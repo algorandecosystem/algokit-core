@@ -3,7 +3,8 @@
   "type": "module",
   "workspaces": {
     "packages": [
-      "packages/typescript/*"
+      "packages/typescript/*",
+      "api/"
     ],
     "catalog": {
       "@types/bun": "^1.2.4",
