@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeAll } from "vitest";
 import { algorandFixture } from "@algorandfoundation/algokit-utils/testing";
-import * as algodPackage from "@algorandfoundation/algokit-algod-api";
+import * as algodPackage from "..";
 
 /**
  * Tests exercising Algod account-related endpoints.
