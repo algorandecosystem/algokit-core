@@ -95,6 +95,7 @@ dependencies = [
  "algokit_http_client_trait",
  "algokit_transact",
  "async-trait",
+ "base64",
  "derive_more",
  "reqwest",
  "thiserror 2.0.7",
