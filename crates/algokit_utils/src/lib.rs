@@ -8,6 +8,7 @@ use algokit_transact::PaymentTransactionFields;
 use algokit_transact::SignedTransaction;
 use algokit_transact::Transaction;
 use algokit_transact::TransactionHeader;
+use algokit_transact::Transactions;
 use base64::DecodeError;
 use base64::{Engine as _, engine::general_purpose};
 use derive_more::Debug;
@@ -143,50 +144,53 @@ impl Composer {
             group: None,
         };
 
-        self.built_group = Some(
-            self.transactions
-                .iter()
-                .map(|composer_txn| {
-                    let alread_formed_txn = matches!(composer_txn, ComposerTxn::Transaction(_));
+        let txs = self
+            .transactions
+            .iter()
+            .map(|composer_txn| {
+                let alread_formed_txn = matches!(composer_txn, ComposerTxn::Transaction(_));
 
-                    let mut transaction: algokit_transact::Transaction = match composer_txn {
-                        ComposerTxn::Transaction(txn) => txn.clone(),
-                        ComposerTxn::Payment(pay_params) => {
-                            let pay_params = PaymentTransactionFields {
-                                header: default_header.clone(),
-                                receiver: pay_params.receiver.clone(),
-                                amount: pay_params.amount,
-                                close_remainder_to: pay_params.close_remainder_to.clone(),
-                            };
+                let mut transaction: algokit_transact::Transaction = match composer_txn {
+                    ComposerTxn::Transaction(txn) => txn.clone(),
+                    ComposerTxn::Payment(pay_params) => {
+                        let pay_params = PaymentTransactionFields {
+                            header: default_header.clone(),
+                            receiver: pay_params.receiver.clone(),
+                            amount: pay_params.amount,
+                            close_remainder_to: pay_params.close_remainder_to.clone(),
+                        };
 
-                            Transaction::Payment(pay_params)
-                        }
-                    };
-
-                    if !alread_formed_txn {
-                        let common_params = composer_txn.common_params();
-                        let header = transaction.header_mut();
-
-                        header.sender = common_params.sender;
-                        header.rekey_to = common_params.rekey_to;
-                        header.note = common_params.note;
-                        header.lease = common_params.lease;
-
-                        transaction
-                            .assign_fee(FeeParams {
-                                fee_per_byte: suggested_params.fee,
-                                min_fee: suggested_params.min_fee,
-                                extra_fee: common_params.extra_fee,
-                                max_fee: common_params.max_fee,
-                            })
-                            .map_err(|e| HttpError::HttpError(e.to_string()))?;
+                        Transaction::Payment(pay_params)
                     }
+                };
 
-                    Ok(transaction)
-                })
-                .collect::<Result<Vec<Transaction>, HttpError>>()?,
+                if !alread_formed_txn {
+                    let common_params = composer_txn.common_params();
+                    let header = transaction.header_mut();
+
+                    header.sender = common_params.sender;
+                    header.rekey_to = common_params.rekey_to;
+                    header.note = common_params.note;
+                    header.lease = common_params.lease;
+
+                    transaction
+                        .assign_fee(FeeParams {
+                            fee_per_byte: suggested_params.fee,
+                            min_fee: suggested_params.min_fee,
+                            extra_fee: common_params.extra_fee,
+                            max_fee: common_params.max_fee,
+                        })
+                        .map_err(|e| HttpError::HttpError(e.to_string()))?;
+                }
+
+                Ok(transaction)
+            })
+            .collect::<Result<Vec<Transaction>, HttpError>>()?;
+
+        self.built_group = Some(
+            txs.assign_group()
+                .map_err(|e| HttpError::HttpError(format!("Failed to assign group: {}", e)))?,
         );
-
         Ok(self)
     }
 }
