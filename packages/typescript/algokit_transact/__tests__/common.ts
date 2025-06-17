@@ -8,7 +8,7 @@ const defaultReviver = (key: string, value: unknown) => {
     return new Uint8Array(value);
   }
 
-  if (typeof value === "number" && ["fee", "amount", "firstValid", "lastValid"].includes(key)) {
+  if (typeof value === "number" && ["fee", "amount", "firstValid", "lastValid", "assetId"].includes(key)) {
     return BigInt(value);
   }
 
