@@ -29,6 +29,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "algod_api"
+version = "0.1.0"
+dependencies = [
+ "algokit_http_client_trait",
+]
+
+[[package]]
 name = "algokit_http_client_trait"
 version = "0.1.0"
 dependencies = [
@@ -82,6 +89,7 @@ dependencies = [
 name = "algokit_utils"
 version = "0.1.0"
 dependencies = [
+ "algod_api",
  "algokit_http_client_trait",
  "algokit_transact",
  "async-trait",
