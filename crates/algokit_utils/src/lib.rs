@@ -118,6 +118,10 @@ impl Composer {
     }
 
     pub async fn build(&mut self) -> Result<&mut Self, HttpError> {
+        if self.built_group.is_some() {
+            return Ok(self);
+        }
+
         let suggested_params = self.get_suggested_params().await?;
 
         let default_header = TransactionHeader {
