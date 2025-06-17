@@ -62,6 +62,7 @@ pub struct Composer {
     algod_client: AlgodClient,
     get_signer_fn: TxnSignerGetter,
     built_group: Option<Vec<Transaction>>,
+    signed_group: Option<Vec<SignedTransaction>>,
 }
 
 impl Composer {
@@ -71,6 +72,7 @@ impl Composer {
             algod_client: algod_client,
             get_signer_fn: get_signer.unwrap_or(Arc::new(|_| None)),
             built_group: None,
+            signed_group: None,
         }
     }
 
@@ -85,6 +87,7 @@ impl Composer {
             algod_client: AlgodClient::testnet(),
             get_signer_fn: Arc::new(|_| None),
             built_group: None,
+            signed_group: None,
         }
     }
 
@@ -197,6 +200,32 @@ impl Composer {
         );
         Ok(self)
     }
+
+    pub fn gather_signatures(&mut self) -> Result<&mut Self, HttpError> {
+        if self.built_group.is_none() {
+            return Err(HttpError::HttpError(
+                "Cannot gather signatures before building the transaction group".to_string(),
+            ));
+        }
+
+        let transactions = self.built_group.as_ref().unwrap();
+
+        self.signed_group = Some(Vec::<SignedTransaction>::new());
+
+        for (i, txn) in transactions.iter().enumerate() {
+            let signer =
+                self.get_signer(txn.header().sender.clone())
+                    .ok_or(HttpError::HttpError(format!(
+                        "No signer found for address: {}",
+                        txn.header().sender
+                    )))?;
+
+            let signed_txns = signer(transactions, &[i]);
+            self.signed_group.as_mut().map(|v| v.extend(signed_txns));
+        }
+
+        Ok(self)
+    }
 }
 #[cfg(test)]
 mod tests {
@@ -281,5 +310,55 @@ mod tests {
         assert!(composer.add_payment(payment_params).is_ok());
         assert!(composer.build().await.is_ok());
         assert!(composer.built_group().is_some());
+    }
+
+    #[tokio::test]
+    async fn test_gather_signatures() {
+        let signer = Arc::new(|txns: &[Transaction], indices: &[usize]| {
+            txns.iter()
+                .enumerate()
+                .filter_map(|(idx, txn)| {
+                    if indices.contains(&idx) {
+                        Some(SignedTransaction {
+                            transaction: txn.clone(),
+                            signature: Some([0; 64]), // Mock signature
+                            auth_address: None,
+                        })
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<SignedTransaction>>()
+        });
+
+        let mut composer = Composer {
+            transactions: Vec::new(),
+            algod_client: AlgodClient::testnet(),
+            get_signer_fn: Arc::new(move |_| Some(signer.clone())),
+            built_group: None,
+            signed_group: None,
+        };
+        let payment_params = PaymentParams {
+            common_params: CommonParams {
+                sender: AddressMother::address(),
+                signer: None,
+                rekey_to: None,
+                note: None,
+                lease: None,
+                static_fee: None,
+                extra_fee: None,
+                max_fee: None,
+                validity_window: None,
+                first_valid_round: None,
+                last_valid_round: None,
+            },
+            receiver: AddressMother::address(),
+            amount: 1000,
+            close_remainder_to: None,
+        };
+        assert!(composer.add_payment(payment_params).is_ok());
+        assert!(composer.build().await.is_ok());
+        assert!(composer.gather_signatures().is_ok());
+        assert!(composer.signed_group.is_some());
     }
 }
