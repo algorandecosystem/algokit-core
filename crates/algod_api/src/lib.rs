@@ -5,8 +5,21 @@ use algokit_http_client_trait::{HttpClient, HttpError};
 #[cfg(feature = "default_http_client")]
 use algokit_http_client_trait::DefaultHttpClient;
 
+use serde::{Deserialize, Serialize};
+
 pub struct AlgodClient {
     http_client: Arc<dyn HttpClient>,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct TransactionParams {
+    pub consensus_version: String,
+    pub fee: u64,
+    pub last_round: u64,
+    pub genesis_id: String,
+    pub genesis_hash: String,
+    pub min_fee: u64,
 }
 
 impl AlgodClient {
@@ -23,8 +36,10 @@ impl AlgodClient {
         }
     }
 
-    pub async fn get_suggested_params(&self) -> Result<String, HttpError> {
+    pub async fn transaction_params(&self) -> Result<TransactionParams, HttpError> {
         let path = "/v2/transactions/params".to_string();
-        self.http_client.json(path).await
+        let response = self.http_client.get(path).await?;
+
+        serde_json::from_slice(&response).map_err(|e| HttpError::HttpError(e.to_string()))
     }
 }

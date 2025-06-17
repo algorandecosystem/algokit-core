@@ -1,5 +1,6 @@
 use algod_api::AlgodClient;
 
+use algod_api::TransactionParams;
 use algokit_http_client_trait::HttpError;
 use algokit_transact::Address;
 use algokit_transact::SignedTransaction;
@@ -8,7 +9,7 @@ use derive_more::Debug;
 use std::sync::Arc;
 
 #[derive(Debug)]
-pub struct TransactionParams {
+pub struct CommonParams {
     pub sender: Address,
     #[debug(skip)]
     pub signer: Option<TxnSigner>,
@@ -25,7 +26,7 @@ pub struct TransactionParams {
 
 #[derive(Debug)]
 pub struct PaymentParams {
-    pub common_fields: TransactionParams,
+    pub common_params: CommonParams,
     pub receiver: Address,
     pub amount: u64,
     pub close_remainder_to: Option<Address>,
@@ -90,8 +91,8 @@ impl Composer {
     }
 
     // TODO: Use Fn defined in ComposerConfig
-    pub async fn get_suggested_params(&self) -> Result<String, HttpError> {
-        Ok(self.algod_client.get_suggested_params().await?)
+    pub async fn get_suggested_params(&self) -> Result<TransactionParams, HttpError> {
+        self.algod_client.transaction_params().await
     }
 }
 
@@ -124,16 +125,17 @@ mod tests {
         let composer = Composer::testnet();
         let response = composer.get_suggested_params().await.unwrap();
 
-        assert!(
-            response.contains(r#""genesis-hash":"SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=""#)
-        )
+        assert_eq!(
+            response.genesis_hash,
+            "SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI="
+        );
     }
 
     #[test]
     fn test_add_payment() {
         let mut composer = Composer::testnet();
         let payment_params = PaymentParams {
-            common_fields: TransactionParams {
+            common_params: CommonParams {
                 sender: AddressMother::address(),
                 signer: None,
                 rekey_to: None,

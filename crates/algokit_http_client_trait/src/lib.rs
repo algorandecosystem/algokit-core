@@ -1,3 +1,4 @@
+#[cfg(feature = "default_client")]
 use async_trait::async_trait;
 
 #[cfg(feature = "ffi_uniffi")]
@@ -22,7 +23,7 @@ pub enum HttpError {
 /// With the `ffi_uniffi` feature enabled, this is exported as a foreign trait, meaning it is implemented natively in the foreign language.
 ///
 pub trait HttpClient: Send + Sync {
-    async fn json(&self, path: String) -> Result<String, HttpError>;
+    async fn get(&self, path: String) -> Result<Vec<u8>, HttpError>;
 }
 
 #[cfg(feature = "default_client")]
@@ -45,13 +46,14 @@ impl DefaultHttpClient {
 #[cfg(feature = "default_client")]
 #[async_trait]
 impl HttpClient for DefaultHttpClient {
-    async fn json(&self, path: String) -> Result<String, HttpError> {
+    async fn get(&self, path: String) -> Result<Vec<u8>, HttpError> {
         let response = reqwest::get(self.host.clone() + &path)
             .await
             .map_err(|e| HttpError::HttpError(e.to_string()))?
-            .text()
+            .bytes()
             .await
-            .map_err(|e| HttpError::HttpError(e.to_string()))?;
+            .map_err(|e| HttpError::HttpError(e.to_string()))?
+            .to_vec();
 
         Ok(response)
     }
