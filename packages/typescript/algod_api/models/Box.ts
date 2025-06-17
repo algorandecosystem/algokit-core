@@ -19,13 +19,13 @@ export class Box {
     /**
     * The round for which this information is relevant
     */
-    'round'?: number;
+    'round': number | bigint;
     /**
-    * The box name, base64 encoded
+    * \\[name\\] box name, base64 encoded
     */
     'name': string;
     /**
-    * The box value, base64 encoded.
+    * \\[value\\] box value, base64 encoded.
     */
     'value': string;
 
@@ -37,7 +37,7 @@ export class Box {
         {
             "name": "round",
             "baseName": "round",
-            "type": "number",
+            "type": "bigint",
             "format": ""
         },
         {

@@ -8,7 +8,7 @@ use convert_case::{Case, Casing};
 use ed25519_dalek::{Signer, SigningKey};
 use serde::Serialize;
 use serde_json::to_writer_pretty;
-use std::fs::File;
+use std::{fs::File, str::FromStr};
 
 pub struct TransactionHeaderMother {}
 impl TransactionHeaderMother {
@@ -83,11 +83,7 @@ impl TransactionMother {
         AssetTransferTransactionBuilder::default()
             .header(
                 TransactionHeaderMother::simple_testnet()
-                    .sender(
-                        "JB3K6HTAXODO4THESLNYTSG6GQUFNEVIQG7A6ZYVDACR6WA3ZF52TKU5NA"
-                            .parse::<Address>()
-                            .unwrap(),
-                    )
+                    .sender(AddressMother::neil())
                     .first_valid(51183672)
                     .last_valid(51183872)
                     .build()
@@ -95,11 +91,7 @@ impl TransactionMother {
             )
             .asset_id(107686045)
             .amount(0)
-            .receiver(
-                "JB3K6HTAXODO4THESLNYTSG6GQUFNEVIQG7A6ZYVDACR6WA3ZF52TKU5NA"
-                    .parse::<Address>()
-                    .unwrap(),
-            )
+            .receiver(AddressMother::neil())
             .to_owned()
     }
 }
@@ -115,6 +107,78 @@ impl AddressMother {
             .parse::<Address>()
             .unwrap()
     }
+
+    pub fn neil() -> Address {
+        "JB3K6HTAXODO4THESLNYTSG6GQUFNEVIQG7A6ZYVDACR6WA3ZF52TKU5NA"
+            .parse::<Address>()
+            .unwrap()
+    }
+}
+
+pub struct TransactionGroupMother {}
+impl TransactionGroupMother {
+    pub fn testnet_payment_group() -> Vec<Transaction> {
+        // This is a real TestNet transaction group with two payment transactions.
+        let header_builder = TransactionHeaderMother::testnet()
+            .sender(AddressMother::neil())
+            .first_valid(51532821)
+            .last_valid(51533021)
+            .to_owned();
+
+        let pay_1 = PaymentTransactionBuilder::default()
+            .header(
+                header_builder
+                    .clone()
+                    .note(BASE64_STANDARD.decode("VGVzdCAx").unwrap())
+                    .build()
+                    .unwrap(),
+            )
+            .receiver(AddressMother::neil())
+            .amount(1000000)
+            .build()
+            .unwrap();
+
+        let pay_2: Transaction = PaymentTransactionBuilder::default()
+            .header(
+                header_builder
+                    .clone()
+                    .note(BASE64_STANDARD.decode("VGVzdCAy").unwrap())
+                    .build()
+                    .unwrap(),
+            )
+            .receiver(AddressMother::neil())
+            .amount(200000)
+            .build()
+            .unwrap();
+
+        vec![pay_1, pay_2]
+    }
+
+    pub fn group_of(number_of_transactions: usize) -> Vec<Transaction> {
+        let header_builder = TransactionHeaderMother::testnet()
+            .sender(AddressMother::neil())
+            .first_valid(51532821)
+            .last_valid(51533021)
+            .to_owned();
+
+        let mut txs = vec![];
+        for i in 0..number_of_transactions {
+            let tx: Transaction = PaymentTransactionBuilder::default()
+                .header(
+                    header_builder
+                        .clone()
+                        .note(format!("tx:{}", i).as_bytes().to_vec())
+                        .build()
+                        .unwrap(),
+                )
+                .receiver(AddressMother::neil())
+                .amount(200000)
+                .build()
+                .unwrap();
+            txs.push(tx);
+        }
+        txs
+    }
 }
 
 #[derive(Serialize)]
@@ -125,20 +189,33 @@ pub struct TransactionTestData {
     pub unsigned_bytes: Vec<u8>,
     pub signing_private_key: Byte32,
     pub signed_bytes: Vec<u8>,
+    pub rekeyed_sender_auth_address: Address,
+    pub rekeyed_sender_signed_bytes: Vec<u8>,
 }
 
 impl TransactionTestData {
     pub fn new(transaction: Transaction, signing_private_key: Byte32) -> Self {
         let signing_key: SigningKey = SigningKey::from_bytes(&signing_private_key);
-        let id = transaction.id().unwrap();
+        let id: String = transaction.id().unwrap();
         let id_raw: [u8; HASH_BYTES_LENGTH] = transaction.id_raw().unwrap();
         let unsigned_bytes = transaction.encode().unwrap();
         let signature = signing_key.sign(&unsigned_bytes);
         let signed_txn = SignedTransaction {
             transaction: transaction.clone(),
-            signature: signature.to_bytes(),
+            signature: Some(signature.to_bytes()),
+            auth_address: None,
         };
         let signed_bytes = signed_txn.encode().unwrap();
+
+        let rekeyed_sender_auth_address =
+            Address::from_str("BKDYDIDVSZCP75JVCB76P3WBJRY6HWAIFDSEOKYHJY5WMNJ2UWJ65MYETU")
+                .unwrap();
+        let signer_signed_txn = SignedTransaction {
+            transaction: transaction.clone(),
+            signature: Some(signature.to_bytes()),
+            auth_address: Some(rekeyed_sender_auth_address.clone()),
+        };
+        let rekeyed_sender_signed_bytes = signer_signed_txn.encode().unwrap();
 
         Self {
             transaction,
@@ -147,6 +224,8 @@ impl TransactionTestData {
             unsigned_bytes,
             signing_private_key,
             signed_bytes,
+            rekeyed_sender_auth_address,
+            rekeyed_sender_signed_bytes,
         }
     }
 

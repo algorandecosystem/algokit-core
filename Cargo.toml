@@ -4,7 +4,9 @@ members = [ "crates/algod_api", "crates/algokit_http_client_trait",
   "crates/algokit_transact",
   "crates/algokit_transact_ffi", "crates/algokit_utils", "crates/algokit_utils_ffi",
   "crates/ffi_macros", "crates/ffi_mutex",
+  "tools/build_pkgs",
   "crates/uniffi-bindgen",
+  "docs",
   "tools/cargo-bin",
 ]
 
@@ -13,6 +15,7 @@ uniffi = { version = "0.28.3" }
 thiserror = { version = "2.0.7" }
 wasm-bindgen = { version = "0.2.99" }
 tsify-next = { version = "0.5.4", features = ["js"] }
+js-sys = { version = "0.3.77" }
 
 [workspace.metadata.bin]
 polytest = { version = "0.3.0", locked = true }

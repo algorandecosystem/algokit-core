@@ -1,10 +1,15 @@
-use crate::constants::{ALGORAND_SIGNATURE_BYTE_LENGTH, ALGORAND_SIGNATURE_ENCODING_INCR};
-use crate::FeeParams;
 use crate::{
-    test_utils::{AddressMother, TransactionMother},
+    constants::{
+        ALGORAND_SIGNATURE_BYTE_LENGTH, ALGORAND_SIGNATURE_ENCODING_INCR, MAX_TX_GROUP_SIZE,
+    },
+    test_utils::{
+        AddressMother, TransactionGroupMother, TransactionHeaderMother, TransactionMother,
+    },
+    transactions::FeeParams,
     Address, AlgorandMsgpack, EstimateTransactionSize, SignedTransaction, Transaction,
-    TransactionId,
+    TransactionId, Transactions,
 };
+use base64::{prelude::BASE64_STANDARD, Engine};
 use pretty_assertions::assert_eq;
 
 #[test]
@@ -20,7 +25,8 @@ fn test_payment_transaction_encoding() {
 
     let signed_tx = SignedTransaction {
         transaction: payment_tx.clone(),
-        signature: [0; ALGORAND_SIGNATURE_BYTE_LENGTH],
+        signature: Some([0; ALGORAND_SIGNATURE_BYTE_LENGTH]),
+        auth_address: None,
     };
     let encoded_stx = signed_tx.encode().unwrap();
     let decoded_stx = SignedTransaction::decode(&encoded_stx).unwrap();
@@ -51,7 +57,8 @@ fn test_asset_transfer_transaction_encoding() {
 
     let signed_tx = SignedTransaction {
         transaction: asset_transfer_tx.clone(),
-        signature: [0; ALGORAND_SIGNATURE_BYTE_LENGTH],
+        signature: Some([0; ALGORAND_SIGNATURE_BYTE_LENGTH]),
+        auth_address: None,
     };
     let encoded_stx = signed_tx.encode().unwrap();
     let decoded_stx = SignedTransaction::decode(&encoded_stx).unwrap();
@@ -64,6 +71,35 @@ fn test_asset_transfer_transaction_encoding() {
     assert_eq!(encoded.len(), raw_encoded.len() + 2);
     assert_eq!(encoded[2..], raw_encoded);
     assert_eq!(encoded.len(), 178);
+}
+
+#[test]
+fn test_signed_transaction_encoding() {
+    let tx_builder = TransactionMother::simple_payment();
+    let payment_tx = tx_builder.build().unwrap();
+
+    // The sender is signing the transaction
+    let signed_tx = SignedTransaction {
+        transaction: payment_tx.clone(),
+        signature: Some([0; ALGORAND_SIGNATURE_BYTE_LENGTH]),
+        auth_address: None,
+    };
+    let encoded_stx = signed_tx.encode().unwrap();
+    assert_eq!(encoded_stx.len(), 247);
+    let decoded_stx = SignedTransaction::decode(&encoded_stx).unwrap();
+    assert_eq!(decoded_stx, signed_tx);
+
+    // The sender is not signing the transaction (rekeyed sender account)
+    let auth_address = AddressMother::address();
+    let signed_tx = SignedTransaction {
+        transaction: payment_tx.clone(),
+        signature: Some([1; ALGORAND_SIGNATURE_BYTE_LENGTH]),
+        auth_address: Some(auth_address.clone()),
+    };
+    let encoded_stx: Vec<u8> = signed_tx.encode().unwrap();
+    assert_eq!(encoded_stx.len(), 286);
+    let decoded_stx = SignedTransaction::decode(&encoded_stx).unwrap();
+    assert_eq!(decoded_stx, signed_tx);
 }
 
 #[test]
@@ -102,7 +138,8 @@ fn test_pay_transaction_id() {
     let payment_tx = tx_builder.build().unwrap();
     let signed_tx = SignedTransaction {
         transaction: payment_tx.clone(),
-        signature: [0; ALGORAND_SIGNATURE_BYTE_LENGTH],
+        signature: Some([0; ALGORAND_SIGNATURE_BYTE_LENGTH]),
+        auth_address: None,
     };
 
     assert_eq!(payment_tx.id().unwrap(), expected_tx_id);
@@ -120,7 +157,8 @@ fn test_estimate_transaction_size() {
 
     let signed_tx = SignedTransaction {
         transaction: payment_tx.clone(),
-        signature: [0; ALGORAND_SIGNATURE_BYTE_LENGTH],
+        signature: Some([0; ALGORAND_SIGNATURE_BYTE_LENGTH]),
+        auth_address: None,
     };
     let actual_size = signed_tx.encode().unwrap().len();
 
@@ -173,10 +211,10 @@ fn test_max_fee() {
     });
 
     assert!(result.is_err());
-    let err = result.unwrap_err();
+    let err: crate::AlgoKitTransactError = result.unwrap_err();
     let msg = format!("{}", err);
     assert!(
-        msg == "Calculated transaction fee 2470 µALGO is greater than max fee 1000 µALGO",
+        msg == "Transaction fee 2470 µALGO is greater than max fee 1000 µALGO",
         "Unexpected error message: {}",
         msg
     );
@@ -196,4 +234,158 @@ fn test_calculate_fee() {
         .unwrap();
 
     assert_eq!(updated_transaction.header().fee, Some(1235));
+}
+
+#[test]
+fn test_multi_transaction_group() {
+    let expected_group: [u8; 32] = BASE64_STANDARD
+        .decode(String::from("uJA6BWzZ5g7Ve0FersqCLWsrEstt6p0+F3bNGEKH3I4="))
+        .unwrap()
+        .try_into()
+        .unwrap();
+    let txs = TransactionGroupMother::testnet_payment_group();
+
+    let grouped_txs = txs.assign_group().unwrap();
+
+    assert_eq!(grouped_txs.len(), txs.len());
+    for grouped_tx in grouped_txs.iter() {
+        assert_eq!(grouped_tx.header().group.unwrap(), expected_group);
+    }
+    assert_eq!(
+        &grouped_txs[0].id().unwrap(),
+        "6SIXGV2TELA2M5RHZ72CVKLBSJ2OPUAKYFTUUE27O23RN6TFMGHQ"
+    );
+    assert_eq!(
+        &grouped_txs[1].id().unwrap(),
+        "7OY3VQXJCDSKPMGEFJMNJL2L3XIOMRM2U7DM2L54CC7QM5YBFQEA"
+    );
+}
+
+#[test]
+fn test_single_transaction_group() {
+    let expected_group: [u8; 32] = BASE64_STANDARD
+        .decode(String::from("LLW3AwgyXbwoMMBNfLSAGHtqoKtj/c7MjNMR0MGW6sg="))
+        .unwrap()
+        .try_into()
+        .unwrap();
+    let txs: Vec<Transaction> = TransactionGroupMother::group_of(1);
+
+    let grouped_txs = txs.assign_group().unwrap();
+
+    assert_eq!(grouped_txs.len(), txs.len());
+    for grouped_tx in grouped_txs.iter() {
+        assert_eq!(grouped_tx.header().group.unwrap(), expected_group);
+    }
+}
+
+#[test]
+fn test_transaction_group_too_big() {
+    let txs: Vec<Transaction> = TransactionGroupMother::group_of(MAX_TX_GROUP_SIZE + 1);
+
+    let result = txs.assign_group();
+
+    let error = result.unwrap_err();
+    assert!(error
+        .to_string()
+        .starts_with("Transaction group size exceeds the max limit"));
+}
+
+#[test]
+fn test_transaction_group_too_small() {
+    let txs: Vec<Transaction> = TransactionGroupMother::group_of(0);
+
+    let result = txs.assign_group();
+
+    let error = result.unwrap_err();
+    assert!(error
+        .to_string()
+        .starts_with("Transaction group size cannot be 0"));
+}
+
+#[test]
+fn test_transaction_group_already_set() {
+    let tx: Transaction = TransactionMother::simple_payment()
+        .header(
+            TransactionHeaderMother::simple_testnet()
+                .group(
+                    BASE64_STANDARD
+                        .decode(String::from("y1Hz6KZhHJI4TZLwZqXO3TFgXVQdD/1+c6BLk3wTW6Q="))
+                        .unwrap()
+                        .try_into()
+                        .unwrap(),
+                )
+                .build()
+                .unwrap(),
+        )
+        .to_owned()
+        .build()
+        .unwrap();
+
+    let result = vec![tx].assign_group();
+
+    let error = result.unwrap_err();
+    assert!(error
+        .to_string()
+        .starts_with("Transactions must not already be grouped"));
+}
+
+#[test]
+fn test_transaction_group_encoding() {
+    let grouped_txs = TransactionGroupMother::testnet_payment_group()
+        .assign_group()
+        .unwrap();
+
+    let encoded_grouped_txs = grouped_txs
+        .iter()
+        .map(|tx| tx.encode())
+        .collect::<Result<Vec<Vec<u8>>, _>>()
+        .unwrap();
+    let decoded_grouped_txs = encoded_grouped_txs
+        .iter()
+        .map(|tx| Transaction::decode(tx))
+        .collect::<Result<Vec<Transaction>, _>>()
+        .unwrap();
+
+    for ((grouped_tx, encoded_tx), decoded_tx) in grouped_txs
+        .iter()
+        .zip(encoded_grouped_txs.into_iter())
+        .zip(decoded_grouped_txs.iter())
+    {
+        assert_eq!(encoded_tx, grouped_tx.encode().unwrap());
+        assert_eq!(decoded_tx, grouped_tx);
+    }
+}
+
+#[test]
+fn test_signed_transaction_group_encoding() {
+    let signed_grouped_txs = TransactionGroupMother::testnet_payment_group()
+        .assign_group()
+        .unwrap()
+        .iter()
+        .map(|tx| SignedTransaction {
+            transaction: tx.clone(),
+            signature: Some([0; ALGORAND_SIGNATURE_BYTE_LENGTH]),
+            auth_address: None,
+        })
+        .collect::<Vec<SignedTransaction>>();
+
+    let encoded_signed_group = signed_grouped_txs
+        .iter()
+        .map(|tx| tx.encode())
+        .collect::<Result<Vec<Vec<u8>>, _>>()
+        .unwrap();
+    let decoded_signed_group = encoded_signed_group
+        .iter()
+        .map(|tx| SignedTransaction::decode(tx))
+        .collect::<Result<Vec<SignedTransaction>, _>>()
+        .unwrap();
+
+    for ((signed_grouped_tx, encoded_signed_tx), decoded_signed_tx) in signed_grouped_txs
+        .iter()
+        .zip(encoded_signed_group.into_iter())
+        .zip(decoded_signed_group.iter())
+    {
+        assert_eq!(encoded_signed_tx, signed_grouped_tx.encode().unwrap());
+        assert_eq!(decoded_signed_tx, signed_grouped_tx);
+    }
 }

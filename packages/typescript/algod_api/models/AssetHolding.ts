@@ -19,11 +19,11 @@ export class AssetHolding {
     /**
     * \\[a\\] number of units held.
     */
-    'amount': number;
+    'amount': number | bigint;
     /**
     * Asset ID of the holding.
     */
-    'assetId': number;
+    'assetId': number | bigint;
     /**
     * \\[f\\] whether or not the holding is frozen.
     */
@@ -37,13 +37,13 @@ export class AssetHolding {
         {
             "name": "amount",
             "baseName": "amount",
-            "type": "number",
+            "type": "bigint",
             "format": ""
         },
         {
             "name": "assetId",
             "baseName": "asset-id",
-            "type": "number",
+            "type": "bigint",
             "format": ""
         },
         {

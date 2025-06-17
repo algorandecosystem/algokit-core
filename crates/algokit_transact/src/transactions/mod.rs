@@ -16,9 +16,12 @@ pub use payment::{PaymentTransactionBuilder, PaymentTransactionFields};
 
 use crate::constants::{
     ALGORAND_SIGNATURE_BYTE_LENGTH, ALGORAND_SIGNATURE_ENCODING_INCR, HASH_BYTES_LENGTH,
+    MAX_TX_GROUP_SIZE,
 };
 use crate::error::AlgoKitTransactError;
-use crate::traits::{AlgorandMsgpack, EstimateTransactionSize, TransactionId};
+use crate::traits::{AlgorandMsgpack, EstimateTransactionSize, TransactionId, Transactions};
+use crate::utils::{compute_group_id, is_zero_addr_opt};
+use crate::Address;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, Bytes};
 use std::any::Any;
@@ -113,7 +116,9 @@ impl AssetTransferTransactionBuilder {
     }
 }
 
-impl AlgorandMsgpack for Transaction {}
+impl AlgorandMsgpack for Transaction {
+    const PREFIX: &'static [u8] = b"TX";
+}
 impl TransactionId for Transaction {}
 
 impl EstimateTransactionSize for Transaction {
@@ -130,20 +135,23 @@ pub struct SignedTransaction {
     #[serde(rename = "txn")]
     pub transaction: Transaction,
 
-    /// The Ed25519 signature authorizing the transaction.
+    /// Optional Ed25519 signature authorizing the transaction.
     #[serde(rename = "sig")]
-    #[serde_as(as = "Bytes")]
-    pub signature: [u8; ALGORAND_SIGNATURE_BYTE_LENGTH],
+    #[serde_as(as = "Option<Bytes>")]
+    pub signature: Option<[u8; ALGORAND_SIGNATURE_BYTE_LENGTH]>,
+
+    /// Optional auth address applicable if the transaction sender is a rekeyed account.
+    #[serde(rename = "sgnr")]
+    #[serde(skip_serializing_if = "is_zero_addr_opt")]
+    #[serde(default)]
+    pub auth_address: Option<Address>,
 }
 
 impl AlgorandMsgpack for SignedTransaction {
-    /// The prefix used for MessagePack encoding, empty for signed transactions.
-    const PREFIX: &'static [u8] = b"";
-
-    /// Decodes MessagePack bytes into a SignedTransaction.
+    /// Decodes MsgPack bytes into a SignedTransaction.
     ///
     /// # Parameters
-    /// * `bytes` - The MessagePack encoded signed transaction bytes
+    /// * `bytes` - The MsgPack encoded signed transaction bytes
     ///
     /// # Returns
     /// The decoded SignedTransaction or an error if decoding fails or the transaction type is not recognized.
@@ -165,10 +173,10 @@ impl AlgorandMsgpack for SignedTransaction {
                 let mut txn_buf = Vec::new();
                 rmpv::encode::write_value(&mut txn_buf, &txn_value)?;
 
-                let txn = Transaction::decode(&txn_buf)?;
-                let mut stxn: SignedTransaction = rmp_serde::from_slice(bytes)?;
-
-                stxn.transaction = txn;
+                let stxn = SignedTransaction {
+                    transaction: Transaction::decode(&txn_buf)?,
+                    ..rmp_serde::from_slice(bytes)?
+                };
 
                 return Ok(stxn);
             }
@@ -194,5 +202,36 @@ impl TransactionId for SignedTransaction {
 impl EstimateTransactionSize for SignedTransaction {
     fn estimate_size(&self) -> Result<usize, AlgoKitTransactError> {
         return Ok(self.encode()?.len());
+    }
+}
+
+impl Transactions for &[Transaction] {
+    /// Groups the supplied transactions by calculating and assigning the group to each transaction.
+    ///
+    /// # Returns
+    /// A result containing the transactions with group assign or an error if grouping fails.
+    fn assign_group(self) -> Result<Vec<Transaction>, AlgoKitTransactError> {
+        if self.len() > MAX_TX_GROUP_SIZE {
+            return Err(AlgoKitTransactError::InputError(format!(
+                "Transaction group size exceeds the max limit of {}",
+                MAX_TX_GROUP_SIZE
+            )));
+        }
+
+        if self.is_empty() {
+            return Err(AlgoKitTransactError::InputError(String::from(
+                "Transaction group size cannot be 0",
+            )));
+        }
+
+        let group_id = compute_group_id(self)?;
+        Ok(self
+            .iter()
+            .map(|tx| {
+                let mut tx = tx.clone();
+                tx.header_mut().group = Some(group_id);
+                tx
+            })
+            .collect())
     }
 }
