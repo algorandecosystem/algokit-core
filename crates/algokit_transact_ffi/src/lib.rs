@@ -6,7 +6,9 @@ use algokit_transact::msgpack::{
     encode_json_to_msgpack as internal_encode_json_to_msgpack,
     AlgoKitMsgPackError as InternalMsgPackError, ModelType as InternalModelType,
 };
-use algokit_transact::{AlgorandMsgpack, Byte32, EstimateTransactionSize, TransactionId, Transactions};
+use algokit_transact::{
+    AlgorandMsgpack, Byte32, EstimateTransactionSize, TransactionId, Transactions,
+};
 use ffi_macros::{ffi_enum, ffi_func, ffi_record};
 use serde::{Deserialize, Serialize};
 use serde_bytes::ByteBuf;
@@ -167,6 +169,14 @@ impl TryFrom<Address> for algokit_transact::Address {
 
         Ok(algokit_transact::Address::from_pubkey(&pub_key))
     }
+}
+
+#[ffi_record]
+pub struct FeeParams {
+    fee_per_byte: u64,
+    min_fee: u64,
+    extra_fee: Option<u64>,
+    max_fee: Option<u64>,
 }
 
 #[ffi_record]
@@ -659,23 +669,34 @@ pub fn assign_fees(
     network_params: NetworkFeeParams,
     transaction_params: Vec<IndexedTransactionFeeParams>,
 ) -> Result<Vec<Transaction>, AlgoKitTransactError> {
-    let txs_internal: Vec<algokit_transact::Transaction> = txs
+    let txs_with_fees: Vec<Transaction> = txs
         .into_iter()
-        .map(|tx| tx.try_into())
-        .collect::<Result<Vec<_>, _>>()?;
-
-    let network_params_internal: algokit_transact::NetworkFeeParams = network_params.into();
-    let transaction_params_internal: Vec<(usize, algokit_transact::TransactionFeeParams)> =
-        transaction_params
-            .into_iter()
-            .map(|itp| (itp.index as usize, itp.fee_params.into()))
-            .collect();
-
-    let txs_with_fees: Vec<Transaction> = txs_internal
-        .assign_fees(network_params_internal, transaction_params_internal)?
-        .into_iter()
-        .map(|tx| tx.try_into())
-        .collect::<Result<Vec<_>, _>>()?;
+        .enumerate()
+        .map(|(index, tx)| {
+            let internal_tx: algokit_transact::Transaction = tx.try_into()?;
+            let fee_params: algokit_transact::FeeParams;
+            if let Some(txn_params) = transaction_params
+                .iter()
+                .find(|tp| tp.index as usize == index)
+            {
+                fee_params = algokit_transact::FeeParams {
+                    fee_per_byte: network_params.fee_per_byte,
+                    min_fee: network_params.min_fee,
+                    extra_fee: txn_params.fee_params.extra_fee,
+                    max_fee: txn_params.fee_params.max_fee,
+                }
+            } else {
+                fee_params = algokit_transact::FeeParams {
+                    fee_per_byte: network_params.fee_per_byte,
+                    min_fee: network_params.min_fee,
+                    extra_fee: None,
+                    max_fee: None,
+                }
+            }
+            let internal_tx_with_fees = internal_tx.assign_fee(fee_params)?;
+            return internal_tx_with_fees.try_into();
+        })
+        .collect::<Result<Vec<Transaction>, AlgoKitTransactError>>()?;
 
     Ok(txs_with_fees)
 }
@@ -731,38 +752,27 @@ pub fn get_algorand_constant(constant: AlgorandConstant) -> u64 {
     constant.value()
 }
 
-impl From<NetworkFeeParams> for algokit_transact::NetworkFeeParams {
-    fn from(value: NetworkFeeParams) -> Self {
-        Self {
+impl TryFrom<FeeParams> for algokit_transact::FeeParams {
+    type Error = AlgoKitTransactError;
+
+    fn try_from(value: FeeParams) -> Result<Self, Self::Error> {
+        Ok(Self {
             fee_per_byte: value.fee_per_byte,
             min_fee: value.min_fee,
-        }
-    }
-}
-
-impl From<TransactionFeeParams> for algokit_transact::TransactionFeeParams {
-    fn from(value: TransactionFeeParams) -> Self {
-        Self {
             extra_fee: value.extra_fee,
             max_fee: value.max_fee,
-        }
+        })
     }
 }
 
 #[ffi_func]
 pub fn assign_fee(
     txn: Transaction,
-    network_params: NetworkFeeParams,
-    transaction_params: Option<TransactionFeeParams>,
+    fee_params: FeeParams,
 ) -> Result<Transaction, AlgoKitTransactError> {
     let txn_internal: algokit_transact::Transaction = txn.try_into()?;
-    let network_params_internal: algokit_transact::NetworkFeeParams = network_params.into();
-    let transaction_params_internal: Option<algokit_transact::TransactionFeeParams> =
-        transaction_params.map(|params| params.into());
-
-    let updated_txn =
-        txn_internal.assign_fee(network_params_internal, transaction_params_internal)?;
-
+    let fee_params_internal: algokit_transact::FeeParams = fee_params.try_into()?;
+    let updated_txn = txn_internal.assign_fee(fee_params_internal)?;
     Ok(updated_txn.try_into()?)
 }
 
