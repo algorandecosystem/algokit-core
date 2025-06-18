@@ -1,5 +1,8 @@
 use crate::{
-    transactions::{AssetTransferTransactionBuilder, PaymentTransactionBuilder},
+    transactions::{
+        ApplicationTransactionBuilder, AssetTransferTransactionBuilder, OnApplicationComplete,
+        PaymentTransactionBuilder, StateSchema,
+    },
     Address, AlgorandMsgpack, Byte32, SignedTransaction, Transaction, TransactionHeaderBuilder,
     TransactionId, ALGORAND_PUBLIC_KEY_BYTE_LENGTH, HASH_BYTES_LENGTH,
 };
@@ -92,6 +95,32 @@ impl TransactionMother {
             .asset_id(107686045)
             .amount(0)
             .receiver(AddressMother::neil())
+            .to_owned()
+    }
+
+    pub fn simple_application_call() -> ApplicationTransactionBuilder {
+        ApplicationTransactionBuilder::default()
+            .header(TransactionHeaderMother::simple_testnet().build().unwrap())
+            .app_id(1234567890)
+            .on_complete(OnApplicationComplete::NoOp)
+            .to_owned()
+    }
+
+    pub fn application_creation() -> ApplicationTransactionBuilder {
+        ApplicationTransactionBuilder::default()
+            .header(TransactionHeaderMother::simple_testnet().build().unwrap())
+            .app_id(0) // 0 indicates creation
+            .on_complete(OnApplicationComplete::NoOp)
+            .approval_program(vec![0x01, 0x20, 0x01, 0x01, 0x22]) // Simple TEAL program
+            .clear_state_program(vec![0x01, 0x20, 0x01, 0x01, 0x22]) // Simple TEAL program
+            .global_state_schema(StateSchema {
+                num_uints: 1,
+                num_byte_slices: 1,
+            })
+            .local_state_schema(StateSchema {
+                num_uints: 1,
+                num_byte_slices: 1,
+            })
             .to_owned()
     }
 }

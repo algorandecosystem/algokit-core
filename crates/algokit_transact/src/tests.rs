@@ -389,3 +389,60 @@ fn test_signed_transaction_group_encoding() {
         assert_eq!(decoded_signed_tx, signed_grouped_tx);
     }
 }
+
+#[test]
+fn test_application_transaction_encoding() {
+    let tx_builder = TransactionMother::simple_application_call();
+    let application_call_tx_fields = tx_builder.build_fields().unwrap();
+    let application_call_tx = tx_builder.build().unwrap();
+
+    let encoded = application_call_tx.encode().unwrap();
+    let decoded = Transaction::decode(&encoded).unwrap();
+    assert_eq!(decoded, application_call_tx);
+    assert_eq!(
+        decoded,
+        Transaction::Application(application_call_tx_fields)
+    );
+
+    let signed_tx = SignedTransaction {
+        transaction: application_call_tx.clone(),
+        signature: Some([0; ALGORAND_SIGNATURE_BYTE_LENGTH]),
+        auth_address: None,
+    };
+    let encoded_stx = signed_tx.encode().unwrap();
+    let decoded_stx = SignedTransaction::decode(&encoded_stx).unwrap();
+    assert_eq!(decoded_stx, signed_tx);
+    assert_eq!(decoded_stx.transaction, application_call_tx);
+
+    let raw_encoded = application_call_tx.encode_raw().unwrap();
+    assert_eq!(encoded[0], b'T');
+    assert_eq!(encoded[1], b'X');
+    assert_eq!(encoded.len(), raw_encoded.len() + 2);
+    assert_eq!(encoded[2..], raw_encoded);
+}
+
+#[test]
+fn test_application_creation_transaction_encoding() {
+    let tx_builder = TransactionMother::application_creation();
+    let application_call_tx_fields = tx_builder.build_fields().unwrap();
+    let application_call_tx = tx_builder.build().unwrap();
+
+    let encoded = application_call_tx.encode().unwrap();
+    let decoded = Transaction::decode(&encoded).unwrap();
+    assert_eq!(decoded, application_call_tx);
+    assert_eq!(
+        decoded,
+        Transaction::Application(application_call_tx_fields)
+    );
+
+    // Verify it's an application creation (app_id = 0)
+    if let Transaction::Application(fields) = &decoded {
+        assert_eq!(fields.app_id, 0);
+        assert!(fields.approval_program.is_some());
+        assert!(fields.clear_state_program.is_some());
+        assert!(fields.global_state_schema.is_some());
+        assert!(fields.local_state_schema.is_some());
+    } else {
+        panic!("Expected ApplicationCall transaction");
+    }
+}

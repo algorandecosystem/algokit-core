@@ -2,7 +2,9 @@ use crate::address::Address;
 use crate::constants::{
     Byte32, ALGORAND_CHECKSUM_BYTE_LENGTH, ALGORAND_PUBLIC_KEY_BYTE_LENGTH, HASH_BYTES_LENGTH,
 };
-use crate::{AlgoKitTransactError, AlgorandMsgpack, Transaction, TransactionId};
+use crate::{
+    AlgoKitTransactError, AlgorandMsgpack, OnApplicationComplete, Transaction, TransactionId,
+};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, skip_serializing_none, Bytes};
 use sha2::{Digest, Sha512_256};
@@ -67,6 +69,10 @@ pub fn is_empty_string_opt(string: &Option<String>) -> bool {
 
 pub fn is_empty_vec_opt<T>(vec: &Option<Vec<T>>) -> bool {
     vec.as_ref().map_or(true, Vec::is_empty)
+}
+
+pub fn is_default_on_complete(on_complete: &OnApplicationComplete) -> bool {
+    matches!(on_complete, OnApplicationComplete::NoOp)
 }
 
 pub fn pub_key_to_checksum(pub_key: &Byte32) -> [u8; ALGORAND_CHECKSUM_BYTE_LENGTH] {
