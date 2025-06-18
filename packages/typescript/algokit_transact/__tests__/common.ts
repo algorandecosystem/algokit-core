@@ -18,6 +18,7 @@ const defaultReviver = (key: string, value: unknown) => {
       key,
     )
   ) {
+  if (typeof value === "number" && ["fee", "amount", "firstValid", "lastValid", "voteFirst", "voteLast", "voteKeyDilution"].includes(key)) {
     return BigInt(value);
   }
 
@@ -54,3 +55,4 @@ export const testData =
       TransactionTestData
     >
   >(jsonString);
+export const testData = parseJson<Record<"simplePayment" | "optInAssetTransfer" | "onlineKeyRegistration" | "offlineKeyRegistration" | "nonParticipatingKeyRegistration", TransactionTestData>>(jsonString);

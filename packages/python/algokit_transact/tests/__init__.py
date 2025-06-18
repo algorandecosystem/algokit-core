@@ -12,6 +12,7 @@ from algokit_transact import (
     ApplicationCallTransactionFields,
     OnApplicationComplete,
     StateSchema,
+    KeyRegistrationTransactionFields,
 )
 from nacl.signing import SigningKey
 
@@ -39,6 +40,9 @@ class TestData:
     application_create: TransactionTestData
     application_update: TransactionTestData
     application_delete: TransactionTestData
+    online_key_registration: TransactionTestData
+    offline_key_registration: TransactionTestData
+    non_participating_key_registration: TransactionTestData
 
 
 def convert_values(obj: Any) -> Any:
@@ -185,5 +189,84 @@ def load_test_data() -> TestData:
 
     return TestData(**test_data_objects)
 
+    # Online key registration
+    online_key_registration_txn = data["online_key_registration"].pop("transaction")
+    _ = online_key_registration_txn.pop("transaction_type")
+    online_key_registration_txn_data = online_key_registration_txn.pop("key_registration")
+    online_key_registration_signing_private_key = data["online_key_registration"].pop(
+        "signing_private_key"
+    )
+
+    # Offline key registration
+    offline_key_registration_txn = data["offline_key_registration"].pop("transaction")
+    _ = offline_key_registration_txn.pop("transaction_type")
+    offline_key_registration_txn_data = offline_key_registration_txn.pop("key_registration")
+    offline_key_registration_signing_private_key = data["offline_key_registration"].pop(
+        "signing_private_key"
+    )
+
+    # Non-participating key registration
+    non_participating_key_registration_txn = data["non_participating_key_registration"].pop("transaction")
+    _ = non_participating_key_registration_txn.pop("transaction_type")
+    non_participating_key_registration_txn_data = non_participating_key_registration_txn.pop("key_registration")
+    non_participating_key_registration_signing_private_key = data["non_participating_key_registration"].pop(
+        "signing_private_key"
+    )
+
+    return TestData(
+        simple_payment=TransactionTestData(
+            **data["simple_payment"],
+            transaction=Transaction(
+                **simple_payment_txn,
+                transaction_type=TransactionType.PAYMENT,
+                payment=PaymentTransactionFields(**simple_payment_txn_data),
+            ),
+            signing_private_key=SigningKey(simple_payment_signing_private_key),
+        ),
+        opt_in_asset_transfer=TransactionTestData(
+            **data["opt_in_asset_transfer"],
+            transaction=Transaction(
+                **opt_in_asset_transfer_txn,
+                transaction_type=TransactionType.ASSET_TRANSFER,
+                asset_transfer=AssetTransferTransactionFields(
+                    **opt_in_asset_transfer_txn_data
+                ),
+            ),
+            signing_private_key=SigningKey(opt_in_asset_transfer_signing_private_key),
+        ),
+        online_key_registration=TransactionTestData(
+            **data["online_key_registration"],
+            transaction=Transaction(
+                **online_key_registration_txn,
+                transaction_type=TransactionType.KEY_REGISTRATION,
+                key_registration=KeyRegistrationTransactionFields(
+                    **online_key_registration_txn_data
+                ),
+            ),
+            signing_private_key=SigningKey(online_key_registration_signing_private_key),
+        ),
+        offline_key_registration=TransactionTestData(
+            **data["offline_key_registration"],
+            transaction=Transaction(
+                **offline_key_registration_txn,
+                transaction_type=TransactionType.KEY_REGISTRATION,
+                key_registration=KeyRegistrationTransactionFields(
+                    **offline_key_registration_txn_data
+                ),
+            ),
+            signing_private_key=SigningKey(offline_key_registration_signing_private_key),
+        ),
+        non_participating_key_registration=TransactionTestData(
+            **data["non_participating_key_registration"],
+            transaction=Transaction(
+                **non_participating_key_registration_txn,
+                transaction_type=TransactionType.KEY_REGISTRATION,
+                key_registration=KeyRegistrationTransactionFields(
+                    **non_participating_key_registration_txn_data
+                ),
+            ),
+            signing_private_key=SigningKey(non_participating_key_registration_signing_private_key),
+        ),
+    )
 
 TEST_DATA = load_test_data()
