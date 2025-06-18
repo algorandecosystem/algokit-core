@@ -176,6 +176,30 @@ pub struct AssetTransferTransactionFields {
 }
 
 #[ffi_record]
+pub struct KeyRegistrationTransactionFields {
+    /// Root participation public key (32 bytes)
+    vote_key: Option<ByteBuf>,
+
+    /// VRF public key (32 bytes) 
+    selection_key: Option<ByteBuf>,
+
+    /// State proof key (64 bytes)
+    state_proof_key: Option<ByteBuf>,
+
+    /// First round for which the participation key is valid
+    vote_first: Option<u64>,
+
+    /// Last round for which the participation key is valid
+    vote_last: Option<u64>,
+
+    /// Key dilution for the 2-level participation key
+    vote_key_dilution: Option<u64>,
+
+    /// Mark account as non-reward earning
+    non_participation: Option<bool>,
+}
+
+#[ffi_record]
 pub struct Transaction {
     /// The type of transaction
     transaction_type: TransactionType,
@@ -211,6 +235,8 @@ pub struct Transaction {
     asset_config: Option<AssetConfigTransactionFields>,
 
     application_call: Option<ApplicationCallTransactionFields>,
+
+    key_registration: Option<KeyRegistrationTransactionFields>,
 }
 
 impl TryFrom<Transaction> for algokit_transact::Transaction {
@@ -315,6 +341,20 @@ impl From<algokit_transact::AssetTransferTransactionFields> for AssetTransferTra
     }
 }
 
+impl From<algokit_transact::KeyRegistrationTransactionFields> for KeyRegistrationTransactionFields {
+    fn from(tx: algokit_transact::KeyRegistrationTransactionFields) -> Self {
+        Self {
+            vote_key: tx.vote_key.map(|bytes| ByteBuf::from(bytes.to_vec())),
+            selection_key: tx.selection_key.map(|bytes| ByteBuf::from(bytes.to_vec())),
+            state_proof_key: tx.state_proof_key.map(|bytes| ByteBuf::from(bytes.to_vec())),
+            vote_first: tx.vote_first,
+            vote_last: tx.vote_last,
+            vote_key_dilution: tx.vote_key_dilution,
+            non_participation: tx.non_participation,
+        }
+    }
+}
+
 impl TryFrom<Transaction> for algokit_transact::AssetTransferTransactionFields {
     type Error = AlgoKitTransactError;
 
@@ -335,6 +375,32 @@ impl TryFrom<Transaction> for algokit_transact::AssetTransferTransactionFields {
             receiver: data.receiver.try_into()?,
             asset_sender: data.asset_sender.map(TryInto::try_into).transpose()?,
             close_remainder_to: data.close_remainder_to.map(TryInto::try_into).transpose()?,
+        })
+    }
+}
+
+impl TryFrom<Transaction> for algokit_transact::KeyRegistrationTransactionFields {
+    type Error = AlgoKitTransactError;
+
+    fn try_from(tx: Transaction) -> Result<Self, Self::Error> {
+        if tx.transaction_type != TransactionType::KeyRegistration || tx.key_registration.is_none() {
+            return Err(Self::Error::DecodingError(
+                "Key Registration data missing".to_string(),
+            ));
+        }
+
+        let data = tx.clone().key_registration.unwrap();
+        let header: algokit_transact::TransactionHeader = tx.try_into()?;
+
+        Ok(Self {
+            header,
+            vote_key: data.vote_key.map(|buf| bytebuf_to_32_bytes(&buf)).transpose()?,
+            selection_key: data.selection_key.map(|buf| bytebuf_to_32_bytes(&buf)).transpose()?,
+            state_proof_key: data.state_proof_key.map(|buf| bytebuf_to_64_bytes(&buf)).transpose()?,
+            vote_first: data.vote_first,
+            vote_last: data.vote_last,
+            vote_key_dilution: data.vote_key_dilution,
+            non_participation: data.non_participation,
         })
     }
 }
@@ -386,6 +452,16 @@ impl TryFrom<algokit_transact::Transaction> for Transaction {
                     None,
                     None,
                     Some(application_call_fields),
+                )
+            }
+            algokit_transact::Transaction::KeyRegistration(key_registration) => {
+                let key_registration_fields = key_registration.clone().into();
+                build_transaction(
+                    key_registration.header,
+                    TransactionType::KeyRegistration,
+                    None,
+                    None,
+                    Some(key_registration_fields),
                 )
             }
         }
@@ -451,6 +527,24 @@ fn byte32_to_bytebuf(b32: Byte32) -> ByteBuf {
     ByteBuf::from(b32.to_vec())
 }
 
+fn bytebuf_to_32_bytes(buf: &ByteBuf) -> Result<[u8; 32], AlgoKitTransactError> {
+    let vec = buf.to_vec();
+    vec.try_into().map_err(|_| {
+        AlgoKitTransactError::DecodingError(
+            "Expected 32 bytes but got a different length".to_string(),
+        )
+    })
+}
+
+fn bytebuf_to_64_bytes(buf: &ByteBuf) -> Result<[u8; 64], AlgoKitTransactError> {
+    let vec = buf.to_vec();
+    vec.try_into().map_err(|_| {
+        AlgoKitTransactError::DecodingError(
+            "Expected 64 bytes but got a different length".to_string(),
+        )
+    })
+}
+
 fn build_transaction(
     header: algokit_transact::TransactionHeader,
     transaction_type: TransactionType,
@@ -458,6 +552,7 @@ fn build_transaction(
     asset_transfer: Option<AssetTransferTransactionFields>,
     asset_config: Option<AssetConfigTransactionFields>,
     application_call: Option<ApplicationCallTransactionFields>,
+    key_registration: Option<KeyRegistrationTransactionFields>,
 ) -> Result<Transaction, AlgoKitTransactError> {
     Ok(Transaction {
         transaction_type,
@@ -475,6 +570,7 @@ fn build_transaction(
         asset_transfer,
         asset_config,
         application_call,
+        key_registration,
     })
 }
 
@@ -492,6 +588,7 @@ pub fn get_encoded_transaction_type(bytes: &[u8]) -> Result<TransactionType, Alg
         algokit_transact::Transaction::AssetTransfer(_) => Ok(TransactionType::AssetTransfer),
         algokit_transact::Transaction::AssetConfig(_) => Ok(TransactionType::AssetConfig),
         algokit_transact::Transaction::ApplicationCall(_) => Ok(TransactionType::ApplicationCall),
+        algokit_transact::Transaction::KeyRegistration(_) => Ok(TransactionType::KeyRegistration),
     }
 }
 

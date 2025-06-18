@@ -16,6 +16,10 @@ pub use transactions::{
     AssetTransferTransactionFields, BoxReference, FeeParams, OnApplicationComplete,
     PaymentTransactionBuilder, PaymentTransactionFields, SignedTransaction, StateSchema,
     Transaction, TransactionHeader, TransactionHeaderBuilder,
+    AssetTransferTransactionBuilder, AssetTransferTransactionFields, FeeParams,
+    KeyRegistrationTransactionBuilder, KeyRegistrationTransactionFields,
+    PaymentTransactionBuilder, PaymentTransactionFields, SignedTransaction, Transaction,
+    TransactionHeader, TransactionHeaderBuilder,
 };
 
 #[cfg(test)]

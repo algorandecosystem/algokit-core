@@ -8,6 +8,7 @@ mod application_call;
 mod asset_config;
 mod asset_transfer;
 mod common;
+mod key_registration;
 mod payment;
 
 use application_call::{application_call_deserializer, application_call_serializer};
@@ -21,6 +22,9 @@ pub use asset_config::{
 };
 pub use asset_transfer::{AssetTransferTransactionBuilder, AssetTransferTransactionFields};
 pub use common::{TransactionHeader, TransactionHeaderBuilder};
+use key_registration::KeyRegistrationTransactionBuilderError;
+pub use key_registration::{KeyRegistrationTransactionBuilder, KeyRegistrationTransactionFields};
+use payment::PaymentTransactionBuilderError;
 pub use payment::{PaymentTransactionBuilder, PaymentTransactionFields};
 
 use crate::constants::{
@@ -45,15 +49,8 @@ pub enum Transaction {
     #[serde(rename = "axfer")]
     AssetTransfer(AssetTransferTransactionFields),
 
-    #[serde(serialize_with = "asset_config_serializer")]
-    #[serde(deserialize_with = "asset_config_deserializer")]
-    #[serde(rename = "acfg")]
-    AssetConfig(AssetConfigTransactionFields),
-
-    #[serde(serialize_with = "application_call_serializer")]
-    #[serde(deserialize_with = "application_call_deserializer")]
-    #[serde(rename = "appl")]
-    ApplicationCall(ApplicationCallTransactionFields),
+    #[serde(rename = "keyreg")]
+    KeyRegistration(KeyRegistrationTransactionFields),
     // All the below transaction variants will be implemented in the future
     // #[serde(rename = "afrz")]
     // AssetFreeze(...),
@@ -76,6 +73,7 @@ impl Transaction {
             Transaction::AssetTransfer(a) => &a.header,
             Transaction::AssetConfig(a) => &a.header,
             Transaction::ApplicationCall(a) => &a.header,
+            Transaction::KeyRegistration(k) => &k.header,
         }
     }
 
@@ -85,6 +83,7 @@ impl Transaction {
             Transaction::AssetTransfer(a) => &mut a.header,
             Transaction::AssetConfig(a) => &mut a.header,
             Transaction::ApplicationCall(a) => &mut a.header,
+            Transaction::KeyRegistration(k) => &mut k.header,
         }
     }
 

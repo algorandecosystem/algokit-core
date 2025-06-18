@@ -2,7 +2,7 @@ mod application_call;
 mod asset_config;
 
 use crate::{
-    transactions::{AssetTransferTransactionBuilder, PaymentTransactionBuilder},
+    transactions::{AssetTransferTransactionBuilder, KeyRegistrationTransactionBuilder, PaymentTransactionBuilder},
     Address, AlgorandMsgpack, Byte32, SignedTransaction, Transaction, TransactionHeaderBuilder,
     TransactionId, ALGORAND_PUBLIC_KEY_BYTE_LENGTH, HASH_BYTES_LENGTH,
 };
@@ -154,6 +154,31 @@ impl TransactionMother {
         Self::simple_asset_transfer()
             .amount(0)
             .receiver(AddressMother::neil())
+            .to_owned()
+    }
+
+    pub fn online_key_registration() -> KeyRegistrationTransactionBuilder {
+        KeyRegistrationTransactionBuilder::default()
+            .header(TransactionHeaderMother::simple_testnet().build().unwrap())
+            .vote_key([1u8; 32])
+            .selection_key([2u8; 32])
+            .state_proof_key([3u8; 64])
+            .vote_first(100)
+            .vote_last(1000)
+            .vote_key_dilution(1000)
+            .to_owned()
+    }
+
+    pub fn offline_key_registration() -> KeyRegistrationTransactionBuilder {
+        KeyRegistrationTransactionBuilder::default()
+            .header(TransactionHeaderMother::simple_testnet().build().unwrap())
+            .to_owned()
+    }
+
+    pub fn non_participating_key_registration() -> KeyRegistrationTransactionBuilder {
+        KeyRegistrationTransactionBuilder::default()
+            .header(TransactionHeaderMother::simple_testnet().build().unwrap())
+            .non_participation(true)
             .to_owned()
     }
 }
@@ -387,6 +412,33 @@ impl TestDataMother {
         TransactionTestData::new(transaction, SIGNING_PRIVATE_KEY)
     }
 
+    pub fn online_key_registration() -> TransactionTestData {
+        let signing_private_key: Byte32 = [
+            2, 205, 103, 33, 67, 14, 82, 196, 115, 196, 206, 254, 50, 110, 63, 182, 149, 229, 184,
+            216, 93, 11, 13, 99, 69, 213, 218, 165, 134, 118, 47, 44,
+        ];
+        let transaction = TransactionMother::online_key_registration().build().unwrap();
+        TransactionTestData::new(transaction, signing_private_key)
+    }
+
+    pub fn offline_key_registration() -> TransactionTestData {
+        let signing_private_key: Byte32 = [
+            2, 205, 103, 33, 67, 14, 82, 196, 115, 196, 206, 254, 50, 110, 63, 182, 149, 229, 184,
+            216, 93, 11, 13, 99, 69, 213, 218, 165, 134, 118, 47, 44,
+        ];
+        let transaction = TransactionMother::offline_key_registration().build().unwrap();
+        TransactionTestData::new(transaction, signing_private_key)
+    }
+
+    pub fn non_participating_key_registration() -> TransactionTestData {
+        let signing_private_key: Byte32 = [
+            2, 205, 103, 33, 67, 14, 82, 196, 115, 196, 206, 254, 50, 110, 63, 182, 149, 229, 184,
+            216, 93, 11, 13, 99, 69, 213, 218, 165, 134, 118, 47, 44,
+        ];
+        let transaction = TransactionMother::non_participating_key_registration().build().unwrap();
+        TransactionTestData::new(transaction, signing_private_key)
+    }
+
     pub fn export<F, T>(path: &std::path::Path, transform: Option<F>)
     where
         F: Fn(&TransactionTestData) -> T,
@@ -406,6 +458,9 @@ impl TestDataMother {
             "asset_create": Self::asset_create().as_json(&transform),
             "asset_destroy": Self::asset_destroy().as_json(&transform),
             "asset_reconfigure": Self::asset_reconfigure().as_json(&transform),
+            "online_key_registration": Self::online_key_registration().as_json(&transform),
+            "offline_key_registration": Self::offline_key_registration().as_json(&transform),
+            "non_participating_key_registration": Self::non_participating_key_registration().as_json(&transform),
         }));
 
         let file = File::create(path).expect("Failed to create export file");
