@@ -673,28 +673,20 @@ pub fn assign_fees(
         .into_iter()
         .enumerate()
         .map(|(index, tx)| {
-            let internal_tx: algokit_transact::Transaction = tx.try_into()?;
-            let fee_params: algokit_transact::FeeParams;
-            if let Some(txn_params) = transaction_params
+            let impl_tx: algokit_transact::Transaction = tx.try_into()?;
+
+            let tx_params = transaction_params
                 .iter()
-                .find(|tp| tp.index as usize == index)
-            {
-                fee_params = algokit_transact::FeeParams {
-                    fee_per_byte: network_params.fee_per_byte,
-                    min_fee: network_params.min_fee,
-                    extra_fee: txn_params.fee_params.extra_fee,
-                    max_fee: txn_params.fee_params.max_fee,
-                }
-            } else {
-                fee_params = algokit_transact::FeeParams {
-                    fee_per_byte: network_params.fee_per_byte,
-                    min_fee: network_params.min_fee,
-                    extra_fee: None,
-                    max_fee: None,
-                }
-            }
-            let internal_tx_with_fees = internal_tx.assign_fee(fee_params)?;
-            return internal_tx_with_fees.try_into();
+                .find(|p| p.index as usize == index);
+
+            let impl_tx_with_fee = impl_tx.assign_fee(algokit_transact::FeeParams {
+                fee_per_byte: network_params.fee_per_byte,
+                min_fee: network_params.min_fee,
+                extra_fee: tx_params.and_then(|p| p.fee_params.extra_fee),
+                max_fee: tx_params.and_then(|p| p.fee_params.max_fee),
+            })?;
+
+            return impl_tx_with_fee.try_into();
         })
         .collect::<Result<Vec<Transaction>, AlgoKitTransactError>>()?;
 
