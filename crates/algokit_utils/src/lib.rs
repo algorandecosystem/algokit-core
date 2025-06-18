@@ -18,7 +18,7 @@ use std::sync::Arc;
 pub struct CommonParams {
     pub sender: Address,
     #[debug(skip)]
-    pub signer: Option<TxnSigner>,
+    pub signer: Option<Arc<dyn TxnSigner>>,
     pub rekey_to: Option<Address>,
     pub note: Option<Vec<u8>>,
     pub lease: Option<[u8; 32]>,
@@ -54,23 +54,67 @@ impl ComposerTxn {
     }
 }
 
-type TxnSigner = Arc<dyn Fn(&[Transaction], &[usize]) -> Vec<SignedTransaction> + Send + Sync>;
-type TxnSignerGetter = Arc<dyn Fn(Address) -> Option<TxnSigner> + Send + Sync>;
+pub trait TxnSigner: Send + Sync {
+    fn sign_txns(&self, txns: &[Transaction], indices: &[usize]) -> Vec<SignedTransaction>;
+
+    fn sign_txn(&self, txn: &Transaction) -> SignedTransaction {
+        self.sign_txns(&[txn.clone()], &[0])[0].clone()
+    }
+}
+
+pub trait TxnSignerGetter: Send + Sync {
+    fn get_signer(&self, address: Address) -> Option<&dyn TxnSigner>;
+}
+
+struct DefaultSignerGetter;
+
+impl TxnSignerGetter for DefaultSignerGetter {
+    fn get_signer(&self, _address: Address) -> Option<&dyn TxnSigner> {
+        None
+    }
+}
+
+pub struct EmptySigner {}
+
+impl TxnSigner for EmptySigner {
+    fn sign_txns(&self, txns: &[Transaction], indices: &[usize]) -> Vec<SignedTransaction> {
+        indices
+            .iter()
+            .map(|&idx| {
+                if idx < txns.len() {
+                    SignedTransaction {
+                        transaction: txns[idx].clone(),
+                        signature: Some([0; 64]),
+                        auth_address: None,
+                    }
+                } else {
+                    panic!("Index out of bounds for transactions");
+                }
+            })
+            .collect()
+    }
+}
+
+impl TxnSignerGetter for EmptySigner {
+    fn get_signer(&self, _address: Address) -> Option<&dyn TxnSigner> {
+        Some(self)
+    }
+}
 
 pub struct Composer {
     transactions: Vec<ComposerTxn>,
     algod_client: AlgodClient,
-    get_signer_fn: TxnSignerGetter,
+    signer_getter: Arc<dyn TxnSignerGetter>,
     built_group: Option<Vec<Transaction>>,
     signed_group: Option<Vec<SignedTransaction>>,
 }
 
 impl Composer {
-    pub fn new(algod_client: AlgodClient, get_signer: Option<TxnSignerGetter>) -> Self {
+    pub fn new(algod_client: AlgodClient, get_signer: Option<Arc<dyn TxnSignerGetter>>) -> Self {
         Composer {
             transactions: Vec::new(),
             algod_client: algod_client,
-            get_signer_fn: get_signer.unwrap_or(Arc::new(|_| None)),
+            signer_getter: get_signer.unwrap_or(Arc::new(DefaultSignerGetter)),
             built_group: None,
             signed_group: None,
         }
@@ -85,7 +129,7 @@ impl Composer {
         Composer {
             transactions: Vec::new(),
             algod_client: AlgodClient::testnet(),
-            get_signer_fn: Arc::new(|_| None),
+            signer_getter: Arc::new(DefaultSignerGetter),
             built_group: None,
             signed_group: None,
         }
@@ -111,8 +155,8 @@ impl Composer {
         &self.transactions
     }
 
-    pub fn get_signer(&self, address: Address) -> Option<TxnSigner> {
-        (self.get_signer_fn)(address)
+    pub fn get_signer(&self, address: Address) -> Option<&dyn TxnSigner> {
+        self.signer_getter.get_signer(address)
     }
 
     // TODO: Use Fn defined in ComposerConfig
@@ -212,7 +256,7 @@ impl Composer {
 
         self.signed_group = Some(Vec::<SignedTransaction>::new());
 
-        for (i, txn) in transactions.iter().enumerate() {
+        for txn in transactions.iter() {
             let signer =
                 self.get_signer(txn.header().sender.clone())
                     .ok_or(HttpError::HttpError(format!(
@@ -220,8 +264,11 @@ impl Composer {
                         txn.header().sender
                     )))?;
 
-            let signed_txns = signer(transactions, &[i]);
-            self.signed_group.as_mut().map(|v| v.extend(signed_txns));
+            let signed_txn = signer.sign_txn(txn);
+            self.signed_group
+                .as_mut()
+                .expect("should exist because it was created above")
+                .push(signed_txn);
         }
 
         Ok(self)
@@ -314,27 +361,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_gather_signatures() {
-        let signer = Arc::new(|txns: &[Transaction], indices: &[usize]| {
-            txns.iter()
-                .enumerate()
-                .filter_map(|(idx, txn)| {
-                    if indices.contains(&idx) {
-                        Some(SignedTransaction {
-                            transaction: txn.clone(),
-                            signature: Some([0; 64]), // Mock signature
-                            auth_address: None,
-                        })
-                    } else {
-                        None
-                    }
-                })
-                .collect::<Vec<SignedTransaction>>()
-        });
-
         let mut composer = Composer {
             transactions: Vec::new(),
             algod_client: AlgodClient::testnet(),
-            get_signer_fn: Arc::new(move |_| Some(signer.clone())),
+            signer_getter: Arc::new(EmptySigner {}),
             built_group: None,
             signed_group: None,
         };
