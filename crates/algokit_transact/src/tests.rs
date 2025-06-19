@@ -12,33 +12,44 @@ use crate::{
 use base64::{prelude::BASE64_STANDARD, Engine};
 use pretty_assertions::assert_eq;
 
-#[test]
-fn test_payment_transaction_encoding() {
-    let tx_builder = TransactionMother::simple_payment();
-    let payment_tx_fields = tx_builder.build_fields().unwrap();
-    let payment_tx = tx_builder.build().unwrap();
-
-    let encoded = payment_tx.encode().unwrap();
+fn check_transaction_encoding(
+    tx: &Transaction,
+    expected_variant: &Transaction,
+    expected_encoded_len: usize,
+) {
+    let encoded = tx.encode().unwrap();
     let decoded = Transaction::decode(&encoded).unwrap();
-    assert_eq!(decoded, payment_tx);
-    assert_eq!(decoded, Transaction::Payment(payment_tx_fields));
+    assert_eq!(decoded, *tx);
+    assert_eq!(decoded, *expected_variant);
 
     let signed_tx = SignedTransaction {
-        transaction: payment_tx.clone(),
+        transaction: tx.clone(),
         signature: Some([0; ALGORAND_SIGNATURE_BYTE_LENGTH]),
         auth_address: None,
     };
     let encoded_stx = signed_tx.encode().unwrap();
     let decoded_stx = SignedTransaction::decode(&encoded_stx).unwrap();
     assert_eq!(decoded_stx, signed_tx);
-    assert_eq!(decoded_stx.transaction, payment_tx);
+    assert_eq!(decoded_stx.transaction, *tx);
 
-    let raw_encoded = payment_tx.encode_raw().unwrap();
+    let raw_encoded = tx.encode_raw().unwrap();
     assert_eq!(encoded[0], b'T');
     assert_eq!(encoded[1], b'X');
     assert_eq!(encoded.len(), raw_encoded.len() + 2);
     assert_eq!(encoded[2..], raw_encoded);
-    assert_eq!(encoded.len(), 174);
+    assert_eq!(encoded.len(), expected_encoded_len);
+}
+
+#[test]
+fn test_payment_transaction_encoding() {
+    let tx_builder = TransactionMother::simple_payment();
+    let payment_tx_fields = tx_builder.build_fields().unwrap();
+    let payment_tx = tx_builder.build().unwrap();
+    check_transaction_encoding(
+        &payment_tx,
+        &Transaction::Payment(payment_tx_fields),
+        174,
+    );
 }
 
 #[test]
@@ -46,31 +57,11 @@ fn test_asset_transfer_transaction_encoding() {
     let tx_builder = TransactionMother::simple_asset_transfer();
     let asset_transfer_tx_fields = tx_builder.build_fields().unwrap();
     let asset_transfer_tx = tx_builder.build().unwrap();
-
-    let encoded = asset_transfer_tx.encode().unwrap();
-    let decoded = Transaction::decode(&encoded).unwrap();
-    assert_eq!(decoded, asset_transfer_tx);
-    assert_eq!(
-        decoded,
-        Transaction::AssetTransfer(asset_transfer_tx_fields)
+    check_transaction_encoding(
+        &asset_transfer_tx,
+        &Transaction::AssetTransfer(asset_transfer_tx_fields),
+        186,
     );
-
-    let signed_tx = SignedTransaction {
-        transaction: asset_transfer_tx.clone(),
-        signature: Some([0; ALGORAND_SIGNATURE_BYTE_LENGTH]),
-        auth_address: None,
-    };
-    let encoded_stx = signed_tx.encode().unwrap();
-    let decoded_stx = SignedTransaction::decode(&encoded_stx).unwrap();
-    assert_eq!(decoded_stx, signed_tx);
-    assert_eq!(decoded_stx.transaction, asset_transfer_tx);
-
-    let raw_encoded = asset_transfer_tx.encode_raw().unwrap();
-    assert_eq!(encoded[0], b'T');
-    assert_eq!(encoded[1], b'X');
-    assert_eq!(encoded.len(), raw_encoded.len() + 2);
-    assert_eq!(encoded[2..], raw_encoded);
-    assert_eq!(encoded.len(), 186);
 }
 
 #[test]
@@ -78,28 +69,11 @@ fn test_asset_opt_in_transaction_encoding() {
     let tx_builder = TransactionMother::opt_in_asset_transfer();
     let asset_opt_in_tx_fields = tx_builder.build_fields().unwrap();
     let asset_opt_in_tx = tx_builder.build().unwrap();
-
-    let encoded = asset_opt_in_tx.encode().unwrap();
-    let decoded = Transaction::decode(&encoded).unwrap();
-    assert_eq!(decoded, asset_opt_in_tx);
-    assert_eq!(decoded, Transaction::AssetTransfer(asset_opt_in_tx_fields));
-
-    let signed_tx = SignedTransaction {
-        transaction: asset_opt_in_tx.clone(),
-        signature: Some([0; ALGORAND_SIGNATURE_BYTE_LENGTH]),
-        auth_address: None,
-    };
-    let encoded_stx = signed_tx.encode().unwrap();
-    let decoded_stx = SignedTransaction::decode(&encoded_stx).unwrap();
-    assert_eq!(decoded_stx, signed_tx);
-    assert_eq!(decoded_stx.transaction, asset_opt_in_tx);
-
-    let raw_encoded = asset_opt_in_tx.encode_raw().unwrap();
-    assert_eq!(encoded[0], b'T');
-    assert_eq!(encoded[1], b'X');
-    assert_eq!(encoded.len(), raw_encoded.len() + 2);
-    assert_eq!(encoded[2..], raw_encoded);
-    assert_eq!(encoded.len(), 178);
+    check_transaction_encoding(
+        &asset_opt_in_tx,
+        &Transaction::AssetTransfer(asset_opt_in_tx_fields),
+        178,
+    );
 }
 
 #[test]
