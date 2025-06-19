@@ -6,7 +6,9 @@ use algokit_transact::msgpack::{
     encode_json_to_msgpack as internal_encode_json_to_msgpack,
     AlgoKitMsgPackError as InternalMsgPackError, ModelType as InternalModelType,
 };
-use algokit_transact::{AlgorandMsgpack, Byte32, EstimateTransactionSize, TransactionId, Transactions};
+use algokit_transact::{
+    AlgorandMsgpack, Byte32, EstimateTransactionSize, TransactionId, Transactions,
+};
 use ffi_macros::{ffi_enum, ffi_func, ffi_record};
 use serde::{Deserialize, Serialize};
 use serde_bytes::ByteBuf;
