@@ -56,6 +56,19 @@ fn check_signed_transaction_encoding(
     assert_eq!(decoded_stx, signed_tx);
 }
 
+fn check_transaction_id(tx: &Transaction, expected_tx_id: &str, expected_tx_id_raw: &[u8]) {
+    let signed_tx = SignedTransaction {
+        transaction: tx.clone(),
+        signature: Some([0; ALGORAND_SIGNATURE_BYTE_LENGTH]),
+        auth_address: None,
+    };
+
+    assert_eq!(tx.id().unwrap(), expected_tx_id);
+    assert_eq!(tx.id_raw().unwrap(), expected_tx_id_raw);
+    assert_eq!(signed_tx.id().unwrap(), expected_tx_id);
+    assert_eq!(signed_tx.id_raw().unwrap(), expected_tx_id_raw);
+}
+
 #[test]
 fn test_payment_transaction_encoding() {
     let tx_builder = TransactionMother::simple_payment();
@@ -149,40 +162,32 @@ fn test_pay_transaction_id() {
     ];
     let expected_tx_id = "ENOQBKTA3UAUU54TQN2AOH7BFDLS6LDYQD2SSQLU76JUAWSQSPPQ";
 
-    let tx_builder = TransactionMother::payment_with_note();
-    let payment_tx = tx_builder.build().unwrap();
-    let signed_tx = SignedTransaction {
-        transaction: payment_tx.clone(),
-        signature: Some([0; ALGORAND_SIGNATURE_BYTE_LENGTH]),
-        auth_address: None,
-    };
-
-    assert_eq!(payment_tx.id().unwrap(), expected_tx_id);
-    assert_eq!(payment_tx.id_raw().unwrap(), expected_tx_id_raw);
-    assert_eq!(signed_tx.id().unwrap(), expected_tx_id);
-    assert_eq!(signed_tx.id_raw().unwrap(), expected_tx_id_raw);
+    let payment_tx = TransactionMother::payment_with_note().build().unwrap();
+    check_transaction_id(&payment_tx, expected_tx_id, &expected_tx_id_raw);
 }
 
 #[test]
-fn test_axfer_transaction_id() {
+fn test_asset_transfer_transaction_id() {
     let expected_tx_id_raw = [
         168, 14, 254, 22, 41, 63, 13, 26, 249, 3, 208, 115, 21, 118, 184, 64, 247, 255, 18, 187,
         169, 61, 61, 77, 74, 25, 82, 16, 141, 215, 176, 132,
     ];
     let expected_tx_id = "VAHP4FRJH4GRV6ID2BZRK5VYID376EV3VE6T2TKKDFJBBDOXWCCA";
 
-    let tx_builder = TransactionMother::simple_asset_transfer();
-    let asset_transfer_tx = tx_builder.build().unwrap();
-    let signed_tx = SignedTransaction {
-        transaction: asset_transfer_tx.clone(),
-        signature: Some([0; ALGORAND_SIGNATURE_BYTE_LENGTH]),
-        auth_address: None,
-    };
+    let asset_transfer_tx = TransactionMother::simple_asset_transfer().build().unwrap();
+    check_transaction_id(&asset_transfer_tx, expected_tx_id, &expected_tx_id_raw);
+}
 
-    assert_eq!(asset_transfer_tx.id().unwrap(), expected_tx_id);
-    assert_eq!(asset_transfer_tx.id_raw().unwrap(), expected_tx_id_raw);
-    assert_eq!(signed_tx.id().unwrap(), expected_tx_id);
-    assert_eq!(signed_tx.id_raw().unwrap(), expected_tx_id_raw);
+#[test]
+fn test_asset_opt_in_transaction_id() {
+    let expected_tx_id_raw = [
+        74, 6, 19, 141, 235, 8, 37, 69, 195, 37, 71, 9, 142, 149, 54, 143, 171, 8, 177, 239, 44,
+        141, 128, 168, 154, 186, 173, 238, 183, 116, 130, 110,
+    ];
+    let expected_tx_id = "JIDBHDPLBASULQZFI4EY5FJWR6VQRMPPFSGYBKE2XKW65N3UQJXA";
+
+    let asset_opt_in_tx = TransactionMother::opt_in_asset_transfer().build().unwrap();
+    check_transaction_id(&asset_opt_in_tx, expected_tx_id, &expected_tx_id_raw);
 }
 
 #[test]
