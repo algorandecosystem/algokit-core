@@ -178,7 +178,29 @@ fn test_pay_transaction_id() {
 }
 
 #[test]
-fn test_estimate_transaction_size() {
+fn test_axfer_transaction_id() {
+    let expected_tx_id_raw = [
+        168, 14, 254, 22, 41, 63, 13, 26, 249, 3, 208, 115, 21, 118, 184, 64, 247, 255, 18, 187,
+        169, 61, 61, 77, 74, 25, 82, 16, 141, 215, 176, 132,
+    ];
+    let expected_tx_id = "VAHP4FRJH4GRV6ID2BZRK5VYID376EV3VE6T2TKKDFJBBDOXWCCA";
+
+    let tx_builder = TransactionMother::simple_asset_transfer();
+    let asset_transfer_tx = tx_builder.build().unwrap();
+    let signed_tx = SignedTransaction {
+        transaction: asset_transfer_tx.clone(),
+        signature: Some([0; ALGORAND_SIGNATURE_BYTE_LENGTH]),
+        auth_address: None,
+    };
+
+    assert_eq!(asset_transfer_tx.id().unwrap(), expected_tx_id);
+    assert_eq!(asset_transfer_tx.id_raw().unwrap(), expected_tx_id_raw);
+    assert_eq!(signed_tx.id().unwrap(), expected_tx_id);
+    assert_eq!(signed_tx.id_raw().unwrap(), expected_tx_id_raw);
+}
+
+#[test]
+fn test_pay_estimate_transaction_size() {
     let tx_builder = TransactionMother::simple_payment();
     let payment_tx = tx_builder.build().unwrap();
     let encoding_length = payment_tx.encode_raw().unwrap().len();
@@ -186,6 +208,27 @@ fn test_estimate_transaction_size() {
 
     let signed_tx = SignedTransaction {
         transaction: payment_tx.clone(),
+        signature: Some([0; ALGORAND_SIGNATURE_BYTE_LENGTH]),
+        auth_address: None,
+    };
+    let actual_size = signed_tx.encode().unwrap().len();
+
+    assert_eq!(
+        estimation,
+        encoding_length + ALGORAND_SIGNATURE_ENCODING_INCR
+    );
+    assert_eq!(estimation, actual_size);
+}
+
+#[test]
+fn test_axfer_estimate_transaction_size() {
+    let tx_builder = TransactionMother::simple_asset_transfer();
+    let asset_transfer_tx = tx_builder.build().unwrap();
+    let encoding_length = asset_transfer_tx.encode_raw().unwrap().len();
+    let estimation = asset_transfer_tx.estimate_size().unwrap();
+
+    let signed_tx = SignedTransaction {
+        transaction: asset_transfer_tx.clone(),
         signature: Some([0; ALGORAND_SIGNATURE_BYTE_LENGTH]),
         auth_address: None,
     };
