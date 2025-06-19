@@ -122,7 +122,7 @@ fn test_signed_transaction_encoding() {
     let auth_address = AddressMother::address();
     let signed_tx = SignedTransaction {
         transaction: payment_tx.clone(),
-        signature: Some([1; ALGORAND_SIGNATURE_BYTE_LENGTH]),
+        signature: Some([0; ALGORAND_SIGNATURE_BYTE_LENGTH]),
         auth_address: Some(auth_address.clone()),
     };
     let encoded_stx: Vec<u8> = signed_tx.encode().unwrap();
