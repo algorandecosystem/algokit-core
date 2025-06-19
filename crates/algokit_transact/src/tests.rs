@@ -40,16 +40,28 @@ fn check_transaction_encoding(
     assert_eq!(encoded.len(), expected_encoded_len);
 }
 
+fn check_signed_transaction_encoding(
+    tx: &Transaction,
+    expected_encoded_len: usize,
+    auth_address: Option<Address>,
+) {
+    let signed_tx = SignedTransaction {
+        transaction: tx.clone(),
+        signature: Some([0; ALGORAND_SIGNATURE_BYTE_LENGTH]),
+        auth_address: auth_address.clone(),
+    };
+    let encoded_stx = signed_tx.encode().unwrap();
+    assert_eq!(encoded_stx.len(), expected_encoded_len);
+    let decoded_stx = SignedTransaction::decode(&encoded_stx).unwrap();
+    assert_eq!(decoded_stx, signed_tx);
+}
+
 #[test]
 fn test_payment_transaction_encoding() {
     let tx_builder = TransactionMother::simple_payment();
     let payment_tx_fields = tx_builder.build_fields().unwrap();
     let payment_tx = tx_builder.build().unwrap();
-    check_transaction_encoding(
-        &payment_tx,
-        &Transaction::Payment(payment_tx_fields),
-        174,
-    );
+    check_transaction_encoding(&payment_tx, &Transaction::Payment(payment_tx_fields), 174);
 }
 
 #[test]
@@ -77,32 +89,32 @@ fn test_asset_opt_in_transaction_encoding() {
 }
 
 #[test]
-fn test_signed_transaction_encoding() {
-    let tx_builder = TransactionMother::simple_payment();
-    let payment_tx = tx_builder.build().unwrap();
+fn test_payment_signed_transaction_encoding() {
+    let payment_tx = TransactionMother::simple_payment().build().unwrap();
+    check_signed_transaction_encoding(&payment_tx, 247, None);
+    check_signed_transaction_encoding(&payment_tx, 286, Some(AddressMother::address().clone()));
+}
 
-    // The sender is signing the transaction
-    let signed_tx = SignedTransaction {
-        transaction: payment_tx.clone(),
-        signature: Some([0; ALGORAND_SIGNATURE_BYTE_LENGTH]),
-        auth_address: None,
-    };
-    let encoded_stx = signed_tx.encode().unwrap();
-    assert_eq!(encoded_stx.len(), 247);
-    let decoded_stx = SignedTransaction::decode(&encoded_stx).unwrap();
-    assert_eq!(decoded_stx, signed_tx);
+#[test]
+fn test_asset_transfer_signed_transaction_encoding() {
+    let asset_transfer_tx = TransactionMother::simple_asset_transfer().build().unwrap();
+    check_signed_transaction_encoding(&asset_transfer_tx, 259, None);
+    check_signed_transaction_encoding(
+        &asset_transfer_tx,
+        298,
+        Some(AddressMother::address().clone()),
+    );
+}
 
-    // The sender is not signing the transaction (rekeyed sender account)
-    let auth_address = AddressMother::address();
-    let signed_tx = SignedTransaction {
-        transaction: payment_tx.clone(),
-        signature: Some([0; ALGORAND_SIGNATURE_BYTE_LENGTH]),
-        auth_address: Some(auth_address.clone()),
-    };
-    let encoded_stx: Vec<u8> = signed_tx.encode().unwrap();
-    assert_eq!(encoded_stx.len(), 286);
-    let decoded_stx = SignedTransaction::decode(&encoded_stx).unwrap();
-    assert_eq!(decoded_stx, signed_tx);
+#[test]
+fn test_asset_opt_in_signed_transaction_encoding() {
+    let asset_opt_in_tx = TransactionMother::opt_in_asset_transfer().build().unwrap();
+    check_signed_transaction_encoding(&asset_opt_in_tx, 251, None);
+    check_signed_transaction_encoding(
+        &asset_opt_in_tx,
+        290,
+        Some(AddressMother::address().clone()),
+    );
 }
 
 #[test]
