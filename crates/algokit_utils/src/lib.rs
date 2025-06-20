@@ -14,6 +14,8 @@ use base64::{Engine as _, engine::general_purpose};
 use derive_more::Debug;
 use std::sync::Arc;
 
+use async_trait::async_trait;
+
 #[derive(Debug, Default, Clone)]
 pub struct CommonParams {
     pub sender: Address,
@@ -54,30 +56,34 @@ impl ComposerTxn {
     }
 }
 
+#[async_trait]
 pub trait TxnSigner: Send + Sync {
-    fn sign_txns(&self, txns: &[Transaction], indices: &[usize]) -> Vec<SignedTransaction>;
+    async fn sign_txns(&self, txns: &[Transaction], indices: &[usize]) -> Vec<SignedTransaction>;
 
-    fn sign_txn(&self, txn: &Transaction) -> SignedTransaction {
-        self.sign_txns(&[txn.clone()], &[0])[0].clone()
+    async fn sign_txn(&self, txn: &Transaction) -> SignedTransaction {
+        self.sign_txns(&[txn.clone()], &[0]).await[0].clone()
     }
 }
 
+#[async_trait]
 pub trait TxnSignerGetter: Send + Sync {
-    fn get_signer(&self, address: Address) -> Option<&dyn TxnSigner>;
+    async fn get_signer(&self, address: Address) -> Option<&dyn TxnSigner>;
 }
 
 struct DefaultSignerGetter;
 
+#[async_trait]
 impl TxnSignerGetter for DefaultSignerGetter {
-    fn get_signer(&self, _address: Address) -> Option<&dyn TxnSigner> {
+    async fn get_signer(&self, _address: Address) -> Option<&dyn TxnSigner> {
         None
     }
 }
 
 pub struct EmptySigner {}
 
+#[async_trait]
 impl TxnSigner for EmptySigner {
-    fn sign_txns(&self, txns: &[Transaction], indices: &[usize]) -> Vec<SignedTransaction> {
+    async fn sign_txns(&self, txns: &[Transaction], indices: &[usize]) -> Vec<SignedTransaction> {
         indices
             .iter()
             .map(|&idx| {
@@ -95,8 +101,9 @@ impl TxnSigner for EmptySigner {
     }
 }
 
+#[async_trait]
 impl TxnSignerGetter for EmptySigner {
-    fn get_signer(&self, _address: Address) -> Option<&dyn TxnSigner> {
+    async fn get_signer(&self, _address: Address) -> Option<&dyn TxnSigner> {
         Some(self)
     }
 }
@@ -155,8 +162,8 @@ impl Composer {
         &self.transactions
     }
 
-    pub fn get_signer(&self, address: Address) -> Option<&dyn TxnSigner> {
-        self.signer_getter.get_signer(address)
+    pub async fn get_signer(&self, address: Address) -> Option<&dyn TxnSigner> {
+        self.signer_getter.get_signer(address).await
     }
 
     // TODO: Use Fn defined in ComposerConfig
@@ -245,7 +252,7 @@ impl Composer {
         Ok(self)
     }
 
-    pub fn gather_signatures(&mut self) -> Result<&mut Self, HttpError> {
+    pub async fn gather_signatures(&mut self) -> Result<&mut Self, HttpError> {
         if self.built_group.is_none() {
             return Err(HttpError::HttpError(
                 "Cannot gather signatures before building the transaction group".to_string(),
@@ -259,12 +266,13 @@ impl Composer {
         for txn in transactions.iter() {
             let signer =
                 self.get_signer(txn.header().sender.clone())
+                    .await
                     .ok_or(HttpError::HttpError(format!(
                         "No signer found for address: {}",
                         txn.header().sender
                     )))?;
 
-            let signed_txn = signer.sign_txn(txn);
+            let signed_txn = signer.sign_txn(txn).await;
             self.signed_group
                 .as_mut()
                 .expect("should exist because it was created above")
@@ -388,7 +396,7 @@ mod tests {
         };
         assert!(composer.add_payment(payment_params).is_ok());
         assert!(composer.build().await.is_ok());
-        assert!(composer.gather_signatures().is_ok());
+        assert!(composer.gather_signatures().await.is_ok());
         assert!(composer.signed_group.is_some());
     }
 }
