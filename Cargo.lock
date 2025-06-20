@@ -116,27 +116,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "algokit_utils_ffi"
-version = "0.1.0"
-dependencies = [
- "algokit_http_client_trait",
- "algokit_transact_ffi",
- "algokit_utils",
- "async-trait",
- "ffi_mutex",
- "js-sys",
- "serde",
- "serde-wasm-bindgen",
- "serde_bytes",
- "thiserror 2.0.7",
- "tokio",
- "tsify-next",
- "uniffi",
- "wasm-bindgen",
- "wasm-bindgen-futures",
-]
-
-[[package]]
 name = "ammonia"
 version = "4.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

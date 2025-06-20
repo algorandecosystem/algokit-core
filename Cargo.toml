@@ -2,7 +2,7 @@
 resolver = "2"
 members = [ "crates/algod_api", "crates/algokit_http_client_trait",
   "crates/algokit_transact",
-  "crates/algokit_transact_ffi", "crates/algokit_utils", "crates/algokit_utils_ffi",
+  "crates/algokit_transact_ffi", "crates/algokit_utils",
   "crates/ffi_macros", "crates/ffi_mutex",
   "tools/build_pkgs",
   "crates/uniffi-bindgen",
