@@ -1,3 +1,5 @@
+mod transactions;
+
 use algokit_transact::constants::*;
 use algokit_transact::msgpack::{
     decode_base64_msgpack_to_json as internal_decode_base64_msgpack_to_json,
@@ -12,6 +14,8 @@ use algokit_transact::{
 use ffi_macros::{ffi_enum, ffi_func, ffi_record};
 use serde::{Deserialize, Serialize};
 use serde_bytes::ByteBuf;
+
+pub use transactions::ApplicationCallTransactionFields;
 
 // thiserror is used to easily create errors than can be propagated to the language bindings
 // UniFFI will create classes for errors (i.e. `MsgPackError.EncodingError` in Python)
@@ -134,7 +138,7 @@ pub enum TransactionType {
     AssetFreeze,
     AssetConfig,
     KeyRegistration,
-    Application,
+    ApplicationCall,
 }
 
 #[ffi_record]
@@ -201,185 +205,6 @@ pub struct AssetTransferTransactionFields {
     close_remainder_to: Option<Address>,
 }
 
-#[ffi_enum]
-pub enum OnApplicationComplete {
-    NoOp = 0,
-    OptIn = 1,
-    CloseOut = 2,
-    ClearState = 3,
-    UpdateApplication = 4,
-    DeleteApplication = 5,
-}
-
-impl From<algokit_transact::OnApplicationComplete> for OnApplicationComplete {
-    fn from(value: algokit_transact::OnApplicationComplete) -> Self {
-        match value {
-            algokit_transact::OnApplicationComplete::NoOp => OnApplicationComplete::NoOp,
-            algokit_transact::OnApplicationComplete::OptIn => OnApplicationComplete::OptIn,
-            algokit_transact::OnApplicationComplete::CloseOut => OnApplicationComplete::CloseOut,
-            algokit_transact::OnApplicationComplete::ClearState => {
-                OnApplicationComplete::ClearState
-            }
-            algokit_transact::OnApplicationComplete::UpdateApplication => {
-                OnApplicationComplete::UpdateApplication
-            }
-            algokit_transact::OnApplicationComplete::DeleteApplication => {
-                OnApplicationComplete::DeleteApplication
-            }
-        }
-    }
-}
-
-impl Into<algokit_transact::OnApplicationComplete> for OnApplicationComplete {
-    fn into(self) -> algokit_transact::OnApplicationComplete {
-        match self {
-            OnApplicationComplete::NoOp => algokit_transact::OnApplicationComplete::NoOp,
-            OnApplicationComplete::OptIn => algokit_transact::OnApplicationComplete::OptIn,
-            OnApplicationComplete::CloseOut => algokit_transact::OnApplicationComplete::CloseOut,
-            OnApplicationComplete::ClearState => {
-                algokit_transact::OnApplicationComplete::ClearState
-            }
-            OnApplicationComplete::UpdateApplication => {
-                algokit_transact::OnApplicationComplete::UpdateApplication
-            }
-            OnApplicationComplete::DeleteApplication => {
-                algokit_transact::OnApplicationComplete::DeleteApplication
-            }
-        }
-    }
-}
-
-#[ffi_record]
-pub struct StateSchema {
-    num_uints: u64,
-    num_byte_slices: u64,
-}
-
-impl From<algokit_transact::StateSchema> for StateSchema {
-    fn from(value: algokit_transact::StateSchema) -> Self {
-        Self {
-            num_uints: value.num_uints,
-            num_byte_slices: value.num_byte_slices,
-        }
-    }
-}
-
-impl Into<algokit_transact::StateSchema> for StateSchema {
-    fn into(self) -> algokit_transact::StateSchema {
-        algokit_transact::StateSchema {
-            num_uints: self.num_uints,
-            num_byte_slices: self.num_byte_slices,
-        }
-    }
-}
-
-#[ffi_record]
-pub struct BoxReference {
-    app_id: u64,
-    name: ByteBuf,
-}
-
-impl From<algokit_transact::BoxReference> for BoxReference {
-    fn from(value: algokit_transact::BoxReference) -> Self {
-        Self {
-            app_id: value.app_id,
-            name: value.name.into(),
-        }
-    }
-}
-
-impl Into<algokit_transact::BoxReference> for BoxReference {
-    fn into(self) -> algokit_transact::BoxReference {
-        algokit_transact::BoxReference {
-            app_id: self.app_id,
-            name: self.name.into_vec(),
-        }
-    }
-}
-
-#[ffi_record]
-pub struct ApplicationTransactionFields {
-    app_id: u64,
-    on_complete: OnApplicationComplete,
-    approval_program: Option<ByteBuf>,
-    clear_state_program: Option<ByteBuf>,
-    global_state_schema: Option<StateSchema>,
-    local_state_schema: Option<StateSchema>,
-    extra_program_pages: u64,
-    args: Option<Vec<ByteBuf>>,
-    account_references: Option<Vec<Address>>,
-    app_references: Option<Vec<u64>>,
-    asset_references: Option<Vec<u64>>,
-    box_references: Option<Vec<BoxReference>>,
-}
-
-impl From<algokit_transact::ApplicationTransactionFields> for ApplicationTransactionFields {
-    fn from(tx: algokit_transact::ApplicationTransactionFields) -> Self {
-        Self {
-            app_id: tx.app_id,
-            on_complete: tx.on_complete.into(),
-            approval_program: tx.approval_program.map(Into::into),
-            clear_state_program: tx.clear_state_program.map(Into::into),
-            global_state_schema: tx.global_state_schema.map(Into::into),
-            local_state_schema: tx.local_state_schema.map(Into::into),
-            extra_program_pages: tx.extra_program_pages,
-            args: tx
-                .args
-                .map(|args| args.into_iter().map(Into::into).collect()),
-            account_references: tx
-                .account_references
-                .map(|accs| accs.into_iter().map(Into::into).collect()),
-            app_references: tx.app_references,
-            asset_references: tx.asset_references,
-            box_references: tx
-                .box_references
-                .map(|boxes| boxes.into_iter().map(Into::into).collect()),
-        }
-    }
-}
-
-impl TryFrom<Transaction> for algokit_transact::ApplicationTransactionFields {
-    type Error = AlgoKitTransactError;
-
-    fn try_from(tx: Transaction) -> Result<Self, Self::Error> {
-        if tx.transaction_type != TransactionType::Application || tx.application.is_none() {
-            return Err(Self::Error::DecodingError(
-                "Application data missing".to_string(),
-            ));
-        }
-
-        let data = tx.clone().application.unwrap();
-        let header: algokit_transact::TransactionHeader = tx.try_into()?;
-
-        Ok(Self {
-            header,
-            app_id: data.app_id,
-            on_complete: data.on_complete.into(),
-            approval_program: data.approval_program.map(ByteBuf::into_vec),
-            clear_state_program: data.clear_state_program.map(ByteBuf::into_vec),
-            global_state_schema: data.global_state_schema.map(Into::into),
-            local_state_schema: data.local_state_schema.map(Into::into),
-            extra_program_pages: data.extra_program_pages,
-            args: data
-                .args
-                .map(|args| args.into_iter().map(ByteBuf::into_vec).collect()),
-            account_references: data
-                .account_references
-                .map(|accs| {
-                    accs.into_iter()
-                        .map(TryInto::try_into)
-                        .collect::<Result<Vec<_>, _>>()
-                })
-                .transpose()?,
-            app_references: data.app_references,
-            asset_references: data.asset_references,
-            box_references: data
-                .box_references
-                .map(|boxes| boxes.into_iter().map(Into::into).collect()),
-        })
-    }
-}
-
 #[ffi_record]
 pub struct Transaction {
     /// The type of transaction
@@ -413,7 +238,7 @@ pub struct Transaction {
 
     asset_transfer: Option<AssetTransferTransactionFields>,
 
-    application: Option<ApplicationTransactionFields>,
+    application_call: Option<ApplicationCallTransactionFields>,
 }
 
 impl TryFrom<Transaction> for algokit_transact::Transaction {
@@ -424,10 +249,10 @@ impl TryFrom<Transaction> for algokit_transact::Transaction {
         if [
             tx.payment.is_some(),
             tx.asset_transfer.is_some(),
-            tx.application.is_some(),
+            tx.application_call.is_some(),
         ]
-        .iter()
-        .filter(|&&x| x)
+        .into_iter()
+        .filter(|&x| x)
         .count()
             > 1
         {
@@ -441,9 +266,9 @@ impl TryFrom<Transaction> for algokit_transact::Transaction {
             TransactionType::AssetTransfer => {
                 Ok(algokit_transact::Transaction::AssetTransfer(tx.try_into()?))
             }
-            TransactionType::Application => {
-                Ok(algokit_transact::Transaction::Application(tx.try_into()?))
-            }
+            TransactionType::ApplicationCall => Ok(algokit_transact::Transaction::ApplicationCall(
+                tx.try_into()?,
+            )),
             _ => {
                 return Err(Self::Error::DecodingError(
                     "Transaction type is not implemented".to_string(),
@@ -565,14 +390,14 @@ impl TryFrom<algokit_transact::Transaction> for Transaction {
                     None,
                 )
             }
-            algokit_transact::Transaction::Application(application) => {
-                let application_fields = application.clone().into();
+            algokit_transact::Transaction::ApplicationCall(application_call) => {
+                let application_call_fields = application_call.clone().into();
                 build_transaction(
-                    application.header,
-                    TransactionType::Application,
+                    application_call.header,
+                    TransactionType::ApplicationCall,
                     None,
                     None,
-                    Some(application_fields),
+                    Some(application_call_fields),
                 )
             }
         }
@@ -643,7 +468,7 @@ fn build_transaction(
     transaction_type: TransactionType,
     payment: Option<PaymentTransactionFields>,
     asset_transfer: Option<AssetTransferTransactionFields>,
-    application: Option<ApplicationTransactionFields>,
+    application_call: Option<ApplicationCallTransactionFields>,
 ) -> Result<Transaction, AlgoKitTransactError> {
     Ok(Transaction {
         transaction_type,
@@ -659,7 +484,7 @@ fn build_transaction(
         group: header.group.map(byte32_to_bytebuf),
         payment,
         asset_transfer,
-        application,
+        application_call,
     })
 }
 
@@ -675,7 +500,7 @@ pub fn get_encoded_transaction_type(bytes: &[u8]) -> Result<TransactionType, Alg
     match decoded {
         algokit_transact::Transaction::Payment(_) => Ok(TransactionType::Payment),
         algokit_transact::Transaction::AssetTransfer(_) => Ok(TransactionType::AssetTransfer),
-        algokit_transact::Transaction::Application(_) => Ok(TransactionType::Application),
+        algokit_transact::Transaction::ApplicationCall(_) => Ok(TransactionType::ApplicationCall),
     }
 }
 
