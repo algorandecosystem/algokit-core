@@ -51,6 +51,7 @@ name = "algokit_http_client_trait"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "js-sys",
  "reqwest",
  "thiserror 2.0.7",
  "uniffi",

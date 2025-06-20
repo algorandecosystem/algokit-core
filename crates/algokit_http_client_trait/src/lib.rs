@@ -1,4 +1,3 @@
-#[cfg(feature = "default_client")]
 use async_trait::async_trait;
 
 #[cfg(feature = "ffi_uniffi")]
@@ -63,9 +62,12 @@ impl HttpClient for DefaultHttpClient {
 use wasm_bindgen::prelude::*;
 
 #[cfg(feature = "ffi_wasm")]
+use js_sys::Uint8Array;
+
+#[cfg(feature = "ffi_wasm")]
 #[async_trait(?Send)]
 pub trait HttpClient {
-    async fn json(&self, path: String) -> Result<String, HttpError>;
+    async fn get(&self, path: String) -> Result<Vec<u8>, HttpError>;
 }
 
 #[wasm_bindgen]
@@ -77,19 +79,15 @@ extern "C" {
     pub type WasmHttpClient;
 
     #[wasm_bindgen(method, catch)]
-    async fn json(this: &WasmHttpClient, path: &str) -> Result<JsValue, JsValue>;
+    async fn get(this: &WasmHttpClient, path: &str) -> Result<Uint8Array, JsValue>;
 }
 
 #[cfg(feature = "ffi_wasm")]
 #[async_trait(?Send)]
 impl HttpClient for WasmHttpClient {
-    async fn json(&self, path: String) -> Result<String, HttpError> {
-        let result = self.json(&path).await.unwrap();
+    async fn get(&self, path: String) -> Result<Vec<u8>, HttpError> {
+        let result = self.get(&path).await.unwrap();
 
-        let result = result.as_string().ok_or_else(|| {
-            HttpError::HttpError("Failed to convert JS string to Rust string".to_string())
-        })?;
-
-        Ok(result)
+        Ok(result.to_vec())
     }
 }
