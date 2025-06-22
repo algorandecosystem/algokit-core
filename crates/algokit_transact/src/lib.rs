@@ -12,10 +12,11 @@ pub use error::AlgoKitTransactError;
 pub use traits::{AlgorandMsgpack, EstimateTransactionSize, TransactionId, Transactions, Validate};
 pub use transactions::{
     ApplicationCallTransactionBuilder, ApplicationCallTransactionFields,
-    AssetConfigTransactionBuilder, AssetConfigTransactionFields, AssetTransferTransactionBuilder,
-    AssetTransferTransactionFields, BoxReference, FeeParams, OnApplicationComplete,
-    PaymentTransactionBuilder, PaymentTransactionFields, SignedTransaction, StateSchema,
-    Transaction, TransactionHeader, TransactionHeaderBuilder,
+    AssetConfigTransactionBuilder, AssetConfigTransactionFields, AssetFreezeTransactionBuilder,
+    AssetFreezeTransactionFields, AssetTransferTransactionBuilder, AssetTransferTransactionFields,
+    BoxReference, FeeParams, OnApplicationComplete, PaymentTransactionBuilder,
+    PaymentTransactionFields, SignedTransaction, StateSchema, Transaction, TransactionHeader,
+    TransactionHeaderBuilder,
 };
 
 #[cfg(test)]

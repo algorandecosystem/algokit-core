@@ -176,6 +176,13 @@ pub struct AssetTransferTransactionFields {
 }
 
 #[ffi_record]
+pub struct AssetFreezeTransactionFields {
+    asset_id: u64,
+    freeze_target: Address,
+    frozen: bool,
+}
+
+#[ffi_record]
 pub struct Transaction {
     /// The type of transaction
     transaction_type: TransactionType,
@@ -211,6 +218,8 @@ pub struct Transaction {
     asset_config: Option<AssetConfigTransactionFields>,
 
     application_call: Option<ApplicationCallTransactionFields>,
+
+    asset_freeze: Option<AssetFreezeTransactionFields>,
 }
 
 impl TryFrom<Transaction> for algokit_transact::Transaction {
@@ -223,6 +232,8 @@ impl TryFrom<Transaction> for algokit_transact::Transaction {
             tx.asset_transfer.is_some(),
             tx.asset_config.is_some(),
             tx.application_call.is_some(),
+            tx.asset_transfer.is_some(),
+            tx.asset_freeze.is_some(),
         ]
         .into_iter()
         .filter(|&x| x)
@@ -245,6 +256,9 @@ impl TryFrom<Transaction> for algokit_transact::Transaction {
             TransactionType::ApplicationCall => Ok(algokit_transact::Transaction::ApplicationCall(
                 tx.try_into()?,
             )),
+            TransactionType::AssetFreeze => {
+                Ok(algokit_transact::Transaction::AssetFreeze(tx.try_into()?))
+            }
             _ => Err(Self::Error::DecodingError(
                 "Transaction type is not implemented".to_string(),
             )),
@@ -339,6 +353,38 @@ impl TryFrom<Transaction> for algokit_transact::AssetTransferTransactionFields {
     }
 }
 
+impl From<algokit_transact::AssetFreezeTransactionFields> for AssetFreezeTransactionFields {
+    fn from(tx: algokit_transact::AssetFreezeTransactionFields) -> Self {
+        Self {
+            asset_id: tx.asset_id,
+            freeze_target: tx.freeze_target.into(),
+            frozen: tx.frozen,
+        }
+    }
+}
+
+impl TryFrom<Transaction> for algokit_transact::AssetFreezeTransactionFields {
+    type Error = AlgoKitTransactError;
+
+    fn try_from(tx: Transaction) -> Result<Self, Self::Error> {
+        if tx.transaction_type != TransactionType::AssetFreeze || tx.asset_freeze.is_none() {
+            return Err(Self::Error::DecodingError(
+                "Asset Freeze data missing".to_string(),
+            ));
+        }
+
+        let data = tx.clone().asset_freeze.unwrap();
+        let header: algokit_transact::TransactionHeader = tx.try_into()?;
+
+        Ok(Self {
+            header,
+            asset_id: data.asset_id,
+            freeze_target: data.freeze_target.try_into()?,
+            frozen: data.frozen,
+        })
+    }
+}
+
 impl TryFrom<algokit_transact::Transaction> for Transaction {
     type Error = AlgoKitTransactError;
 
@@ -353,6 +399,7 @@ impl TryFrom<algokit_transact::Transaction> for Transaction {
                     None,
                     None,
                     None,
+                    None,
                 )
             }
             algokit_transact::Transaction::AssetTransfer(asset_transfer) => {
@@ -362,6 +409,7 @@ impl TryFrom<algokit_transact::Transaction> for Transaction {
                     TransactionType::AssetTransfer,
                     None,
                     Some(asset_transfer_fields),
+                    None,
                     None,
                     None,
                 )
@@ -375,6 +423,7 @@ impl TryFrom<algokit_transact::Transaction> for Transaction {
                     None,
                     Some(asset_config_fields),
                     None,
+                    None,
                 )
             }
             algokit_transact::Transaction::ApplicationCall(application_call) => {
@@ -386,6 +435,19 @@ impl TryFrom<algokit_transact::Transaction> for Transaction {
                     None,
                     None,
                     Some(application_call_fields),
+                    None,
+                )
+            }
+            algokit_transact::Transaction::AssetFreeze(asset_freeze) => {
+                let asset_freeze_fields = asset_freeze.clone().into();
+                build_transaction(
+                    asset_freeze.header,
+                    TransactionType::AssetFreeze,
+                    None,
+                    None,
+                    None,
+                    None,
+                    Some(asset_freeze_fields),
                 )
             }
         }
@@ -458,6 +520,7 @@ fn build_transaction(
     asset_transfer: Option<AssetTransferTransactionFields>,
     asset_config: Option<AssetConfigTransactionFields>,
     application_call: Option<ApplicationCallTransactionFields>,
+    asset_freeze: Option<AssetFreezeTransactionFields>,
 ) -> Result<Transaction, AlgoKitTransactError> {
     Ok(Transaction {
         transaction_type,
@@ -475,6 +538,7 @@ fn build_transaction(
         asset_transfer,
         asset_config,
         application_call,
+        asset_freeze,
     })
 }
 
@@ -492,6 +556,7 @@ pub fn get_encoded_transaction_type(bytes: &[u8]) -> Result<TransactionType, Alg
         algokit_transact::Transaction::AssetTransfer(_) => Ok(TransactionType::AssetTransfer),
         algokit_transact::Transaction::AssetConfig(_) => Ok(TransactionType::AssetConfig),
         algokit_transact::Transaction::ApplicationCall(_) => Ok(TransactionType::ApplicationCall),
+        algokit_transact::Transaction::AssetFreeze(_) => Ok(TransactionType::AssetFreeze),
     }
 }
 

@@ -6,6 +6,7 @@
 
 mod application_call;
 mod asset_config;
+mod asset_freeze;
 mod asset_transfer;
 mod common;
 mod payment;
@@ -19,6 +20,8 @@ pub use asset_config::{
     asset_config_deserializer, asset_config_serializer, AssetConfigTransactionBuilder,
     AssetConfigTransactionFields,
 };
+use asset_freeze::AssetFreezeTransactionBuilderError;
+pub use asset_freeze::{AssetFreezeTransactionBuilder, AssetFreezeTransactionFields};
 pub use asset_transfer::{AssetTransferTransactionBuilder, AssetTransferTransactionFields};
 pub use common::{TransactionHeader, TransactionHeaderBuilder};
 pub use payment::{PaymentTransactionBuilder, PaymentTransactionFields};
@@ -54,9 +57,14 @@ pub enum Transaction {
     #[serde(deserialize_with = "application_call_deserializer")]
     #[serde(rename = "appl")]
     ApplicationCall(ApplicationCallTransactionFields),
+
+    #[serde(rename = "afrz")]
+    AssetFreeze(AssetFreezeTransactionFields),
     // All the below transaction variants will be implemented in the future
     // #[serde(rename = "afrz")]
     // AssetFreeze(...),
+    // #[serde(rename = "acfg")]
+    // AssetConfig(...),
 
     // #[serde(rename = "keyreg")]
     // KeyRegistration(...),
@@ -76,6 +84,7 @@ impl Transaction {
             Transaction::AssetTransfer(a) => &a.header,
             Transaction::AssetConfig(a) => &a.header,
             Transaction::ApplicationCall(a) => &a.header,
+            Transaction::AssetFreeze(f) => &f.header,
         }
     }
 
@@ -85,6 +94,7 @@ impl Transaction {
             Transaction::AssetTransfer(a) => &mut a.header,
             Transaction::AssetConfig(a) => &mut a.header,
             Transaction::ApplicationCall(a) => &mut a.header,
+            Transaction::AssetFreeze(f) => &mut f.header,
         }
     }
 
@@ -118,6 +128,12 @@ impl Transaction {
         header.fee = Some(calculated_fee);
 
         Ok(tx)
+    }
+}
+
+impl AssetFreezeTransactionBuilder {
+    pub fn build(&self) -> Result<Transaction, AssetFreezeTransactionBuilderError> {
+        self.build_fields().map(|d| Transaction::AssetFreeze(d))
     }
 }
 
