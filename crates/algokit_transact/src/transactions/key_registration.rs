@@ -98,6 +98,7 @@ impl KeyRegistrationTransactionFields {
 
     /// Returns true if this is an offline key registration transaction.
     /// Offline transactions have no participation key fields set.
+    /// NOTE: This also ensures this is NOT a non-participating transaction
     pub fn is_offline(&self) -> bool {
         self.vote_key.is_none()
             && self.selection_key.is_none()
@@ -105,6 +106,12 @@ impl KeyRegistrationTransactionFields {
             && self.vote_first.is_none()
             && self.vote_last.is_none()
             && self.vote_key_dilution.is_none()
+            && !self.is_non_participating()
+    }
+
+    /// Returns true if this transaction registers the account as non-participating.
+    /// WARNING: This means the account will NEVER be able to participate in consensus
+    pub fn is_non_participating(&self) -> bool {
+        self.non_participation.is_some_and(|v| v)
     }
 }
-
