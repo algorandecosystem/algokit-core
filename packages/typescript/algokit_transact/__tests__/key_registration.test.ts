@@ -7,7 +7,6 @@ import {
   getEncodedTransactionType,
   Transaction,
   addressFromPubKey,
-  addressFromString,
   getTransactionIdRaw,
   getTransactionId,
   assignFee,
@@ -86,7 +85,7 @@ describe("Key Registration", () => {
       // Test with online key registration
       expect(getTransactionId(onlineKeyRegistration.transaction)).toBe(onlineKeyRegistration.id);
       expect(getTransactionIdRaw(onlineKeyRegistration.transaction)).toEqual(onlineKeyRegistration.idRaw);
-      
+
       // Test with offline key registration
       expect(getTransactionId(offlineKeyRegistration.transaction)).toBe(offlineKeyRegistration.id);
       expect(getTransactionIdRaw(offlineKeyRegistration.transaction)).toEqual(offlineKeyRegistration.idRaw);
@@ -95,7 +94,7 @@ describe("Key Registration", () => {
     test("get encoded transaction type", () => {
       const onlineEncoded = encodeTransaction(onlineKeyRegistration.transaction);
       expect(getEncodedTransactionType(onlineEncoded)).toBe("KeyRegistration");
-      
+
       const offlineEncoded = encodeTransaction(offlineKeyRegistration.transaction);
       expect(getEncodedTransactionType(offlineEncoded)).toBe("KeyRegistration");
     });
@@ -104,7 +103,7 @@ describe("Key Registration", () => {
       // Remove TX prefix (first 2 bytes) and decode
       const onlineDecoded = decodeTransaction(onlineKeyRegistration.unsignedBytes.slice(2));
       expect(onlineDecoded).toEqual(onlineKeyRegistration.transaction);
-      
+
       const offlineDecoded = decodeTransaction(offlineKeyRegistration.unsignedBytes.slice(2));
       expect(offlineDecoded).toEqual(offlineKeyRegistration.transaction);
     });
@@ -113,32 +112,32 @@ describe("Key Registration", () => {
       // Decode with TX prefix
       const onlineDecoded = decodeTransaction(onlineKeyRegistration.unsignedBytes);
       expect(onlineDecoded).toEqual(onlineKeyRegistration.transaction);
-      
+
       const offlineDecoded = decodeTransaction(offlineKeyRegistration.unsignedBytes);
       expect(offlineDecoded).toEqual(offlineKeyRegistration.transaction);
     });
 
     test("encode with auth address", async () => {
       const signature = await ed.signAsync(onlineKeyRegistration.unsignedBytes, onlineKeyRegistration.signingPrivateKey);
-      
+
       const signedTxn: SignedTransaction = {
         transaction: onlineKeyRegistration.transaction,
         signature: signature,
         authAddress: onlineKeyRegistration.rekeyedSenderAuthAddress,
       };
-      
+
       const encoded = encodeSignedTransaction(signedTxn);
       expect(encoded).toEqual(onlineKeyRegistration.rekeyedSenderSignedBytes);
     });
 
     test("encode with signature", async () => {
       const signature = await ed.signAsync(onlineKeyRegistration.unsignedBytes, onlineKeyRegistration.signingPrivateKey);
-      
+
       const signedTxn: SignedTransaction = {
         transaction: onlineKeyRegistration.transaction,
         signature: signature,
       };
-      
+
       const encoded = encodeSignedTransaction(signedTxn);
       expect(encoded).toEqual(onlineKeyRegistration.signedBytes);
     });
@@ -147,16 +146,14 @@ describe("Key Registration", () => {
       // Test online key registration encoding
       const onlineEncoded = encodeTransaction(onlineKeyRegistration.transaction);
       expect(onlineEncoded).toEqual(onlineKeyRegistration.unsignedBytes);
-      
+
       // Test offline key registration encoding
       const offlineEncoded = encodeTransaction(offlineKeyRegistration.transaction);
       expect(offlineEncoded).toEqual(offlineKeyRegistration.unsignedBytes);
-      
+
       // Test non-participating key registration encoding
       const nonPartEncoded = encodeTransaction(nonParticipatingKeyRegistration.transaction);
       expect(nonPartEncoded).toEqual(nonParticipatingKeyRegistration.unsignedBytes);
     });
-
   });
-
 });
