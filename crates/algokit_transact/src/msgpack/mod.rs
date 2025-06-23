@@ -257,34 +257,29 @@ where
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ModelType {
-    SimulateRequest,
-    SimulateTransaction200Response,
+    // Simulate models have been moved to algod_client crate
+    // This enum is kept for potential future msgpack models
 }
 
 impl ModelType {
     /// Convert a ModelType to its string representation
     pub fn as_str(&self) -> &'static str {
-        match self {
-            ModelType::SimulateRequest => "SimulateRequest",
-            ModelType::SimulateTransaction200Response => "SimulateTransaction200Response",
+        match *self {
+            // No models remaining - all moved to algod_client
         }
     }
 
     /// Convert a string to a ModelType, returning None if the string doesn't match any model
     #[allow(clippy::should_implement_trait)]
-    pub fn from_str(s: &str) -> Option<Self> {
-        match s {
-            "SimulateRequest" => Some(ModelType::SimulateRequest),
-            "SimulateTransaction200Response" => Some(ModelType::SimulateTransaction200Response),
-            _ => None,
-        }
+    pub fn from_str(_s: &str) -> Option<Self> {
+        // No models remaining - all moved to algod_client
+        None
     }
 
     /// Get all available model types
     pub fn all() -> Vec<ModelType> {
         vec![
-            ModelType::SimulateRequest,
-            ModelType::SimulateTransaction200Response,
+            // No models remaining - all moved to algod_client
         ]
     }
 }

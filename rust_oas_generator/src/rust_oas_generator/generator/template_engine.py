@@ -47,7 +47,8 @@ class RustTemplateEngine:
         self.env.filters["pascal_case"] = pascal_case
         self.env.filters["normalize_name"] = normalize_name
         self.env.filters["rust_type"] = lambda schema, schemas: rust_type_from_openapi(
-            schema, schemas,
+            schema,
+            schemas,
         )
         self.env.filters["rust_doc_comment"] = self._rust_doc_comment
         self.env.filters["rust_string_literal"] = self._rust_string_literal
@@ -104,7 +105,8 @@ class RustTemplateEngine:
         return sorted(list(tags))
 
     def _group_operations_by_tag(
-        self, operations: List[Operation],
+        self,
+        operations: List[Operation],
     ) -> Dict[str, List[Operation]]:
         """Group operations by their first tag."""
         groups = {}
@@ -148,7 +150,9 @@ class RustTemplateEngine:
         response_types = set()
         for operation in operations:
             for status_code, response in operation.responses.items():
-                if status_code.startswith("2") and response.rust_type:  # 2xx success codes
+                if (
+                    status_code.startswith("2") and response.rust_type
+                ):  # 2xx success codes
                     # Only include types that end with "Response" (our generated response types)
                     if response.rust_type.endswith("Response"):
                         response_types.add(response.rust_type)
@@ -179,7 +183,10 @@ class RustCodeGenerator:
         self.template_engine = template_engine or RustTemplateEngine()
 
     def generate_client(
-        self, spec: ParsedSpec, output_dir: Path, package_name: str = "api_client",
+        self,
+        spec: ParsedSpec,
+        output_dir: Path,
+        package_name: str = "api_client",
     ) -> Dict[str, str]:
         """Generate complete Rust client from OpenAPI spec."""
         output_dir = Path(output_dir)
@@ -209,7 +216,9 @@ class RustCodeGenerator:
         return files
 
     def _generate_base_files(
-        self, context: Dict[str, Any], output_dir: Path,
+        self,
+        context: Dict[str, Any],
+        output_dir: Path,
     ) -> Dict[str, str]:
         """Generate base library files."""
         files = {}
@@ -221,7 +230,8 @@ class RustCodeGenerator:
 
         # Configuration
         content = self.template_engine.render_template(
-            "base/configuration.rs.j2", context,
+            "base/configuration.rs.j2",
+            context,
         )
         files[str(src_dir / "apis" / "configuration.rs")] = content
 
@@ -232,7 +242,10 @@ class RustCodeGenerator:
         return files
 
     def _generate_model_files(
-        self, schemas: Dict[str, Schema], context: Dict[str, Any], output_dir: Path,
+        self,
+        schemas: Dict[str, Schema],
+        context: Dict[str, Any],
+        output_dir: Path,
     ) -> Dict[str, str]:
         """Generate model files."""
         files = {}
@@ -242,7 +255,8 @@ class RustCodeGenerator:
         for schema_name, schema in schemas.items():
             model_context = {**context, "schema": schema}
             content = self.template_engine.render_template(
-                "models/model.rs.j2", model_context,
+                "models/model.rs.j2",
+                model_context,
             )
             snake_case_name = snake_case(schema_name)
             # Handle Rust reserved keywords
@@ -277,14 +291,18 @@ class RustCodeGenerator:
         # Models mod.rs
         models_context = {**context, "schemas": schemas}
         content = self.template_engine.render_template(
-            "models/mod.rs.j2", models_context,
+            "models/mod.rs.j2",
+            models_context,
         )
         files[str(models_dir / "mod.rs")] = content
 
         return files
 
     def _generate_api_files(
-        self, operations: List[Operation], context: Dict[str, Any], output_dir: Path,
+        self,
+        operations: List[Operation],
+        context: Dict[str, Any],
+        output_dir: Path,
     ) -> Dict[str, str]:
         """Generate API files in flat structure."""
         files = {}
@@ -298,7 +316,9 @@ class RustCodeGenerator:
         return files
 
     def _generate_project_files(
-        self, context: Dict[str, Any], output_dir: Path,
+        self,
+        context: Dict[str, Any],
+        output_dir: Path,
     ) -> Dict[str, str]:
         """Generate project configuration files."""
         files = {}
