@@ -4,12 +4,16 @@ use algokit_transact::constants::*;
 use algokit_transact::{
     AlgorandMsgpack, Byte32, EstimateTransactionSize, TransactionId, Transactions, Validate,
 };
+use algokit_transact::{AlgorandMsgpack, Byte32, EstimateTransactionSize, TransactionId, Transactions};
 use ffi_macros::{ffi_enum, ffi_func, ffi_record};
 use serde::{Deserialize, Serialize};
 use serde_bytes::ByteBuf;
 
 pub use transactions::ApplicationCallTransactionFields;
 pub use transactions::AssetConfigTransactionFields;
+
+mod transactions;
+use transactions::KeyRegistrationTransactionFields;
 
 // thiserror is used to easily create errors than can be propagated to the language bindings
 // UniFFI will create classes for errors (i.e. `MsgPackError.EncodingError` in Python)
@@ -176,30 +180,6 @@ pub struct AssetTransferTransactionFields {
 }
 
 #[ffi_record]
-pub struct KeyRegistrationTransactionFields {
-    /// Root participation public key (32 bytes)
-    vote_key: Option<ByteBuf>,
-
-    /// VRF public key (32 bytes) 
-    selection_key: Option<ByteBuf>,
-
-    /// State proof key (64 bytes)
-    state_proof_key: Option<ByteBuf>,
-
-    /// First round for which the participation key is valid
-    vote_first: Option<u64>,
-
-    /// Last round for which the participation key is valid
-    vote_last: Option<u64>,
-
-    /// Key dilution for the 2-level participation key
-    vote_key_dilution: Option<u64>,
-
-    /// Mark account as non-reward earning
-    non_participation: Option<bool>,
-}
-
-#[ffi_record]
 pub struct Transaction {
     /// The type of transaction
     transaction_type: TransactionType,
@@ -248,6 +228,7 @@ impl TryFrom<Transaction> for algokit_transact::Transaction {
             tx.payment.is_some(),
             tx.asset_transfer.is_some(),
             tx.asset_config.is_some(),
+            tx.key_registration.is_some(),
             tx.application_call.is_some(),
         ]
         .into_iter()
@@ -265,6 +246,9 @@ impl TryFrom<Transaction> for algokit_transact::Transaction {
             TransactionType::AssetTransfer => {
                 Ok(algokit_transact::Transaction::AssetTransfer(tx.try_into()?))
             }
+            TransactionType::KeyRegistration => Ok(algokit_transact::Transaction::KeyRegistration(
+                tx.try_into()?,
+            )),
             TransactionType::AssetConfig => {
                 Ok(algokit_transact::Transaction::AssetConfig(tx.try_into()?))
             }
@@ -341,20 +325,6 @@ impl From<algokit_transact::AssetTransferTransactionFields> for AssetTransferTra
     }
 }
 
-impl From<algokit_transact::KeyRegistrationTransactionFields> for KeyRegistrationTransactionFields {
-    fn from(tx: algokit_transact::KeyRegistrationTransactionFields) -> Self {
-        Self {
-            vote_key: tx.vote_key.map(|bytes| ByteBuf::from(bytes.to_vec())),
-            selection_key: tx.selection_key.map(|bytes| ByteBuf::from(bytes.to_vec())),
-            state_proof_key: tx.state_proof_key.map(|bytes| ByteBuf::from(bytes.to_vec())),
-            vote_first: tx.vote_first,
-            vote_last: tx.vote_last,
-            vote_key_dilution: tx.vote_key_dilution,
-            non_participation: tx.non_participation,
-        }
-    }
-}
-
 impl TryFrom<Transaction> for algokit_transact::AssetTransferTransactionFields {
     type Error = AlgoKitTransactError;
 
@@ -375,32 +345,6 @@ impl TryFrom<Transaction> for algokit_transact::AssetTransferTransactionFields {
             receiver: data.receiver.try_into()?,
             asset_sender: data.asset_sender.map(TryInto::try_into).transpose()?,
             close_remainder_to: data.close_remainder_to.map(TryInto::try_into).transpose()?,
-        })
-    }
-}
-
-impl TryFrom<Transaction> for algokit_transact::KeyRegistrationTransactionFields {
-    type Error = AlgoKitTransactError;
-
-    fn try_from(tx: Transaction) -> Result<Self, Self::Error> {
-        if tx.transaction_type != TransactionType::KeyRegistration || tx.key_registration.is_none() {
-            return Err(Self::Error::DecodingError(
-                "Key Registration data missing".to_string(),
-            ));
-        }
-
-        let data = tx.clone().key_registration.unwrap();
-        let header: algokit_transact::TransactionHeader = tx.try_into()?;
-
-        Ok(Self {
-            header,
-            vote_key: data.vote_key.map(|buf| bytebuf_to_32_bytes(&buf)).transpose()?,
-            selection_key: data.selection_key.map(|buf| bytebuf_to_32_bytes(&buf)).transpose()?,
-            state_proof_key: data.state_proof_key.map(|buf| bytebuf_to_64_bytes(&buf)).transpose()?,
-            vote_first: data.vote_first,
-            vote_last: data.vote_last,
-            vote_key_dilution: data.vote_key_dilution,
-            non_participation: data.non_participation,
         })
     }
 }
