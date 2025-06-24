@@ -11,6 +11,7 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
+use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
 
 
 
@@ -55,6 +56,9 @@ pub struct ApplicationParams {
 
 
 
+impl AlgorandMsgpack for ApplicationParams {
+    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+}
 
 impl ApplicationParams {
     /// Constructor for ApplicationParams
@@ -71,4 +75,13 @@ impl ApplicationParams {
         }
     }
 
+    /// Encode this struct to msgpack bytes using AlgorandMsgpack trait
+    pub fn to_msgpack(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        Ok(self.encode()?)
+    }
+
+    /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
+    pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(Self::decode(bytes)?)
+    }
 }

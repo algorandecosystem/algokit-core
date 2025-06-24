@@ -89,7 +89,11 @@ format: Option<&str>,
                 let content = resp.text().await?;
                 serde_json::from_str(&content).map_err(Error::from)
             },
-            ContentType::MsgPack => return Err(Error::from(serde_json::Error::custom("MsgPack response handling not supported for this endpoint"))),
+            ContentType::MsgPack => {
+                let content = resp.bytes().await?;
+                GetPendingTransactionsByAddress200Response::decode(&content)
+                    .map_err(|e| Error::from(serde_json::Error::custom(format!("Failed to decode msgpack response: {}", e))))
+            },
             ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `GetPendingTransactionsByAddress200Response`"))),
             ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `GetPendingTransactionsByAddress200Response`")))),
         }

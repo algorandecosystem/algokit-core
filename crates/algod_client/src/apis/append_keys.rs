@@ -63,11 +63,11 @@ participation_id: &str,
         req_builder = req_builder.header("X-Algo-API-Token", value);
     };
 
-    // Determine content type: use msgpack if format parameter indicates it, otherwise use msgpack by default for supported types
+    // Determine content type: use msgpack by default if supported, unless format explicitly requests JSON
     let use_msgpack = true;
 
     if use_msgpack {
-        // For binary data, use directly as msgpack
+        // For binary data, use directly - detect if it's a binary endpoint or msgpack endpoint
         req_builder = req_builder
             .header("Content-Type", "application/msgpack")
             .body(p_request);
@@ -93,7 +93,9 @@ participation_id: &str,
                 let content = resp.text().await?;
                 serde_json::from_str(&content).map_err(Error::from)
             },
-            ContentType::MsgPack => return Err(Error::from(serde_json::Error::custom("MsgPack response handling not supported for this endpoint"))),
+            ContentType::MsgPack => {
+                return Err(Error::from(serde_json::Error::custom("MsgPack response handling not supported for this endpoint")))
+            },
             ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `ParticipationKey`"))),
             ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `ParticipationKey`")))),
         }

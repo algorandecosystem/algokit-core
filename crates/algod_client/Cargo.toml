@@ -27,6 +27,8 @@ reqwest = { version = "^0.12", default-features = false, features = [
 
 # AlgoKit dependencies for msgpack and signed transactions
 algokit_transact = { path = "../algokit_transact" }
+# MessagePack serialization
+rmp-serde = "^1.1"
 
 # Error handling
 thiserror = "^1.0"

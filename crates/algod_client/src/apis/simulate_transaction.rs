@@ -67,7 +67,20 @@ format: Option<&str>,
         req_builder = req_builder.header("X-Algo-API-Token", value);
     };
 
-    req_builder = req_builder.json(&p_request);
+    // Determine content type: use msgpack by default if supported, unless format explicitly requests JSON
+    let use_msgpack = p_format.map(|f| f != "json").unwrap_or(true);
+
+    if use_msgpack {
+        // Serialize using msgpack
+        let msgpack_bytes = p_request.encode()
+            .map_err(|e| Error::from(serde_json::Error::custom(format!("Failed to serialize to msgpack: {}", e))))?;
+        req_builder = req_builder
+            .header("Content-Type", "application/msgpack")
+            .body(msgpack_bytes);
+    } else {
+        // Use JSON
+        req_builder = req_builder.json(&p_request);
+    }
 
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;
@@ -86,7 +99,11 @@ format: Option<&str>,
                 let content = resp.text().await?;
                 serde_json::from_str(&content).map_err(Error::from)
             },
-            ContentType::MsgPack => return Err(Error::from(serde_json::Error::custom("MsgPack response handling not supported for this endpoint"))),
+            ContentType::MsgPack => {
+                let content = resp.bytes().await?;
+                SimulateTransaction200Response::decode(&content)
+                    .map_err(|e| Error::from(serde_json::Error::custom(format!("Failed to decode msgpack response: {}", e))))
+            },
             ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `SimulateTransaction200Response`"))),
             ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `SimulateTransaction200Response`")))),
         }

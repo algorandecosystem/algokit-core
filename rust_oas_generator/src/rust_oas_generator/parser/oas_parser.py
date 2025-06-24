@@ -112,11 +112,22 @@ def detect_msgpack_field(prop_data: Dict[str, Any]) -> bool:
 
 
 def detect_msgpack_support_for_operation(operation_data: Dict[str, Any]) -> bool:
-    """Detect if an operation supports msgpack content type."""
+    """Detect if an operation supports msgpack content type or binary data transmission."""
     # Check request body content types
     request_body = operation_data.get("requestBody", {})
-    if "application/msgpack" in request_body.get("content", {}):
+    content = request_body.get("content", {})
+
+    # Explicit msgpack support
+    if "application/msgpack" in content:
         return True
+
+    # Binary endpoints (like raw transactions) should also use binary transmission
+    if "application/x-binary" in content:
+        binary_content = content["application/x-binary"]
+        schema = binary_content.get("schema", {})
+        # If it's binary format, treat it as msgpack-compatible for raw data transmission
+        if schema.get("format") == "binary":
+            return True
 
     # Check response content types
     responses = operation_data.get("responses", {})
@@ -346,15 +357,164 @@ class OASParser:
         self, schemas: Dict[str, Schema], has_msgpack_operations: bool
     ):
         """Update schemas to implement AlgorandMsgpack trait when appropriate."""
+        # Collect request body types from msgpack operations
+        msgpack_request_types = set()
+        msgpack_response_types = set()
+        if has_msgpack_operations:
+            for operation in self.spec_data.get("paths", {}).values():
+                for method_data in operation.values():
+                    if (
+                        isinstance(method_data, dict)
+                        and method_data.get("operationId") in self.msgpack_operations
+                    ):
+                        # Collect request body types
+                        request_body = method_data.get("requestBody", {})
+                        if "application/msgpack" in request_body.get("content", {}):
+                            content = request_body["content"]["application/msgpack"]
+                            schema = content.get("schema", {})
+                            if "$ref" in schema:
+                                ref_name = schema["$ref"].split("/")[-1]
+                                msgpack_request_types.add(ref_name)
+
+                        # Collect response types
+                        responses = method_data.get("responses", {})
+                        for status_code, response_data in responses.items():
+                            if status_code.startswith("2"):  # Success responses
+                                content = response_data.get("content", {})
+                                if "application/msgpack" in content:
+                                    msgpack_content = content["application/msgpack"]
+                                    schema = msgpack_content.get("schema", {})
+                                    if "$ref" in schema:
+                                        ref_name = schema["$ref"].split("/")[-1]
+                                        msgpack_response_types.add(ref_name)
+
+        # Get all root msgpack types (direct references)
+        all_msgpack_types = msgpack_request_types | msgpack_response_types
+
+        # Recursively find all nested dependencies
+        def find_nested_dependencies(type_name: str, visited: set = None) -> set:
+            if visited is None:
+                visited = set()
+
+            if type_name in visited:
+                return set()
+
+            visited.add(type_name)
+            dependencies = {type_name}
+
+            # Get the raw schema for this type
+            raw_schema = self.schemas.get(type_name, {})
+
+            # Look for $ref in properties
+            properties = raw_schema.get("properties", {})
+            for prop_data in properties.values():
+                deps = self._extract_schema_references(prop_data, visited.copy())
+                dependencies.update(deps)
+
+            # Look for $ref in oneOf, anyOf, allOf
+            for key in ["oneOf", "anyOf", "allOf"]:
+                if key in raw_schema:
+                    for item in raw_schema[key]:
+                        deps = self._extract_schema_references(item, visited.copy())
+                        dependencies.update(deps)
+
+            return dependencies
+
+        # Collect all dependencies recursively
+        all_required_msgpack_types = set()
+        for root_type in all_msgpack_types:
+            dependencies = find_nested_dependencies(root_type)
+            all_required_msgpack_types.update(dependencies)
+
         for schema_name, schema in schemas.items():
             raw_schema = self.schemas.get(schema_name, {})
 
             # Check if this schema should implement AlgorandMsgpack
+            is_response_model = schema_name.endswith("Response")
+            is_request_model = schema_name in msgpack_request_types
+            is_msgpack_response_model = schema_name in msgpack_response_types
+            is_nested_dependency = schema_name in all_required_msgpack_types
+
             should_implement = should_implement_algokit_msgpack(
-                raw_schema, has_msgpack_operations and schema_name.endswith("Response")
+                raw_schema,
+                has_msgpack_operations
+                and (
+                    is_response_model
+                    or is_request_model
+                    or is_msgpack_response_model
+                    or is_nested_dependency
+                ),
             )
 
             schema.implements_algokit_msgpack = should_implement
+
+    def _extract_schema_references(
+        self, schema_item: Dict[str, Any], visited: set = None
+    ) -> set:
+        """Extract all schema references from a schema item (property, oneOf item, etc.)"""
+        if visited is None:
+            visited = set()
+
+        references = set()
+
+        # Direct $ref
+        if "$ref" in schema_item:
+            ref_name = schema_item["$ref"].split("/")[-1]
+            if ref_name not in visited:
+                references.add(ref_name)
+                # Recursively find dependencies of this reference
+                nested_deps = self._find_nested_dependencies_helper(
+                    ref_name, visited.copy()
+                )
+                references.update(nested_deps)
+
+        # Array items
+        if schema_item.get("type") == "array" and "items" in schema_item:
+            item_refs = self._extract_schema_references(
+                schema_item["items"], visited.copy()
+            )
+            references.update(item_refs)
+
+        # Object properties
+        if "properties" in schema_item:
+            for prop_data in schema_item["properties"].values():
+                prop_refs = self._extract_schema_references(prop_data, visited.copy())
+                references.update(prop_refs)
+
+        # oneOf, anyOf, allOf
+        for key in ["oneOf", "anyOf", "allOf"]:
+            if key in schema_item:
+                for item in schema_item[key]:
+                    item_refs = self._extract_schema_references(item, visited.copy())
+                    references.update(item_refs)
+
+        return references
+
+    def _find_nested_dependencies_helper(self, type_name: str, visited: set) -> set:
+        """Helper method to find nested dependencies"""
+        if type_name in visited:
+            return set()
+
+        visited.add(type_name)
+        dependencies = set()
+
+        # Get the raw schema for this type
+        raw_schema = self.schemas.get(type_name, {})
+
+        # Look for $ref in properties
+        properties = raw_schema.get("properties", {})
+        for prop_data in properties.values():
+            deps = self._extract_schema_references(prop_data, visited.copy())
+            dependencies.update(deps)
+
+        # Look for $ref in oneOf, anyOf, allOf
+        for key in ["oneOf", "anyOf", "allOf"]:
+            if key in raw_schema:
+                for item in raw_schema[key]:
+                    deps = self._extract_schema_references(item, visited.copy())
+                    dependencies.update(deps)
+
+        return dependencies
 
     def _parse_operations(self) -> List[Operation]:
         """Parse all operations from paths."""
@@ -400,11 +560,22 @@ class OASParser:
         # Check if operation supports msgpack
         supports_msgpack = detect_msgpack_support_for_operation(operation_data)
 
-        # Check if request body supports msgpack
+        # Check if request body supports msgpack or binary transmission
         request_body_supports_msgpack = False
         request_body = operation_data.get("requestBody", {})
-        if "application/msgpack" in request_body.get("content", {}):
+        content = request_body.get("content", {})
+
+        # Explicit msgpack support
+        if "application/msgpack" in content:
             request_body_supports_msgpack = True
+
+        # Binary endpoints (like raw transactions) should also use binary transmission
+        elif "application/x-binary" in content:
+            binary_content = content["application/x-binary"]
+            schema = binary_content.get("schema", {})
+            # If it's binary format, treat it as msgpack-compatible for raw data transmission
+            if schema.get("format") == "binary":
+                request_body_supports_msgpack = True
 
         # Parse parameters
         parameters = []

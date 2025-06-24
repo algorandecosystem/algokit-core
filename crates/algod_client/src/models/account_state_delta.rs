@@ -10,6 +10,7 @@
 
 use crate::models;
 use serde::{Deserialize, Serialize};
+use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
 
 
 
@@ -27,6 +28,9 @@ pub struct AccountStateDelta {
 
 
 
+impl AlgorandMsgpack for AccountStateDelta {
+    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+}
 
 impl AccountStateDelta {
     /// Constructor for AccountStateDelta
@@ -37,4 +41,13 @@ impl AccountStateDelta {
         }
     }
 
+    /// Encode this struct to msgpack bytes using AlgorandMsgpack trait
+    pub fn to_msgpack(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        Ok(self.encode()?)
+    }
+
+    /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
+    pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(Self::decode(bytes)?)
+    }
 }

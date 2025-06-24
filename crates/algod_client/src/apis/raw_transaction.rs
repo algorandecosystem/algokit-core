@@ -12,6 +12,7 @@ use reqwest;
 use serde::{Deserialize, Serialize, de::Error as _};
 use crate::{apis::ResponseContent, models};
 use super::{Error, configuration, ContentType};
+use algokit_transact::AlgorandMsgpack;
 
 // Import all custom types used by this endpoint
 use crate::models::{
@@ -60,7 +61,18 @@ request: Vec<u8>,
         req_builder = req_builder.header("X-Algo-API-Token", value);
     };
 
-    req_builder = req_builder.json(&p_request);
+    // Determine content type: use msgpack by default if supported, unless format explicitly requests JSON
+    let use_msgpack = true;
+
+    if use_msgpack {
+        // For binary data, use directly - detect if it's a binary endpoint or msgpack endpoint
+        req_builder = req_builder
+            .header("Content-Type", "application/x-binary")
+            .body(p_request);
+    } else {
+        // Use JSON
+        req_builder = req_builder.json(&p_request);
+    }
 
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;
@@ -79,7 +91,9 @@ request: Vec<u8>,
                 let content = resp.text().await?;
                 serde_json::from_str(&content).map_err(Error::from)
             },
-            ContentType::MsgPack => return Err(Error::from(serde_json::Error::custom("MsgPack response handling not supported for this endpoint"))),
+            ContentType::MsgPack => {
+                return Err(Error::from(serde_json::Error::custom("MsgPack response handling not supported for this endpoint")))
+            },
             ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `RawTransaction200Response`"))),
             ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `RawTransaction200Response`")))),
         }

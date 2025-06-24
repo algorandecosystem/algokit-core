@@ -125,20 +125,26 @@ pub async fn {{ operation.rust_function_name }}(
 
 {% if has_request_body(operation) %}
     {% set request_body_type = get_request_body_type(operation) %}
-    {% if operation.request_body_supports_msgpack and request_body_type not in ["SimulateRequest"] %}
-    // Determine content type: use msgpack if format parameter indicates it, otherwise use msgpack by default for supported types
-    let use_msgpack = {% for param in operation.parameters if param.name == "format" %}p_{{ param.rust_name }}.map(|f| f == "msgpack").unwrap_or(true){% else %}true{% endfor %};
+    {% if operation.request_body_supports_msgpack %}
+    // Determine content type: use msgpack by default if supported, unless format explicitly requests JSON
+    let use_msgpack = {% for param in operation.parameters if param.name == "format" %}p_{{ param.rust_name }}.map(|f| f != "json").unwrap_or(true){% else %}true{% endfor %};
 
     {% if is_request_body_required(operation) %}
     if use_msgpack {
         {% if request_body_type == "Vec<u8>" %}
-        // For binary data, use directly as msgpack
+        // For binary data, use directly - detect if it's a binary endpoint or msgpack endpoint
+        {% if "application/x-binary" in (operation.request_body.content if operation.request_body else {}) %}
+        req_builder = req_builder
+            .header("Content-Type", "application/x-binary")
+            .body(p_{{ get_request_body_name(operation) }});
+        {% else %}
         req_builder = req_builder
             .header("Content-Type", "application/msgpack")
             .body(p_{{ get_request_body_name(operation) }});
+        {% endif %}
         {% else %}
         // Serialize using msgpack
-        let msgpack_bytes = p_{{ get_request_body_name(operation) }}.to_msgpack()
+        let msgpack_bytes = p_{{ get_request_body_name(operation) }}.encode()
             .map_err(|e| Error::from(serde_json::Error::custom(format!("Failed to serialize to msgpack: {}", e))))?;
         req_builder = req_builder
             .header("Content-Type", "application/msgpack")
@@ -152,13 +158,19 @@ pub async fn {{ operation.rust_function_name }}(
     if let Some(ref request_body) = p_{{ get_request_body_name(operation) }} {
         if use_msgpack {
             {% if request_body_type == "Vec<u8>" %}
-            // For binary data, use directly as msgpack
+            // For binary data, use directly - detect if it's a binary endpoint or msgpack endpoint
+            {% if "application/x-binary" in (operation.request_body.content if operation.request_body else {}) %}
+            req_builder = req_builder
+                .header("Content-Type", "application/x-binary")
+                .body(request_body.clone());
+            {% else %}
             req_builder = req_builder
                 .header("Content-Type", "application/msgpack")
                 .body(request_body.clone());
+            {% endif %}
             {% else %}
             // Serialize using msgpack
-            let msgpack_bytes = request_body.to_msgpack()
+            let msgpack_bytes = request_body.encode()
                 .map_err(|e| Error::from(serde_json::Error::custom(format!("Failed to serialize to msgpack: {}", e))))?;
             req_builder = req_builder
                 .header("Content-Type", "application/msgpack")
@@ -197,13 +209,24 @@ pub async fn {{ operation.rust_function_name }}(
     if !status.is_client_error() && !status.is_server_error() {
         {% if get_success_response_type(operation) %}
         {% set success_response_type = get_success_response_type(operation) %}
-        {# Use JSON-only response handling for all endpoints #}
         match content_type {
             ContentType::Json => {
                 let content = resp.text().await?;
                 serde_json::from_str(&content).map_err(Error::from)
             },
-            ContentType::MsgPack => return Err(Error::from(serde_json::Error::custom("MsgPack response handling not supported for this endpoint"))),
+            ContentType::MsgPack => {
+                {% if operation.supports_msgpack %}
+                {% for response_code, response in operation.responses.items() if response_code.startswith('2') and response.supports_msgpack %}
+                let content = resp.bytes().await?;
+                {{ get_success_response_type(operation) }}::decode(&content)
+                    .map_err(|e| Error::from(serde_json::Error::custom(format!("Failed to decode msgpack response: {}", e))))
+                {% else %}
+                return Err(Error::from(serde_json::Error::custom("MsgPack response handling not supported for this endpoint")))
+                {% endfor %}
+                {% else %}
+                return Err(Error::from(serde_json::Error::custom("MsgPack response handling not supported for this endpoint")))
+                {% endif %}
+            },
             ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `{{ success_response_type }}`"))),
             ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `{{ success_response_type }}`")))),
         }
