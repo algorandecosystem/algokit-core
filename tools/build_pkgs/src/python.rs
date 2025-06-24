@@ -2,15 +2,6 @@ use crate::{Package, get_repo_root, run};
 use color_eyre::eyre::{Result, eyre};
 
 pub fn build(package: &Package) -> Result<()> {
-    let crate_name = package.crate_name();
-    let ext = if cfg!(target_os = "windows") {
-        "dll"
-    } else if cfg!(target_os = "macos") {
-        "dylib"
-    } else {
-        "so"
-    };
-
     run(
         &format!(
             r#"cargo --color always build --release --manifest-path "{}""#,
@@ -29,7 +20,7 @@ pub fn build(package: &Package) -> Result<()> {
     run(
         &format!(
             r#"cargo --color always run -p uniffi-bindgen generate --no-format --library "{}" --language python --out-dir "{}""#,
-            package.dylib().display(),
+            package.dylib(None).display(),
             module_dir.display()
         ),
         None,
@@ -37,8 +28,8 @@ pub fn build(package: &Package) -> Result<()> {
     )?;
 
     std::fs::copy(
-        package.dylib(),
-        module_dir.join(package.dylib().file_name().unwrap()),
+        package.dylib(None),
+        module_dir.join(package.dylib(None).file_name().unwrap()),
     )?;
 
     run("poetry install --only build", Some(&package_dir), None)?;
@@ -48,7 +39,7 @@ pub fn build(package: &Package) -> Result<()> {
     if cfg!(target_os = "linux") {
         let dist_files: Vec<_> = std::fs::read_dir(package_dir.join("dist"))?
             .filter_map(Result::ok)
-            .filter(|entry| entry.path().extension().map_or(false, |ext| ext == "whl"))
+            .filter(|entry| entry.path().extension().is_some_and(|ext| ext == "whl"))
             .collect();
 
         if dist_files.is_empty() {

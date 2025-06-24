@@ -1,3 +1,4 @@
+mod kotlin;
 mod python;
 mod swift;
 mod typescript;
@@ -19,6 +20,8 @@ enum Language {
     #[value(alias = "ts")]
     Typescript,
     Swift,
+    #[value(alias = "kt")]
+    Kotlin,
 }
 
 impl Display for Language {
@@ -27,6 +30,7 @@ impl Display for Language {
             Language::Python => f.write_str("python"),
             Language::Typescript => f.write_str("typescript"),
             Language::Swift => f.write_str("swift"),
+            Language::Kotlin => f.write_str("kotlin"),
         }
     }
 }
@@ -37,6 +41,7 @@ impl Language {
             Self::Python => python::build(pkg),
             Self::Typescript => typescript::build(pkg),
             Self::Swift => swift::build(pkg),
+            Self::Kotlin => kotlin::build(pkg),
         }
     }
 
@@ -75,23 +80,29 @@ impl Package {
         self.crate_dir().join("Cargo.toml")
     }
 
-    fn dylib(&self) -> PathBuf {
+    fn dylib(&self, target: Option<&str>) -> PathBuf {
         let mut prefix = "lib";
-        let ext = if cfg!(target_os = "windows") {
+        let ext = if target.map_or(cfg!(target_os = "windows"), |t| t.contains("windows")) {
             prefix = "";
             "dll"
-        } else if cfg!(target_os = "macos") {
+        } else if target.map_or(cfg!(target_os = "macos"), |t| t.contains("darwin")) {
             "dylib"
         } else {
             "so"
         };
 
-        get_repo_root().join("target").join("release").join(format!(
-            "{}{}.{}",
-            prefix,
-            self.crate_name(),
-            ext
-        ))
+        let mut lib_path = get_repo_root().join("target");
+
+        if let Some(target) = target {
+            lib_path = lib_path.join(target);
+        }
+
+        lib_path =
+            lib_path
+                .join("release")
+                .join(format!("{}{}.{}", prefix, self.crate_name(), ext));
+
+        lib_path
     }
 }
 

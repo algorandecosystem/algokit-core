@@ -17,18 +17,19 @@ package uniffi.algokit_transact_ffi
 // compile the Rust component. The easiest way to ensure this is to bundle the Kotlin
 // helpers directly inline like we're doing here.
 
-import com.sun.jna.Callback
 import com.sun.jna.Library
+import com.sun.jna.IntegerType
 import com.sun.jna.Native
 import com.sun.jna.Pointer
 import com.sun.jna.Structure
+import com.sun.jna.Callback
 import com.sun.jna.ptr.*
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.CharBuffer
 import java.nio.charset.CodingErrorAction
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.ConcurrentHashMap
 
 // This is a helper for safely working with byte buffers returned from the Rust code.
 // A rust-owned buffer is represented by its capacity, its current length, and a
@@ -42,41 +43,29 @@ open class RustBuffer : Structure() {
     // Note: `capacity` and `len` are actually `ULong` values, but JVM only supports signed values.
     // When dealing with these fields, make sure to call `toULong()`.
     @JvmField var capacity: Long = 0
-
     @JvmField var len: Long = 0
-
     @JvmField var data: Pointer? = null
 
-    class ByValue :
-        RustBuffer(),
-        Structure.ByValue
+    class ByValue: RustBuffer(), Structure.ByValue
+    class ByReference: RustBuffer(), Structure.ByReference
 
-    class ByReference :
-        RustBuffer(),
-        Structure.ByReference
-
-    internal fun setValue(other: RustBuffer) {
+   internal fun setValue(other: RustBuffer) {
         capacity = other.capacity
         len = other.len
         data = other.data
     }
 
     companion object {
-        internal fun alloc(size: ULong = 0UL) =
-            uniffiRustCall { status ->
-                // Note: need to convert the size to a `Long` value to make this work with JVM.
-                UniffiLib.INSTANCE.ffi_algokit_transact_ffi_rustbuffer_alloc(size.toLong(), status)
-            }.also {
-                if (it.data == null) {
-                    throw RuntimeException("RustBuffer.alloc() returned null data pointer (size=$size)")
-                }
-            }
+        internal fun alloc(size: ULong = 0UL) = uniffiRustCall() { status ->
+            // Note: need to convert the size to a `Long` value to make this work with JVM.
+            UniffiLib.INSTANCE.ffi_algokit_transact_ffi_rustbuffer_alloc(size.toLong(), status)
+        }.also {
+            if(it.data == null) {
+               throw RuntimeException("RustBuffer.alloc() returned null data pointer (size=${size})")
+           }
+        }
 
-        internal fun create(
-            capacity: ULong,
-            len: ULong,
-            data: Pointer?,
-        ): RustBuffer.ByValue {
+        internal fun create(capacity: ULong, len: ULong, data: Pointer?): RustBuffer.ByValue {
             var buf = RustBuffer.ByValue()
             buf.capacity = capacity.toLong()
             buf.len = len.toLong()
@@ -84,10 +73,9 @@ open class RustBuffer : Structure() {
             return buf
         }
 
-        internal fun free(buf: RustBuffer.ByValue) =
-            uniffiRustCall { status ->
-                UniffiLib.INSTANCE.ffi_algokit_transact_ffi_rustbuffer_free(buf, status)
-            }
+        internal fun free(buf: RustBuffer.ByValue) = uniffiRustCall() { status ->
+            UniffiLib.INSTANCE.ffi_algokit_transact_ffi_rustbuffer_free(buf, status)
+        }
     }
 
     @Suppress("TooGenericExceptionThrown")
@@ -140,14 +128,10 @@ class RustBufferByReference : ByReference(16) {
 @Structure.FieldOrder("len", "data")
 internal open class ForeignBytes : Structure() {
     @JvmField var len: Int = 0
-
     @JvmField var data: Pointer? = null
 
-    class ByValue :
-        ForeignBytes(),
-        Structure.ByValue
+    class ByValue : ForeignBytes(), Structure.ByValue
 }
-
 /**
  * The FfiConverter interface handles converter types to and from the FFI
  *
@@ -177,10 +161,7 @@ public interface FfiConverter<KotlinType, FfiType> {
     fun allocationSize(value: KotlinType): ULong
 
     // Write a Kotlin type to a `ByteBuffer`
-    fun write(
-        value: KotlinType,
-        buf: ByteBuffer,
-    )
+    fun write(value: KotlinType, buf: ByteBuffer)
 
     // Lower a value into a `RustBuffer`
     //
@@ -191,10 +172,9 @@ public interface FfiConverter<KotlinType, FfiType> {
     fun lowerIntoRustBuffer(value: KotlinType): RustBuffer.ByValue {
         val rbuf = RustBuffer.alloc(allocationSize(value))
         try {
-            val bbuf =
-                rbuf.data!!.getByteBuffer(0, rbuf.capacity).also {
-                    it.order(ByteOrder.BIG_ENDIAN)
-                }
+            val bbuf = rbuf.data!!.getByteBuffer(0, rbuf.capacity).also {
+                it.order(ByteOrder.BIG_ENDIAN)
+            }
             write(value, bbuf)
             rbuf.writeField("len", bbuf.position().toLong())
             return rbuf
@@ -211,11 +191,11 @@ public interface FfiConverter<KotlinType, FfiType> {
     fun liftFromRustBuffer(rbuf: RustBuffer.ByValue): KotlinType {
         val byteBuf = rbuf.asByteBuffer()!!
         try {
-            val item = read(byteBuf)
-            if (byteBuf.hasRemaining()) {
-                throw RuntimeException("junk remaining in buffer after lifting, something is very wrong!!")
-            }
-            return item
+           val item = read(byteBuf)
+           if (byteBuf.hasRemaining()) {
+               throw RuntimeException("junk remaining in buffer after lifting, something is very wrong!!")
+           }
+           return item
         } finally {
             RustBuffer.free(rbuf)
         }
@@ -227,9 +207,8 @@ public interface FfiConverter<KotlinType, FfiType> {
  *
  * @suppress
  */
-public interface FfiConverterRustBuffer<KotlinType> : FfiConverter<KotlinType, RustBuffer.ByValue> {
+public interface FfiConverterRustBuffer<KotlinType>: FfiConverter<KotlinType, RustBuffer.ByValue> {
     override fun lift(value: RustBuffer.ByValue) = liftFromRustBuffer(value)
-
     override fun lower(value: KotlinType) = lowerIntoRustBuffer(value)
 }
 // A handful of classes and functions to support the generated data structures.
@@ -242,24 +221,24 @@ internal const val UNIFFI_CALL_UNEXPECTED_ERROR = 2.toByte()
 @Structure.FieldOrder("code", "error_buf")
 internal open class UniffiRustCallStatus : Structure() {
     @JvmField var code: Byte = 0
-
     @JvmField var error_buf: RustBuffer.ByValue = RustBuffer.ByValue()
 
-    class ByValue :
-        UniffiRustCallStatus(),
-        Structure.ByValue
+    class ByValue: UniffiRustCallStatus(), Structure.ByValue
 
-    fun isSuccess(): Boolean = code == UNIFFI_CALL_SUCCESS
+    fun isSuccess(): Boolean {
+        return code == UNIFFI_CALL_SUCCESS
+    }
 
-    fun isError(): Boolean = code == UNIFFI_CALL_ERROR
+    fun isError(): Boolean {
+        return code == UNIFFI_CALL_ERROR
+    }
 
-    fun isPanic(): Boolean = code == UNIFFI_CALL_UNEXPECTED_ERROR
+    fun isPanic(): Boolean {
+        return code == UNIFFI_CALL_UNEXPECTED_ERROR
+    }
 
     companion object {
-        fun create(
-            code: Byte,
-            errorBuf: RustBuffer.ByValue,
-        ): UniffiRustCallStatus.ByValue {
+        fun create(code: Byte, errorBuf: RustBuffer.ByValue): UniffiRustCallStatus.ByValue {
             val callStatus = UniffiRustCallStatus.ByValue()
             callStatus.code = code
             callStatus.error_buf = errorBuf
@@ -268,9 +247,7 @@ internal open class UniffiRustCallStatus : Structure() {
     }
 }
 
-class InternalException(
-    message: String,
-) : kotlin.Exception(message)
+class InternalException(message: String) : kotlin.Exception(message)
 
 /**
  * Each top-level error class has a companion object that can lift the error from the call status's rust buffer
@@ -278,7 +255,7 @@ class InternalException(
  * @suppress
  */
 interface UniffiRustCallStatusErrorHandler<E> {
-    fun lift(error_buf: RustBuffer.ByValue): E
+    fun lift(error_buf: RustBuffer.ByValue): E;
 }
 
 // Helpers for calling Rust
@@ -286,10 +263,7 @@ interface UniffiRustCallStatusErrorHandler<E> {
 // synchronize itself
 
 // Call a rust function that returns a Result<>.  Pass in the Error class companion that corresponds to the Err
-private inline fun <U, E : kotlin.Exception> uniffiRustCallWithError(
-    errorHandler: UniffiRustCallStatusErrorHandler<E>,
-    callback: (UniffiRustCallStatus) -> U,
-): U {
+private inline fun <U, E: kotlin.Exception> uniffiRustCallWithError(errorHandler: UniffiRustCallStatusErrorHandler<E>, callback: (UniffiRustCallStatus) -> U): U {
     var status = UniffiRustCallStatus()
     val return_value = callback(status)
     uniffiCheckCallStatus(errorHandler, status)
@@ -297,10 +271,7 @@ private inline fun <U, E : kotlin.Exception> uniffiRustCallWithError(
 }
 
 // Check UniffiRustCallStatus and throw an error if the call wasn't successful
-private fun <E : kotlin.Exception> uniffiCheckCallStatus(
-    errorHandler: UniffiRustCallStatusErrorHandler<E>,
-    status: UniffiRustCallStatus,
-) {
+private fun<E: kotlin.Exception> uniffiCheckCallStatus(errorHandler: UniffiRustCallStatusErrorHandler<E>, status: UniffiRustCallStatus) {
     if (status.isSuccess()) {
         return
     } else if (status.isError()) {
@@ -324,7 +295,7 @@ private fun <E : kotlin.Exception> uniffiCheckCallStatus(
  *
  * @suppress
  */
-object UniffiNullRustCallStatusErrorHandler : UniffiRustCallStatusErrorHandler<InternalException> {
+object UniffiNullRustCallStatusErrorHandler: UniffiRustCallStatusErrorHandler<InternalException> {
     override fun lift(error_buf: RustBuffer.ByValue): InternalException {
         RustBuffer.free(error_buf)
         return InternalException("Unexpected CALL_ERROR")
@@ -332,31 +303,32 @@ object UniffiNullRustCallStatusErrorHandler : UniffiRustCallStatusErrorHandler<I
 }
 
 // Call a rust function that returns a plain value
-private inline fun <U> uniffiRustCall(callback: (UniffiRustCallStatus) -> U): U =
-    uniffiRustCallWithError(UniffiNullRustCallStatusErrorHandler, callback)
+private inline fun <U> uniffiRustCall(callback: (UniffiRustCallStatus) -> U): U {
+    return uniffiRustCallWithError(UniffiNullRustCallStatusErrorHandler, callback)
+}
 
-internal inline fun <T> uniffiTraitInterfaceCall(
+internal inline fun<T> uniffiTraitInterfaceCall(
     callStatus: UniffiRustCallStatus,
     makeCall: () -> T,
     writeReturn: (T) -> Unit,
 ) {
     try {
         writeReturn(makeCall())
-    } catch (e: kotlin.Exception) {
+    } catch(e: kotlin.Exception) {
         callStatus.code = UNIFFI_CALL_UNEXPECTED_ERROR
         callStatus.error_buf = FfiConverterString.lower(e.toString())
     }
 }
 
-internal inline fun <T, reified E : Throwable> uniffiTraitInterfaceCallWithError(
+internal inline fun<T, reified E: Throwable> uniffiTraitInterfaceCallWithError(
     callStatus: UniffiRustCallStatus,
     makeCall: () -> T,
     writeReturn: (T) -> Unit,
-    lowerError: (E) -> RustBuffer.ByValue,
+    lowerError: (E) -> RustBuffer.ByValue
 ) {
     try {
         writeReturn(makeCall())
-    } catch (e: kotlin.Exception) {
+    } catch(e: kotlin.Exception) {
         if (e is E) {
             callStatus.code = UNIFFI_CALL_ERROR
             callStatus.error_buf = lowerError(e)
@@ -366,15 +338,12 @@ internal inline fun <T, reified E : Throwable> uniffiTraitInterfaceCallWithError
         }
     }
 }
-
 // Map handles to objects
 //
 // This is used pass an opaque 64-bit handle representing a foreign object to the Rust code.
-internal class UniffiHandleMap<T : Any> {
+internal class UniffiHandleMap<T: Any> {
     private val map = ConcurrentHashMap<Long, T>()
-    private val counter =
-        java.util.concurrent.atomic
-            .AtomicLong(0)
+    private val counter = java.util.concurrent.atomic.AtomicLong(0)
 
     val size: Int
         get() = map.size
@@ -387,10 +356,14 @@ internal class UniffiHandleMap<T : Any> {
     }
 
     // Get an object from the handle map
-    fun get(handle: Long): T = map.get(handle) ?: throw InternalException("UniffiHandleMap.get: Invalid handle")
+    fun get(handle: Long): T {
+        return map.get(handle) ?: throw InternalException("UniffiHandleMap.get: Invalid handle")
+    }
 
     // Remove an entry from the handlemap and get the Kotlin object back
-    fun remove(handle: Long): T = map.remove(handle) ?: throw InternalException("UniffiHandleMap: Invalid handle")
+    fun remove(handle: Long): T {
+        return map.remove(handle) ?: throw InternalException("UniffiHandleMap: Invalid handle")
+    }
 }
 
 // Contains loading, initialization code,
@@ -404,25 +377,22 @@ private fun findLibraryName(componentName: String): String {
     return "algokit_transact_ffi"
 }
 
-private inline fun <reified Lib : Library> loadIndirect(componentName: String): Lib =
-    Native.load<Lib>(findLibraryName(componentName), Lib::class.java)
+private inline fun <reified Lib : Library> loadIndirect(
+    componentName: String
+): Lib {
+    return Native.load<Lib>(findLibraryName(componentName), Lib::class.java)
+}
 
 // Define FFI callback types
 internal interface UniffiRustFutureContinuationCallback : com.sun.jna.Callback {
-    fun callback(
-        `data`: Long,
-        `pollResult`: Byte,
-    )
+    fun callback(`data`: Long,`pollResult`: Byte,)
 }
-
 internal interface UniffiForeignFutureFree : com.sun.jna.Callback {
-    fun callback(`handle`: Long)
+    fun callback(`handle`: Long,)
 }
-
 internal interface UniffiCallbackInterfaceFree : com.sun.jna.Callback {
-    fun callback(`handle`: Long)
+    fun callback(`handle`: Long,)
 }
-
 @Structure.FieldOrder("handle", "free")
 internal open class UniffiForeignFuture(
     @JvmField internal var `handle`: Long = 0.toLong(),
@@ -431,15 +401,14 @@ internal open class UniffiForeignFuture(
     class UniffiByValue(
         `handle`: Long = 0.toLong(),
         `free`: UniffiForeignFutureFree? = null,
-    ) : UniffiForeignFuture(`handle`, `free`),
-        Structure.ByValue
+    ): UniffiForeignFuture(`handle`,`free`,), Structure.ByValue
 
-    internal fun uniffiSetValue(other: UniffiForeignFuture) {
+   internal fun uniffiSetValue(other: UniffiForeignFuture) {
         `handle` = other.`handle`
         `free` = other.`free`
     }
-}
 
+}
 @Structure.FieldOrder("returnValue", "callStatus")
 internal open class UniffiForeignFutureStructU8(
     @JvmField internal var `returnValue`: Byte = 0.toByte(),
@@ -448,22 +417,17 @@ internal open class UniffiForeignFutureStructU8(
     class UniffiByValue(
         `returnValue`: Byte = 0.toByte(),
         `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
-    ) : UniffiForeignFutureStructU8(`returnValue`, `callStatus`),
-        Structure.ByValue
+    ): UniffiForeignFutureStructU8(`returnValue`,`callStatus`,), Structure.ByValue
 
-    internal fun uniffiSetValue(other: UniffiForeignFutureStructU8) {
+   internal fun uniffiSetValue(other: UniffiForeignFutureStructU8) {
         `returnValue` = other.`returnValue`
         `callStatus` = other.`callStatus`
     }
-}
 
+}
 internal interface UniffiForeignFutureCompleteU8 : com.sun.jna.Callback {
-    fun callback(
-        `callbackData`: Long,
-        `result`: UniffiForeignFutureStructU8.UniffiByValue,
-    )
+    fun callback(`callbackData`: Long,`result`: UniffiForeignFutureStructU8.UniffiByValue,)
 }
-
 @Structure.FieldOrder("returnValue", "callStatus")
 internal open class UniffiForeignFutureStructI8(
     @JvmField internal var `returnValue`: Byte = 0.toByte(),
@@ -472,22 +436,17 @@ internal open class UniffiForeignFutureStructI8(
     class UniffiByValue(
         `returnValue`: Byte = 0.toByte(),
         `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
-    ) : UniffiForeignFutureStructI8(`returnValue`, `callStatus`),
-        Structure.ByValue
+    ): UniffiForeignFutureStructI8(`returnValue`,`callStatus`,), Structure.ByValue
 
-    internal fun uniffiSetValue(other: UniffiForeignFutureStructI8) {
+   internal fun uniffiSetValue(other: UniffiForeignFutureStructI8) {
         `returnValue` = other.`returnValue`
         `callStatus` = other.`callStatus`
     }
-}
 
+}
 internal interface UniffiForeignFutureCompleteI8 : com.sun.jna.Callback {
-    fun callback(
-        `callbackData`: Long,
-        `result`: UniffiForeignFutureStructI8.UniffiByValue,
-    )
+    fun callback(`callbackData`: Long,`result`: UniffiForeignFutureStructI8.UniffiByValue,)
 }
-
 @Structure.FieldOrder("returnValue", "callStatus")
 internal open class UniffiForeignFutureStructU16(
     @JvmField internal var `returnValue`: Short = 0.toShort(),
@@ -496,22 +455,17 @@ internal open class UniffiForeignFutureStructU16(
     class UniffiByValue(
         `returnValue`: Short = 0.toShort(),
         `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
-    ) : UniffiForeignFutureStructU16(`returnValue`, `callStatus`),
-        Structure.ByValue
+    ): UniffiForeignFutureStructU16(`returnValue`,`callStatus`,), Structure.ByValue
 
-    internal fun uniffiSetValue(other: UniffiForeignFutureStructU16) {
+   internal fun uniffiSetValue(other: UniffiForeignFutureStructU16) {
         `returnValue` = other.`returnValue`
         `callStatus` = other.`callStatus`
     }
-}
 
+}
 internal interface UniffiForeignFutureCompleteU16 : com.sun.jna.Callback {
-    fun callback(
-        `callbackData`: Long,
-        `result`: UniffiForeignFutureStructU16.UniffiByValue,
-    )
+    fun callback(`callbackData`: Long,`result`: UniffiForeignFutureStructU16.UniffiByValue,)
 }
-
 @Structure.FieldOrder("returnValue", "callStatus")
 internal open class UniffiForeignFutureStructI16(
     @JvmField internal var `returnValue`: Short = 0.toShort(),
@@ -520,22 +474,17 @@ internal open class UniffiForeignFutureStructI16(
     class UniffiByValue(
         `returnValue`: Short = 0.toShort(),
         `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
-    ) : UniffiForeignFutureStructI16(`returnValue`, `callStatus`),
-        Structure.ByValue
+    ): UniffiForeignFutureStructI16(`returnValue`,`callStatus`,), Structure.ByValue
 
-    internal fun uniffiSetValue(other: UniffiForeignFutureStructI16) {
+   internal fun uniffiSetValue(other: UniffiForeignFutureStructI16) {
         `returnValue` = other.`returnValue`
         `callStatus` = other.`callStatus`
     }
-}
 
+}
 internal interface UniffiForeignFutureCompleteI16 : com.sun.jna.Callback {
-    fun callback(
-        `callbackData`: Long,
-        `result`: UniffiForeignFutureStructI16.UniffiByValue,
-    )
+    fun callback(`callbackData`: Long,`result`: UniffiForeignFutureStructI16.UniffiByValue,)
 }
-
 @Structure.FieldOrder("returnValue", "callStatus")
 internal open class UniffiForeignFutureStructU32(
     @JvmField internal var `returnValue`: Int = 0,
@@ -544,22 +493,17 @@ internal open class UniffiForeignFutureStructU32(
     class UniffiByValue(
         `returnValue`: Int = 0,
         `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
-    ) : UniffiForeignFutureStructU32(`returnValue`, `callStatus`),
-        Structure.ByValue
+    ): UniffiForeignFutureStructU32(`returnValue`,`callStatus`,), Structure.ByValue
 
-    internal fun uniffiSetValue(other: UniffiForeignFutureStructU32) {
+   internal fun uniffiSetValue(other: UniffiForeignFutureStructU32) {
         `returnValue` = other.`returnValue`
         `callStatus` = other.`callStatus`
     }
-}
 
+}
 internal interface UniffiForeignFutureCompleteU32 : com.sun.jna.Callback {
-    fun callback(
-        `callbackData`: Long,
-        `result`: UniffiForeignFutureStructU32.UniffiByValue,
-    )
+    fun callback(`callbackData`: Long,`result`: UniffiForeignFutureStructU32.UniffiByValue,)
 }
-
 @Structure.FieldOrder("returnValue", "callStatus")
 internal open class UniffiForeignFutureStructI32(
     @JvmField internal var `returnValue`: Int = 0,
@@ -568,22 +512,17 @@ internal open class UniffiForeignFutureStructI32(
     class UniffiByValue(
         `returnValue`: Int = 0,
         `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
-    ) : UniffiForeignFutureStructI32(`returnValue`, `callStatus`),
-        Structure.ByValue
+    ): UniffiForeignFutureStructI32(`returnValue`,`callStatus`,), Structure.ByValue
 
-    internal fun uniffiSetValue(other: UniffiForeignFutureStructI32) {
+   internal fun uniffiSetValue(other: UniffiForeignFutureStructI32) {
         `returnValue` = other.`returnValue`
         `callStatus` = other.`callStatus`
     }
-}
 
+}
 internal interface UniffiForeignFutureCompleteI32 : com.sun.jna.Callback {
-    fun callback(
-        `callbackData`: Long,
-        `result`: UniffiForeignFutureStructI32.UniffiByValue,
-    )
+    fun callback(`callbackData`: Long,`result`: UniffiForeignFutureStructI32.UniffiByValue,)
 }
-
 @Structure.FieldOrder("returnValue", "callStatus")
 internal open class UniffiForeignFutureStructU64(
     @JvmField internal var `returnValue`: Long = 0.toLong(),
@@ -592,22 +531,17 @@ internal open class UniffiForeignFutureStructU64(
     class UniffiByValue(
         `returnValue`: Long = 0.toLong(),
         `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
-    ) : UniffiForeignFutureStructU64(`returnValue`, `callStatus`),
-        Structure.ByValue
+    ): UniffiForeignFutureStructU64(`returnValue`,`callStatus`,), Structure.ByValue
 
-    internal fun uniffiSetValue(other: UniffiForeignFutureStructU64) {
+   internal fun uniffiSetValue(other: UniffiForeignFutureStructU64) {
         `returnValue` = other.`returnValue`
         `callStatus` = other.`callStatus`
     }
-}
 
+}
 internal interface UniffiForeignFutureCompleteU64 : com.sun.jna.Callback {
-    fun callback(
-        `callbackData`: Long,
-        `result`: UniffiForeignFutureStructU64.UniffiByValue,
-    )
+    fun callback(`callbackData`: Long,`result`: UniffiForeignFutureStructU64.UniffiByValue,)
 }
-
 @Structure.FieldOrder("returnValue", "callStatus")
 internal open class UniffiForeignFutureStructI64(
     @JvmField internal var `returnValue`: Long = 0.toLong(),
@@ -616,22 +550,17 @@ internal open class UniffiForeignFutureStructI64(
     class UniffiByValue(
         `returnValue`: Long = 0.toLong(),
         `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
-    ) : UniffiForeignFutureStructI64(`returnValue`, `callStatus`),
-        Structure.ByValue
+    ): UniffiForeignFutureStructI64(`returnValue`,`callStatus`,), Structure.ByValue
 
-    internal fun uniffiSetValue(other: UniffiForeignFutureStructI64) {
+   internal fun uniffiSetValue(other: UniffiForeignFutureStructI64) {
         `returnValue` = other.`returnValue`
         `callStatus` = other.`callStatus`
     }
-}
 
+}
 internal interface UniffiForeignFutureCompleteI64 : com.sun.jna.Callback {
-    fun callback(
-        `callbackData`: Long,
-        `result`: UniffiForeignFutureStructI64.UniffiByValue,
-    )
+    fun callback(`callbackData`: Long,`result`: UniffiForeignFutureStructI64.UniffiByValue,)
 }
-
 @Structure.FieldOrder("returnValue", "callStatus")
 internal open class UniffiForeignFutureStructF32(
     @JvmField internal var `returnValue`: Float = 0.0f,
@@ -640,22 +569,17 @@ internal open class UniffiForeignFutureStructF32(
     class UniffiByValue(
         `returnValue`: Float = 0.0f,
         `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
-    ) : UniffiForeignFutureStructF32(`returnValue`, `callStatus`),
-        Structure.ByValue
+    ): UniffiForeignFutureStructF32(`returnValue`,`callStatus`,), Structure.ByValue
 
-    internal fun uniffiSetValue(other: UniffiForeignFutureStructF32) {
+   internal fun uniffiSetValue(other: UniffiForeignFutureStructF32) {
         `returnValue` = other.`returnValue`
         `callStatus` = other.`callStatus`
     }
-}
 
+}
 internal interface UniffiForeignFutureCompleteF32 : com.sun.jna.Callback {
-    fun callback(
-        `callbackData`: Long,
-        `result`: UniffiForeignFutureStructF32.UniffiByValue,
-    )
+    fun callback(`callbackData`: Long,`result`: UniffiForeignFutureStructF32.UniffiByValue,)
 }
-
 @Structure.FieldOrder("returnValue", "callStatus")
 internal open class UniffiForeignFutureStructF64(
     @JvmField internal var `returnValue`: Double = 0.0,
@@ -664,22 +588,17 @@ internal open class UniffiForeignFutureStructF64(
     class UniffiByValue(
         `returnValue`: Double = 0.0,
         `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
-    ) : UniffiForeignFutureStructF64(`returnValue`, `callStatus`),
-        Structure.ByValue
+    ): UniffiForeignFutureStructF64(`returnValue`,`callStatus`,), Structure.ByValue
 
-    internal fun uniffiSetValue(other: UniffiForeignFutureStructF64) {
+   internal fun uniffiSetValue(other: UniffiForeignFutureStructF64) {
         `returnValue` = other.`returnValue`
         `callStatus` = other.`callStatus`
     }
-}
 
+}
 internal interface UniffiForeignFutureCompleteF64 : com.sun.jna.Callback {
-    fun callback(
-        `callbackData`: Long,
-        `result`: UniffiForeignFutureStructF64.UniffiByValue,
-    )
+    fun callback(`callbackData`: Long,`result`: UniffiForeignFutureStructF64.UniffiByValue,)
 }
-
 @Structure.FieldOrder("returnValue", "callStatus")
 internal open class UniffiForeignFutureStructPointer(
     @JvmField internal var `returnValue`: Pointer = Pointer.NULL,
@@ -688,22 +607,17 @@ internal open class UniffiForeignFutureStructPointer(
     class UniffiByValue(
         `returnValue`: Pointer = Pointer.NULL,
         `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
-    ) : UniffiForeignFutureStructPointer(`returnValue`, `callStatus`),
-        Structure.ByValue
+    ): UniffiForeignFutureStructPointer(`returnValue`,`callStatus`,), Structure.ByValue
 
-    internal fun uniffiSetValue(other: UniffiForeignFutureStructPointer) {
+   internal fun uniffiSetValue(other: UniffiForeignFutureStructPointer) {
         `returnValue` = other.`returnValue`
         `callStatus` = other.`callStatus`
     }
-}
 
+}
 internal interface UniffiForeignFutureCompletePointer : com.sun.jna.Callback {
-    fun callback(
-        `callbackData`: Long,
-        `result`: UniffiForeignFutureStructPointer.UniffiByValue,
-    )
+    fun callback(`callbackData`: Long,`result`: UniffiForeignFutureStructPointer.UniffiByValue,)
 }
-
 @Structure.FieldOrder("returnValue", "callStatus")
 internal open class UniffiForeignFutureStructRustBuffer(
     @JvmField internal var `returnValue`: RustBuffer.ByValue = RustBuffer.ByValue(),
@@ -712,42 +626,136 @@ internal open class UniffiForeignFutureStructRustBuffer(
     class UniffiByValue(
         `returnValue`: RustBuffer.ByValue = RustBuffer.ByValue(),
         `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
-    ) : UniffiForeignFutureStructRustBuffer(`returnValue`, `callStatus`),
-        Structure.ByValue
+    ): UniffiForeignFutureStructRustBuffer(`returnValue`,`callStatus`,), Structure.ByValue
 
-    internal fun uniffiSetValue(other: UniffiForeignFutureStructRustBuffer) {
+   internal fun uniffiSetValue(other: UniffiForeignFutureStructRustBuffer) {
         `returnValue` = other.`returnValue`
         `callStatus` = other.`callStatus`
     }
-}
 
+}
 internal interface UniffiForeignFutureCompleteRustBuffer : com.sun.jna.Callback {
-    fun callback(
-        `callbackData`: Long,
-        `result`: UniffiForeignFutureStructRustBuffer.UniffiByValue,
-    )
+    fun callback(`callbackData`: Long,`result`: UniffiForeignFutureStructRustBuffer.UniffiByValue,)
 }
-
 @Structure.FieldOrder("callStatus")
 internal open class UniffiForeignFutureStructVoid(
     @JvmField internal var `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
 ) : Structure() {
     class UniffiByValue(
         `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
-    ) : UniffiForeignFutureStructVoid(`callStatus`),
-        Structure.ByValue
+    ): UniffiForeignFutureStructVoid(`callStatus`,), Structure.ByValue
 
-    internal fun uniffiSetValue(other: UniffiForeignFutureStructVoid) {
+   internal fun uniffiSetValue(other: UniffiForeignFutureStructVoid) {
         `callStatus` = other.`callStatus`
     }
+
+}
+internal interface UniffiForeignFutureCompleteVoid : com.sun.jna.Callback {
+    fun callback(`callbackData`: Long,`result`: UniffiForeignFutureStructVoid.UniffiByValue,)
 }
 
-internal interface UniffiForeignFutureCompleteVoid : com.sun.jna.Callback {
-    fun callback(
-        `callbackData`: Long,
-        `result`: UniffiForeignFutureStructVoid.UniffiByValue,
-    )
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // A JNA Library to expose the extern-C FFI definitions.
 // This is an implementation detail which will be called internally by the public API.
@@ -756,294 +764,221 @@ internal interface UniffiLib : Library {
     companion object {
         internal val INSTANCE: UniffiLib by lazy {
             loadIndirect<UniffiLib>(componentName = "algokit_transact_ffi")
-                .also { lib: UniffiLib ->
-                    uniffiCheckContractApiVersion(lib)
-                    uniffiCheckApiChecksums(lib)
+            .also { lib: UniffiLib ->
+                uniffiCheckContractApiVersion(lib)
+                uniffiCheckApiChecksums(lib)
                 }
         }
+        
     }
 
-    fun uniffi_algokit_transact_ffi_fn_func_address_from_pub_key(
-        `pubKey`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
+    fun uniffi_algokit_transact_ffi_fn_func_address_from_pub_key(`pubKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-
-    fun uniffi_algokit_transact_ffi_fn_func_address_from_string(
-        `address`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
+    fun uniffi_algokit_transact_ffi_fn_func_address_from_string(`address`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-
-    fun uniffi_algokit_transact_ffi_fn_func_attach_signature(
-        `encodedTx`: RustBuffer.ByValue,
-        `signature`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
+    fun uniffi_algokit_transact_ffi_fn_func_assign_fee(`txn`: RustBuffer.ByValue,`feeParams`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-
-    fun uniffi_algokit_transact_ffi_fn_func_decode_transaction(
-        `bytes`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
+    fun uniffi_algokit_transact_ffi_fn_func_decode_base64_msgpack_to_json(`modelType`: RustBuffer.ByValue,`base64Str`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-
-    fun uniffi_algokit_transact_ffi_fn_func_encode_transaction(
-        `tx`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
+    fun uniffi_algokit_transact_ffi_fn_func_decode_msgpack_to_json(`modelType`: RustBuffer.ByValue,`msgpackBytes`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-
-    fun uniffi_algokit_transact_ffi_fn_func_encode_transaction_raw(
-        `tx`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
+    fun uniffi_algokit_transact_ffi_fn_func_decode_signed_transaction(`bytes`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-
-    fun uniffi_algokit_transact_ffi_fn_func_get_encoded_transaction_type(
-        `bytes`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
+    fun uniffi_algokit_transact_ffi_fn_func_decode_signed_transactions(`encodedSignedTxs`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-
-    fun uniffi_algokit_transact_ffi_fn_func_get_transaction_id(
-        `tx`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
+    fun uniffi_algokit_transact_ffi_fn_func_decode_transaction(`encodedTx`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-
-    fun uniffi_algokit_transact_ffi_fn_func_get_transaction_raw_id(
-        `tx`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
+    fun uniffi_algokit_transact_ffi_fn_func_decode_transactions(`encodedTxs`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-
-    fun ffi_algokit_transact_ffi_rustbuffer_alloc(
-        `size`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
+    fun uniffi_algokit_transact_ffi_fn_func_encode_json_to_base64_msgpack(`modelType`: RustBuffer.ByValue,`jsonStr`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-
-    fun ffi_algokit_transact_ffi_rustbuffer_from_bytes(
-        `bytes`: ForeignBytes.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
+    fun uniffi_algokit_transact_ffi_fn_func_encode_json_to_msgpack(`modelType`: RustBuffer.ByValue,`jsonStr`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-
-    fun ffi_algokit_transact_ffi_rustbuffer_free(
-        `buf`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    fun ffi_algokit_transact_ffi_rustbuffer_reserve(
-        `buf`: RustBuffer.ByValue,
-        `additional`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
+    fun uniffi_algokit_transact_ffi_fn_func_encode_signed_transaction(`signedTx`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-
-    fun ffi_algokit_transact_ffi_rust_future_poll_u8(
-        `handle`: Long,
-        `callback`: UniffiRustFutureContinuationCallback,
-        `callbackData`: Long,
-    ): Unit
-
-    fun ffi_algokit_transact_ffi_rust_future_cancel_u8(`handle`: Long): Unit
-
-    fun ffi_algokit_transact_ffi_rust_future_free_u8(`handle`: Long): Unit
-
-    fun ffi_algokit_transact_ffi_rust_future_complete_u8(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Byte
-
-    fun ffi_algokit_transact_ffi_rust_future_poll_i8(
-        `handle`: Long,
-        `callback`: UniffiRustFutureContinuationCallback,
-        `callbackData`: Long,
-    ): Unit
-
-    fun ffi_algokit_transact_ffi_rust_future_cancel_i8(`handle`: Long): Unit
-
-    fun ffi_algokit_transact_ffi_rust_future_free_i8(`handle`: Long): Unit
-
-    fun ffi_algokit_transact_ffi_rust_future_complete_i8(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Byte
-
-    fun ffi_algokit_transact_ffi_rust_future_poll_u16(
-        `handle`: Long,
-        `callback`: UniffiRustFutureContinuationCallback,
-        `callbackData`: Long,
-    ): Unit
-
-    fun ffi_algokit_transact_ffi_rust_future_cancel_u16(`handle`: Long): Unit
-
-    fun ffi_algokit_transact_ffi_rust_future_free_u16(`handle`: Long): Unit
-
-    fun ffi_algokit_transact_ffi_rust_future_complete_u16(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Short
-
-    fun ffi_algokit_transact_ffi_rust_future_poll_i16(
-        `handle`: Long,
-        `callback`: UniffiRustFutureContinuationCallback,
-        `callbackData`: Long,
-    ): Unit
-
-    fun ffi_algokit_transact_ffi_rust_future_cancel_i16(`handle`: Long): Unit
-
-    fun ffi_algokit_transact_ffi_rust_future_free_i16(`handle`: Long): Unit
-
-    fun ffi_algokit_transact_ffi_rust_future_complete_i16(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Short
-
-    fun ffi_algokit_transact_ffi_rust_future_poll_u32(
-        `handle`: Long,
-        `callback`: UniffiRustFutureContinuationCallback,
-        `callbackData`: Long,
-    ): Unit
-
-    fun ffi_algokit_transact_ffi_rust_future_cancel_u32(`handle`: Long): Unit
-
-    fun ffi_algokit_transact_ffi_rust_future_free_u32(`handle`: Long): Unit
-
-    fun ffi_algokit_transact_ffi_rust_future_complete_u32(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Int
-
-    fun ffi_algokit_transact_ffi_rust_future_poll_i32(
-        `handle`: Long,
-        `callback`: UniffiRustFutureContinuationCallback,
-        `callbackData`: Long,
-    ): Unit
-
-    fun ffi_algokit_transact_ffi_rust_future_cancel_i32(`handle`: Long): Unit
-
-    fun ffi_algokit_transact_ffi_rust_future_free_i32(`handle`: Long): Unit
-
-    fun ffi_algokit_transact_ffi_rust_future_complete_i32(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Int
-
-    fun ffi_algokit_transact_ffi_rust_future_poll_u64(
-        `handle`: Long,
-        `callback`: UniffiRustFutureContinuationCallback,
-        `callbackData`: Long,
-    ): Unit
-
-    fun ffi_algokit_transact_ffi_rust_future_cancel_u64(`handle`: Long): Unit
-
-    fun ffi_algokit_transact_ffi_rust_future_free_u64(`handle`: Long): Unit
-
-    fun ffi_algokit_transact_ffi_rust_future_complete_u64(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
+    fun uniffi_algokit_transact_ffi_fn_func_encode_signed_transactions(`signedTxs`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    fun uniffi_algokit_transact_ffi_fn_func_encode_transaction(`tx`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    fun uniffi_algokit_transact_ffi_fn_func_encode_transaction_raw(`tx`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    fun uniffi_algokit_transact_ffi_fn_func_encode_transactions(`txs`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    fun uniffi_algokit_transact_ffi_fn_func_estimate_transaction_size(`transaction`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): Long
-
-    fun ffi_algokit_transact_ffi_rust_future_poll_i64(
-        `handle`: Long,
-        `callback`: UniffiRustFutureContinuationCallback,
-        `callbackData`: Long,
-    ): Unit
-
-    fun ffi_algokit_transact_ffi_rust_future_cancel_i64(`handle`: Long): Unit
-
-    fun ffi_algokit_transact_ffi_rust_future_free_i64(`handle`: Long): Unit
-
-    fun ffi_algokit_transact_ffi_rust_future_complete_i64(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
+    fun uniffi_algokit_transact_ffi_fn_func_get_algorand_constant(`constant`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): Long
-
-    fun ffi_algokit_transact_ffi_rust_future_poll_f32(
-        `handle`: Long,
-        `callback`: UniffiRustFutureContinuationCallback,
-        `callbackData`: Long,
+    fun uniffi_algokit_transact_ffi_fn_func_get_encoded_transaction_type(`bytes`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    fun uniffi_algokit_transact_ffi_fn_func_get_transaction_id(`tx`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    fun uniffi_algokit_transact_ffi_fn_func_get_transaction_id_raw(`tx`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    fun uniffi_algokit_transact_ffi_fn_func_group_transactions(`txs`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    fun uniffi_algokit_transact_ffi_fn_func_supported_models(uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    fun ffi_algokit_transact_ffi_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    fun ffi_algokit_transact_ffi_rustbuffer_from_bytes(`bytes`: ForeignBytes.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    fun ffi_algokit_transact_ffi_rustbuffer_free(`buf`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): Unit
-
-    fun ffi_algokit_transact_ffi_rust_future_cancel_f32(`handle`: Long): Unit
-
-    fun ffi_algokit_transact_ffi_rust_future_free_f32(`handle`: Long): Unit
-
-    fun ffi_algokit_transact_ffi_rust_future_complete_f32(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
+    fun ffi_algokit_transact_ffi_rustbuffer_reserve(`buf`: RustBuffer.ByValue,`additional`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    fun ffi_algokit_transact_ffi_rust_future_poll_u8(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+    ): Unit
+    fun ffi_algokit_transact_ffi_rust_future_cancel_u8(`handle`: Long,
+    ): Unit
+    fun ffi_algokit_transact_ffi_rust_future_free_u8(`handle`: Long,
+    ): Unit
+    fun ffi_algokit_transact_ffi_rust_future_complete_u8(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Byte
+    fun ffi_algokit_transact_ffi_rust_future_poll_i8(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+    ): Unit
+    fun ffi_algokit_transact_ffi_rust_future_cancel_i8(`handle`: Long,
+    ): Unit
+    fun ffi_algokit_transact_ffi_rust_future_free_i8(`handle`: Long,
+    ): Unit
+    fun ffi_algokit_transact_ffi_rust_future_complete_i8(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Byte
+    fun ffi_algokit_transact_ffi_rust_future_poll_u16(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+    ): Unit
+    fun ffi_algokit_transact_ffi_rust_future_cancel_u16(`handle`: Long,
+    ): Unit
+    fun ffi_algokit_transact_ffi_rust_future_free_u16(`handle`: Long,
+    ): Unit
+    fun ffi_algokit_transact_ffi_rust_future_complete_u16(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Short
+    fun ffi_algokit_transact_ffi_rust_future_poll_i16(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+    ): Unit
+    fun ffi_algokit_transact_ffi_rust_future_cancel_i16(`handle`: Long,
+    ): Unit
+    fun ffi_algokit_transact_ffi_rust_future_free_i16(`handle`: Long,
+    ): Unit
+    fun ffi_algokit_transact_ffi_rust_future_complete_i16(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Short
+    fun ffi_algokit_transact_ffi_rust_future_poll_u32(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+    ): Unit
+    fun ffi_algokit_transact_ffi_rust_future_cancel_u32(`handle`: Long,
+    ): Unit
+    fun ffi_algokit_transact_ffi_rust_future_free_u32(`handle`: Long,
+    ): Unit
+    fun ffi_algokit_transact_ffi_rust_future_complete_u32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Int
+    fun ffi_algokit_transact_ffi_rust_future_poll_i32(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+    ): Unit
+    fun ffi_algokit_transact_ffi_rust_future_cancel_i32(`handle`: Long,
+    ): Unit
+    fun ffi_algokit_transact_ffi_rust_future_free_i32(`handle`: Long,
+    ): Unit
+    fun ffi_algokit_transact_ffi_rust_future_complete_i32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Int
+    fun ffi_algokit_transact_ffi_rust_future_poll_u64(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+    ): Unit
+    fun ffi_algokit_transact_ffi_rust_future_cancel_u64(`handle`: Long,
+    ): Unit
+    fun ffi_algokit_transact_ffi_rust_future_free_u64(`handle`: Long,
+    ): Unit
+    fun ffi_algokit_transact_ffi_rust_future_complete_u64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Long
+    fun ffi_algokit_transact_ffi_rust_future_poll_i64(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+    ): Unit
+    fun ffi_algokit_transact_ffi_rust_future_cancel_i64(`handle`: Long,
+    ): Unit
+    fun ffi_algokit_transact_ffi_rust_future_free_i64(`handle`: Long,
+    ): Unit
+    fun ffi_algokit_transact_ffi_rust_future_complete_i64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Long
+    fun ffi_algokit_transact_ffi_rust_future_poll_f32(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+    ): Unit
+    fun ffi_algokit_transact_ffi_rust_future_cancel_f32(`handle`: Long,
+    ): Unit
+    fun ffi_algokit_transact_ffi_rust_future_free_f32(`handle`: Long,
+    ): Unit
+    fun ffi_algokit_transact_ffi_rust_future_complete_f32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Float
-
-    fun ffi_algokit_transact_ffi_rust_future_poll_f64(
-        `handle`: Long,
-        `callback`: UniffiRustFutureContinuationCallback,
-        `callbackData`: Long,
+    fun ffi_algokit_transact_ffi_rust_future_poll_f64(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
     ): Unit
-
-    fun ffi_algokit_transact_ffi_rust_future_cancel_f64(`handle`: Long): Unit
-
-    fun ffi_algokit_transact_ffi_rust_future_free_f64(`handle`: Long): Unit
-
-    fun ffi_algokit_transact_ffi_rust_future_complete_f64(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
+    fun ffi_algokit_transact_ffi_rust_future_cancel_f64(`handle`: Long,
+    ): Unit
+    fun ffi_algokit_transact_ffi_rust_future_free_f64(`handle`: Long,
+    ): Unit
+    fun ffi_algokit_transact_ffi_rust_future_complete_f64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Double
-
-    fun ffi_algokit_transact_ffi_rust_future_poll_pointer(
-        `handle`: Long,
-        `callback`: UniffiRustFutureContinuationCallback,
-        `callbackData`: Long,
+    fun ffi_algokit_transact_ffi_rust_future_poll_pointer(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
     ): Unit
-
-    fun ffi_algokit_transact_ffi_rust_future_cancel_pointer(`handle`: Long): Unit
-
-    fun ffi_algokit_transact_ffi_rust_future_free_pointer(`handle`: Long): Unit
-
-    fun ffi_algokit_transact_ffi_rust_future_complete_pointer(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
+    fun ffi_algokit_transact_ffi_rust_future_cancel_pointer(`handle`: Long,
+    ): Unit
+    fun ffi_algokit_transact_ffi_rust_future_free_pointer(`handle`: Long,
+    ): Unit
+    fun ffi_algokit_transact_ffi_rust_future_complete_pointer(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Pointer
-
-    fun ffi_algokit_transact_ffi_rust_future_poll_rust_buffer(
-        `handle`: Long,
-        `callback`: UniffiRustFutureContinuationCallback,
-        `callbackData`: Long,
+    fun ffi_algokit_transact_ffi_rust_future_poll_rust_buffer(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
     ): Unit
-
-    fun ffi_algokit_transact_ffi_rust_future_cancel_rust_buffer(`handle`: Long): Unit
-
-    fun ffi_algokit_transact_ffi_rust_future_free_rust_buffer(`handle`: Long): Unit
-
-    fun ffi_algokit_transact_ffi_rust_future_complete_rust_buffer(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
+    fun ffi_algokit_transact_ffi_rust_future_cancel_rust_buffer(`handle`: Long,
+    ): Unit
+    fun ffi_algokit_transact_ffi_rust_future_free_rust_buffer(`handle`: Long,
+    ): Unit
+    fun ffi_algokit_transact_ffi_rust_future_complete_rust_buffer(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-
-    fun ffi_algokit_transact_ffi_rust_future_poll_void(
-        `handle`: Long,
-        `callback`: UniffiRustFutureContinuationCallback,
-        `callbackData`: Long,
+    fun ffi_algokit_transact_ffi_rust_future_poll_void(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
     ): Unit
-
-    fun ffi_algokit_transact_ffi_rust_future_cancel_void(`handle`: Long): Unit
-
-    fun ffi_algokit_transact_ffi_rust_future_free_void(`handle`: Long): Unit
-
-    fun ffi_algokit_transact_ffi_rust_future_complete_void(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
+    fun ffi_algokit_transact_ffi_rust_future_cancel_void(`handle`: Long,
     ): Unit
-
-    fun uniffi_algokit_transact_ffi_checksum_func_address_from_pub_key(): Short
-
-    fun uniffi_algokit_transact_ffi_checksum_func_address_from_string(): Short
-
-    fun uniffi_algokit_transact_ffi_checksum_func_attach_signature(): Short
-
-    fun uniffi_algokit_transact_ffi_checksum_func_decode_transaction(): Short
-
-    fun uniffi_algokit_transact_ffi_checksum_func_encode_transaction(): Short
-
-    fun uniffi_algokit_transact_ffi_checksum_func_encode_transaction_raw(): Short
-
-    fun uniffi_algokit_transact_ffi_checksum_func_get_encoded_transaction_type(): Short
-
-    fun uniffi_algokit_transact_ffi_checksum_func_get_transaction_id(): Short
-
-    fun uniffi_algokit_transact_ffi_checksum_func_get_transaction_raw_id(): Short
-
-    fun ffi_algokit_transact_ffi_uniffi_contract_version(): Int
+    fun ffi_algokit_transact_ffi_rust_future_free_void(`handle`: Long,
+    ): Unit
+    fun ffi_algokit_transact_ffi_rust_future_complete_void(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    fun uniffi_algokit_transact_ffi_checksum_func_address_from_pub_key(
+    ): Short
+    fun uniffi_algokit_transact_ffi_checksum_func_address_from_string(
+    ): Short
+    fun uniffi_algokit_transact_ffi_checksum_func_assign_fee(
+    ): Short
+    fun uniffi_algokit_transact_ffi_checksum_func_decode_base64_msgpack_to_json(
+    ): Short
+    fun uniffi_algokit_transact_ffi_checksum_func_decode_msgpack_to_json(
+    ): Short
+    fun uniffi_algokit_transact_ffi_checksum_func_decode_signed_transaction(
+    ): Short
+    fun uniffi_algokit_transact_ffi_checksum_func_decode_signed_transactions(
+    ): Short
+    fun uniffi_algokit_transact_ffi_checksum_func_decode_transaction(
+    ): Short
+    fun uniffi_algokit_transact_ffi_checksum_func_decode_transactions(
+    ): Short
+    fun uniffi_algokit_transact_ffi_checksum_func_encode_json_to_base64_msgpack(
+    ): Short
+    fun uniffi_algokit_transact_ffi_checksum_func_encode_json_to_msgpack(
+    ): Short
+    fun uniffi_algokit_transact_ffi_checksum_func_encode_signed_transaction(
+    ): Short
+    fun uniffi_algokit_transact_ffi_checksum_func_encode_signed_transactions(
+    ): Short
+    fun uniffi_algokit_transact_ffi_checksum_func_encode_transaction(
+    ): Short
+    fun uniffi_algokit_transact_ffi_checksum_func_encode_transaction_raw(
+    ): Short
+    fun uniffi_algokit_transact_ffi_checksum_func_encode_transactions(
+    ): Short
+    fun uniffi_algokit_transact_ffi_checksum_func_estimate_transaction_size(
+    ): Short
+    fun uniffi_algokit_transact_ffi_checksum_func_get_algorand_constant(
+    ): Short
+    fun uniffi_algokit_transact_ffi_checksum_func_get_encoded_transaction_type(
+    ): Short
+    fun uniffi_algokit_transact_ffi_checksum_func_get_transaction_id(
+    ): Short
+    fun uniffi_algokit_transact_ffi_checksum_func_get_transaction_id_raw(
+    ): Short
+    fun uniffi_algokit_transact_ffi_checksum_func_group_transactions(
+    ): Short
+    fun uniffi_algokit_transact_ffi_checksum_func_supported_models(
+    ): Short
+    fun ffi_algokit_transact_ffi_uniffi_contract_version(
+    ): Int
+    
 }
 
 private fun uniffiCheckContractApiVersion(lib: UniffiLib) {
@@ -1064,10 +999,37 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_algokit_transact_ffi_checksum_func_address_from_string() != 56499.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_algokit_transact_ffi_checksum_func_attach_signature() != 7369.toShort()) {
+    if (lib.uniffi_algokit_transact_ffi_checksum_func_assign_fee() != 10019.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_algokit_transact_ffi_checksum_func_decode_transaction() != 38127.toShort()) {
+    if (lib.uniffi_algokit_transact_ffi_checksum_func_decode_base64_msgpack_to_json() != 38916.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_algokit_transact_ffi_checksum_func_decode_msgpack_to_json() != 8846.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_algokit_transact_ffi_checksum_func_decode_signed_transaction() != 61944.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_algokit_transact_ffi_checksum_func_decode_signed_transactions() != 64807.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_algokit_transact_ffi_checksum_func_decode_transaction() != 56405.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_algokit_transact_ffi_checksum_func_decode_transactions() != 26956.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_algokit_transact_ffi_checksum_func_encode_json_to_base64_msgpack() != 10243.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_algokit_transact_ffi_checksum_func_encode_json_to_msgpack() != 16545.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_algokit_transact_ffi_checksum_func_encode_signed_transaction() != 57498.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_algokit_transact_ffi_checksum_func_encode_signed_transactions() != 52346.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_algokit_transact_ffi_checksum_func_encode_transaction() != 62809.toShort()) {
@@ -1076,13 +1038,28 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_algokit_transact_ffi_checksum_func_encode_transaction_raw() != 1774.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_algokit_transact_ffi_checksum_func_encode_transactions() != 64884.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_algokit_transact_ffi_checksum_func_estimate_transaction_size() != 60858.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_algokit_transact_ffi_checksum_func_get_algorand_constant() != 49400.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_algokit_transact_ffi_checksum_func_get_encoded_transaction_type() != 9866.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_algokit_transact_ffi_checksum_func_get_transaction_id() != 20463.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_algokit_transact_ffi_checksum_func_get_transaction_raw_id() != 15873.toShort()) {
+    if (lib.uniffi_algokit_transact_ffi_checksum_func_get_transaction_id_raw() != 37098.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_algokit_transact_ffi_checksum_func_group_transactions() != 26081.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_algokit_transact_ffi_checksum_func_supported_models() != 57883.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
 }
@@ -1090,6 +1067,7 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
 // Async support
 
 // Public interface members begin here.
+
 
 // Interface implemented by anything that can contain an object reference.
 //
@@ -1101,11 +1079,9 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
 // helper method to execute a block and destroy the object at the end.
 interface Disposable {
     fun destroy()
-
     companion object {
         fun destroy(vararg args: Any?) {
-            args
-                .filterIsInstance<Disposable>()
+            args.filterIsInstance<Disposable>()
                 .forEach(Disposable::destroy)
         }
     }
@@ -1126,7 +1102,7 @@ inline fun <T : Disposable?, R> T.use(block: (T) -> R) =
         }
     }
 
-/**
+/** 
  * Used to instantiate an interface without an actual pointer, for fakes in tests, mostly.
  *
  * @suppress
@@ -1136,19 +1112,22 @@ object NoPointer
 /**
  * @suppress
  */
-public object FfiConverterULong : FfiConverter<ULong, Long> {
-    override fun lift(value: Long): ULong = value.toULong()
+public object FfiConverterULong: FfiConverter<ULong, Long> {
+    override fun lift(value: Long): ULong {
+        return value.toULong()
+    }
 
-    override fun read(buf: ByteBuffer): ULong = lift(buf.getLong())
+    override fun read(buf: ByteBuffer): ULong {
+        return lift(buf.getLong())
+    }
 
-    override fun lower(value: ULong): Long = value.toLong()
+    override fun lower(value: ULong): Long {
+        return value.toLong()
+    }
 
     override fun allocationSize(value: ULong) = 8UL
 
-    override fun write(
-        value: ULong,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: ULong, buf: ByteBuffer) {
         buf.putLong(value.toLong())
     }
 }
@@ -1156,7 +1135,7 @@ public object FfiConverterULong : FfiConverter<ULong, Long> {
 /**
  * @suppress
  */
-public object FfiConverterString : FfiConverter<String, RustBuffer.ByValue> {
+public object FfiConverterString: FfiConverter<String, RustBuffer.ByValue> {
     // Note: we don't inherit from FfiConverterRustBuffer, because we use a
     // special encoding when lowering/lifting.  We can use `RustBuffer.len` to
     // store our length and avoid writing it out to the buffer.
@@ -1203,10 +1182,7 @@ public object FfiConverterString : FfiConverter<String, RustBuffer.ByValue> {
         return sizeForLength + sizeForString
     }
 
-    override fun write(
-        value: String,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: String, buf: ByteBuffer) {
         val byteBuf = toUtf8(value)
         buf.putInt(byteBuf.limit())
         buf.put(byteBuf)
@@ -1216,170 +1192,491 @@ public object FfiConverterString : FfiConverter<String, RustBuffer.ByValue> {
 /**
  * @suppress
  */
-public object FfiConverterByteArray : FfiConverterRustBuffer<ByteArray> {
+public object FfiConverterByteArray: FfiConverterRustBuffer<ByteArray> {
     override fun read(buf: ByteBuffer): ByteArray {
         val len = buf.getInt()
         val byteArr = ByteArray(len)
         buf.get(byteArr)
         return byteArr
     }
-
-    override fun allocationSize(value: ByteArray): ULong = 4UL + value.size.toULong()
-
-    override fun write(
-        value: ByteArray,
-        buf: ByteBuffer,
-    ) {
+    override fun allocationSize(value: ByteArray): ULong {
+        return 4UL + value.size.toULong()
+    }
+    override fun write(value: ByteArray, buf: ByteBuffer) {
         buf.putInt(value.size)
         buf.put(value)
     }
 }
 
-data class Address(
-    var `address`: kotlin.String,
-    var `pubKey`: ByteBuf,
+
+
+data class Address (
+    var `address`: kotlin.String, 
+    var `pubKey`: ByteBuf
 ) {
+    
     companion object
 }
 
 /**
  * @suppress
  */
-public object FfiConverterTypeAddress : FfiConverterRustBuffer<Address> {
-    override fun read(buf: ByteBuffer): Address =
-        Address(
+public object FfiConverterTypeAddress: FfiConverterRustBuffer<Address> {
+    override fun read(buf: ByteBuffer): Address {
+        return Address(
             FfiConverterString.read(buf),
             FfiConverterTypeByteBuf.read(buf),
         )
+    }
 
-    override fun allocationSize(value: Address) =
-        (
+    override fun allocationSize(value: Address) = (
             FfiConverterString.allocationSize(value.`address`) +
-                FfiConverterTypeByteBuf.allocationSize(value.`pubKey`)
-        )
+            FfiConverterTypeByteBuf.allocationSize(value.`pubKey`)
+    )
 
-    override fun write(
-        value: Address,
-        buf: ByteBuffer,
-    ) {
-        FfiConverterString.write(value.`address`, buf)
-        FfiConverterTypeByteBuf.write(value.`pubKey`, buf)
+    override fun write(value: Address, buf: ByteBuffer) {
+            FfiConverterString.write(value.`address`, buf)
+            FfiConverterTypeByteBuf.write(value.`pubKey`, buf)
     }
 }
 
-data class AssetTransferTransactionFields(
-    var `assetId`: kotlin.ULong,
-    var `amount`: kotlin.ULong,
-    var `receiver`: Address,
-    var `assetSender`: Address? = null,
-    var `closeRemainderTo`: Address? = null,
+
+
+/**
+ * Represents an application call transaction that interacts with Algorand Smart Contracts.
+ *
+ * Application call transactions are used to create, update, delete, opt-in to,
+ * close out of, or clear state from Algorand applications (smart contracts).
+ */
+data class ApplicationCallTransactionFields (
+    /**
+     * ID of the application being called.
+     *
+     * Set this to 0 to indicate an application creation call.
+     */
+    var `appId`: kotlin.ULong, 
+    /**
+     * Defines what additional actions occur with the transaction.
+     */
+    var `onComplete`: OnApplicationComplete, 
+    /**
+     * Logic executed for every application call transaction, except when
+     * on-completion is set to "clear".
+     *
+     * Approval programs may reject the transaction.
+     * Only required for application creation and update transactions.
+     */
+    var `approvalProgram`: ByteBuf? = null, 
+    /**
+     * Logic executed for application call transactions with on-completion set to "clear".
+     *
+     * Clear state programs cannot reject the transaction.
+     * Only required for application creation and update transactions.
+     */
+    var `clearStateProgram`: ByteBuf? = null, 
+    /**
+     * Holds the maximum number of global state values.
+     *
+     * Only required for application creation transactions.
+     * This cannot be changed after creation.
+     */
+    var `globalStateSchema`: StateSchema? = null, 
+    /**
+     * Holds the maximum number of local state values.
+     *
+     * Only required for application creation transactions.
+     * This cannot be changed after creation.
+     */
+    var `localStateSchema`: StateSchema? = null, 
+    /**
+     * Number of additional pages allocated to the application's approval
+     * and clear state programs.
+     *
+     * Each extra program page is 2048 bytes. The sum of approval program
+     * and clear state program may not exceed 2048*(1+extra_program_pages) bytes.
+     * Currently, the maximum value is 3.
+     * This cannot be changed after creation.
+     */
+    var `extraProgramPages`: kotlin.ULong? = null, 
+    /**
+     * Transaction specific arguments available in the application's
+     * approval program and clear state program.
+     */
+    var `args`: List<ByteBuf>? = null, 
+    /**
+     * List of accounts in addition to the sender that may be accessed
+     * from the application's approval program and clear state program.
+     */
+    var `accountReferences`: List<Address>? = null, 
+    /**
+     * List of applications in addition to the application ID that may be called
+     * from the application's approval program and clear state program.
+     */
+    var `appReferences`: List<kotlin.ULong>? = null, 
+    /**
+     * Lists the assets whose parameters may be accessed by this application's
+     * approval program and clear state program.
+     *
+     * The access is read-only.
+     */
+    var `assetReferences`: List<kotlin.ULong>? = null, 
+    /**
+     * The boxes that should be made available for the runtime of the program.
+     */
+    var `boxReferences`: List<BoxReference>? = null
 ) {
+    
     companion object
 }
 
 /**
  * @suppress
  */
-public object FfiConverterTypeAssetTransferTransactionFields : FfiConverterRustBuffer<AssetTransferTransactionFields> {
-    override fun read(buf: ByteBuffer): AssetTransferTransactionFields =
-        AssetTransferTransactionFields(
+public object FfiConverterTypeApplicationCallTransactionFields: FfiConverterRustBuffer<ApplicationCallTransactionFields> {
+    override fun read(buf: ByteBuffer): ApplicationCallTransactionFields {
+        return ApplicationCallTransactionFields(
+            FfiConverterULong.read(buf),
+            FfiConverterTypeOnApplicationComplete.read(buf),
+            FfiConverterOptionalTypeByteBuf.read(buf),
+            FfiConverterOptionalTypeByteBuf.read(buf),
+            FfiConverterOptionalTypeStateSchema.read(buf),
+            FfiConverterOptionalTypeStateSchema.read(buf),
+            FfiConverterOptionalULong.read(buf),
+            FfiConverterOptionalSequenceTypeByteBuf.read(buf),
+            FfiConverterOptionalSequenceTypeAddress.read(buf),
+            FfiConverterOptionalSequenceULong.read(buf),
+            FfiConverterOptionalSequenceULong.read(buf),
+            FfiConverterOptionalSequenceTypeBoxReference.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: ApplicationCallTransactionFields) = (
+            FfiConverterULong.allocationSize(value.`appId`) +
+            FfiConverterTypeOnApplicationComplete.allocationSize(value.`onComplete`) +
+            FfiConverterOptionalTypeByteBuf.allocationSize(value.`approvalProgram`) +
+            FfiConverterOptionalTypeByteBuf.allocationSize(value.`clearStateProgram`) +
+            FfiConverterOptionalTypeStateSchema.allocationSize(value.`globalStateSchema`) +
+            FfiConverterOptionalTypeStateSchema.allocationSize(value.`localStateSchema`) +
+            FfiConverterOptionalULong.allocationSize(value.`extraProgramPages`) +
+            FfiConverterOptionalSequenceTypeByteBuf.allocationSize(value.`args`) +
+            FfiConverterOptionalSequenceTypeAddress.allocationSize(value.`accountReferences`) +
+            FfiConverterOptionalSequenceULong.allocationSize(value.`appReferences`) +
+            FfiConverterOptionalSequenceULong.allocationSize(value.`assetReferences`) +
+            FfiConverterOptionalSequenceTypeBoxReference.allocationSize(value.`boxReferences`)
+    )
+
+    override fun write(value: ApplicationCallTransactionFields, buf: ByteBuffer) {
+            FfiConverterULong.write(value.`appId`, buf)
+            FfiConverterTypeOnApplicationComplete.write(value.`onComplete`, buf)
+            FfiConverterOptionalTypeByteBuf.write(value.`approvalProgram`, buf)
+            FfiConverterOptionalTypeByteBuf.write(value.`clearStateProgram`, buf)
+            FfiConverterOptionalTypeStateSchema.write(value.`globalStateSchema`, buf)
+            FfiConverterOptionalTypeStateSchema.write(value.`localStateSchema`, buf)
+            FfiConverterOptionalULong.write(value.`extraProgramPages`, buf)
+            FfiConverterOptionalSequenceTypeByteBuf.write(value.`args`, buf)
+            FfiConverterOptionalSequenceTypeAddress.write(value.`accountReferences`, buf)
+            FfiConverterOptionalSequenceULong.write(value.`appReferences`, buf)
+            FfiConverterOptionalSequenceULong.write(value.`assetReferences`, buf)
+            FfiConverterOptionalSequenceTypeBoxReference.write(value.`boxReferences`, buf)
+    }
+}
+
+
+
+data class AssetTransferTransactionFields (
+    var `assetId`: kotlin.ULong, 
+    var `amount`: kotlin.ULong, 
+    var `receiver`: Address, 
+    var `assetSender`: Address? = null, 
+    var `closeRemainderTo`: Address? = null
+) {
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeAssetTransferTransactionFields: FfiConverterRustBuffer<AssetTransferTransactionFields> {
+    override fun read(buf: ByteBuffer): AssetTransferTransactionFields {
+        return AssetTransferTransactionFields(
             FfiConverterULong.read(buf),
             FfiConverterULong.read(buf),
             FfiConverterTypeAddress.read(buf),
             FfiConverterOptionalTypeAddress.read(buf),
             FfiConverterOptionalTypeAddress.read(buf),
         )
+    }
 
-    override fun allocationSize(value: AssetTransferTransactionFields) =
-        (
+    override fun allocationSize(value: AssetTransferTransactionFields) = (
             FfiConverterULong.allocationSize(value.`assetId`) +
-                FfiConverterULong.allocationSize(value.`amount`) +
-                FfiConverterTypeAddress.allocationSize(value.`receiver`) +
-                FfiConverterOptionalTypeAddress.allocationSize(value.`assetSender`) +
-                FfiConverterOptionalTypeAddress.allocationSize(value.`closeRemainderTo`)
-        )
+            FfiConverterULong.allocationSize(value.`amount`) +
+            FfiConverterTypeAddress.allocationSize(value.`receiver`) +
+            FfiConverterOptionalTypeAddress.allocationSize(value.`assetSender`) +
+            FfiConverterOptionalTypeAddress.allocationSize(value.`closeRemainderTo`)
+    )
 
-    override fun write(
-        value: AssetTransferTransactionFields,
-        buf: ByteBuffer,
-    ) {
-        FfiConverterULong.write(value.`assetId`, buf)
-        FfiConverterULong.write(value.`amount`, buf)
-        FfiConverterTypeAddress.write(value.`receiver`, buf)
-        FfiConverterOptionalTypeAddress.write(value.`assetSender`, buf)
-        FfiConverterOptionalTypeAddress.write(value.`closeRemainderTo`, buf)
+    override fun write(value: AssetTransferTransactionFields, buf: ByteBuffer) {
+            FfiConverterULong.write(value.`assetId`, buf)
+            FfiConverterULong.write(value.`amount`, buf)
+            FfiConverterTypeAddress.write(value.`receiver`, buf)
+            FfiConverterOptionalTypeAddress.write(value.`assetSender`, buf)
+            FfiConverterOptionalTypeAddress.write(value.`closeRemainderTo`, buf)
     }
 }
 
-data class PaymentTransactionFields(
-    var `receiver`: Address,
-    var `amount`: kotlin.ULong,
-    var `closeRemainderTo`: Address? = null,
+
+
+/**
+ * Box reference for application call transactions.
+ *
+ * References a specific box that should be made available for the runtime
+ * of the program.
+ */
+data class BoxReference (
+    /**
+     * Application ID that owns the box.
+     * A value of 0 indicates the current application.
+     */
+    var `appId`: kotlin.ULong, 
+    /**
+     * Name of the box.
+     */
+    var `name`: ByteBuf
 ) {
+    
     companion object
 }
 
 /**
  * @suppress
  */
-public object FfiConverterTypePaymentTransactionFields : FfiConverterRustBuffer<PaymentTransactionFields> {
-    override fun read(buf: ByteBuffer): PaymentTransactionFields =
-        PaymentTransactionFields(
+public object FfiConverterTypeBoxReference: FfiConverterRustBuffer<BoxReference> {
+    override fun read(buf: ByteBuffer): BoxReference {
+        return BoxReference(
+            FfiConverterULong.read(buf),
+            FfiConverterTypeByteBuf.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: BoxReference) = (
+            FfiConverterULong.allocationSize(value.`appId`) +
+            FfiConverterTypeByteBuf.allocationSize(value.`name`)
+    )
+
+    override fun write(value: BoxReference, buf: ByteBuffer) {
+            FfiConverterULong.write(value.`appId`, buf)
+            FfiConverterTypeByteBuf.write(value.`name`, buf)
+    }
+}
+
+
+
+data class FeeParams (
+    var `feePerByte`: kotlin.ULong, 
+    var `minFee`: kotlin.ULong, 
+    var `extraFee`: kotlin.ULong? = null, 
+    var `maxFee`: kotlin.ULong? = null
+) {
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFeeParams: FfiConverterRustBuffer<FeeParams> {
+    override fun read(buf: ByteBuffer): FeeParams {
+        return FeeParams(
+            FfiConverterULong.read(buf),
+            FfiConverterULong.read(buf),
+            FfiConverterOptionalULong.read(buf),
+            FfiConverterOptionalULong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FeeParams) = (
+            FfiConverterULong.allocationSize(value.`feePerByte`) +
+            FfiConverterULong.allocationSize(value.`minFee`) +
+            FfiConverterOptionalULong.allocationSize(value.`extraFee`) +
+            FfiConverterOptionalULong.allocationSize(value.`maxFee`)
+    )
+
+    override fun write(value: FeeParams, buf: ByteBuffer) {
+            FfiConverterULong.write(value.`feePerByte`, buf)
+            FfiConverterULong.write(value.`minFee`, buf)
+            FfiConverterOptionalULong.write(value.`extraFee`, buf)
+            FfiConverterOptionalULong.write(value.`maxFee`, buf)
+    }
+}
+
+
+
+data class PaymentTransactionFields (
+    var `receiver`: Address, 
+    var `amount`: kotlin.ULong, 
+    var `closeRemainderTo`: Address? = null
+) {
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypePaymentTransactionFields: FfiConverterRustBuffer<PaymentTransactionFields> {
+    override fun read(buf: ByteBuffer): PaymentTransactionFields {
+        return PaymentTransactionFields(
             FfiConverterTypeAddress.read(buf),
             FfiConverterULong.read(buf),
             FfiConverterOptionalTypeAddress.read(buf),
         )
+    }
 
-    override fun allocationSize(value: PaymentTransactionFields) =
-        (
+    override fun allocationSize(value: PaymentTransactionFields) = (
             FfiConverterTypeAddress.allocationSize(value.`receiver`) +
-                FfiConverterULong.allocationSize(value.`amount`) +
-                FfiConverterOptionalTypeAddress.allocationSize(value.`closeRemainderTo`)
-        )
+            FfiConverterULong.allocationSize(value.`amount`) +
+            FfiConverterOptionalTypeAddress.allocationSize(value.`closeRemainderTo`)
+    )
 
-    override fun write(
-        value: PaymentTransactionFields,
-        buf: ByteBuffer,
-    ) {
-        FfiConverterTypeAddress.write(value.`receiver`, buf)
-        FfiConverterULong.write(value.`amount`, buf)
-        FfiConverterOptionalTypeAddress.write(value.`closeRemainderTo`, buf)
+    override fun write(value: PaymentTransactionFields, buf: ByteBuffer) {
+            FfiConverterTypeAddress.write(value.`receiver`, buf)
+            FfiConverterULong.write(value.`amount`, buf)
+            FfiConverterOptionalTypeAddress.write(value.`closeRemainderTo`, buf)
     }
 }
 
-data class Transaction(
+
+
+data class SignedTransaction (
+    /**
+     * The transaction that has been signed.
+     */
+    var `transaction`: Transaction, 
+    /**
+     * Optional Ed25519 signature authorizing the transaction.
+     */
+    var `signature`: ByteBuf? = null, 
+    /**
+     * Optional auth address applicable if the transaction sender is a rekeyed account.
+     */
+    var `authAddress`: Address? = null
+) {
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeSignedTransaction: FfiConverterRustBuffer<SignedTransaction> {
+    override fun read(buf: ByteBuffer): SignedTransaction {
+        return SignedTransaction(
+            FfiConverterTypeTransaction.read(buf),
+            FfiConverterOptionalTypeByteBuf.read(buf),
+            FfiConverterOptionalTypeAddress.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: SignedTransaction) = (
+            FfiConverterTypeTransaction.allocationSize(value.`transaction`) +
+            FfiConverterOptionalTypeByteBuf.allocationSize(value.`signature`) +
+            FfiConverterOptionalTypeAddress.allocationSize(value.`authAddress`)
+    )
+
+    override fun write(value: SignedTransaction, buf: ByteBuffer) {
+            FfiConverterTypeTransaction.write(value.`transaction`, buf)
+            FfiConverterOptionalTypeByteBuf.write(value.`signature`, buf)
+            FfiConverterOptionalTypeAddress.write(value.`authAddress`, buf)
+    }
+}
+
+
+
+/**
+ * Schema for application state storage.
+ *
+ * Defines the maximum number of values that may be stored in application
+ * key/value storage for both global and local state.
+ */
+data class StateSchema (
+    /**
+     * Maximum number of integer values that may be stored.
+     */
+    var `numUints`: kotlin.ULong, 
+    /**
+     * Maximum number of byte slice values that may be stored.
+     */
+    var `numByteSlices`: kotlin.ULong
+) {
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeStateSchema: FfiConverterRustBuffer<StateSchema> {
+    override fun read(buf: ByteBuffer): StateSchema {
+        return StateSchema(
+            FfiConverterULong.read(buf),
+            FfiConverterULong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: StateSchema) = (
+            FfiConverterULong.allocationSize(value.`numUints`) +
+            FfiConverterULong.allocationSize(value.`numByteSlices`)
+    )
+
+    override fun write(value: StateSchema, buf: ByteBuffer) {
+            FfiConverterULong.write(value.`numUints`, buf)
+            FfiConverterULong.write(value.`numByteSlices`, buf)
+    }
+}
+
+
+
+data class Transaction (
     /**
      * The type of transaction
      */
-    var `transactionType`: TransactionType,
+    var `transactionType`: TransactionType, 
     /**
      * The sender of the transaction
      */
-    var `sender`: Address,
-    var `fee`: kotlin.ULong,
-    var `firstValid`: kotlin.ULong,
-    var `lastValid`: kotlin.ULong,
-    var `genesisHash`: ByteBuf?,
-    var `genesisId`: kotlin.String?,
-    var `note`: ByteBuf? = null,
-    var `rekeyTo`: Address? = null,
-    var `lease`: ByteBuf? = null,
-    var `group`: ByteBuf? = null,
-    var `payment`: PaymentTransactionFields? = null,
-    var `assetTransfer`: AssetTransferTransactionFields? = null,
+    var `sender`: Address, 
+    /**
+     * Optional transaction fee in microALGO.
+     *
+     * If not set, the fee will be interpreted as 0 by the network.
+     */
+    var `fee`: kotlin.ULong? = null, 
+    var `firstValid`: kotlin.ULong, 
+    var `lastValid`: kotlin.ULong, 
+    var `genesisHash`: ByteBuf?, 
+    var `genesisId`: kotlin.String?, 
+    var `note`: ByteBuf? = null, 
+    var `rekeyTo`: Address? = null, 
+    var `lease`: ByteBuf? = null, 
+    var `group`: ByteBuf? = null, 
+    var `payment`: PaymentTransactionFields? = null, 
+    var `assetTransfer`: AssetTransferTransactionFields? = null, 
+    var `applicationCall`: ApplicationCallTransactionFields? = null
 ) {
+    
     companion object
 }
 
 /**
  * @suppress
  */
-public object FfiConverterTypeTransaction : FfiConverterRustBuffer<Transaction> {
-    override fun read(buf: ByteBuffer): Transaction =
-        Transaction(
+public object FfiConverterTypeTransaction: FfiConverterRustBuffer<Transaction> {
+    override fun read(buf: ByteBuffer): Transaction {
+        return Transaction(
             FfiConverterTypeTransactionType.read(buf),
             FfiConverterTypeAddress.read(buf),
-            FfiConverterULong.read(buf),
+            FfiConverterOptionalULong.read(buf),
             FfiConverterULong.read(buf),
             FfiConverterULong.read(buf),
             FfiConverterOptionalTypeByteBuf.read(buf),
@@ -1390,101 +1687,142 @@ public object FfiConverterTypeTransaction : FfiConverterRustBuffer<Transaction> 
             FfiConverterOptionalTypeByteBuf.read(buf),
             FfiConverterOptionalTypePaymentTransactionFields.read(buf),
             FfiConverterOptionalTypeAssetTransferTransactionFields.read(buf),
+            FfiConverterOptionalTypeApplicationCallTransactionFields.read(buf),
         )
+    }
 
-    override fun allocationSize(value: Transaction) =
-        (
+    override fun allocationSize(value: Transaction) = (
             FfiConverterTypeTransactionType.allocationSize(value.`transactionType`) +
-                FfiConverterTypeAddress.allocationSize(value.`sender`) +
-                FfiConverterULong.allocationSize(value.`fee`) +
-                FfiConverterULong.allocationSize(value.`firstValid`) +
-                FfiConverterULong.allocationSize(value.`lastValid`) +
-                FfiConverterOptionalTypeByteBuf.allocationSize(value.`genesisHash`) +
-                FfiConverterOptionalString.allocationSize(value.`genesisId`) +
-                FfiConverterOptionalTypeByteBuf.allocationSize(value.`note`) +
-                FfiConverterOptionalTypeAddress.allocationSize(value.`rekeyTo`) +
-                FfiConverterOptionalTypeByteBuf.allocationSize(value.`lease`) +
-                FfiConverterOptionalTypeByteBuf.allocationSize(value.`group`) +
-                FfiConverterOptionalTypePaymentTransactionFields.allocationSize(value.`payment`) +
-                FfiConverterOptionalTypeAssetTransferTransactionFields.allocationSize(value.`assetTransfer`)
-        )
+            FfiConverterTypeAddress.allocationSize(value.`sender`) +
+            FfiConverterOptionalULong.allocationSize(value.`fee`) +
+            FfiConverterULong.allocationSize(value.`firstValid`) +
+            FfiConverterULong.allocationSize(value.`lastValid`) +
+            FfiConverterOptionalTypeByteBuf.allocationSize(value.`genesisHash`) +
+            FfiConverterOptionalString.allocationSize(value.`genesisId`) +
+            FfiConverterOptionalTypeByteBuf.allocationSize(value.`note`) +
+            FfiConverterOptionalTypeAddress.allocationSize(value.`rekeyTo`) +
+            FfiConverterOptionalTypeByteBuf.allocationSize(value.`lease`) +
+            FfiConverterOptionalTypeByteBuf.allocationSize(value.`group`) +
+            FfiConverterOptionalTypePaymentTransactionFields.allocationSize(value.`payment`) +
+            FfiConverterOptionalTypeAssetTransferTransactionFields.allocationSize(value.`assetTransfer`) +
+            FfiConverterOptionalTypeApplicationCallTransactionFields.allocationSize(value.`applicationCall`)
+    )
 
-    override fun write(
-        value: Transaction,
-        buf: ByteBuffer,
-    ) {
-        FfiConverterTypeTransactionType.write(value.`transactionType`, buf)
-        FfiConverterTypeAddress.write(value.`sender`, buf)
-        FfiConverterULong.write(value.`fee`, buf)
-        FfiConverterULong.write(value.`firstValid`, buf)
-        FfiConverterULong.write(value.`lastValid`, buf)
-        FfiConverterOptionalTypeByteBuf.write(value.`genesisHash`, buf)
-        FfiConverterOptionalString.write(value.`genesisId`, buf)
-        FfiConverterOptionalTypeByteBuf.write(value.`note`, buf)
-        FfiConverterOptionalTypeAddress.write(value.`rekeyTo`, buf)
-        FfiConverterOptionalTypeByteBuf.write(value.`lease`, buf)
-        FfiConverterOptionalTypeByteBuf.write(value.`group`, buf)
-        FfiConverterOptionalTypePaymentTransactionFields.write(value.`payment`, buf)
-        FfiConverterOptionalTypeAssetTransferTransactionFields.write(value.`assetTransfer`, buf)
+    override fun write(value: Transaction, buf: ByteBuffer) {
+            FfiConverterTypeTransactionType.write(value.`transactionType`, buf)
+            FfiConverterTypeAddress.write(value.`sender`, buf)
+            FfiConverterOptionalULong.write(value.`fee`, buf)
+            FfiConverterULong.write(value.`firstValid`, buf)
+            FfiConverterULong.write(value.`lastValid`, buf)
+            FfiConverterOptionalTypeByteBuf.write(value.`genesisHash`, buf)
+            FfiConverterOptionalString.write(value.`genesisId`, buf)
+            FfiConverterOptionalTypeByteBuf.write(value.`note`, buf)
+            FfiConverterOptionalTypeAddress.write(value.`rekeyTo`, buf)
+            FfiConverterOptionalTypeByteBuf.write(value.`lease`, buf)
+            FfiConverterOptionalTypeByteBuf.write(value.`group`, buf)
+            FfiConverterOptionalTypePaymentTransactionFields.write(value.`payment`, buf)
+            FfiConverterOptionalTypeAssetTransferTransactionFields.write(value.`assetTransfer`, buf)
+            FfiConverterOptionalTypeApplicationCallTransactionFields.write(value.`applicationCall`, buf)
     }
 }
 
-sealed class AlgoKitTransactException : kotlin.Exception() {
-    class EncodingException(
-        val v1: kotlin.String,
-    ) : AlgoKitTransactException() {
-        override val message
-            get() = "v1=${ v1 }"
-    }
 
-    class DecodingException(
-        val v1: kotlin.String,
-    ) : AlgoKitTransactException() {
+
+
+
+sealed class AlgoKitTransactException: kotlin.Exception() {
+    
+    class EncodingException(
+        
+        val v1: kotlin.String
+        ) : AlgoKitTransactException() {
         override val message
             get() = "v1=${ v1 }"
     }
+    
+    class DecodingException(
+        
+        val v1: kotlin.String
+        ) : AlgoKitTransactException() {
+        override val message
+            get() = "v1=${ v1 }"
+    }
+    
+    class InputException(
+        
+        val v1: kotlin.String
+        ) : AlgoKitTransactException() {
+        override val message
+            get() = "v1=${ v1 }"
+    }
+    
+    class MsgPackException(
+        
+        val v1: kotlin.String
+        ) : AlgoKitTransactException() {
+        override val message
+            get() = "v1=${ v1 }"
+    }
+    
 
     companion object ErrorHandler : UniffiRustCallStatusErrorHandler<AlgoKitTransactException> {
         override fun lift(error_buf: RustBuffer.ByValue): AlgoKitTransactException = FfiConverterTypeAlgoKitTransactError.lift(error_buf)
     }
+
+    
 }
 
 /**
  * @suppress
  */
 public object FfiConverterTypeAlgoKitTransactError : FfiConverterRustBuffer<AlgoKitTransactException> {
-    override fun read(buf: ByteBuffer): AlgoKitTransactException =
-        when (buf.getInt()) {
-            1 ->
-                AlgoKitTransactException.EncodingException(
-                    FfiConverterString.read(buf),
+    override fun read(buf: ByteBuffer): AlgoKitTransactException {
+        
+
+        return when(buf.getInt()) {
+            1 -> AlgoKitTransactException.EncodingException(
+                FfiConverterString.read(buf),
                 )
-            2 ->
-                AlgoKitTransactException.DecodingException(
-                    FfiConverterString.read(buf),
+            2 -> AlgoKitTransactException.DecodingException(
+                FfiConverterString.read(buf),
+                )
+            3 -> AlgoKitTransactException.InputException(
+                FfiConverterString.read(buf),
+                )
+            4 -> AlgoKitTransactException.MsgPackException(
+                FfiConverterString.read(buf),
                 )
             else -> throw RuntimeException("invalid error enum value, something is very wrong!!")
         }
+    }
 
-    override fun allocationSize(value: AlgoKitTransactException): ULong =
-        when (value) {
+    override fun allocationSize(value: AlgoKitTransactException): ULong {
+        return when(value) {
             is AlgoKitTransactException.EncodingException -> (
                 // Add the size for the Int that specifies the variant plus the size needed for all fields
-                4UL +
-                    FfiConverterString.allocationSize(value.v1)
+                4UL
+                + FfiConverterString.allocationSize(value.v1)
             )
             is AlgoKitTransactException.DecodingException -> (
                 // Add the size for the Int that specifies the variant plus the size needed for all fields
-                4UL +
-                    FfiConverterString.allocationSize(value.v1)
+                4UL
+                + FfiConverterString.allocationSize(value.v1)
+            )
+            is AlgoKitTransactException.InputException -> (
+                // Add the size for the Int that specifies the variant plus the size needed for all fields
+                4UL
+                + FfiConverterString.allocationSize(value.v1)
+            )
+            is AlgoKitTransactException.MsgPackException -> (
+                // Add the size for the Int that specifies the variant plus the size needed for all fields
+                4UL
+                + FfiConverterString.allocationSize(value.v1)
             )
         }
+    }
 
-    override fun write(
-        value: AlgoKitTransactException,
-        buf: ByteBuffer,
-    ) {
-        when (value) {
+    override fun write(value: AlgoKitTransactException, buf: ByteBuffer) {
+        when(value) {
             is AlgoKitTransactException.EncodingException -> {
                 buf.putInt(1)
                 FfiConverterString.write(value.v1, buf)
@@ -1495,47 +1833,249 @@ public object FfiConverterTypeAlgoKitTransactError : FfiConverterRustBuffer<Algo
                 FfiConverterString.write(value.v1, buf)
                 Unit
             }
+            is AlgoKitTransactException.InputException -> {
+                buf.putInt(3)
+                FfiConverterString.write(value.v1, buf)
+                Unit
+            }
+            is AlgoKitTransactException.MsgPackException -> {
+                buf.putInt(4)
+                FfiConverterString.write(value.v1, buf)
+                Unit
+            }
         }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+
+}
+
+
+
+/**
+ * Enum containing all constants used in this crate.
+ */
+
+enum class AlgorandConstant {
+    
+    /**
+     * Length of hash digests (32)
+     */
+    HASH_LENGTH,
+    /**
+     * Length of the checksum used in Algorand addresses (4)
+     */
+    CHECKSUM_LENGTH,
+    /**
+     * Length of a base32-encoded Algorand address (58)
+     */
+    ADDRESS_LENGTH,
+    /**
+     * Length of an Algorand public key in bytes (32)
+     */
+    PUBLIC_KEY_LENGTH,
+    /**
+     * Length of an Algorand secret key in bytes (32)
+     */
+    SECRET_KEY_LENGTH,
+    /**
+     * Length of an Algorand signature in bytes (64)
+     */
+    SIGNATURE_LENGTH,
+    /**
+     * Increment in the encoded byte size when a signature is attached to a transaction (75)
+     */
+    SIGNATURE_ENCODING_INCR_LENGTH,
+    MAX_TX_GROUP_SIZE;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeAlgorandConstant: FfiConverterRustBuffer<AlgorandConstant> {
+    override fun read(buf: ByteBuffer) = try {
+        AlgorandConstant.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: AlgorandConstant) = 4UL
+
+    override fun write(value: AlgorandConstant, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
     }
 }
 
+
+
+
+
+
+enum class ModelType {
+    
+    SIMULATE_REQUEST,
+    SIMULATE_TRANSACTION200_RESPONSE;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeModelType: FfiConverterRustBuffer<ModelType> {
+    override fun read(buf: ByteBuffer) = try {
+        ModelType.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: ModelType) = 4UL
+
+    override fun write(value: ModelType, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+/**
+ * On-completion actions for application transactions.
+ *
+ * These values define what additional actions occur with the transaction.
+ */
+
+enum class OnApplicationComplete {
+    
+    /**
+     * NoOp indicates that an application transaction will simply call its
+     * approval program without any additional action.
+     */
+    NO_OP,
+    /**
+     * OptIn indicates that an application transaction will allocate some
+     * local state for the application in the sender's account.
+     */
+    OPT_IN,
+    /**
+     * CloseOut indicates that an application transaction will deallocate
+     * some local state for the application from the user's account.
+     */
+    CLOSE_OUT,
+    /**
+     * ClearState is similar to CloseOut, but may never fail. This
+     * allows users to reclaim their minimum balance from an application
+     * they no longer wish to opt in to.
+     */
+    CLEAR_STATE,
+    /**
+     * UpdateApplication indicates that an application transaction will
+     * update the approval program and clear state program for the application.
+     */
+    UPDATE_APPLICATION,
+    /**
+     * DeleteApplication indicates that an application transaction will
+     * delete the application parameters for the application from the creator's
+     * balance record.
+     */
+    DELETE_APPLICATION;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeOnApplicationComplete: FfiConverterRustBuffer<OnApplicationComplete> {
+    override fun read(buf: ByteBuffer) = try {
+        OnApplicationComplete.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: OnApplicationComplete) = 4UL
+
+    override fun write(value: OnApplicationComplete, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+
 enum class TransactionType {
+    
     PAYMENT,
     ASSET_TRANSFER,
     ASSET_FREEZE,
     ASSET_CONFIG,
     KEY_REGISTRATION,
-    APPLICATION_CALL,
-    ;
-
+    APPLICATION_CALL;
     companion object
 }
+
 
 /**
  * @suppress
  */
-public object FfiConverterTypeTransactionType : FfiConverterRustBuffer<TransactionType> {
-    override fun read(buf: ByteBuffer) =
-        try {
-            TransactionType.values()[buf.getInt() - 1]
-        } catch (e: IndexOutOfBoundsException) {
-            throw RuntimeException("invalid enum value, something is very wrong!!", e)
-        }
+public object FfiConverterTypeTransactionType: FfiConverterRustBuffer<TransactionType> {
+    override fun read(buf: ByteBuffer) = try {
+        TransactionType.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
 
     override fun allocationSize(value: TransactionType) = 4UL
 
-    override fun write(
-        value: TransactionType,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: TransactionType, buf: ByteBuffer) {
         buf.putInt(value.ordinal + 1)
     }
 }
 
+
+
+
+
+
 /**
  * @suppress
  */
-public object FfiConverterOptionalString : FfiConverterRustBuffer<kotlin.String?> {
+public object FfiConverterOptionalULong: FfiConverterRustBuffer<kotlin.ULong?> {
+    override fun read(buf: ByteBuffer): kotlin.ULong? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterULong.read(buf)
+    }
+
+    override fun allocationSize(value: kotlin.ULong?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterULong.allocationSize(value)
+        }
+    }
+
+    override fun write(value: kotlin.ULong?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterULong.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalString: FfiConverterRustBuffer<kotlin.String?> {
     override fun read(buf: ByteBuffer): kotlin.String? {
         if (buf.get().toInt() == 0) {
             return null
@@ -1551,10 +2091,7 @@ public object FfiConverterOptionalString : FfiConverterRustBuffer<kotlin.String?
         }
     }
 
-    override fun write(
-        value: kotlin.String?,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: kotlin.String?, buf: ByteBuffer) {
         if (value == null) {
             buf.put(0)
         } else {
@@ -1564,10 +2101,13 @@ public object FfiConverterOptionalString : FfiConverterRustBuffer<kotlin.String?
     }
 }
 
+
+
+
 /**
  * @suppress
  */
-public object FfiConverterOptionalTypeAddress : FfiConverterRustBuffer<Address?> {
+public object FfiConverterOptionalTypeAddress: FfiConverterRustBuffer<Address?> {
     override fun read(buf: ByteBuffer): Address? {
         if (buf.get().toInt() == 0) {
             return null
@@ -1583,10 +2123,7 @@ public object FfiConverterOptionalTypeAddress : FfiConverterRustBuffer<Address?>
         }
     }
 
-    override fun write(
-        value: Address?,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: Address?, buf: ByteBuffer) {
         if (value == null) {
             buf.put(0)
         } else {
@@ -1596,10 +2133,45 @@ public object FfiConverterOptionalTypeAddress : FfiConverterRustBuffer<Address?>
     }
 }
 
+
+
+
 /**
  * @suppress
  */
-public object FfiConverterOptionalTypeAssetTransferTransactionFields : FfiConverterRustBuffer<AssetTransferTransactionFields?> {
+public object FfiConverterOptionalTypeApplicationCallTransactionFields: FfiConverterRustBuffer<ApplicationCallTransactionFields?> {
+    override fun read(buf: ByteBuffer): ApplicationCallTransactionFields? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeApplicationCallTransactionFields.read(buf)
+    }
+
+    override fun allocationSize(value: ApplicationCallTransactionFields?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeApplicationCallTransactionFields.allocationSize(value)
+        }
+    }
+
+    override fun write(value: ApplicationCallTransactionFields?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeApplicationCallTransactionFields.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeAssetTransferTransactionFields: FfiConverterRustBuffer<AssetTransferTransactionFields?> {
     override fun read(buf: ByteBuffer): AssetTransferTransactionFields? {
         if (buf.get().toInt() == 0) {
             return null
@@ -1615,10 +2187,7 @@ public object FfiConverterOptionalTypeAssetTransferTransactionFields : FfiConver
         }
     }
 
-    override fun write(
-        value: AssetTransferTransactionFields?,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: AssetTransferTransactionFields?, buf: ByteBuffer) {
         if (value == null) {
             buf.put(0)
         } else {
@@ -1628,10 +2197,13 @@ public object FfiConverterOptionalTypeAssetTransferTransactionFields : FfiConver
     }
 }
 
+
+
+
 /**
  * @suppress
  */
-public object FfiConverterOptionalTypePaymentTransactionFields : FfiConverterRustBuffer<PaymentTransactionFields?> {
+public object FfiConverterOptionalTypePaymentTransactionFields: FfiConverterRustBuffer<PaymentTransactionFields?> {
     override fun read(buf: ByteBuffer): PaymentTransactionFields? {
         if (buf.get().toInt() == 0) {
             return null
@@ -1647,10 +2219,7 @@ public object FfiConverterOptionalTypePaymentTransactionFields : FfiConverterRus
         }
     }
 
-    override fun write(
-        value: PaymentTransactionFields?,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: PaymentTransactionFields?, buf: ByteBuffer) {
         if (value == null) {
             buf.put(0)
         } else {
@@ -1660,10 +2229,173 @@ public object FfiConverterOptionalTypePaymentTransactionFields : FfiConverterRus
     }
 }
 
+
+
+
 /**
  * @suppress
  */
-public object FfiConverterOptionalTypeByteBuf : FfiConverterRustBuffer<ByteBuf?> {
+public object FfiConverterOptionalTypeStateSchema: FfiConverterRustBuffer<StateSchema?> {
+    override fun read(buf: ByteBuffer): StateSchema? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeStateSchema.read(buf)
+    }
+
+    override fun allocationSize(value: StateSchema?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeStateSchema.allocationSize(value)
+        }
+    }
+
+    override fun write(value: StateSchema?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeStateSchema.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalSequenceULong: FfiConverterRustBuffer<List<kotlin.ULong>?> {
+    override fun read(buf: ByteBuffer): List<kotlin.ULong>? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterSequenceULong.read(buf)
+    }
+
+    override fun allocationSize(value: List<kotlin.ULong>?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterSequenceULong.allocationSize(value)
+        }
+    }
+
+    override fun write(value: List<kotlin.ULong>?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterSequenceULong.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalSequenceTypeAddress: FfiConverterRustBuffer<List<Address>?> {
+    override fun read(buf: ByteBuffer): List<Address>? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterSequenceTypeAddress.read(buf)
+    }
+
+    override fun allocationSize(value: List<Address>?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterSequenceTypeAddress.allocationSize(value)
+        }
+    }
+
+    override fun write(value: List<Address>?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterSequenceTypeAddress.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalSequenceTypeBoxReference: FfiConverterRustBuffer<List<BoxReference>?> {
+    override fun read(buf: ByteBuffer): List<BoxReference>? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterSequenceTypeBoxReference.read(buf)
+    }
+
+    override fun allocationSize(value: List<BoxReference>?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterSequenceTypeBoxReference.allocationSize(value)
+        }
+    }
+
+    override fun write(value: List<BoxReference>?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterSequenceTypeBoxReference.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalSequenceTypeByteBuf: FfiConverterRustBuffer<List<ByteBuf>?> {
+    override fun read(buf: ByteBuffer): List<ByteBuf>? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterSequenceTypeByteBuf.read(buf)
+    }
+
+    override fun allocationSize(value: List<ByteBuf>?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterSequenceTypeByteBuf.allocationSize(value)
+        }
+    }
+
+    override fun write(value: List<ByteBuf>?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterSequenceTypeByteBuf.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeByteBuf: FfiConverterRustBuffer<ByteBuf?> {
     override fun read(buf: ByteBuffer): ByteBuf? {
         if (buf.get().toInt() == 0) {
             return null
@@ -1679,10 +2411,7 @@ public object FfiConverterOptionalTypeByteBuf : FfiConverterRustBuffer<ByteBuf?>
         }
     }
 
-    override fun write(
-        value: ByteBuf?,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: ByteBuf?, buf: ByteBuffer) {
         if (value == null) {
             buf.put(0)
         } else {
@@ -1692,6 +2421,232 @@ public object FfiConverterOptionalTypeByteBuf : FfiConverterRustBuffer<ByteBuf?>
     }
 }
 
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceULong: FfiConverterRustBuffer<List<kotlin.ULong>> {
+    override fun read(buf: ByteBuffer): List<kotlin.ULong> {
+        val len = buf.getInt()
+        return List<kotlin.ULong>(len) {
+            FfiConverterULong.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<kotlin.ULong>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterULong.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<kotlin.ULong>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterULong.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceByteArray: FfiConverterRustBuffer<List<kotlin.ByteArray>> {
+    override fun read(buf: ByteBuffer): List<kotlin.ByteArray> {
+        val len = buf.getInt()
+        return List<kotlin.ByteArray>(len) {
+            FfiConverterByteArray.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<kotlin.ByteArray>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterByteArray.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<kotlin.ByteArray>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterByteArray.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeAddress: FfiConverterRustBuffer<List<Address>> {
+    override fun read(buf: ByteBuffer): List<Address> {
+        val len = buf.getInt()
+        return List<Address>(len) {
+            FfiConverterTypeAddress.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<Address>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeAddress.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<Address>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeAddress.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeBoxReference: FfiConverterRustBuffer<List<BoxReference>> {
+    override fun read(buf: ByteBuffer): List<BoxReference> {
+        val len = buf.getInt()
+        return List<BoxReference>(len) {
+            FfiConverterTypeBoxReference.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<BoxReference>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeBoxReference.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<BoxReference>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeBoxReference.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeSignedTransaction: FfiConverterRustBuffer<List<SignedTransaction>> {
+    override fun read(buf: ByteBuffer): List<SignedTransaction> {
+        val len = buf.getInt()
+        return List<SignedTransaction>(len) {
+            FfiConverterTypeSignedTransaction.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<SignedTransaction>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeSignedTransaction.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<SignedTransaction>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeSignedTransaction.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeTransaction: FfiConverterRustBuffer<List<Transaction>> {
+    override fun read(buf: ByteBuffer): List<Transaction> {
+        val len = buf.getInt()
+        return List<Transaction>(len) {
+            FfiConverterTypeTransaction.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<Transaction>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeTransaction.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<Transaction>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeTransaction.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeModelType: FfiConverterRustBuffer<List<ModelType>> {
+    override fun read(buf: ByteBuffer): List<ModelType> {
+        val len = buf.getInt()
+        return List<ModelType>(len) {
+            FfiConverterTypeModelType.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<ModelType>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeModelType.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<ModelType>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeModelType.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeByteBuf: FfiConverterRustBuffer<List<ByteBuf>> {
+    override fun read(buf: ByteBuffer): List<ByteBuf> {
+        val len = buf.getInt()
+        return List<ByteBuf>(len) {
+            FfiConverterTypeByteBuf.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<ByteBuf>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeByteBuf.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<ByteBuf>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeByteBuf.write(it, buf)
+        }
+    }
+}
+
+
+
 /**
  * Typealias from the type name used in the UDL file to the builtin type.  This
  * is needed because the UDL type name is used in function/method signatures.
@@ -1699,123 +2654,323 @@ public object FfiConverterOptionalTypeByteBuf : FfiConverterRustBuffer<ByteBuf?>
  */
 public typealias ByteBuf = kotlin.ByteArray
 public typealias FfiConverterTypeByteBuf = FfiConverterByteArray
-
-@Throws(AlgoKitTransactException::class)
-fun `addressFromPubKey`(`pubKey`: kotlin.ByteArray): Address =
-    FfiConverterTypeAddress.lift(
-        uniffiRustCallWithError(AlgoKitTransactException) { _status ->
-            UniffiLib.INSTANCE.uniffi_algokit_transact_ffi_fn_func_address_from_pub_key(
-                FfiConverterByteArray.lower(`pubKey`),
-                _status,
-            )
-        },
+    @Throws(AlgoKitTransactException::class) fun `addressFromPubKey`(`pubKey`: kotlin.ByteArray): Address {
+            return FfiConverterTypeAddress.lift(
+    uniffiRustCallWithError(AlgoKitTransactException) { _status ->
+    UniffiLib.INSTANCE.uniffi_algokit_transact_ffi_fn_func_address_from_pub_key(
+        FfiConverterByteArray.lower(`pubKey`),_status)
+}
     )
+    }
+    
 
-@Throws(AlgoKitTransactException::class)
-fun `addressFromString`(`address`: kotlin.String): Address =
-    FfiConverterTypeAddress.lift(
-        uniffiRustCallWithError(AlgoKitTransactException) { _status ->
-            UniffiLib.INSTANCE.uniffi_algokit_transact_ffi_fn_func_address_from_string(
-                FfiConverterString.lower(`address`),
-                _status,
-            )
-        },
+    @Throws(AlgoKitTransactException::class) fun `addressFromString`(`address`: kotlin.String): Address {
+            return FfiConverterTypeAddress.lift(
+    uniffiRustCallWithError(AlgoKitTransactException) { _status ->
+    UniffiLib.INSTANCE.uniffi_algokit_transact_ffi_fn_func_address_from_string(
+        FfiConverterString.lower(`address`),_status)
+}
     )
+    }
+    
 
-@Throws(AlgoKitTransactException::class)
-fun `attachSignature`(
-    `encodedTx`: kotlin.ByteArray,
-    `signature`: kotlin.ByteArray,
-): kotlin.ByteArray =
-    FfiConverterByteArray.lift(
-        uniffiRustCallWithError(AlgoKitTransactException) { _status ->
-            UniffiLib.INSTANCE.uniffi_algokit_transact_ffi_fn_func_attach_signature(
-                FfiConverterByteArray.lower(`encodedTx`),
-                FfiConverterByteArray.lower(`signature`),
-                _status,
-            )
-        },
+    @Throws(AlgoKitTransactException::class) fun `assignFee`(`txn`: Transaction, `feeParams`: FeeParams): Transaction {
+            return FfiConverterTypeTransaction.lift(
+    uniffiRustCallWithError(AlgoKitTransactException) { _status ->
+    UniffiLib.INSTANCE.uniffi_algokit_transact_ffi_fn_func_assign_fee(
+        FfiConverterTypeTransaction.lower(`txn`),FfiConverterTypeFeeParams.lower(`feeParams`),_status)
+}
     )
+    }
+    
 
-@Throws(AlgoKitTransactException::class)
-fun `decodeTransaction`(`bytes`: kotlin.ByteArray): Transaction =
-    FfiConverterTypeTransaction.lift(
-        uniffiRustCallWithError(AlgoKitTransactException) { _status ->
-            UniffiLib.INSTANCE.uniffi_algokit_transact_ffi_fn_func_decode_transaction(
-                FfiConverterByteArray.lower(`bytes`),
-                _status,
-            )
-        },
+    @Throws(AlgoKitTransactException::class) fun `decodeBase64MsgpackToJson`(`modelType`: ModelType, `base64Str`: kotlin.String): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCallWithError(AlgoKitTransactException) { _status ->
+    UniffiLib.INSTANCE.uniffi_algokit_transact_ffi_fn_func_decode_base64_msgpack_to_json(
+        FfiConverterTypeModelType.lower(`modelType`),FfiConverterString.lower(`base64Str`),_status)
+}
     )
+    }
+    
 
-/**
- * Encode the transaction with the domain separation (e.g. "TX") prefix
- */
-@Throws(AlgoKitTransactException::class)
-fun `encodeTransaction`(`tx`: Transaction): kotlin.ByteArray =
-    FfiConverterByteArray.lift(
-        uniffiRustCallWithError(AlgoKitTransactException) { _status ->
-            UniffiLib.INSTANCE.uniffi_algokit_transact_ffi_fn_func_encode_transaction(
-                FfiConverterTypeTransaction.lower(`tx`),
-                _status,
-            )
-        },
+    @Throws(AlgoKitTransactException::class) fun `decodeMsgpackToJson`(`modelType`: ModelType, `msgpackBytes`: kotlin.ByteArray): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCallWithError(AlgoKitTransactException) { _status ->
+    UniffiLib.INSTANCE.uniffi_algokit_transact_ffi_fn_func_decode_msgpack_to_json(
+        FfiConverterTypeModelType.lower(`modelType`),FfiConverterByteArray.lower(`msgpackBytes`),_status)
+}
     )
+    }
+    
 
-/**
- * Encode the transaction without the domain separation (e.g. "TX") prefix
- * This is useful for encoding the transaction for signing with tools that automatically add "TX" prefix to the transaction bytes.
- */
-@Throws(AlgoKitTransactException::class)
-fun `encodeTransactionRaw`(`tx`: Transaction): kotlin.ByteArray =
-    FfiConverterByteArray.lift(
-        uniffiRustCallWithError(AlgoKitTransactException) { _status ->
-            UniffiLib.INSTANCE.uniffi_algokit_transact_ffi_fn_func_encode_transaction_raw(
-                FfiConverterTypeTransaction.lower(`tx`),
-                _status,
-            )
-        },
+        /**
+         * Decodes a signed transaction.
+         *
+         * # Parameters
+         * * `bytes` - The MsgPack encoded signed transaction bytes
+         *
+         * # Returns
+         * The decoded SignedTransaction or an error if decoding fails.
+         */
+    @Throws(AlgoKitTransactException::class) fun `decodeSignedTransaction`(`bytes`: kotlin.ByteArray): SignedTransaction {
+            return FfiConverterTypeSignedTransaction.lift(
+    uniffiRustCallWithError(AlgoKitTransactException) { _status ->
+    UniffiLib.INSTANCE.uniffi_algokit_transact_ffi_fn_func_decode_signed_transaction(
+        FfiConverterByteArray.lower(`bytes`),_status)
+}
     )
+    }
+    
 
-/**
- * Get the transaction type from the encoded transaction.
- * This is particularly useful when decoding a transaction that has an unknown type
- */
-@Throws(AlgoKitTransactException::class)
-fun `getEncodedTransactionType`(`bytes`: kotlin.ByteArray): TransactionType =
-    FfiConverterTypeTransactionType.lift(
-        uniffiRustCallWithError(AlgoKitTransactException) { _status ->
-            UniffiLib.INSTANCE.uniffi_algokit_transact_ffi_fn_func_get_encoded_transaction_type(
-                FfiConverterByteArray.lower(`bytes`),
-                _status,
-            )
-        },
+        /**
+         * Decodes a collection of MsgPack bytes into a signed transaction collection.
+         *
+         * # Parameters
+         * * `encoded_signed_txs` - A collection of MsgPack encoded bytes, each representing a signed transaction.
+         *
+         * # Returns
+         * A collection of decoded signed transactions or an error if decoding fails.
+         */
+    @Throws(AlgoKitTransactException::class) fun `decodeSignedTransactions`(`encodedSignedTxs`: List<kotlin.ByteArray>): List<SignedTransaction> {
+            return FfiConverterSequenceTypeSignedTransaction.lift(
+    uniffiRustCallWithError(AlgoKitTransactException) { _status ->
+    UniffiLib.INSTANCE.uniffi_algokit_transact_ffi_fn_func_decode_signed_transactions(
+        FfiConverterSequenceByteArray.lower(`encodedSignedTxs`),_status)
+}
     )
+    }
+    
 
-/**
- * Get the base32 transaction ID string for a transaction.
- */
-@Throws(AlgoKitTransactException::class)
-fun `getTransactionId`(`tx`: Transaction): kotlin.String =
-    FfiConverterString.lift(
-        uniffiRustCallWithError(AlgoKitTransactException) { _status ->
-            UniffiLib.INSTANCE.uniffi_algokit_transact_ffi_fn_func_get_transaction_id(
-                FfiConverterTypeTransaction.lower(`tx`),
-                _status,
-            )
-        },
+        /**
+         * Decodes MsgPack bytes into a transaction.
+         *
+         * # Parameters
+         * * `encoded_tx` - MsgPack encoded bytes representing a transaction.
+         *
+         * # Returns
+         * A decoded transaction or an error if decoding fails.
+         */
+    @Throws(AlgoKitTransactException::class) fun `decodeTransaction`(`encodedTx`: kotlin.ByteArray): Transaction {
+            return FfiConverterTypeTransaction.lift(
+    uniffiRustCallWithError(AlgoKitTransactException) { _status ->
+    UniffiLib.INSTANCE.uniffi_algokit_transact_ffi_fn_func_decode_transaction(
+        FfiConverterByteArray.lower(`encodedTx`),_status)
+}
     )
+    }
+    
 
-/**
- * Get the raw 32-byte transaction ID for a transaction.
- */
-@Throws(AlgoKitTransactException::class)
-fun `getTransactionRawId`(`tx`: Transaction): kotlin.ByteArray =
-    FfiConverterByteArray.lift(
-        uniffiRustCallWithError(AlgoKitTransactException) { _status ->
-            UniffiLib.INSTANCE.uniffi_algokit_transact_ffi_fn_func_get_transaction_raw_id(
-                FfiConverterTypeTransaction.lower(`tx`),
-                _status,
-            )
-        },
+        /**
+         * Decodes a collection of MsgPack bytes into a transaction collection.
+         *
+         * # Parameters
+         * * `encoded_txs` - A collection of MsgPack encoded bytes, each representing a transaction.
+         *
+         * # Returns
+         * A collection of decoded transactions or an error if decoding fails.
+         */
+    @Throws(AlgoKitTransactException::class) fun `decodeTransactions`(`encodedTxs`: List<kotlin.ByteArray>): List<Transaction> {
+            return FfiConverterSequenceTypeTransaction.lift(
+    uniffiRustCallWithError(AlgoKitTransactException) { _status ->
+    UniffiLib.INSTANCE.uniffi_algokit_transact_ffi_fn_func_decode_transactions(
+        FfiConverterSequenceByteArray.lower(`encodedTxs`),_status)
+}
     )
+    }
+    
+
+    @Throws(AlgoKitTransactException::class) fun `encodeJsonToBase64Msgpack`(`modelType`: ModelType, `jsonStr`: kotlin.String): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCallWithError(AlgoKitTransactException) { _status ->
+    UniffiLib.INSTANCE.uniffi_algokit_transact_ffi_fn_func_encode_json_to_base64_msgpack(
+        FfiConverterTypeModelType.lower(`modelType`),FfiConverterString.lower(`jsonStr`),_status)
+}
+    )
+    }
+    
+
+    @Throws(AlgoKitTransactException::class) fun `encodeJsonToMsgpack`(`modelType`: ModelType, `jsonStr`: kotlin.String): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
+    uniffiRustCallWithError(AlgoKitTransactException) { _status ->
+    UniffiLib.INSTANCE.uniffi_algokit_transact_ffi_fn_func_encode_json_to_msgpack(
+        FfiConverterTypeModelType.lower(`modelType`),FfiConverterString.lower(`jsonStr`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Encode a signed transaction to MsgPack for sending on the network.
+         *
+         * This method performs canonical encoding. No domain separation prefix is applicable.
+         *
+         * # Parameters
+         * * `signed_tx` - The signed transaction to encode
+         *
+         * # Returns
+         * The MsgPack encoded bytes or an error if encoding fails.
+         */
+    @Throws(AlgoKitTransactException::class) fun `encodeSignedTransaction`(`signedTx`: SignedTransaction): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
+    uniffiRustCallWithError(AlgoKitTransactException) { _status ->
+    UniffiLib.INSTANCE.uniffi_algokit_transact_ffi_fn_func_encode_signed_transaction(
+        FfiConverterTypeSignedTransaction.lower(`signedTx`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Encode signed transactions to MsgPack for sending on the network.
+         *
+         * This method performs canonical encoding. No domain separation prefix is applicable.
+         *
+         * # Parameters
+         * * `signed_txs` - A collection of signed transactions to encode
+         *
+         * # Returns
+         * A collection of MsgPack encoded bytes or an error if encoding fails.
+         */
+    @Throws(AlgoKitTransactException::class) fun `encodeSignedTransactions`(`signedTxs`: List<SignedTransaction>): List<kotlin.ByteArray> {
+            return FfiConverterSequenceByteArray.lift(
+    uniffiRustCallWithError(AlgoKitTransactException) { _status ->
+    UniffiLib.INSTANCE.uniffi_algokit_transact_ffi_fn_func_encode_signed_transactions(
+        FfiConverterSequenceTypeSignedTransaction.lower(`signedTxs`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Encode the transaction with the domain separation (e.g. "TX") prefix
+         */
+    @Throws(AlgoKitTransactException::class) fun `encodeTransaction`(`tx`: Transaction): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
+    uniffiRustCallWithError(AlgoKitTransactException) { _status ->
+    UniffiLib.INSTANCE.uniffi_algokit_transact_ffi_fn_func_encode_transaction(
+        FfiConverterTypeTransaction.lower(`tx`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Encode the transaction without the domain separation (e.g. "TX") prefix
+         * This is useful for encoding the transaction for signing with tools that automatically add "TX" prefix to the transaction bytes.
+         */
+    @Throws(AlgoKitTransactException::class) fun `encodeTransactionRaw`(`tx`: Transaction): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
+    uniffiRustCallWithError(AlgoKitTransactException) { _status ->
+    UniffiLib.INSTANCE.uniffi_algokit_transact_ffi_fn_func_encode_transaction_raw(
+        FfiConverterTypeTransaction.lower(`tx`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Encode transactions to MsgPack with the domain separation (e.g. "TX") prefix.
+         *
+         * # Parameters
+         * * `txs` - A collection of transactions to encode
+         *
+         * # Returns
+         * A collection of MsgPack encoded bytes or an error if encoding fails.
+         */
+    @Throws(AlgoKitTransactException::class) fun `encodeTransactions`(`txs`: List<Transaction>): List<kotlin.ByteArray> {
+            return FfiConverterSequenceByteArray.lift(
+    uniffiRustCallWithError(AlgoKitTransactException) { _status ->
+    UniffiLib.INSTANCE.uniffi_algokit_transact_ffi_fn_func_encode_transactions(
+        FfiConverterSequenceTypeTransaction.lower(`txs`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Return the size of the transaction in bytes as if it was already signed and encoded.
+         * This is useful for estimating the fee for the transaction.
+         */
+    @Throws(AlgoKitTransactException::class) fun `estimateTransactionSize`(`transaction`: Transaction): kotlin.ULong {
+            return FfiConverterULong.lift(
+    uniffiRustCallWithError(AlgoKitTransactException) { _status ->
+    UniffiLib.INSTANCE.uniffi_algokit_transact_ffi_fn_func_estimate_transaction_size(
+        FfiConverterTypeTransaction.lower(`transaction`),_status)
+}
+    )
+    }
+    
+ fun `getAlgorandConstant`(`constant`: AlgorandConstant): kotlin.ULong {
+            return FfiConverterULong.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_algokit_transact_ffi_fn_func_get_algorand_constant(
+        FfiConverterTypeAlgorandConstant.lower(`constant`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Get the transaction type from the encoded transaction.
+         * This is particularly useful when decoding a transaction that has an unknown type
+         */
+    @Throws(AlgoKitTransactException::class) fun `getEncodedTransactionType`(`bytes`: kotlin.ByteArray): TransactionType {
+            return FfiConverterTypeTransactionType.lift(
+    uniffiRustCallWithError(AlgoKitTransactException) { _status ->
+    UniffiLib.INSTANCE.uniffi_algokit_transact_ffi_fn_func_get_encoded_transaction_type(
+        FfiConverterByteArray.lower(`bytes`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Get the base32 transaction ID string for a transaction.
+         */
+    @Throws(AlgoKitTransactException::class) fun `getTransactionId`(`tx`: Transaction): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCallWithError(AlgoKitTransactException) { _status ->
+    UniffiLib.INSTANCE.uniffi_algokit_transact_ffi_fn_func_get_transaction_id(
+        FfiConverterTypeTransaction.lower(`tx`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Get the raw 32-byte transaction ID for a transaction.
+         */
+    @Throws(AlgoKitTransactException::class) fun `getTransactionIdRaw`(`tx`: Transaction): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
+    uniffiRustCallWithError(AlgoKitTransactException) { _status ->
+    UniffiLib.INSTANCE.uniffi_algokit_transact_ffi_fn_func_get_transaction_id_raw(
+        FfiConverterTypeTransaction.lower(`tx`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Groups a collection of transactions by calculating and assigning the group to each transaction.
+         */
+    @Throws(AlgoKitTransactException::class) fun `groupTransactions`(`txs`: List<Transaction>): List<Transaction> {
+            return FfiConverterSequenceTypeTransaction.lift(
+    uniffiRustCallWithError(AlgoKitTransactException) { _status ->
+    UniffiLib.INSTANCE.uniffi_algokit_transact_ffi_fn_func_group_transactions(
+        FfiConverterSequenceTypeTransaction.lower(`txs`),_status)
+}
+    )
+    }
+    
+ fun `supportedModels`(): List<ModelType> {
+            return FfiConverterSequenceTypeModelType.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_algokit_transact_ffi_fn_func_supported_models(
+        _status)
+}
+    )
+    }
+    
+
+
