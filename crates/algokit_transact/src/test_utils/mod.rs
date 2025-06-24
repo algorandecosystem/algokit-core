@@ -100,6 +100,37 @@ impl TransactionMother {
             .to_owned()
     }
 
+    pub fn observed_payment() -> PaymentTransactionBuilder {
+        // https://lora.algokit.io/mainnet/transaction/VTADY3NGJGE4DVZ4CKLX43NTEE3C2J4JJANZ5TPBR4OYJ2D4F2CA
+        PaymentTransactionBuilder::default()
+            .header(
+                TransactionHeaderMother::mainnet()
+                    .first_valid(51169629)
+                    .last_valid(51170629)
+                    .sender(
+                        "P5IFX3UBXZJPDSLPT4TB4RYACD2XJ74XSNKCF7KMW3P7ZGN4RRE3C2T5WM"
+                            .parse()
+                            .unwrap(),
+                    )
+                    .group(
+                        BASE64_STANDARD
+                            .decode("u8X2MQIAMHmcBUEsoE0ivmGoYxSWU91VbNN8Z+Zb+sk=")
+                            .unwrap()
+                            .try_into()
+                            .unwrap(),
+                    )
+                    .build()
+                    .unwrap(),
+            )
+            .amount(53100000)
+            .receiver(
+                "G6TOB3V7INUMZ5BYFOH52RNMMCZCX3ZCX7JHF3BGIG46PFFZNRPHDCIDIM"
+                    .parse()
+                    .unwrap(),
+            )
+            .to_owned()
+    }
+
     pub fn simple_asset_transfer() -> AssetTransferTransactionBuilder {
         AssetTransferTransactionBuilder::default()
             .header(

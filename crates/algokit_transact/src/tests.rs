@@ -65,13 +65,13 @@ fn check_transaction_id(tx: &Transaction, expected_tx_id: &str) {
 
 #[test]
 fn test_payment_transaction_encoding() {
-    let payment_tx = TransactionMother::simple_payment().build().unwrap();
+    let payment_tx = TransactionMother::observed_payment().build().unwrap();
 
     check_transaction_id(
         &payment_tx,
-        "TZM3P4ZL4DLIEZ3WOEP67MQ6JITTO4D3NJN3RCA5YDBC3V4LA5LA",
+        "VTADY3NGJGE4DVZ4CKLX43NTEE3C2J4JJANZ5TPBR4OYJ2D4F2CA",
     );
-    check_transaction_encoding(&payment_tx, 174);
+    check_transaction_encoding(&payment_tx, 212);
 }
 
 #[test]
