@@ -11,12 +11,22 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
+
+
+
+
+
+
+
+use crate::models::SimulateTransactionResult;
+use crate::models::SimulateUnnamedResourcesAccessed;
+
 /// Simulation result for an atomic transaction group
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SimulateTransactionGroupResult {
         /// Simulation result for individual transactions
     #[serde(rename = "txn-results")]
-    pub txn_results: Vec<serde_json::Value>,
+    pub txn_results: Vec<SimulateTransactionResult>,
         /// If present, indicates that the transaction group failed and specifies why that happened
     #[serde(rename = "failure-message", skip_serializing_if = "Option::is_none")]
     pub failure_message: Option<String>,
@@ -30,14 +40,15 @@ pub struct SimulateTransactionGroupResult {
     #[serde(rename = "app-budget-consumed", skip_serializing_if = "Option::is_none")]
     pub app_budget_consumed: Option<i32>,
     #[serde(rename = "unnamed-resources-accessed", skip_serializing_if = "Option::is_none")]
-    pub unnamed_resources_accessed: Option<serde_json::Value>,
+    pub unnamed_resources_accessed: Option<SimulateUnnamedResourcesAccessed>,
 }
+
 
 
 
 impl SimulateTransactionGroupResult {
     /// Constructor for SimulateTransactionGroupResult
-    pub fn new(txn_results: Vec<serde_json::Value>) -> SimulateTransactionGroupResult {
+    pub fn new(txn_results: Vec<SimulateTransactionResult>) -> SimulateTransactionGroupResult {
         SimulateTransactionGroupResult {
             txn_results,
             failure_message: None,
@@ -47,4 +58,5 @@ impl SimulateTransactionGroupResult {
             unnamed_resources_accessed: None,
         }
     }
+
 }

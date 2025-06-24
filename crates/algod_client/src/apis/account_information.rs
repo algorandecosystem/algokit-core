@@ -12,16 +12,23 @@ use reqwest;
 use serde::{Deserialize, Serialize, de::Error as _};
 use crate::{apis::ResponseContent, models};
 use super::{Error, configuration, ContentType};
+use algokit_transact::AlgorandMsgpack;
 
-// Import response types for this endpoint
+// Import all custom types used by this endpoint
+use crate::models::{
+    Account,
+    ErrorResponse,
+};
+
+// Import request body type if needed
 
 /// struct for typed errors of method [`account_information`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum AccountInformationError {
-    Status400(serde_json::Value),
-    Status401(serde_json::Value),
-    Status500(serde_json::Value),
+    Status400(ErrorResponse),
+    Status401(ErrorResponse),
+    Status500(ErrorResponse),
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(serde_json::Value),
@@ -33,7 +40,8 @@ pub async fn account_information(
 format: Option<&str>,
 address: &str,
 exclude: Option<&str>,
-) -> Result<serde_json::Value, Error<AccountInformationError>> {
+
+) -> Result<Account, Error<AccountInformationError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_format = format;
     let p_address = address;
@@ -49,6 +57,7 @@ exclude: Option<&str>,
         req_builder = req_builder.query(&[("exclude", &param_value.to_string())]);
     }
 
+
     if let Some(ref user_agent) = configuration.user_agent {
         req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
     }
@@ -60,6 +69,7 @@ exclude: Option<&str>,
         };
         req_builder = req_builder.header("X-Algo-API-Token", value);
     };
+
 
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;
@@ -78,8 +88,9 @@ exclude: Option<&str>,
                 let content = resp.text().await?;
                 serde_json::from_str(&content).map_err(Error::from)
             },
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `serde_json::Value`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `serde_json::Value`")))),
+            ContentType::MsgPack => return Err(Error::from(serde_json::Error::custom("MsgPack response handling not supported for this endpoint"))),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Account`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Account`")))),
         }
     } else {
         let content = resp.text().await?;

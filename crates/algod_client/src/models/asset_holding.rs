@@ -11,6 +11,11 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
+
+
+
+
+
 /// Describes an asset held by an account.
 /// 
 /// Definition:
@@ -30,6 +35,7 @@ pub struct AssetHolding {
 
 
 
+
 impl AssetHolding {
     /// Constructor for AssetHolding
     pub fn new(amount: i32, asset_id: i32, is_frozen: bool) -> AssetHolding {
@@ -39,4 +45,5 @@ impl AssetHolding {
             is_frozen,
         }
     }
+
 }

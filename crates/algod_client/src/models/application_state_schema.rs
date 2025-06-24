@@ -11,6 +11,10 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
+
+
+
+
 /// Specifies maximums on the number of each type that may be stored.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ApplicationStateSchema {
@@ -24,6 +28,7 @@ pub struct ApplicationStateSchema {
 
 
 
+
 impl ApplicationStateSchema {
     /// Constructor for ApplicationStateSchema
     pub fn new(num_uint: i32, num_byte_slice: i32) -> ApplicationStateSchema {
@@ -32,4 +37,5 @@ impl ApplicationStateSchema {
             num_byte_slice,
         }
     }
+
 }

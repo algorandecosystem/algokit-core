@@ -12,6 +12,11 @@ use crate::models;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
+
+
+
+
+
 /// Proof of membership and position of a light block header.
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
@@ -30,6 +35,7 @@ pub struct LightBlockHeaderProof {
 
 
 
+
 impl LightBlockHeaderProof {
     /// Constructor for LightBlockHeaderProof
     pub fn new(index: i32, treedepth: i32, proof: Vec<u8>) -> LightBlockHeaderProof {
@@ -39,4 +45,5 @@ impl LightBlockHeaderProof {
             proof,
         }
     }
+
 }

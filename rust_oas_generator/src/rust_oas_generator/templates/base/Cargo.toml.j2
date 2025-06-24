@@ -25,8 +25,10 @@ reqwest = { version = "^0.12", default-features = false, features = [
   "multipart",
 ] }
 
+{% if spec.has_msgpack_operations %}
 # AlgoKit dependencies for msgpack and signed transactions
 algokit_transact = { path = "../algokit_transact" }
+{% endif %}
 
 # Error handling
 thiserror = "^1.0"

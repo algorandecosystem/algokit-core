@@ -49,8 +49,12 @@ def rust_type_from_openapi(
             return pascal_case(ref_name)
         visited.add(ref_name)
         if ref_name in schemas:
-            # Resolve the reference
-            return rust_type_from_openapi(schemas[ref_name], schemas, visited)
+            # For named schemas, return the schema name directly instead of resolving the schema
+            # This prevents object schemas from falling back to serde_json::Value
+            # Handle special case for "Box" which conflicts with Rust's std::boxed::Box
+            if ref_name == "Box":
+                return "ModelBox"
+            return pascal_case(ref_name)
         return pascal_case(ref_name)
 
     schema_type = schema.get("type", "string")
@@ -107,6 +111,46 @@ def detect_msgpack_field(prop_data: Dict[str, Any]) -> bool:
     return False
 
 
+def detect_msgpack_support_for_operation(operation_data: Dict[str, Any]) -> bool:
+    """Detect if an operation supports msgpack content type."""
+    # Check request body content types
+    request_body = operation_data.get("requestBody", {})
+    if "application/msgpack" in request_body.get("content", {}):
+        return True
+
+    # Check response content types
+    responses = operation_data.get("responses", {})
+    for response_data in responses.values():
+        content = response_data.get("content", {})
+        if "application/msgpack" in content:
+            return True
+
+    return False
+
+
+def should_implement_algokit_msgpack(
+    schema_data: Dict[str, Any], operation_msgpack_support: bool = False
+) -> bool:
+    """Determine if a schema should implement AlgorandMsgpack trait."""
+    # If it's a signed transaction type
+    if schema_data.get("x-algokit-signed-txn", False):
+        return True
+
+    # If any properties have signed transaction marker
+    properties = schema_data.get("properties", {})
+    for prop_data in properties.values():
+        if prop_data.get("x-algokit-signed-txn", False):
+            return True
+        # Check array items
+        if prop_data.get("type") == "array":
+            items = prop_data.get("items", {})
+            if items.get("x-algokit-signed-txn", False):
+                return True
+
+    # If this is a response/request model for msgpack operations
+    return bool(operation_msgpack_support)
+
+
 def rust_type_with_msgpack(
     schema: Dict[str, Any],
     schemas: Dict[str, Any],
@@ -143,6 +187,7 @@ class Response:
     description: str
     rust_type: Optional[str] = None
     content_types: List[str] = field(default_factory=list)
+    supports_msgpack: bool = False
 
 
 @dataclass
@@ -160,6 +205,8 @@ class Operation:
     tags: List[str]
     rust_function_name: str = field(init=False)
     rust_error_enum: str = field(init=False)
+    supports_msgpack: bool = False
+    request_body_supports_msgpack: bool = False
 
     def __post_init__(self):
         self.rust_function_name = snake_case(self.operation_id)
@@ -216,13 +263,22 @@ class Schema:
     rust_struct_name: str = field(init=False)
     has_msgpack_fields: bool = field(init=False)
     has_required_fields: bool = field(init=False)
+    implements_algokit_msgpack: bool = field(init=False)
+    has_signed_transaction_fields: bool = field(init=False)
 
     def __post_init__(self):
-        self.rust_struct_name = pascal_case(self.name)
+        # Handle special case for "Box" which conflicts with Rust's std::boxed::Box
+        if self.name == "Box":
+            self.rust_struct_name = "ModelBox"
+        else:
+            self.rust_struct_name = pascal_case(self.name)
         self.has_msgpack_fields = any(
             prop.is_base64_encoded for prop in self.properties
         )
         self.has_required_fields = len(self.required_fields) > 0
+        self.has_signed_transaction_fields = any(
+            prop.is_signed_transaction for prop in self.properties
+        )
 
 
 @dataclass
@@ -234,6 +290,7 @@ class ParsedSpec:
     operations: List[Operation]
     schemas: Dict[str, Schema]
     content_types: List[str]
+    has_msgpack_operations: bool = False
 
 
 class OASParser:
@@ -242,6 +299,7 @@ class OASParser:
     def __init__(self):
         self.spec_data: Optional[Dict[str, Any]] = None
         self.schemas: Dict[str, Any] = {}
+        self.msgpack_operations: List[str] = []
 
     def parse_file(self, file_path: Union[str, Path]) -> ParsedSpec:
         """Parse OpenAPI specification from file."""
@@ -269,13 +327,34 @@ class OASParser:
         schemas = self._parse_schemas()
         content_types = self._extract_content_types()
 
+        # Check if any operations support msgpack
+        has_msgpack_operations = len(self.msgpack_operations) > 0
+
+        # Update schemas to implement AlgorandMsgpack if needed
+        self._update_schemas_for_msgpack(schemas, has_msgpack_operations)
+
         return ParsedSpec(
             info=info,
             servers=servers,
             operations=operations,
             schemas=schemas,
             content_types=content_types,
+            has_msgpack_operations=has_msgpack_operations,
         )
+
+    def _update_schemas_for_msgpack(
+        self, schemas: Dict[str, Schema], has_msgpack_operations: bool
+    ):
+        """Update schemas to implement AlgorandMsgpack trait when appropriate."""
+        for schema_name, schema in schemas.items():
+            raw_schema = self.schemas.get(schema_name, {})
+
+            # Check if this schema should implement AlgorandMsgpack
+            should_implement = should_implement_algokit_msgpack(
+                raw_schema, has_msgpack_operations and schema_name.endswith("Response")
+            )
+
+            schema.implements_algokit_msgpack = should_implement
 
     def _parse_operations(self) -> List[Operation]:
         """Parse all operations from paths."""
@@ -301,6 +380,10 @@ class OASParser:
                     if operation:
                         operations.append(operation)
 
+                        # Track operations that support msgpack
+                        if operation.supports_msgpack:
+                            self.msgpack_operations.append(operation.operation_id)
+
         return operations
 
     def _parse_operation(
@@ -313,6 +396,15 @@ class OASParser:
         operation_id = operation_data.get("operationId")
         if not operation_id:
             return None
+
+        # Check if operation supports msgpack
+        supports_msgpack = detect_msgpack_support_for_operation(operation_data)
+
+        # Check if request body supports msgpack
+        request_body_supports_msgpack = False
+        request_body = operation_data.get("requestBody", {})
+        if "application/msgpack" in request_body.get("content", {}):
+            request_body_supports_msgpack = True
 
         # Parse parameters
         parameters = []
@@ -337,6 +429,8 @@ class OASParser:
             request_body=operation_data.get("requestBody"),
             responses=responses,
             tags=operation_data.get("tags", []),
+            supports_msgpack=supports_msgpack,
+            request_body_supports_msgpack=request_body_supports_msgpack,
         )
 
     def _parse_parameter(self, param_data: Dict[str, Any]) -> Optional[Parameter]:
@@ -373,6 +467,7 @@ class OASParser:
         """Parse a response."""
         content = response_data.get("content", {})
         content_types = list(content.keys())
+        supports_msgpack = "application/msgpack" in content_types
 
         # Determine Rust type from content
         rust_type = None
@@ -403,6 +498,7 @@ class OASParser:
             description=response_data.get("description", ""),
             rust_type=rust_type,
             content_types=content_types,
+            supports_msgpack=supports_msgpack,
         )
 
     def _should_create_response_model(

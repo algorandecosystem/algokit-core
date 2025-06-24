@@ -12,7 +12,11 @@ use reqwest;
 use serde::{Deserialize, Serialize};
 
 pub mod configuration;
-pub mod default_api;
+
+// Individual endpoint modules
+{% for operation in operations %}
+pub mod {{ operation.rust_function_name }};
+{% endfor %}
 
 #[derive(Debug, Clone)]
 pub struct ResponseContent<T> {
@@ -53,10 +57,13 @@ pub fn urlencode<T: AsRef<str>>(s: T) -> String {
 
 {% set content_types = spec.content_types %}
 {% set has_text_plain = "text/plain" in content_types %}
+{% set has_msgpack = spec.has_msgpack_operations %}
 #[derive(Debug, PartialEq)]
 pub enum ContentType {
     Json,
     {% if has_text_plain %}Text,
+    {% endif %}
+    {% if has_msgpack %}MsgPack,
     {% endif %}
     Unsupported(String),
 }
@@ -69,9 +76,21 @@ impl From<&str> for ContentType {
         } else if content_type.starts_with("text/plain") {
             return Self::Text;
         {% endif %}
+        {% if has_msgpack %}
+        } else if content_type.starts_with("application/msgpack") {
+            return Self::MsgPack;
+        {% endif %}
         } else {
             return Self::Unsupported(content_type.to_string());
         }
     }
 }
+
+// Re-export all endpoint functions
+{% for operation in operations %}
+pub use {{ operation.rust_function_name }}::{
+    {{ operation.rust_function_name }},
+    {{ operation.rust_error_enum }},
+};
+{% endfor %}
 

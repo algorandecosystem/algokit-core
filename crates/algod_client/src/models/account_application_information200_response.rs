@@ -10,6 +10,14 @@
 
 use crate::models;
 use serde::{Deserialize, Serialize};
+use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
+
+
+
+
+
+use crate::models::ApplicationLocalState;
+use crate::models::ApplicationParams;
 
 /// AccountApplicationResponse describes the account's application local state and global state (AppLocalState and AppParams, if either exists) for a specific application ID. Global state will only be returned if the provided address is the application's creator.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
@@ -18,12 +26,16 @@ pub struct AccountApplicationInformation200Response {
     #[serde(rename = "round")]
     pub round: i32,
     #[serde(rename = "app-local-state", skip_serializing_if = "Option::is_none")]
-    pub app_local_state: Option<serde_json::Value>,
+    pub app_local_state: Option<ApplicationLocalState>,
     #[serde(rename = "created-app", skip_serializing_if = "Option::is_none")]
-    pub created_app: Option<serde_json::Value>,
+    pub created_app: Option<ApplicationParams>,
 }
 
 
+
+impl AlgorandMsgpack for AccountApplicationInformation200Response {
+    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+}
 
 impl AccountApplicationInformation200Response {
     /// Constructor for AccountApplicationInformation200Response
@@ -33,5 +45,15 @@ impl AccountApplicationInformation200Response {
             app_local_state: None,
             created_app: None,
         }
+    }
+
+    /// Encode this struct to msgpack bytes using AlgorandMsgpack trait
+    pub fn to_msgpack(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        Ok(self.encode()?)
+    }
+
+    /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
+    pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(Self::decode(bytes)?)
     }
 }

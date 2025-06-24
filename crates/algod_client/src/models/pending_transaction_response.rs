@@ -12,6 +12,24 @@ use crate::models;
 use serde::{Deserialize, Serialize};
 use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+use crate::models::AccountStateDelta;
+use crate::models::StateDelta;
+
 /// Details about a pending transaction. If the transaction was recently confirmed, includes confirmation details like the round and reward details.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct PendingTransactionResponse {
@@ -44,15 +62,15 @@ pub struct PendingTransactionResponse {
     pub sender_rewards: Option<i32>,
         /// Local state key/value changes for the application being executed by this transaction.
     #[serde(rename = "local-state-delta", skip_serializing_if = "Option::is_none")]
-    pub local_state_delta: Option<Vec<serde_json::Value>>,
+    pub local_state_delta: Option<Vec<AccountStateDelta>>,
     #[serde(rename = "global-state-delta", skip_serializing_if = "Option::is_none")]
-    pub global_state_delta: Option<Vec<serde_json::Value>>,
+    pub global_state_delta: Option<StateDelta>,
         /// Logs for the application being executed by this transaction.
     #[serde(rename = "logs", skip_serializing_if = "Option::is_none")]
     pub logs: Option<Vec<String>>,
         /// Inner transactions produced by application execution.
     #[serde(rename = "inner-txns", skip_serializing_if = "Option::is_none")]
-    pub inner_txns: Option<Vec<serde_json::Value>>,
+    pub inner_txns: Option<Vec<PendingTransactionResponse>>,
         /// The raw signed transaction.
     #[serde(rename = "txn")]
     pub txn: AlgokitSignedTransaction,
@@ -74,11 +92,35 @@ impl Default for PendingTransactionResponse {
             global_state_delta: None,
             logs: None,
             inner_txns: None,
-            txn: todo!("Provide default AlgokitSignedTransaction"),
+            txn: AlgokitSignedTransaction {
+                transaction: algokit_transact::Transaction::Payment(algokit_transact::PaymentTransactionFields {
+                    header: algokit_transact::TransactionHeader {
+                        sender: Default::default(),
+                        fee: None,
+                        first_valid: 0,
+                        last_valid: 0,
+                        genesis_hash: None,
+                        genesis_id: None,
+                        note: None,
+                        rekey_to: None,
+                        lease: None,
+                        group: None,
+                    },
+                    receiver: Default::default(),
+                    amount: 0,
+                    close_remainder_to: None,
+                }),
+                signature: None,
+                auth_address: None,
+            },
         }
     }
 }
 
+
+impl AlgorandMsgpack for PendingTransactionResponse {
+    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+}
 
 impl PendingTransactionResponse {
     /// Constructor for PendingTransactionResponse
@@ -99,5 +141,15 @@ impl PendingTransactionResponse {
             logs: None,
             inner_txns: None,
         }
+    }
+
+    /// Encode this struct to msgpack bytes using AlgorandMsgpack trait
+    pub fn to_msgpack(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        Ok(self.encode()?)
+    }
+
+    /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
+    pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(Self::decode(bytes)?)
     }
 }

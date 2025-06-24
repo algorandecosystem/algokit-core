@@ -13,19 +13,22 @@ use serde::{Deserialize, Serialize, de::Error as _};
 use crate::{apis::ResponseContent, models};
 use super::{Error, configuration, ContentType};
 
-// Import response types for this endpoint
+// Import all custom types used by this endpoint
 use crate::models::{
+    ErrorResponse,
     TealCompile200Response,
 };
+
+// Import request body type if needed
 
 /// struct for typed errors of method [`teal_compile`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum TealCompileError {
-    Status400(serde_json::Value),
-    Status401(serde_json::Value),
+    Status400(ErrorResponse),
+    Status401(ErrorResponse),
     Status404(),
-    Status500(serde_json::Value),
+    Status500(ErrorResponse),
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(serde_json::Value),
@@ -34,9 +37,12 @@ pub enum TealCompileError {
 /// Given TEAL source code in plain text, return base64 encoded program bytes and base32 SHA512_256 hash of program bytes (Address style). This endpoint is only enabled when a node's configuration file sets EnableDeveloperAPI to true.
 pub async fn teal_compile(
     configuration: &configuration::Configuration,
+request: Vec<u8>,
 sourcemap: Option<bool>,
+
 ) -> Result<TealCompile200Response, Error<TealCompileError>> {
     // add a prefix to parameters to efficiently prevent name collisions
+    let p_request = request;
     let p_sourcemap = sourcemap;
 
     let uri_str = format!("{}/v2/teal/compile", configuration.base_path);
@@ -45,6 +51,7 @@ sourcemap: Option<bool>,
     if let Some(ref param_value) = p_sourcemap {
         req_builder = req_builder.query(&[("sourcemap", &param_value.to_string())]);
     }
+
 
     if let Some(ref user_agent) = configuration.user_agent {
         req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
@@ -57,6 +64,8 @@ sourcemap: Option<bool>,
         };
         req_builder = req_builder.header("X-Algo-API-Token", value);
     };
+
+    req_builder = req_builder.json(&p_request);
 
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;
@@ -75,6 +84,7 @@ sourcemap: Option<bool>,
                 let content = resp.text().await?;
                 serde_json::from_str(&content).map_err(Error::from)
             },
+            ContentType::MsgPack => return Err(Error::from(serde_json::Error::custom("MsgPack response handling not supported for this endpoint"))),
             ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `TealCompile200Response`"))),
             ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `TealCompile200Response`")))),
         }

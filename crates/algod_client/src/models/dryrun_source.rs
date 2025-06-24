@@ -11,6 +11,12 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
+
+
+
+
+
+
 /// DryrunSource is TEAL source text that gets uploaded, compiled, and inserted into transactions or application state.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct DryrunSource {
@@ -27,6 +33,7 @@ pub struct DryrunSource {
 
 
 
+
 impl DryrunSource {
     /// Constructor for DryrunSource
     pub fn new(field_name: String, source: String, txn_index: i32, app_index: i32) -> DryrunSource {
@@ -37,4 +44,5 @@ impl DryrunSource {
             app_index,
         }
     }
+
 }

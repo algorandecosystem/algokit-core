@@ -11,6 +11,11 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
+
+
+
+
+
 /// Represents a TEAL value.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TealValue {
@@ -27,6 +32,7 @@ pub struct TealValue {
 
 
 
+
 impl TealValue {
     /// Constructor for TealValue
     pub fn new(r#type: i32, bytes: String, uint: i32) -> TealValue {
@@ -36,4 +42,5 @@ impl TealValue {
             uint,
         }
     }
+
 }

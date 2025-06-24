@@ -11,6 +11,11 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
+
+
+
+
+
 /// Represents an AVM value.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct AvmValue {
@@ -27,6 +32,7 @@ pub struct AvmValue {
 
 
 
+
 impl AvmValue {
     /// Constructor for AvmValue
     pub fn new(r#type: i32) -> AvmValue {
@@ -36,4 +42,5 @@ impl AvmValue {
             uint: None,
         }
     }
+
 }

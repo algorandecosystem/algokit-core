@@ -13,16 +13,22 @@ use serde::{Deserialize, Serialize, de::Error as _};
 use crate::{apis::ResponseContent, models};
 use super::{Error, configuration, ContentType};
 
-// Import response types for this endpoint
+// Import all custom types used by this endpoint
+use crate::models::{
+    ErrorResponse,
+    ModelBox,
+};
+
+// Import request body type if needed
 
 /// struct for typed errors of method [`get_application_box_by_name`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum GetApplicationBoxByNameError {
-    Status400(serde_json::Value),
-    Status401(serde_json::Value),
-    Status404(serde_json::Value),
-    Status500(serde_json::Value),
+    Status400(ErrorResponse),
+    Status401(ErrorResponse),
+    Status404(ErrorResponse),
+    Status500(ErrorResponse),
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(serde_json::Value),
@@ -33,7 +39,8 @@ pub async fn get_application_box_by_name(
     configuration: &configuration::Configuration,
 application_id: i32,
 name: &str,
-) -> Result<serde_json::Value, Error<GetApplicationBoxByNameError>> {
+
+) -> Result<ModelBox, Error<GetApplicationBoxByNameError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_application_id = application_id;
     let p_name = name;
@@ -42,6 +49,7 @@ name: &str,
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     req_builder = req_builder.query(&[("name", &p_name.to_string())]);
+
 
     if let Some(ref user_agent) = configuration.user_agent {
         req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
@@ -54,6 +62,7 @@ name: &str,
         };
         req_builder = req_builder.header("X-Algo-API-Token", value);
     };
+
 
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;
@@ -72,8 +81,9 @@ name: &str,
                 let content = resp.text().await?;
                 serde_json::from_str(&content).map_err(Error::from)
             },
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `serde_json::Value`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `serde_json::Value`")))),
+            ContentType::MsgPack => return Err(Error::from(serde_json::Error::custom("MsgPack response handling not supported for this endpoint"))),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `ModelBox`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `ModelBox`")))),
         }
     } else {
         let content = resp.text().await?;

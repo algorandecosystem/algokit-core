@@ -11,12 +11,24 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
+
+
+
+
+
+
+
+
+
+use crate::models::SimulateRequestTransactionGroup;
+use crate::models::SimulateTraceConfig;
+
 /// Request type for simulation endpoint.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SimulateRequest {
         /// The transaction groups to simulate.
     #[serde(rename = "txn-groups")]
-    pub txn_groups: Vec<serde_json::Value>,
+    pub txn_groups: Vec<SimulateRequestTransactionGroup>,
         /// If provided, specifies the round preceding the simulation. State changes through this round will be used to run this simulation. Usually only the 4 most recent rounds will be available (controlled by the node config value MaxAcctLookback). If not specified, defaults to the latest available round.
     #[serde(rename = "round", skip_serializing_if = "Option::is_none")]
     pub round: Option<i32>,
@@ -33,7 +45,7 @@ pub struct SimulateRequest {
     #[serde(rename = "extra-opcode-budget", skip_serializing_if = "Option::is_none")]
     pub extra_opcode_budget: Option<i32>,
     #[serde(rename = "exec-trace-config", skip_serializing_if = "Option::is_none")]
-    pub exec_trace_config: Option<serde_json::Value>,
+    pub exec_trace_config: Option<SimulateTraceConfig>,
         /// If true, signers for transactions that are missing signatures will be fixed during evaluation.
     #[serde(rename = "fix-signers", skip_serializing_if = "Option::is_none")]
     pub fix_signers: Option<bool>,
@@ -41,9 +53,10 @@ pub struct SimulateRequest {
 
 
 
+
 impl SimulateRequest {
     /// Constructor for SimulateRequest
-    pub fn new(txn_groups: Vec<serde_json::Value>) -> SimulateRequest {
+    pub fn new(txn_groups: Vec<SimulateRequestTransactionGroup>) -> SimulateRequest {
         SimulateRequest {
             txn_groups,
             round: None,
@@ -55,4 +68,5 @@ impl SimulateRequest {
             fix_signers: None,
         }
     }
+
 }

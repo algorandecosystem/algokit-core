@@ -12,10 +12,15 @@ use crate::models;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
+
+
+
+
+
 /// Box name and its content.
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct Box {
+pub struct ModelBox {
         /// The round for which this information is relevant
     #[serde(rename = "round")]
     pub round: i32,
@@ -31,13 +36,15 @@ pub struct Box {
 
 
 
-impl Box {
-    /// Constructor for Box
-    pub fn new(round: i32, name: Vec<u8>, value: Vec<u8>) -> Box {
-        Box {
+
+impl ModelBox {
+    /// Constructor for ModelBox
+    pub fn new(round: i32, name: Vec<u8>, value: Vec<u8>) -> ModelBox {
+        ModelBox {
             round,
             name,
             value,
         }
     }
+
 }

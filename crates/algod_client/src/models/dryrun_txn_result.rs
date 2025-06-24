@@ -11,6 +11,22 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
+
+
+
+
+
+
+
+
+
+
+
+
+use crate::models::DryrunState;
+use crate::models::StateDelta;
+use crate::models::AccountStateDelta;
+
 /// DryrunTxnResult contains any LogicSig or ApplicationCall program debug information and state updates from a dryrun.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct DryrunTxnResult {
@@ -21,17 +37,17 @@ pub struct DryrunTxnResult {
     #[serde(rename = "logic-sig-disassembly", skip_serializing_if = "Option::is_none")]
     pub logic_sig_disassembly: Option<Vec<String>>,
     #[serde(rename = "logic-sig-trace", skip_serializing_if = "Option::is_none")]
-    pub logic_sig_trace: Option<Vec<serde_json::Value>>,
+    pub logic_sig_trace: Option<Vec<DryrunState>>,
     #[serde(rename = "logic-sig-messages", skip_serializing_if = "Option::is_none")]
     pub logic_sig_messages: Option<Vec<String>>,
     #[serde(rename = "app-call-trace", skip_serializing_if = "Option::is_none")]
-    pub app_call_trace: Option<Vec<serde_json::Value>>,
+    pub app_call_trace: Option<Vec<DryrunState>>,
     #[serde(rename = "app-call-messages", skip_serializing_if = "Option::is_none")]
     pub app_call_messages: Option<Vec<String>>,
     #[serde(rename = "global-delta", skip_serializing_if = "Option::is_none")]
-    pub global_delta: Option<Vec<serde_json::Value>>,
+    pub global_delta: Option<StateDelta>,
     #[serde(rename = "local-deltas", skip_serializing_if = "Option::is_none")]
-    pub local_deltas: Option<Vec<serde_json::Value>>,
+    pub local_deltas: Option<Vec<AccountStateDelta>>,
     #[serde(rename = "logs", skip_serializing_if = "Option::is_none")]
     pub logs: Option<Vec<String>>,
         /// Budget added during execution of app call transaction.
@@ -41,6 +57,7 @@ pub struct DryrunTxnResult {
     #[serde(rename = "budget-consumed", skip_serializing_if = "Option::is_none")]
     pub budget_consumed: Option<i32>,
 }
+
 
 
 
@@ -61,4 +78,5 @@ impl DryrunTxnResult {
             budget_consumed: None,
         }
     }
+
 }

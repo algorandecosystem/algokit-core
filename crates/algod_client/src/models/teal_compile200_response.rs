@@ -11,6 +11,12 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
+use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
+
+
+
+
+
 
 /// Teal compile Result
 #[serde_as]
@@ -30,6 +36,10 @@ pub struct TealCompile200Response {
 
 
 
+impl AlgorandMsgpack for TealCompile200Response {
+    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+}
+
 impl TealCompile200Response {
     /// Constructor for TealCompile200Response
     pub fn new(hash: String, result: Vec<u8>) -> TealCompile200Response {
@@ -38,5 +48,15 @@ impl TealCompile200Response {
             result,
             sourcemap: None,
         }
+    }
+
+    /// Encode this struct to msgpack bytes using AlgorandMsgpack trait
+    pub fn to_msgpack(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        Ok(self.encode()?)
+    }
+
+    /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
+    pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(Self::decode(bytes)?)
     }
 }

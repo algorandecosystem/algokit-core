@@ -12,12 +12,17 @@ use crate::models;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
+
+
+
+use crate::models::StateProofMessage;
+
 /// Represents a state proof and its corresponding message
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct StateProof {
     #[serde(rename = "Message")]
-    pub message: serde_json::Value,
+    pub message: StateProofMessage,
         /// The encoded StateProof for the message.
     #[serde_as(as = "serde_with::base64::Base64")]
     #[serde(rename = "StateProof")]
@@ -26,12 +31,14 @@ pub struct StateProof {
 
 
 
+
 impl StateProof {
     /// Constructor for StateProof
-    pub fn new(message: serde_json::Value, state_proof: Vec<u8>) -> StateProof {
+    pub fn new(message: StateProofMessage, state_proof: Vec<u8>) -> StateProof {
         StateProof {
             message,
             state_proof,
         }
     }
+
 }

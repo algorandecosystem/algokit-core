@@ -11,6 +11,14 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
+
+
+
+
+
+
+
+
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct BuildVersion {
     #[serde(rename = "branch")]
@@ -29,6 +37,7 @@ pub struct BuildVersion {
 
 
 
+
 impl BuildVersion {
     /// Constructor for BuildVersion
     pub fn new(branch: String, build_number: i64, channel: String, commit_hash: String, major: i64, minor: i64) -> BuildVersion {
@@ -41,4 +50,5 @@ impl BuildVersion {
             minor,
         }
     }
+
 }

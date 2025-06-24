@@ -13,17 +13,22 @@ use serde::{Deserialize, Serialize, de::Error as _};
 use crate::{apis::ResponseContent, models};
 use super::{Error, configuration, ContentType};
 
-// Import response types for this endpoint
+// Import all custom types used by this endpoint
+use crate::models::{
+    ErrorResponse,
+};
+
+// Import request body type if needed
 
 /// struct for typed errors of method [`raw_transaction_async`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum RawTransactionAsyncError {
-    Status400(serde_json::Value),
-    Status401(serde_json::Value),
+    Status400(ErrorResponse),
+    Status401(ErrorResponse),
     Status404(),
-    Status500(serde_json::Value),
-    Status503(serde_json::Value),
+    Status500(ErrorResponse),
+    Status503(ErrorResponse),
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(serde_json::Value),
@@ -32,11 +37,15 @@ pub enum RawTransactionAsyncError {
 /// Fast track for broadcasting a raw transaction or transaction group to the network through the tx handler without performing most of the checks and reporting detailed errors. Should be only used for development and performance testing.
 pub async fn raw_transaction_async(
     configuration: &configuration::Configuration,
+request: Vec<u8>,
+
 ) -> Result<(), Error<RawTransactionAsyncError>> {
     // add a prefix to parameters to efficiently prevent name collisions
+    let p_request = request;
 
     let uri_str = format!("{}/v2/transactions/async", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::POST, &uri_str);
+
 
 
     if let Some(ref user_agent) = configuration.user_agent {
@@ -50,6 +59,8 @@ pub async fn raw_transaction_async(
         };
         req_builder = req_builder.header("X-Algo-API-Token", value);
     };
+
+    req_builder = req_builder.json(&p_request);
 
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;

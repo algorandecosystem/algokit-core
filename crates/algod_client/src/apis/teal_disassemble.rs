@@ -13,19 +13,22 @@ use serde::{Deserialize, Serialize, de::Error as _};
 use crate::{apis::ResponseContent, models};
 use super::{Error, configuration, ContentType};
 
-// Import response types for this endpoint
+// Import all custom types used by this endpoint
 use crate::models::{
+    ErrorResponse,
     TealDisassemble200Response,
 };
+
+// Import request body type if needed
 
 /// struct for typed errors of method [`teal_disassemble`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum TealDisassembleError {
-    Status400(serde_json::Value),
-    Status401(serde_json::Value),
+    Status400(ErrorResponse),
+    Status401(ErrorResponse),
     Status404(),
-    Status500(serde_json::Value),
+    Status500(ErrorResponse),
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(serde_json::Value),
@@ -34,11 +37,15 @@ pub enum TealDisassembleError {
 /// Given the program bytes, return the TEAL source code in plain text. This endpoint is only enabled when a node's configuration file sets EnableDeveloperAPI to true.
 pub async fn teal_disassemble(
     configuration: &configuration::Configuration,
+request: String,
+
 ) -> Result<TealDisassemble200Response, Error<TealDisassembleError>> {
     // add a prefix to parameters to efficiently prevent name collisions
+    let p_request = request;
 
     let uri_str = format!("{}/v2/teal/disassemble", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::POST, &uri_str);
+
 
 
     if let Some(ref user_agent) = configuration.user_agent {
@@ -52,6 +59,8 @@ pub async fn teal_disassemble(
         };
         req_builder = req_builder.header("X-Algo-API-Token", value);
     };
+
+    req_builder = req_builder.json(&p_request);
 
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;
@@ -70,6 +79,7 @@ pub async fn teal_disassemble(
                 let content = resp.text().await?;
                 serde_json::from_str(&content).map_err(Error::from)
             },
+            ContentType::MsgPack => return Err(Error::from(serde_json::Error::custom("MsgPack response handling not supported for this endpoint"))),
             ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `TealDisassemble200Response`"))),
             ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `TealDisassemble200Response`")))),
         }

@@ -11,6 +11,17 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
+
+
+
+
+
+
+
+
+
+use crate::models::AccountParticipation;
+
 /// Represents a participation key used by the node.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ParticipationKey {
@@ -36,14 +47,15 @@ pub struct ParticipationKey {
     #[serde(rename = "last-state-proof", skip_serializing_if = "Option::is_none")]
     pub last_state_proof: Option<i32>,
     #[serde(rename = "key")]
-    pub key: serde_json::Value,
+    pub key: AccountParticipation,
 }
+
 
 
 
 impl ParticipationKey {
     /// Constructor for ParticipationKey
-    pub fn new(id: String, address: String, key: serde_json::Value) -> ParticipationKey {
+    pub fn new(id: String, address: String, key: AccountParticipation) -> ParticipationKey {
         ParticipationKey {
             id,
             address,
@@ -55,4 +67,5 @@ impl ParticipationKey {
             last_state_proof: None,
         }
     }
+
 }

@@ -11,6 +11,10 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
+
+
+
+
 /// References an asset held by an account.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct AssetHoldingReference {
@@ -24,6 +28,7 @@ pub struct AssetHoldingReference {
 
 
 
+
 impl AssetHoldingReference {
     /// Constructor for AssetHoldingReference
     pub fn new(account: String, asset: i32) -> AssetHoldingReference {
@@ -32,4 +37,5 @@ impl AssetHoldingReference {
             asset,
         }
     }
+
 }

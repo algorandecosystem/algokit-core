@@ -11,23 +11,30 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
+
+
+
+use crate::models::EvalDelta;
+
 /// Key-value pairs for StateDelta.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct EvalDeltaKeyValue {
     #[serde(rename = "key")]
     pub key: String,
     #[serde(rename = "value")]
-    pub value: serde_json::Value,
+    pub value: EvalDelta,
 }
+
 
 
 
 impl EvalDeltaKeyValue {
     /// Constructor for EvalDeltaKeyValue
-    pub fn new(key: String, value: serde_json::Value) -> EvalDeltaKeyValue {
+    pub fn new(key: String, value: EvalDelta) -> EvalDeltaKeyValue {
         EvalDeltaKeyValue {
             key,
             value,
         }
     }
+
 }

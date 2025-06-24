@@ -74,6 +74,17 @@ class RustTemplateEngine:
         self.env.globals["has_query_parameters"] = self._has_query_parameters
         self.env.globals["get_path_parameters"] = self._get_path_parameters
         self.env.globals["get_query_parameters"] = self._get_query_parameters
+        self.env.globals["has_request_body"] = self._has_request_body
+        self.env.globals["get_request_body_type"] = self._get_request_body_type
+        self.env.globals["get_request_body_name"] = self._get_request_body_name
+        self.env.globals["is_request_body_required"] = self._is_request_body_required
+        self.env.globals["has_header_parameters"] = self._has_header_parameters
+        self.env.globals["get_header_parameters"] = self._get_header_parameters
+        self.env.globals["should_import_request_body_type"] = (
+            self._should_import_request_body_type
+        )
+        self.env.globals["get_all_used_types"] = self._get_all_used_types
+        self.env.globals["get_operation_used_types"] = self._get_operation_used_types
 
     def render_template(self, template_name: str, context: Dict[str, Any]) -> str:
         """Render a template with the given context."""
@@ -191,6 +202,224 @@ class RustTemplateEngine:
     def _get_query_parameters(self, operation: Operation) -> List[Parameter]:
         """Get query parameters for an operation."""
         return [p for p in operation.parameters if p.param_type == "query"]
+
+    def _has_request_body(self, operation: Operation) -> bool:
+        """Check if operation has a request body."""
+        return operation.request_body is not None
+
+    def _get_request_body_type(self, operation: Operation) -> Optional[str]:
+        """Get the request body type for an operation."""
+        if not operation.request_body:
+            return None
+
+        # Get the first content type (usually application/json)
+        content = operation.request_body.get("content", {})
+        if not content:
+            return None
+
+        first_content_type = next(iter(content.keys()))
+        schema = content[first_content_type].get("schema", {})
+
+        # Handle $ref schemas
+        if "$ref" in schema:
+            ref_name = schema["$ref"].split("/")[-1]
+            return pascal_case(ref_name)
+
+        # Handle inline schemas (fallback to generic type)
+        return rust_type_from_openapi(schema, {})
+
+    def _get_request_body_name(self, operation: Operation) -> Optional[str]:
+        """Get the request body parameter name for an operation."""
+        if not operation.request_body:
+            return None
+        return "request"  # Standard name for request body parameter
+
+    def _is_request_body_required(self, operation: Operation) -> bool:
+        """Check if the request body is required for an operation."""
+        if not operation.request_body:
+            return False
+        return operation.request_body.get("required", False)
+
+    def _has_header_parameters(self, operation: Operation) -> bool:
+        """Check if operation has header parameters."""
+        return any(p.param_type == "header" for p in operation.parameters)
+
+    def _get_header_parameters(self, operation: Operation) -> List[Parameter]:
+        """Get header parameters for an operation."""
+        return [p for p in operation.parameters if p.param_type == "header"]
+
+    def _should_import_request_body_type(self, request_body_type: str) -> bool:
+        """Check if a request body type is a custom model that needs to be imported."""
+        if not request_body_type:
+            return False
+
+        # Don't import primitive types
+        primitive_types = {
+            "String",
+            "i32",
+            "i64",
+            "u32",
+            "u64",
+            "f32",
+            "f64",
+            "bool",
+            "Vec<u8>",
+            "Vec<String>",
+            "Vec<i32>",
+            "Vec<i64>",
+            "serde_json::Value",
+            "std::path::PathBuf",
+        }
+
+        # Check if it's a primitive type or contains generic brackets
+        if request_body_type in primitive_types or "<" in request_body_type:
+            return False
+
+        # If it's a PascalCase identifier without generics, it's likely a custom model
+        return request_body_type[0].isupper() and request_body_type.isalnum()
+
+    def _get_all_used_types(self, operations: List[Operation]) -> List[str]:
+        """Get all unique custom types used across operations for imports."""
+        used_types = set()
+
+        # Primitive types that don't need imports
+        primitive_types = {
+            "String",
+            "str",
+            "i32",
+            "i64",
+            "u32",
+            "u64",
+            "f32",
+            "f64",
+            "bool",
+            "Vec<u8>",
+            "Vec<String>",
+            "Vec<i32>",
+            "Vec<i64>",
+            "serde_json::Value",
+            "std::path::PathBuf",
+            "()",
+            "Box",
+        }
+
+        for operation in operations:
+            # Get success response types
+            for status_code, response in operation.responses.items():
+                if status_code.startswith("2") and response.rust_type:
+                    # Extract base type from Vec<Type> or Option<Type>
+                    response_type = response.rust_type
+                    if response_type.startswith("Vec<") and response_type.endswith(">"):
+                        response_type = response_type[4:-1]  # Remove Vec< and >
+                    if response_type.startswith("Option<") and response_type.endswith(
+                        ">"
+                    ):
+                        response_type = response_type[7:-1]  # Remove Option< and >
+
+                    if response_type not in primitive_types:
+                        used_types.add(response_type)
+
+            # Get error response types
+            for status_code, response in operation.responses.items():
+                if (
+                    status_code.startswith("4")
+                    or status_code.startswith("5")
+                    or status_code == "default"
+                ) and response.rust_type:
+                    # Extract base type from Vec<Type> or Option<Type>
+                    response_type = response.rust_type
+                    if response_type.startswith("Vec<") and response_type.endswith(">"):
+                        response_type = response_type[4:-1]  # Remove Vec< and >
+                    if response_type.startswith("Option<") and response_type.endswith(
+                        ">"
+                    ):
+                        response_type = response_type[7:-1]  # Remove Option< and >
+
+                    if response_type not in primitive_types:
+                        used_types.add(response_type)
+
+            # Get parameter types
+            for param in operation.parameters:
+                # Extract base type from Vec<Type> or Option<Type>
+                param_type = param.rust_type
+                if param_type.startswith("Vec<") and param_type.endswith(">"):
+                    param_type = param_type[4:-1]  # Remove Vec< and >
+                if param_type.startswith("Option<") and param_type.endswith(">"):
+                    param_type = param_type[7:-1]  # Remove Option< and >
+
+                if param_type not in primitive_types:
+                    used_types.add(param_type)
+
+        return sorted(list(used_types))
+
+    def _get_operation_used_types(self, operation: Operation) -> List[str]:
+        """Get all unique custom types used by a single operation for imports."""
+        used_types = set()
+
+        # Primitive types that don't need imports
+        primitive_types = {
+            "String",
+            "str",
+            "i32",
+            "i64",
+            "u32",
+            "u64",
+            "f32",
+            "f64",
+            "bool",
+            "Vec<u8>",
+            "Vec<String>",
+            "Vec<i32>",
+            "Vec<i64>",
+            "serde_json::Value",
+            "std::path::PathBuf",
+            "()",
+            "Box",
+        }
+
+        # Get success response types
+        for status_code, response in operation.responses.items():
+            if status_code.startswith("2") and response.rust_type:
+                # Extract base type from Vec<Type> or Option<Type>
+                response_type = response.rust_type
+                if response_type.startswith("Vec<") and response_type.endswith(">"):
+                    response_type = response_type[4:-1]  # Remove Vec< and >
+                if response_type.startswith("Option<") and response_type.endswith(">"):
+                    response_type = response_type[7:-1]  # Remove Option< and >
+
+                if response_type not in primitive_types:
+                    used_types.add(response_type)
+
+        # Get error response types
+        for status_code, response in operation.responses.items():
+            if (
+                status_code.startswith("4")
+                or status_code.startswith("5")
+                or status_code == "default"
+            ) and response.rust_type:
+                # Extract base type from Vec<Type> or Option<Type>
+                response_type = response.rust_type
+                if response_type.startswith("Vec<") and response_type.endswith(">"):
+                    response_type = response_type[4:-1]  # Remove Vec< and >
+                if response_type.startswith("Option<") and response_type.endswith(">"):
+                    response_type = response_type[7:-1]  # Remove Option< and >
+
+                if response_type not in primitive_types:
+                    used_types.add(response_type)
+
+        # Get parameter types
+        for param in operation.parameters:
+            # Extract base type from Vec<Type> or Option<Type>
+            param_type = param.rust_type
+            if param_type.startswith("Vec<") and param_type.endswith(">"):
+                param_type = param_type[4:-1]  # Remove Vec< and >
+            if param_type.startswith("Option<") and param_type.endswith(">"):
+                param_type = param_type[7:-1]  # Remove Option< and >
+
+            if param_type not in primitive_types:
+                used_types.add(param_type)
+
+        return sorted(list(used_types))
 
 
 class RustCodeGenerator:

@@ -11,23 +11,30 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
+
+
+
+use crate::models::LedgerStateDelta;
+
 /// Contains a ledger delta for a single transaction group
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct LedgerStateDeltaForTransactionGroup {
     #[serde(rename = "Delta")]
-    pub delta: serde_json::Value,
+    pub delta: LedgerStateDelta,
     #[serde(rename = "Ids")]
     pub ids: Vec<String>,
 }
 
 
 
+
 impl LedgerStateDeltaForTransactionGroup {
     /// Constructor for LedgerStateDeltaForTransactionGroup
-    pub fn new(delta: serde_json::Value, ids: Vec<String>) -> LedgerStateDeltaForTransactionGroup {
+    pub fn new(delta: LedgerStateDelta, ids: Vec<String>) -> LedgerStateDeltaForTransactionGroup {
         LedgerStateDeltaForTransactionGroup {
             delta,
             ids,
         }
     }
+
 }

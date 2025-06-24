@@ -12,6 +12,14 @@ use crate::models;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
+
+
+
+
+
+
+use crate::models::AvmValue;
+
 /// An operation against an application's global/local/box state.
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
@@ -27,11 +35,12 @@ pub struct ApplicationStateOperation {
     #[serde(rename = "key")]
     pub key: Vec<u8>,
     #[serde(rename = "new-value", skip_serializing_if = "Option::is_none")]
-    pub new_value: Option<serde_json::Value>,
+    pub new_value: Option<AvmValue>,
         /// For local state changes, the address of the account associated with the local state.
     #[serde(rename = "account", skip_serializing_if = "Option::is_none")]
     pub account: Option<String>,
 }
+
 
 
 
@@ -46,4 +55,5 @@ impl ApplicationStateOperation {
             account: None,
         }
     }
+
 }

@@ -13,20 +13,23 @@ use serde::{Deserialize, Serialize, de::Error as _};
 use crate::{apis::ResponseContent, models};
 use super::{Error, configuration, ContentType};
 
-// Import response types for this endpoint
+// Import all custom types used by this endpoint
 use crate::models::{
+    ErrorResponse,
     StartCatchup200Response,
     StartCatchup201Response,
 };
+
+// Import request body type if needed
 
 /// struct for typed errors of method [`start_catchup`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum StartCatchupError {
-    Status400(serde_json::Value),
-    Status401(serde_json::Value),
-    Status408(serde_json::Value),
-    Status500(serde_json::Value),
+    Status400(ErrorResponse),
+    Status401(ErrorResponse),
+    Status408(ErrorResponse),
+    Status500(ErrorResponse),
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(serde_json::Value),
@@ -37,6 +40,7 @@ pub async fn start_catchup(
     configuration: &configuration::Configuration,
 catchpoint: &str,
 min: Option<i32>,
+
 ) -> Result<StartCatchup200Response, Error<StartCatchupError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_catchpoint = catchpoint;
@@ -49,6 +53,7 @@ min: Option<i32>,
         req_builder = req_builder.query(&[("min", &param_value.to_string())]);
     }
 
+
     if let Some(ref user_agent) = configuration.user_agent {
         req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
     }
@@ -60,6 +65,7 @@ min: Option<i32>,
         };
         req_builder = req_builder.header("X-Algo-API-Token", value);
     };
+
 
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;
@@ -78,6 +84,7 @@ min: Option<i32>,
                 let content = resp.text().await?;
                 serde_json::from_str(&content).map_err(Error::from)
             },
+            ContentType::MsgPack => return Err(Error::from(serde_json::Error::custom("MsgPack response handling not supported for this endpoint"))),
             ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `StartCatchup200Response`"))),
             ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `StartCatchup200Response`")))),
         }

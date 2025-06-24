@@ -12,20 +12,32 @@ use crate::models;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
+
+
+
+
+
+
+
+
+
+
+use crate::models::SimulationOpcodeTraceUnit;
+
 /// The execution trace of calling an app or a logic sig, containing the inner app call trace in a recursive way.
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SimulationTransactionExecTrace {
         /// Program trace that contains a trace of opcode effects in an approval program.
     #[serde(rename = "approval-program-trace", skip_serializing_if = "Option::is_none")]
-    pub approval_program_trace: Option<Vec<serde_json::Value>>,
+    pub approval_program_trace: Option<Vec<SimulationOpcodeTraceUnit>>,
         /// SHA512_256 hash digest of the approval program executed in transaction.
     #[serde_as(as = "Option<serde_with::base64::Base64>")]
     #[serde(rename = "approval-program-hash", skip_serializing_if = "Option::is_none")]
     pub approval_program_hash: Option<Vec<u8>>,
         /// Program trace that contains a trace of opcode effects in a clear state program.
     #[serde(rename = "clear-state-program-trace", skip_serializing_if = "Option::is_none")]
-    pub clear_state_program_trace: Option<Vec<serde_json::Value>>,
+    pub clear_state_program_trace: Option<Vec<SimulationOpcodeTraceUnit>>,
         /// SHA512_256 hash digest of the clear state program executed in transaction.
     #[serde_as(as = "Option<serde_with::base64::Base64>")]
     #[serde(rename = "clear-state-program-hash", skip_serializing_if = "Option::is_none")]
@@ -38,15 +50,16 @@ pub struct SimulationTransactionExecTrace {
     pub clear_state_rollback_error: Option<String>,
         /// Program trace that contains a trace of opcode effects in a logic sig.
     #[serde(rename = "logic-sig-trace", skip_serializing_if = "Option::is_none")]
-    pub logic_sig_trace: Option<Vec<serde_json::Value>>,
+    pub logic_sig_trace: Option<Vec<SimulationOpcodeTraceUnit>>,
         /// SHA512_256 hash digest of the logic sig executed in transaction.
     #[serde_as(as = "Option<serde_with::base64::Base64>")]
     #[serde(rename = "logic-sig-hash", skip_serializing_if = "Option::is_none")]
     pub logic_sig_hash: Option<Vec<u8>>,
         /// An array of SimulationTransactionExecTrace representing the execution trace of any inner transactions executed.
     #[serde(rename = "inner-trace", skip_serializing_if = "Option::is_none")]
-    pub inner_trace: Option<Vec<serde_json::Value>>,
+    pub inner_trace: Option<Vec<SimulationTransactionExecTrace>>,
 }
+
 
 
 
@@ -55,4 +68,5 @@ impl SimulationTransactionExecTrace {
     pub fn new() -> SimulationTransactionExecTrace {
         SimulationTransactionExecTrace::default()
     }
+
 }

@@ -11,6 +11,17 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
+
+
+
+
+
+
+
+use crate::models::ScratchChange;
+use crate::models::ApplicationStateOperation;
+use crate::models::AvmValue;
+
 /// The set of trace information and effect from evaluating a single opcode.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SimulationOpcodeTraceUnit {
@@ -19,10 +30,10 @@ pub struct SimulationOpcodeTraceUnit {
     pub pc: i32,
         /// The writes into scratch slots.
     #[serde(rename = "scratch-changes", skip_serializing_if = "Option::is_none")]
-    pub scratch_changes: Option<Vec<serde_json::Value>>,
+    pub scratch_changes: Option<Vec<ScratchChange>>,
         /// The operations against the current application's states.
     #[serde(rename = "state-changes", skip_serializing_if = "Option::is_none")]
-    pub state_changes: Option<Vec<serde_json::Value>>,
+    pub state_changes: Option<Vec<ApplicationStateOperation>>,
         /// The indexes of the traces for inner transactions spawned by this opcode, if any.
     #[serde(rename = "spawned-inners", skip_serializing_if = "Option::is_none")]
     pub spawned_inners: Option<Vec<i32>>,
@@ -31,8 +42,9 @@ pub struct SimulationOpcodeTraceUnit {
     pub stack_pop_count: Option<i32>,
         /// The values added by this opcode to the stack.
     #[serde(rename = "stack-additions", skip_serializing_if = "Option::is_none")]
-    pub stack_additions: Option<Vec<serde_json::Value>>,
+    pub stack_additions: Option<Vec<AvmValue>>,
 }
+
 
 
 
@@ -48,4 +60,5 @@ impl SimulationOpcodeTraceUnit {
             stack_additions: None,
         }
     }
+
 }

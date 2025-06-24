@@ -10,6 +10,12 @@
 
 use crate::models;
 use serde::{Deserialize, Serialize};
+use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
+
+
+
+
+
 
 /// Supply represents the current supply of MicroAlgos in the system
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
@@ -27,6 +33,10 @@ pub struct GetSupply200Response {
 
 
 
+impl AlgorandMsgpack for GetSupply200Response {
+    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+}
+
 impl GetSupply200Response {
     /// Constructor for GetSupply200Response
     pub fn new(current_round: i32, online_money: i32, total_money: i32) -> GetSupply200Response {
@@ -35,5 +45,15 @@ impl GetSupply200Response {
             online_money,
             total_money,
         }
+    }
+
+    /// Encode this struct to msgpack bytes using AlgorandMsgpack trait
+    pub fn to_msgpack(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        Ok(self.encode()?)
+    }
+
+    /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
+    pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(Self::decode(bytes)?)
     }
 }

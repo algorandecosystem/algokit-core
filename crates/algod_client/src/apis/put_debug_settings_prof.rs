@@ -13,7 +13,12 @@ use serde::{Deserialize, Serialize, de::Error as _};
 use crate::{apis::ResponseContent, models};
 use super::{Error, configuration, ContentType};
 
-// Import response types for this endpoint
+// Import all custom types used by this endpoint
+use crate::models::{
+    DebugSettingsProf,
+};
+
+// Import request body type if needed
 
 /// struct for typed errors of method [`put_debug_settings_prof`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -26,11 +31,13 @@ pub enum PutDebugSettingsProfError {
 /// Enables blocking and mutex profiles, and returns the old settings
 pub async fn put_debug_settings_prof(
     configuration: &configuration::Configuration,
-) -> Result<serde_json::Value, Error<PutDebugSettingsProfError>> {
+
+) -> Result<DebugSettingsProf, Error<PutDebugSettingsProfError>> {
     // add a prefix to parameters to efficiently prevent name collisions
 
     let uri_str = format!("{}/debug/settings/pprof", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::PUT, &uri_str);
+
 
 
     if let Some(ref user_agent) = configuration.user_agent {
@@ -44,6 +51,7 @@ pub async fn put_debug_settings_prof(
         };
         req_builder = req_builder.header("X-Algo-API-Token", value);
     };
+
 
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;
@@ -62,8 +70,9 @@ pub async fn put_debug_settings_prof(
                 let content = resp.text().await?;
                 serde_json::from_str(&content).map_err(Error::from)
             },
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `serde_json::Value`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `serde_json::Value`")))),
+            ContentType::MsgPack => return Err(Error::from(serde_json::Error::custom("MsgPack response handling not supported for this endpoint"))),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `DebugSettingsProf`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `DebugSettingsProf`")))),
         }
     } else {
         let content = resp.text().await?;

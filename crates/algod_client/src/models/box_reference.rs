@@ -12,6 +12,10 @@ use crate::models;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
+
+
+
+
 /// References a box of an application.
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
@@ -27,6 +31,7 @@ pub struct BoxReference {
 
 
 
+
 impl BoxReference {
     /// Constructor for BoxReference
     pub fn new(app: i32, name: Vec<u8>) -> BoxReference {
@@ -35,4 +40,5 @@ impl BoxReference {
             name,
         }
     }
+
 }

@@ -12,6 +12,11 @@ use crate::models;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
+
+
+
+use crate::models::AvmValue;
+
 /// Represents an AVM key-value pair in an application store.
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
@@ -20,17 +25,19 @@ pub struct AvmKeyValue {
     #[serde(rename = "key")]
     pub key: Vec<u8>,
     #[serde(rename = "value")]
-    pub value: serde_json::Value,
+    pub value: AvmValue,
 }
+
 
 
 
 impl AvmKeyValue {
     /// Constructor for AvmKeyValue
-    pub fn new(key: Vec<u8>, value: serde_json::Value) -> AvmKeyValue {
+    pub fn new(key: Vec<u8>, value: AvmValue) -> AvmKeyValue {
         AvmKeyValue {
             key,
             value,
         }
     }
+
 }

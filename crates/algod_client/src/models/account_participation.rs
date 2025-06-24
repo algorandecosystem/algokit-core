@@ -12,6 +12,14 @@ use crate::models;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
+
+
+
+
+
+
+
+
 /// AccountParticipation describes the parameters used by this account in consensus protocol.
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
@@ -41,6 +49,7 @@ pub struct AccountParticipation {
 
 
 
+
 impl AccountParticipation {
     /// Constructor for AccountParticipation
     pub fn new(selection_participation_key: Vec<u8>, vote_first_valid: i32, vote_key_dilution: i32, vote_last_valid: i32, vote_participation_key: Vec<u8>) -> AccountParticipation {
@@ -53,4 +62,5 @@ impl AccountParticipation {
             state_proof_key: None,
         }
     }
+
 }

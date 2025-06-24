@@ -11,10 +11,13 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
+
+
 /// Ledger StateDelta object
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct LedgerStateDelta {
 }
+
 
 
 
@@ -23,4 +26,5 @@ impl LedgerStateDelta {
     pub fn new() -> LedgerStateDelta {
         LedgerStateDelta::default()
     }
+
 }

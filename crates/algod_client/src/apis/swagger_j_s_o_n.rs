@@ -13,7 +13,9 @@ use serde::{Deserialize, Serialize, de::Error as _};
 use crate::{apis::ResponseContent, models};
 use super::{Error, configuration, ContentType};
 
-// Import response types for this endpoint
+// Import all custom types used by this endpoint
+
+// Import request body type if needed
 
 /// struct for typed errors of method [`swagger_j_s_o_n`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -27,11 +29,13 @@ pub enum SwaggerJsonError {
 /// Returns the entire swagger spec in json.
 pub async fn swagger_j_s_o_n(
     configuration: &configuration::Configuration,
+
 ) -> Result<String, Error<SwaggerJsonError>> {
     // add a prefix to parameters to efficiently prevent name collisions
 
     let uri_str = format!("{}/swagger.json", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
+
 
 
     if let Some(ref user_agent) = configuration.user_agent {
@@ -45,6 +49,7 @@ pub async fn swagger_j_s_o_n(
         };
         req_builder = req_builder.header("X-Algo-API-Token", value);
     };
+
 
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;
@@ -63,6 +68,7 @@ pub async fn swagger_j_s_o_n(
                 let content = resp.text().await?;
                 serde_json::from_str(&content).map_err(Error::from)
             },
+            ContentType::MsgPack => return Err(Error::from(serde_json::Error::custom("MsgPack response handling not supported for this endpoint"))),
             ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `String`"))),
             ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `String`")))),
         }

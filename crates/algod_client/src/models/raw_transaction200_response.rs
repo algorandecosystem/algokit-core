@@ -10,6 +10,10 @@
 
 use crate::models;
 use serde::{Deserialize, Serialize};
+use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
+
+
+
 
 /// Transaction ID of the submission.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
@@ -21,11 +25,25 @@ pub struct RawTransaction200Response {
 
 
 
+impl AlgorandMsgpack for RawTransaction200Response {
+    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+}
+
 impl RawTransaction200Response {
     /// Constructor for RawTransaction200Response
     pub fn new(tx_id: String) -> RawTransaction200Response {
         RawTransaction200Response {
             tx_id,
         }
+    }
+
+    /// Encode this struct to msgpack bytes using AlgorandMsgpack trait
+    pub fn to_msgpack(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        Ok(self.encode()?)
+    }
+
+    /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
+    pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(Self::decode(bytes)?)
     }
 }

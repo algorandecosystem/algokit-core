@@ -13,7 +13,9 @@ use serde::{Deserialize, Serialize, de::Error as _};
 use crate::{apis::ResponseContent, models};
 use super::{Error, configuration, ContentType};
 
-// Import response types for this endpoint
+// Import all custom types used by this endpoint
+
+// Import request body type if needed
 
 /// struct for typed errors of method [`experimental_check`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -28,11 +30,13 @@ pub enum ExperimentalCheckError {
 /// Returns OK if experimental API is enabled.
 pub async fn experimental_check(
     configuration: &configuration::Configuration,
+
 ) -> Result<(), Error<ExperimentalCheckError>> {
     // add a prefix to parameters to efficiently prevent name collisions
 
     let uri_str = format!("{}/v2/experimental", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
+
 
 
     if let Some(ref user_agent) = configuration.user_agent {
@@ -46,6 +50,7 @@ pub async fn experimental_check(
         };
         req_builder = req_builder.header("X-Algo-API-Token", value);
     };
+
 
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;

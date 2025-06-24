@@ -162,7 +162,7 @@ data/transactions/asset.go : AssetParams
 - `SimulateRequest` - Request type for simulation endpoint.
 - `SimulateRequestTransactionGroup` - A transaction group to simulate.
 - `SimulateTraceConfig` - An object that configures simulation execution trace.
-- `Box` - Box name and its content.
+- `ModelBox` - Box name and its content.
 - `BoxDescriptor` - Box descriptor describes a Box.
 - `BoxReference` - References a box of an application.
 - `KvDelta` - A single Delta containing the key, the previous value and the current value for a single round.

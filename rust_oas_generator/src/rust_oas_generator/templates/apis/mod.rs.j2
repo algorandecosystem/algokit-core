@@ -62,6 +62,7 @@ pub enum ContentType {
     Json,
     {% if has_text_plain %}Text,
     {% endif %}
+    MsgPack,
     Unsupported(String),
 }
 
@@ -73,6 +74,8 @@ impl From<&str> for ContentType {
         } else if content_type.starts_with("text/plain") {
             return Self::Text;
         {% endif %}
+        } else if content_type.starts_with("application/msgpack") {
+            return Self::MsgPack;
         } else {
             return Self::Unsupported(content_type.to_string());
         }

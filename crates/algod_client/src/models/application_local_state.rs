@@ -11,6 +11,13 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
+
+
+
+
+use crate::models::ApplicationStateSchema;
+use crate::models::TealKeyValueStore;
+
 /// Stores local state associated with an application.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ApplicationLocalState {
@@ -18,20 +25,22 @@ pub struct ApplicationLocalState {
     #[serde(rename = "id")]
     pub id: i32,
     #[serde(rename = "schema")]
-    pub schema: serde_json::Value,
+    pub schema: ApplicationStateSchema,
     #[serde(rename = "key-value", skip_serializing_if = "Option::is_none")]
-    pub key_value: Option<Vec<serde_json::Value>>,
+    pub key_value: Option<TealKeyValueStore>,
 }
+
 
 
 
 impl ApplicationLocalState {
     /// Constructor for ApplicationLocalState
-    pub fn new(id: i32, schema: serde_json::Value) -> ApplicationLocalState {
+    pub fn new(id: i32, schema: ApplicationStateSchema) -> ApplicationLocalState {
         ApplicationLocalState {
             id,
             schema,
             key_value: None,
         }
     }
+
 }

@@ -13,9 +13,35 @@ use serde::{Deserialize, Serialize};
 {% if schema.has_msgpack_fields %}
 use serde_with::serde_as;
 {% endif %}
-{% if schema.vendor_extensions.get('x-algokit-signed-txn') or schema.properties | selectattr('is_signed_transaction') | list | length > 0 %}
+{% if schema.has_signed_transaction_fields or schema.implements_algokit_msgpack %}
 use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
 {% endif %}
+
+{# Generate imports for custom types used in this schema #}
+{% set custom_types = [] %}
+{% for property in schema.properties %}
+    {% set rust_type = property.rust_type_with_msgpack %}
+    {# Extract base type from Vec<Type> or Option<Type> #}
+    {% if rust_type.startswith('Vec<') %}
+        {% set inner_type = rust_type[4:-1] %}
+    {% elif rust_type.startswith('Option<') %}
+        {% set inner_type = rust_type[7:-1] %}
+    {% else %}
+        {% set inner_type = rust_type %}
+    {% endif %}
+
+    {# Check if it's a custom type (starts with uppercase and doesn't contain :: or primitives) and it's not the current schema's own type #}
+    {% if inner_type and inner_type[0].isupper() and '::' not in inner_type and inner_type not in ['String', 'Vec', 'Option'] and not inner_type.startswith('i') and not inner_type.startswith('u') and inner_type != 'bool' and inner_type != schema.rust_struct_name %}
+        {% if inner_type not in custom_types %}
+            {% set _ = custom_types.append(inner_type) %}
+        {% endif %}
+    {% endif %}
+{% endfor %}
+
+{# Generate the import statements #}
+{% for custom_type in custom_types %}
+use crate::models::{{ custom_type }};
+{% endfor %}
 
 {% if schema.description %}
 {{ schema.description | rust_doc_comment }}
@@ -23,7 +49,7 @@ use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMs
 {% if schema.has_msgpack_fields %}
 #[serde_as]
 {% endif %}
-{% set has_signed_tx = schema.properties | selectattr('is_signed_transaction') | list | length > 0 %}
+{% set has_signed_tx = schema.has_signed_transaction_fields %}
 #[derive(Clone, {% if not has_signed_tx %}Default, {% endif %}Debug, PartialEq, Serialize, Deserialize)]
 {% if schema.vendor_extensions.get('x-algokit-signed-txn') %}
 // This struct represents a SignedTransaction and can be converted to/from AlgoKit's SignedTransaction
@@ -55,9 +81,29 @@ impl Default for {{ schema.rust_struct_name }} {
         Self {
 {% for property in schema.properties %}
             {% if property.is_signed_transaction %}
-            {{ property.rust_field_name }}: {% if property.required %}{% if property.rust_type.startswith('Vec<') %}Vec::new(){% else %}todo!("Provide default AlgokitSignedTransaction"){% endif %}{% else %}None{% endif %},
+            {{ property.rust_field_name }}: {% if property.required %}{% if property.rust_type.startswith('Vec<') %}Vec::new(){% else %}AlgokitSignedTransaction {
+                transaction: algokit_transact::Transaction::Payment(algokit_transact::PaymentTransactionFields {
+                    header: algokit_transact::TransactionHeader {
+                        sender: Default::default(),
+                        fee: None,
+                        first_valid: 0,
+                        last_valid: 0,
+                        genesis_hash: None,
+                        genesis_id: None,
+                        note: None,
+                        rekey_to: None,
+                        lease: None,
+                        group: None,
+                    },
+                    receiver: Default::default(),
+                    amount: 0,
+                    close_remainder_to: None,
+                }),
+                signature: None,
+                auth_address: None,
+            }{% endif %}{% else %}None{% endif %},
             {% elif property.required %}
-            {{ property.rust_field_name }}: {% if property.rust_type == "String" %}"".to_string(){% elif property.rust_type.startswith('Vec<') %}Vec::new(){% elif property.rust_type.startswith('i') or property.rust_type.startswith('u') %}0{% elif property.rust_type == "bool" %}false{% else %}Default::default(){% endif %},
+            {{ property.rust_field_name }}: {% if property.rust_type == "String" %}"".to_string(){% elif property.rust_type.startswith('Vec<') %}Vec::new(){% elif property.rust_type.startswith('i') or property.rust_type.startswith('u') %}0{% elif property.rust_type == "bool" %}false{% elif property.rust_type == "serde_json::Value" %}serde_json::Value::Null{% else %}Default::default(){% endif %},
             {% else %}
             {{ property.rust_field_name }}: None,
             {% endif %}
@@ -90,9 +136,15 @@ impl TryFrom<{{ schema.rust_struct_name }}> for AlgokitSignedTransaction {
         todo!("Implement conversion to AlgoKit SignedTransaction based on your schema fields")
     }
 }
+{% endif %}
 
+{% if schema.implements_algokit_msgpack %}
 impl AlgorandMsgpack for {{ schema.rust_struct_name }} {
+    {% if schema.vendor_extensions.get('x-algokit-signed-txn') %}
     const PREFIX: &'static [u8] = b"";  // No prefix for SignedTransaction
+    {% else %}
+    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+    {% endif %}
 }
 {% endif %}
 
@@ -113,6 +165,18 @@ impl {{ schema.rust_struct_name }} {
     /// Default constructor for {{ schema.rust_struct_name }}
     pub fn new() -> {{ schema.rust_struct_name }} {
         {{ schema.rust_struct_name }}::default()
+    }
+    {% endif %}
+
+    {% if schema.implements_algokit_msgpack %}
+    /// Encode this struct to msgpack bytes using AlgorandMsgpack trait
+    pub fn to_msgpack(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        Ok(self.encode()?)
+    }
+
+    /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
+    pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(Self::decode(bytes)?)
     }
     {% endif %}
 }

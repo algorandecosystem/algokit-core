@@ -11,6 +11,11 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
+
+
+
+
+
 /// Represents a TEAL value delta.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct EvalDelta {
@@ -27,6 +32,7 @@ pub struct EvalDelta {
 
 
 
+
 impl EvalDelta {
     /// Constructor for EvalDelta
     pub fn new(action: i32) -> EvalDelta {
@@ -36,4 +42,5 @@ impl EvalDelta {
             uint: None,
         }
     }
+
 }

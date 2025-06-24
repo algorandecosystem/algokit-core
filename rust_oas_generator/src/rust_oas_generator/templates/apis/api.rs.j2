@@ -14,11 +14,11 @@ use crate::{apis::ResponseContent, models};
 use super::{Error, configuration, ContentType};
 
 // Import all response types
-{% set response_types = get_all_response_types(operations) %}
-{% if response_types %}
+{% set used_types = get_all_used_types(operations) %}
+{% if used_types %}
 use crate::models::{
-{% for response_type in response_types %}
-    {{ response_type }},
+{% for used_type in used_types %}
+    {{ used_type }},
 {% endfor %}
 };
 {% endif %}

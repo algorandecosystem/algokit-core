@@ -11,6 +11,11 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
+
+
+
+use crate::models::ApplicationParams;
+
 /// Application index and its parameters
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Application {
@@ -18,17 +23,19 @@ pub struct Application {
     #[serde(rename = "id")]
     pub id: i32,
     #[serde(rename = "params")]
-    pub params: serde_json::Value,
+    pub params: ApplicationParams,
 }
+
 
 
 
 impl Application {
     /// Constructor for Application
-    pub fn new(id: i32, params: serde_json::Value) -> Application {
+    pub fn new(id: i32, params: ApplicationParams) -> Application {
         Application {
             id,
             params,
         }
     }
+
 }

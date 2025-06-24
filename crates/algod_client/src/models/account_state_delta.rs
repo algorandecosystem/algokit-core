@@ -11,23 +11,30 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
+
+
+
+use crate::models::StateDelta;
+
 /// Application state delta.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct AccountStateDelta {
     #[serde(rename = "address")]
     pub address: String,
     #[serde(rename = "delta")]
-    pub delta: Vec<serde_json::Value>,
+    pub delta: StateDelta,
 }
+
 
 
 
 impl AccountStateDelta {
     /// Constructor for AccountStateDelta
-    pub fn new(address: String, delta: Vec<serde_json::Value>) -> AccountStateDelta {
+    pub fn new(address: String, delta: StateDelta) -> AccountStateDelta {
         AccountStateDelta {
             address,
             delta,
         }
     }
+
 }

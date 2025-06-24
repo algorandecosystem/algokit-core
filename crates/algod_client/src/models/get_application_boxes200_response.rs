@@ -10,21 +10,40 @@
 
 use crate::models;
 use serde::{Deserialize, Serialize};
+use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
+
+
+
+use crate::models::BoxDescriptor;
 
 /// Box names of an application
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GetApplicationBoxes200Response {
     #[serde(rename = "boxes")]
-    pub boxes: Vec<serde_json::Value>,
+    pub boxes: Vec<BoxDescriptor>,
 }
 
 
 
+impl AlgorandMsgpack for GetApplicationBoxes200Response {
+    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+}
+
 impl GetApplicationBoxes200Response {
     /// Constructor for GetApplicationBoxes200Response
-    pub fn new(boxes: Vec<serde_json::Value>) -> GetApplicationBoxes200Response {
+    pub fn new(boxes: Vec<BoxDescriptor>) -> GetApplicationBoxes200Response {
         GetApplicationBoxes200Response {
             boxes,
         }
+    }
+
+    /// Encode this struct to msgpack bytes using AlgorandMsgpack trait
+    pub fn to_msgpack(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        Ok(self.encode()?)
+    }
+
+    /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
+    pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(Self::decode(bytes)?)
     }
 }

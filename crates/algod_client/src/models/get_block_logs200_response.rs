@@ -10,21 +10,40 @@
 
 use crate::models;
 use serde::{Deserialize, Serialize};
+use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
+
+
+
+use crate::models::AppCallLogs;
 
 /// All logs emitted in the given round. Each app call, whether top-level or inner, that contains logs results in a separate AppCallLogs object. Therefore there may be multiple AppCallLogs with the same application ID and outer transaction ID in the event of multiple inner app calls to the same app. App calls with no logs are not included in the response. AppCallLogs are returned in the same order that their corresponding app call appeared in the block (pre-order traversal of inner app calls)
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GetBlockLogs200Response {
     #[serde(rename = "logs")]
-    pub logs: Vec<serde_json::Value>,
+    pub logs: Vec<AppCallLogs>,
 }
 
 
 
+impl AlgorandMsgpack for GetBlockLogs200Response {
+    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+}
+
 impl GetBlockLogs200Response {
     /// Constructor for GetBlockLogs200Response
-    pub fn new(logs: Vec<serde_json::Value>) -> GetBlockLogs200Response {
+    pub fn new(logs: Vec<AppCallLogs>) -> GetBlockLogs200Response {
         GetBlockLogs200Response {
             logs,
         }
+    }
+
+    /// Encode this struct to msgpack bytes using AlgorandMsgpack trait
+    pub fn to_msgpack(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        Ok(self.encode()?)
+    }
+
+    /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
+    pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(Self::decode(bytes)?)
     }
 }

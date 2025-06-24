@@ -11,23 +11,31 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
+
+
+
+use crate::models::AssetHolding;
+use crate::models::AssetParams;
+
 /// AccountAssetHolding describes the account's asset holding and asset parameters (if either exist) for a specific asset ID.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct AccountAssetHolding {
     #[serde(rename = "asset-holding")]
-    pub asset_holding: serde_json::Value,
+    pub asset_holding: AssetHolding,
     #[serde(rename = "asset-params", skip_serializing_if = "Option::is_none")]
-    pub asset_params: Option<serde_json::Value>,
+    pub asset_params: Option<AssetParams>,
 }
+
 
 
 
 impl AccountAssetHolding {
     /// Constructor for AccountAssetHolding
-    pub fn new(asset_holding: serde_json::Value) -> AccountAssetHolding {
+    pub fn new(asset_holding: AssetHolding) -> AccountAssetHolding {
         AccountAssetHolding {
             asset_holding,
             asset_params: None,
         }
     }
+
 }

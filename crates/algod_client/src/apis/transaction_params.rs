@@ -13,18 +13,21 @@ use serde::{Deserialize, Serialize, de::Error as _};
 use crate::{apis::ResponseContent, models};
 use super::{Error, configuration, ContentType};
 
-// Import response types for this endpoint
+// Import all custom types used by this endpoint
 use crate::models::{
+    ErrorResponse,
     TransactionParams200Response,
 };
+
+// Import request body type if needed
 
 /// struct for typed errors of method [`transaction_params`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum TransactionParamsError {
-    Status401(serde_json::Value),
-    Status500(serde_json::Value),
-    Status503(serde_json::Value),
+    Status401(ErrorResponse),
+    Status500(ErrorResponse),
+    Status503(ErrorResponse),
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(serde_json::Value),
@@ -33,11 +36,13 @@ pub enum TransactionParamsError {
 /// Get parameters for constructing a new transaction
 pub async fn transaction_params(
     configuration: &configuration::Configuration,
+
 ) -> Result<TransactionParams200Response, Error<TransactionParamsError>> {
     // add a prefix to parameters to efficiently prevent name collisions
 
     let uri_str = format!("{}/v2/transactions/params", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
+
 
 
     if let Some(ref user_agent) = configuration.user_agent {
@@ -51,6 +56,7 @@ pub async fn transaction_params(
         };
         req_builder = req_builder.header("X-Algo-API-Token", value);
     };
+
 
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;
@@ -69,6 +75,7 @@ pub async fn transaction_params(
                 let content = resp.text().await?;
                 serde_json::from_str(&content).map_err(Error::from)
             },
+            ContentType::MsgPack => return Err(Error::from(serde_json::Error::custom("MsgPack response handling not supported for this endpoint"))),
             ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `TransactionParams200Response`"))),
             ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `TransactionParams200Response`")))),
         }

@@ -12,6 +12,23 @@ use crate::models;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /// AssetParams specifies the parameters for an asset.
 /// 
 /// \[apar\] when part of an AssetConfig transaction.
@@ -74,6 +91,7 @@ pub struct AssetParams {
 
 
 
+
 impl AssetParams {
     /// Constructor for AssetParams
     pub fn new(creator: String, decimals: i32, total: i32) -> AssetParams {
@@ -95,4 +113,5 @@ impl AssetParams {
             url_b64: None,
         }
     }
+
 }

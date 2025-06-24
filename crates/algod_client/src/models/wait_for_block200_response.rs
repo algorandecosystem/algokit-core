@@ -10,6 +10,35 @@
 
 use crate::models;
 use serde::{Deserialize, Serialize};
+use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /// NodeStatus contains the information about a node status
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
@@ -96,6 +125,10 @@ pub struct WaitForBlock200Response {
 
 
 
+impl AlgorandMsgpack for WaitForBlock200Response {
+    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+}
+
 impl WaitForBlock200Response {
     /// Constructor for WaitForBlock200Response
     pub fn new(catchup_time: i32, last_round: i32, last_version: String, next_version: String, next_version_round: i32, next_version_supported: bool, stopped_at_unsupported_round: bool, time_since_last_round: i32) -> WaitForBlock200Response {
@@ -127,5 +160,15 @@ impl WaitForBlock200Response {
             upgrade_next_protocol_vote_before: None,
             upgrade_vote_rounds: None,
         }
+    }
+
+    /// Encode this struct to msgpack bytes using AlgorandMsgpack trait
+    pub fn to_msgpack(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        Ok(self.encode()?)
+    }
+
+    /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
+    pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(Self::decode(bytes)?)
     }
 }

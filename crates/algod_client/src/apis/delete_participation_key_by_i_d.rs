@@ -13,16 +13,21 @@ use serde::{Deserialize, Serialize, de::Error as _};
 use crate::{apis::ResponseContent, models};
 use super::{Error, configuration, ContentType};
 
-// Import response types for this endpoint
+// Import all custom types used by this endpoint
+use crate::models::{
+    ErrorResponse,
+};
+
+// Import request body type if needed
 
 /// struct for typed errors of method [`delete_participation_key_by_i_d`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum DeleteParticipationKeyByIdError {
-    Status400(serde_json::Value),
-    Status401(serde_json::Value),
-    Status404(serde_json::Value),
-    Status500(serde_json::Value),
+    Status400(ErrorResponse),
+    Status401(ErrorResponse),
+    Status404(ErrorResponse),
+    Status500(ErrorResponse),
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(serde_json::Value),
@@ -32,12 +37,14 @@ pub enum DeleteParticipationKeyByIdError {
 pub async fn delete_participation_key_by_i_d(
     configuration: &configuration::Configuration,
 participation_id: &str,
+
 ) -> Result<(), Error<DeleteParticipationKeyByIdError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_participation_id = participation_id;
 
     let uri_str = format!("{}/v2/participation/{participation_id}", configuration.base_path, participation_id=crate::apis::urlencode(p_participation_id));
     let mut req_builder = configuration.client.request(reqwest::Method::DELETE, &uri_str);
+
 
 
     if let Some(ref user_agent) = configuration.user_agent {
@@ -51,6 +58,7 @@ participation_id: &str,
         };
         req_builder = req_builder.header("X-Algo-API-Token", value);
     };
+
 
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;

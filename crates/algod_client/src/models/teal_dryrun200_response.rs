@@ -10,12 +10,19 @@
 
 use crate::models;
 use serde::{Deserialize, Serialize};
+use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
+
+
+
+
+
+use crate::models::DryrunTxnResult;
 
 /// DryrunResponse contains per-txn debug information from a dryrun.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TealDryrun200Response {
     #[serde(rename = "txns")]
-    pub txns: Vec<serde_json::Value>,
+    pub txns: Vec<DryrunTxnResult>,
     #[serde(rename = "error")]
     pub error: String,
         /// Protocol version is the protocol version Dryrun was operated under.
@@ -25,13 +32,27 @@ pub struct TealDryrun200Response {
 
 
 
+impl AlgorandMsgpack for TealDryrun200Response {
+    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+}
+
 impl TealDryrun200Response {
     /// Constructor for TealDryrun200Response
-    pub fn new(txns: Vec<serde_json::Value>, error: String, protocol_version: String) -> TealDryrun200Response {
+    pub fn new(txns: Vec<DryrunTxnResult>, error: String, protocol_version: String) -> TealDryrun200Response {
         TealDryrun200Response {
             txns,
             error,
             protocol_version,
         }
+    }
+
+    /// Encode this struct to msgpack bytes using AlgorandMsgpack trait
+    pub fn to_msgpack(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        Ok(self.encode()?)
+    }
+
+    /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
+    pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(Self::decode(bytes)?)
     }
 }

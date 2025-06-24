@@ -12,21 +12,25 @@ use reqwest;
 use serde::{Deserialize, Serialize, de::Error as _};
 use crate::{apis::ResponseContent, models};
 use super::{Error, configuration, ContentType};
+use algokit_transact::AlgorandMsgpack;
 
-// Import response types for this endpoint
+// Import all custom types used by this endpoint
 use crate::models::{
     AddParticipationKey200Response,
+    ErrorResponse,
 };
+
+// Import request body type if needed
 
 /// struct for typed errors of method [`add_participation_key`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum AddParticipationKeyError {
-    Status400(serde_json::Value),
-    Status401(serde_json::Value),
-    Status404(serde_json::Value),
-    Status500(serde_json::Value),
-    Status503(serde_json::Value),
+    Status400(ErrorResponse),
+    Status401(ErrorResponse),
+    Status404(ErrorResponse),
+    Status500(ErrorResponse),
+    Status503(ErrorResponse),
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(serde_json::Value),
@@ -35,11 +39,15 @@ pub enum AddParticipationKeyError {
 /// Add a participation key to the node
 pub async fn add_participation_key(
     configuration: &configuration::Configuration,
+request: Vec<u8>,
+
 ) -> Result<AddParticipationKey200Response, Error<AddParticipationKeyError>> {
     // add a prefix to parameters to efficiently prevent name collisions
+    let p_request = request;
 
     let uri_str = format!("{}/v2/participation", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::POST, &uri_str);
+
 
 
     if let Some(ref user_agent) = configuration.user_agent {
@@ -53,6 +61,19 @@ pub async fn add_participation_key(
         };
         req_builder = req_builder.header("X-Algo-API-Token", value);
     };
+
+    // Determine content type: use msgpack if format parameter indicates it, otherwise use msgpack by default for supported types
+    let use_msgpack = true;
+
+    if use_msgpack {
+        // For binary data, use directly as msgpack
+        req_builder = req_builder
+            .header("Content-Type", "application/msgpack")
+            .body(p_request);
+    } else {
+        // Use JSON
+        req_builder = req_builder.json(&p_request);
+    }
 
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;
@@ -71,6 +92,7 @@ pub async fn add_participation_key(
                 let content = resp.text().await?;
                 serde_json::from_str(&content).map_err(Error::from)
             },
+            ContentType::MsgPack => return Err(Error::from(serde_json::Error::custom("MsgPack response handling not supported for this endpoint"))),
             ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `AddParticipationKey200Response`"))),
             ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `AddParticipationKey200Response`")))),
         }

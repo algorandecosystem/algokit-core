@@ -11,6 +11,14 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
+
+
+
+
+
+
+
+
 /// The set of parameters and limits override during simulation. If this set of parameters is present, then evaluation parameters may differ from standard evaluation in certain ways.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SimulationEvalOverrides {
@@ -36,9 +44,11 @@ pub struct SimulationEvalOverrides {
 
 
 
+
 impl SimulationEvalOverrides {
     /// Default constructor for SimulationEvalOverrides
     pub fn new() -> SimulationEvalOverrides {
         SimulationEvalOverrides::default()
     }
+
 }

@@ -111,6 +111,7 @@ pub fn urlencode<T: AsRef<str>>(s: T) -> String {
 pub enum ContentType {
     Json,
 Text,
+    MsgPack,
     Unsupported(String),
 }
 
@@ -120,6 +121,8 @@ impl From<&str> for ContentType {
             return Self::Json;
         } else if content_type.starts_with("text/plain") {
             return Self::Text;
+        } else if content_type.starts_with("application/msgpack") {
+            return Self::MsgPack;
         } else {
             return Self::Unsupported(content_type.to_string());
         }

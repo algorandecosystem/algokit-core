@@ -11,6 +11,14 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
+
+
+
+
+
+
+use crate::models::TealValue;
+
 /// Stores the TEAL eval step data
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct DryrunState {
@@ -21,9 +29,9 @@ pub struct DryrunState {
     #[serde(rename = "pc")]
     pub pc: i32,
     #[serde(rename = "stack")]
-    pub stack: Vec<serde_json::Value>,
+    pub stack: Vec<TealValue>,
     #[serde(rename = "scratch", skip_serializing_if = "Option::is_none")]
-    pub scratch: Option<Vec<serde_json::Value>>,
+    pub scratch: Option<Vec<TealValue>>,
         /// Evaluation error if any
     #[serde(rename = "error", skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
@@ -31,9 +39,10 @@ pub struct DryrunState {
 
 
 
+
 impl DryrunState {
     /// Constructor for DryrunState
-    pub fn new(line: i32, pc: i32, stack: Vec<serde_json::Value>) -> DryrunState {
+    pub fn new(line: i32, pc: i32, stack: Vec<TealValue>) -> DryrunState {
         DryrunState {
             line,
             pc,
@@ -42,4 +51,5 @@ impl DryrunState {
             error: None,
         }
     }
+
 }

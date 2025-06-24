@@ -12,6 +12,10 @@ use crate::models;
 use serde::{Deserialize, Serialize};
 use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
 
+
+
+
+
 /// PendingTransactions is an array of signed transactions exactly as they were submitted.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GetPendingTransactionsByAddress200Response {
@@ -33,6 +37,10 @@ impl Default for GetPendingTransactionsByAddress200Response {
 }
 
 
+impl AlgorandMsgpack for GetPendingTransactionsByAddress200Response {
+    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+}
+
 impl GetPendingTransactionsByAddress200Response {
     /// Constructor for GetPendingTransactionsByAddress200Response
     pub fn new(top_transactions: Vec<AlgokitSignedTransaction>, total_transactions: i32) -> GetPendingTransactionsByAddress200Response {
@@ -40,5 +48,15 @@ impl GetPendingTransactionsByAddress200Response {
             top_transactions,
             total_transactions,
         }
+    }
+
+    /// Encode this struct to msgpack bytes using AlgorandMsgpack trait
+    pub fn to_msgpack(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        Ok(self.encode()?)
+    }
+
+    /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
+    pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(Self::decode(bytes)?)
     }
 }

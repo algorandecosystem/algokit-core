@@ -10,6 +10,19 @@
 
 use crate::models;
 use serde::{Deserialize, Serialize};
+use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
+
+
+
+
+
+
+
+
+use crate::models::SimulateTransactionGroupResult;
+use crate::models::SimulationEvalOverrides;
+use crate::models::SimulateTraceConfig;
+use crate::models::SimulateInitialStates;
 
 /// Result of a transaction group simulation.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
@@ -22,20 +35,24 @@ pub struct SimulateTransaction200Response {
     pub last_round: i32,
         /// A result object for each transaction group that was simulated.
     #[serde(rename = "txn-groups")]
-    pub txn_groups: Vec<serde_json::Value>,
+    pub txn_groups: Vec<SimulateTransactionGroupResult>,
     #[serde(rename = "eval-overrides", skip_serializing_if = "Option::is_none")]
-    pub eval_overrides: Option<serde_json::Value>,
+    pub eval_overrides: Option<SimulationEvalOverrides>,
     #[serde(rename = "exec-trace-config", skip_serializing_if = "Option::is_none")]
-    pub exec_trace_config: Option<serde_json::Value>,
+    pub exec_trace_config: Option<SimulateTraceConfig>,
     #[serde(rename = "initial-states", skip_serializing_if = "Option::is_none")]
-    pub initial_states: Option<serde_json::Value>,
+    pub initial_states: Option<SimulateInitialStates>,
 }
 
 
 
+impl AlgorandMsgpack for SimulateTransaction200Response {
+    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+}
+
 impl SimulateTransaction200Response {
     /// Constructor for SimulateTransaction200Response
-    pub fn new(version: i32, last_round: i32, txn_groups: Vec<serde_json::Value>) -> SimulateTransaction200Response {
+    pub fn new(version: i32, last_round: i32, txn_groups: Vec<SimulateTransactionGroupResult>) -> SimulateTransaction200Response {
         SimulateTransaction200Response {
             version,
             last_round,
@@ -44,5 +61,15 @@ impl SimulateTransaction200Response {
             exec_trace_config: None,
             initial_states: None,
         }
+    }
+
+    /// Encode this struct to msgpack bytes using AlgorandMsgpack trait
+    pub fn to_msgpack(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        Ok(self.encode()?)
+    }
+
+    /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
+    pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(Self::decode(bytes)?)
     }
 }

@@ -11,6 +11,18 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
+
+
+
+
+
+
+
+
+use crate::models::BoxReference;
+use crate::models::AssetHoldingReference;
+use crate::models::ApplicationLocalReference;
+
 /// These are resources that were accessed by this group that would normally have caused failure, but were allowed in simulation. Depending on where this object is in the response, the unnamed resources it contains may or may not qualify for group resource sharing. If this is a field in SimulateTransactionGroupResult, the resources do qualify, but if this is a field in SimulateTransactionResult, they do not qualify. In order to make this group valid for actual submission, resources that qualify for group sharing can be made available by any transaction of the group; otherwise, resources must be placed in the same transaction which accessed them.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SimulateUnnamedResourcesAccessed {
@@ -25,17 +37,18 @@ pub struct SimulateUnnamedResourcesAccessed {
     pub apps: Option<Vec<i32>>,
         /// The unnamed boxes that were referenced. The order of this array is arbitrary.
     #[serde(rename = "boxes", skip_serializing_if = "Option::is_none")]
-    pub boxes: Option<Vec<serde_json::Value>>,
+    pub boxes: Option<Vec<BoxReference>>,
         /// The number of extra box references used to increase the IO budget. This is in addition to the references defined in the input transaction group and any referenced to unnamed boxes.
     #[serde(rename = "extra-box-refs", skip_serializing_if = "Option::is_none")]
     pub extra_box_refs: Option<i32>,
         /// The unnamed asset holdings that were referenced. The order of this array is arbitrary.
     #[serde(rename = "asset-holdings", skip_serializing_if = "Option::is_none")]
-    pub asset_holdings: Option<Vec<serde_json::Value>>,
+    pub asset_holdings: Option<Vec<AssetHoldingReference>>,
         /// The unnamed application local states that were referenced. The order of this array is arbitrary.
     #[serde(rename = "app-locals", skip_serializing_if = "Option::is_none")]
-    pub app_locals: Option<Vec<serde_json::Value>>,
+    pub app_locals: Option<Vec<ApplicationLocalReference>>,
 }
+
 
 
 
@@ -44,4 +57,5 @@ impl SimulateUnnamedResourcesAccessed {
     pub fn new() -> SimulateUnnamedResourcesAccessed {
         SimulateUnnamedResourcesAccessed::default()
     }
+
 }

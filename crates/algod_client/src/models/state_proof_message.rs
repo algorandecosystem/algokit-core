@@ -12,6 +12,13 @@ use crate::models;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
+
+
+
+
+
+
+
 /// Represents the message that the state proofs are attesting to.
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
@@ -37,6 +44,7 @@ pub struct StateProofMessage {
 
 
 
+
 impl StateProofMessage {
     /// Constructor for StateProofMessage
     pub fn new(block_headers_commitment: Vec<u8>, voters_commitment: Vec<u8>, ln_proven_weight: i32, first_attested_round: i32, last_attested_round: i32) -> StateProofMessage {
@@ -48,4 +56,5 @@ impl StateProofMessage {
             last_attested_round,
         }
     }
+
 }

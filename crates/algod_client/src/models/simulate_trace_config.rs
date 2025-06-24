@@ -11,6 +11,12 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
+
+
+
+
+
+
 /// An object that configures simulation execution trace.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SimulateTraceConfig {
@@ -30,9 +36,11 @@ pub struct SimulateTraceConfig {
 
 
 
+
 impl SimulateTraceConfig {
     /// Default constructor for SimulateTraceConfig
     pub fn new() -> SimulateTraceConfig {
         SimulateTraceConfig::default()
     }
+
 }

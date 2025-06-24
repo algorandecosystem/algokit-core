@@ -11,6 +11,11 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
+
+
+
+use crate::models::AssetParams;
+
 /// Specifies both the unique identifier and the parameters for an asset
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Asset {
@@ -18,17 +23,19 @@ pub struct Asset {
     #[serde(rename = "index")]
     pub index: i32,
     #[serde(rename = "params")]
-    pub params: serde_json::Value,
+    pub params: AssetParams,
 }
+
 
 
 
 impl Asset {
     /// Constructor for Asset
-    pub fn new(index: i32, params: serde_json::Value) -> Asset {
+    pub fn new(index: i32, params: AssetParams) -> Asset {
         Asset {
             index,
             params,
         }
     }
+
 }

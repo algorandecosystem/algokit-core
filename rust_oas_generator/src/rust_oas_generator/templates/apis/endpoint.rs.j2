@@ -12,15 +12,26 @@ use reqwest;
 use serde::{Deserialize, Serialize, de::Error as _};
 use crate::{apis::ResponseContent, models};
 use super::{Error, configuration, ContentType};
+{% if operation.supports_msgpack %}
+use algokit_transact::AlgorandMsgpack;
+{% endif %}
 
-// Import response types for this endpoint
-{% set response_types = get_endpoint_response_types(operation) %}
-{% if response_types %}
+// Import all custom types used by this endpoint
+{% set used_types = get_operation_used_types(operation) %}
+{% if used_types %}
 use crate::models::{
-{% for response_type in response_types %}
-    {{ response_type }},
+{% for used_type in used_types %}
+    {{ used_type }},
 {% endfor %}
 };
+{% endif %}
+
+// Import request body type if needed
+{% if has_request_body(operation) %}
+{% set request_body_type = get_request_body_type(operation) %}
+{% if should_import_request_body_type(request_body_type) %}
+use crate::models::{{ request_body_type }};
+{% endif %}
 {% endif %}
 
 /// struct for typed errors of method [`{{ operation.rust_function_name }}`]
@@ -39,13 +50,24 @@ pub enum {{ operation.rust_error_enum }} {
 {% endif %}
 pub async fn {{ operation.rust_function_name }}(
     configuration: &configuration::Configuration,
+{% if has_request_body(operation) %}
+    {% set request_body_name = get_request_body_name(operation) %}
+    {% set request_body_type = get_request_body_type(operation) %}
+    {% if is_request_body_required(operation) %}{{ request_body_name }}: {{ request_body_type }},
+    {% else %}{{ request_body_name }}: Option<{{ request_body_type }}>,
+    {% endif %}
+{% endif %}
 {% for param in operation.parameters %}
     {% if param.required %}{{ param.rust_name }}: {% if param.rust_type == "String" %}&str{% else %}{{ param.rust_type }}{% endif %},
     {% else %}{{ param.rust_name }}: Option<{% if param.rust_type == "String" %}&str{% else %}{{ param.rust_type }}{% endif %}>,
     {% endif %}
 {% endfor %}
+
 ) -> Result<{% if get_success_response_type(operation) %}{{ get_success_response_type(operation) }}{% else %}(){% endif %}, Error<{{ operation.rust_error_enum }}>> {
     // add a prefix to parameters to efficiently prevent name collisions
+{% if has_request_body(operation) %}
+    let p_{{ get_request_body_name(operation) }} = {{ get_request_body_name(operation) }};
+{% endif %}
 {% for param in operation.parameters %}
     let p_{{ param.rust_name }} = {{ param.rust_name }};
 {% endfor %}
@@ -77,6 +99,18 @@ pub async fn {{ operation.rust_function_name }}(
 {% endfor %}
 {% endif %}
 
+{% if has_header_parameters(operation) %}
+{% for param in get_header_parameters(operation) %}
+    {% if param.required %}
+    req_builder = req_builder.header("{{ param.name }}", p_{{ param.rust_name }}.to_string());
+    {% else %}
+    if let Some(ref param_value) = p_{{ param.rust_name }} {
+        req_builder = req_builder.header("{{ param.name }}", param_value.to_string());
+    }
+    {% endif %}
+{% endfor %}
+{% endif %}
+
     if let Some(ref user_agent) = configuration.user_agent {
         req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
     }
@@ -88,6 +122,64 @@ pub async fn {{ operation.rust_function_name }}(
         };
         req_builder = req_builder.header("X-Algo-API-Token", value);
     };
+
+{% if has_request_body(operation) %}
+    {% set request_body_type = get_request_body_type(operation) %}
+    {% if operation.request_body_supports_msgpack and request_body_type not in ["SimulateRequest"] %}
+    // Determine content type: use msgpack if format parameter indicates it, otherwise use msgpack by default for supported types
+    let use_msgpack = {% for param in operation.parameters if param.name == "format" %}p_{{ param.rust_name }}.map(|f| f == "msgpack").unwrap_or(true){% else %}true{% endfor %};
+
+    {% if is_request_body_required(operation) %}
+    if use_msgpack {
+        {% if request_body_type == "Vec<u8>" %}
+        // For binary data, use directly as msgpack
+        req_builder = req_builder
+            .header("Content-Type", "application/msgpack")
+            .body(p_{{ get_request_body_name(operation) }});
+        {% else %}
+        // Serialize using msgpack
+        let msgpack_bytes = p_{{ get_request_body_name(operation) }}.to_msgpack()
+            .map_err(|e| Error::from(serde_json::Error::custom(format!("Failed to serialize to msgpack: {}", e))))?;
+        req_builder = req_builder
+            .header("Content-Type", "application/msgpack")
+            .body(msgpack_bytes);
+        {% endif %}
+    } else {
+        // Use JSON
+        req_builder = req_builder.json(&p_{{ get_request_body_name(operation) }});
+    }
+    {% else %}
+    if let Some(ref request_body) = p_{{ get_request_body_name(operation) }} {
+        if use_msgpack {
+            {% if request_body_type == "Vec<u8>" %}
+            // For binary data, use directly as msgpack
+            req_builder = req_builder
+                .header("Content-Type", "application/msgpack")
+                .body(request_body.clone());
+            {% else %}
+            // Serialize using msgpack
+            let msgpack_bytes = request_body.to_msgpack()
+                .map_err(|e| Error::from(serde_json::Error::custom(format!("Failed to serialize to msgpack: {}", e))))?;
+            req_builder = req_builder
+                .header("Content-Type", "application/msgpack")
+                .body(msgpack_bytes);
+            {% endif %}
+        } else {
+            // Use JSON
+            req_builder = req_builder.json(request_body);
+        }
+    }
+    {% endif %}
+    {% else %}
+    {% if is_request_body_required(operation) %}
+    req_builder = req_builder.json(&p_{{ get_request_body_name(operation) }});
+    {% else %}
+    if let Some(ref request_body) = p_{{ get_request_body_name(operation) }} {
+        req_builder = req_builder.json(request_body);
+    }
+    {% endif %}
+    {% endif %}
+{% endif %}
 
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;
@@ -104,16 +196,16 @@ pub async fn {{ operation.rust_function_name }}(
 
     if !status.is_client_error() && !status.is_server_error() {
         {% if get_success_response_type(operation) %}
+        {% set success_response_type = get_success_response_type(operation) %}
+        {# Use JSON-only response handling for all endpoints #}
         match content_type {
             ContentType::Json => {
                 let content = resp.text().await?;
                 serde_json::from_str(&content).map_err(Error::from)
             },
-            {% set has_text_plain = "text/plain" in spec.content_types %}
-            {% if has_text_plain %}
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `{{ get_success_response_type(operation) }}`"))),
-            {% endif %}
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `{{ get_success_response_type(operation) }}`")))),
+            ContentType::MsgPack => return Err(Error::from(serde_json::Error::custom("MsgPack response handling not supported for this endpoint"))),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `{{ success_response_type }}`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `{{ success_response_type }}`")))),
         }
         {% else %}
         let _content = resp.text().await?;

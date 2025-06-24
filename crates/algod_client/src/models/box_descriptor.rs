@@ -12,6 +12,9 @@ use crate::models;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
+
+
+
 /// Box descriptor describes a Box.
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
@@ -24,6 +27,7 @@ pub struct BoxDescriptor {
 
 
 
+
 impl BoxDescriptor {
     /// Constructor for BoxDescriptor
     pub fn new(name: Vec<u8>) -> BoxDescriptor {
@@ -31,4 +35,5 @@ impl BoxDescriptor {
             name,
         }
     }
+
 }

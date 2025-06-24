@@ -13,7 +13,9 @@ use serde::{Deserialize, Serialize, de::Error as _};
 use crate::{apis::ResponseContent, models};
 use super::{Error, configuration, ContentType};
 
-// Import response types for this endpoint
+// Import all custom types used by this endpoint
+
+// Import request body type if needed
 
 /// struct for typed errors of method [`health_check`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -27,11 +29,13 @@ pub enum HealthCheckError {
 /// Returns OK if healthy.
 pub async fn health_check(
     configuration: &configuration::Configuration,
+
 ) -> Result<(), Error<HealthCheckError>> {
     // add a prefix to parameters to efficiently prevent name collisions
 
     let uri_str = format!("{}/health", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
+
 
 
     if let Some(ref user_agent) = configuration.user_agent {
@@ -45,6 +49,7 @@ pub async fn health_check(
         };
         req_builder = req_builder.header("X-Algo-API-Token", value);
     };
+
 
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;

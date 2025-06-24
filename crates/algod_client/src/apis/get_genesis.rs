@@ -13,7 +13,12 @@ use serde::{Deserialize, Serialize, de::Error as _};
 use crate::{apis::ResponseContent, models};
 use super::{Error, configuration, ContentType};
 
-// Import response types for this endpoint
+// Import all custom types used by this endpoint
+use crate::models::{
+    Genesis,
+};
+
+// Import request body type if needed
 
 /// struct for typed errors of method [`get_genesis`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -27,11 +32,13 @@ pub enum GetGenesisError {
 /// Returns the entire genesis file in json.
 pub async fn get_genesis(
     configuration: &configuration::Configuration,
-) -> Result<serde_json::Value, Error<GetGenesisError>> {
+
+) -> Result<Genesis, Error<GetGenesisError>> {
     // add a prefix to parameters to efficiently prevent name collisions
 
     let uri_str = format!("{}/genesis", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
+
 
 
     if let Some(ref user_agent) = configuration.user_agent {
@@ -45,6 +52,7 @@ pub async fn get_genesis(
         };
         req_builder = req_builder.header("X-Algo-API-Token", value);
     };
+
 
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;
@@ -63,8 +71,9 @@ pub async fn get_genesis(
                 let content = resp.text().await?;
                 serde_json::from_str(&content).map_err(Error::from)
             },
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `serde_json::Value`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `serde_json::Value`")))),
+            ContentType::MsgPack => return Err(Error::from(serde_json::Error::custom("MsgPack response handling not supported for this endpoint"))),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Genesis`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Genesis`")))),
         }
     } else {
         let content = resp.text().await?;

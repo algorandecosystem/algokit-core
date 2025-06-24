@@ -12,15 +12,27 @@ use crate::models;
 use serde::{Deserialize, Serialize};
 use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
 
+
+
+
+
+
+
+
+
+use crate::models::Account;
+use crate::models::Application;
+use crate::models::DryrunSource;
+
 /// Request data type for dryrun endpoint. Given the Transactions and simulated ledger state upload, run TEAL scripts and return debugging information.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct DryrunRequest {
     #[serde(rename = "txns")]
     pub txns: Vec<AlgokitSignedTransaction>,
     #[serde(rename = "accounts")]
-    pub accounts: Vec<serde_json::Value>,
+    pub accounts: Vec<Account>,
     #[serde(rename = "apps")]
-    pub apps: Vec<serde_json::Value>,
+    pub apps: Vec<Application>,
         /// ProtocolVersion specifies a specific version string to operate under, otherwise whatever the current protocol of the network this algod is running in.
     #[serde(rename = "protocol-version")]
     pub protocol_version: String,
@@ -31,7 +43,7 @@ pub struct DryrunRequest {
     #[serde(rename = "latest-timestamp")]
     pub latest_timestamp: i64,
     #[serde(rename = "sources")]
-    pub sources: Vec<serde_json::Value>,
+    pub sources: Vec<DryrunSource>,
 }
 
 impl Default for DryrunRequest {
@@ -49,9 +61,13 @@ impl Default for DryrunRequest {
 }
 
 
+impl AlgorandMsgpack for DryrunRequest {
+    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+}
+
 impl DryrunRequest {
     /// Constructor for DryrunRequest
-    pub fn new(txns: Vec<AlgokitSignedTransaction>, accounts: Vec<serde_json::Value>, apps: Vec<serde_json::Value>, protocol_version: String, round: i32, latest_timestamp: i64, sources: Vec<serde_json::Value>) -> DryrunRequest {
+    pub fn new(txns: Vec<AlgokitSignedTransaction>, accounts: Vec<Account>, apps: Vec<Application>, protocol_version: String, round: i32, latest_timestamp: i64, sources: Vec<DryrunSource>) -> DryrunRequest {
         DryrunRequest {
             txns,
             accounts,
@@ -61,5 +77,15 @@ impl DryrunRequest {
             latest_timestamp,
             sources,
         }
+    }
+
+    /// Encode this struct to msgpack bytes using AlgorandMsgpack trait
+    pub fn to_msgpack(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        Ok(self.encode()?)
+    }
+
+    /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
+    pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(Self::decode(bytes)?)
     }
 }

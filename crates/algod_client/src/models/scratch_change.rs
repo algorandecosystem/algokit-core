@@ -11,6 +11,11 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
+
+
+
+use crate::models::AvmValue;
+
 /// A write operation into a scratch slot.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ScratchChange {
@@ -18,17 +23,19 @@ pub struct ScratchChange {
     #[serde(rename = "slot")]
     pub slot: i32,
     #[serde(rename = "new-value")]
-    pub new_value: serde_json::Value,
+    pub new_value: AvmValue,
 }
+
 
 
 
 impl ScratchChange {
     /// Constructor for ScratchChange
-    pub fn new(slot: i32, new_value: serde_json::Value) -> ScratchChange {
+    pub fn new(slot: i32, new_value: AvmValue) -> ScratchChange {
         ScratchChange {
             slot,
             new_value,
         }
     }
+
 }
