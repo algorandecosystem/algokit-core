@@ -1,20 +1,24 @@
 {
-    "name": "api",
-    "module": "index.ts",
-    "type": "module",
-    "private": true,
-    "scripts": {
-        "generate": "openapi-generator-cli generate",
-        "generate-algod-clients": "bun run scripts/generate-algod-clients.ts",
-        "convert-openapi": "bun run scripts/convert-openapi.ts"
-    },
-    "devDependencies": {
-        "@openapitools/openapi-generator-cli": "2.19.1",
-        "@types/bun": "latest",
-        "@types/node": "^20.10.0",
-        "prettier": "^3.5.3"
-    },
-    "peerDependencies": {
-        "typescript": "^5"
-    }
+  "name": "api",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "generate": "openapi-generator-cli generate",
+    "generate:algod_api": "bun generate:algod_api:all",
+    "generate:algod_api:all": "bun scripts/generate-clients.ts algod all",
+    "generate:algod_api:ts": "bun scripts/generate-clients.ts algod typescript",
+    "generate:algod_api:py": "bun scripts/generate-clients.ts algod python",
+    "convert-openapi": "bun scripts/convert-openapi.ts"
+  },
+  "devDependencies": {
+    "@apidevtools/swagger-parser": "^11.0.0",
+    "@openapitools/openapi-generator-cli": "2.19.1",
+    "@types/bun": "latest",
+    "@types/node": "^20.10.0",
+    "prettier": "^3.5.3"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
 }

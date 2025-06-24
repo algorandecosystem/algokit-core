@@ -1,6 +1,6 @@
 import { expect, test, describe } from "bun:test";
 import { testData } from "./common.ts";
-import { decodeTransaction } from "../src";
+import { decodeTransaction } from "..";
 
 describe("Generic Transaction", () => {
   // Polytest Suite: Generic Transaction
@@ -14,9 +14,7 @@ describe("Generic Transaction", () => {
     });
 
     test("encode 0 bytes", () => {
-      expect(() => decodeTransaction(new Uint8Array(0))).toThrow(
-        "DecodingError: attempted to decode 0 bytes"
-      );
+      expect(() => decodeTransaction(new Uint8Array(0))).toThrow("attempted to decode 0 bytes");
     });
   });
 });

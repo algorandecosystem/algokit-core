@@ -1,7 +1,21 @@
-use algokit_transact::{AlgorandMsgpack, Byte32, TransactionId};
-use ffi_macros::{ffi_func, ffi_record};
+mod transactions;
+
+use algokit_transact::constants::*;
+use algokit_transact::msgpack::{
+    decode_base64_msgpack_to_json as internal_decode_base64_msgpack_to_json,
+    decode_msgpack_to_json as internal_decode_msgpack_to_json,
+    encode_json_to_base64_msgpack as internal_encode_json_to_base64_msgpack,
+    encode_json_to_msgpack as internal_encode_json_to_msgpack,
+    AlgoKitMsgPackError as InternalMsgPackError, ModelType as InternalModelType,
+};
+use algokit_transact::{
+    AlgorandMsgpack, Byte32, EstimateTransactionSize, TransactionId, Transactions,
+};
+use ffi_macros::{ffi_enum, ffi_func, ffi_record};
 use serde::{Deserialize, Serialize};
 use serde_bytes::ByteBuf;
+
+pub use transactions::ApplicationCallTransactionFields;
 
 // thiserror is used to easily create errors than can be propagated to the language bindings
 // UniFFI will create classes for errors (i.e. `MsgPackError.EncodingError` in Python)
@@ -12,6 +26,10 @@ pub enum AlgoKitTransactError {
     EncodingError(String),
     #[error("DecodingError: {0}")]
     DecodingError(String),
+    #[error("{0}")]
+    InputError(String),
+    #[error("MsgPackError: {0}")]
+    MsgPackError(String),
 }
 
 // For now, in WASM we just throw the string, hence the error
@@ -44,11 +62,35 @@ impl From<algokit_transact::AlgoKitTransactError> for AlgoKitTransactError {
                 AlgoKitTransactError::DecodingError(e.to_string())
             }
             algokit_transact::AlgoKitTransactError::InputError(e) => {
-                AlgoKitTransactError::DecodingError(e.to_string())
+                AlgoKitTransactError::InputError(e.to_string())
             }
             algokit_transact::AlgoKitTransactError::InvalidAddress(_) => {
                 AlgoKitTransactError::DecodingError(e.to_string())
             }
+        }
+    }
+}
+
+// Convert msgpack errors to FFI errors
+impl From<InternalMsgPackError> for AlgoKitTransactError {
+    fn from(e: InternalMsgPackError) -> Self {
+        match e {
+            InternalMsgPackError::SerializationError(e) => {
+                AlgoKitTransactError::MsgPackError(e.to_string())
+            }
+            InternalMsgPackError::MsgpackEncodingError(e) => {
+                AlgoKitTransactError::MsgPackError(e.to_string())
+            }
+            InternalMsgPackError::MsgpackDecodingError(e) => {
+                AlgoKitTransactError::MsgPackError(e.to_string())
+            }
+            InternalMsgPackError::Base64DecodingError(e) => {
+                AlgoKitTransactError::MsgPackError(e.to_string())
+            }
+            InternalMsgPackError::MsgpackWriteError(s) => AlgoKitTransactError::MsgPackError(s),
+            InternalMsgPackError::UnknownModelError(s) => AlgoKitTransactError::MsgPackError(s),
+            InternalMsgPackError::IoError(s) => AlgoKitTransactError::MsgPackError(s),
+            InternalMsgPackError::ValueWriteError(s) => AlgoKitTransactError::MsgPackError(s),
         }
     }
 }
@@ -59,6 +101,8 @@ use uniffi::{self};
 #[cfg(feature = "ffi_uniffi")]
 uniffi::setup_scaffolding!();
 
+#[cfg(feature = "ffi_wasm")]
+use js_sys::Uint8Array;
 #[cfg(feature = "ffi_wasm")]
 use tsify_next::Tsify;
 #[cfg(feature = "ffi_wasm")]
@@ -106,7 +150,7 @@ pub struct Address {
 impl From<algokit_transact::Address> for Address {
     fn from(value: algokit_transact::Address) -> Self {
         return Self {
-            address: value.address(),
+            address: value.to_string(),
             pub_key: value.pub_key.to_vec().into(),
         };
     }
@@ -116,12 +160,27 @@ impl TryFrom<Address> for algokit_transact::Address {
     type Error = AlgoKitTransactError;
 
     fn try_from(value: Address) -> Result<Self, Self::Error> {
-        let pub_key: [u8; 32] = value.pub_key.to_vec().try_into().map_err(|_| {
-            AlgoKitTransactError::EncodingError("public key should be 32 bytes".to_string())
-        })?;
+        let pub_key: [u8; ALGORAND_PUBLIC_KEY_BYTE_LENGTH] =
+            value.pub_key.to_vec().try_into().map_err(|_| {
+                AlgoKitTransactError::EncodingError(
+                    format!(
+                        "public key should be {} bytes",
+                        ALGORAND_PUBLIC_KEY_BYTE_LENGTH
+                    )
+                    .to_string(),
+                )
+            })?;
 
         Ok(algokit_transact::Address::from_pubkey(&pub_key))
     }
+}
+
+#[ffi_record]
+pub struct FeeParams {
+    fee_per_byte: u64,
+    min_fee: u64,
+    extra_fee: Option<u64>,
+    max_fee: Option<u64>,
 }
 
 #[ffi_record]
@@ -154,7 +213,10 @@ pub struct Transaction {
     /// The sender of the transaction
     sender: Address,
 
-    fee: u64,
+    /// Optional transaction fee in microALGO.
+    ///
+    /// If not set, the fee will be interpreted as 0 by the network.
+    fee: Option<u64>,
 
     first_valid: u64,
 
@@ -175,6 +237,8 @@ pub struct Transaction {
     payment: Option<PaymentTransactionFields>,
 
     asset_transfer: Option<AssetTransferTransactionFields>,
+
+    application_call: Option<ApplicationCallTransactionFields>,
 }
 
 impl TryFrom<Transaction> for algokit_transact::Transaction {
@@ -182,10 +246,14 @@ impl TryFrom<Transaction> for algokit_transact::Transaction {
 
     fn try_from(tx: Transaction) -> Result<Self, AlgoKitTransactError> {
         // Ensure there is never more than 1 transaction type specific field set
-        if [tx.payment.is_some(), tx.asset_transfer.is_some()]
-            .iter()
-            .filter(|&&x| x)
-            .count()
+        if [
+            tx.payment.is_some(),
+            tx.asset_transfer.is_some(),
+            tx.application_call.is_some(),
+        ]
+        .into_iter()
+        .filter(|&x| x)
+        .count()
             > 1
         {
             return Err(Self::Error::DecodingError(
@@ -198,6 +266,9 @@ impl TryFrom<Transaction> for algokit_transact::Transaction {
             TransactionType::AssetTransfer => {
                 Ok(algokit_transact::Transaction::AssetTransfer(tx.try_into()?))
             }
+            TransactionType::ApplicationCall => Ok(algokit_transact::Transaction::ApplicationCall(
+                tx.try_into()?,
+            )),
             _ => {
                 return Err(Self::Error::DecodingError(
                     "Transaction type is not implemented".to_string(),
@@ -274,7 +345,7 @@ impl TryFrom<Transaction> for algokit_transact::AssetTransferTransactionFields {
     type Error = AlgoKitTransactError;
 
     fn try_from(tx: Transaction) -> Result<Self, Self::Error> {
-        if tx.transaction_type != TransactionType::AssetTransfer || tx.payment.is_none() {
+        if tx.transaction_type != TransactionType::AssetTransfer || tx.asset_transfer.is_none() {
             return Err(Self::Error::DecodingError(
                 "Asset Transfer data missing".to_string(),
             ));
@@ -306,6 +377,7 @@ impl TryFrom<algokit_transact::Transaction> for Transaction {
                     TransactionType::Payment,
                     Some(payment_fields),
                     None,
+                    None,
                 )
             }
             algokit_transact::Transaction::AssetTransfer(asset_transfer) => {
@@ -315,9 +387,66 @@ impl TryFrom<algokit_transact::Transaction> for Transaction {
                     TransactionType::AssetTransfer,
                     None,
                     Some(asset_transfer_fields),
+                    None,
+                )
+            }
+            algokit_transact::Transaction::ApplicationCall(application_call) => {
+                let application_call_fields = application_call.clone().into();
+                build_transaction(
+                    application_call.header,
+                    TransactionType::ApplicationCall,
+                    None,
+                    None,
+                    Some(application_call_fields),
                 )
             }
         }
+    }
+}
+
+#[ffi_record]
+pub struct SignedTransaction {
+    /// The transaction that has been signed.
+    pub transaction: Transaction,
+
+    /// Optional Ed25519 signature authorizing the transaction.
+    pub signature: Option<ByteBuf>,
+
+    /// Optional auth address applicable if the transaction sender is a rekeyed account.
+    pub auth_address: Option<Address>,
+}
+
+impl From<algokit_transact::SignedTransaction> for SignedTransaction {
+    fn from(signed_tx: algokit_transact::SignedTransaction) -> Self {
+        Self {
+            transaction: signed_tx.transaction.try_into().unwrap(),
+            signature: signed_tx.signature.map(|sig| sig.to_vec().into()),
+            auth_address: signed_tx.auth_address.map(Into::into),
+        }
+    }
+}
+
+impl TryFrom<SignedTransaction> for algokit_transact::SignedTransaction {
+    type Error = AlgoKitTransactError;
+
+    fn try_from(signed_tx: SignedTransaction) -> Result<Self, Self::Error> {
+        let signature = signed_tx
+            .signature
+            .map(|sig| {
+                sig.to_vec().try_into().map_err(|_| {
+                    AlgoKitTransactError::EncodingError(format!(
+                        "signature should be {} bytes",
+                        ALGORAND_SIGNATURE_BYTE_LENGTH
+                    ))
+                })
+            })
+            .transpose()?;
+
+        Ok(Self {
+            transaction: signed_tx.transaction.try_into()?,
+            signature,
+            auth_address: signed_tx.auth_address.map(TryInto::try_into).transpose()?,
+        })
     }
 }
 
@@ -339,6 +468,7 @@ fn build_transaction(
     transaction_type: TransactionType,
     payment: Option<PaymentTransactionFields>,
     asset_transfer: Option<AssetTransferTransactionFields>,
+    application_call: Option<ApplicationCallTransactionFields>,
 ) -> Result<Transaction, AlgoKitTransactError> {
     Ok(Transaction {
         transaction_type,
@@ -354,6 +484,7 @@ fn build_transaction(
         group: header.group.map(byte32_to_bytebuf),
         payment,
         asset_transfer,
+        application_call,
     })
 }
 
@@ -369,6 +500,7 @@ pub fn get_encoded_transaction_type(bytes: &[u8]) -> Result<TransactionType, Alg
     match decoded {
         algokit_transact::Transaction::Payment(_) => Ok(TransactionType::Payment),
         algokit_transact::Transaction::AssetTransfer(_) => Ok(TransactionType::AssetTransfer),
+        algokit_transact::Transaction::ApplicationCall(_) => Ok(TransactionType::ApplicationCall),
     }
 }
 
@@ -379,6 +511,35 @@ pub fn encode_transaction(tx: Transaction) -> Result<Vec<u8>, AlgoKitTransactErr
     Ok(ctx.encode()?)
 }
 
+/// Encode transactions to MsgPack with the domain separation (e.g. "TX") prefix.
+///
+/// # Parameters
+/// * `txs` - A collection of transactions to encode
+///
+/// # Returns
+/// A collection of MsgPack encoded bytes or an error if encoding fails.
+#[cfg(feature = "ffi_wasm")]
+#[ffi_func]
+/// Encode transactions with the domain separation (e.g. "TX") prefix
+pub fn encode_transactions(txs: Vec<Transaction>) -> Result<Vec<Uint8Array>, AlgoKitTransactError> {
+    txs.into_iter()
+        .map(|tx| encode_transaction(tx).map(|bytes| bytes.as_slice().into()))
+        .collect()
+}
+
+/// Encode transactions to MsgPack with the domain separation (e.g. "TX") prefix.
+///
+/// # Parameters
+/// * `txs` - A collection of transactions to encode
+///
+/// # Returns
+/// A collection of MsgPack encoded bytes or an error if encoding fails.
+#[cfg(not(feature = "ffi_wasm"))]
+#[ffi_func]
+pub fn encode_transactions(txs: Vec<Transaction>) -> Result<Vec<Vec<u8>>, AlgoKitTransactError> {
+    txs.into_iter().map(encode_transaction).collect()
+}
+
 #[ffi_func]
 /// Encode the transaction without the domain separation (e.g. "TX") prefix
 /// This is useful for encoding the transaction for signing with tools that automatically add "TX" prefix to the transaction bytes.
@@ -387,30 +548,85 @@ pub fn encode_transaction_raw(tx: Transaction) -> Result<Vec<u8>, AlgoKitTransac
     Ok(ctx.encode_raw()?)
 }
 
+/// Decodes MsgPack bytes into a transaction.
+///
+/// # Parameters
+/// * `encoded_tx` - MsgPack encoded bytes representing a transaction.
+///
+/// # Returns
+/// A decoded transaction or an error if decoding fails.
 #[ffi_func]
-pub fn decode_transaction(bytes: &[u8]) -> Result<Transaction, AlgoKitTransactError> {
-    let ctx: algokit_transact::Transaction = algokit_transact::Transaction::decode(bytes)?;
+pub fn decode_transaction(encoded_tx: &[u8]) -> Result<Transaction, AlgoKitTransactError> {
+    let ctx: algokit_transact::Transaction = algokit_transact::Transaction::decode(encoded_tx)?;
     Ok(ctx.try_into()?)
 }
 
+/// Decodes a collection of MsgPack bytes into a transaction collection.
+///
+/// # Parameters
+/// * `encoded_txs` - A collection of MsgPack encoded bytes, each representing a transaction.
+///
+/// # Returns
+/// A collection of decoded transactions or an error if decoding fails.
+#[cfg(feature = "ffi_wasm")]
 #[ffi_func]
-pub fn attach_signature(
-    encoded_tx: &[u8],
-    signature: &[u8],
-) -> Result<Vec<u8>, AlgoKitTransactError> {
-    let encoded_tx = algokit_transact::Transaction::decode(encoded_tx)?;
-    let signed_tx = algokit_transact::SignedTransaction {
-        transaction: encoded_tx,
-        signature: signature.try_into().expect("signature should be 64 bytes"),
-    };
-    Ok(signed_tx.encode()?)
+pub fn decode_transactions(
+    encoded_txs: Vec<Uint8Array>,
+) -> Result<Vec<Transaction>, AlgoKitTransactError> {
+    encoded_txs
+        .iter()
+        .map(|bytes| decode_transaction(bytes.to_vec().as_slice()))
+        .collect()
+}
+
+/// Decodes a collection of MsgPack bytes into a transaction collection.
+///
+/// # Parameters
+/// * `encoded_txs` - A collection of MsgPack encoded bytes, each representing a transaction.
+///
+/// # Returns
+/// A collection of decoded transactions or an error if decoding fails.
+#[cfg(not(feature = "ffi_wasm"))]
+#[ffi_func]
+pub fn decode_transactions(
+    encoded_txs: Vec<Vec<u8>>,
+) -> Result<Vec<Transaction>, AlgoKitTransactError> {
+    encoded_txs
+        .iter()
+        .map(|tx| decode_transaction(tx))
+        .collect()
+}
+
+/// Return the size of the transaction in bytes as if it was already signed and encoded.
+/// This is useful for estimating the fee for the transaction.
+#[ffi_func]
+pub fn estimate_transaction_size(transaction: Transaction) -> Result<u64, AlgoKitTransactError> {
+    let core_tx: algokit_transact::Transaction = transaction.try_into()?;
+    return core_tx
+        .estimate_size()
+        .map_err(|e| {
+            AlgoKitTransactError::EncodingError(format!(
+                "Failed to estimate transaction size: {}",
+                e
+            ))
+        })?
+        .try_into()
+        .map_err(|_| {
+            AlgoKitTransactError::EncodingError("Failed to convert size to u64".to_string())
+        });
 }
 
 #[ffi_func]
 pub fn address_from_pub_key(pub_key: &[u8]) -> Result<Address, AlgoKitTransactError> {
     Ok(
         algokit_transact::Address::from_pubkey(pub_key.try_into().map_err(|_| {
-            AlgoKitTransactError::EncodingError("public key should be 32 bytes".to_string())
+            AlgoKitTransactError::EncodingError(
+                format!(
+                    "public key should be {} bytes",
+                    ALGORAND_PUBLIC_KEY_BYTE_LENGTH
+                )
+                .to_string(),
+            )
         })?)
         .into(),
     )
@@ -418,24 +634,225 @@ pub fn address_from_pub_key(pub_key: &[u8]) -> Result<Address, AlgoKitTransactEr
 
 #[ffi_func]
 pub fn address_from_string(address: &str) -> Result<Address, AlgoKitTransactError> {
-    algokit_transact::Address::from_string(address)
+    address
+        .parse::<algokit_transact::Address>()
         .map(Into::into)
         .map_err(|e| AlgoKitTransactError::EncodingError(e.to_string()))
 }
 
 /// Get the raw 32-byte transaction ID for a transaction.
 #[ffi_func]
-pub fn get_transaction_raw_id(tx: &Transaction) -> Result<Vec<u8>, AlgoKitTransactError> {
-    let tx_internal: algokit_transact::Transaction = tx.clone().try_into()?;
-    let raw_id = tx_internal.raw_id()?;
-    Ok(raw_id.to_vec())
+pub fn get_transaction_id_raw(tx: Transaction) -> Result<Vec<u8>, AlgoKitTransactError> {
+    let tx_internal: algokit_transact::Transaction = tx.try_into()?;
+    let id_raw = tx_internal.id_raw()?;
+    Ok(id_raw.to_vec())
 }
 
 /// Get the base32 transaction ID string for a transaction.
 #[ffi_func]
-pub fn get_transaction_id(tx: &Transaction) -> Result<String, AlgoKitTransactError> {
-    let tx_internal: algokit_transact::Transaction = tx.clone().try_into()?;
+pub fn get_transaction_id(tx: Transaction) -> Result<String, AlgoKitTransactError> {
+    let tx_internal: algokit_transact::Transaction = tx.try_into()?;
     Ok(tx_internal.id()?)
+}
+
+/// Groups a collection of transactions by calculating and assigning the group to each transaction.
+#[ffi_func]
+pub fn group_transactions(txs: Vec<Transaction>) -> Result<Vec<Transaction>, AlgoKitTransactError> {
+    let txs_internal: Vec<algokit_transact::Transaction> = txs
+        .into_iter()
+        .map(|tx| tx.try_into())
+        .collect::<Result<Vec<_>, _>>()?;
+
+    let grouped_txs: Vec<Transaction> = txs_internal
+        .assign_group()?
+        .into_iter()
+        .map(|tx| tx.try_into())
+        .collect::<Result<Vec<_>, _>>()?;
+
+    Ok(grouped_txs)
+}
+
+/// Enum containing all constants used in this crate.
+#[ffi_enum]
+pub enum AlgorandConstant {
+    /// Length of hash digests (32)
+    HashLength,
+
+    /// Length of the checksum used in Algorand addresses (4)
+    ChecksumLength,
+
+    /// Length of a base32-encoded Algorand address (58)
+    AddressLength,
+
+    /// Length of an Algorand public key in bytes (32)
+    PublicKeyLength,
+
+    /// Length of an Algorand secret key in bytes (32)
+    SecretKeyLength,
+
+    /// Length of an Algorand signature in bytes (64)
+    SignatureLength,
+
+    /// Increment in the encoded byte size when a signature is attached to a transaction (75)
+    SignatureEncodingIncrLength,
+
+    // The maximum number of transactions in a group (16)
+    MaxTxGroupSize,
+}
+
+impl AlgorandConstant {
+    /// Get the numeric value of the constant
+    pub fn value(&self) -> u64 {
+        match self {
+            AlgorandConstant::HashLength => HASH_BYTES_LENGTH as u64,
+            AlgorandConstant::ChecksumLength => ALGORAND_CHECKSUM_BYTE_LENGTH as u64,
+            AlgorandConstant::AddressLength => ALGORAND_ADDRESS_LENGTH as u64,
+            AlgorandConstant::PublicKeyLength => ALGORAND_PUBLIC_KEY_BYTE_LENGTH as u64,
+            AlgorandConstant::SecretKeyLength => ALGORAND_SECRET_KEY_BYTE_LENGTH as u64,
+            AlgorandConstant::SignatureLength => ALGORAND_SIGNATURE_BYTE_LENGTH as u64,
+            AlgorandConstant::SignatureEncodingIncrLength => {
+                ALGORAND_SIGNATURE_ENCODING_INCR as u64
+            }
+            AlgorandConstant::MaxTxGroupSize => MAX_TX_GROUP_SIZE as u64,
+        }
+    }
+}
+
+#[ffi_func]
+pub fn get_algorand_constant(constant: AlgorandConstant) -> u64 {
+    constant.value()
+}
+
+impl TryFrom<FeeParams> for algokit_transact::FeeParams {
+    type Error = AlgoKitTransactError;
+
+    fn try_from(value: FeeParams) -> Result<Self, Self::Error> {
+        Ok(Self {
+            fee_per_byte: value.fee_per_byte,
+            min_fee: value.min_fee,
+            extra_fee: value.extra_fee,
+            max_fee: value.max_fee,
+        })
+    }
+}
+
+#[ffi_func]
+pub fn assign_fee(
+    txn: Transaction,
+    fee_params: FeeParams,
+) -> Result<Transaction, AlgoKitTransactError> {
+    let txn_internal: algokit_transact::Transaction = txn.try_into()?;
+    let fee_params_internal: algokit_transact::FeeParams = fee_params.try_into()?;
+
+    let updated_txn = txn_internal.assign_fee(fee_params_internal)?;
+
+    Ok(updated_txn.try_into()?)
+}
+
+/// Decodes a signed transaction.
+///
+/// # Parameters
+/// * `bytes` - The MsgPack encoded signed transaction bytes
+///
+/// # Returns
+/// The decoded SignedTransaction or an error if decoding fails.
+#[ffi_func]
+pub fn decode_signed_transaction(bytes: &[u8]) -> Result<SignedTransaction, AlgoKitTransactError> {
+    let signed_tx = algokit_transact::SignedTransaction::decode(bytes)?;
+    Ok(signed_tx.into())
+}
+
+/// Decodes a collection of MsgPack bytes into a signed transaction collection.
+///
+/// # Parameters
+/// * `encoded_signed_txs` - A collection of MsgPack encoded bytes, each representing a signed transaction.
+///
+/// # Returns
+/// A collection of decoded signed transactions or an error if decoding fails.
+#[cfg(feature = "ffi_wasm")]
+#[ffi_func]
+pub fn decode_signed_transactions(
+    encoded_signed_txs: Vec<Uint8Array>,
+) -> Result<Vec<SignedTransaction>, AlgoKitTransactError> {
+    encoded_signed_txs
+        .iter()
+        .map(|bytes| decode_signed_transaction(bytes.to_vec().as_slice()))
+        .collect()
+}
+
+/// Decodes a collection of MsgPack bytes into a signed transaction collection.
+///
+/// # Parameters
+/// * `encoded_signed_txs` - A collection of MsgPack encoded bytes, each representing a signed transaction.
+///
+/// # Returns
+/// A collection of decoded signed transactions or an error if decoding fails.
+#[cfg(not(feature = "ffi_wasm"))]
+#[ffi_func]
+pub fn decode_signed_transactions(
+    encoded_signed_txs: Vec<Vec<u8>>,
+) -> Result<Vec<SignedTransaction>, AlgoKitTransactError> {
+    encoded_signed_txs
+        .iter()
+        .map(|tx| decode_signed_transaction(tx))
+        .collect()
+}
+
+/// Encode a signed transaction to MsgPack for sending on the network.
+///
+/// This method performs canonical encoding. No domain separation prefix is applicable.
+///
+/// # Parameters
+/// * `signed_tx` - The signed transaction to encode
+///
+/// # Returns
+/// The MsgPack encoded bytes or an error if encoding fails.
+#[ffi_func]
+pub fn encode_signed_transaction(
+    signed_tx: SignedTransaction,
+) -> Result<Vec<u8>, AlgoKitTransactError> {
+    let signed_tx_internal: algokit_transact::SignedTransaction = signed_tx.try_into()?;
+    Ok(signed_tx_internal.encode()?)
+}
+
+/// Encode signed transactions to MsgPack for sending on the network.
+///
+/// This method performs canonical encoding. No domain separation prefix is applicable.
+///
+/// # Parameters
+/// * `signed_txs` - A collection of signed transactions to encode
+///
+/// # Returns
+/// A collection of MsgPack encoded bytes or an error if encoding fails.
+#[cfg(feature = "ffi_wasm")]
+#[ffi_func]
+pub fn encode_signed_transactions(
+    signed_txs: Vec<SignedTransaction>,
+) -> Result<Vec<Uint8Array>, AlgoKitTransactError> {
+    signed_txs
+        .into_iter()
+        .map(|tx| encode_signed_transaction(tx).map(|bytes| bytes.as_slice().into()))
+        .collect()
+}
+
+/// Encode signed transactions to MsgPack for sending on the network.
+///
+/// This method performs canonical encoding. No domain separation prefix is applicable.
+///
+/// # Parameters
+/// * `signed_txs` - A collection of signed transactions to encode
+///
+/// # Returns
+/// A collection of MsgPack encoded bytes or an error if encoding fails.
+#[cfg(not(feature = "ffi_wasm"))]
+#[ffi_func]
+pub fn encode_signed_transactions(
+    signed_txs: Vec<SignedTransaction>,
+) -> Result<Vec<Vec<u8>>, AlgoKitTransactError> {
+    signed_txs
+        .into_iter()
+        .map(encode_signed_transaction)
+        .collect()
 }
 
 #[cfg(test)]
@@ -445,7 +862,7 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     #[test]
-    fn test_get_encoded_transaction_type() {
+    fn test_get_encoded_payment_transaction_type() {
         let txn: Transaction = TransactionMother::simple_payment()
             .build()
             .unwrap()
@@ -461,14 +878,156 @@ mod tests {
     }
 
     #[test]
-    fn test_transaction_id_ffi() {
-        let data = TestDataMother::simple_payment();
-        let tx_ffi = data.transaction.try_into().unwrap();
+    fn test_get_encoded_asset_transfer_transaction_type() {
+        let txn: Transaction = TransactionMother::simple_asset_transfer()
+            .build()
+            .unwrap()
+            .try_into()
+            .unwrap();
 
-        let actual_id = get_transaction_id(&tx_ffi).unwrap();
-        let actual_raw_id = get_transaction_raw_id(&tx_ffi).unwrap();
+        // Encode the transaction
+        let encoded = encode_transaction(txn).unwrap();
+
+        // Test the get_encoded_transaction_type function
+        let tx_type = get_encoded_transaction_type(&encoded).unwrap();
+        assert_eq!(tx_type, TransactionType::AssetTransfer);
+    }
+
+    #[test]
+    fn test_payment_transaction_id_ffi() {
+        let data = TestDataMother::simple_payment();
+        let tx_ffi: Transaction = data.transaction.try_into().unwrap();
+
+        let actual_id = get_transaction_id(tx_ffi.clone()).unwrap();
+        let actual_id_raw = get_transaction_id_raw(tx_ffi.clone()).unwrap();
 
         assert_eq!(actual_id, data.id);
-        assert_eq!(actual_raw_id, data.raw_id);
+        assert_eq!(actual_id_raw, data.id_raw);
     }
+
+    #[test]
+    fn test_asset_transfer_transaction_id_ffi() {
+        let data = TestDataMother::simple_asset_transfer();
+        let tx_ffi: Transaction = data.transaction.try_into().unwrap();
+
+        let actual_id = get_transaction_id(tx_ffi.clone()).unwrap();
+        let actual_id_raw = get_transaction_id_raw(tx_ffi.clone()).unwrap();
+
+        assert_eq!(actual_id, data.id);
+        assert_eq!(actual_id_raw, data.id_raw);
+    }
+
+    #[test]
+    fn test_group_transactions_ffi() {
+        let expected_group = [
+            157, 37, 101, 171, 205, 211, 38, 98, 250, 86, 254, 215, 115, 126, 212, 252, 24, 53,
+            199, 142, 152, 75, 250, 200, 173, 128, 52, 142, 13, 193, 184, 137,
+        ];
+        let tx1 = TestDataMother::simple_payment()
+            .transaction
+            .try_into()
+            .unwrap();
+        let tx2 = TestDataMother::simple_asset_transfer()
+            .transaction
+            .try_into()
+            .unwrap();
+        let tx3 = TestDataMother::opt_in_asset_transfer()
+            .transaction
+            .try_into()
+            .unwrap();
+        let txs = vec![tx1, tx2, tx3];
+
+        let grouped_txs = group_transactions(txs.clone()).unwrap();
+
+        assert_eq!(grouped_txs.len(), txs.len());
+        for grouped_tx in grouped_txs.into_iter() {
+            assert_eq!(grouped_tx.group.unwrap(), &expected_group);
+        }
+    }
+}
+
+// ========== MessagePack FFI Functions ==========
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[cfg_attr(feature = "ffi_wasm", derive(tsify_next::Tsify))]
+#[cfg_attr(feature = "ffi_wasm", tsify(into_wasm_abi, from_wasm_abi))]
+#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Enum))]
+pub enum ModelType {
+    SimulateRequest,
+    SimulateTransaction200Response,
+}
+
+impl From<ModelType> for InternalModelType {
+    fn from(model_type: ModelType) -> Self {
+        match model_type {
+            ModelType::SimulateRequest => InternalModelType::SimulateRequest,
+            ModelType::SimulateTransaction200Response => {
+                InternalModelType::SimulateTransaction200Response
+            }
+        }
+    }
+}
+
+impl From<InternalModelType> for ModelType {
+    fn from(model_type: InternalModelType) -> Self {
+        match model_type {
+            InternalModelType::SimulateRequest => ModelType::SimulateRequest,
+            InternalModelType::SimulateTransaction200Response => {
+                ModelType::SimulateTransaction200Response
+            }
+        }
+    }
+}
+
+#[ffi_func]
+pub fn encode_json_to_msgpack(
+    model_type: ModelType,
+    json_str: &str,
+) -> Result<Vec<u8>, AlgoKitTransactError> {
+    let internal_type: InternalModelType = model_type.into();
+    Ok(internal_encode_json_to_msgpack(internal_type, json_str)?)
+}
+
+#[ffi_func]
+pub fn decode_msgpack_to_json(
+    model_type: ModelType,
+    msgpack_bytes: &[u8],
+) -> Result<String, AlgoKitTransactError> {
+    let internal_type: InternalModelType = model_type.into();
+    Ok(internal_decode_msgpack_to_json(
+        internal_type,
+        msgpack_bytes,
+    )?)
+}
+
+#[ffi_func]
+pub fn encode_json_to_base64_msgpack(
+    model_type: ModelType,
+    json_str: &str,
+) -> Result<String, AlgoKitTransactError> {
+    let internal_type: InternalModelType = model_type.into();
+    Ok(internal_encode_json_to_base64_msgpack(
+        internal_type,
+        json_str,
+    )?)
+}
+
+#[ffi_func]
+pub fn decode_base64_msgpack_to_json(
+    model_type: ModelType,
+    base64_str: &str,
+) -> Result<String, AlgoKitTransactError> {
+    let internal_type: InternalModelType = model_type.into();
+    Ok(internal_decode_base64_msgpack_to_json(
+        internal_type,
+        base64_str,
+    )?)
+}
+
+#[ffi_func]
+pub fn supported_models() -> Vec<ModelType> {
+    algokit_transact::msgpack::supported_models()
+        .into_iter()
+        .map(Into::into)
+        .collect()
 }
