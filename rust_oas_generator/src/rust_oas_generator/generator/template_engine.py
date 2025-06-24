@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
+from rust_oas_generator.generator.filters import FILTERS
 from rust_oas_generator.parser.oas_parser import (
     Operation,
     Parameter,
@@ -54,6 +55,10 @@ class RustTemplateEngine:
         self.env.filters["rust_string_literal"] = self._rust_string_literal
         self.env.filters["rust_optional"] = self._rust_optional
         self.env.filters["rust_vec"] = self._rust_vec
+
+        # Register custom filters from filters module
+        for name, filter_func in FILTERS.items():
+            self.env.filters[name] = filter_func
 
     def _register_globals(self):
         """Register global functions available in templates."""

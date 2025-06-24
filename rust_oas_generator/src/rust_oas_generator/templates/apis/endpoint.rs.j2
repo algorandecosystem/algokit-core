@@ -56,10 +56,22 @@ pub async fn {{ operation.rust_function_name }}(
 {% if has_query_parameters(operation) %}
 {% for param in get_query_parameters(operation) %}
     {% if param.required %}
+        {% if param.rust_type.startswith("Vec<") %}
+    for item in &p_{{ param.rust_name }} {
+        req_builder = req_builder.query(&[("{{ param.name }}", &item.to_string())]);
+    }
+        {% else %}
     req_builder = req_builder.query(&[("{{ param.name }}", &p_{{ param.rust_name }}.to_string())]);
+        {% endif %}
     {% else %}
     if let Some(ref param_value) = p_{{ param.rust_name }} {
+        {% if param.rust_type.startswith("Vec<") %}
+        for item in param_value {
+            req_builder = req_builder.query(&[("{{ param.name }}", &item.to_string())]);
+        }
+        {% else %}
         req_builder = req_builder.query(&[("{{ param.name }}", &param_value.to_string())]);
+        {% endif %}
     }
     {% endif %}
 {% endfor %}
@@ -97,7 +109,10 @@ pub async fn {{ operation.rust_function_name }}(
                 let content = resp.text().await?;
                 serde_json::from_str(&content).map_err(Error::from)
             },
+            {% set has_text_plain = "text/plain" in spec.content_types %}
+            {% if has_text_plain %}
             ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `{{ get_success_response_type(operation) }}`"))),
+            {% endif %}
             ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `{{ get_success_response_type(operation) }}`")))),
         }
         {% else %}

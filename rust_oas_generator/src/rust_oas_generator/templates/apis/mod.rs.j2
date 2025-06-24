@@ -56,13 +56,12 @@ pub fn urlencode<T: AsRef<str>>(s: T) -> String {
 }
 
 {% set content_types = spec.content_types %}
+{% set has_text_plain = "text/plain" in content_types %}
 #[derive(Debug, PartialEq)]
 pub enum ContentType {
-    {% for content_type in content_types %}
-    {% if content_type == "application/json" %}Json,
-    {% elif content_type == "text/plain" %}Text,
+    Json,
+    {% if has_text_plain %}Text,
     {% endif %}
-    {% endfor %}
     Unsupported(String),
 }
 
@@ -70,8 +69,10 @@ impl From<&str> for ContentType {
     fn from(content_type: &str) -> Self {
         if content_type.starts_with("application") && content_type.contains("json") {
             return Self::Json;
+        {% if has_text_plain %}
         } else if content_type.starts_with("text/plain") {
             return Self::Text;
+        {% endif %}
         } else {
             return Self::Unsupported(content_type.to_string());
         }

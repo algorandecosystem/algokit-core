@@ -1,6 +1,6 @@
 [package]
 name = "{{ package_name | snake_case }}"
-version = "{{ spec.info.version }}"
+version = "{{ spec.info.version | ensure_semver }}"
 authors = ["OpenAPI Generator"]
 description = "{{ spec.info.description or spec.info.title }}"
 license = "MIT OR Apache-2.0"

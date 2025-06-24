@@ -51,10 +51,25 @@ def get_dependencies_for_schema(schema: Dict[str, Any]) -> List[str]:
     return deps
 
 
+def ensure_semver(version_str: str) -> str:
+    """Ensure version string is valid semantic versioning format."""
+    if not version_str:
+        return "0.1.0"
+
+    parts = version_str.split(".")
+    if len(parts) == 1:
+        return f"{parts[0]}.0.0"
+    elif len(parts) == 2:
+        return f"{parts[0]}.{parts[1]}.0"
+    else:
+        return version_str
+
+
 # Register filters that will be available in Jinja templates
 FILTERS = {
     "rust_doc_comment": rust_doc_comment,
     "detect_signed_transaction_field": detect_signed_transaction_field,
     "needs_msgpack_trait": needs_msgpack_trait,
     "get_dependencies_for_schema": get_dependencies_for_schema,
+    "ensure_semver": ensure_semver,
 }

@@ -1,0 +1,8 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+- Read all readmes and docs before making any changes - you must have clear understanding of what this project does
+- Current goal is replacing oas generators in api folder with custom written jinja based rust client generator
+- We use bun, cargo and in case of rust oas generator use uv from within the folder

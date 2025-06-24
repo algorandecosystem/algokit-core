@@ -109,7 +109,7 @@ pub fn urlencode<T: AsRef<str>>(s: T) -> String {
 
 #[derive(Debug, PartialEq)]
 pub enum ContentType {
-Json,
+    Json,
 Text,
     Unsupported(String),
 }
