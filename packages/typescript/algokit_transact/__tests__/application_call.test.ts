@@ -25,7 +25,7 @@ describe("Application Call", () => {
   describe("Transaction Tests", () => {
     // Polytest Group: Transaction Tests
 
-    txnTestData.forEach(async ([label, testData]) => {
+    for (const [label, testData] of txnTestData) {
       test("example", async () => {
         await assertExample(label, testData);
       });
@@ -61,6 +61,6 @@ describe("Application Call", () => {
       test("encode", () => {
         assertEncode(label, testData);
       });
-    });
+    }
   });
 });

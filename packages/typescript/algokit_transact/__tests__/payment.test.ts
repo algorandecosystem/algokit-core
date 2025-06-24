@@ -22,7 +22,7 @@ describe("Payment", () => {
   describe("Transaction Tests", () => {
     // Polytest Group: Transaction Tests
 
-    txnTestData.forEach(async ([label, testData]) => {
+    for (const [label, testData] of txnTestData) {
       test("example", async () => {
         await assertExample(label, testData);
       });
@@ -58,6 +58,6 @@ describe("Payment", () => {
       test("encode", () => {
         assertEncode(label, testData);
       });
-    });
+    }
   });
 });

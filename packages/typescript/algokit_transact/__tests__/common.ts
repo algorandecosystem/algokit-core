@@ -5,8 +5,8 @@ const jsonString = await Bun.file(path.join(__dirname, "../../../../crates/algok
 
 const defaultReviver = (key: string, value: unknown) => {
   if (Array.isArray(value) && value.every((n) => typeof n === "number")) {
-    // assetReferences should be an array of BigInts
-    if (key === "assetReferences") {
+    // assetReferences and appReferences should be arrays of BigInts
+    if (key === "assetReferences" || key === "appReferences") {
       return value.map((n) => BigInt(n));
     }
     return new Uint8Array(value);

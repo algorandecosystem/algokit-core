@@ -246,14 +246,15 @@ where
                 .iter()
                 .map(|box_ref| {
                     let app_id_index = if box_ref.app_id == 0 || box_ref.app_id == fields.app_id {
-                        // App ID 0 and the transaction's own app ID remain as 0 (current application)
+                        // A 0 value denotes the current app_id,
+                        // return 0 when the app_id is for the current application.
                         0
                     } else {
                         // Find position in app_references and add 1 (1-based indexing)
                         app_references
                             .iter()
                             .position(|&id| id == box_ref.app_id)
-                            .map(|pos| (pos + 1) as u64) // App references start from index 1; index 0 is ithe current application ID.
+                            .map(|pos| (pos + 1) as u64) // App references start from index 1; index 0 is the current application ID.
                             .ok_or_else(|| {
                                 format!(
                                     "Box reference with app id {} not found in app references.",
@@ -302,7 +303,8 @@ where
                 .iter()
                 .map(|box_ref| {
                     let app_id = if box_ref.app_id == 0 {
-                        // App ID 0 remains as 0 (current application)
+                        // The current app_id is always serialized as 0,
+                        // return 0 when the app_id is for the current application.
                         0
                     } else {
                         // Convert 1-based index back to the actual app ID

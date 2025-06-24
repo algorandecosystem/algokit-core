@@ -335,6 +335,11 @@ impl AddressMother {
     }
 }
 
+const SIGNING_PRIVATE_KEY: Byte32 = [
+    2, 205, 103, 33, 67, 14, 82, 196, 115, 196, 206, 254, 50, 110, 63, 182, 149, 229, 184, 216, 93,
+    11, 13, 99, 69, 213, 218, 165, 134, 118, 47, 44,
+];
+
 pub struct TransactionGroupMother {}
 impl TransactionGroupMother {
     pub fn testnet_payment_group() -> Vec<Transaction> {
@@ -462,59 +467,36 @@ impl TransactionTestData {
 }
 
 pub struct TestDataMother {}
+
 impl TestDataMother {
     pub fn simple_payment() -> TransactionTestData {
-        let signing_private_key: Byte32 = [
-            2, 205, 103, 33, 67, 14, 82, 196, 115, 196, 206, 254, 50, 110, 63, 182, 149, 229, 184,
-            216, 93, 11, 13, 99, 69, 213, 218, 165, 134, 118, 47, 44,
-        ];
         let transaction = TransactionMother::simple_payment().build().unwrap();
-        TransactionTestData::new(transaction, signing_private_key)
+        TransactionTestData::new(transaction, SIGNING_PRIVATE_KEY)
     }
 
     pub fn opt_in_asset_transfer() -> TransactionTestData {
-        let signing_private_key: Byte32 = [
-            2, 205, 103, 33, 67, 14, 82, 196, 115, 196, 206, 254, 50, 110, 63, 182, 149, 229, 184,
-            216, 93, 11, 13, 99, 69, 213, 218, 165, 134, 118, 47, 44,
-        ];
         let transaction = TransactionMother::opt_in_asset_transfer().build().unwrap();
-        TransactionTestData::new(transaction, signing_private_key)
+        TransactionTestData::new(transaction, SIGNING_PRIVATE_KEY)
     }
 
     pub fn application_create() -> TransactionTestData {
-        let signing_private_key: Byte32 = [
-            2, 205, 103, 33, 67, 14, 82, 196, 115, 196, 206, 254, 50, 110, 63, 182, 149, 229, 184,
-            216, 93, 11, 13, 99, 69, 213, 218, 165, 134, 118, 47, 44,
-        ];
         let transaction = TransactionMother::application_create().build().unwrap();
-        TransactionTestData::new(transaction, signing_private_key)
+        TransactionTestData::new(transaction, SIGNING_PRIVATE_KEY)
     }
 
     pub fn application_update() -> TransactionTestData {
-        let signing_private_key: Byte32 = [
-            2, 205, 103, 33, 67, 14, 82, 196, 115, 196, 206, 254, 50, 110, 63, 182, 149, 229, 184,
-            216, 93, 11, 13, 99, 69, 213, 218, 165, 134, 118, 47, 44,
-        ];
         let transaction = TransactionMother::application_update().build().unwrap();
-        TransactionTestData::new(transaction, signing_private_key)
+        TransactionTestData::new(transaction, SIGNING_PRIVATE_KEY)
     }
 
     pub fn application_delete() -> TransactionTestData {
-        let signing_private_key: Byte32 = [
-            2, 205, 103, 33, 67, 14, 82, 196, 115, 196, 206, 254, 50, 110, 63, 182, 149, 229, 184,
-            216, 93, 11, 13, 99, 69, 213, 218, 165, 134, 118, 47, 44,
-        ];
         let transaction = TransactionMother::application_delete().build().unwrap();
-        TransactionTestData::new(transaction, signing_private_key)
+        TransactionTestData::new(transaction, SIGNING_PRIVATE_KEY)
     }
 
     pub fn application_call() -> TransactionTestData {
-        let signing_private_key: Byte32 = [
-            2, 205, 103, 33, 67, 14, 82, 196, 115, 196, 206, 254, 50, 110, 63, 182, 149, 229, 184,
-            216, 93, 11, 13, 99, 69, 213, 218, 165, 134, 118, 47, 44,
-        ];
         let transaction = TransactionMother::application_call().build().unwrap();
-        TransactionTestData::new(transaction, signing_private_key)
+        TransactionTestData::new(transaction, SIGNING_PRIVATE_KEY)
     }
 
     pub fn export<F, T>(path: &std::path::Path, transform: Option<F>)
