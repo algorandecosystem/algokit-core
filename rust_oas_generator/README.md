@@ -9,6 +9,7 @@ A sophisticated Jinja2-based generator that produces high-quality Rust API clien
 - **Async/Await Support**: Modern async Rust patterns with reqwest
 - **Serde Integration**: Automatic serialization/deserialization with serde
 - **Modular Architecture**: Clean separation between models, APIs, and configuration
+- **Individual Endpoint Files**: Each API endpoint generates its own file for better organization
 - **Template-Driven**: Fully customizable through Jinja2 templates
 - **LLM-Optimized**: Clear, readable code structure optimized for AI analysis
 - **Reference-Based**: Uses existing Rust clients as structural reference
@@ -39,6 +40,7 @@ uv sync --extra dev
 ```bash
 pip install .
 ```
+
 - Jinja2 template engine
 
 ### Setup
@@ -99,9 +101,11 @@ my_api_client/
 └── src/
     ├── lib.rs              # Library root
     ├── apis/               # API operations
-    │   ├── mod.rs          # API module exports
+    │   ├── mod.rs          # API module exports and re-exports
     │   ├── configuration.rs # Client configuration
-    │   └── default_api.rs  # All API operations
+    │   ├── health_check.rs # Individual endpoint file
+    │   ├── get_status.rs   # Individual endpoint file
+    │   └── *.rs            # One file per API endpoint
     └── models/             # Data models
         ├── mod.rs          # Model exports
         └── *.rs            # Individual model files
@@ -120,18 +124,21 @@ my_api_client/
 ### Key Components
 
 #### Parser Module (`parser/`)
+
 - **OASParser**: Comprehensive OpenAPI 3.x specification parser
 - **Type Resolution**: Converts OpenAPI types to Rust types
 - **Reference Handling**: Resolves $ref references and circular dependencies
 - **Validation**: Ensures specification completeness
 
 #### Generator Module (`generator/`)
+
 - **RustTemplateEngine**: Jinja2-based template rendering engine
 - **RustCodeGenerator**: Orchestrates the complete generation process
 - **Custom Filters**: Rust-specific naming and type conversion filters
 - **Template Management**: Loads and renders all necessary templates
 
 #### Templates (`templates/`)
+
 - **Base Templates**: Core library files (lib.rs, Cargo.toml, README.md)
 - **API Templates**: Operation and error type generation
 - **Model Templates**: Struct and enum generation
@@ -323,6 +330,7 @@ Future versions will support WebAssembly compilation:
 ### Reporting Issues
 
 Please report issues with:
+
 - OpenAPI specification that caused the issue
 - Generated code that's incorrect
 - Expected vs actual behavior
@@ -345,4 +353,3 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 **Version**: 1.0.0  
 **Rust Support**: 2021 Edition  
 **OpenAPI Support**: 3.x specifications
-

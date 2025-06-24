@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from ..parser.oas_parser import (
+from rust_oas_generator.parser.oas_parser import (
     Operation,
     Parameter,
     ParsedSpec,
@@ -62,6 +62,9 @@ class RustTemplateEngine:
         self.env.globals["get_error_types"] = self._get_error_types
         self.env.globals["get_success_response_type"] = self._get_success_response_type
         self.env.globals["get_all_response_types"] = self._get_all_response_types
+        self.env.globals["get_endpoint_response_types"] = (
+            self._get_endpoint_response_types
+        )
         self.env.globals["has_path_parameters"] = self._has_path_parameters
         self.env.globals["has_query_parameters"] = self._has_query_parameters
         self.env.globals["get_path_parameters"] = self._get_path_parameters
@@ -158,6 +161,16 @@ class RustTemplateEngine:
                         response_types.add(response.rust_type)
         return sorted(list(response_types))
 
+    def _get_endpoint_response_types(self, operation: Operation) -> List[str]:
+        """Get response types for a single endpoint."""
+        response_types = set()
+        for status_code, response in operation.responses.items():
+            if status_code.startswith("2") and response.rust_type:  # 2xx success codes
+                # Only include types that end with "Response" (our generated response types)
+                if response.rust_type.endswith("Response"):
+                    response_types.add(response.rust_type)
+        return sorted(list(response_types))
+
     def _has_path_parameters(self, operation: Operation) -> bool:
         """Check if operation has path parameters."""
         return any(p.param_type == "path" for p in operation.parameters)
@@ -235,10 +248,6 @@ class RustCodeGenerator:
         )
         files[str(src_dir / "apis" / "configuration.rs")] = content
 
-        # Common API utilities
-        content = self.template_engine.render_template("base/mod.rs.j2", context)
-        files[str(src_dir / "apis" / "mod.rs")] = content
-
         return files
 
     def _generate_model_files(
@@ -304,14 +313,22 @@ class RustCodeGenerator:
         context: Dict[str, Any],
         output_dir: Path,
     ) -> Dict[str, str]:
-        """Generate API files in flat structure."""
+        """Generate individual API files per endpoint."""
         files = {}
         apis_dir = output_dir / "src" / "apis"
 
-        # Generate main API file with all operations
+        # Generate individual endpoint files
+        for operation in operations:
+            endpoint_context = {**context, "operation": operation}
+            content = self.template_engine.render_template(
+                "apis/endpoint.rs.j2", endpoint_context
+            )
+            files[str(apis_dir / f"{operation.rust_function_name}.rs")] = content
+
+        # Generate mod.rs file that includes all endpoints
         api_context = {**context, "operations": operations}
-        content = self.template_engine.render_template("apis/api.rs.j2", api_context)
-        files[str(apis_dir / "default_api.rs")] = content
+        content = self.template_engine.render_template("apis/mod.rs.j2", api_context)
+        files[str(apis_dir / "mod.rs")] = content
 
         return files
 

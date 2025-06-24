@@ -9,19 +9,9 @@ import argparse
 import sys
 from pathlib import Path
 
-# Add the parent directory to Python path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-try:
-    from rust_client_generator.generator import RustCodeGenerator
-    from rust_client_generator.parser import OASParser
-    from rust_client_generator.utils.file_utils import write_files_to_disk
-except ImportError:
-    # Fallback to local imports
-    from parser import OASParser
-
-    from generator import RustCodeGenerator
-    from utils.file_utils import write_files_to_disk
+from rust_oas_generator.generator import RustCodeGenerator
+from rust_oas_generator.parser import OASParser
+from rust_oas_generator.utils.file_utils import write_files_to_disk
 
 
 def parse_args():

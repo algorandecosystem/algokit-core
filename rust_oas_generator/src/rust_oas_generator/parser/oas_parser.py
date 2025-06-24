@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from ..utils.string_case import (
+from rust_oas_generator.utils.string_case import (
     escape_rust_keyword,
     normalize_rust_identifier,
     rust_pascal_case,
