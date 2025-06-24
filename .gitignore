@@ -11,3 +11,11 @@ node_modules/
 .DS_Store
 *.idea
 wheelhouse/
+
+# Android/Kotlin
+.gradle/
+build/
+*.iml
+local.properties
+gradle-wrapper.jar
+*.so
