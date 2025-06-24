@@ -513,12 +513,8 @@ impl TestDataMother {
     }
 
     pub fn simple_asset_transfer() -> TransactionTestData {
-        let signing_private_key: Byte32 = [
-            2, 205, 103, 33, 67, 14, 82, 196, 115, 196, 206, 254, 50, 110, 63, 182, 149, 229, 184,
-            216, 93, 11, 13, 99, 69, 213, 218, 165, 134, 118, 47, 44,
-        ];
         let transaction = TransactionMother::simple_asset_transfer().build().unwrap();
-        TransactionTestData::new(transaction, signing_private_key)
+        TransactionTestData::new(transaction, SIGNING_PRIVATE_KEY)
     }
 
     pub fn opt_in_asset_transfer() -> TransactionTestData {
@@ -557,7 +553,6 @@ impl TestDataMother {
 
         let test_data = normalise_json(serde_json::json!({
             "simple_payment": Self::simple_payment().as_json(&transform),
-            "simple_asset_transfer": Self::simple_asset_transfer().as_json(&transform),
             "opt_in_asset_transfer": Self::opt_in_asset_transfer().as_json(&transform),
             "application_create": Self::application_create().as_json(&transform),
             "application_update": Self::application_update().as_json(&transform),
