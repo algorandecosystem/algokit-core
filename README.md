@@ -32,9 +32,9 @@ The exported interfaces should be purely functional without any state owned by R
 
 ## Build Scripts
 
-`bun scripts/build` will run the build script. For example: `bun scripts/build algokit_transact kotlin` builds `algokit_transact` for `kotlin`.
+`cargo pkg` will run the build script. For example: `cargo pkg transact kt` builds `algokit_transact` for `kotlin`.
 
-The scripts are defined in [./scripts/build/languages/] for each language.
+The scripts are defined in [tools/build_pkgs] for each language.
 
 ### Learning Resources
 
