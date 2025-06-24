@@ -65,22 +65,34 @@ fn check_transaction_id(tx: &Transaction, expected_tx_id: &str) {
 
 #[test]
 fn test_payment_transaction_encoding() {
-    let tx_builder = TransactionMother::simple_payment();
-    let payment_tx = tx_builder.build().unwrap();
+    let payment_tx = TransactionMother::simple_payment().build().unwrap();
+
+    check_transaction_id(
+        &payment_tx,
+        "TZM3P4ZL4DLIEZ3WOEP67MQ6JITTO4D3NJN3RCA5YDBC3V4LA5LA",
+    );
     check_transaction_encoding(&payment_tx, 174);
 }
 
 #[test]
 fn test_asset_transfer_transaction_encoding() {
-    let tx_builder = TransactionMother::simple_asset_transfer();
-    let asset_transfer_tx = tx_builder.build().unwrap();
+    let asset_transfer_tx = TransactionMother::simple_asset_transfer().build().unwrap();
+
+    check_transaction_id(
+        &asset_transfer_tx,
+        "VAHP4FRJH4GRV6ID2BZRK5VYID376EV3VE6T2TKKDFJBBDOXWCCA",
+    );
     check_transaction_encoding(&asset_transfer_tx, 186);
 }
 
 #[test]
 fn test_asset_opt_in_transaction_encoding() {
-    let tx_builder = TransactionMother::opt_in_asset_transfer();
-    let asset_opt_in_tx = tx_builder.build().unwrap();
+    let asset_opt_in_tx = TransactionMother::opt_in_asset_transfer().build().unwrap();
+
+    check_transaction_id(
+        &asset_opt_in_tx,
+        "JIDBHDPLBASULQZFI4EY5FJWR6VQRMPPFSGYBKE2XKW65N3UQJXA",
+    );
     check_transaction_encoding(&asset_opt_in_tx, 178);
 }
 
@@ -135,30 +147,6 @@ fn test_address() {
 
     let addr_from_str = addr.to_string().parse::<Address>().unwrap();
     assert_eq!(addr, addr_from_str);
-}
-
-#[test]
-fn test_pay_transaction_id() {
-    let expected_tx_id = "ENOQBKTA3UAUU54TQN2AOH7BFDLS6LDYQD2SSQLU76JUAWSQSPPQ";
-
-    let payment_tx = TransactionMother::payment_with_note().build().unwrap();
-    check_transaction_id(&payment_tx, expected_tx_id);
-}
-
-#[test]
-fn test_asset_transfer_transaction_id() {
-    let expected_tx_id = "VAHP4FRJH4GRV6ID2BZRK5VYID376EV3VE6T2TKKDFJBBDOXWCCA";
-
-    let asset_transfer_tx = TransactionMother::simple_asset_transfer().build().unwrap();
-    check_transaction_id(&asset_transfer_tx, expected_tx_id);
-}
-
-#[test]
-fn test_asset_opt_in_transaction_id() {
-    let expected_tx_id = "JIDBHDPLBASULQZFI4EY5FJWR6VQRMPPFSGYBKE2XKW65N3UQJXA";
-
-    let asset_opt_in_tx = TransactionMother::opt_in_asset_transfer().build().unwrap();
-    check_transaction_id(&asset_opt_in_tx, expected_tx_id);
 }
 
 #[test]
