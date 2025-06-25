@@ -19,7 +19,7 @@ pub static ALGOD_CONFIG: Lazy<Configuration> = Lazy::new(|| {
         oauth_access_token: None,
         bearer_access_token: None,
         api_key: Some(algod_client::apis::configuration::ApiKey {
-            prefix: None,  // No prefix needed for algod API token
+            prefix: None, // No prefix needed for algod API token
             key: token,
         }),
     }

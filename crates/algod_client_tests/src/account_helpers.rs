@@ -96,7 +96,7 @@ impl TestAccount {
         let key_bytes = self.signing_key.to_bytes();
         from_key(&key_bytes).unwrap_or_else(|_| {
             // Fallback to hex for debugging if mnemonic generation fails
-            hex::encode(&key_bytes)
+            hex::encode(key_bytes)
         })
     }
 
@@ -158,7 +158,7 @@ impl LocalNetDispenser {
     ) -> Result<TestAccount, Box<dyn std::error::Error + Send + Sync>> {
         // Get list of accounts to find the one with highest balance
         let output = Command::new("algokit")
-            .args(&["goal", "account", "list"])
+            .args(["goal", "account", "list"])
             .output()
             .map_err(|e| format!("Failed to run algokit goal account list: {}", e))?;
 
@@ -198,7 +198,7 @@ impl LocalNetDispenser {
 
         // Export the account to get its mnemonic
         let output = Command::new("algokit")
-            .args(&["goal", "account", "export", "-a", &dispenser_address])
+            .args(["goal", "account", "export", "-a", &dispenser_address])
             .output()
             .map_err(|e| format!("Failed to export account {}: {}", dispenser_address, e))?;
 
@@ -289,7 +289,6 @@ impl LocalNetDispenser {
 /// Test account manager for generating and managing test accounts
 #[derive(Debug)]
 pub struct TestAccountManager {
-    config: Configuration,
     dispenser: LocalNetDispenser,
 }
 
@@ -297,7 +296,7 @@ impl TestAccountManager {
     /// Create a new test account manager
     pub fn new(config: Configuration) -> Self {
         let dispenser = LocalNetDispenser::new(config.clone());
-        Self { config, dispenser }
+        Self { dispenser }
     }
 
     /// Get a test account with optional configuration

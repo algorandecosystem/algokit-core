@@ -9,9 +9,9 @@ impl LocalnetManager {
     /// Check if localnet is running by trying to connect to the algod endpoint
     pub async fn is_running() -> bool {
         let client = reqwest::Client::new();
-        let url = std::env::var("ALGORAND_HOST")
-            .unwrap_or_else(|_| "http://localhost:4001".to_string());
-        
+        let url =
+            std::env::var("ALGORAND_HOST").unwrap_or_else(|_| "http://localhost:4001".to_string());
+
         match client.get(format!("{}/health", url)).send().await {
             Ok(response) => response.status().is_success(),
             Err(_) => false,
@@ -21,9 +21,9 @@ impl LocalnetManager {
     /// Start localnet using algokit
     pub fn start() -> Result<(), String> {
         println!("Starting localnet...");
-        
+
         let output = Command::new("algokit")
-            .args(&["localnet", "start"])
+            .args(["localnet", "start"])
             .output()
             .map_err(|e| format!("Failed to execute algokit: {}", e))?;
 
@@ -39,9 +39,9 @@ impl LocalnetManager {
     /// Stop localnet using algokit
     pub fn stop() -> Result<(), String> {
         println!("Stopping localnet...");
-        
+
         let output = Command::new("algokit")
-            .args(&["localnet", "stop"])
+            .args(["localnet", "stop"])
             .output()
             .map_err(|e| format!("Failed to execute algokit: {}", e))?;
 
@@ -57,9 +57,9 @@ impl LocalnetManager {
     /// Reset localnet to a clean state
     pub fn reset() -> Result<(), String> {
         println!("Resetting localnet...");
-        
+
         let output = Command::new("algokit")
-            .args(&["localnet", "reset"])
+            .args(["localnet", "reset"])
             .output()
             .map_err(|e| format!("Failed to execute algokit: {}", e))?;
 
@@ -82,11 +82,14 @@ impl LocalnetManager {
                 println!("Localnet is ready!");
                 return Ok(());
             }
-            
+
             sleep(Duration::from_millis(500)).await;
         }
 
-        Err(format!("Timeout waiting for localnet to be ready after {} seconds", timeout_seconds))
+        Err(format!(
+            "Timeout waiting for localnet to be ready after {} seconds",
+            timeout_seconds
+        ))
     }
 
     /// Ensure localnet is running, start if needed
@@ -109,11 +112,16 @@ mod tests {
         // Test that we can check if localnet is running
         let is_running = LocalnetManager::is_running().await;
         println!("Localnet running: {}", is_running);
-        
+
         // If not running, try to start it
         if !is_running {
-            LocalnetManager::ensure_running().await.expect("Failed to start localnet");
-            assert!(LocalnetManager::is_running().await, "Localnet should be running after start");
+            LocalnetManager::ensure_running()
+                .await
+                .expect("Failed to start localnet");
+            assert!(
+                LocalnetManager::is_running().await,
+                "Localnet should be running after start"
+            );
         }
     }
 }

@@ -1,13 +1,6 @@
 mod transactions;
 
 use algokit_transact::constants::*;
-use algokit_transact::msgpack::{
-    decode_base64_msgpack_to_json as internal_decode_base64_msgpack_to_json,
-    decode_msgpack_to_json as internal_decode_msgpack_to_json,
-    encode_json_to_base64_msgpack as internal_encode_json_to_base64_msgpack,
-    encode_json_to_msgpack as internal_encode_json_to_msgpack,
-    AlgoKitMsgPackError as InternalMsgPackError, ModelType as InternalModelType,
-};
 use algokit_transact::{
     AlgorandMsgpack, Byte32, EstimateTransactionSize, TransactionId, Transactions,
 };
@@ -67,30 +60,6 @@ impl From<algokit_transact::AlgoKitTransactError> for AlgoKitTransactError {
             algokit_transact::AlgoKitTransactError::InvalidAddress(_) => {
                 AlgoKitTransactError::DecodingError(e.to_string())
             }
-        }
-    }
-}
-
-// Convert msgpack errors to FFI errors
-impl From<InternalMsgPackError> for AlgoKitTransactError {
-    fn from(e: InternalMsgPackError) -> Self {
-        match e {
-            InternalMsgPackError::SerializationError(e) => {
-                AlgoKitTransactError::MsgPackError(e.to_string())
-            }
-            InternalMsgPackError::MsgpackEncodingError(e) => {
-                AlgoKitTransactError::MsgPackError(e.to_string())
-            }
-            InternalMsgPackError::MsgpackDecodingError(e) => {
-                AlgoKitTransactError::MsgPackError(e.to_string())
-            }
-            InternalMsgPackError::Base64DecodingError(e) => {
-                AlgoKitTransactError::MsgPackError(e.to_string())
-            }
-            InternalMsgPackError::MsgpackWriteError(s) => AlgoKitTransactError::MsgPackError(s),
-            InternalMsgPackError::UnknownModelError(s) => AlgoKitTransactError::MsgPackError(s),
-            InternalMsgPackError::IoError(s) => AlgoKitTransactError::MsgPackError(s),
-            InternalMsgPackError::ValueWriteError(s) => AlgoKitTransactError::MsgPackError(s),
         }
     }
 }
