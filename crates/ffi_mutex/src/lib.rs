@@ -11,7 +11,7 @@ pub type InnerMutex<T> = std::cell::RefCell<T>;
 /// WASM doesn't need to be thread-safe, but we still need the interior mutability so we can have the same API on our FfiMutex in both
 /// cases (otherwise we have a bunch of different code paths in our implementations). We probably could use some unsafe code
 /// (i.e `UnsafeCell`) in place of the `RefCell`, but to make our lives easier and avoid accidental UB we use `RefCell` instead. The
-/// perofmrance difference is likely negligible in practice.
+/// performance difference is likely negligible in practice.
 pub struct FfiMutex<T>(InnerMutex<T>);
 
 impl<T> FfiMutex<T> {
