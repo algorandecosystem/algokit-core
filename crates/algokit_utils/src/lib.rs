@@ -206,7 +206,7 @@ impl Composer {
             .transactions
             .iter()
             .map(|composer_txn| {
-                let alread_formed_txn = matches!(composer_txn, ComposerTxn::Transaction(_));
+                let already_formed_txn = matches!(composer_txn, ComposerTxn::Transaction(_));
 
                 let mut transaction: algokit_transact::Transaction = match composer_txn {
                     ComposerTxn::Transaction(txn) => txn.clone(),
@@ -222,7 +222,7 @@ impl Composer {
                     }
                 };
 
-                if !alread_formed_txn {
+                if !already_formed_txn {
                     let common_params = composer_txn.common_params();
                     let header = transaction.header_mut();
 
