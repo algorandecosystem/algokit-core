@@ -26,9 +26,6 @@ pub trait HttpClient: Send + Sync {
 }
 
 #[cfg(feature = "default_client")]
-use reqwest;
-
-#[cfg(feature = "default_client")]
 pub struct DefaultHttpClient {
     host: String,
 }

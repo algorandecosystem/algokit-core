@@ -120,7 +120,7 @@ impl Composer {
     pub fn new(algod_client: AlgodClient, get_signer: Option<Arc<dyn TxnSignerGetter>>) -> Self {
         Composer {
             transactions: Vec::new(),
-            algod_client: algod_client,
+            algod_client,
             signer_getter: get_signer.unwrap_or(Arc::new(DefaultSignerGetter)),
             built_group: None,
             signed_group: None,
@@ -286,7 +286,6 @@ impl Composer {
 mod tests {
     use super::*;
     use algokit_transact::test_utils::{AddressMother, TransactionMother};
-    use tokio;
 
     #[test]
     fn test_add_transaction() {
