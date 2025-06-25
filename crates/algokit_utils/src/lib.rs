@@ -1,7 +1,6 @@
 use algod_api::AlgodClient;
 
 use algod_api::TransactionParams;
-use algokit_http_client::HttpError;
 use algokit_transact::Address;
 use algokit_transact::FeeParams;
 use algokit_transact::PaymentTransactionFields;
@@ -9,12 +8,25 @@ use algokit_transact::SignedTransaction;
 use algokit_transact::Transaction;
 use algokit_transact::TransactionHeader;
 use algokit_transact::Transactions;
-use base64::DecodeError;
 use base64::{Engine as _, engine::general_purpose};
 use derive_more::Debug;
 use std::sync::Arc;
 
 use async_trait::async_trait;
+
+#[derive(Debug, thiserror::Error)]
+pub enum ComposerError {
+    #[error(transparent)]
+    HttpError(#[from] algokit_http_client::HttpError),
+    #[error("Decode Error: {0}")]
+    DecodeError(String),
+    #[error("Transaction Error: {0}")]
+    TransactionError(String),
+    #[error("Signing Error: {0}")]
+    SigningError(String),
+    #[error("Composer State Error: {0}")]
+    StateError(String),
+}
 
 #[derive(Debug, Default, Clone)]
 pub struct CommonParams {
@@ -167,11 +179,14 @@ impl Composer {
     }
 
     // TODO: Use Fn defined in ComposerConfig
-    pub async fn get_suggested_params(&self) -> Result<TransactionParams, HttpError> {
-        self.algod_client.transaction_params().await
+    pub async fn get_suggested_params(&self) -> Result<TransactionParams, ComposerError> {
+        self.algod_client
+            .transaction_params()
+            .await
+            .map_err(ComposerError::HttpError)
     }
 
-    pub async fn build(&mut self) -> Result<&mut Self, HttpError> {
+    pub async fn build(&mut self) -> Result<&mut Self, ComposerError> {
         if self.built_group.is_some() {
             return Ok(self);
         }
@@ -184,12 +199,15 @@ impl Composer {
             genesis_hash: Some(
                 general_purpose::STANDARD
                     .decode(suggested_params.genesis_hash)
-                    .map_err(|e: DecodeError| {
-                        HttpError::HttpError(format!("Failed to decode genesis hash: {}", e))
+                    .map_err(|e| {
+                        ComposerError::DecodeError(format!("Failed to decode genesis hash: {}", e))
                     })?
                     .try_into()
                     .map_err(|e| {
-                        HttpError::HttpError(format!("Failed to convert genesis hash: {:?}", e))
+                        ComposerError::DecodeError(format!(
+                            "Failed to convert genesis hash: {:?}",
+                            e
+                        ))
                     })?,
             ),
             // The rest of these fields are set further down per txn
@@ -238,46 +256,39 @@ impl Composer {
                             extra_fee: common_params.extra_fee,
                             max_fee: common_params.max_fee,
                         })
-                        .map_err(|e| HttpError::HttpError(e.to_string()))?;
+                        .map_err(|e| ComposerError::TransactionError(e.to_string()))?;
                 }
 
                 Ok(transaction)
             })
-            .collect::<Result<Vec<Transaction>, HttpError>>()?;
+            .collect::<Result<Vec<Transaction>, ComposerError>>()?;
 
-        self.built_group = Some(
-            txs.assign_group()
-                .map_err(|e| HttpError::HttpError(format!("Failed to assign group: {}", e)))?,
-        );
+        self.built_group = Some(txs.assign_group().map_err(|e| {
+            ComposerError::TransactionError(format!("Failed to assign group: {}", e))
+        })?);
         Ok(self)
     }
 
-    pub async fn gather_signatures(&mut self) -> Result<&mut Self, HttpError> {
-        if self.built_group.is_none() {
-            return Err(HttpError::HttpError(
-                "Cannot gather signatures before building the transaction group".to_string(),
-            ));
-        }
+    pub async fn gather_signatures(&mut self) -> Result<&mut Self, ComposerError> {
+        let transactions = self.built_group.as_ref().ok_or(ComposerError::StateError(
+            "Cannot gather signatures before building the transaction group".to_string(),
+        ))?;
 
-        let transactions = self.built_group.as_ref().unwrap();
-
-        self.signed_group = Some(Vec::<SignedTransaction>::new());
+        let mut signed_group = Vec::<SignedTransaction>::new();
 
         for txn in transactions.iter() {
-            let signer =
-                self.get_signer(txn.header().sender.clone())
-                    .await
-                    .ok_or(HttpError::HttpError(format!(
-                        "No signer found for address: {}",
-                        txn.header().sender
-                    )))?;
+            let signer = self.get_signer(txn.header().sender.clone()).await.ok_or(
+                ComposerError::SigningError(format!(
+                    "No signer found for address: {}",
+                    txn.header().sender
+                )),
+            )?;
 
             let signed_txn = signer.sign_txn(txn).await;
-            self.signed_group
-                .as_mut()
-                .expect("should exist because it was created above")
-                .push(signed_txn);
+            signed_group.push(signed_txn);
         }
+
+        self.signed_group = Some(signed_group);
 
         Ok(self)
     }
