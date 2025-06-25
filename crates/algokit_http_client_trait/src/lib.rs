@@ -40,7 +40,8 @@ impl DefaultHttpClient {
 }
 
 #[cfg(feature = "default_client")]
-#[async_trait]
+#[cfg_attr(feature = "ffi_wasm", async_trait(?Send))]
+#[cfg_attr(not(feature = "ffi_wasm"), async_trait)]
 impl HttpClient for DefaultHttpClient {
     async fn get(&self, path: String) -> Result<Vec<u8>, HttpError> {
         let response = reqwest::get(self.host.clone() + &path)
