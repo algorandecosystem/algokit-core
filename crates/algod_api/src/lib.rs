@@ -22,6 +22,8 @@ pub struct TransactionParams {
     pub min_fee: u64,
 }
 
+/// A temporary AlgodClient until the proper client is generated.
+/// The exepectation is that this client will use a HttpClient to make requests to the Algorand API
 impl AlgodClient {
     pub fn new(http_client: Arc<dyn HttpClient>) -> Self {
         AlgodClient { http_client }
