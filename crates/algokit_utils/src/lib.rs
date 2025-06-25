@@ -69,7 +69,7 @@ pub struct AssetOptOutParams {
     /// without additional side effects.
     pub common_params: CommonParams,
     pub asset_id: u64,
-    pub asset_close_to: Option<Address>,
+    pub close_remainder_to: Option<Address>,
 }
 
 #[derive(Debug)]
@@ -334,7 +334,7 @@ impl Composer {
                             amount: 0,
                             receiver: asset_opt_out_params.common_params.sender.clone(),
                             asset_sender: None,
-                            close_remainder_to: asset_opt_out_params.asset_close_to.clone(),
+                            close_remainder_to: asset_opt_out_params.close_remainder_to.clone(),
                         })
                     }
                     ComposerTxn::AssetClawback(asset_clawback_params) => {
@@ -562,7 +562,7 @@ mod tests {
                 last_valid_round: None,
             },
             asset_id: 12345,
-            asset_close_to: Some(AddressMother::neil()),
+            close_remainder_to: Some(AddressMother::neil()),
         };
         assert!(composer.add_asset_opt_out(asset_opt_out_params).is_ok());
         assert!(composer.build().await.is_ok());
