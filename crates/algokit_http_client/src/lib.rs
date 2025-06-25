@@ -84,7 +84,14 @@ extern "C" {
 #[async_trait(?Send)]
 impl HttpClient for WasmHttpClient {
     async fn get(&self, path: String) -> Result<Vec<u8>, HttpError> {
-        let result = self.get(&path).await.unwrap();
+        let result = self.get(&path).await.map_err(|e| {
+            HttpError::HttpError(
+                e.as_string().unwrap_or(
+                    "A HTTP error ocurred in JavaScript, but it cannot be converted to a string"
+                        .to_string(),
+                ),
+            )
+        })?;
 
         Ok(result.to_vec())
     }
