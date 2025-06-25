@@ -1,6 +1,9 @@
-use algod_client::apis::{configuration::Configuration, raw_transaction};
-use algod_client_tests::{LocalnetManager, ALGOD_CONFIG};
-use algokit_transact::test_utils::TestDataMother;
+use algod_client::apis::{configuration::Configuration, raw_transaction, transaction_params};
+use algod_client_tests::{
+    LocalnetManager, NetworkType, TestAccountConfig, TestAccountManager, ALGOD_CONFIG,
+};
+use algokit_transact::{PaymentTransactionBuilder, Transaction, TransactionHeaderBuilder};
+use std::convert::TryInto;
 use std::sync::OnceLock;
 
 /// Global configuration instance - idiomatic Rust pattern for shared test state
@@ -11,158 +14,92 @@ fn get_config() -> &'static Configuration {
     CONFIG.get_or_init(|| ALGOD_CONFIG.clone())
 }
 
-/// Create a test payment transaction using pre-signed test data
-async fn create_test_transaction() -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
-    // Use the pre-signed test data which has a valid signature
-    let test_data = TestDataMother::simple_payment();
-    Ok(test_data.signed_bytes)
-}
-
 #[tokio::test]
 async fn test_raw_transaction_broadcast() {
-    // Ensure localnet is running
+    // ARRANGE - Set up test environment and create a real transaction
     LocalnetManager::ensure_running()
         .await
         .expect("Failed to start localnet");
 
-    // Create and encode a test transaction
-    let signed_txn_bytes = create_test_transaction()
+    // Create account manager and generate test accounts
+    let mut account_manager = TestAccountManager::new(get_config().clone());
+
+    let sender_config = TestAccountConfig {
+        initial_funds: 10_000_000, // 10 ALGO
+        suppress_log: true,
+        network_type: NetworkType::LocalNet,
+        funding_note: Some("Test sender account".to_string()),
+    };
+
+    let receiver_config = TestAccountConfig {
+        initial_funds: 1_000_000, // 1 ALGO
+        suppress_log: true,
+        network_type: NetworkType::LocalNet,
+        funding_note: Some("Test receiver account".to_string()),
+    };
+
+    let sender = account_manager
+        .get_test_account(Some(sender_config))
         .await
-        .expect("Failed to create test transaction");
+        .expect("Failed to create sender account");
 
-    // Call the raw transaction endpoint
-    let result = raw_transaction::raw_transaction(get_config(), signed_txn_bytes).await;
-
-    // The transaction might fail due to network mismatch (testnet vs localnet)
-    // but we should at least get past the signature verification and msgpack issues
-    match result {
-        Ok(response) => {
-            // If it succeeds, verify response structure
-            assert!(
-                !response.tx_id.is_empty(),
-                "Transaction ID should not be empty"
-            );
-            assert!(
-                response.tx_id.len() >= 32,
-                "Transaction ID should be at least 32 characters"
-            );
-            println!("✓ Successfully broadcasted raw transaction");
-            println!("  Transaction ID: {}", response.tx_id);
-        }
-        Err(err) => {
-            // Expected errors due to network differences or other validation issues
-            println!(
-                "Transaction failed as expected due to test/network mismatch: {:?}",
-                err
-            );
-
-            // The error should not be about msgpack decoding anymore
-            let error_str = format!("{:?}", err);
-            assert!(
-                !error_str.contains("msgpack decode error"),
-                "Should not have msgpack decode errors anymore"
-            );
-
-            // This test validates that the API layer works correctly even if the transaction fails
-            println!("✓ API layer working correctly - transaction reached algod validation");
-        }
-    }
-}
-
-#[tokio::test]
-async fn test_raw_transaction_with_multiple_transactions() {
-    LocalnetManager::ensure_running()
+    let receiver = account_manager
+        .get_test_account(Some(receiver_config))
         .await
-        .expect("Failed to start localnet");
+        .expect("Failed to create receiver account");
 
-    // Test broadcasting multiple transactions
-    let mut results = Vec::new();
+    let sender_addr = sender.address().expect("Failed to get sender address");
+    let receiver_addr = receiver.address().expect("Failed to get receiver address");
 
-    for i in 0..3 {
-        let signed_txn_bytes = create_test_transaction()
-            .await
-            .expect(&format!("Failed to create test transaction {}", i));
-
-        let result = raw_transaction::raw_transaction(get_config(), signed_txn_bytes).await;
-        results.push(result);
-    }
-
-    // Check that all calls reached the API (regardless of success/failure)
-    for (i, result) in results.iter().enumerate() {
-        match result {
-            Ok(response) => {
-                println!("Transaction {}: Success - {}", i + 1, response.tx_id);
-            }
-            Err(err) => {
-                let error_str = format!("{:?}", err);
-                assert!(
-                    !error_str.contains("msgpack decode error"),
-                    "Transaction {} should not have msgpack decode errors",
-                    i
-                );
-                println!(
-                    "Transaction {}: Expected failure - API layer working",
-                    i + 1
-                );
-            }
-        }
-    }
-
-    println!("✓ Successfully tested multiple transaction broadcasts");
-}
-
-#[tokio::test]
-async fn test_raw_transaction_error_handling() {
-    LocalnetManager::ensure_running()
+    // Get transaction parameters
+    let params = transaction_params::transaction_params(get_config())
         .await
-        .expect("Failed to start localnet");
+        .expect("Failed to get transaction params");
 
-    // Test with invalid transaction bytes (empty vector)
-    let invalid_txn_bytes: Vec<u8> = vec![];
+    // Convert genesis hash to 32-byte array
+    let genesis_hash_bytes: [u8; 32] = params
+        .genesis_hash
+        .try_into()
+        .expect("Genesis hash must be 32 bytes");
 
-    let result = raw_transaction::raw_transaction(get_config(), invalid_txn_bytes).await;
+    // Build transaction header
+    let header = TransactionHeaderBuilder::default()
+        .sender(sender_addr.clone())
+        .fee(params.min_fee as u64)
+        .first_valid(params.last_round as u64)
+        .last_valid((params.last_round + 1000) as u64)
+        .genesis_id(params.genesis_id.clone())
+        .genesis_hash(genesis_hash_bytes)
+        .note(b"Test payment transaction".to_vec())
+        .build()
+        .expect("Failed to build transaction header");
 
-    // This should fail
+    // Build payment transaction
+    let payment_fields = PaymentTransactionBuilder::default()
+        .header(header)
+        .receiver(receiver_addr)
+        .amount(500_000) // 0.5 ALGO
+        .build_fields()
+        .expect("Failed to build payment fields");
+
+    let transaction = Transaction::Payment(payment_fields);
+    let signed_bytes = sender
+        .sign_transaction(&transaction)
+        .expect("Failed to sign transaction");
+
+    // ACT - Broadcast the transaction
+    let response = raw_transaction::raw_transaction(get_config(), signed_bytes)
+        .await
+        .expect("Failed to broadcast transaction");
+
+    // ASSERT - Verify response has transaction ID
     assert!(
-        result.is_err(),
-        "Empty transaction bytes should result in error"
+        !response.tx_id.is_empty(),
+        "Response should contain a transaction ID"
     );
 
-    println!("✓ Error handling test passed - correctly failed with invalid transaction");
-}
-
-#[tokio::test]
-async fn test_raw_transaction_api_format() {
-    LocalnetManager::ensure_running()
-        .await
-        .expect("Failed to start localnet");
-
-    // Test that the API accepts binary data correctly
-    let test_data = TestDataMother::simple_payment();
-    let signed_txn_bytes = test_data.signed_bytes;
-
-    // This test verifies the API can handle the msgpack format correctly
-    let result = raw_transaction::raw_transaction(get_config(), signed_txn_bytes).await;
-
-    // We expect either success or a meaningful algod error (not a format error)
-    match result {
-        Ok(_) => {
-            println!("✓ Transaction succeeded");
-        }
-        Err(err) => {
-            let error_str = format!("{:?}", err);
-
-            // Should not be msgpack format errors
-            assert!(
-                !error_str.contains("msgpack decode error"),
-                "Should not have msgpack decode errors"
-            );
-            assert!(
-                !error_str.contains("only encoded map or array"),
-                "Should not have JSON array decode errors"
-            );
-
-            println!("✓ API format test passed - no format-related errors");
-        }
-    }
+    println!(
+        "✓ Successfully broadcast transaction with ID: {}",
+        response.tx_id
+    );
 }

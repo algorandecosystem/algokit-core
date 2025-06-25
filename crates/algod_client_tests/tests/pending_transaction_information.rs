@@ -1,10 +1,11 @@
-use algod_client::apis::{
-    configuration::Configuration, pending_transaction_information, raw_transaction,
+use algod_client::apis::pending_transaction_information;
+use algod_client::apis::{configuration::Configuration, raw_transaction, transaction_params};
+use algod_client_tests::{
+    LocalnetManager, NetworkType, TestAccountConfig, TestAccountManager, ALGOD_CONFIG,
 };
-use algod_client_tests::{LocalnetManager, ALGOD_CONFIG};
-use algokit_transact::test_utils::TestDataMother;
+use algokit_transact::{PaymentTransactionBuilder, Transaction, TransactionHeaderBuilder};
+use std::convert::TryInto;
 use std::sync::OnceLock;
-use tokio::time::{sleep, Duration};
 
 /// Global configuration instance - idiomatic Rust pattern for shared test state
 static CONFIG: OnceLock<Configuration> = OnceLock::new();
@@ -14,274 +15,98 @@ fn get_config() -> &'static Configuration {
     CONFIG.get_or_init(|| ALGOD_CONFIG.clone())
 }
 
-/// Create a test payment transaction using pre-signed test data
-async fn create_test_transaction() -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
-    // Use the pre-signed test data which has a valid signature
-    let test_data = TestDataMother::simple_payment();
-    Ok(test_data.signed_bytes)
-}
-
-/// Broadcast a transaction and return its ID (or None if broadcast fails)
-async fn try_broadcast_test_transaction() -> Option<String> {
-    let signed_txn_bytes = create_test_transaction().await.ok()?;
-    let response = raw_transaction::raw_transaction(get_config(), signed_txn_bytes)
-        .await
-        .ok()?;
-    Some(response.tx_id)
-}
-
 #[tokio::test]
-async fn test_pending_transaction_information_basic() {
-    // Ensure localnet is running
+async fn test_pending_transaction_broadcast() {
+    // ARRANGE - Set up test environment and create a real transaction
     LocalnetManager::ensure_running()
         .await
         .expect("Failed to start localnet");
 
-    // Try to broadcast a transaction first
-    if let Some(tx_id) = try_broadcast_test_transaction().await {
-        // Query pending transaction information
-        let result = pending_transaction_information::pending_transaction_information(
-            get_config(),
-            &tx_id,
-            None, // Default format
-        )
-        .await;
+    // Create account manager and generate test accounts
+    let mut account_manager = TestAccountManager::new(get_config().clone());
 
-        // Verify the call succeeded
-        assert!(
-            result.is_ok(),
-            "Pending transaction information should succeed: {:?}",
-            result.err()
-        );
+    let sender_config = TestAccountConfig {
+        initial_funds: 10_000_000, // 10 ALGO
+        suppress_log: true,
+        network_type: NetworkType::LocalNet,
+        funding_note: Some("Test sender account".to_string()),
+    };
 
-        let response = result.unwrap();
+    let receiver_config = TestAccountConfig {
+        initial_funds: 1_000_000, // 1 ALGO
+        suppress_log: true,
+        network_type: NetworkType::LocalNet,
+        funding_note: Some("Test receiver account".to_string()),
+    };
 
-        // Verify response structure - these fields should always be present
-        // confirmed_round is Option<i32>, pool_error is String
-        // If transaction is confirmed (round > 0), it should have no pool error
-        if let Some(confirmed_round) = response.confirmed_round {
-            if confirmed_round > 0 {
-                assert!(
-                    response.pool_error.is_empty(),
-                    "Confirmed transactions should have no pool error"
-                );
-            }
-        }
-
-        println!("✓ Successfully retrieved pending transaction information");
-        println!("  Transaction ID: {}", tx_id);
-        if let Some(confirmed_round) = response.confirmed_round {
-            println!("  Confirmed Round: {}", confirmed_round);
-        }
-        if !response.pool_error.is_empty() {
-            println!("  Pool Error: {}", response.pool_error);
-        }
-    } else {
-        // If broadcast fails (expected due to network mismatch), test with fake ID
-        println!("Transaction broadcast failed as expected, testing API with fake transaction ID");
-
-        let fake_tx_id = "7GVX6QQHZBVWGB4QHFIQPQPQC7W5YYTYTQ4PNYAGMYHLC7LQAAAA";
-        let result = pending_transaction_information::pending_transaction_information(
-            get_config(),
-            fake_tx_id,
-            None,
-        )
-        .await;
-
-        // Should get a 404 or similar error
-        assert!(
-            result.is_err(),
-            "Fake transaction ID should result in error"
-        );
-        println!(
-            "✓ API layer working correctly - proper error handling for nonexistent transaction"
-        );
-    }
-}
-
-#[tokio::test]
-async fn test_pending_transaction_information_json_format() {
-    LocalnetManager::ensure_running()
+    let sender = account_manager
+        .get_test_account(Some(sender_config))
         .await
-        .expect("Failed to start localnet");
+        .expect("Failed to create sender account");
 
-    // Test the format parameter functionality
-    let fake_tx_id = "7GVX6QQHZBVWGB4QHFIQPQPQC7W5YYTYTQ4PNYAGMYHLC7LQAAAA";
+    let receiver = account_manager
+        .get_test_account(Some(receiver_config))
+        .await
+        .expect("Failed to create receiver account");
 
-    // Query with explicit JSON format
-    let result = pending_transaction_information::pending_transaction_information(
-        get_config(),
-        fake_tx_id,
-        Some("json"),
-    )
-    .await;
+    let sender_addr = sender.address().expect("Failed to get sender address");
+    let receiver_addr = receiver.address().expect("Failed to get receiver address");
 
-    // Should get an error (404), but it should be a properly formatted error
-    assert!(result.is_err(), "Fake transaction should result in error");
+    // Get transaction parameters
+    let params = transaction_params::transaction_params(get_config())
+        .await
+        .expect("Failed to get transaction params");
 
-    // The error should not be a format-related error
-    let error_str = format!("{:?}", result.err().unwrap());
+    // Convert genesis hash to 32-byte array
+    let genesis_hash_bytes: [u8; 32] = params
+        .genesis_hash
+        .try_into()
+        .expect("Genesis hash must be 32 bytes");
+
+    // Build transaction header
+    let header = TransactionHeaderBuilder::default()
+        .sender(sender_addr.clone())
+        .fee(params.min_fee as u64)
+        .first_valid(params.last_round as u64)
+        .last_valid((params.last_round + 1000) as u64)
+        .genesis_id(params.genesis_id.clone())
+        .genesis_hash(genesis_hash_bytes)
+        .note(b"Test payment transaction".to_vec())
+        .build()
+        .expect("Failed to build transaction header");
+
+    // Build payment transaction
+    let payment_fields = PaymentTransactionBuilder::default()
+        .header(header)
+        .receiver(receiver_addr)
+        .amount(500_000) // 0.5 ALGO
+        .build_fields()
+        .expect("Failed to build payment fields");
+
+    let transaction = Transaction::Payment(payment_fields);
+    let signed_bytes = sender
+        .sign_transaction(&transaction)
+        .expect("Failed to sign transaction");
+
+    // ACT - Broadcast the transaction
+    let response = raw_transaction::raw_transaction(get_config(), signed_bytes)
+        .await
+        .expect("Failed to broadcast transaction");
+
+    // ASSERT - Verify response has transaction ID
     assert!(
-        !error_str.contains("msgpack decode error"),
-        "Should not have msgpack decode errors"
+        !response.tx_id.is_empty(),
+        "Response should contain a transaction ID"
     );
 
-    println!("✓ Successfully tested pending transaction information in JSON format");
-}
-
-#[tokio::test]
-async fn test_pending_transaction_information_msgpack_format() {
-    LocalnetManager::ensure_running()
-        .await
-        .expect("Failed to start localnet");
-
-    let fake_tx_id = "7GVX6QQHZBVWGB4QHFIQPQPQC7W5YYTYTQ4PNYAGMYHLC7LQAAAA";
-
-    // Query with msgpack format
-    let result = pending_transaction_information::pending_transaction_information(
+    let pending_transaction = pending_transaction_information::pending_transaction_information(
         get_config(),
-        fake_tx_id,
+        &response.tx_id,
         Some("msgpack"),
     )
-    .await;
+    .await
+    .expect("Failed to get pending transaction information");
 
-    // Should get an error (404), but it should be a properly formatted error
-    assert!(result.is_err(), "Fake transaction should result in error");
-
-    // The error should not be a format-related error
-    let error_str = format!("{:?}", result.err().unwrap());
-    assert!(
-        !error_str.contains("msgpack decode error"),
-        "Should not have msgpack decode errors"
-    );
-
-    println!("✓ Successfully tested pending transaction information in msgpack format");
-}
-
-#[tokio::test]
-async fn test_pending_transaction_information_multiple_transactions() {
-    LocalnetManager::ensure_running()
-        .await
-        .expect("Failed to start localnet");
-
-    // Test with multiple fake transaction IDs to verify API handling
-    let fake_transaction_ids = vec![
-        "7GVX6QQHZBVWGB4QHFIQPQPQC7W5YYTYTQ4PNYAGMYHLC7LQAAAA",
-        "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-        "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
-    ];
-
-    // Query information for each transaction
-    for (i, tx_id) in fake_transaction_ids.iter().enumerate() {
-        let result = pending_transaction_information::pending_transaction_information(
-            get_config(),
-            tx_id,
-            None,
-        )
-        .await;
-
-        // All should fail with 404 errors, but the API should handle them properly
-        assert!(
-            result.is_err(),
-            "Fake transaction {} should result in error",
-            i
-        );
-
-        let error_str = format!("{:?}", result.err().unwrap());
-        assert!(
-            !error_str.contains("msgpack decode error"),
-            "Transaction {} should not have format errors",
-            i
-        );
-    }
-
-    println!("✓ Successfully tested multiple transaction queries");
-    println!(
-        "  All {} fake transactions properly handled",
-        fake_transaction_ids.len()
-    );
-}
-
-#[tokio::test]
-async fn test_pending_transaction_information_nonexistent_transaction() {
-    LocalnetManager::ensure_running()
-        .await
-        .expect("Failed to start localnet");
-
-    // Use a fake transaction ID that doesn't exist
-    let fake_tx_id = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
-
-    let result = pending_transaction_information::pending_transaction_information(
-        get_config(),
-        fake_tx_id,
-        None,
-    )
-    .await;
-
-    // This should fail with a 404 error
-    assert!(
-        result.is_err(),
-        "Nonexistent transaction ID should result in error"
-    );
-
-    println!("✓ Error handling test passed - correctly failed with nonexistent transaction ID");
-}
-
-#[tokio::test]
-async fn test_pending_transaction_information_with_wait() {
-    LocalnetManager::ensure_running()
-        .await
-        .expect("Failed to start localnet");
-
-    // Try to broadcast a transaction
-    if let Some(tx_id) = try_broadcast_test_transaction().await {
-        // Wait a bit for the transaction to potentially be processed
-        sleep(Duration::from_millis(500)).await;
-
-        // Query the transaction information
-        let result = pending_transaction_information::pending_transaction_information(
-            get_config(),
-            &tx_id,
-            None,
-        )
-        .await;
-
-        assert!(
-            result.is_ok(),
-            "Transaction query after wait should succeed"
-        );
-        let response = result.unwrap();
-
-        // Check if transaction was confirmed
-        let is_confirmed = response.confirmed_round.unwrap_or(0) > 0;
-        let has_pool_error = !response.pool_error.is_empty();
-
-        println!("✓ Successfully queried transaction after wait");
-        println!("  Transaction ID: {}", tx_id);
-        println!("  Is Confirmed: {}", is_confirmed);
-        println!("  Has Pool Error: {}", has_pool_error);
-
-        if let Some(confirmed_round) = response.confirmed_round {
-            println!("  Confirmed Round: {}", confirmed_round);
-        }
-    } else {
-        // If broadcast fails, just test the API functionality
-        println!("Broadcast failed as expected, testing API timing functionality");
-
-        let fake_tx_id = "7GVX6QQHZBVWGB4QHFIQPQPQC7W5YYTYTQ4PNYAGMYHLC7LQAAAA";
-
-        // Wait a bit to simulate the same timing
-        sleep(Duration::from_millis(500)).await;
-
-        let result = pending_transaction_information::pending_transaction_information(
-            get_config(),
-            fake_tx_id,
-            None,
-        )
-        .await;
-
-        // Should still get a proper error response
-        assert!(result.is_err(), "Fake transaction should result in error");
-        println!("✓ API timing test passed - proper error handling after wait");
-    }
+    assert_eq!(pending_transaction.pool_error, "");
+    assert!(pending_transaction.confirmed_round.is_some());
 }
