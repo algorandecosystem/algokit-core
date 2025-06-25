@@ -5,11 +5,11 @@ edition = "2024"
 
 [features]
 default = ["default_http_client"]
-default_http_client = ["dep:reqwest", "algokit_http_client_trait/default_client"]
+default_http_client = ["dep:reqwest", "algokit_http_client/default_client"]
 
 [dependencies]
 algod_api = { version = "0.1.0", path = "../algod_api" }
-algokit_http_client_trait = { version = "0.1.0", path = "../algokit_http_client_trait", default-features = false }
+algokit_http_client = { version = "0.1.0", path = "../algokit_http_client", default-features = false }
 algokit_transact = { version = "0.1.0", path = "../algokit_transact", features = ["test_utils"] }
 async-trait = { version = "0.1.88" }
 base64 = "0.22.1"

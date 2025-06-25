@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
-use algokit_http_client_trait::{HttpClient, HttpError};
+use algokit_http_client::{HttpClient, HttpError};
 
 #[cfg(feature = "default_http_client")]
-use algokit_http_client_trait::DefaultHttpClient;
+use algokit_http_client::DefaultHttpClient;
 
 use serde::{Deserialize, Serialize};
 

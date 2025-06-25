@@ -1,5 +1,5 @@
 [package]
-name = "algokit_http_client_trait"
+name = "algokit_http_client"
 version = "0.1.0"
 edition = "2024"
 

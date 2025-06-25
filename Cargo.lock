@@ -41,13 +41,13 @@ dependencies = [
 name = "algod_api"
 version = "0.1.0"
 dependencies = [
- "algokit_http_client_trait",
+ "algokit_http_client",
  "serde",
  "serde_json",
 ]
 
 [[package]]
-name = "algokit_http_client_trait"
+name = "algokit_http_client"
 version = "0.1.0"
 dependencies = [
  "async-trait",
@@ -107,7 +107,7 @@ name = "algokit_utils"
 version = "0.1.0"
 dependencies = [
  "algod_api",
- "algokit_http_client_trait",
+ "algokit_http_client",
  "algokit_transact",
  "async-trait",
  "base64 0.22.1",

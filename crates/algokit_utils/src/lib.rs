@@ -1,7 +1,7 @@
 use algod_api::AlgodClient;
 
 use algod_api::TransactionParams;
-use algokit_http_client_trait::HttpError;
+use algokit_http_client::HttpError;
 use algokit_transact::Address;
 use algokit_transact::FeeParams;
 use algokit_transact::PaymentTransactionFields;
