@@ -9,12 +9,8 @@
  */
 
 use crate::models;
+use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
-use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
-
-
-
-
 
 use crate::models::DryrunTxnResult;
 
@@ -25,20 +21,22 @@ pub struct TealDryrun200Response {
     pub txns: Vec<DryrunTxnResult>,
     #[serde(rename = "error")]
     pub error: String,
-        /// Protocol version is the protocol version Dryrun was operated under.
+    /// Protocol version is the protocol version Dryrun was operated under.
     #[serde(rename = "protocol-version")]
     pub protocol_version: String,
 }
 
-
-
 impl AlgorandMsgpack for TealDryrun200Response {
-    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
 }
 
 impl TealDryrun200Response {
     /// Constructor for TealDryrun200Response
-    pub fn new(txns: Vec<DryrunTxnResult>, error: String, protocol_version: String) -> TealDryrun200Response {
+    pub fn new(
+        txns: Vec<DryrunTxnResult>,
+        error: String,
+        protocol_version: String,
+    ) -> TealDryrun200Response {
         TealDryrun200Response {
             txns,
             error,

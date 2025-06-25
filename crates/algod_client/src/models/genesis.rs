@@ -11,16 +11,6 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
-
-
-
-
-
-
-
-
-
-
 use crate::models::GenesisAllocation;
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
@@ -45,12 +35,17 @@ pub struct Genesis {
     pub timestamp: i64,
 }
 
-
-
-
 impl Genesis {
     /// Constructor for Genesis
-    pub fn new(alloc: Vec<GenesisAllocation>, fees: String, id: String, network: String, proto: String, rwd: String, timestamp: i64) -> Genesis {
+    pub fn new(
+        alloc: Vec<GenesisAllocation>,
+        fees: String,
+        id: String,
+        network: String,
+        proto: String,
+        rwd: String,
+        timestamp: i64,
+    ) -> Genesis {
         Genesis {
             alloc,
             fees,
@@ -63,5 +58,4 @@ impl Genesis {
             devmode: None,
         }
     }
-
 }

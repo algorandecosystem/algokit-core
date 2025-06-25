@@ -11,42 +11,32 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
-
-
-
-
-
-
-
-use crate::models::ScratchChange;
 use crate::models::ApplicationStateOperation;
 use crate::models::AvmValue;
+use crate::models::ScratchChange;
 
 /// The set of trace information and effect from evaluating a single opcode.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SimulationOpcodeTraceUnit {
-        /// The program counter of the current opcode being evaluated.
+    /// The program counter of the current opcode being evaluated.
     #[serde(rename = "pc")]
     pub pc: i32,
-        /// The writes into scratch slots.
+    /// The writes into scratch slots.
     #[serde(rename = "scratch-changes", skip_serializing_if = "Option::is_none")]
     pub scratch_changes: Option<Vec<ScratchChange>>,
-        /// The operations against the current application's states.
+    /// The operations against the current application's states.
     #[serde(rename = "state-changes", skip_serializing_if = "Option::is_none")]
     pub state_changes: Option<Vec<ApplicationStateOperation>>,
-        /// The indexes of the traces for inner transactions spawned by this opcode, if any.
+    /// The indexes of the traces for inner transactions spawned by this opcode, if any.
     #[serde(rename = "spawned-inners", skip_serializing_if = "Option::is_none")]
     pub spawned_inners: Option<Vec<i32>>,
-        /// The number of deleted stack values by this opcode.
+    /// The number of deleted stack values by this opcode.
     #[serde(rename = "stack-pop-count", skip_serializing_if = "Option::is_none")]
     pub stack_pop_count: Option<i32>,
-        /// The values added by this opcode to the stack.
+    /// The values added by this opcode to the stack.
     #[serde(rename = "stack-additions", skip_serializing_if = "Option::is_none")]
     pub stack_additions: Option<Vec<AvmValue>>,
 }
-
-
-
 
 impl SimulationOpcodeTraceUnit {
     /// Constructor for SimulationOpcodeTraceUnit
@@ -60,5 +50,4 @@ impl SimulationOpcodeTraceUnit {
             stack_additions: None,
         }
     }
-
 }

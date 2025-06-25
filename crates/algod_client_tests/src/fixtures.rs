@@ -25,6 +25,16 @@ pub static ALGOD_CONFIG: Lazy<Configuration> = Lazy::new(|| {
     }
 });
 
+/// Global algod client instance - shared across all tests
+/// Note: We use a function that returns a reference to avoid circular imports
+pub fn get_algod_client() -> &'static algod_client::apis::AlgodClient {
+    use algod_client::apis::AlgodClient;
+    use std::sync::OnceLock;
+
+    static CLIENT: OnceLock<AlgodClient> = OnceLock::new();
+    CLIENT.get_or_init(|| AlgodClient::new(ALGOD_CONFIG.clone()))
+}
+
 /// Re-export the test utilities from algokit_transact
 pub use algokit_transact::test_utils::{
     AddressMother, TestDataMother, TransactionHeaderMother, TransactionMother,

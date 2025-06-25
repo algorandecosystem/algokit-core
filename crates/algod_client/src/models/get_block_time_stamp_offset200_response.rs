@@ -9,32 +9,25 @@
  */
 
 use crate::models;
+use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
-use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
-
-
-
 
 /// Response containing the timestamp offset in seconds
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GetBlockTimeStampOffset200Response {
-        /// Timestamp offset in seconds.
+    /// Timestamp offset in seconds.
     #[serde(rename = "offset")]
     pub offset: i32,
 }
 
-
-
 impl AlgorandMsgpack for GetBlockTimeStampOffset200Response {
-    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
 }
 
 impl GetBlockTimeStampOffset200Response {
     /// Constructor for GetBlockTimeStampOffset200Response
     pub fn new(offset: i32) -> GetBlockTimeStampOffset200Response {
-        GetBlockTimeStampOffset200Response {
-            offset,
-        }
+        GetBlockTimeStampOffset200Response { offset }
     }
 
     /// Encode this struct to msgpack bytes using AlgorandMsgpack trait

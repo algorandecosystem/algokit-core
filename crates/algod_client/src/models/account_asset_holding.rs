@@ -11,9 +11,6 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
-
-
-
 use crate::models::AssetHolding;
 use crate::models::AssetParams;
 
@@ -26,9 +23,6 @@ pub struct AccountAssetHolding {
     pub asset_params: Option<AssetParams>,
 }
 
-
-
-
 impl AccountAssetHolding {
     /// Constructor for AccountAssetHolding
     pub fn new(asset_holding: AssetHolding) -> AccountAssetHolding {
@@ -37,5 +31,4 @@ impl AccountAssetHolding {
             asset_params: None,
         }
     }
-
 }

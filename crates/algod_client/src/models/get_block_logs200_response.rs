@@ -9,10 +9,8 @@
  */
 
 use crate::models;
+use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
-use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
-
-
 
 use crate::models::AppCallLogs;
 
@@ -23,18 +21,14 @@ pub struct GetBlockLogs200Response {
     pub logs: Vec<AppCallLogs>,
 }
 
-
-
 impl AlgorandMsgpack for GetBlockLogs200Response {
-    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
 }
 
 impl GetBlockLogs200Response {
     /// Constructor for GetBlockLogs200Response
     pub fn new(logs: Vec<AppCallLogs>) -> GetBlockLogs200Response {
-        GetBlockLogs200Response {
-            logs,
-        }
+        GetBlockLogs200Response { logs }
     }
 
     /// Encode this struct to msgpack bytes using AlgorandMsgpack trait

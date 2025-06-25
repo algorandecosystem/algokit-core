@@ -9,37 +9,29 @@
  */
 
 use crate::models;
+use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
-use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
-
-
-
 
 use crate::models::AssetParams;
 
 /// Specifies both the unique identifier and the parameters for an asset
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Asset {
-        /// unique asset identifier
+    /// unique asset identifier
     #[serde(rename = "index")]
     pub index: i32,
     #[serde(rename = "params")]
     pub params: AssetParams,
 }
 
-
-
 impl AlgorandMsgpack for Asset {
-    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
 }
 
 impl Asset {
     /// Constructor for Asset
     pub fn new(index: i32, params: AssetParams) -> Asset {
-        Asset {
-            index,
-            params,
-        }
+        Asset { index, params }
     }
 
     /// Encode this struct to msgpack bytes using AlgorandMsgpack trait

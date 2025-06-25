@@ -11,31 +11,20 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
-
-
-
-
 /// References an asset held by an account.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct AssetHoldingReference {
-        /// Address of the account holding the asset.
+    /// Address of the account holding the asset.
     #[serde(rename = "account")]
     pub account: String,
-        /// Asset ID of the holding.
+    /// Asset ID of the holding.
     #[serde(rename = "asset")]
     pub asset: i32,
 }
 
-
-
-
 impl AssetHoldingReference {
     /// Constructor for AssetHoldingReference
     pub fn new(account: String, asset: i32) -> AssetHoldingReference {
-        AssetHoldingReference {
-            account,
-            asset,
-        }
+        AssetHoldingReference { account, asset }
     }
-
 }

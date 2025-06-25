@@ -9,36 +9,28 @@
  */
 
 use crate::models;
+use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
-use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
-
-
-
-
-
-
 
 /// An object that configures simulation execution trace.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SimulateTraceConfig {
-        /// A boolean option for opting in execution trace features simulation endpoint.
+    /// A boolean option for opting in execution trace features simulation endpoint.
     #[serde(rename = "enable", skip_serializing_if = "Option::is_none")]
     pub enable: Option<bool>,
-        /// A boolean option enabling returning stack changes together with execution trace during simulation.
+    /// A boolean option enabling returning stack changes together with execution trace during simulation.
     #[serde(rename = "stack-change", skip_serializing_if = "Option::is_none")]
     pub stack_change: Option<bool>,
-        /// A boolean option enabling returning scratch slot changes together with execution trace during simulation.
+    /// A boolean option enabling returning scratch slot changes together with execution trace during simulation.
     #[serde(rename = "scratch-change", skip_serializing_if = "Option::is_none")]
     pub scratch_change: Option<bool>,
-        /// A boolean option enabling returning application state changes (global, local, and box changes) with the execution trace during simulation.
+    /// A boolean option enabling returning application state changes (global, local, and box changes) with the execution trace during simulation.
     #[serde(rename = "state-change", skip_serializing_if = "Option::is_none")]
     pub state_change: Option<bool>,
 }
 
-
-
 impl AlgorandMsgpack for SimulateTraceConfig {
-    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
 }
 
 impl SimulateTraceConfig {

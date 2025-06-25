@@ -1,19 +1,9 @@
 // Simulate transaction tests
 // These tests demonstrate the integration test structure and API communication
 
-use algod_client::apis::{configuration::Configuration, simulate_transaction};
 use algod_client::models::{SimulateRequest, SimulateRequestTransactionGroup, SimulateTraceConfig};
-use algod_client_tests::{LocalnetManager, LocalnetTransactionMother, ALGOD_CONFIG};
+use algod_client_tests::{get_algod_client, LocalnetManager, LocalnetTransactionMother};
 use algokit_transact::SignedTransaction;
-use std::sync::OnceLock;
-
-/// Global configuration instance - idiomatic Rust pattern for shared test state
-static CONFIG: OnceLock<Configuration> = OnceLock::new();
-
-/// Get or initialize the algod client configuration
-fn get_config() -> &'static Configuration {
-    CONFIG.get_or_init(|| ALGOD_CONFIG.clone())
-}
 
 #[tokio::test]
 async fn test_simulate_transactions() {
@@ -63,9 +53,9 @@ async fn test_simulate_transactions() {
     };
 
     // Call the simulate transaction endpoint
-    let result =
-        simulate_transaction::simulate_transaction(get_config(), simulate_request, Some("msgpack"))
-            .await;
+    let result = get_algod_client()
+        .simulate_transaction(simulate_request, Some("msgpack"))
+        .await;
 
     assert!(
         result.is_ok(),

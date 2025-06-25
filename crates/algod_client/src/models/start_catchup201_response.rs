@@ -9,32 +9,25 @@
  */
 
 use crate::models;
+use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
-use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
-
-
-
 
 /// An catchpoint start response.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct StartCatchup201Response {
-        /// Catchup start response string
+    /// Catchup start response string
     #[serde(rename = "catchup-message")]
     pub catchup_message: String,
 }
 
-
-
 impl AlgorandMsgpack for StartCatchup201Response {
-    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
 }
 
 impl StartCatchup201Response {
     /// Constructor for StartCatchup201Response
     pub fn new(catchup_message: String) -> StartCatchup201Response {
-        StartCatchup201Response {
-            catchup_message,
-        }
+        StartCatchup201Response { catchup_message }
     }
 
     /// Encode this struct to msgpack bytes using AlgorandMsgpack trait

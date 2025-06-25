@@ -9,20 +9,15 @@
  */
 
 use crate::models;
+use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
-use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
-
-
 
 /// Ledger StateDelta object
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct LedgerStateDelta {
-}
-
-
+pub struct LedgerStateDelta {}
 
 impl AlgorandMsgpack for LedgerStateDelta {
-    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
 }
 
 impl LedgerStateDelta {

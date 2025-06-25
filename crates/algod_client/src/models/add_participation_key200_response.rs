@@ -9,32 +9,25 @@
  */
 
 use crate::models;
+use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
-use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
-
-
-
 
 /// Participation ID of the submission
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct AddParticipationKey200Response {
-        /// encoding of the participation ID.
+    /// encoding of the participation ID.
     #[serde(rename = "partId")]
     pub part_id: String,
 }
 
-
-
 impl AlgorandMsgpack for AddParticipationKey200Response {
-    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
 }
 
 impl AddParticipationKey200Response {
     /// Constructor for AddParticipationKey200Response
     pub fn new(part_id: String) -> AddParticipationKey200Response {
-        AddParticipationKey200Response {
-            part_id,
-        }
+        AddParticipationKey200Response { part_id }
     }
 
     /// Encode this struct to msgpack bytes using AlgorandMsgpack trait

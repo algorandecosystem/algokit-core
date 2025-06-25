@@ -11,39 +11,38 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
-
-
-
-
-
-
-
 use crate::models::PendingTransactionResponse;
-use crate::models::SimulationTransactionExecTrace;
 use crate::models::SimulateUnnamedResourcesAccessed;
+use crate::models::SimulationTransactionExecTrace;
 
 /// Simulation result for an individual transaction
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SimulateTransactionResult {
     #[serde(rename = "txn-result")]
     pub txn_result: PendingTransactionResponse,
-        /// Budget used during execution of an app call transaction. This value includes budged used by inner app calls spawned by this transaction.
-    #[serde(rename = "app-budget-consumed", skip_serializing_if = "Option::is_none")]
+    /// Budget used during execution of an app call transaction. This value includes budged used by inner app calls spawned by this transaction.
+    #[serde(
+        rename = "app-budget-consumed",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub app_budget_consumed: Option<i32>,
-        /// Budget used during execution of a logic sig transaction.
-    #[serde(rename = "logic-sig-budget-consumed", skip_serializing_if = "Option::is_none")]
+    /// Budget used during execution of a logic sig transaction.
+    #[serde(
+        rename = "logic-sig-budget-consumed",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub logic_sig_budget_consumed: Option<i32>,
     #[serde(rename = "exec-trace", skip_serializing_if = "Option::is_none")]
     pub exec_trace: Option<SimulationTransactionExecTrace>,
-    #[serde(rename = "unnamed-resources-accessed", skip_serializing_if = "Option::is_none")]
+    #[serde(
+        rename = "unnamed-resources-accessed",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub unnamed_resources_accessed: Option<SimulateUnnamedResourcesAccessed>,
-        /// The account that needed to sign this transaction when no signature was provided and the provided signer was incorrect.
+    /// The account that needed to sign this transaction when no signature was provided and the provided signer was incorrect.
     #[serde(rename = "fixed-signer", skip_serializing_if = "Option::is_none")]
     pub fixed_signer: Option<String>,
 }
-
-
-
 
 impl SimulateTransactionResult {
     /// Constructor for SimulateTransactionResult
@@ -57,5 +56,4 @@ impl SimulateTransactionResult {
             fixed_signer: None,
         }
     }
-
 }

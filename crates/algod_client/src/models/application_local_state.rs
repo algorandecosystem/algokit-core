@@ -9,12 +9,8 @@
  */
 
 use crate::models;
+use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
-use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
-
-
-
-
 
 use crate::models::ApplicationStateSchema;
 use crate::models::TealKeyValueStore;
@@ -22,7 +18,7 @@ use crate::models::TealKeyValueStore;
 /// Stores local state associated with an application.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ApplicationLocalState {
-        /// The application which this local state is for.
+    /// The application which this local state is for.
     #[serde(rename = "id")]
     pub id: i32,
     #[serde(rename = "schema")]
@@ -31,10 +27,8 @@ pub struct ApplicationLocalState {
     pub key_value: Option<TealKeyValueStore>,
 }
 
-
-
 impl AlgorandMsgpack for ApplicationLocalState {
-    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
 }
 
 impl ApplicationLocalState {

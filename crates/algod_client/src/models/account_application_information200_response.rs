@@ -9,12 +9,8 @@
  */
 
 use crate::models;
+use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
-use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
-
-
-
-
 
 use crate::models::ApplicationLocalState;
 use crate::models::ApplicationParams;
@@ -22,7 +18,7 @@ use crate::models::ApplicationParams;
 /// AccountApplicationResponse describes the account's application local state and global state (AppLocalState and AppParams, if either exists) for a specific application ID. Global state will only be returned if the provided address is the application's creator.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct AccountApplicationInformation200Response {
-        /// The round for which this information is relevant.
+    /// The round for which this information is relevant.
     #[serde(rename = "round")]
     pub round: i32,
     #[serde(rename = "app-local-state", skip_serializing_if = "Option::is_none")]
@@ -31,10 +27,8 @@ pub struct AccountApplicationInformation200Response {
     pub created_app: Option<ApplicationParams>,
 }
 
-
-
 impl AlgorandMsgpack for AccountApplicationInformation200Response {
-    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
 }
 
 impl AccountApplicationInformation200Response {

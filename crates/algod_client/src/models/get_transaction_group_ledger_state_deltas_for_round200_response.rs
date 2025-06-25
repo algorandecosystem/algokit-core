@@ -9,10 +9,8 @@
  */
 
 use crate::models;
+use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
-use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
-
-
 
 use crate::models::LedgerStateDeltaForTransactionGroup;
 
@@ -23,18 +21,16 @@ pub struct GetTransactionGroupLedgerStateDeltasForRound200Response {
     pub deltas: Vec<LedgerStateDeltaForTransactionGroup>,
 }
 
-
-
 impl AlgorandMsgpack for GetTransactionGroupLedgerStateDeltasForRound200Response {
-    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
 }
 
 impl GetTransactionGroupLedgerStateDeltasForRound200Response {
     /// Constructor for GetTransactionGroupLedgerStateDeltasForRound200Response
-    pub fn new(deltas: Vec<LedgerStateDeltaForTransactionGroup>) -> GetTransactionGroupLedgerStateDeltasForRound200Response {
-        GetTransactionGroupLedgerStateDeltasForRound200Response {
-            deltas,
-        }
+    pub fn new(
+        deltas: Vec<LedgerStateDeltaForTransactionGroup>,
+    ) -> GetTransactionGroupLedgerStateDeltasForRound200Response {
+        GetTransactionGroupLedgerStateDeltasForRound200Response { deltas }
     }
 
     /// Encode this struct to msgpack bytes using AlgorandMsgpack trait

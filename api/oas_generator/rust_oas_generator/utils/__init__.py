@@ -5,7 +5,7 @@ This module provides utility functions for file operations, string case conversi
 and other common tasks in the Rust client generation process.
 """
 
-from .file_utils import clean_directory, ensure_directory, write_files_to_disk
+from .file_utils import clean_output_directory, ensure_directory, write_files_to_disk
 from .string_case import (
     alphanumcase,
     camelcase,
@@ -27,7 +27,7 @@ from .string_case import (
 __all__ = [
     "alphanumcase",
     "camelcase",
-    "clean_directory",
+    "clean_output_directory",
     "constcase",
     "ensure_directory",
     "escape_rust_keyword",

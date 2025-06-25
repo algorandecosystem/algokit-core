@@ -9,10 +9,8 @@
  */
 
 use crate::models;
+use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
-use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
-
-
 
 use crate::models::BoxDescriptor;
 
@@ -23,18 +21,14 @@ pub struct GetApplicationBoxes200Response {
     pub boxes: Vec<BoxDescriptor>,
 }
 
-
-
 impl AlgorandMsgpack for GetApplicationBoxes200Response {
-    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
 }
 
 impl GetApplicationBoxes200Response {
     /// Constructor for GetApplicationBoxes200Response
     pub fn new(boxes: Vec<BoxDescriptor>) -> GetApplicationBoxes200Response {
-        GetApplicationBoxes200Response {
-            boxes,
-        }
+        GetApplicationBoxes200Response { boxes }
     }
 
     /// Encode this struct to msgpack bytes using AlgorandMsgpack trait

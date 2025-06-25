@@ -9,18 +9,9 @@
  */
 
 use crate::models;
+use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
-use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
-
-
-
-
-
-
-
-
-
 
 use crate::models::ApplicationStateSchema;
 use crate::models::TealKeyValueStore;
@@ -29,40 +20,48 @@ use crate::models::TealKeyValueStore;
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ApplicationParams {
-        /// The address that created this application. This is the address where the parameters and global state for this application can be found.
+    /// The address that created this application. This is the address where the parameters and global state for this application can be found.
     #[serde(rename = "creator")]
     pub creator: String,
-        /// \[approv\] approval program.
+    /// \[approv\] approval program.
     #[serde_as(as = "serde_with::base64::Base64")]
     #[serde(rename = "approval-program")]
     pub approval_program: Vec<u8>,
-        /// \[clearp\] approval program.
+    /// \[clearp\] approval program.
     #[serde_as(as = "serde_with::base64::Base64")]
     #[serde(rename = "clear-state-program")]
     pub clear_state_program: Vec<u8>,
-        /// \[epp\] the amount of extra program pages available to this app.
-    #[serde(rename = "extra-program-pages", skip_serializing_if = "Option::is_none")]
+    /// \[epp\] the amount of extra program pages available to this app.
+    #[serde(
+        rename = "extra-program-pages",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub extra_program_pages: Option<i32>,
     #[serde(rename = "local-state-schema", skip_serializing_if = "Option::is_none")]
     pub local_state_schema: Option<ApplicationStateSchema>,
-    #[serde(rename = "global-state-schema", skip_serializing_if = "Option::is_none")]
+    #[serde(
+        rename = "global-state-schema",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub global_state_schema: Option<ApplicationStateSchema>,
     #[serde(rename = "global-state", skip_serializing_if = "Option::is_none")]
     pub global_state: Option<TealKeyValueStore>,
-        /// \[v\] the number of updates to the application programs
+    /// \[v\] the number of updates to the application programs
     #[serde(rename = "version", skip_serializing_if = "Option::is_none")]
     pub version: Option<i32>,
 }
 
-
-
 impl AlgorandMsgpack for ApplicationParams {
-    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
 }
 
 impl ApplicationParams {
     /// Constructor for ApplicationParams
-    pub fn new(creator: String, approval_program: Vec<u8>, clear_state_program: Vec<u8>) -> ApplicationParams {
+    pub fn new(
+        creator: String,
+        approval_program: Vec<u8>,
+        clear_state_program: Vec<u8>,
+    ) -> ApplicationParams {
         ApplicationParams {
             creator,
             approval_program,

@@ -13,6 +13,9 @@ use serde::{Deserialize, Serialize};
 
 pub mod configuration;
 
+// Consolidated client
+pub mod client;
+
 // Individual endpoint modules
 {% for operation in operations %}
 pub mod {{ operation.rust_function_name }};
@@ -81,6 +84,9 @@ impl From<&str> for ContentType {
         }
     }
 }
+
+// Re-export the consolidated client
+pub use client::AlgodClient;
 
 // Re-export all endpoint functions
 {% for operation in operations %}

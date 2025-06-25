@@ -9,28 +9,22 @@
  */
 
 use crate::models;
+use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
-use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
-
-
-
-
 
 /// Specifies maximums on the number of each type that may be stored.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ApplicationStateSchema {
-        /// \[nui\] num of uints.
+    /// \[nui\] num of uints.
     #[serde(rename = "num-uint")]
     pub num_uint: i32,
-        /// \[nbs\] num of byte slices.
+    /// \[nbs\] num of byte slices.
     #[serde(rename = "num-byte-slice")]
     pub num_byte_slice: i32,
 }
 
-
-
 impl AlgorandMsgpack for ApplicationStateSchema {
-    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
 }
 
 impl ApplicationStateSchema {

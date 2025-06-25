@@ -9,32 +9,25 @@
  */
 
 use crate::models;
+use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
-use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
-
-
-
 
 /// Response containing the ledger's minimum sync round
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GetSyncRound200Response {
-        /// The minimum sync round for the ledger.
+    /// The minimum sync round for the ledger.
     #[serde(rename = "round")]
     pub round: i32,
 }
 
-
-
 impl AlgorandMsgpack for GetSyncRound200Response {
-    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
 }
 
 impl GetSyncRound200Response {
     /// Constructor for GetSyncRound200Response
     pub fn new(round: i32) -> GetSyncRound200Response {
-        GetSyncRound200Response {
-            round,
-        }
+        GetSyncRound200Response { round }
     }
 
     /// Encode this struct to msgpack bytes using AlgorandMsgpack trait

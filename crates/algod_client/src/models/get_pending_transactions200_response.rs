@@ -9,33 +9,30 @@
  */
 
 use crate::models;
+use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
-use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
-
-
-
-
 
 /// PendingTransactions is an array of signed transactions exactly as they were submitted.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GetPendingTransactions200Response {
-        /// An array of signed transaction objects.
+    /// An array of signed transaction objects.
     #[serde(rename = "top-transactions")]
     pub top_transactions: Vec<AlgokitSignedTransaction>,
-        /// Total number of transactions in the pool.
+    /// Total number of transactions in the pool.
     #[serde(rename = "total-transactions")]
     pub total_transactions: i32,
 }
 
-
-
 impl AlgorandMsgpack for GetPendingTransactions200Response {
-    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
 }
 
 impl GetPendingTransactions200Response {
     /// Constructor for GetPendingTransactions200Response
-    pub fn new(top_transactions: Vec<AlgokitSignedTransaction>, total_transactions: i32) -> GetPendingTransactions200Response {
+    pub fn new(
+        top_transactions: Vec<AlgokitSignedTransaction>,
+        total_transactions: i32,
+    ) -> GetPendingTransactions200Response {
         GetPendingTransactions200Response {
             top_transactions,
             total_transactions,

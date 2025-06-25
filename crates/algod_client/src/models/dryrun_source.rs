@@ -9,19 +9,13 @@
  */
 
 use crate::models;
+use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
-use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
-
-
-
-
-
-
 
 /// DryrunSource is TEAL source text that gets uploaded, compiled, and inserted into transactions or application state.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct DryrunSource {
-        /// FieldName is what kind of sources this is. If lsig then it goes into the transactions[this.TxnIndex].LogicSig. If approv or clearp it goes into the Approval Program or Clear State Program of application[this.AppIndex].
+    /// FieldName is what kind of sources this is. If lsig then it goes into the transactions[this.TxnIndex].LogicSig. If approv or clearp it goes into the Approval Program or Clear State Program of application[this.AppIndex].
     #[serde(rename = "field-name")]
     pub field_name: String,
     #[serde(rename = "source")]
@@ -32,10 +26,8 @@ pub struct DryrunSource {
     pub app_index: i32,
 }
 
-
-
 impl AlgorandMsgpack for DryrunSource {
-    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
 }
 
 impl DryrunSource {

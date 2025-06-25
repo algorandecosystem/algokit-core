@@ -11,47 +11,44 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
-
-
-
-
-
-
-
-
-
 use crate::models::AccountParticipation;
 
 /// Represents a participation key used by the node.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ParticipationKey {
-        /// The key's ParticipationID.
+    /// The key's ParticipationID.
     #[serde(rename = "id")]
     pub id: String,
-        /// Address the key was generated for.
+    /// Address the key was generated for.
     #[serde(rename = "address")]
     pub address: String,
-        /// When registered, this is the first round it may be used.
-    #[serde(rename = "effective-first-valid", skip_serializing_if = "Option::is_none")]
+    /// When registered, this is the first round it may be used.
+    #[serde(
+        rename = "effective-first-valid",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub effective_first_valid: Option<i32>,
-        /// When registered, this is the last round it may be used.
-    #[serde(rename = "effective-last-valid", skip_serializing_if = "Option::is_none")]
+    /// When registered, this is the last round it may be used.
+    #[serde(
+        rename = "effective-last-valid",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub effective_last_valid: Option<i32>,
-        /// Round when this key was last used to vote.
+    /// Round when this key was last used to vote.
     #[serde(rename = "last-vote", skip_serializing_if = "Option::is_none")]
     pub last_vote: Option<i32>,
-        /// Round when this key was last used to propose a block.
-    #[serde(rename = "last-block-proposal", skip_serializing_if = "Option::is_none")]
+    /// Round when this key was last used to propose a block.
+    #[serde(
+        rename = "last-block-proposal",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub last_block_proposal: Option<i32>,
-        /// Round when this key was last used to generate a state proof.
+    /// Round when this key was last used to generate a state proof.
     #[serde(rename = "last-state-proof", skip_serializing_if = "Option::is_none")]
     pub last_state_proof: Option<i32>,
     #[serde(rename = "key")]
     pub key: AccountParticipation,
 }
-
-
-
 
 impl ParticipationKey {
     /// Constructor for ParticipationKey
@@ -67,5 +64,4 @@ impl ParticipationKey {
             last_state_proof: None,
         }
     }
-
 }

@@ -11,27 +11,19 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
-
-
-
-
-
 /// Represents a TEAL value.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TealValue {
-        /// \[tt\] value type. Value `1` refers to **bytes**, value `2` refers to **uint**
+    /// \[tt\] value type. Value `1` refers to **bytes**, value `2` refers to **uint**
     #[serde(rename = "type")]
     pub r#type: i32,
-        /// \[tb\] bytes value.
+    /// \[tb\] bytes value.
     #[serde(rename = "bytes")]
     pub bytes: String,
-        /// \[ui\] uint value.
+    /// \[ui\] uint value.
     #[serde(rename = "uint")]
     pub uint: i32,
 }
-
-
-
 
 impl TealValue {
     /// Constructor for TealValue
@@ -42,5 +34,4 @@ impl TealValue {
             uint,
         }
     }
-
 }

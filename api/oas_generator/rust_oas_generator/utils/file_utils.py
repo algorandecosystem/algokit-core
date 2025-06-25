@@ -1,36 +1,49 @@
 """
-File Utilities for Rust Client Generation
-
-This module provides utilities for writing generated files to disk
-and managing file operations.
+File utilities for the OAS generator.
 """
 
+import shutil
 from pathlib import Path
-from typing import Dict
 
 
-def write_files_to_disk(files: Dict[str, str]) -> None:
+def write_files_to_disk(files: dict[str, str]) -> None:
     """Write generated files to disk."""
     for file_path, content in files.items():
         path = Path(file_path)
-
-        # Create directory if it doesn't exist
         path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
 
-        # Write file content
-        with open(path, "w", encoding="utf-8") as f:
-            f.write(content)
+
+def clean_output_directory(output_dir: Path) -> None:
+    """Clean the output directory by removing all files and subdirectories."""
+    if output_dir.exists():
+        shutil.rmtree(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+
+def copy_file(src: Path, dest: Path) -> None:
+    """Copy a file from source to destination."""
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(src, dest)
 
 
 def ensure_directory(directory: Path) -> None:
-    """Ensure directory exists."""
+    """Ensure that a directory exists."""
     directory.mkdir(parents=True, exist_ok=True)
 
 
-def clean_directory(directory: Path) -> None:
-    """Clean directory by removing all files."""
+def get_relative_path(file_path: Path, base_path: Path) -> Path:
+    """Get relative path from base_path to file_path."""
+    try:
+        return file_path.relative_to(base_path)
+    except ValueError:
+        return file_path
+
+
+def list_rust_files(directory: Path) -> list[Path]:
+    """List all .rs files in a directory recursively."""
+    rust_files = []
     if directory.exists():
-        import shutil
-        shutil.rmtree(directory)
-    directory.mkdir(parents=True, exist_ok=True)
-
+        for file_path in directory.rglob("*.rs"):
+            rust_files.append(file_path)
+    return sorted(rust_files)

@@ -9,12 +9,8 @@
  */
 
 use crate::models;
+use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
-use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
-
-
-
-
 
 use crate::models::AssetHolding;
 use crate::models::AssetParams;
@@ -22,7 +18,7 @@ use crate::models::AssetParams;
 /// AccountAssetResponse describes the account's asset holding and asset parameters (if either exist) for a specific asset ID. Asset parameters will only be returned if the provided address is the asset's creator.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct AccountAssetInformation200Response {
-        /// The round for which this information is relevant.
+    /// The round for which this information is relevant.
     #[serde(rename = "round")]
     pub round: i32,
     #[serde(rename = "asset-holding", skip_serializing_if = "Option::is_none")]
@@ -31,10 +27,8 @@ pub struct AccountAssetInformation200Response {
     pub created_asset: Option<AssetParams>,
 }
 
-
-
 impl AlgorandMsgpack for AccountAssetInformation200Response {
-    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
 }
 
 impl AccountAssetInformation200Response {

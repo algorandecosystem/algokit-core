@@ -9,32 +9,25 @@
  */
 
 use crate::models;
+use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
-use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
-
-
-
 
 /// Teal disassembly Result
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TealDisassemble200Response {
-        /// disassembled Teal code
+    /// disassembled Teal code
     #[serde(rename = "result")]
     pub result: String,
 }
 
-
-
 impl AlgorandMsgpack for TealDisassemble200Response {
-    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
 }
 
 impl TealDisassemble200Response {
     /// Constructor for TealDisassemble200Response
     pub fn new(result: String) -> TealDisassemble200Response {
-        TealDisassemble200Response {
-            result,
-        }
+        TealDisassemble200Response { result }
     }
 
     /// Encode this struct to msgpack bytes using AlgorandMsgpack trait

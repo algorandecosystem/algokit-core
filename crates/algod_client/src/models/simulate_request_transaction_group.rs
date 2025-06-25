@@ -9,32 +9,25 @@
  */
 
 use crate::models;
+use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
-use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
-
-
-
 
 /// A transaction group to simulate.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SimulateRequestTransactionGroup {
-        /// An atomic transaction group.
+    /// An atomic transaction group.
     #[serde(rename = "txns")]
     pub txns: Vec<AlgokitSignedTransaction>,
 }
 
-
-
 impl AlgorandMsgpack for SimulateRequestTransactionGroup {
-    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
 }
 
 impl SimulateRequestTransactionGroup {
     /// Constructor for SimulateRequestTransactionGroup
     pub fn new(txns: Vec<AlgokitSignedTransaction>) -> SimulateRequestTransactionGroup {
-        SimulateRequestTransactionGroup {
-            txns,
-        }
+        SimulateRequestTransactionGroup { txns }
     }
 
     /// Encode this struct to msgpack bytes using AlgorandMsgpack trait

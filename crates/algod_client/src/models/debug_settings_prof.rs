@@ -11,28 +11,20 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
-
-
-
-
 /// algod mutex and blocking profiling state.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct DebugSettingsProf {
-        /// The rate of blocking events. The profiler aims to sample an average of one blocking event per rate nanoseconds spent blocked. To turn off profiling entirely, pass rate 0.
+    /// The rate of blocking events. The profiler aims to sample an average of one blocking event per rate nanoseconds spent blocked. To turn off profiling entirely, pass rate 0.
     #[serde(rename = "block-rate", skip_serializing_if = "Option::is_none")]
     pub block_rate: Option<i32>,
-        /// The rate of mutex events. On average 1/rate events are reported. To turn off profiling entirely, pass rate 0
+    /// The rate of mutex events. On average 1/rate events are reported. To turn off profiling entirely, pass rate 0
     #[serde(rename = "mutex-rate", skip_serializing_if = "Option::is_none")]
     pub mutex_rate: Option<i32>,
 }
-
-
-
 
 impl DebugSettingsProf {
     /// Default constructor for DebugSettingsProf
     pub fn new() -> DebugSettingsProf {
         DebugSettingsProf::default()
     }
-
 }

@@ -9,35 +9,28 @@
  */
 
 use crate::models;
+use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
-use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
-
-
-
-
-
 
 /// Teal compile Result
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TealCompile200Response {
-        /// base32 SHA512_256 of program bytes (Address style)
+    /// base32 SHA512_256 of program bytes (Address style)
     #[serde(rename = "hash")]
     pub hash: String,
-        /// base64 encoded program bytes
+    /// base64 encoded program bytes
     #[serde_as(as = "serde_with::base64::Base64")]
     #[serde(rename = "result")]
     pub result: Vec<u8>,
-        /// JSON of the source map
+    /// JSON of the source map
     #[serde(rename = "sourcemap", skip_serializing_if = "Option::is_none")]
     pub sourcemap: Option<serde_json::Value>,
 }
 
-
-
 impl AlgorandMsgpack for TealCompile200Response {
-    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
 }
 
 impl TealCompile200Response {

@@ -12,28 +12,19 @@ use crate::models;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
-
-
-
 /// Box descriptor describes a Box.
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct BoxDescriptor {
-        /// Base64 encoded box name
+    /// Base64 encoded box name
     #[serde_as(as = "serde_with::base64::Base64")]
     #[serde(rename = "name")]
     pub name: Vec<u8>,
 }
 
-
-
-
 impl BoxDescriptor {
     /// Constructor for BoxDescriptor
     pub fn new(name: Vec<u8>) -> BoxDescriptor {
-        BoxDescriptor {
-            name,
-        }
+        BoxDescriptor { name }
     }
-
 }

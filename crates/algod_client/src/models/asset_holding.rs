@@ -9,35 +9,28 @@
  */
 
 use crate::models;
+use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
-use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
-
-
-
-
-
 
 /// Describes an asset held by an account.
-/// 
+///
 /// Definition:
 /// data/basics/userBalance.go : AssetHolding
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct AssetHolding {
-        /// \[a\] number of units held.
+    /// \[a\] number of units held.
     #[serde(rename = "amount")]
     pub amount: i32,
-        /// Asset ID of the holding.
+    /// Asset ID of the holding.
     #[serde(rename = "asset-id")]
     pub asset_id: i32,
-        /// \[f\] whether or not the holding is frozen.
+    /// \[f\] whether or not the holding is frozen.
     #[serde(rename = "is-frozen")]
     pub is_frozen: bool,
 }
 
-
-
 impl AlgorandMsgpack for AssetHolding {
-    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
 }
 
 impl AssetHolding {

@@ -9,37 +9,28 @@
  */
 
 use crate::models;
+use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
-use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
-
-
-
-
 
 /// Encoded block object.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GetBlock200Response {
-        /// Block header data.
+    /// Block header data.
     #[serde(rename = "block")]
     pub block: serde_json::Value,
-        /// Optional certificate object. This is only included when the format is set to message pack.
+    /// Optional certificate object. This is only included when the format is set to message pack.
     #[serde(rename = "cert", skip_serializing_if = "Option::is_none")]
     pub cert: Option<serde_json::Value>,
 }
 
-
-
 impl AlgorandMsgpack for GetBlock200Response {
-    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
 }
 
 impl GetBlock200Response {
     /// Constructor for GetBlock200Response
     pub fn new(block: serde_json::Value) -> GetBlock200Response {
-        GetBlock200Response {
-            block,
-            cert: None,
-        }
+        GetBlock200Response { block, cert: None }
     }
 
     /// Encode this struct to msgpack bytes using AlgorandMsgpack trait

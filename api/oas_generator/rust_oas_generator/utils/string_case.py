@@ -8,7 +8,7 @@ with additional Rust-specific naming conventions.
 import re
 
 
-def camelcase(string):
+def camelcase(string: object) -> str:
     """Convert string into camel case.
 
     Args:
@@ -18,11 +18,12 @@ def camelcase(string):
         string: Camel case string.
 
     """
-    if string == "":
-        return string
+    string_val = str(string)
+    if string_val == "":
+        return string_val
 
-    string = string.replace("_", "-")
-    lst = string.split("-")
+    string_val = string_val.replace("_", "-")
+    lst = string_val.split("-")
     for i in range(len(lst)):
         if i == 0:
             continue
@@ -31,7 +32,7 @@ def camelcase(string):
     return "".join(lst)
 
 
-def capitalcase(string):
+def capitalcase(string: object) -> str:
     """Convert string into capital case.
     First letters will be uppercase.
 
@@ -48,7 +49,7 @@ def capitalcase(string):
     return uppercase(string[0]) + string[1:]
 
 
-def constcase(string):
+def constcase(string: object) -> str:
     """Convert string into upper snake case.
     Join punctuation with underscore and convert letters into uppercase.
 
@@ -62,7 +63,7 @@ def constcase(string):
     return uppercase(snakecase(string))
 
 
-def lowercase(string):
+def lowercase(string: object) -> str:
     """Convert string into lower case.
 
     Args:
@@ -75,7 +76,7 @@ def lowercase(string):
     return str(string).lower()
 
 
-def pascalcase(string):
+def pascalcase(string: object) -> str:
     """Convert string into pascal case.
 
     Args:
@@ -88,7 +89,7 @@ def pascalcase(string):
     return capitalcase(camelcase(string))
 
 
-def snakecase(string):
+def snakecase(string: object) -> str:
     """Convert string into snake case.
     Join punctuation with underscore
 
@@ -103,11 +104,13 @@ def snakecase(string):
     if not string:
         return string
     return lowercase(string[0]) + re.sub(
-        r"[A-Z]", lambda matched: "_" + lowercase(matched.group(0)), string[1:],
+        r"[A-Z]",
+        lambda matched: "_" + lowercase(matched.group(0)),
+        string[1:],
     )
 
 
-def spinalcase(string):
+def spinalcase(string: object) -> str:
     """Convert string into spinal case.
     Join punctuation with hyphen.
 
@@ -121,7 +124,7 @@ def spinalcase(string):
     return re.sub(r"_", "-", snakecase(string))
 
 
-def titlecase(string):
+def titlecase(string: object) -> str:
     """Convert string into sentence case.
     First letter capped while each punctuations is capitalised
     and joined with space.
@@ -136,7 +139,7 @@ def titlecase(string):
     return " ".join([capitalcase(word) for word in snakecase(string).split("_")])
 
 
-def trimcase(string):
+def trimcase(string: object) -> str:
     """Convert string into trimmed string.
 
     Args:
@@ -148,7 +151,7 @@ def trimcase(string):
     return str(string).strip()
 
 
-def uppercase(string):
+def uppercase(string: object) -> str:
     """Convert string into upper case.
 
     Args:
@@ -161,7 +164,7 @@ def uppercase(string):
     return str(string).upper()
 
 
-def alphanumcase(string):
+def alphanumcase(string: object) -> str:
     """Cuts all non-alphanumeric symbols,
     i.e. cuts all expect except 0-9, a-z and A-Z.
 
@@ -185,31 +188,21 @@ def rust_snake_case(name: str) -> str:
 
 def rust_pascal_case(name: str) -> str:
     """Convert string to PascalCase for Rust types (structs, enums, traits)."""
-    # Handle special cases that might not be properly handled by basic pascalcase
     if not name:
         return name
 
-    # Remove any non-alphanumeric characters except underscores and hyphens
-    # but preserve case boundaries
     name = re.sub(r"[^\w\-]", "_", str(name))
-
-    # Split on underscores, hyphens, and camelCase boundaries
-    # This regex finds boundaries between lowercase and uppercase letters
-    # Also handle numeric boundaries
     parts = re.split(
-        r"[-_]+|(?<=[a-z])(?=[A-Z])|(?<=[0-9])(?=[A-Z])|(?<=[A-Z])(?=[0-9])", name,
+        r"[-_]+|(?<=[a-z])(?=[A-Z])|(?<=[0-9])(?=[A-Z])|(?<=[A-Z])(?=[0-9])",
+        name,
     )
 
-    # Filter out empty parts and capitalize each part
-    # Special handling for parts that start with numbers or are all numbers
     capitalized_parts = []
     for part in parts:
         if part:
             if part.isdigit():
-                # Keep numeric parts as-is
                 capitalized_parts.append(part)
             elif part[0].isdigit():
-                # For parts starting with digits, capitalize only the letter part
                 digits = ""
                 letters = ""
                 for char in part:
@@ -222,7 +215,6 @@ def rust_pascal_case(name: str) -> str:
                 else:
                     capitalized_parts.append(digits)
             else:
-                # Regular capitalization for letter-only parts
                 capitalized_parts.append(part.capitalize())
 
     return "".join(capitalized_parts)
@@ -235,9 +227,7 @@ def rust_const_case(name: str) -> str:
 
 def normalize_rust_identifier(name: str) -> str:
     """Normalize name for Rust identifiers."""
-    # Remove special characters and ensure valid Rust identifier
     normalized = re.sub(r"[^a-zA-Z0-9_]", "_", str(name))
-    # Ensure doesn't start with number
     if normalized and normalized[0].isdigit():
         normalized = f"_{normalized}"
     return normalized
@@ -303,6 +293,4 @@ RUST_KEYWORDS = {
 
 def escape_rust_keyword(name: str) -> str:
     """Escape Rust keywords with r# prefix if necessary."""
-    if name in RUST_KEYWORDS:
-        return f"r#{name}"
-    return name
+    return f"r#{name}" if name in RUST_KEYWORDS else name

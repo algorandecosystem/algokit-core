@@ -1,14 +1,5 @@
-use algod_client::apis::{configuration::Configuration, transaction_params};
-use algod_client_tests::{LocalnetManager, ALGOD_CONFIG};
-use std::sync::OnceLock;
-
-/// Global configuration instance - idiomatic Rust pattern for shared test state
-static CONFIG: OnceLock<Configuration> = OnceLock::new();
-
-/// Get or initialize the algod client configuration
-fn get_config() -> &'static Configuration {
-    CONFIG.get_or_init(|| ALGOD_CONFIG.clone())
-}
+use algod_client::apis::AlgodClient;
+use algod_client_tests::{get_algod_client, LocalnetManager, ALGOD_CONFIG};
 
 #[tokio::test]
 async fn test_get_transaction_params() {
@@ -18,7 +9,7 @@ async fn test_get_transaction_params() {
         .expect("Failed to start localnet");
 
     // Call the transaction params endpoint
-    let result = transaction_params::transaction_params(get_config()).await;
+    let result = get_algod_client().transaction_params().await;
 
     // Verify the call succeeded
     assert!(
@@ -58,7 +49,8 @@ async fn test_transaction_params_error_handling() {
     let mut invalid_config = ALGOD_CONFIG.clone();
     invalid_config.base_path = "http://invalid-host:9999".to_string();
 
-    let result = transaction_params::transaction_params(&invalid_config).await;
+    let invalid_client = AlgodClient::new(invalid_config);
+    let result = invalid_client.transaction_params().await;
 
     // This should fail due to connection error
     assert!(result.is_err(), "Invalid host should result in error");

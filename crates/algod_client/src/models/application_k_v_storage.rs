@@ -11,32 +11,22 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
-
-
-
 use crate::models::AvmKeyValue;
 
 /// An application's global/local/box state.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ApplicationKvstorage {
-        /// Key-Value pairs representing application states.
+    /// Key-Value pairs representing application states.
     #[serde(rename = "kvs")]
     pub kvs: Vec<AvmKeyValue>,
-        /// The address of the account associated with the local state.
+    /// The address of the account associated with the local state.
     #[serde(rename = "account", skip_serializing_if = "Option::is_none")]
     pub account: Option<String>,
 }
 
-
-
-
 impl ApplicationKvstorage {
     /// Constructor for ApplicationKvstorage
     pub fn new(kvs: Vec<AvmKeyValue>) -> ApplicationKvstorage {
-        ApplicationKvstorage {
-            kvs,
-            account: None,
-        }
+        ApplicationKvstorage { kvs, account: None }
     }
-
 }

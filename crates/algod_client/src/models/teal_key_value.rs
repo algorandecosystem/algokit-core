@@ -11,9 +11,6 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
-
-
-
 use crate::models::TealValue;
 
 /// Represents a key-value pair in an application store.
@@ -25,16 +22,9 @@ pub struct TealKeyValue {
     pub value: TealValue,
 }
 
-
-
-
 impl TealKeyValue {
     /// Constructor for TealKeyValue
     pub fn new(key: String, value: TealValue) -> TealKeyValue {
-        TealKeyValue {
-            key,
-            value,
-        }
+        TealKeyValue { key, value }
     }
-
 }

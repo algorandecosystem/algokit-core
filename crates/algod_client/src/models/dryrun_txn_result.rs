@@ -11,30 +11,21 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
-
-
-
-
-
-
-
-
-
-
-
-
+use crate::models::AccountStateDelta;
 use crate::models::DryrunState;
 use crate::models::StateDelta;
-use crate::models::AccountStateDelta;
 
 /// DryrunTxnResult contains any LogicSig or ApplicationCall program debug information and state updates from a dryrun.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct DryrunTxnResult {
-        /// Disassembled program line by line.
+    /// Disassembled program line by line.
     #[serde(rename = "disassembly")]
     pub disassembly: Vec<String>,
-        /// Disassembled lsig program line by line.
-    #[serde(rename = "logic-sig-disassembly", skip_serializing_if = "Option::is_none")]
+    /// Disassembled lsig program line by line.
+    #[serde(
+        rename = "logic-sig-disassembly",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub logic_sig_disassembly: Option<Vec<String>>,
     #[serde(rename = "logic-sig-trace", skip_serializing_if = "Option::is_none")]
     pub logic_sig_trace: Option<Vec<DryrunState>>,
@@ -50,16 +41,13 @@ pub struct DryrunTxnResult {
     pub local_deltas: Option<Vec<AccountStateDelta>>,
     #[serde(rename = "logs", skip_serializing_if = "Option::is_none")]
     pub logs: Option<Vec<String>>,
-        /// Budget added during execution of app call transaction.
+    /// Budget added during execution of app call transaction.
     #[serde(rename = "budget-added", skip_serializing_if = "Option::is_none")]
     pub budget_added: Option<i32>,
-        /// Budget consumed during execution of app call transaction.
+    /// Budget consumed during execution of app call transaction.
     #[serde(rename = "budget-consumed", skip_serializing_if = "Option::is_none")]
     pub budget_consumed: Option<i32>,
 }
-
-
-
 
 impl DryrunTxnResult {
     /// Constructor for DryrunTxnResult
@@ -78,5 +66,4 @@ impl DryrunTxnResult {
             budget_consumed: None,
         }
     }
-
 }

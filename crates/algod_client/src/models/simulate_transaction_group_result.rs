@@ -11,40 +11,36 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
-
-
-
-
-
-
-
 use crate::models::SimulateTransactionResult;
 use crate::models::SimulateUnnamedResourcesAccessed;
 
 /// Simulation result for an atomic transaction group
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SimulateTransactionGroupResult {
-        /// Simulation result for individual transactions
+    /// Simulation result for individual transactions
     #[serde(rename = "txn-results")]
     pub txn_results: Vec<SimulateTransactionResult>,
-        /// If present, indicates that the transaction group failed and specifies why that happened
+    /// If present, indicates that the transaction group failed and specifies why that happened
     #[serde(rename = "failure-message", skip_serializing_if = "Option::is_none")]
     pub failure_message: Option<String>,
-        /// If present, indicates which transaction in this group caused the failure. This array represents the path to the failing transaction. Indexes are zero based, the first element indicates the top-level transaction, and successive elements indicate deeper inner transactions.
+    /// If present, indicates which transaction in this group caused the failure. This array represents the path to the failing transaction. Indexes are zero based, the first element indicates the top-level transaction, and successive elements indicate deeper inner transactions.
     #[serde(rename = "failed-at", skip_serializing_if = "Option::is_none")]
     pub failed_at: Option<Vec<i32>>,
-        /// Total budget added during execution of app calls in the transaction group.
+    /// Total budget added during execution of app calls in the transaction group.
     #[serde(rename = "app-budget-added", skip_serializing_if = "Option::is_none")]
     pub app_budget_added: Option<i32>,
-        /// Total budget consumed during execution of app calls in the transaction group.
-    #[serde(rename = "app-budget-consumed", skip_serializing_if = "Option::is_none")]
+    /// Total budget consumed during execution of app calls in the transaction group.
+    #[serde(
+        rename = "app-budget-consumed",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub app_budget_consumed: Option<i32>,
-    #[serde(rename = "unnamed-resources-accessed", skip_serializing_if = "Option::is_none")]
+    #[serde(
+        rename = "unnamed-resources-accessed",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub unnamed_resources_accessed: Option<SimulateUnnamedResourcesAccessed>,
 }
-
-
-
 
 impl SimulateTransactionGroupResult {
     /// Constructor for SimulateTransactionGroupResult
@@ -58,5 +54,4 @@ impl SimulateTransactionGroupResult {
             unnamed_resources_accessed: None,
         }
     }
-
 }

@@ -8,7 +8,7 @@ needed to generate Rust API clients.
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 from rust_oas_generator.utils.string_case import (
     escape_rust_keyword,
@@ -34,9 +34,9 @@ def normalize_name(name: str) -> str:
 
 
 def rust_type_from_openapi(
-    schema: Dict[str, Any],
-    schemas: Dict[str, Any],
-    visited: set = None,
+    schema: dict[str, Any],
+    schemas: dict[str, Any],
+    visited: set[str] | None = None,
 ) -> str:
     """Convert OpenAPI schema type to Rust type."""
     if visited is None:
@@ -45,16 +45,11 @@ def rust_type_from_openapi(
     if "$ref" in schema:
         ref_name = schema["$ref"].split("/")[-1]
         if ref_name in visited:
-            # Circular reference, return the type name
             return pascal_case(ref_name)
+
         visited.add(ref_name)
         if ref_name in schemas:
-            # For named schemas, return the schema name directly instead of resolving the schema
-            # This prevents object schemas from falling back to serde_json::Value
-            # Handle special case for "Box" which conflicts with Rust's std::boxed::Box
-            if ref_name == "Box":
-                return "ModelBox"
-            return pascal_case(ref_name)
+            return "ModelBox" if ref_name == "Box" else pascal_case(ref_name)
         return pascal_case(ref_name)
 
     schema_type = schema.get("type", "string")
@@ -63,9 +58,9 @@ def rust_type_from_openapi(
     type_mapping = {
         "string": {
             None: "String",
-            "date": "String",  # Could be chrono::NaiveDate
-            "date-time": "String",  # Could be chrono::DateTime
-            "byte": "String",  # Base64 encoded
+            "date": "String",
+            "date-time": "String",
+            "byte": "String",
             "binary": "Vec<u8>",
         },
         "integer": {
@@ -82,7 +77,7 @@ def rust_type_from_openapi(
             None: "bool",
         },
         "object": {
-            None: "serde_json::Value",  # Generic object
+            None: "serde_json::Value",
         },
     }
 
@@ -90,46 +85,36 @@ def rust_type_from_openapi(
         items_type = rust_type_from_openapi(schema.get("items", {}), schemas, visited)
         return f"Vec<{items_type}>"
 
-    return type_mapping.get(schema_type, {}).get(schema_format, "String")
+    type_formats = type_mapping.get(schema_type, {})
+    return type_formats.get(schema_format, "String") if isinstance(type_formats, dict) else "String"
 
 
-def detect_msgpack_field(prop_data: Dict[str, Any]) -> bool:
+def detect_msgpack_field(prop_data: dict[str, Any]) -> bool:
     """Detect if a property should use msgpack/base64 encoding."""
-    # Check format
     if prop_data.get("format") == "byte":
         return True
 
-    # Check description for base64 mention
     description = prop_data.get("description", "").lower()
     if "base64" in description:
         return True
 
-    # Check vendor extension
-    if prop_data.get("x-msgpack-encoding"):
-        return True
-
-    return False
+    return bool(prop_data.get("x-msgpack-encoding"))
 
 
-def detect_msgpack_support_for_operation(operation_data: Dict[str, Any]) -> bool:
-    """Detect if an operation supports msgpack content type or binary data transmission."""
-    # Check request body content types
+def detect_msgpack_support_for_operation(operation_data: dict[str, Any]) -> bool:
+    """Detect if an operation supports msgpack content type or binary data."""
     request_body = operation_data.get("requestBody", {})
     content = request_body.get("content", {})
 
-    # Explicit msgpack support
     if "application/msgpack" in content:
         return True
 
-    # Binary endpoints (like raw transactions) should also use binary transmission
     if "application/x-binary" in content:
         binary_content = content["application/x-binary"]
         schema = binary_content.get("schema", {})
-        # If it's binary format, treat it as msgpack-compatible for raw data transmission
         if schema.get("format") == "binary":
             return True
 
-    # Check response content types
     responses = operation_data.get("responses", {})
     for response_data in responses.values():
         content = response_data.get("content", {})
@@ -140,37 +125,34 @@ def detect_msgpack_support_for_operation(operation_data: Dict[str, Any]) -> bool
 
 
 def should_implement_algokit_msgpack(
-    schema_data: Dict[str, Any], operation_msgpack_support: bool = False
+    schema_data: dict[str, Any],
+    *,
+    operation_msgpack_support: bool = False,
 ) -> bool:
     """Determine if a schema should implement AlgorandMsgpack trait."""
-    # If it's a signed transaction type
     if schema_data.get("x-algokit-signed-txn", False):
         return True
 
-    # If any properties have signed transaction marker
     properties = schema_data.get("properties", {})
     for prop_data in properties.values():
         if prop_data.get("x-algokit-signed-txn", False):
             return True
-        # Check array items
+
         if prop_data.get("type") == "array":
             items = prop_data.get("items", {})
             if items.get("x-algokit-signed-txn", False):
                 return True
 
-    # If this is a response/request model for msgpack operations
     return bool(operation_msgpack_support)
 
 
 def rust_type_with_msgpack(
-    schema: Dict[str, Any],
-    schemas: Dict[str, Any],
-    visited: set = None,
+    schema: dict[str, Any],
+    schemas: dict[str, Any],
+    visited: set[str] | None = None,
 ) -> str:
     """Convert OpenAPI schema type to Rust type with msgpack considerations."""
-    if detect_msgpack_field(schema):
-        return "Vec<u8>"
-    return rust_type_from_openapi(schema, schemas, visited)
+    return "Vec<u8>" if detect_msgpack_field(schema) else rust_type_from_openapi(schema, schemas, visited)
 
 
 @dataclass
@@ -178,14 +160,14 @@ class Parameter:
     """Represents an OpenAPI parameter."""
 
     name: str
-    param_type: str  # query, path, header, cookie
+    param_type: str
     rust_type: str
     required: bool
-    description: Optional[str] = None
+    description: str | None = None
     rust_name: str = field(init=False)
     rust_field_name: str = field(init=False)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.rust_name = snake_case(self.name)
         self.rust_field_name = escape_rust_keyword(self.rust_name)
 
@@ -196,8 +178,8 @@ class Response:
 
     status_code: str
     description: str
-    rust_type: Optional[str] = None
-    content_types: List[str] = field(default_factory=list)
+    rust_type: str | None = None
+    content_types: list[str] = field(default_factory=list)
     supports_msgpack: bool = False
 
 
@@ -208,18 +190,18 @@ class Operation:
     operation_id: str
     method: str
     path: str
-    summary: Optional[str]
-    description: Optional[str]
-    parameters: List[Parameter]
-    request_body: Optional[Dict[str, Any]]
-    responses: Dict[str, Response]
-    tags: List[str]
+    summary: str | None
+    description: str | None
+    parameters: list[Parameter]
+    request_body: dict[str, Any] | None
+    responses: dict[str, Response]
+    tags: list[str]
     rust_function_name: str = field(init=False)
     rust_error_enum: str = field(init=False)
     supports_msgpack: bool = False
     request_body_supports_msgpack: bool = False
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.rust_function_name = snake_case(self.operation_id)
         self.rust_error_enum = f"{pascal_case(self.operation_id)}Error"
 
@@ -231,33 +213,30 @@ class Property:
     name: str
     rust_type: str
     required: bool
-    description: Optional[str] = None
+    description: str | None = None
     is_base64_encoded: bool = False
-    vendor_extensions: List[Tuple[str, Any]] = field(default_factory=list)
-    format: Optional[str] = None
-    items: Optional["Property"] = None
+    vendor_extensions: list[tuple[str, Any]] = field(default_factory=list)
+    format: str | None = None
+    items: "Property | None" = None
     rust_name: str = field(init=False)
     rust_field_name: str = field(init=False)
     rust_type_with_msgpack: str = field(init=False)
     is_msgpack_field: bool = field(init=False)
     is_signed_transaction: bool = field(init=False)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.rust_name = snake_case(self.name)
         self.rust_field_name = escape_rust_keyword(self.rust_name)
-        self.rust_type_with_msgpack = (
-            "Vec<u8>" if self.is_base64_encoded else self.rust_type
-        )
+        self.rust_type_with_msgpack = "Vec<u8>" if self.is_base64_encoded else self.rust_type
         self.is_msgpack_field = self.is_base64_encoded
-        # Check if this property or its items have signed transaction extension
+
         self.is_signed_transaction = any(
-            "x-algokit-signed-txn" in ext_name and ext_value
-            for ext_name, ext_value in self.vendor_extensions
+            "x-algokit-signed-txn" in ext_name and ext_value for ext_name, ext_value in self.vendor_extensions
         )
+
         if self.items and hasattr(self.items, "vendor_extensions"):
             self.is_signed_transaction = self.is_signed_transaction or any(
-                "x-algokit-signed-txn" in ext_name and ext_value
-                for ext_name, ext_value in self.items.vendor_extensions
+                "x-algokit-signed-txn" in ext_name and ext_value for ext_name, ext_value in self.items.vendor_extensions
             )
 
 
@@ -267,58 +246,51 @@ class Schema:
 
     name: str
     schema_type: str
-    description: Optional[str]
-    properties: List[Property]
-    required_fields: List[str]
-    vendor_extensions: Dict[str, Any] = field(default_factory=dict)
+    description: str | None
+    properties: list[Property]
+    required_fields: list[str]
+    vendor_extensions: dict[str, Any] = field(default_factory=dict)
     rust_struct_name: str = field(init=False)
     has_msgpack_fields: bool = field(init=False)
     has_required_fields: bool = field(init=False)
     implements_algokit_msgpack: bool = field(init=False)
     has_signed_transaction_fields: bool = field(init=False)
 
-    def __post_init__(self):
-        # Handle special case for "Box" which conflicts with Rust's std::boxed::Box
-        if self.name == "Box":
-            self.rust_struct_name = "ModelBox"
-        else:
-            self.rust_struct_name = pascal_case(self.name)
-        self.has_msgpack_fields = any(
-            prop.is_base64_encoded for prop in self.properties
-        )
+    def __post_init__(self) -> None:
+        self.rust_struct_name = "ModelBox" if self.name == "Box" else pascal_case(self.name)
+        self.has_msgpack_fields = any(prop.is_base64_encoded for prop in self.properties)
         self.has_required_fields = len(self.required_fields) > 0
-        self.has_signed_transaction_fields = any(
-            prop.is_signed_transaction for prop in self.properties
-        )
+        self.has_signed_transaction_fields = any(prop.is_signed_transaction for prop in self.properties)
 
 
 @dataclass
 class ParsedSpec:
     """Represents a parsed OpenAPI specification."""
 
-    info: Dict[str, Any]
-    servers: List[Dict[str, Any]]
-    operations: List[Operation]
-    schemas: Dict[str, Schema]
-    content_types: List[str]
+    info: dict[str, Any]
+    servers: list[dict[str, Any]]
+    operations: list[Operation]
+    schemas: dict[str, Schema]
+    content_types: list[str]
     has_msgpack_operations: bool = False
 
 
 class OASParser:
     """Parser for OpenAPI 3.x specifications."""
 
-    def __init__(self):
-        self.spec_data: Optional[Dict[str, Any]] = None
-        self.schemas: Dict[str, Any] = {}
-        self.msgpack_operations: List[str] = []
+    def __init__(self) -> None:
+        self.spec_data: dict[str, Any] | None = None
+        self.schemas: dict[str, Any] = {}
+        self.msgpack_operations: list[str] = []
 
-    def parse_file(self, file_path: Union[str, Path]) -> ParsedSpec:
+    def parse_file(self, file_path: str | Path) -> ParsedSpec:
         """Parse OpenAPI specification from file."""
-        with open(file_path, encoding="utf-8") as f:
+        path = Path(file_path)
+        with path.open(encoding="utf-8") as f:
             self.spec_data = json.load(f)
         return self._parse_spec()
 
-    def parse_dict(self, spec_dict: Dict[str, Any]) -> ParsedSpec:
+    def parse_dict(self, spec_dict: dict[str, Any]) -> ParsedSpec:
         """Parse OpenAPI specification from dictionary."""
         self.spec_data = spec_dict
         return self._parse_spec()
@@ -326,23 +298,19 @@ class OASParser:
     def _parse_spec(self) -> ParsedSpec:
         """Parse the loaded specification."""
         if not self.spec_data:
-            raise ValueError("No specification data loaded")
+            msg = "No specification data loaded"
+            raise ValueError(msg)
 
-        # Extract schemas first for type resolution
         self.schemas = self.spec_data.get("components", {}).get("schemas", {})
 
-        # Parse main components
         info = self.spec_data.get("info", {})
         servers = self.spec_data.get("servers", [])
         operations = self._parse_operations()
         schemas = self._parse_schemas()
         content_types = self._extract_content_types()
 
-        # Check if any operations support msgpack
         has_msgpack_operations = len(self.msgpack_operations) > 0
-
-        # Update schemas to implement AlgorandMsgpack if needed
-        self._update_schemas_for_msgpack(schemas, has_msgpack_operations)
+        self._update_schemas_for_msgpack(schemas, has_msgpack_operations=has_msgpack_operations)
 
         return ParsedSpec(
             info=info,
@@ -354,160 +322,104 @@ class OASParser:
         )
 
     def _update_schemas_for_msgpack(
-        self, schemas: Dict[str, Schema], has_msgpack_operations: bool
-    ):
+        self,
+        schemas: dict[str, Schema],
+        *,
+        has_msgpack_operations: bool,
+    ) -> None:
         """Update schemas to implement AlgorandMsgpack trait when appropriate."""
-        # Collect request body types from msgpack operations
-        msgpack_request_types = set()
-        msgpack_response_types = set()
-        if has_msgpack_operations:
+        msgpack_request_types: set[str] = set()
+        msgpack_response_types: set[str] = set()
+
+        if has_msgpack_operations and self.spec_data:
             for operation in self.spec_data.get("paths", {}).values():
                 for method_data in operation.values():
-                    if (
-                        isinstance(method_data, dict)
-                        and method_data.get("operationId") in self.msgpack_operations
-                    ):
-                        # Collect request body types
-                        request_body = method_data.get("requestBody", {})
-                        if "application/msgpack" in request_body.get("content", {}):
-                            content = request_body["content"]["application/msgpack"]
-                            schema = content.get("schema", {})
-                            if "$ref" in schema:
-                                ref_name = schema["$ref"].split("/")[-1]
-                                msgpack_request_types.add(ref_name)
+                    if isinstance(method_data, dict) and method_data.get("operationId") in self.msgpack_operations:
+                        self._collect_msgpack_types(
+                            method_data,
+                            msgpack_request_types,
+                            msgpack_response_types,
+                        )
 
-                        # Collect response types
-                        responses = method_data.get("responses", {})
-                        for status_code, response_data in responses.items():
-                            if status_code.startswith("2"):  # Success responses
-                                content = response_data.get("content", {})
-                                if "application/msgpack" in content:
-                                    msgpack_content = content["application/msgpack"]
-                                    schema = msgpack_content.get("schema", {})
-                                    if "$ref" in schema:
-                                        ref_name = schema["$ref"].split("/")[-1]
-                                        msgpack_response_types.add(ref_name)
-
-        # Get all root msgpack types (direct references)
         all_msgpack_types = msgpack_request_types | msgpack_response_types
-
-        # Recursively find all nested dependencies
-        def find_nested_dependencies(type_name: str, visited: set = None) -> set:
-            if visited is None:
-                visited = set()
-
-            if type_name in visited:
-                return set()
-
-            visited.add(type_name)
-            dependencies = {type_name}
-
-            # Get the raw schema for this type
-            raw_schema = self.schemas.get(type_name, {})
-
-            # Look for $ref in properties
-            properties = raw_schema.get("properties", {})
-            for prop_data in properties.values():
-                deps = self._extract_schema_references(prop_data, visited.copy())
-                dependencies.update(deps)
-
-            # Look for $ref in oneOf, anyOf, allOf
-            for key in ["oneOf", "anyOf", "allOf"]:
-                if key in raw_schema:
-                    for item in raw_schema[key]:
-                        deps = self._extract_schema_references(item, visited.copy())
-                        dependencies.update(deps)
-
-            return dependencies
-
-        # Collect all dependencies recursively
         all_required_msgpack_types = set()
+
         for root_type in all_msgpack_types:
-            dependencies = find_nested_dependencies(root_type)
+            dependencies = self._find_nested_dependencies(root_type)
             all_required_msgpack_types.update(dependencies)
 
         for schema_name, schema in schemas.items():
             raw_schema = self.schemas.get(schema_name, {})
 
-            # Check if this schema should implement AlgorandMsgpack
-            is_response_model = schema_name.endswith("Response")
-            is_request_model = schema_name in msgpack_request_types
-            is_msgpack_response_model = schema_name in msgpack_response_types
-            is_nested_dependency = schema_name in all_required_msgpack_types
-
             should_implement = should_implement_algokit_msgpack(
                 raw_schema,
-                has_msgpack_operations
-                and (
-                    is_response_model
-                    or is_request_model
-                    or is_msgpack_response_model
-                    or is_nested_dependency
+                operation_msgpack_support=has_msgpack_operations
+                and self._should_implement_msgpack_for_schema(
+                    schema_name, msgpack_request_types, msgpack_response_types, all_required_msgpack_types
                 ),
             )
 
             schema.implements_algokit_msgpack = should_implement
 
-    def _extract_schema_references(
-        self, schema_item: Dict[str, Any], visited: set = None
-    ) -> set:
-        """Extract all schema references from a schema item (property, oneOf item, etc.)"""
+    def _collect_msgpack_types(
+        self,
+        method_data: dict[str, Any],
+        request_types: set[str],
+        response_types: set[str],
+    ) -> None:
+        """Collect msgpack request and response types from method data."""
+        request_body = method_data.get("requestBody", {})
+        if "application/msgpack" in request_body.get("content", {}):
+            content = request_body["content"]["application/msgpack"]
+            schema = content.get("schema", {})
+            if "$ref" in schema:
+                ref_name = schema["$ref"].split("/")[-1]
+                request_types.add(ref_name)
+
+        responses = method_data.get("responses", {})
+        for status_code, response_data in responses.items():
+            if status_code.startswith("2"):
+                content = response_data.get("content", {})
+                if "application/msgpack" in content:
+                    msgpack_content = content["application/msgpack"]
+                    schema = msgpack_content.get("schema", {})
+                    if "$ref" in schema:
+                        ref_name = schema["$ref"].split("/")[-1]
+                        response_types.add(ref_name)
+
+    def _should_implement_msgpack_for_schema(
+        self, schema_name: str, request_types: set[str], response_types: set[str], required_types: set[str]
+    ) -> bool:
+        """Check if schema should implement msgpack based on its usage."""
+        is_response_model = schema_name.endswith("Response")
+        is_request_model = schema_name in request_types
+        is_msgpack_response_model = schema_name in response_types
+        is_nested_dependency = schema_name in required_types
+
+        return is_response_model or is_request_model or is_msgpack_response_model or is_nested_dependency
+
+    def _find_nested_dependencies(
+        self,
+        type_name: str,
+        visited: set[str] | None = None,
+    ) -> set[str]:
+        """Find all nested dependencies recursively."""
         if visited is None:
             visited = set()
 
-        references = set()
-
-        # Direct $ref
-        if "$ref" in schema_item:
-            ref_name = schema_item["$ref"].split("/")[-1]
-            if ref_name not in visited:
-                references.add(ref_name)
-                # Recursively find dependencies of this reference
-                nested_deps = self._find_nested_dependencies_helper(
-                    ref_name, visited.copy()
-                )
-                references.update(nested_deps)
-
-        # Array items
-        if schema_item.get("type") == "array" and "items" in schema_item:
-            item_refs = self._extract_schema_references(
-                schema_item["items"], visited.copy()
-            )
-            references.update(item_refs)
-
-        # Object properties
-        if "properties" in schema_item:
-            for prop_data in schema_item["properties"].values():
-                prop_refs = self._extract_schema_references(prop_data, visited.copy())
-                references.update(prop_refs)
-
-        # oneOf, anyOf, allOf
-        for key in ["oneOf", "anyOf", "allOf"]:
-            if key in schema_item:
-                for item in schema_item[key]:
-                    item_refs = self._extract_schema_references(item, visited.copy())
-                    references.update(item_refs)
-
-        return references
-
-    def _find_nested_dependencies_helper(self, type_name: str, visited: set) -> set:
-        """Helper method to find nested dependencies"""
         if type_name in visited:
             return set()
 
         visited.add(type_name)
-        dependencies = set()
+        dependencies = {type_name}
 
-        # Get the raw schema for this type
         raw_schema = self.schemas.get(type_name, {})
-
-        # Look for $ref in properties
         properties = raw_schema.get("properties", {})
+
         for prop_data in properties.values():
             deps = self._extract_schema_references(prop_data, visited.copy())
             dependencies.update(deps)
 
-        # Look for $ref in oneOf, anyOf, allOf
         for key in ["oneOf", "anyOf", "allOf"]:
             if key in raw_schema:
                 for item in raw_schema[key]:
@@ -516,22 +428,80 @@ class OASParser:
 
         return dependencies
 
-    def _parse_operations(self) -> List[Operation]:
+    def _extract_schema_references(
+        self,
+        schema_item: dict[str, Any],
+        visited: set[str] | None = None,
+    ) -> set[str]:
+        """Extract all schema references from a schema item."""
+        if visited is None:
+            visited = set()
+
+        references = set()
+
+        if "$ref" in schema_item:
+            ref_name = schema_item["$ref"].split("/")[-1]
+            if ref_name not in visited:
+                references.add(ref_name)
+                nested_deps = self._find_nested_dependencies_helper(
+                    ref_name,
+                    visited.copy(),
+                )
+                references.update(nested_deps)
+
+        if schema_item.get("type") == "array" and "items" in schema_item:
+            item_refs = self._extract_schema_references(
+                schema_item["items"],
+                visited.copy(),
+            )
+            references.update(item_refs)
+
+        if "properties" in schema_item:
+            for prop_data in schema_item["properties"].values():
+                prop_refs = self._extract_schema_references(prop_data, visited.copy())
+                references.update(prop_refs)
+
+        for key in ["oneOf", "anyOf", "allOf"]:
+            if key in schema_item:
+                for item in schema_item[key]:
+                    item_refs = self._extract_schema_references(item, visited.copy())
+                    references.update(item_refs)
+
+        return references
+
+    def _find_nested_dependencies_helper(
+        self,
+        type_name: str,
+        visited: set[str],
+    ) -> set[str]:
+        """Helper method to find nested dependencies."""
+        if type_name in visited:
+            return set()
+
+        visited.add(type_name)
+        dependencies = set()
+
+        raw_schema = self.schemas.get(type_name, {})
+        properties = raw_schema.get("properties", {})
+
+        for prop_data in properties.values():
+            deps = self._extract_schema_references(prop_data, visited.copy())
+            dependencies.update(deps)
+
+        return dependencies
+
+    def _parse_operations(self) -> list[Operation]:
         """Parse all operations from paths."""
-        operations = []
+        operations: list[Operation] = []
+        if not self.spec_data:
+            return operations
         paths = self.spec_data.get("paths", {})
+
+        http_methods = {"get", "post", "put", "delete", "patch", "head", "options"}
 
         for path, path_item in paths.items():
             for method, operation_data in path_item.items():
-                if method.lower() in [
-                    "get",
-                    "post",
-                    "put",
-                    "delete",
-                    "patch",
-                    "head",
-                    "options",
-                ]:
+                if method.lower() in http_methods:
                     operation = self._parse_operation(
                         path,
                         method.upper(),
@@ -540,7 +510,6 @@ class OASParser:
                     if operation:
                         operations.append(operation)
 
-                        # Track operations that support msgpack
                         if operation.supports_msgpack:
                             self.msgpack_operations.append(operation.operation_id)
 
@@ -550,41 +519,24 @@ class OASParser:
         self,
         path: str,
         method: str,
-        operation_data: Dict[str, Any],
-    ) -> Optional[Operation]:
+        operation_data: dict[str, Any],
+    ) -> Operation | None:
         """Parse a single operation."""
         operation_id = operation_data.get("operationId")
         if not operation_id:
             return None
 
-        # Check if operation supports msgpack
         supports_msgpack = detect_msgpack_support_for_operation(operation_data)
+        request_body_supports_msgpack = self._check_request_body_msgpack_support(
+            operation_data,
+        )
 
-        # Check if request body supports msgpack or binary transmission
-        request_body_supports_msgpack = False
-        request_body = operation_data.get("requestBody", {})
-        content = request_body.get("content", {})
-
-        # Explicit msgpack support
-        if "application/msgpack" in content:
-            request_body_supports_msgpack = True
-
-        # Binary endpoints (like raw transactions) should also use binary transmission
-        elif "application/x-binary" in content:
-            binary_content = content["application/x-binary"]
-            schema = binary_content.get("schema", {})
-            # If it's binary format, treat it as msgpack-compatible for raw data transmission
-            if schema.get("format") == "binary":
-                request_body_supports_msgpack = True
-
-        # Parse parameters
         parameters = []
         for param_data in operation_data.get("parameters", []):
             param = self._parse_parameter(param_data)
             if param:
                 parameters.append(param)
 
-        # Parse responses
         responses = {}
         for status_code, response_data in operation_data.get("responses", {}).items():
             response = self._parse_response(status_code, response_data, operation_id)
@@ -604,15 +556,29 @@ class OASParser:
             request_body_supports_msgpack=request_body_supports_msgpack,
         )
 
-    def _parse_parameter(self, param_data: Dict[str, Any]) -> Optional[Parameter]:
+    def _check_request_body_msgpack_support(
+        self,
+        operation_data: dict[str, Any],
+    ) -> bool:
+        """Check if request body supports msgpack or binary transmission."""
+        request_body = operation_data.get("requestBody", {})
+        content = request_body.get("content", {})
+
+        if "application/msgpack" in content:
+            return True
+
+        if "application/x-binary" in content:
+            binary_content = content["application/x-binary"]
+            schema = binary_content.get("schema", {})
+            format_value: str | None = schema.get("format")
+            return format_value == "binary"
+
+        return False
+
+    def _parse_parameter(self, param_data: dict[str, Any]) -> Parameter | None:
         """Parse a parameter."""
         if "$ref" in param_data:
-            # Resolve reference
-            ref_path = param_data["$ref"].split("/")
-            resolved = self.spec_data
-            for part in ref_path[1:]:  # Skip '#'
-                resolved = resolved.get(part, {})
-            param_data = resolved
+            param_data = self._resolve_reference(param_data["$ref"])
 
         name = param_data.get("name")
         if not name:
@@ -629,10 +595,23 @@ class OASParser:
             description=param_data.get("description"),
         )
 
+    def _resolve_reference(self, ref: str) -> dict[str, Any]:
+        """Resolve a JSON reference."""
+        if not self.spec_data:
+            return {}
+
+        ref_path = ref.split("/")
+        resolved: dict[str, Any] | None = self.spec_data
+        for part in ref_path[1:]:  # Skip '#'
+            if resolved is None:
+                return {}
+            resolved = resolved.get(part)
+        return resolved or {}
+
     def _parse_response(
         self,
         status_code: str,
-        response_data: Dict[str, Any],
+        response_data: dict[str, Any],
         operation_id: str,
     ) -> Response:
         """Parse a response."""
@@ -640,29 +619,13 @@ class OASParser:
         content_types = list(content.keys())
         supports_msgpack = "application/msgpack" in content_types
 
-        # Determine Rust type from content
-        rust_type = None
-        if content_types:
-            # Use first content type for type determination
-            first_content = content[content_types[0]]
-            schema = first_content.get("schema", {})
-
-            # Check if this is an inline schema that should become a response model
-            if self._should_create_response_model(schema, status_code):
-                # Create a response model name
-                response_model_name = f"{operation_id}{status_code}Response"
-
-                # Create a schema for this response and add to schemas collection
-                self.schemas[response_model_name] = self._create_response_schema(
-                    response_model_name,
-                    schema,
-                    response_data.get("description", ""),
-                )
-
-                # Use the model name as the rust type
-                rust_type = pascal_case(response_model_name)
-            else:
-                rust_type = rust_type_from_openapi(schema, self.schemas, set())
+        rust_type = self._determine_response_rust_type(
+            content_types,
+            content,
+            status_code,
+            operation_id,
+            response_data,
+        )
 
         return Response(
             status_code=status_code,
@@ -672,44 +635,61 @@ class OASParser:
             supports_msgpack=supports_msgpack,
         )
 
+    def _determine_response_rust_type(
+        self,
+        content_types: list[str],
+        content: dict[str, Any],
+        status_code: str,
+        operation_id: str,
+        response_data: dict[str, Any],
+    ) -> str | None:
+        """Determine the Rust type for a response."""
+        if not content_types:
+            return None
+
+        first_content = content[content_types[0]]
+        schema = first_content.get("schema", {})
+
+        if self._should_create_response_model(schema, status_code):
+            response_model_name = f"{operation_id}{status_code}Response"
+
+            self.schemas[response_model_name] = self._create_response_schema(
+                response_model_name,
+                schema,
+                response_data.get("description", ""),
+            )
+
+            return pascal_case(response_model_name)
+
+        return rust_type_from_openapi(schema, self.schemas, set())
+
     def _should_create_response_model(
         self,
-        schema: Dict[str, Any],
+        schema: dict[str, Any],
         status_code: str,
     ) -> bool:
         """Determine if we should create a response model for this schema."""
-        # Create response models for:
-        # 1. Success responses (200-299) with object schemas
-        # 2. Inline schemas with properties (not just $ref)
-        if not status_code.startswith("2"):
+        if not status_code.startswith("2") or "$ref" in schema:
             return False
-
-        if "$ref" in schema:
-            return False  # Already a reference to existing schema
 
         if schema.get("type") == "object" and "properties" in schema:
             return True
 
-        # Also create for schemas with required fields or complex structure
-        if "required" in schema or "allOf" in schema or "oneOf" in schema:
-            return True
-
-        return False
+        return bool("required" in schema or "allOf" in schema or "oneOf" in schema)
 
     def _create_response_schema(
         self,
-        name: str,
-        schema: Dict[str, Any],
+        _name: str,
+        schema: dict[str, Any],
         description: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create a response schema from an inline schema."""
-        # Return the schema as-is but with a description
         response_schema = schema.copy()
         if description and "description" not in response_schema:
             response_schema["description"] = description
         return response_schema
 
-    def _parse_schemas(self) -> Dict[str, Schema]:
+    def _parse_schemas(self) -> dict[str, Schema]:
         """Parse all schemas."""
         schemas = {}
 
@@ -720,7 +700,7 @@ class OASParser:
 
         return schemas
 
-    def _parse_schema(self, name: str, schema_data: Dict[str, Any]) -> Optional[Schema]:
+    def _parse_schema(self, name: str, schema_data: dict[str, Any]) -> Schema | None:
         """Parse a single schema."""
         schema_type = schema_data.get("type", "object")
         properties_data = schema_data.get("properties", {})
@@ -783,22 +763,22 @@ class OASParser:
             vendor_extensions=vendor_extensions,
         )
 
-    def _extract_content_types(self) -> List[str]:
+    def _extract_content_types(self) -> list[str]:
         """Extract all content types used in the API."""
         content_types = set()
 
-        # Check operations for content types
+        if not self.spec_data:
+            return []
+
         for path_item in self.spec_data.get("paths", {}).values():
             for operation in path_item.values():
                 if isinstance(operation, dict):
-                    # Request body content types
                     request_body = operation.get("requestBody", {})
                     content = request_body.get("content", {})
                     content_types.update(content.keys())
 
-                    # Response content types
                     for response in operation.get("responses", {}).values():
                         response_content = response.get("content", {})
                         content_types.update(response_content.keys())
 
-        return sorted(list(content_types))
+        return sorted(content_types)

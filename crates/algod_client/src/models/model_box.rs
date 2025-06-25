@@ -12,39 +12,26 @@ use crate::models;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
-
-
-
-
-
 /// Box name and its content.
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ModelBox {
-        /// The round for which this information is relevant
+    /// The round for which this information is relevant
     #[serde(rename = "round")]
     pub round: i32,
-        /// \[name\] box name, base64 encoded
+    /// \[name\] box name, base64 encoded
     #[serde_as(as = "serde_with::base64::Base64")]
     #[serde(rename = "name")]
     pub name: Vec<u8>,
-        /// \[value\] box value, base64 encoded.
+    /// \[value\] box value, base64 encoded.
     #[serde_as(as = "serde_with::base64::Base64")]
     #[serde(rename = "value")]
     pub value: Vec<u8>,
 }
 
-
-
-
 impl ModelBox {
     /// Constructor for ModelBox
     pub fn new(round: i32, name: Vec<u8>, value: Vec<u8>) -> ModelBox {
-        ModelBox {
-            round,
-            name,
-            value,
-        }
+        ModelBox { round, name, value }
     }
-
 }

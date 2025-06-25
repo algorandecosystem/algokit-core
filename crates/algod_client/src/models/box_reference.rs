@@ -12,33 +12,22 @@ use crate::models;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
-
-
-
-
 /// References a box of an application.
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct BoxReference {
-        /// Application ID which this box belongs to
+    /// Application ID which this box belongs to
     #[serde(rename = "app")]
     pub app: i32,
-        /// Base64 encoded box name
+    /// Base64 encoded box name
     #[serde_as(as = "serde_with::base64::Base64")]
     #[serde(rename = "name")]
     pub name: Vec<u8>,
 }
 
-
-
-
 impl BoxReference {
     /// Constructor for BoxReference
     pub fn new(app: i32, name: Vec<u8>) -> BoxReference {
-        BoxReference {
-            app,
-            name,
-        }
+        BoxReference { app, name }
     }
-
 }

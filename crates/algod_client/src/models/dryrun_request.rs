@@ -9,16 +9,8 @@
  */
 
 use crate::models;
+use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
-use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
-
-
-
-
-
-
-
-
 
 use crate::models::Account;
 use crate::models::Application;
@@ -33,28 +25,34 @@ pub struct DryrunRequest {
     pub accounts: Vec<Account>,
     #[serde(rename = "apps")]
     pub apps: Vec<Application>,
-        /// ProtocolVersion specifies a specific version string to operate under, otherwise whatever the current protocol of the network this algod is running in.
+    /// ProtocolVersion specifies a specific version string to operate under, otherwise whatever the current protocol of the network this algod is running in.
     #[serde(rename = "protocol-version")]
     pub protocol_version: String,
-        /// Round is available to some TEAL scripts. Defaults to the current round on the network this algod is attached to.
+    /// Round is available to some TEAL scripts. Defaults to the current round on the network this algod is attached to.
     #[serde(rename = "round")]
     pub round: i32,
-        /// LatestTimestamp is available to some TEAL scripts. Defaults to the latest confirmed timestamp this algod is attached to.
+    /// LatestTimestamp is available to some TEAL scripts. Defaults to the latest confirmed timestamp this algod is attached to.
     #[serde(rename = "latest-timestamp")]
     pub latest_timestamp: i64,
     #[serde(rename = "sources")]
     pub sources: Vec<DryrunSource>,
 }
 
-
-
 impl AlgorandMsgpack for DryrunRequest {
-    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
 }
 
 impl DryrunRequest {
     /// Constructor for DryrunRequest
-    pub fn new(txns: Vec<AlgokitSignedTransaction>, accounts: Vec<Account>, apps: Vec<Application>, protocol_version: String, round: i32, latest_timestamp: i64, sources: Vec<DryrunSource>) -> DryrunRequest {
+    pub fn new(
+        txns: Vec<AlgokitSignedTransaction>,
+        accounts: Vec<Account>,
+        apps: Vec<Application>,
+        protocol_version: String,
+        round: i32,
+        latest_timestamp: i64,
+        sources: Vec<DryrunSource>,
+    ) -> DryrunRequest {
         DryrunRequest {
             txns,
             accounts,

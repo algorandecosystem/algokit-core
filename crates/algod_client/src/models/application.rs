@@ -9,37 +9,29 @@
  */
 
 use crate::models;
+use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
-use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
-
-
-
 
 use crate::models::ApplicationParams;
 
 /// Application index and its parameters
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Application {
-        /// \[appidx\] application index.
+    /// \[appidx\] application index.
     #[serde(rename = "id")]
     pub id: i32,
     #[serde(rename = "params")]
     pub params: ApplicationParams,
 }
 
-
-
 impl AlgorandMsgpack for Application {
-    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
 }
 
 impl Application {
     /// Constructor for Application
     pub fn new(id: i32, params: ApplicationParams) -> Application {
-        Application {
-            id,
-            params,
-        }
+        Application { id, params }
     }
 
     /// Encode this struct to msgpack bytes using AlgorandMsgpack trait

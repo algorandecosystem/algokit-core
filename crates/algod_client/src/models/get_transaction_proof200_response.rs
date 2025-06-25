@@ -9,51 +9,48 @@
  */
 
 use crate::models;
+use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
-use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
-
-
-
-
-
-
-
 
 /// Proof of transaction in a block.
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GetTransactionProof200Response {
-        /// Proof of transaction membership.
+    /// Proof of transaction membership.
     #[serde_as(as = "serde_with::base64::Base64")]
     #[serde(rename = "proof")]
     pub proof: Vec<u8>,
-        /// Hash of SignedTxnInBlock for verifying proof.
+    /// Hash of SignedTxnInBlock for verifying proof.
     #[serde_as(as = "serde_with::base64::Base64")]
     #[serde(rename = "stibhash")]
     pub stibhash: Vec<u8>,
-        /// Represents the depth of the tree that is being proven, i.e. the number of edges from a leaf to the root.
+    /// Represents the depth of the tree that is being proven, i.e. the number of edges from a leaf to the root.
     #[serde(rename = "treedepth")]
     pub treedepth: i32,
-        /// Index of the transaction in the block's payset.
+    /// Index of the transaction in the block's payset.
     #[serde(rename = "idx")]
     pub idx: i32,
-        /// The type of hash function used to create the proof, must be one of:
+    /// The type of hash function used to create the proof, must be one of:
     ///   * sha512_256
     ///   * sha256
     #[serde(rename = "hashtype")]
     pub hashtype: String,
 }
 
-
-
 impl AlgorandMsgpack for GetTransactionProof200Response {
-    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
 }
 
 impl GetTransactionProof200Response {
     /// Constructor for GetTransactionProof200Response
-    pub fn new(proof: Vec<u8>, stibhash: Vec<u8>, treedepth: i32, idx: i32, hashtype: String) -> GetTransactionProof200Response {
+    pub fn new(
+        proof: Vec<u8>,
+        stibhash: Vec<u8>,
+        treedepth: i32,
+        idx: i32,
+        hashtype: String,
+    ) -> GetTransactionProof200Response {
         GetTransactionProof200Response {
             proof,
             stibhash,

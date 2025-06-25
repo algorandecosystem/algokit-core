@@ -1,18 +1,8 @@
-use algod_client::apis::{configuration::Configuration, raw_transaction, transaction_params};
 use algod_client_tests::{
-    LocalnetManager, NetworkType, TestAccountConfig, TestAccountManager, ALGOD_CONFIG,
+    get_algod_client, LocalnetManager, NetworkType, TestAccountConfig, TestAccountManager,
 };
 use algokit_transact::{PaymentTransactionBuilder, Transaction, TransactionHeaderBuilder};
 use std::convert::TryInto;
-use std::sync::OnceLock;
-
-/// Global configuration instance - idiomatic Rust pattern for shared test state
-static CONFIG: OnceLock<Configuration> = OnceLock::new();
-
-/// Get or initialize the algod client configuration
-fn get_config() -> &'static Configuration {
-    CONFIG.get_or_init(|| ALGOD_CONFIG.clone())
-}
 
 #[tokio::test]
 async fn test_raw_transaction_broadcast() {
@@ -22,7 +12,7 @@ async fn test_raw_transaction_broadcast() {
         .expect("Failed to start localnet");
 
     // Create account manager and generate test accounts
-    let mut account_manager = TestAccountManager::new(get_config().clone());
+    let mut account_manager = TestAccountManager::new(get_algod_client().configuration().clone());
 
     let sender_config = TestAccountConfig {
         initial_funds: 10_000_000, // 10 ALGO
@@ -52,7 +42,8 @@ async fn test_raw_transaction_broadcast() {
     let receiver_addr = receiver.address().expect("Failed to get receiver address");
 
     // Get transaction parameters
-    let params = transaction_params::transaction_params(get_config())
+    let params = get_algod_client()
+        .transaction_params()
         .await
         .expect("Failed to get transaction params");
 
@@ -88,7 +79,8 @@ async fn test_raw_transaction_broadcast() {
         .expect("Failed to sign transaction");
 
     // ACT - Broadcast the transaction
-    let response = raw_transaction::raw_transaction(get_config(), signed_bytes)
+    let response = get_algod_client()
+        .raw_transaction(signed_bytes)
         .await
         .expect("Failed to broadcast transaction");
 

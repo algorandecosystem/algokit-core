@@ -9,11 +9,8 @@
  */
 
 use crate::models;
+use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
-use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
-
-
-
 
 use crate::models::StateDelta;
 
@@ -26,19 +23,14 @@ pub struct AccountStateDelta {
     pub delta: StateDelta,
 }
 
-
-
 impl AlgorandMsgpack for AccountStateDelta {
-    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
 }
 
 impl AccountStateDelta {
     /// Constructor for AccountStateDelta
     pub fn new(address: String, delta: StateDelta) -> AccountStateDelta {
-        AccountStateDelta {
-            address,
-            delta,
-        }
+        AccountStateDelta { address, delta }
     }
 
     /// Encode this struct to msgpack bytes using AlgorandMsgpack trait

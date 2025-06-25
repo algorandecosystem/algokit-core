@@ -9,23 +9,8 @@
  */
 
 use crate::models;
+use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
-use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 use crate::models::AccountStateDelta;
 use crate::models::StateDelta;
@@ -33,45 +18,48 @@ use crate::models::StateDelta;
 /// Details about a pending transaction. If the transaction was recently confirmed, includes confirmation details like the round and reward details.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct PendingTransactionResponse {
-        /// The asset index if the transaction was found and it created an asset.
+    /// The asset index if the transaction was found and it created an asset.
     #[serde(rename = "asset-index", skip_serializing_if = "Option::is_none")]
     pub asset_index: Option<i32>,
-        /// The application index if the transaction was found and it created an application.
+    /// The application index if the transaction was found and it created an application.
     #[serde(rename = "application-index", skip_serializing_if = "Option::is_none")]
     pub application_index: Option<i32>,
-        /// Rewards in microalgos applied to the close remainder to account.
+    /// Rewards in microalgos applied to the close remainder to account.
     #[serde(rename = "close-rewards", skip_serializing_if = "Option::is_none")]
     pub close_rewards: Option<i32>,
-        /// Closing amount for the transaction.
+    /// Closing amount for the transaction.
     #[serde(rename = "closing-amount", skip_serializing_if = "Option::is_none")]
     pub closing_amount: Option<i32>,
-        /// The number of the asset's unit that were transferred to the close-to address.
-    #[serde(rename = "asset-closing-amount", skip_serializing_if = "Option::is_none")]
+    /// The number of the asset's unit that were transferred to the close-to address.
+    #[serde(
+        rename = "asset-closing-amount",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub asset_closing_amount: Option<i32>,
-        /// The round where this transaction was confirmed, if present.
+    /// The round where this transaction was confirmed, if present.
     #[serde(rename = "confirmed-round", skip_serializing_if = "Option::is_none")]
     pub confirmed_round: Option<i32>,
-        /// Indicates that the transaction was kicked out of this node's transaction pool (and specifies why that happened).  An empty string indicates the transaction wasn't kicked out of this node's txpool due to an error.
+    /// Indicates that the transaction was kicked out of this node's transaction pool (and specifies why that happened).  An empty string indicates the transaction wasn't kicked out of this node's txpool due to an error.
     #[serde(rename = "pool-error")]
     pub pool_error: String,
-        /// Rewards in microalgos applied to the receiver account.
+    /// Rewards in microalgos applied to the receiver account.
     #[serde(rename = "receiver-rewards", skip_serializing_if = "Option::is_none")]
     pub receiver_rewards: Option<i32>,
-        /// Rewards in microalgos applied to the sender account.
+    /// Rewards in microalgos applied to the sender account.
     #[serde(rename = "sender-rewards", skip_serializing_if = "Option::is_none")]
     pub sender_rewards: Option<i32>,
-        /// Local state key/value changes for the application being executed by this transaction.
+    /// Local state key/value changes for the application being executed by this transaction.
     #[serde(rename = "local-state-delta", skip_serializing_if = "Option::is_none")]
     pub local_state_delta: Option<Vec<AccountStateDelta>>,
     #[serde(rename = "global-state-delta", skip_serializing_if = "Option::is_none")]
     pub global_state_delta: Option<StateDelta>,
-        /// Logs for the application being executed by this transaction.
+    /// Logs for the application being executed by this transaction.
     #[serde(rename = "logs", skip_serializing_if = "Option::is_none")]
     pub logs: Option<Vec<String>>,
-        /// Inner transactions produced by application execution.
+    /// Inner transactions produced by application execution.
     #[serde(rename = "inner-txns", skip_serializing_if = "Option::is_none")]
     pub inner_txns: Option<Vec<PendingTransactionResponse>>,
-        /// The raw signed transaction.
+    /// The raw signed transaction.
     #[serde(rename = "txn")]
     pub txn: AlgokitSignedTransaction,
 }
@@ -93,23 +81,25 @@ impl Default for PendingTransactionResponse {
             logs: None,
             inner_txns: None,
             txn: AlgokitSignedTransaction {
-                transaction: algokit_transact::Transaction::Payment(algokit_transact::PaymentTransactionFields {
-                    header: algokit_transact::TransactionHeader {
-                        sender: Default::default(),
-                        fee: None,
-                        first_valid: 0,
-                        last_valid: 0,
-                        genesis_hash: None,
-                        genesis_id: None,
-                        note: None,
-                        rekey_to: None,
-                        lease: None,
-                        group: None,
+                transaction: algokit_transact::Transaction::Payment(
+                    algokit_transact::PaymentTransactionFields {
+                        header: algokit_transact::TransactionHeader {
+                            sender: Default::default(),
+                            fee: None,
+                            first_valid: 0,
+                            last_valid: 0,
+                            genesis_hash: None,
+                            genesis_id: None,
+                            note: None,
+                            rekey_to: None,
+                            lease: None,
+                            group: None,
+                        },
+                        receiver: Default::default(),
+                        amount: 0,
+                        close_remainder_to: None,
                     },
-                    receiver: Default::default(),
-                    amount: 0,
-                    close_remainder_to: None,
-                }),
+                ),
                 signature: None,
                 auth_address: None,
             },
@@ -117,9 +107,8 @@ impl Default for PendingTransactionResponse {
     }
 }
 
-
 impl AlgorandMsgpack for PendingTransactionResponse {
-    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
 }
 
 impl PendingTransactionResponse {

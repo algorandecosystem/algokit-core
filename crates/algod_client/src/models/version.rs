@@ -12,11 +12,6 @@ use crate::models;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
-
-
-
-
-
 use crate::models::BuildVersion;
 
 /// algod version information.
@@ -34,12 +29,14 @@ pub struct Version {
     pub versions: Vec<String>,
 }
 
-
-
-
 impl Version {
     /// Constructor for Version
-    pub fn new(build: BuildVersion, genesis_hash_b64: Vec<u8>, genesis_id: String, versions: Vec<String>) -> Version {
+    pub fn new(
+        build: BuildVersion,
+        genesis_hash_b64: Vec<u8>,
+        genesis_id: String,
+        versions: Vec<String>,
+    ) -> Version {
         Version {
             build,
             genesis_hash_b64,
@@ -47,5 +44,4 @@ impl Version {
             versions,
         }
     }
-
 }

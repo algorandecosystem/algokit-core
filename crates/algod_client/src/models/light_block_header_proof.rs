@@ -12,29 +12,21 @@ use crate::models;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
-
-
-
-
-
 /// Proof of membership and position of a light block header.
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct LightBlockHeaderProof {
-        /// The index of the light block header in the vector commitment tree
+    /// The index of the light block header in the vector commitment tree
     #[serde(rename = "index")]
     pub index: i32,
-        /// Represents the depth of the tree that is being proven, i.e. the number of edges from a leaf to the root.
+    /// Represents the depth of the tree that is being proven, i.e. the number of edges from a leaf to the root.
     #[serde(rename = "treedepth")]
     pub treedepth: i32,
-        /// The encoded proof.
+    /// The encoded proof.
     #[serde_as(as = "serde_with::base64::Base64")]
     #[serde(rename = "proof")]
     pub proof: Vec<u8>,
 }
-
-
-
 
 impl LightBlockHeaderProof {
     /// Constructor for LightBlockHeaderProof
@@ -45,5 +37,4 @@ impl LightBlockHeaderProof {
             proof,
         }
     }
-
 }

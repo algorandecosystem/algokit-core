@@ -11,31 +11,20 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
-
-
-
-
 /// References an account's local state for an application.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ApplicationLocalReference {
-        /// Address of the account with the local state.
+    /// Address of the account with the local state.
     #[serde(rename = "account")]
     pub account: String,
-        /// Application ID of the local state application.
+    /// Application ID of the local state application.
     #[serde(rename = "app")]
     pub app: i32,
 }
 
-
-
-
 impl ApplicationLocalReference {
     /// Constructor for ApplicationLocalReference
     pub fn new(account: String, app: i32) -> ApplicationLocalReference {
-        ApplicationLocalReference {
-            account,
-            app,
-        }
+        ApplicationLocalReference { account, app }
     }
-
 }

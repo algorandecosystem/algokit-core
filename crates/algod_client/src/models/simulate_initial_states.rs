@@ -11,25 +11,19 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
-
-
 use crate::models::ApplicationInitialStates;
 
 /// Initial states of resources that were accessed during simulation.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SimulateInitialStates {
-        /// The initial states of accessed application before simulation. The order of this array is arbitrary.
+    /// The initial states of accessed application before simulation. The order of this array is arbitrary.
     #[serde(rename = "app-initial-states", skip_serializing_if = "Option::is_none")]
     pub app_initial_states: Option<Vec<ApplicationInitialStates>>,
 }
-
-
-
 
 impl SimulateInitialStates {
     /// Default constructor for SimulateInitialStates
     pub fn new() -> SimulateInitialStates {
         SimulateInitialStates::default()
     }
-
 }

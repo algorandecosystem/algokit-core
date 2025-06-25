@@ -9,17 +9,8 @@
  */
 
 use crate::models;
+use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
-use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
-
-
-
-
-
-
-
-
-
 
 use crate::models::SimulateRequestTransactionGroup;
 use crate::models::SimulateTraceConfig;
@@ -27,35 +18,42 @@ use crate::models::SimulateTraceConfig;
 /// Request type for simulation endpoint.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SimulateRequest {
-        /// The transaction groups to simulate.
+    /// The transaction groups to simulate.
     #[serde(rename = "txn-groups")]
     pub txn_groups: Vec<SimulateRequestTransactionGroup>,
-        /// If provided, specifies the round preceding the simulation. State changes through this round will be used to run this simulation. Usually only the 4 most recent rounds will be available (controlled by the node config value MaxAcctLookback). If not specified, defaults to the latest available round.
+    /// If provided, specifies the round preceding the simulation. State changes through this round will be used to run this simulation. Usually only the 4 most recent rounds will be available (controlled by the node config value MaxAcctLookback). If not specified, defaults to the latest available round.
     #[serde(rename = "round", skip_serializing_if = "Option::is_none")]
     pub round: Option<i32>,
-        /// Allows transactions without signatures to be simulated as if they had correct signatures.
-    #[serde(rename = "allow-empty-signatures", skip_serializing_if = "Option::is_none")]
+    /// Allows transactions without signatures to be simulated as if they had correct signatures.
+    #[serde(
+        rename = "allow-empty-signatures",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub allow_empty_signatures: Option<bool>,
-        /// Lifts limits on log opcode usage during simulation.
+    /// Lifts limits on log opcode usage during simulation.
     #[serde(rename = "allow-more-logging", skip_serializing_if = "Option::is_none")]
     pub allow_more_logging: Option<bool>,
-        /// Allows access to unnamed resources during simulation.
-    #[serde(rename = "allow-unnamed-resources", skip_serializing_if = "Option::is_none")]
+    /// Allows access to unnamed resources during simulation.
+    #[serde(
+        rename = "allow-unnamed-resources",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub allow_unnamed_resources: Option<bool>,
-        /// Applies extra opcode budget during simulation for each transaction group.
-    #[serde(rename = "extra-opcode-budget", skip_serializing_if = "Option::is_none")]
+    /// Applies extra opcode budget during simulation for each transaction group.
+    #[serde(
+        rename = "extra-opcode-budget",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub extra_opcode_budget: Option<i32>,
     #[serde(rename = "exec-trace-config", skip_serializing_if = "Option::is_none")]
     pub exec_trace_config: Option<SimulateTraceConfig>,
-        /// If true, signers for transactions that are missing signatures will be fixed during evaluation.
+    /// If true, signers for transactions that are missing signatures will be fixed during evaluation.
     #[serde(rename = "fix-signers", skip_serializing_if = "Option::is_none")]
     pub fix_signers: Option<bool>,
 }
 
-
-
 impl AlgorandMsgpack for SimulateRequest {
-    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
 }
 
 impl SimulateRequest {

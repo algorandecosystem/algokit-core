@@ -9,54 +9,50 @@
  */
 
 use crate::models;
+use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
-use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
-
-
-
-
-
-
-
-
 
 /// AccountParticipation describes the parameters used by this account in consensus protocol.
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct AccountParticipation {
-        /// \[sel\] Selection public key (if any) currently registered for this round.
+    /// \[sel\] Selection public key (if any) currently registered for this round.
     #[serde_as(as = "serde_with::base64::Base64")]
     #[serde(rename = "selection-participation-key")]
     pub selection_participation_key: Vec<u8>,
-        /// \[voteFst\] First round for which this participation is valid.
+    /// \[voteFst\] First round for which this participation is valid.
     #[serde(rename = "vote-first-valid")]
     pub vote_first_valid: i32,
-        /// \[voteKD\] Number of subkeys in each batch of participation keys.
+    /// \[voteKD\] Number of subkeys in each batch of participation keys.
     #[serde(rename = "vote-key-dilution")]
     pub vote_key_dilution: i32,
-        /// \[voteLst\] Last round for which this participation is valid.
+    /// \[voteLst\] Last round for which this participation is valid.
     #[serde(rename = "vote-last-valid")]
     pub vote_last_valid: i32,
-        /// \[vote\] root participation public key (if any) currently registered for this round.
+    /// \[vote\] root participation public key (if any) currently registered for this round.
     #[serde_as(as = "serde_with::base64::Base64")]
     #[serde(rename = "vote-participation-key")]
     pub vote_participation_key: Vec<u8>,
-        /// \[stprf\] Root of the state proof key (if any)
+    /// \[stprf\] Root of the state proof key (if any)
     #[serde_as(as = "Option<serde_with::base64::Base64>")]
     #[serde(rename = "state-proof-key", skip_serializing_if = "Option::is_none")]
     pub state_proof_key: Option<Vec<u8>>,
 }
 
-
-
 impl AlgorandMsgpack for AccountParticipation {
-    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
 }
 
 impl AccountParticipation {
     /// Constructor for AccountParticipation
-    pub fn new(selection_participation_key: Vec<u8>, vote_first_valid: i32, vote_key_dilution: i32, vote_last_valid: i32, vote_participation_key: Vec<u8>) -> AccountParticipation {
+    pub fn new(
+        selection_participation_key: Vec<u8>,
+        vote_first_valid: i32,
+        vote_key_dilution: i32,
+        vote_last_valid: i32,
+        vote_participation_key: Vec<u8>,
+    ) -> AccountParticipation {
         AccountParticipation {
             selection_participation_key,
             vote_first_valid,

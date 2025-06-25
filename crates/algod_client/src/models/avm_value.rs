@@ -11,27 +11,19 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
-
-
-
-
-
 /// Represents an AVM value.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct AvmValue {
-        /// value type. Value `1` refers to **bytes**, value `2` refers to **uint64**
+    /// value type. Value `1` refers to **bytes**, value `2` refers to **uint64**
     #[serde(rename = "type")]
     pub r#type: i32,
-        /// bytes value.
+    /// bytes value.
     #[serde(rename = "bytes", skip_serializing_if = "Option::is_none")]
     pub bytes: Option<String>,
-        /// uint value.
+    /// uint value.
     #[serde(rename = "uint", skip_serializing_if = "Option::is_none")]
     pub uint: Option<i32>,
 }
-
-
-
 
 impl AvmValue {
     /// Constructor for AvmValue
@@ -42,5 +34,4 @@ impl AvmValue {
             uint: None,
         }
     }
-
 }

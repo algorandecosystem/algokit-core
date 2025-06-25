@@ -11,44 +11,41 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
-
-
-
-
-
-
-
-
 /// The set of parameters and limits override during simulation. If this set of parameters is present, then evaluation parameters may differ from standard evaluation in certain ways.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SimulationEvalOverrides {
-        /// If true, transactions without signatures are allowed and simulated as if they were properly signed.
-    #[serde(rename = "allow-empty-signatures", skip_serializing_if = "Option::is_none")]
+    /// If true, transactions without signatures are allowed and simulated as if they were properly signed.
+    #[serde(
+        rename = "allow-empty-signatures",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub allow_empty_signatures: Option<bool>,
-        /// If true, allows access to unnamed resources during simulation.
-    #[serde(rename = "allow-unnamed-resources", skip_serializing_if = "Option::is_none")]
+    /// If true, allows access to unnamed resources during simulation.
+    #[serde(
+        rename = "allow-unnamed-resources",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub allow_unnamed_resources: Option<bool>,
-        /// The maximum log calls one can make during simulation
+    /// The maximum log calls one can make during simulation
     #[serde(rename = "max-log-calls", skip_serializing_if = "Option::is_none")]
     pub max_log_calls: Option<i32>,
-        /// The maximum byte number to log during simulation
+    /// The maximum byte number to log during simulation
     #[serde(rename = "max-log-size", skip_serializing_if = "Option::is_none")]
     pub max_log_size: Option<i32>,
-        /// The extra opcode budget added to each transaction group during simulation
-    #[serde(rename = "extra-opcode-budget", skip_serializing_if = "Option::is_none")]
+    /// The extra opcode budget added to each transaction group during simulation
+    #[serde(
+        rename = "extra-opcode-budget",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub extra_opcode_budget: Option<i32>,
-        /// If true, signers for transactions that are missing signatures will be fixed during evaluation.
+    /// If true, signers for transactions that are missing signatures will be fixed during evaluation.
     #[serde(rename = "fix-signers", skip_serializing_if = "Option::is_none")]
     pub fix_signers: Option<bool>,
 }
-
-
-
 
 impl SimulationEvalOverrides {
     /// Default constructor for SimulationEvalOverrides
     pub fn new() -> SimulationEvalOverrides {
         SimulationEvalOverrides::default()
     }
-
 }

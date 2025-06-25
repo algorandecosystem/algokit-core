@@ -11,11 +11,6 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
-
-
-
-
-
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GenesisAllocation {
     #[serde(rename = "addr")]
@@ -26,9 +21,6 @@ pub struct GenesisAllocation {
     pub state: serde_json::Value,
 }
 
-
-
-
 impl GenesisAllocation {
     /// Constructor for GenesisAllocation
     pub fn new(addr: String, comment: String, state: serde_json::Value) -> GenesisAllocation {
@@ -38,5 +30,4 @@ impl GenesisAllocation {
             state,
         }
     }
-
 }

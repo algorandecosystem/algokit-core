@@ -12,41 +12,36 @@ use crate::models;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
-
-
-
-
-
-
 use crate::models::AvmValue;
 
 /// An operation against an application's global/local/box state.
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ApplicationStateOperation {
-        /// Operation type. Value `w` is **write**, `d` is **delete**.
+    /// Operation type. Value `w` is **write**, `d` is **delete**.
     #[serde(rename = "operation")]
     pub operation: String,
-        /// Type of application state. Value `g` is **global state**, `l` is **local state**, `b` is **boxes**.
+    /// Type of application state. Value `g` is **global state**, `l` is **local state**, `b` is **boxes**.
     #[serde(rename = "app-state-type")]
     pub app_state_type: String,
-        /// The key (name) of the global/local/box state.
+    /// The key (name) of the global/local/box state.
     #[serde_as(as = "serde_with::base64::Base64")]
     #[serde(rename = "key")]
     pub key: Vec<u8>,
     #[serde(rename = "new-value", skip_serializing_if = "Option::is_none")]
     pub new_value: Option<AvmValue>,
-        /// For local state changes, the address of the account associated with the local state.
+    /// For local state changes, the address of the account associated with the local state.
     #[serde(rename = "account", skip_serializing_if = "Option::is_none")]
     pub account: Option<String>,
 }
 
-
-
-
 impl ApplicationStateOperation {
     /// Constructor for ApplicationStateOperation
-    pub fn new(operation: String, app_state_type: String, key: Vec<u8>) -> ApplicationStateOperation {
+    pub fn new(
+        operation: String,
+        app_state_type: String,
+        key: Vec<u8>,
+    ) -> ApplicationStateOperation {
         ApplicationStateOperation {
             operation,
             app_state_type,
@@ -55,5 +50,4 @@ impl ApplicationStateOperation {
             account: None,
         }
     }
-
 }

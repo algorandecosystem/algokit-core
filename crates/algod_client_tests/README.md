@@ -1,90 +1,118 @@
-# algod_client_tests
+# Algod Client Tests
 
-Integration tests for the `algod_client` crate against a running Algorand localnet.
+Integration tests for the `algod_client` crate, demonstrating usage patterns and ensuring compatibility with the Algorand network.
 
 ## Overview
 
-This crate provides comprehensive integration tests for the `algod_client` crate, focusing on real network interactions with a localnet instance. The tests validate:
+This crate provides integration tests for the Algod API client, using a local Algorand network (sandbox) for testing. The tests showcase:
 
-- Simulate transaction functionality
-- MsgPack encoding/decoding
-- Error handling
-- Different request formats
+- **Transaction parameter retrieval**
+- **Raw transaction broadcasting**
+- **Pending transaction information**
+- **Transaction simulation**
 
-## Prerequisites
+## Test Architecture
 
-1. **AlgoKit**: Install [AlgoKit](https://github.com/algorandfoundation/algokit-cli) for localnet management
-2. **Docker**: Required for AlgoKit localnet
+### Consolidated Client Pattern
+
+All tests now use a **global client fixture** for consistent, idiomatic Rust testing:
+
+```rust
+use algod_client_tests::{get_algod_client, LocalnetManager};
+
+#[tokio::test]
+async fn test_example() {
+    // Ensure localnet is running
+    LocalnetManager::ensure_running().await.expect("Failed to start localnet");
+    
+    // Use the global client - no need to create individual clients
+    let result = get_algod_client().transaction_params().await;
+    
+    assert!(result.is_ok());
+    let params = result.unwrap();
+    println!("Genesis ID: {}", params.genesis_id);
+}
+```
+
+### Benefits of the New Approach
+
+✅ **DRY Principle**: No code duplication across test files
+✅ **Consistent Configuration**: Single source of truth for client setup  
+✅ **Idiomatic Rust**: Uses `OnceLock` for thread-safe global state
+✅ **Easy Maintenance**: Configuration changes apply to all tests automatically
+✅ **Consolidated API**: Uses the ergonomic `AlgodClient` instead of individual endpoint functions
+
+### Before vs After
+
+**Before (❌ Old pattern)**:
+
+```rust
+// Each test file had duplicate client setup
+use algod_client::apis::{configuration::Configuration, transaction_params};
+use std::sync::OnceLock;
+
+static CONFIG: OnceLock<Configuration> = OnceLock::new();
+
+fn get_config() -> &'static Configuration {
+    CONFIG.get_or_init(|| ALGOD_CONFIG.clone())
+}
+
+// Individual endpoint function calls
+let result = transaction_params::transaction_params(get_config()).await;
+```
+
+**After (✅ New pattern)**:
+
+```rust
+// Simple import and usage
+use algod_client_tests::get_algod_client;
+
+// Consolidated client method calls  
+let result = get_algod_client().transaction_params().await;
+```
 
 ## Running Tests
 
-### Start Localnet
+Tests require a running Algorand sandbox/localnet:
 
 ```bash
-algokit localnet start
+# Run all integration tests
+cargo test -p algod_client_tests
+
+# Run a specific test with output
+cargo test -p algod_client_tests transaction_params -- --nocapture
+
+# Check test compilation without running
+cargo check -p algod_client_tests
 ```
 
-### Run Integration Tests
+## Test Configuration
 
-```bash
-# Run all integration tests (they are ignored by default)
-cargo test -p algod_client_tests -- --ignored
+The global client uses environment variables with sensible defaults:
 
-# Run a specific test
-cargo test -p algod_client_tests test_simulate_payment_transaction -- --ignored
-
-# Run all tests including the test runner
-cargo test -p algod_client_tests run_all_integration_tests -- --ignored
-```
-
-### Environment Variables
-
-Configure the test environment using these variables:
-
-```bash
-# Localnet algod endpoint (default: http://localhost:4001)
-export ALGORAND_HOST="http://localhost:4001"
-
-# Localnet API token (default: 64 'a' characters)
-export ALGORAND_API_TOKEN="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-```
+- `ALGORAND_HOST` (default: `http://localhost:4001`)
+- `ALGORAND_API_TOKEN` (default: sandbox token)
 
 ## Test Structure
 
-### Fixtures (`src/fixtures.rs`)
+```
+crates/algod_client_tests/
+├── src/
+│   ├── lib.rs              # Module exports
+│   ├── fixtures.rs         # Global client fixture & test utilities  
+│   ├── localnet.rs         # Localnet management
+│   ├── account_helpers.rs  # Test account creation & management
+│   └── mnemonic.rs         # Mnemonic utilities
+└── tests/
+    ├── transaction_params.rs           # Parameter retrieval tests
+    ├── raw_transaction.rs             # Transaction broadcasting tests  
+    ├── pending_transaction_information.rs  # Pending transaction tests
+    └── simulate_transactions.rs       # Transaction simulation tests
+```
 
-- **ALGOD_CONFIG**: Shared client configuration using `once_cell::sync::Lazy`
-- **Test Data Mothers**: Re-exported from `algokit_transact::test_utils`
-- **LocalnetTransactionMother**: Extended builders for localnet-specific transactions
+## Key Components
 
-### Localnet Management (`src/localnet.rs`)
-
-- **LocalnetManager**: Utilities for starting/stopping/checking localnet status
-- Automatic localnet startup in tests
-- Health checks and readiness validation
-
-### Test Files (`tests/`)
-
-- **simulate_transactions.rs**: Integration tests for the simulate transaction endpoint
-  - Basic transaction simulation
-  - Asset transfer simulation  
-  - MsgPack encoding validation
-  - Different format parameters
-  - Execution trace configuration
-
-## Architecture
-
-The test architecture follows idiomatic Rust patterns:
-
-- **OnceLock**: For shared test state (client configuration)
-- **Mother Pattern**: For test data generation (inherited from `algokit_transact`)
-- **Feature Gates**: Integration tests are ignored by default
-- **Error Handling**: Comprehensive test coverage for error scenarios
-
-## Design Principles
-
-1. **Reuse Existing Code**: Leverages `algokit_transact::test_utils` instead of reimplementing
-2. **Real Network Testing**: Tests against actual localnet for authenticity
-3. **Comprehensive Coverage**: Tests multiple aspects of the simulate endpoint
-4. **Maintainable**: Clear separation of concerns and modular design
-5. **CI/CD Ready**: Supports automated testing with proper setup/teardown
+- **`get_algod_client()`**: Global client fixture for all tests
+- **`LocalnetManager`**: Ensures test environment is available
+- **`TestAccountManager`**: Creates funded test accounts
+- **`LocalnetTransactionMother`**: Builds test transactions

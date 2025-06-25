@@ -9,32 +9,25 @@
  */
 
 use crate::models;
+use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
-use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
-
-
-
-
-
 
 /// Supply represents the current supply of MicroAlgos in the system
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GetSupply200Response {
-        /// Round
+    /// Round
     #[serde(rename = "current_round")]
     pub current_round: i32,
-        /// OnlineMoney
+    /// OnlineMoney
     #[serde(rename = "online-money")]
     pub online_money: i32,
-        /// TotalMoney
+    /// TotalMoney
     #[serde(rename = "total-money")]
     pub total_money: i32,
 }
 
-
-
 impl AlgorandMsgpack for GetSupply200Response {
-    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
 }
 
 impl GetSupply200Response {

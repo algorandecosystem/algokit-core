@@ -9,31 +9,24 @@
  */
 
 use crate::models;
+use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
-use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMsgpack};
 
-
-
-
-
-
-
-
+use crate::models::SimulateInitialStates;
+use crate::models::SimulateTraceConfig;
 use crate::models::SimulateTransactionGroupResult;
 use crate::models::SimulationEvalOverrides;
-use crate::models::SimulateTraceConfig;
-use crate::models::SimulateInitialStates;
 
 /// Result of a transaction group simulation.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SimulateTransaction200Response {
-        /// The version of this response object.
+    /// The version of this response object.
     #[serde(rename = "version")]
     pub version: i32,
-        /// The round immediately preceding this simulation. State changes through this round were used to run this simulation.
+    /// The round immediately preceding this simulation. State changes through this round were used to run this simulation.
     #[serde(rename = "last-round")]
     pub last_round: i32,
-        /// A result object for each transaction group that was simulated.
+    /// A result object for each transaction group that was simulated.
     #[serde(rename = "txn-groups")]
     pub txn_groups: Vec<SimulateTransactionGroupResult>,
     #[serde(rename = "eval-overrides", skip_serializing_if = "Option::is_none")]
@@ -44,15 +37,17 @@ pub struct SimulateTransaction200Response {
     pub initial_states: Option<SimulateInitialStates>,
 }
 
-
-
 impl AlgorandMsgpack for SimulateTransaction200Response {
-    const PREFIX: &'static [u8] = b"";  // Adjust prefix as needed for your specific type
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
 }
 
 impl SimulateTransaction200Response {
     /// Constructor for SimulateTransaction200Response
-    pub fn new(version: i32, last_round: i32, txn_groups: Vec<SimulateTransactionGroupResult>) -> SimulateTransaction200Response {
+    pub fn new(
+        version: i32,
+        last_round: i32,
+        txn_groups: Vec<SimulateTransactionGroupResult>,
+    ) -> SimulateTransaction200Response {
         SimulateTransaction200Response {
             version,
             last_round,

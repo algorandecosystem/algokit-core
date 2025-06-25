@@ -11,31 +11,21 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
-
-
-
 use crate::models::AvmValue;
 
 /// A write operation into a scratch slot.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ScratchChange {
-        /// The scratch slot written.
+    /// The scratch slot written.
     #[serde(rename = "slot")]
     pub slot: i32,
     #[serde(rename = "new-value")]
     pub new_value: AvmValue,
 }
 
-
-
-
 impl ScratchChange {
     /// Constructor for ScratchChange
     pub fn new(slot: i32, new_value: AvmValue) -> ScratchChange {
-        ScratchChange {
-            slot,
-            new_value,
-        }
+        ScratchChange { slot, new_value }
     }
-
 }

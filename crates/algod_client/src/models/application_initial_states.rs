@@ -11,20 +11,15 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
-
-
-
-
-
 use crate::models::ApplicationKvstorage;
 
 /// An application's initial global/local/box states that were accessed during simulation.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ApplicationInitialStates {
-        /// Application index.
+    /// Application index.
     #[serde(rename = "id")]
     pub id: i32,
-        /// An application's initial local states tied to different accounts.
+    /// An application's initial local states tied to different accounts.
     #[serde(rename = "app-locals", skip_serializing_if = "Option::is_none")]
     pub app_locals: Option<Vec<ApplicationKvstorage>>,
     #[serde(rename = "app-globals", skip_serializing_if = "Option::is_none")]
@@ -32,9 +27,6 @@ pub struct ApplicationInitialStates {
     #[serde(rename = "app-boxes", skip_serializing_if = "Option::is_none")]
     pub app_boxes: Option<ApplicationKvstorage>,
 }
-
-
-
 
 impl ApplicationInitialStates {
     /// Constructor for ApplicationInitialStates
@@ -46,5 +38,4 @@ impl ApplicationInitialStates {
             app_boxes: None,
         }
     }
-
 }
