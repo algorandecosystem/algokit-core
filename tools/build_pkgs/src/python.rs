@@ -39,7 +39,7 @@ pub fn build(package: &Package) -> Result<()> {
     if cfg!(target_os = "linux") {
         let dist_files: Vec<_> = std::fs::read_dir(package_dir.join("dist"))?
             .filter_map(Result::ok)
-            .filter(|entry| entry.path().extension().map_or(false, |ext| ext == "whl"))
+            .filter(|entry| entry.path().extension().is_some_and(|ext| ext == "whl"))
             .collect();
 
         if dist_files.is_empty() {
