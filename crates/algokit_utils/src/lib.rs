@@ -11,7 +11,6 @@ use algokit_transact::TransactionHeader;
 use algokit_transact::Transactions;
 use base64::DecodeError;
 use base64::{Engine as _, engine::general_purpose};
-use derive_more::Debug;
 use std::sync::Arc;
 
 use async_trait::async_trait;
@@ -40,17 +39,30 @@ pub struct PaymentParams {
     pub close_remainder_to: Option<Address>,
 }
 
+#[derive(Debug)]
+pub struct AssetTransferParams {
+    pub common_params: CommonParams,
+    pub asset_id: u64,
+    pub amount: u64,
+    pub receiver: Address,
+    pub close_remainder_to: Option<Address>,
+}
+
 // TODO: TransactionWithSigner
 #[derive(Debug)]
 pub enum ComposerTxn {
     Transaction(Transaction),
     Payment(PaymentParams),
+    AssetTransfer(AssetTransferParams),
 }
 
 impl ComposerTxn {
     pub fn common_params(&self) -> CommonParams {
         match self {
             ComposerTxn::Payment(payment_params) => payment_params.common_params.clone(),
+            ComposerTxn::AssetTransfer(asset_transfer_params) => {
+                asset_transfer_params.common_params.clone()
+            }
             _ => CommonParams::default(),
         }
     }
@@ -154,6 +166,13 @@ impl Composer {
         self.push(ComposerTxn::Payment(payment_params))
     }
 
+    pub fn add_asset_transfer(
+        &mut self,
+        asset_transfer_params: AssetTransferParams,
+    ) -> Result<(), String> {
+        self.push(ComposerTxn::AssetTransfer(asset_transfer_params))
+    }
+
     pub fn add_transaction(&mut self, transaction: Transaction) -> Result<(), String> {
         self.push(ComposerTxn::Transaction(transaction))
     }
@@ -219,6 +238,21 @@ impl Composer {
                         };
 
                         Transaction::Payment(pay_params)
+                    }
+                    ComposerTxn::AssetTransfer(asset_transfer_params) => {
+                        let asset_transfer_params =
+                            algokit_transact::AssetTransferTransactionFields {
+                                header: default_header.clone(),
+                                asset_id: asset_transfer_params.asset_id,
+                                amount: asset_transfer_params.amount,
+                                receiver: asset_transfer_params.receiver.clone(),
+                                asset_sender: None,
+                                close_remainder_to: asset_transfer_params
+                                    .close_remainder_to
+                                    .clone(),
+                            };
+
+                        Transaction::AssetTransfer(asset_transfer_params)
                     }
                 };
 
@@ -363,6 +397,33 @@ mod tests {
             close_remainder_to: None,
         };
         assert!(composer.add_payment(payment_params).is_ok());
+        assert!(composer.build().await.is_ok());
+        assert!(composer.built_group().is_some());
+    }
+
+    #[tokio::test]
+    async fn test_build_asset_transfer() {
+        let mut composer = Composer::testnet();
+        let asset_transfer_params = AssetTransferParams {
+            common_params: CommonParams {
+                sender: AddressMother::address(),
+                signer: None,
+                rekey_to: None,
+                note: None,
+                lease: None,
+                static_fee: None,
+                extra_fee: None,
+                max_fee: None,
+                validity_window: None,
+                first_valid_round: None,
+                last_valid_round: None,
+            },
+            asset_id: 12345,
+            amount: 1000,
+            receiver: AddressMother::address(),
+            close_remainder_to: None,
+        };
+        assert!(composer.add_asset_transfer(asset_transfer_params).is_ok());
         assert!(composer.build().await.is_ok());
         assert!(composer.built_group().is_some());
     }
