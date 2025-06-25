@@ -90,8 +90,8 @@ application_id: i32,
                 AccountApplicationInformation200Response::decode(&content)
                     .map_err(|e| Error::from(serde_json::Error::custom(format!("Failed to decode msgpack response: {}", e))))
             },
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `AccountApplicationInformation200Response`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `AccountApplicationInformation200Response`")))),
+            ContentType::Text => Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `AccountApplicationInformation200Response`"))),
+            ContentType::Unsupported(unknown_type) => Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `AccountApplicationInformation200Response`")))),
         }
     } else {
         let content = resp.text().await?;

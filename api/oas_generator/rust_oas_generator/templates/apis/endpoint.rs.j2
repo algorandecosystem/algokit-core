@@ -221,14 +221,14 @@ pub async fn {{ operation.rust_function_name }}(
                 {{ get_success_response_type(operation) }}::decode(&content)
                     .map_err(|e| Error::from(serde_json::Error::custom(format!("Failed to decode msgpack response: {}", e))))
                 {% else %}
-                return Err(Error::from(serde_json::Error::custom("MsgPack response handling not supported for this endpoint")))
+                Err(Error::from(serde_json::Error::custom("MsgPack response handling not supported for this endpoint")))
                 {% endfor %}
                 {% else %}
-                return Err(Error::from(serde_json::Error::custom("MsgPack response handling not supported for this endpoint")))
+                Err(Error::from(serde_json::Error::custom("MsgPack response handling not supported for this endpoint")))
                 {% endif %}
             },
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `{{ success_response_type }}`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `{{ success_response_type }}`")))),
+            ContentType::Text => Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `{{ success_response_type }}`"))),
+            ContentType::Unsupported(unknown_type) => Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `{{ success_response_type }}`")))),
         }
         {% else %}
         let _content = resp.text().await?;

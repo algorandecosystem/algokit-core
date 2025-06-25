@@ -318,7 +318,6 @@ impl TestAccountManager {
                     .await?;
             }
             NetworkType::TestNet => {
-                // TODO: Implement TestNet dispenser integration
                 println!(
                     "⚠ TestNet funding not yet implemented. Please fund manually: {}",
                     address_str

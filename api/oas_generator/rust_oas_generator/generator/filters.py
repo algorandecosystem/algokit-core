@@ -17,7 +17,15 @@ def rust_doc_comment(text: str, indent: int = 0) -> str:
         return f"{indent_str}/// {lines[0]}"
     result = []
     for line in lines:
-        result.append(f"{indent_str}/// {line.strip()}")
+        stripped_line = line.strip()
+        # Handle list items by adding proper indentation
+        if stripped_line.startswith(("* ", "- ", "+ ")):
+            result.append(f"{indent_str}///   {stripped_line}")
+        elif stripped_line.startswith(("Or ", "And ", "But ")):
+            # These might be continuation of list items
+            result.append(f"{indent_str}///   {stripped_line}")
+        else:
+            result.append(f"{indent_str}/// {stripped_line}")
     return "\n".join(result)
 
 

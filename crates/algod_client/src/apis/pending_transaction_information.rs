@@ -35,10 +35,10 @@ pub enum PendingTransactionInformationError {
 }
 
 /// Given a transaction ID of a recently submitted transaction, it returns information about it.  There are several cases when this might succeed:
-/// - transaction committed (committed round > 0)
-/// - transaction still in the pool (committed round = 0, pool error = "")
-/// - transaction removed from pool due to error (committed round = 0, pool error != "")
-/// Or the transaction may have happened sufficiently long ago that the node no longer remembers it, and this will return an error.
+///   - transaction committed (committed round > 0)
+///   - transaction still in the pool (committed round = 0, pool error = "")
+///   - transaction removed from pool due to error (committed round = 0, pool error != "")
+///   Or the transaction may have happened sufficiently long ago that the node no longer remembers it, and this will return an error.
 pub async fn pending_transaction_information(
     configuration: &configuration::Configuration,
 txid: &str,
@@ -92,8 +92,8 @@ format: Option<&str>,
                 PendingTransactionResponse::decode(&content)
                     .map_err(|e| Error::from(serde_json::Error::custom(format!("Failed to decode msgpack response: {}", e))))
             },
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `PendingTransactionResponse`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `PendingTransactionResponse`")))),
+            ContentType::Text => Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `PendingTransactionResponse`"))),
+            ContentType::Unsupported(unknown_type) => Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `PendingTransactionResponse`")))),
         }
     } else {
         let content = resp.text().await?;

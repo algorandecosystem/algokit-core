@@ -128,15 +128,15 @@ pub struct Account {
     #[serde(rename = "round")]
     pub round: i32,
         /// \[onl\] delegation status of the account's MicroAlgos
-    /// * Offline - indicates that the associated account is delegated.
-    /// *  Online  - indicates that the associated account used as part of the delegation pool.
-    /// *   NotParticipating - indicates that the associated account is neither a delegator nor a delegate.
+    ///   * Offline - indicates that the associated account is delegated.
+    ///   *  Online  - indicates that the associated account used as part of the delegation pool.
+    ///   *   NotParticipating - indicates that the associated account is neither a delegator nor a delegate.
     #[serde(rename = "status")]
     pub status: String,
         /// Indicates what type of signature is used by this account, must be one of:
-    /// * sig
-    /// * msig
-    /// * lsig
+    ///   * sig
+    ///   * msig
+    ///   * lsig
     #[serde(rename = "sig-type", skip_serializing_if = "Option::is_none")]
     pub sig_type: Option<String>,
         /// \[spend\] the address against which signing should be checked. If empty, the address of the current account is used. This field can be updated in any transaction by setting the RekeyTo field.

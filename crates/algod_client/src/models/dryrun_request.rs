@@ -25,7 +25,7 @@ use crate::models::Application;
 use crate::models::DryrunSource;
 
 /// Request data type for dryrun endpoint. Given the Transactions and simulated ledger state upload, run TEAL scripts and return debugging information.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct DryrunRequest {
     #[serde(rename = "txns")]
     pub txns: Vec<AlgokitSignedTransaction>,
@@ -46,19 +46,6 @@ pub struct DryrunRequest {
     pub sources: Vec<DryrunSource>,
 }
 
-impl Default for DryrunRequest {
-    fn default() -> Self {
-        Self {
-            txns: Vec::new(),
-            accounts: Vec::new(),
-            apps: Vec::new(),
-            protocol_version: "".to_string(),
-            round: 0,
-            latest_timestamp: 0,
-            sources: Vec::new(),
-        }
-    }
-}
 
 
 impl AlgorandMsgpack for DryrunRequest {

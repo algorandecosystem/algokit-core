@@ -16,20 +16,13 @@ use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMs
 
 
 /// A transaction group to simulate.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SimulateRequestTransactionGroup {
         /// An atomic transaction group.
     #[serde(rename = "txns")]
     pub txns: Vec<AlgokitSignedTransaction>,
 }
 
-impl Default for SimulateRequestTransactionGroup {
-    fn default() -> Self {
-        Self {
-            txns: Vec::new(),
-        }
-    }
-}
 
 
 impl AlgorandMsgpack for SimulateRequestTransactionGroup {

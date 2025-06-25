@@ -17,7 +17,7 @@ use algokit_transact::{SignedTransaction as AlgokitSignedTransaction, AlgorandMs
 
 
 /// PendingTransactions is an array of signed transactions exactly as they were submitted.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GetPendingTransactionsByAddress200Response {
         /// An array of signed transaction objects.
     #[serde(rename = "top-transactions")]
@@ -27,14 +27,6 @@ pub struct GetPendingTransactionsByAddress200Response {
     pub total_transactions: i32,
 }
 
-impl Default for GetPendingTransactionsByAddress200Response {
-    fn default() -> Self {
-        Self {
-            top_transactions: Vec::new(),
-            total_transactions: 0,
-        }
-    }
-}
 
 
 impl AlgorandMsgpack for GetPendingTransactionsByAddress200Response {

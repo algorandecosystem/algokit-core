@@ -78,10 +78,10 @@ catchpoint: &str,
                 serde_json::from_str(&content).map_err(Error::from)
             },
             ContentType::MsgPack => {
-                return Err(Error::from(serde_json::Error::custom("MsgPack response handling not supported for this endpoint")))
+                Err(Error::from(serde_json::Error::custom("MsgPack response handling not supported for this endpoint")))
             },
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `AbortCatchup200Response`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `AbortCatchup200Response`")))),
+            ContentType::Text => Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `AbortCatchup200Response`"))),
+            ContentType::Unsupported(unknown_type) => Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `AbortCatchup200Response`")))),
         }
     } else {
         let content = resp.text().await?;

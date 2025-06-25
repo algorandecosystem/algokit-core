@@ -50,7 +50,14 @@ use crate::models::{{ custom_type }};
 #[serde_as]
 {% endif %}
 {% set has_signed_tx = schema.has_signed_transaction_fields %}
-#[derive(Clone, {% if not has_signed_tx %}Default, {% endif %}Debug, PartialEq, Serialize, Deserialize)]
+{% set complex_signed_tx_fields = [] %}
+{% for property in schema.properties %}
+    {% if property.required and property.is_signed_transaction and not property.rust_type.startswith('Vec<') %}
+        {% set _ = complex_signed_tx_fields.append(property) %}
+    {% endif %}
+{% endfor %}
+{% set needs_manual_default = complex_signed_tx_fields|length > 0 %}
+#[derive(Clone, {% if not needs_manual_default %}Default, {% endif %}Debug, PartialEq, Serialize, Deserialize)]
 {% if schema.vendor_extensions.get('x-algokit-signed-txn') %}
 // This struct represents a SignedTransaction and can be converted to/from AlgoKit's SignedTransaction
 {% endif %}
@@ -75,7 +82,7 @@ pub struct {{ schema.rust_struct_name }} {
 {% endfor %}
 }
 
-{% if has_signed_tx %}
+{% if needs_manual_default %}
 impl Default for {{ schema.rust_struct_name }} {
     fn default() -> Self {
         Self {

@@ -39,8 +39,8 @@ pub struct GetTransactionProof200Response {
     #[serde(rename = "idx")]
     pub idx: i32,
         /// The type of hash function used to create the proof, must be one of:
-    /// * sha512_256
-    /// * sha256
+    ///   * sha512_256
+    ///   * sha256
     #[serde(rename = "hashtype")]
     pub hashtype: String,
 }
