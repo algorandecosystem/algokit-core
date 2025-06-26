@@ -20,7 +20,7 @@ pub struct AssetHoldingReference {
     pub account: String,
     /// Asset ID of the holding.
     #[serde(rename = "asset")]
-    pub asset: i32,
+    pub asset: u64,
 }
 
 impl AlgorandMsgpack for AssetHoldingReference {
@@ -29,7 +29,7 @@ impl AlgorandMsgpack for AssetHoldingReference {
 
 impl AssetHoldingReference {
     /// Constructor for AssetHoldingReference
-    pub fn new(account: String, asset: i32) -> AssetHoldingReference {
+    pub fn new(account: String, asset: u64) -> AssetHoldingReference {
         AssetHoldingReference { account, asset }
     }
 

@@ -20,7 +20,7 @@ pub struct ApplicationLocalReference {
     pub account: String,
     /// Application ID of the local state application.
     #[serde(rename = "app")]
-    pub app: i32,
+    pub app: u64,
 }
 
 impl AlgorandMsgpack for ApplicationLocalReference {
@@ -29,7 +29,7 @@ impl AlgorandMsgpack for ApplicationLocalReference {
 
 impl ApplicationLocalReference {
     /// Constructor for ApplicationLocalReference
-    pub fn new(account: String, app: i32) -> ApplicationLocalReference {
+    pub fn new(account: String, app: u64) -> ApplicationLocalReference {
         ApplicationLocalReference { account, app }
     }
 

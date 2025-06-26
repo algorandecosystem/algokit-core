@@ -19,7 +19,7 @@ use crate::models::ApplicationKvStorage;
 pub struct ApplicationInitialStates {
     /// Application index.
     #[serde(rename = "id")]
-    pub id: i32,
+    pub id: u64,
     /// An application's initial local states tied to different accounts.
     #[serde(rename = "app-locals", skip_serializing_if = "Option::is_none")]
     pub app_locals: Option<Vec<ApplicationKvStorage>>,
@@ -35,7 +35,7 @@ impl AlgorandMsgpack for ApplicationInitialStates {
 
 impl ApplicationInitialStates {
     /// Constructor for ApplicationInitialStates
-    pub fn new(id: i32) -> ApplicationInitialStates {
+    pub fn new(id: u64) -> ApplicationInitialStates {
         ApplicationInitialStates {
             id,
             app_locals: None,

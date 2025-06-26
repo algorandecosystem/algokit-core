@@ -20,7 +20,7 @@ use crate::models::ApplicationParams;
 pub struct AccountApplicationInformation200Response {
     /// The round for which this information is relevant.
     #[serde(rename = "round")]
-    pub round: i32,
+    pub round: u64,
     #[serde(rename = "app-local-state", skip_serializing_if = "Option::is_none")]
     pub app_local_state: Option<ApplicationLocalState>,
     #[serde(rename = "created-app", skip_serializing_if = "Option::is_none")]
@@ -33,7 +33,7 @@ impl AlgorandMsgpack for AccountApplicationInformation200Response {
 
 impl AccountApplicationInformation200Response {
     /// Constructor for AccountApplicationInformation200Response
-    pub fn new(round: i32) -> AccountApplicationInformation200Response {
+    pub fn new(round: u64) -> AccountApplicationInformation200Response {
         AccountApplicationInformation200Response {
             round,
             app_local_state: None,

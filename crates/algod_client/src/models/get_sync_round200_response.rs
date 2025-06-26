@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 pub struct GetSyncRound200Response {
     /// The minimum sync round for the ledger.
     #[serde(rename = "round")]
-    pub round: i32,
+    pub round: u64,
 }
 
 impl AlgorandMsgpack for GetSyncRound200Response {
@@ -26,7 +26,7 @@ impl AlgorandMsgpack for GetSyncRound200Response {
 
 impl GetSyncRound200Response {
     /// Constructor for GetSyncRound200Response
-    pub fn new(round: i32) -> GetSyncRound200Response {
+    pub fn new(round: u64) -> GetSyncRound200Response {
         GetSyncRound200Response { round }
     }
 

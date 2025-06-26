@@ -19,7 +19,7 @@ use crate::models::AccountAssetHolding;
 pub struct AccountAssetsInformation200Response {
     /// The round for which this information is relevant.
     #[serde(rename = "round")]
-    pub round: i32,
+    pub round: u64,
     /// Used for pagination, when making another request provide this token with the next parameter.
     #[serde(rename = "next-token", skip_serializing_if = "Option::is_none")]
     pub next_token: Option<String>,
@@ -33,7 +33,7 @@ impl AlgorandMsgpack for AccountAssetsInformation200Response {
 
 impl AccountAssetsInformation200Response {
     /// Constructor for AccountAssetsInformation200Response
-    pub fn new(round: i32) -> AccountAssetsInformation200Response {
+    pub fn new(round: u64) -> AccountAssetsInformation200Response {
         AccountAssetsInformation200Response {
             round,
             next_token: None,

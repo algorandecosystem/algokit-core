@@ -23,7 +23,7 @@ pub struct EvalDelta {
     pub bytes: Option<String>,
     /// \[ui\] uint value.
     #[serde(rename = "uint", skip_serializing_if = "Option::is_none")]
-    pub uint: Option<i32>,
+    pub uint: Option<u64>,
 }
 
 impl AlgorandMsgpack for EvalDelta {

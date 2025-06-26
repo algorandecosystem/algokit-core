@@ -98,6 +98,10 @@ def rust_type_from_openapi(
     if visited is None:
         visited = set()
 
+    # Handle x-algokit-bigint extension for u64 mapping
+    if schema.get("x-algokit-bigint") is True:
+        return "u64"
+
     # Handle $ref references
     if "$ref" in schema:
         ref_name = _extract_ref_name(schema["$ref"])

@@ -30,15 +30,15 @@ pub struct Account {
     pub address: String,
     /// \[algo\] total number of MicroAlgos in the account
     #[serde(rename = "amount")]
-    pub amount: i32,
+    pub amount: u64,
     /// MicroAlgo balance required by the account.
     ///
     /// The requirement grows based on asset and application usage.
     #[serde(rename = "min-balance")]
-    pub min_balance: i32,
+    pub min_balance: u64,
     /// specifies the amount of MicroAlgos in the account, without the pending rewards.
     #[serde(rename = "amount-without-pending-rewards")]
-    pub amount_without_pending_rewards: i32,
+    pub amount_without_pending_rewards: u64,
     /// \[appl\] applications local data stored in this account.
     ///
     /// Note the raw object uses `map[int] -> AppLocalState` for this type.
@@ -92,16 +92,16 @@ pub struct Account {
     pub incentive_eligible: Option<bool>,
     /// amount of MicroAlgos of pending rewards in this account.
     #[serde(rename = "pending-rewards")]
-    pub pending_rewards: i32,
+    pub pending_rewards: u64,
     /// \[ebase\] used as part of the rewards computation. Only applicable to accounts which are participating.
     #[serde(rename = "reward-base", skip_serializing_if = "Option::is_none")]
-    pub reward_base: Option<i32>,
+    pub reward_base: Option<u64>,
     /// \[ern\] total rewards of MicroAlgos the account has received, including pending rewards.
     #[serde(rename = "rewards")]
-    pub rewards: i32,
+    pub rewards: u64,
     /// The round for which this information is relevant.
     #[serde(rename = "round")]
-    pub round: i32,
+    pub round: u64,
     /// \[onl\] delegation status of the account's MicroAlgos
     ///   * Offline - indicates that the associated account is delegated.
     ///   *  Online  - indicates that the associated account used as part of the delegation pool.
@@ -119,10 +119,10 @@ pub struct Account {
     pub auth_addr: Option<String>,
     /// The round in which this account last proposed the block.
     #[serde(rename = "last-proposed", skip_serializing_if = "Option::is_none")]
-    pub last_proposed: Option<i32>,
+    pub last_proposed: Option<u64>,
     /// The round in which this account last went online, or explicitly renewed their online status.
     #[serde(rename = "last-heartbeat", skip_serializing_if = "Option::is_none")]
-    pub last_heartbeat: Option<i32>,
+    pub last_heartbeat: Option<u64>,
 }
 
 impl AlgorandMsgpack for Account {
@@ -133,16 +133,16 @@ impl Account {
     /// Constructor for Account
     pub fn new(
         address: String,
-        amount: i32,
-        min_balance: i32,
-        amount_without_pending_rewards: i32,
+        amount: u64,
+        min_balance: u64,
+        amount_without_pending_rewards: u64,
         total_apps_opted_in: i32,
         total_assets_opted_in: i32,
         total_created_apps: i32,
         total_created_assets: i32,
-        pending_rewards: i32,
-        rewards: i32,
-        round: i32,
+        pending_rewards: u64,
+        rewards: u64,
+        round: u64,
         status: String,
     ) -> Account {
         Account {

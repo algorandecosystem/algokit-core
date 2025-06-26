@@ -26,13 +26,13 @@ pub struct StateProofMessage {
     pub voters_commitment: Vec<u8>,
     /// An integer value representing the natural log of the proven weight with 16 bits of precision. This value would be used to verify the next state proof.
     #[serde(rename = "LnProvenWeight")]
-    pub ln_proven_weight: i32,
+    pub ln_proven_weight: u64,
     /// The first round the message attests to.
     #[serde(rename = "FirstAttestedRound")]
-    pub first_attested_round: i32,
+    pub first_attested_round: u64,
     /// The last round the message attests to.
     #[serde(rename = "LastAttestedRound")]
-    pub last_attested_round: i32,
+    pub last_attested_round: u64,
 }
 
 impl StateProofMessage {
@@ -40,9 +40,9 @@ impl StateProofMessage {
     pub fn new(
         block_headers_commitment: Vec<u8>,
         voters_commitment: Vec<u8>,
-        ln_proven_weight: i32,
-        first_attested_round: i32,
-        last_attested_round: i32,
+        ln_proven_weight: u64,
+        first_attested_round: u64,
+        last_attested_round: u64,
     ) -> StateProofMessage {
         StateProofMessage {
             block_headers_commitment,

@@ -19,7 +19,7 @@ use crate::models::AssetParams;
 pub struct Asset {
     /// unique asset identifier
     #[serde(rename = "index")]
-    pub index: i32,
+    pub index: u64,
     #[serde(rename = "params")]
     pub params: AssetParams,
 }
@@ -30,7 +30,7 @@ impl AlgorandMsgpack for Asset {
 
 impl Asset {
     /// Constructor for Asset
-    pub fn new(index: i32, params: AssetParams) -> Asset {
+    pub fn new(index: u64, params: AssetParams) -> Asset {
         Asset { index, params }
     }
 

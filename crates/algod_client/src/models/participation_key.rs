@@ -27,13 +27,13 @@ pub struct ParticipationKey {
         rename = "effective-first-valid",
         skip_serializing_if = "Option::is_none"
     )]
-    pub effective_first_valid: Option<i32>,
+    pub effective_first_valid: Option<u64>,
     /// When registered, this is the last round it may be used.
     #[serde(
         rename = "effective-last-valid",
         skip_serializing_if = "Option::is_none"
     )]
-    pub effective_last_valid: Option<i32>,
+    pub effective_last_valid: Option<u64>,
     /// Round when this key was last used to vote.
     #[serde(rename = "last-vote", skip_serializing_if = "Option::is_none")]
     pub last_vote: Option<i32>,

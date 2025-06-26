@@ -23,7 +23,7 @@ pub struct SimulateRequest {
     pub txn_groups: Vec<SimulateRequestTransactionGroup>,
     /// If provided, specifies the round preceding the simulation. State changes through this round will be used to run this simulation. Usually only the 4 most recent rounds will be available (controlled by the node config value MaxAcctLookback). If not specified, defaults to the latest available round.
     #[serde(rename = "round", skip_serializing_if = "Option::is_none")]
-    pub round: Option<i32>,
+    pub round: Option<u64>,
     /// Allows transactions without signatures to be simulated as if they had correct signatures.
     #[serde(
         rename = "allow-empty-signatures",

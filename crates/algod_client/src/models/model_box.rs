@@ -18,7 +18,7 @@ use serde_with::serde_as;
 pub struct ModelBox {
     /// The round for which this information is relevant
     #[serde(rename = "round")]
-    pub round: i32,
+    pub round: u64,
     /// \[name\] box name, base64 encoded
     #[serde_as(as = "serde_with::base64::Base64")]
     #[serde(rename = "name")]
@@ -31,7 +31,7 @@ pub struct ModelBox {
 
 impl ModelBox {
     /// Constructor for ModelBox
-    pub fn new(round: i32, name: Vec<u8>, value: Vec<u8>) -> ModelBox {
+    pub fn new(round: u64, name: Vec<u8>, value: Vec<u8>) -> ModelBox {
         ModelBox { round, name, value }
     }
 }

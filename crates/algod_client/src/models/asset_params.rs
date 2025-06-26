@@ -56,7 +56,7 @@ pub struct AssetParams {
     pub reserve: Option<String>,
     /// \[t\] The total number of units of this asset.
     #[serde(rename = "total")]
-    pub total: i32,
+    pub total: u64,
     /// \[un\] Name of a unit of this asset, as supplied by the creator. Included only when the name of a unit of this asset is composed of printable utf-8 characters.
     #[serde(rename = "unit-name", skip_serializing_if = "Option::is_none")]
     pub unit_name: Option<String>,
@@ -79,7 +79,7 @@ impl AlgorandMsgpack for AssetParams {
 
 impl AssetParams {
     /// Constructor for AssetParams
-    pub fn new(creator: String, decimals: i32, total: i32) -> AssetParams {
+    pub fn new(creator: String, decimals: i32, total: u64) -> AssetParams {
         AssetParams {
             creator,
             decimals,

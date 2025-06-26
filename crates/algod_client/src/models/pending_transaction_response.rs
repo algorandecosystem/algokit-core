@@ -20,25 +20,25 @@ use crate::models::StateDelta;
 pub struct PendingTransactionResponse {
     /// The asset index if the transaction was found and it created an asset.
     #[serde(rename = "asset-index", skip_serializing_if = "Option::is_none")]
-    pub asset_index: Option<i32>,
+    pub asset_index: Option<u64>,
     /// The application index if the transaction was found and it created an application.
     #[serde(rename = "application-index", skip_serializing_if = "Option::is_none")]
-    pub application_index: Option<i32>,
+    pub application_index: Option<u64>,
     /// Rewards in microalgos applied to the close remainder to account.
     #[serde(rename = "close-rewards", skip_serializing_if = "Option::is_none")]
     pub close_rewards: Option<i32>,
     /// Closing amount for the transaction.
     #[serde(rename = "closing-amount", skip_serializing_if = "Option::is_none")]
-    pub closing_amount: Option<i32>,
+    pub closing_amount: Option<u64>,
     /// The number of the asset's unit that were transferred to the close-to address.
     #[serde(
         rename = "asset-closing-amount",
         skip_serializing_if = "Option::is_none"
     )]
-    pub asset_closing_amount: Option<i32>,
+    pub asset_closing_amount: Option<u64>,
     /// The round where this transaction was confirmed, if present.
     #[serde(rename = "confirmed-round", skip_serializing_if = "Option::is_none")]
-    pub confirmed_round: Option<i32>,
+    pub confirmed_round: Option<u64>,
     /// Indicates that the transaction was kicked out of this node's transaction pool (and specifies why that happened).  An empty string indicates the transaction wasn't kicked out of this node's txpool due to an error.
     #[serde(rename = "pool-error")]
     pub pool_error: String,

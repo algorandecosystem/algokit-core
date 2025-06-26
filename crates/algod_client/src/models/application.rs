@@ -19,7 +19,7 @@ use crate::models::ApplicationParams;
 pub struct Application {
     /// \[appidx\] application index.
     #[serde(rename = "id")]
-    pub id: i32,
+    pub id: u64,
     #[serde(rename = "params")]
     pub params: ApplicationParams,
 }
@@ -30,7 +30,7 @@ impl AlgorandMsgpack for Application {
 
 impl Application {
     /// Constructor for Application
-    pub fn new(id: i32, params: ApplicationParams) -> Application {
+    pub fn new(id: u64, params: ApplicationParams) -> Application {
         Application { id, params }
     }
 

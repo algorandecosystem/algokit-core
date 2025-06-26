@@ -20,7 +20,7 @@ pub struct GetStatus200Response {
     pub catchup_time: i32,
     /// LastRound indicates the last round seen
     #[serde(rename = "last-round")]
-    pub last_round: i32,
+    pub last_round: u64,
     /// LastVersion indicates the last consensus version supported
     #[serde(rename = "last-version")]
     pub last_version: String,
@@ -136,7 +136,7 @@ impl GetStatus200Response {
     /// Constructor for GetStatus200Response
     pub fn new(
         catchup_time: i32,
-        last_round: i32,
+        last_round: u64,
         last_version: String,
         next_version: String,
         next_version_round: i32,

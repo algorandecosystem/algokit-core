@@ -23,7 +23,7 @@ pub struct TealValue {
     pub bytes: String,
     /// \[ui\] uint value.
     #[serde(rename = "uint")]
-    pub uint: i32,
+    pub uint: u64,
 }
 
 impl AlgorandMsgpack for TealValue {
@@ -32,7 +32,7 @@ impl AlgorandMsgpack for TealValue {
 
 impl TealValue {
     /// Constructor for TealValue
-    pub fn new(r#type: i32, bytes: String, uint: i32) -> TealValue {
+    pub fn new(r#type: i32, bytes: String, uint: u64) -> TealValue {
         TealValue {
             r#type,
             bytes,

@@ -24,10 +24,10 @@ pub struct SimulateUnnamedResourcesAccessed {
     pub accounts: Option<Vec<String>>,
     /// The unnamed assets that were referenced. The order of this array is arbitrary.
     #[serde(rename = "assets", skip_serializing_if = "Option::is_none")]
-    pub assets: Option<Vec<i32>>,
+    pub assets: Option<Vec<u64>>,
     /// The unnamed applications that were referenced. The order of this array is arbitrary.
     #[serde(rename = "apps", skip_serializing_if = "Option::is_none")]
-    pub apps: Option<Vec<i32>>,
+    pub apps: Option<Vec<u64>>,
     /// The unnamed boxes that were referenced. The order of this array is arbitrary.
     #[serde(rename = "boxes", skip_serializing_if = "Option::is_none")]
     pub boxes: Option<Vec<BoxReference>>,

@@ -25,7 +25,7 @@ pub struct SimulateTransaction200Response {
     pub version: i32,
     /// The round immediately preceding this simulation. State changes through this round were used to run this simulation.
     #[serde(rename = "last-round")]
-    pub last_round: i32,
+    pub last_round: u64,
     /// A result object for each transaction group that was simulated.
     #[serde(rename = "txn-groups")]
     pub txn_groups: Vec<SimulateTransactionGroupResult>,
@@ -45,7 +45,7 @@ impl SimulateTransaction200Response {
     /// Constructor for SimulateTransaction200Response
     pub fn new(
         version: i32,
-        last_round: i32,
+        last_round: u64,
         txn_groups: Vec<SimulateTransactionGroupResult>,
     ) -> SimulateTransaction200Response {
         SimulateTransaction200Response {

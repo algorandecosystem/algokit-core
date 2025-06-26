@@ -20,7 +20,7 @@ use crate::models::TealKeyValueStore;
 pub struct ApplicationLocalState {
     /// The application which this local state is for.
     #[serde(rename = "id")]
-    pub id: i32,
+    pub id: u64,
     #[serde(rename = "schema")]
     pub schema: ApplicationStateSchema,
     #[serde(rename = "key-value", skip_serializing_if = "Option::is_none")]
@@ -33,7 +33,7 @@ impl AlgorandMsgpack for ApplicationLocalState {
 
 impl ApplicationLocalState {
     /// Constructor for ApplicationLocalState
-    pub fn new(id: i32, schema: ApplicationStateSchema) -> ApplicationLocalState {
+    pub fn new(id: u64, schema: ApplicationStateSchema) -> ApplicationLocalState {
         ApplicationLocalState {
             id,
             schema,

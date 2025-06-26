@@ -20,10 +20,10 @@ use serde::{Deserialize, Serialize};
 pub struct AssetHolding {
     /// \[a\] number of units held.
     #[serde(rename = "amount")]
-    pub amount: i32,
+    pub amount: u64,
     /// Asset ID of the holding.
     #[serde(rename = "asset-id")]
-    pub asset_id: i32,
+    pub asset_id: u64,
     /// \[f\] whether or not the holding is frozen.
     #[serde(rename = "is-frozen")]
     pub is_frozen: bool,
@@ -35,7 +35,7 @@ impl AlgorandMsgpack for AssetHolding {
 
 impl AssetHolding {
     /// Constructor for AssetHolding
-    pub fn new(amount: i32, asset_id: i32, is_frozen: bool) -> AssetHolding {
+    pub fn new(amount: u64, asset_id: u64, is_frozen: bool) -> AssetHolding {
         AssetHolding {
             amount,
             asset_id,

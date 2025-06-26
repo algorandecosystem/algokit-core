@@ -20,7 +20,7 @@ pub struct AppCallLogs {
     pub logs: Vec<String>,
     /// The application from which the logs were generated
     #[serde(rename = "application-index")]
-    pub application_index: i32,
+    pub application_index: u64,
     /// The transaction ID of the outer app call that lead to these logs
     #[serde(rename = "txId")]
     pub tx_id: String,
@@ -32,7 +32,7 @@ impl AlgorandMsgpack for AppCallLogs {
 
 impl AppCallLogs {
     /// Constructor for AppCallLogs
-    pub fn new(logs: Vec<String>, application_index: i32, tx_id: String) -> AppCallLogs {
+    pub fn new(logs: Vec<String>, application_index: u64, tx_id: String) -> AppCallLogs {
         AppCallLogs {
             logs,
             application_index,

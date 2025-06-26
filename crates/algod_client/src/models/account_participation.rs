@@ -23,13 +23,13 @@ pub struct AccountParticipation {
     pub selection_participation_key: Vec<u8>,
     /// \[voteFst\] First round for which this participation is valid.
     #[serde(rename = "vote-first-valid")]
-    pub vote_first_valid: i32,
+    pub vote_first_valid: u64,
     /// \[voteKD\] Number of subkeys in each batch of participation keys.
     #[serde(rename = "vote-key-dilution")]
-    pub vote_key_dilution: i32,
+    pub vote_key_dilution: u64,
     /// \[voteLst\] Last round for which this participation is valid.
     #[serde(rename = "vote-last-valid")]
-    pub vote_last_valid: i32,
+    pub vote_last_valid: u64,
     /// \[vote\] root participation public key (if any) currently registered for this round.
     #[serde_as(as = "serde_with::base64::Base64")]
     #[serde(rename = "vote-participation-key")]
@@ -48,9 +48,9 @@ impl AccountParticipation {
     /// Constructor for AccountParticipation
     pub fn new(
         selection_participation_key: Vec<u8>,
-        vote_first_valid: i32,
-        vote_key_dilution: i32,
-        vote_last_valid: i32,
+        vote_first_valid: u64,
+        vote_key_dilution: u64,
+        vote_last_valid: u64,
         vote_participation_key: Vec<u8>,
     ) -> AccountParticipation {
         AccountParticipation {

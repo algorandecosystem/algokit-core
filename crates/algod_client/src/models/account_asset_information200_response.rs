@@ -20,7 +20,7 @@ use crate::models::AssetParams;
 pub struct AccountAssetInformation200Response {
     /// The round for which this information is relevant.
     #[serde(rename = "round")]
-    pub round: i32,
+    pub round: u64,
     #[serde(rename = "asset-holding", skip_serializing_if = "Option::is_none")]
     pub asset_holding: Option<AssetHolding>,
     #[serde(rename = "created-asset", skip_serializing_if = "Option::is_none")]
@@ -33,7 +33,7 @@ impl AlgorandMsgpack for AccountAssetInformation200Response {
 
 impl AccountAssetInformation200Response {
     /// Constructor for AccountAssetInformation200Response
-    pub fn new(round: i32) -> AccountAssetInformation200Response {
+    pub fn new(round: u64) -> AccountAssetInformation200Response {
         AccountAssetInformation200Response {
             round,
             asset_holding: None,
