@@ -12,25 +12,27 @@ use crate::models;
 use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
 
-use crate::models::TealValue;
+use crate::models::AvmKeyValue;
 
-/// Represents a key-value pair in an application store.
+/// An application's global/local/box state.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct TealKeyValue {
-    #[serde(rename = "key")]
-    pub key: String,
-    #[serde(rename = "value")]
-    pub value: TealValue,
+pub struct ApplicationKvStorage {
+    /// Key-Value pairs representing application states.
+    #[serde(rename = "kvs")]
+    pub kvs: Vec<AvmKeyValue>,
+    /// The address of the account associated with the local state.
+    #[serde(rename = "account", skip_serializing_if = "Option::is_none")]
+    pub account: Option<String>,
 }
 
-impl AlgorandMsgpack for TealKeyValue {
+impl AlgorandMsgpack for ApplicationKvStorage {
     const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
 }
 
-impl TealKeyValue {
-    /// Constructor for TealKeyValue
-    pub fn new(key: String, value: TealValue) -> TealKeyValue {
-        TealKeyValue { key, value }
+impl ApplicationKvStorage {
+    /// Constructor for ApplicationKvStorage
+    pub fn new(kvs: Vec<AvmKeyValue>) -> ApplicationKvStorage {
+        ApplicationKvStorage { kvs, account: None }
     }
 
     /// Encode this struct to msgpack bytes using AlgorandMsgpack trait

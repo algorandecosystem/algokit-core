@@ -4,6 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "test:oas_generator": "cd oas_generator && uv run pytest",
     "format:oas_generator": "cd oas_generator && uv run ruff format",
     "lint:oas_generator": "cd oas_generator && uv run ruff check && uv run mypy rust_oas_generator",
     "format:algod_client": "cargo fmt --manifest-path ../Cargo.toml -p algod_client",

@@ -9,6 +9,7 @@
  */
 
 use crate::models;
+use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
 
 /// Represents a TEAL value delta.
@@ -25,6 +26,10 @@ pub struct EvalDelta {
     pub uint: Option<i32>,
 }
 
+impl AlgorandMsgpack for EvalDelta {
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
+}
+
 impl EvalDelta {
     /// Constructor for EvalDelta
     pub fn new(action: i32) -> EvalDelta {
@@ -33,5 +38,15 @@ impl EvalDelta {
             bytes: None,
             uint: None,
         }
+    }
+
+    /// Encode this struct to msgpack bytes using AlgorandMsgpack trait
+    pub fn to_msgpack(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        Ok(self.encode()?)
+    }
+
+    /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
+    pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(Self::decode(bytes)?)
     }
 }

@@ -24,13 +24,13 @@ pub mod account_assets_information;
 pub mod account_information;
 pub mod add_participation_key;
 pub mod append_keys;
-pub mod delete_participation_key_by_i_d;
+pub mod delete_participation_key_by_id;
 pub mod experimental_check;
 pub mod generate_participation_keys;
 pub mod get_application_box_by_name;
 pub mod get_application_boxes;
-pub mod get_application_by_i_d;
-pub mod get_asset_by_i_d;
+pub mod get_application_by_id;
+pub mod get_asset_by_id;
 pub mod get_block;
 pub mod get_block_hash;
 pub mod get_block_logs;
@@ -42,7 +42,7 @@ pub mod get_genesis;
 pub mod get_ledger_state_delta;
 pub mod get_ledger_state_delta_for_transaction_group;
 pub mod get_light_block_header_proof;
-pub mod get_participation_key_by_i_d;
+pub mod get_participation_key_by_id;
 pub mod get_participation_keys;
 pub mod get_pending_transactions;
 pub mod get_pending_transactions_by_address;
@@ -65,7 +65,7 @@ pub mod set_sync_round;
 pub mod shutdown_node;
 pub mod simulate_transaction;
 pub mod start_catchup;
-pub mod swagger_j_s_o_n;
+pub mod swagger_json;
 pub mod teal_compile;
 pub mod teal_disassemble;
 pub mod teal_dryrun;
@@ -145,8 +145,8 @@ pub use account_assets_information::{account_assets_information, AccountAssetsIn
 pub use account_information::{account_information, AccountInformationError};
 pub use add_participation_key::{add_participation_key, AddParticipationKeyError};
 pub use append_keys::{append_keys, AppendKeysError};
-pub use delete_participation_key_by_i_d::{
-    delete_participation_key_by_i_d, DeleteParticipationKeyByIdError,
+pub use delete_participation_key_by_id::{
+    delete_participation_key_by_id, DeleteParticipationKeyByIdError,
 };
 pub use experimental_check::{experimental_check, ExperimentalCheckError};
 pub use generate_participation_keys::{
@@ -154,8 +154,8 @@ pub use generate_participation_keys::{
 };
 pub use get_application_box_by_name::{get_application_box_by_name, GetApplicationBoxByNameError};
 pub use get_application_boxes::{get_application_boxes, GetApplicationBoxesError};
-pub use get_application_by_i_d::{get_application_by_i_d, GetApplicationByIdError};
-pub use get_asset_by_i_d::{get_asset_by_i_d, GetAssetByIdError};
+pub use get_application_by_id::{get_application_by_id, GetApplicationByIdError};
+pub use get_asset_by_id::{get_asset_by_id, GetAssetByIdError};
 pub use get_block::{get_block, GetBlockError};
 pub use get_block_hash::{get_block_hash, GetBlockHashError};
 pub use get_block_logs::{get_block_logs, GetBlockLogsError};
@@ -171,9 +171,7 @@ pub use get_ledger_state_delta_for_transaction_group::{
 pub use get_light_block_header_proof::{
     get_light_block_header_proof, GetLightBlockHeaderProofError,
 };
-pub use get_participation_key_by_i_d::{
-    get_participation_key_by_i_d, GetParticipationKeyByIdError,
-};
+pub use get_participation_key_by_id::{get_participation_key_by_id, GetParticipationKeyByIdError};
 pub use get_participation_keys::{get_participation_keys, GetParticipationKeysError};
 pub use get_pending_transactions::{get_pending_transactions, GetPendingTransactionsError};
 pub use get_pending_transactions_by_address::{
@@ -203,7 +201,7 @@ pub use set_sync_round::{set_sync_round, SetSyncRoundError};
 pub use shutdown_node::{shutdown_node, ShutdownNodeError};
 pub use simulate_transaction::{simulate_transaction, SimulateTransactionError};
 pub use start_catchup::{start_catchup, StartCatchupError};
-pub use swagger_j_s_o_n::{swagger_j_s_o_n, SwaggerJsonError};
+pub use swagger_json::{swagger_json, SwaggerJsonError};
 pub use teal_compile::{teal_compile, TealCompileError};
 pub use teal_disassemble::{teal_disassemble, TealDisassembleError};
 pub use teal_dryrun::{teal_dryrun, TealDryrunError};

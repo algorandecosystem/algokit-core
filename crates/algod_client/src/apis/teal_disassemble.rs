@@ -10,6 +10,7 @@
 
 use super::{configuration, ContentType, Error};
 use crate::{apis::ResponseContent, models};
+use algokit_transact::AlgorandMsgpack;
 use reqwest;
 use serde::{de::Error as _, Deserialize, Serialize};
 

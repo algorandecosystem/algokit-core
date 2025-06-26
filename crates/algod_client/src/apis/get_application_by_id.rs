@@ -14,14 +14,14 @@ use reqwest;
 use serde::{de::Error as _, Deserialize, Serialize};
 
 // Import all custom types used by this endpoint
-use crate::models::{Asset, ErrorResponse};
+use crate::models::{Application, ErrorResponse};
 
 // Import request body type if needed
 
-/// struct for typed errors of method [`get_asset_by_i_d`]
+/// struct for typed errors of method [`get_application_by_id`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum GetAssetByIdError {
+pub enum GetApplicationByIdError {
     Status400(ErrorResponse),
     Status401(ErrorResponse),
     Status404(ErrorResponse),
@@ -31,18 +31,18 @@ pub enum GetAssetByIdError {
     UnknownValue(serde_json::Value),
 }
 
-/// Given a asset ID, it returns asset information including creator, name, total supply and special addresses.
-pub async fn get_asset_by_i_d(
+/// Given a application ID, it returns application information including creator, approval and clear programs, global and local schemas, and global state.
+pub async fn get_application_by_id(
     configuration: &configuration::Configuration,
-    asset_id: i32,
-) -> Result<Asset, Error<GetAssetByIdError>> {
+    application_id: i32,
+) -> Result<Application, Error<GetApplicationByIdError>> {
     // add a prefix to parameters to efficiently prevent name collisions
-    let p_asset_id = asset_id;
+    let p_application_id = application_id;
 
     let uri_str = format!(
-        "{}/v2/assets/{asset_id}",
+        "{}/v2/applications/{application_id}",
         configuration.base_path,
-        asset_id = p_asset_id
+        application_id = p_application_id
     );
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
@@ -78,12 +78,12 @@ pub async fn get_asset_by_i_d(
             ContentType::MsgPack => {
                 Err(Error::from(serde_json::Error::custom("MsgPack response handling not supported for this endpoint")))
             },
-            ContentType::Text => Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Asset`"))),
-            ContentType::Unsupported(unknown_type) => Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Asset`")))),
+            ContentType::Text => Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Application`"))),
+            ContentType::Unsupported(unknown_type) => Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Application`")))),
         }
     } else {
         let content = resp.text().await?;
-        let entity: Option<GetAssetByIdError> = serde_json::from_str(&content).ok();
+        let entity: Option<GetApplicationByIdError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent {
             status,
             content,

@@ -104,10 +104,10 @@ impl AlgodClient {
     }
 
     /// Gets the current swagger spec.
-    pub async fn swagger_j_s_o_n(
+    pub async fn swagger_json(
         &self,
-    ) -> Result<String, Error<super::swagger_j_s_o_n::SwaggerJsonError>> {
-        super::swagger_j_s_o_n::swagger_j_s_o_n(&self.configuration).await
+    ) -> Result<String, Error<super::swagger_json::SwaggerJsonError>> {
+        super::swagger_json::swagger_json(&self.configuration).await
     }
 
     /// Retrieves the supported API versions, binary build versions, and genesis information.
@@ -331,14 +331,14 @@ impl AlgodClient {
     }
 
     /// Get participation key info given a participation ID
-    pub async fn get_participation_key_by_i_d(
+    pub async fn get_participation_key_by_id(
         &self,
         participation_id: &str,
     ) -> Result<
         ParticipationKey,
-        Error<super::get_participation_key_by_i_d::GetParticipationKeyByIdError>,
+        Error<super::get_participation_key_by_id::GetParticipationKeyByIdError>,
     > {
-        super::get_participation_key_by_i_d::get_participation_key_by_i_d(
+        super::get_participation_key_by_id::get_participation_key_by_id(
             &self.configuration,
             participation_id,
         )
@@ -355,12 +355,12 @@ impl AlgodClient {
     }
 
     /// Delete a given participation key by ID
-    pub async fn delete_participation_key_by_i_d(
+    pub async fn delete_participation_key_by_id(
         &self,
         participation_id: &str,
-    ) -> Result<(), Error<super::delete_participation_key_by_i_d::DeleteParticipationKeyByIdError>>
+    ) -> Result<(), Error<super::delete_participation_key_by_id::DeleteParticipationKeyByIdError>>
     {
-        super::delete_participation_key_by_i_d::delete_participation_key_by_i_d(
+        super::delete_participation_key_by_id::delete_participation_key_by_id(
             &self.configuration,
             participation_id,
         )
@@ -520,11 +520,11 @@ format: Option<&str>,
     }
 
     /// Get application information.
-    pub async fn get_application_by_i_d(
+    pub async fn get_application_by_id(
         &self,
         application_id: i32,
-    ) -> Result<Application, Error<super::get_application_by_i_d::GetApplicationByIdError>> {
-        super::get_application_by_i_d::get_application_by_i_d(&self.configuration, application_id)
+    ) -> Result<Application, Error<super::get_application_by_id::GetApplicationByIdError>> {
+        super::get_application_by_id::get_application_by_id(&self.configuration, application_id)
             .await
     }
 
@@ -561,11 +561,11 @@ format: Option<&str>,
     }
 
     /// Get asset information.
-    pub async fn get_asset_by_i_d(
+    pub async fn get_asset_by_id(
         &self,
         asset_id: i32,
-    ) -> Result<Asset, Error<super::get_asset_by_i_d::GetAssetByIdError>> {
-        super::get_asset_by_i_d::get_asset_by_i_d(&self.configuration, asset_id).await
+    ) -> Result<Asset, Error<super::get_asset_by_id::GetAssetByIdError>> {
+        super::get_asset_by_id::get_asset_by_id(&self.configuration, asset_id).await
     }
 
     /// Returns the minimum sync round the ledger is keeping in cache.

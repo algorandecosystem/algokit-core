@@ -18,7 +18,7 @@ use crate::models::ErrorResponse;
 
 // Import request body type if needed
 
-/// struct for typed errors of method [`delete_participation_key_by_i_d`]
+/// struct for typed errors of method [`delete_participation_key_by_id`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum DeleteParticipationKeyByIdError {
@@ -32,7 +32,7 @@ pub enum DeleteParticipationKeyByIdError {
 }
 
 /// Delete a given participation key by ID
-pub async fn delete_participation_key_by_i_d(
+pub async fn delete_participation_key_by_id(
     configuration: &configuration::Configuration,
     participation_id: &str,
 ) -> Result<(), Error<DeleteParticipationKeyByIdError>> {

@@ -14,36 +14,25 @@ use reqwest;
 use serde::{de::Error as _, Deserialize, Serialize};
 
 // Import all custom types used by this endpoint
-use crate::models::{Application, ErrorResponse};
 
 // Import request body type if needed
 
-/// struct for typed errors of method [`get_application_by_i_d`]
+/// struct for typed errors of method [`swagger_json`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum GetApplicationByIdError {
-    Status400(ErrorResponse),
-    Status401(ErrorResponse),
-    Status404(ErrorResponse),
-    Status500(ErrorResponse),
+pub enum SwaggerJsonError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(serde_json::Value),
 }
 
-/// Given a application ID, it returns application information including creator, approval and clear programs, global and local schemas, and global state.
-pub async fn get_application_by_i_d(
+/// Returns the entire swagger spec in json.
+pub async fn swagger_json(
     configuration: &configuration::Configuration,
-    application_id: i32,
-) -> Result<Application, Error<GetApplicationByIdError>> {
+) -> Result<String, Error<SwaggerJsonError>> {
     // add a prefix to parameters to efficiently prevent name collisions
-    let p_application_id = application_id;
 
-    let uri_str = format!(
-        "{}/v2/applications/{application_id}",
-        configuration.base_path,
-        application_id = p_application_id
-    );
+    let uri_str = format!("{}/swagger.json", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref user_agent) = configuration.user_agent {
@@ -78,12 +67,12 @@ pub async fn get_application_by_i_d(
             ContentType::MsgPack => {
                 Err(Error::from(serde_json::Error::custom("MsgPack response handling not supported for this endpoint")))
             },
-            ContentType::Text => Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Application`"))),
-            ContentType::Unsupported(unknown_type) => Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Application`")))),
+            ContentType::Text => Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `String`"))),
+            ContentType::Unsupported(unknown_type) => Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `String`")))),
         }
     } else {
         let content = resp.text().await?;
-        let entity: Option<GetApplicationByIdError> = serde_json::from_str(&content).ok();
+        let entity: Option<SwaggerJsonError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent {
             status,
             content,

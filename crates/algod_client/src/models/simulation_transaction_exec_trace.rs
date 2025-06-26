@@ -9,6 +9,7 @@
  */
 
 use crate::models;
+use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
@@ -68,9 +69,23 @@ pub struct SimulationTransactionExecTrace {
     pub inner_trace: Option<Vec<SimulationTransactionExecTrace>>,
 }
 
+impl AlgorandMsgpack for SimulationTransactionExecTrace {
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
+}
+
 impl SimulationTransactionExecTrace {
     /// Default constructor for SimulationTransactionExecTrace
     pub fn new() -> SimulationTransactionExecTrace {
         SimulationTransactionExecTrace::default()
+    }
+
+    /// Encode this struct to msgpack bytes using AlgorandMsgpack trait
+    pub fn to_msgpack(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        Ok(self.encode()?)
+    }
+
+    /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
+    pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(Self::decode(bytes)?)
     }
 }

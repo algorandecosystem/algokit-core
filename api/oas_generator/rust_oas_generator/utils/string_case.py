@@ -1,296 +1,365 @@
 """
 String case conversion utilities for Rust client generation.
 
+This module provides comprehensive string case conversion utilities with
+specific support for Rust naming conventions and keyword handling.
+
 Based on https://github.com/okunishinishi/python-stringcase
 with additional Rust-specific naming conventions.
 """
 
 import re
+from collections.abc import Callable
+from typing import Final
+
+# Regex patterns for case conversion
+_SNAKE_CASE_DELIMITER_PATTERN: Final = re.compile(r"[\-\.\s]")
+_ACRONYM_PATTERN: Final = re.compile(r"([A-Z])([A-Z][a-z])")
+_LOWER_UPPER_PATTERN: Final = re.compile(r"([a-z0-9])([A-Z])")
+_NON_ALPHANUMERIC_PATTERN: Final = re.compile(r"[^a-zA-Z0-9_]")
+_NON_WORD_PATTERN: Final = re.compile(r"[^\w\-]")
+
+# Reserved Rust keywords that need to be escaped with r#
+RUST_KEYWORDS: Final = frozenset(
+    {
+        # Strict keywords (cannot be used as identifiers)
+        "as",
+        "break",
+        "const",
+        "continue",
+        "crate",
+        "else",
+        "enum",
+        "extern",
+        "false",
+        "fn",
+        "for",
+        "if",
+        "impl",
+        "in",
+        "let",
+        "loop",
+        "match",
+        "mod",
+        "move",
+        "mut",
+        "pub",
+        "ref",
+        "return",
+        "self",
+        "Self",
+        "static",
+        "struct",
+        "super",
+        "trait",
+        "true",
+        "type",
+        "unsafe",
+        "use",
+        "where",
+        "while",
+        # Weak keywords (context-dependent, but safer to escape)
+        "async",
+        "await",
+        "dyn",
+        "union",
+        "try",
+        # Reserved keywords (not yet used but reserved for future use)
+        "abstract",
+        "become",
+        "box",
+        "do",
+        "final",
+        "macro",
+        "override",
+        "priv",
+        "typeof",
+        "unsized",
+        "virtual",
+        "yield",
+        # Special identifiers
+        "'static",
+    }
+)
 
 
-def camelcase(string: object) -> str:
+def _convert_if_not_empty(string: str | None, conversion_func: Callable[[str], str]) -> str:
+    """Safely convert a string, returning empty string if input is None or empty."""
+    return conversion_func(string) if string else ""
+
+
+def snakecase(string: str | None) -> str:
+    """Convert string into snake_case.
+
+    Handles various formats including camelCase with acronyms.
+
+    Args:
+        string: String to convert.
+
+    Returns:
+        Snake case string.
+
+    Examples:
+        >>> snakecase("HelloWorld")
+        'hello_world'
+        >>> snakecase("hello-world")
+        'hello_world'
+        >>> snakecase("getHTTPResponse")
+        'get_http_response'
+    """
+
+    def _snakecase(s: str) -> str:
+        s = _SNAKE_CASE_DELIMITER_PATTERN.sub("_", s)
+        s = _ACRONYM_PATTERN.sub(r"\1_\2", s)
+        s = _LOWER_UPPER_PATTERN.sub(r"\1_\2", s)
+        return s.lower()
+
+    return _convert_if_not_empty(string, _snakecase)
+
+
+def camelcase(string: str | None) -> str:
     """Convert string into camel case.
 
     Args:
         string: String to convert.
 
     Returns:
-        string: Camel case string.
+        Camel case string.
 
+    Examples:
+        >>> camelcase("hello_world")
+        'helloWorld'
+        >>> camelcase("hello-world")
+        'helloWorld'
+        >>> camelcase("getHTTPResponse")
+        'getHttpResponse'
     """
-    string_val = str(string)
-    if string_val == "":
-        return string_val
 
-    string_val = string_val.replace("_", "-")
-    lst = string_val.split("-")
-    for i in range(len(lst)):
-        if i == 0:
-            continue
-        lst[i] = lst[i].capitalize()
+    def _camelcase(s: str) -> str:
+        words = snakecase(s).split("_")
+        if not words:
+            return ""
+        return words[0] + "".join(word.capitalize() for word in words[1:])
 
-    return "".join(lst)
+    return _convert_if_not_empty(string, _camelcase)
 
 
-def capitalcase(string: object) -> str:
-    """Convert string into capital case.
-    First letters will be uppercase.
+def capitalcase(string: str | None) -> str:
+    """Convert string into capital case (first letter uppercase).
 
     Args:
         string: String to convert.
 
     Returns:
-        string: Capital case string.
+        Capital case string.
 
+    Examples:
+        >>> capitalcase("hello world")
+        'Hello world'
     """
-    string = str(string)
-    if not string:
-        return string
-    return uppercase(string[0]) + string[1:]
+
+    def _capitalcase(s: str) -> str:
+        return s[0].upper() + s[1:]
+
+    return _convert_if_not_empty(string, _capitalcase)
 
 
-def constcase(string: object) -> str:
-    """Convert string into upper snake case.
-    Join punctuation with underscore and convert letters into uppercase.
+def constcase(string: str | None) -> str:
+    """Convert string into CONSTANT_CASE (upper snake case).
 
     Args:
         string: String to convert.
 
     Returns:
-        string: Const cased string.
+        Constant case string.
 
+    Examples:
+        >>> constcase("hello_world")
+        'HELLO_WORLD'
+        >>> constcase("helloWorld")
+        'HELLO_WORLD'
     """
-    return uppercase(snakecase(string))
+    return snakecase(string).upper()
 
 
-def lowercase(string: object) -> str:
-    """Convert string into lower case.
+def lowercase(string: str | None) -> str:
+    """Convert string into lowercase.
 
     Args:
         string: String to convert.
 
     Returns:
-        string: Lowercase case string.
-
+        Lowercase string.
     """
-    return str(string).lower()
+    return string.lower() if string else ""
 
 
-def pascalcase(string: object) -> str:
-    """Convert string into pascal case.
+def pascalcase(string: str | None) -> str:
+    """Convert string into PascalCase.
 
     Args:
         string: String to convert.
 
     Returns:
-        string: Pascal case string.
+        PascalCase string.
 
+    Examples:
+        >>> pascalcase("hello_world")
+        'HelloWorld'
+        >>> pascalcase("hello-world")
+        'HelloWorld'
+        >>> pascalcase("getHTTPResponse")
+        'GetHttpResponse'
     """
-    return capitalcase(camelcase(string))
+
+    def _pascalcase(s: str) -> str:
+        return "".join(word.capitalize() for word in snakecase(s).split("_"))
+
+    return _convert_if_not_empty(string, _pascalcase)
 
 
-def snakecase(string: object) -> str:
-    """Convert string into snake case.
-    Join punctuation with underscore
+def spinalcase(string: str | None) -> str:
+    """Convert string into spinal-case (kebab-case).
 
     Args:
         string: String to convert.
 
     Returns:
-        string: Snake cased string.
+        Spinal case string.
 
+    Examples:
+        >>> spinalcase("hello_world")
+        'hello-world'
     """
-    string = re.sub(r"[\-\.\s]", "_", str(string))
-    if not string:
-        return string
-    return lowercase(string[0]) + re.sub(
-        r"[A-Z]",
-        lambda matched: "_" + lowercase(matched.group(0)),
-        string[1:],
-    )
+    return snakecase(string).replace("_", "-")
 
 
-def spinalcase(string: object) -> str:
-    """Convert string into spinal case.
-    Join punctuation with hyphen.
+def titlecase(string: str | None) -> str:
+    """Convert string into Title Case.
 
     Args:
         string: String to convert.
 
     Returns:
-        string: Spinal cased string.
+        Title case string.
 
+    Examples:
+        >>> titlecase("hello_world")
+        'Hello World'
     """
-    return re.sub(r"_", "-", snakecase(string))
+    return " ".join(capitalcase(word) for word in snakecase(string).split("_") if word)
 
 
-def titlecase(string: object) -> str:
-    """Convert string into sentence case.
-    First letter capped while each punctuations is capitalised
-    and joined with space.
-
-    Args:
-        string: String to convert.
-
-    Returns:
-        string: Title cased string.
-
-    """
-    return " ".join([capitalcase(word) for word in snakecase(string).split("_")])
-
-
-def trimcase(string: object) -> str:
+def trimcase(string: str | None) -> str:
     """Convert string into trimmed string.
 
     Args:
         string: String to convert.
 
     Returns:
-        string: Trimmed case string
+        Trimmed string.
     """
-    return str(string).strip()
+    return string.strip() if string else ""
 
 
-def uppercase(string: object) -> str:
-    """Convert string into upper case.
+def uppercase(string: str | None) -> str:
+    """Convert string into uppercase.
 
     Args:
         string: String to convert.
 
     Returns:
-        string: Uppercase case string.
-
+        Uppercase string.
     """
-    return str(string).upper()
+    return string.upper() if string else ""
 
 
-def alphanumcase(string: object) -> str:
-    """Cuts all non-alphanumeric symbols,
-    i.e. cuts all expect except 0-9, a-z and A-Z.
+def alphanumcase(string: str | None) -> str:
+    """Remove all non-alphanumeric characters (keeps only 0-9, a-z, A-Z).
 
     Args:
         string: String to convert.
 
     Returns:
-        string: String with cutted non-alphanumeric symbols.
+        String with only alphanumeric characters.
 
+    Examples:
+        >>> alphanumcase("hello@world#123")
+        'helloworld123'
     """
-    return "".join(filter(str.isalnum, str(string)))
+
+    def _alphanumcase(s: str) -> str:
+        return "".join(char for char in s if char.isalnum())
+
+    return _convert_if_not_empty(string, _alphanumcase)
 
 
 # Rust-specific naming utilities
 
-
-def rust_snake_case(name: str) -> str:
-    """Convert string to snake_case for Rust naming (fields, functions, etc.)."""
-    return snakecase(name)
-
-
-def rust_pascal_case(name: str) -> str:
-    """Convert string to PascalCase for Rust types (structs, enums, traits)."""
-    if not name:
-        return name
-
-    name = re.sub(r"[^\w\-]", "_", str(name))
-    parts = re.split(
-        r"[-_]+|(?<=[a-z])(?=[A-Z])|(?<=[0-9])(?=[A-Z])|(?<=[A-Z])(?=[0-9])",
-        name,
-    )
-
-    capitalized_parts = []
-    for part in parts:
-        if part:
-            if part.isdigit():
-                capitalized_parts.append(part)
-            elif part[0].isdigit():
-                digits = ""
-                letters = ""
-                for char in part:
-                    if char.isdigit():
-                        digits += char
-                    else:
-                        letters += char
-                if letters:
-                    capitalized_parts.append(digits + letters.capitalize())
-                else:
-                    capitalized_parts.append(digits)
-            else:
-                capitalized_parts.append(part.capitalize())
-
-    return "".join(capitalized_parts)
+rust_snake_case = snakecase
+rust_const_case = constcase
+rust_pascal_case = pascalcase
 
 
-def rust_const_case(name: str) -> str:
-    """Convert string to CONST_CASE for Rust constants."""
-    return constcase(name)
+def normalize_rust_identifier(name: str | None) -> str:
+    """Normalize name to be a valid Rust identifier.
 
+    This function ensures the resulting string is a valid Rust identifier:
+    - Replaces invalid characters with underscores
+    - Ensures it doesn't start with a digit
+    - Preserves valid alphanumeric characters and underscores
 
-def normalize_rust_identifier(name: str) -> str:
-    """Normalize name for Rust identifiers."""
-    normalized = re.sub(r"[^a-zA-Z0-9_]", "_", str(name))
-    if normalized and normalized[0].isdigit():
-        normalized = f"_{normalized}"
-    return normalized
+    Args:
+        name: The string to normalize.
 
+    Returns:
+        A valid Rust identifier.
 
-# Reserved Rust keywords that need to be escaped with r#
-RUST_KEYWORDS = {
-    "as",
-    "break",
-    "const",
-    "continue",
-    "crate",
-    "else",
-    "enum",
-    "extern",
-    "false",
-    "fn",
-    "for",
-    "if",
-    "impl",
-    "in",
-    "let",
-    "loop",
-    "match",
-    "mod",
-    "move",
-    "mut",
-    "pub",
-    "ref",
-    "return",
-    "self",
-    "Self",
-    "static",
-    "struct",
-    "super",
-    "trait",
-    "true",
-    "type",
-    "unsafe",
-    "use",
-    "where",
-    "while",
-    "async",
-    "await",
-    "dyn",
-    "abstract",
-    "become",
-    "box",
-    "do",
-    "final",
-    "macro",
-    "override",
-    "priv",
-    "typeof",
-    "unsized",
-    "virtual",
-    "yield",
-    "try",
-    "union",
-    "'static",
-}
+    Examples:
+        >>> normalize_rust_identifier("123invalid")
+        '_123invalid'
+        >>> normalize_rust_identifier("valid@name")
+        'valid_name'
+    """
+
+    def _normalize(s: str) -> str:
+        # Replace invalid characters with underscores
+        normalized = _NON_ALPHANUMERIC_PATTERN.sub("_", s)
+
+        # Ensure it doesn't start with a digit
+        if normalized and normalized[0].isdigit():
+            normalized = f"_{normalized}"
+
+        return normalized
+
+    return _convert_if_not_empty(name, _normalize)
 
 
 def escape_rust_keyword(name: str) -> str:
-    """Escape Rust keywords with r# prefix if necessary."""
+    """Escape Rust keywords with r# prefix if necessary.
+
+    Args:
+        name: The identifier name to check.
+
+    Returns:
+        The name with r# prefix if it's a Rust keyword, otherwise unchanged.
+
+    Examples:
+        >>> escape_rust_keyword("type")
+        'r#type'
+        >>> escape_rust_keyword("name")
+        'name'
+    """
     return f"r#{name}" if name in RUST_KEYWORDS else name
+
+
+def is_rust_keyword(name: str) -> bool:
+    """Check if a name is a Rust keyword.
+
+    Args:
+        name: The identifier name to check.
+
+    Returns:
+        True if the name is a Rust keyword, False otherwise.
+    """
+    return name in RUST_KEYWORDS

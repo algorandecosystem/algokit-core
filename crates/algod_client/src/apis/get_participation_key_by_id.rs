@@ -18,7 +18,7 @@ use crate::models::{ErrorResponse, ParticipationKey};
 
 // Import request body type if needed
 
-/// struct for typed errors of method [`get_participation_key_by_i_d`]
+/// struct for typed errors of method [`get_participation_key_by_id`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum GetParticipationKeyByIdError {
@@ -32,7 +32,7 @@ pub enum GetParticipationKeyByIdError {
 }
 
 /// Given a participation ID, return information about that participation key
-pub async fn get_participation_key_by_i_d(
+pub async fn get_participation_key_by_id(
     configuration: &configuration::Configuration,
     participation_id: &str,
 ) -> Result<ParticipationKey, Error<GetParticipationKeyByIdError>> {

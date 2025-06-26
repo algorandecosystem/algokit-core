@@ -14,25 +14,36 @@ use reqwest;
 use serde::{de::Error as _, Deserialize, Serialize};
 
 // Import all custom types used by this endpoint
+use crate::models::{Asset, ErrorResponse};
 
 // Import request body type if needed
 
-/// struct for typed errors of method [`swagger_j_s_o_n`]
+/// struct for typed errors of method [`get_asset_by_id`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum SwaggerJsonError {
+pub enum GetAssetByIdError {
+    Status400(ErrorResponse),
+    Status401(ErrorResponse),
+    Status404(ErrorResponse),
+    Status500(ErrorResponse),
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(serde_json::Value),
 }
 
-/// Returns the entire swagger spec in json.
-pub async fn swagger_j_s_o_n(
+/// Given a asset ID, it returns asset information including creator, name, total supply and special addresses.
+pub async fn get_asset_by_id(
     configuration: &configuration::Configuration,
-) -> Result<String, Error<SwaggerJsonError>> {
+    asset_id: i32,
+) -> Result<Asset, Error<GetAssetByIdError>> {
     // add a prefix to parameters to efficiently prevent name collisions
+    let p_asset_id = asset_id;
 
-    let uri_str = format!("{}/swagger.json", configuration.base_path);
+    let uri_str = format!(
+        "{}/v2/assets/{asset_id}",
+        configuration.base_path,
+        asset_id = p_asset_id
+    );
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref user_agent) = configuration.user_agent {
@@ -67,12 +78,12 @@ pub async fn swagger_j_s_o_n(
             ContentType::MsgPack => {
                 Err(Error::from(serde_json::Error::custom("MsgPack response handling not supported for this endpoint")))
             },
-            ContentType::Text => Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `String`"))),
-            ContentType::Unsupported(unknown_type) => Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `String`")))),
+            ContentType::Text => Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Asset`"))),
+            ContentType::Unsupported(unknown_type) => Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Asset`")))),
         }
     } else {
         let content = resp.text().await?;
-        let entity: Option<SwaggerJsonError> = serde_json::from_str(&content).ok();
+        let entity: Option<GetAssetByIdError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent {
             status,
             content,

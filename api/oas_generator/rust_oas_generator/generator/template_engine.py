@@ -5,7 +5,10 @@ This module uses Jinja2 templates to generate Rust API client code
 from parsed OpenAPI specifications.
 """
 
+from __future__ import annotations
+
 from collections.abc import Callable
+from functools import partial
 from pathlib import Path
 from typing import Any
 
@@ -18,56 +21,226 @@ from rust_oas_generator.parser.oas_parser import (
     ParsedSpec,
     Response,
     Schema,
-    normalize_name,
-    pascal_case,
     rust_type_from_openapi,
-    snake_case,
+)
+from rust_oas_generator.utils.string_case import (
+    normalize_rust_identifier as normalize_name,
+)
+from rust_oas_generator.utils.string_case import (
+    rust_pascal_case,
+    rust_snake_case,
 )
 
 # Constants for type checking
-PRIMITIVE_TYPES = {
-    "String",
-    "str",
-    "i32",
-    "i64",
-    "u32",
-    "u64",
-    "f32",
-    "f64",
-    "bool",
-    "Vec<u8>",
-    "Vec<String>",
-    "Vec<i32>",
-    "Vec<i64>",
-    "serde_json::Value",
-    "std::path::PathBuf",
-    "()",
-    "Box",
-}
+PRIMITIVE_TYPES = frozenset(
+    {
+        "String",
+        "str",
+        "i32",
+        "i64",
+        "u32",
+        "u64",
+        "f32",
+        "f64",
+        "bool",
+        "Vec<u8>",
+        "Vec<String>",
+        "Vec<i32>",
+        "Vec<i64>",
+        "serde_json::Value",
+        "std::path::PathBuf",
+        "()",
+        "Box",
+    }
+)
 
-RUST_KEYWORDS = {
-    "box",
-    "type",
-    "match",
-    "fn",
-    "let",
-    "use",
-    "mod",
-    "struct",
-    "enum",
-    "impl",
-    "trait",
-    "true",
-    "false",
-    "if",
-    "else",
-    "while",
-    "for",
-    "loop",
-    "break",
-    "continue",
-    "return",
-}
+RUST_KEYWORDS = frozenset(
+    {
+        "box",
+        "type",
+        "match",
+        "fn",
+        "let",
+        "use",
+        "mod",
+        "struct",
+        "enum",
+        "impl",
+        "trait",
+        "true",
+        "false",
+        "if",
+        "else",
+        "while",
+        "for",
+        "loop",
+        "break",
+        "continue",
+        "return",
+    }
+)
+
+
+class OperationAnalyzer:
+    """Analyzes operations for parameters, types, and responses."""
+
+    @staticmethod
+    def get_unique_tags(operations: list[Operation]) -> list[str]:
+        """Get unique tags from operations."""
+        tags = {tag for op in operations for tag in op.tags}
+        return sorted(tags)
+
+    @staticmethod
+    def group_operations_by_tag(operations: list[Operation]) -> dict[str, list[Operation]]:
+        """Group operations by their first tag."""
+        groups: dict[str, list[Operation]] = {}
+        for operation in operations:
+            tag = operation.tags[0] if operation.tags else "default"
+            groups.setdefault(tag, []).append(operation)
+        return groups
+
+    @staticmethod
+    def get_parameters_by_type(operation: Operation, param_type: str) -> list[Parameter]:
+        """Get parameters of specific type for an operation."""
+        return [p for p in operation.parameters if p.param_type == param_type]
+
+    @staticmethod
+    def has_parameter_type(operation: Operation, param_type: str) -> bool:
+        """Check if operation has parameters of given type."""
+        return any(p.param_type == param_type for p in operation.parameters)
+
+    @staticmethod
+    def get_request_body_type(operation: Operation) -> str | None:
+        """Get the request body type for an operation."""
+        if not operation.request_body:
+            return None
+
+        content = operation.request_body.get("content", {})
+        if not content:
+            return None
+
+        first_content_type = next(iter(content.keys()))
+        schema = content[first_content_type].get("schema", {})
+
+        if "$ref" in schema:
+            ref_name = schema["$ref"].split("/")[-1]
+            return rust_pascal_case(ref_name)
+
+        return rust_type_from_openapi(schema, {})
+
+
+class ResponseAnalyzer:
+    """Analyzes responses for types and error handling."""
+
+    @staticmethod
+    def is_error_status(status_code: str) -> bool:
+        """Check if status code represents an error."""
+        return status_code.startswith(("4", "5")) or status_code == "default"
+
+    @staticmethod
+    def get_success_response_type(operation: Operation) -> str | None:
+        """Get the success response type for an operation."""
+        for status_code, response in operation.responses.items():
+            if status_code.startswith("2"):
+                return response.rust_type
+        return None
+
+    @staticmethod
+    def get_error_types(operation: Operation) -> list[str]:
+        """Get error response types for an operation."""
+        error_types = []
+        for status_code, response in operation.responses.items():
+            if ResponseAnalyzer.is_error_status(status_code):
+                error_type = (
+                    f"Status{status_code}({response.rust_type})" if response.rust_type else f"Status{status_code}()"
+                )
+                error_types.append(error_type)
+
+        if not any("DefaultResponse" in t for t in error_types):
+            error_types.append("DefaultResponse()")
+        error_types.append("UnknownValue(serde_json::Value)")
+
+        return error_types
+
+    @staticmethod
+    def get_response_types_by_filter(
+        operations: list[Operation],
+        filter_func: Callable[[str, Response], bool],
+    ) -> list[str]:
+        """Get response types filtered by a condition."""
+        response_types: set[str] = set()
+        for operation in operations:
+            for status_code, response in operation.responses.items():
+                if response.rust_type and filter_func(status_code, response):
+                    response_types.add(response.rust_type)
+        return sorted(response_types)
+
+    @classmethod
+    def get_all_response_types(cls, operations: list[Operation]) -> list[str]:
+        """Get all unique response types used across operations."""
+
+        def is_success_response(status_code: str, response: Response) -> bool:
+            return (
+                status_code.startswith("2")
+                and response.rust_type is not None
+                and response.rust_type.endswith("Response")
+            )
+
+        return cls.get_response_types_by_filter(operations, is_success_response)
+
+
+class TypeAnalyzer:
+    """Analyzes types for imports and dependencies."""
+
+    @staticmethod
+    def extract_base_type(type_str: str) -> str:
+        """Extract base type from Vec<Type> or Option<Type>."""
+        if type_str.startswith("Vec<") and type_str.endswith(">"):
+            return type_str[4:-1]
+        if type_str.startswith("Option<") and type_str.endswith(">"):
+            return type_str[7:-1]
+        return type_str
+
+    @classmethod
+    def should_import_request_body_type(cls, request_body_type: str) -> bool:
+        """Check if a request body type is a custom model that needs to be imported."""
+        if not request_body_type or request_body_type in PRIMITIVE_TYPES or "<" in request_body_type:
+            return False
+        return request_body_type[0].isupper() and request_body_type.isalnum()
+
+    @classmethod
+    def collect_types_from_responses(cls, operation: Operation, used_types: set[str]) -> None:
+        """Collect types from operation responses."""
+        for _status_code, response in operation.responses.items():
+            if response.rust_type:
+                base_type = cls.extract_base_type(response.rust_type)
+                if base_type not in PRIMITIVE_TYPES:
+                    used_types.add(base_type)
+
+    @classmethod
+    def collect_types_from_parameters(cls, operation: Operation, used_types: set[str]) -> None:
+        """Collect types from operation parameters."""
+        for param in operation.parameters:
+            base_type = cls.extract_base_type(param.rust_type)
+            if base_type not in PRIMITIVE_TYPES:
+                used_types.add(base_type)
+
+    @classmethod
+    def get_all_used_types(cls, operations: list[Operation]) -> list[str]:
+        """Get all unique custom types used across operations for imports."""
+        used_types: set[str] = set()
+        for operation in operations:
+            cls.collect_types_from_responses(operation, used_types)
+            cls.collect_types_from_parameters(operation, used_types)
+        return sorted(used_types)
+
+    @classmethod
+    def get_operation_used_types(cls, operation: Operation) -> list[str]:
+        """Get all unique custom types used by a single operation for imports."""
+        used_types: set[str] = set()
+        cls.collect_types_from_responses(operation, used_types)
+        cls.collect_types_from_parameters(operation, used_types)
+        return sorted(used_types)
 
 
 class RustTemplateEngine:
@@ -94,13 +267,10 @@ class RustTemplateEngine:
         """Register custom Jinja2 filters for Rust code generation."""
         # Built-in filters
         builtin_filters = {
-            "snake_case": snake_case,
-            "pascal_case": pascal_case,
+            "snake_case": rust_snake_case,
+            "pascal_case": rust_pascal_case,
             "normalize_name": normalize_name,
-            "rust_type": lambda schema, schemas: rust_type_from_openapi(
-                schema,
-                schemas,
-            ),
+            "rust_type": lambda schema, schemas: rust_type_from_openapi(schema, schemas),
             "rust_doc_comment": self._rust_doc_comment,
             "rust_string_literal": self._rust_string_literal,
             "rust_optional": self._rust_optional,
@@ -113,27 +283,38 @@ class RustTemplateEngine:
 
     def _register_globals(self) -> None:
         """Register global functions available in templates."""
-        globals_map = {
-            "get_unique_tags": self._get_unique_tags,
-            "group_operations_by_tag": self._group_operations_by_tag,
-            "get_error_types": self._get_error_types,
-            "get_success_response_type": self._get_success_response_type,
-            "get_all_response_types": self._get_all_response_types,
-            "get_endpoint_response_types": self._get_endpoint_response_types,
-            "has_path_parameters": self._has_path_parameters,
-            "has_query_parameters": self._has_query_parameters,
-            "get_path_parameters": self._get_path_parameters,
-            "get_query_parameters": self._get_query_parameters,
-            "has_request_body": self._has_request_body,
-            "get_request_body_type": self._get_request_body_type,
-            "get_request_body_name": self._get_request_body_name,
-            "is_request_body_required": self._is_request_body_required,
-            "has_header_parameters": self._has_header_parameters,
-            "get_header_parameters": self._get_header_parameters,
-            "should_import_request_body_type": self._should_import_request_body_type,
-            "get_all_used_types": self._get_all_used_types,
-            "get_operation_used_types": self._get_operation_used_types,
+        # Create analyzers
+        op_analyzer = OperationAnalyzer()
+        resp_analyzer = ResponseAnalyzer()
+        type_analyzer = TypeAnalyzer()
+
+        globals_map: dict[str, Any] = {
+            # Operation analysis
+            "get_unique_tags": op_analyzer.get_unique_tags,
+            "group_operations_by_tag": op_analyzer.group_operations_by_tag,
+            # Response analysis
+            "get_error_types": resp_analyzer.get_error_types,
+            "get_success_response_type": resp_analyzer.get_success_response_type,
+            "get_all_response_types": resp_analyzer.get_all_response_types,
+            "get_endpoint_response_types": lambda op: resp_analyzer.get_all_response_types([op]),
+            # Type analysis
+            "get_all_used_types": type_analyzer.get_all_used_types,
+            "get_operation_used_types": type_analyzer.get_operation_used_types,
+            # Parameter-related functions
+            "has_path_parameters": partial(op_analyzer.has_parameter_type, param_type="path"),
+            "has_query_parameters": partial(op_analyzer.has_parameter_type, param_type="query"),
+            "has_header_parameters": partial(op_analyzer.has_parameter_type, param_type="header"),
+            "get_path_parameters": partial(op_analyzer.get_parameters_by_type, param_type="path"),
+            "get_query_parameters": partial(op_analyzer.get_parameters_by_type, param_type="query"),
+            "get_header_parameters": partial(op_analyzer.get_parameters_by_type, param_type="header"),
+            # Request body functions
+            "has_request_body": lambda op: op.request_body is not None,
+            "get_request_body_type": op_analyzer.get_request_body_type,
+            "get_request_body_name": lambda op: "request" if op.request_body else None,
+            "is_request_body_required": lambda op: bool(op.request_body and op.request_body.get("required", False)),
+            "should_import_request_body_type": type_analyzer.should_import_request_body_type,
         }
+
         self.env.globals.update(globals_map)
 
     def render_template(self, template_name: str, context: dict[str, Any]) -> str:
@@ -141,7 +322,8 @@ class RustTemplateEngine:
         template = self.env.get_template(template_name)
         return template.render(**context)
 
-    def _rust_doc_comment(self, text: str, indent: int = 0) -> str:
+    @staticmethod
+    def _rust_doc_comment(text: str, indent: int = 0) -> str:
         """Format text as Rust doc comment."""
         if not text:
             return ""
@@ -150,208 +332,21 @@ class RustTemplateEngine:
         prefix = " " * indent + "/// "
         return "\n".join(prefix + line.strip() for line in lines)
 
-    def _rust_string_literal(self, text: str) -> str:
+    @staticmethod
+    def _rust_string_literal(text: str) -> str:
         """Format text as Rust string literal."""
         escaped = text.replace("\\", "\\\\").replace('"', '\\"')
         return f'"{escaped}"'
 
-    def _rust_optional(self, rust_type: str) -> str:
+    @staticmethod
+    def _rust_optional(rust_type: str) -> str:
         """Wrap Rust type in Option if not already optional."""
         return rust_type if rust_type.startswith("Option<") else f"Option<{rust_type}>"
 
-    def _rust_vec(self, rust_type: str) -> str:
+    @staticmethod
+    def _rust_vec(rust_type: str) -> str:
         """Wrap Rust type in Vec."""
         return f"Vec<{rust_type}>"
-
-    def _get_unique_tags(self, operations: list[Operation]) -> list[str]:
-        """Get unique tags from operations."""
-        tags = set()
-        for operation in operations:
-            tags.update(operation.tags)
-        return sorted(tags)
-
-    def _group_operations_by_tag(
-        self,
-        operations: list[Operation],
-    ) -> dict[str, list[Operation]]:
-        """Group operations by their first tag."""
-        groups: dict[str, list[Operation]] = {}
-        for operation in operations:
-            tag = operation.tags[0] if operation.tags else "default"
-            groups.setdefault(tag, []).append(operation)
-        return groups
-
-    def _get_error_types(self, operation: Operation) -> list[str]:
-        """Get error response types for an operation."""
-        error_types = []
-        for status_code, response in operation.responses.items():
-            if self._is_error_status(status_code):
-                error_type = (
-                    f"Status{status_code}({response.rust_type})" if response.rust_type else f"Status{status_code}()"
-                )
-                error_types.append(error_type)
-
-        if not any("DefaultResponse" in t for t in error_types):
-            error_types.append("DefaultResponse()")
-        error_types.append("UnknownValue(serde_json::Value)")
-
-        return error_types
-
-    def _is_error_status(self, status_code: str) -> bool:
-        """Check if status code represents an error."""
-        return status_code.startswith(("4", "5")) or status_code == "default"
-
-    def _get_success_response_type(self, operation: Operation) -> str | None:
-        """Get the success response type for an operation."""
-        for status_code, response in operation.responses.items():
-            if status_code.startswith("2"):
-                return response.rust_type
-        return None
-
-    def _get_response_types_by_filter(
-        self,
-        operations: list[Operation],
-        filter_func: Callable[[str, Response], bool],
-    ) -> list[str]:
-        """Get response types filtered by a condition."""
-        response_types: set[str] = set()
-        for operation in operations:
-            for status_code, response in operation.responses.items():
-                if response.rust_type and filter_func(status_code, response):
-                    response_types.add(response.rust_type)
-        return sorted(response_types)
-
-    def _get_all_response_types(self, operations: list[Operation]) -> list[str]:
-        """Get all unique response types used across operations."""
-
-        def is_success_response(status_code: str, response: Response) -> bool:
-            return (
-                status_code.startswith("2")
-                and response.rust_type is not None
-                and response.rust_type.endswith("Response")
-            )
-
-        return self._get_response_types_by_filter(operations, is_success_response)
-
-    def _get_endpoint_response_types(self, operation: Operation) -> list[str]:
-        """Get response types for a single endpoint."""
-        return self._get_all_response_types([operation])
-
-    def _has_parameter_type(self, operation: Operation, param_type: str) -> bool:
-        """Check if operation has parameters of given type."""
-        return any(p.param_type == param_type for p in operation.parameters)
-
-    def _get_parameters_by_type(
-        self,
-        operation: Operation,
-        param_type: str,
-    ) -> list[Parameter]:
-        """Get parameters of specific type for an operation."""
-        return [p for p in operation.parameters if p.param_type == param_type]
-
-    def _has_path_parameters(self, operation: Operation) -> bool:
-        """Check if operation has path parameters."""
-        return self._has_parameter_type(operation, "path")
-
-    def _has_query_parameters(self, operation: Operation) -> bool:
-        """Check if operation has query parameters."""
-        return self._has_parameter_type(operation, "query")
-
-    def _get_path_parameters(self, operation: Operation) -> list[Parameter]:
-        """Get path parameters for an operation."""
-        return self._get_parameters_by_type(operation, "path")
-
-    def _get_query_parameters(self, operation: Operation) -> list[Parameter]:
-        """Get query parameters for an operation."""
-        return self._get_parameters_by_type(operation, "query")
-
-    def _has_request_body(self, operation: Operation) -> bool:
-        """Check if operation has a request body."""
-        return operation.request_body is not None
-
-    def _get_request_body_type(self, operation: Operation) -> str | None:
-        """Get the request body type for an operation."""
-        if not operation.request_body:
-            return None
-
-        content = operation.request_body.get("content", {})
-        if not content:
-            return None
-
-        first_content_type = next(iter(content.keys()))
-        schema = content[first_content_type].get("schema", {})
-
-        if "$ref" in schema:
-            ref_name = schema["$ref"].split("/")[-1]
-            return pascal_case(ref_name)
-
-        return rust_type_from_openapi(schema, {})
-
-    def _get_request_body_name(self, operation: Operation) -> str | None:
-        """Get the request body parameter name for an operation."""
-        return "request" if operation.request_body else None
-
-    def _is_request_body_required(self, operation: Operation) -> bool:
-        """Check if the request body is required for an operation."""
-        return bool(
-            operation.request_body and operation.request_body.get("required", False),
-        )
-
-    def _has_header_parameters(self, operation: Operation) -> bool:
-        """Check if operation has header parameters."""
-        return self._has_parameter_type(operation, "header")
-
-    def _get_header_parameters(self, operation: Operation) -> list[Parameter]:
-        """Get header parameters for an operation."""
-        return self._get_parameters_by_type(operation, "header")
-
-    def _should_import_request_body_type(self, request_body_type: str) -> bool:
-        """Check if a request body type is a custom model that needs to be imported."""
-        if not request_body_type or request_body_type in PRIMITIVE_TYPES or "<" in request_body_type:
-            return False
-        return request_body_type[0].isupper() and request_body_type.isalnum()
-
-    def _extract_base_type(self, type_str: str) -> str:
-        """Extract base type from Vec<Type> or Option<Type>."""
-        if type_str.startswith("Vec<") and type_str.endswith(">"):
-            return type_str[4:-1]
-        if type_str.startswith("Option<") and type_str.endswith(">"):
-            return type_str[7:-1]
-        return type_str
-
-    def _collect_types_from_responses(self, operation: Operation, used_types: set[str]) -> None:
-        """Collect types from operation responses."""
-        for _status_code, response in operation.responses.items():
-            if response.rust_type:
-                base_type = self._extract_base_type(response.rust_type)
-                if base_type not in PRIMITIVE_TYPES:
-                    used_types.add(base_type)
-
-    def _collect_types_from_parameters(
-        self,
-        operation: Operation,
-        used_types: set[str],
-    ) -> None:
-        """Collect types from operation parameters."""
-        for param in operation.parameters:
-            base_type = self._extract_base_type(param.rust_type)
-            if base_type not in PRIMITIVE_TYPES:
-                used_types.add(base_type)
-
-    def _get_all_used_types(self, operations: list[Operation]) -> list[str]:
-        """Get all unique custom types used across operations for imports."""
-        used_types: set[str] = set()
-        for operation in operations:
-            self._collect_types_from_responses(operation, used_types)
-            self._collect_types_from_parameters(operation, used_types)
-        return sorted(used_types)
-
-    def _get_operation_used_types(self, operation: Operation) -> list[str]:
-        """Get all unique custom types used by a single operation for imports."""
-        used_types: set[str] = set()
-        self._collect_types_from_responses(operation, used_types)
-        self._collect_types_from_parameters(operation, used_types)
-        return sorted(used_types)
 
 
 class RustCodeGenerator:
@@ -366,7 +361,7 @@ class RustCodeGenerator:
         spec: ParsedSpec,
         output_dir: Path,
         package_name: str = "api_client",
-    ) -> dict[str, str]:
+    ) -> dict[Path, str]:
         """Generate complete Rust client from OpenAPI spec."""
         output_dir = Path(output_dir)
         context = {
@@ -385,24 +380,13 @@ class RustCodeGenerator:
 
         return files
 
-    def _generate_base_files(
-        self,
-        context: dict[str, Any],
-        output_dir: Path,
-    ) -> dict[str, str]:
+    def _generate_base_files(self, context: dict[str, Any], output_dir: Path) -> dict[Path, str]:
         """Generate base library files."""
         src_dir = output_dir / "src"
-
         return {
-            str(src_dir / "lib.rs"): self.template_engine.render_template(
-                "base/lib.rs.j2",
-                context,
-            ),
-            str(
-                src_dir / "apis" / "configuration.rs",
-            ): self.template_engine.render_template(
-                "base/configuration.rs.j2",
-                context,
+            src_dir / "lib.rs": self.template_engine.render_template("base/lib.rs.j2", context),
+            src_dir / "apis" / "configuration.rs": self.template_engine.render_template(
+                "base/configuration.rs.j2", context
             ),
         }
 
@@ -411,27 +395,21 @@ class RustCodeGenerator:
         schemas: dict[str, Schema],
         context: dict[str, Any],
         output_dir: Path,
-    ) -> dict[str, str]:
+    ) -> dict[Path, str]:
         """Generate model files."""
         files = {}
         models_dir = output_dir / "src" / "models"
 
         for schema_name, schema in schemas.items():
             model_context = {**context, "schema": schema}
-            content = self.template_engine.render_template(
-                "models/model.rs.j2",
-                model_context,
-            )
+            content = self.template_engine.render_template("models/model.rs.j2", model_context)
 
-            snake_case_name = snake_case(schema_name)
+            snake_case_name = rust_snake_case(schema_name)
             filename = f"model_{snake_case_name}.rs" if snake_case_name in RUST_KEYWORDS else f"{snake_case_name}.rs"
-            files[str(models_dir / filename)] = content
+            files[models_dir / filename] = content
 
         models_context = {**context, "schemas": schemas}
-        files[str(models_dir / "mod.rs")] = self.template_engine.render_template(
-            "models/mod.rs.j2",
-            models_context,
-        )
+        files[models_dir / "mod.rs"] = self.template_engine.render_template("models/mod.rs.j2", models_context)
 
         return files
 
@@ -440,46 +418,27 @@ class RustCodeGenerator:
         operations: list[Operation],
         context: dict[str, Any],
         output_dir: Path,
-    ) -> dict[str, str]:
+    ) -> dict[Path, str]:
         """Generate individual API files per endpoint."""
         files = {}
         apis_dir = output_dir / "src" / "apis"
 
         for operation in operations:
             endpoint_context = {**context, "operation": operation}
-            content = self.template_engine.render_template(
-                "apis/endpoint.rs.j2",
-                endpoint_context,
-            )
-            files[str(apis_dir / f"{operation.rust_function_name}.rs")] = content
+            content = self.template_engine.render_template("apis/endpoint.rs.j2", endpoint_context)
+            files[apis_dir / f"{operation.rust_function_name}.rs"] = content
 
         client_context = {**context, "operations": operations}
-        files[str(apis_dir / "client.rs")] = self.template_engine.render_template(
-            "apis/client.rs.j2",
-            client_context,
-        )
+        files[apis_dir / "client.rs"] = self.template_engine.render_template("apis/client.rs.j2", client_context)
 
         api_context = {**context, "operations": operations}
-        files[str(apis_dir / "mod.rs")] = self.template_engine.render_template(
-            "apis/mod.rs.j2",
-            api_context,
-        )
+        files[apis_dir / "mod.rs"] = self.template_engine.render_template("apis/mod.rs.j2", api_context)
 
         return files
 
-    def _generate_project_files(
-        self,
-        context: dict[str, Any],
-        output_dir: Path,
-    ) -> dict[str, str]:
+    def _generate_project_files(self, context: dict[str, Any], output_dir: Path) -> dict[Path, str]:
         """Generate project configuration files."""
         return {
-            str(output_dir / "Cargo.toml"): self.template_engine.render_template(
-                "base/Cargo.toml.j2",
-                context,
-            ),
-            str(output_dir / "README.md"): self.template_engine.render_template(
-                "base/README.md.j2",
-                context,
-            ),
+            output_dir / "Cargo.toml": self.template_engine.render_template("base/Cargo.toml.j2", context),
+            output_dir / "README.md": self.template_engine.render_template("base/README.md.j2", context),
         }

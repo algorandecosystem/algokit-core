@@ -9,6 +9,7 @@
  */
 
 use crate::models;
+use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
 
 use crate::models::ApplicationLocalReference;
@@ -41,9 +42,23 @@ pub struct SimulateUnnamedResourcesAccessed {
     pub app_locals: Option<Vec<ApplicationLocalReference>>,
 }
 
+impl AlgorandMsgpack for SimulateUnnamedResourcesAccessed {
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
+}
+
 impl SimulateUnnamedResourcesAccessed {
     /// Default constructor for SimulateUnnamedResourcesAccessed
     pub fn new() -> SimulateUnnamedResourcesAccessed {
         SimulateUnnamedResourcesAccessed::default()
+    }
+
+    /// Encode this struct to msgpack bytes using AlgorandMsgpack trait
+    pub fn to_msgpack(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        Ok(self.encode()?)
+    }
+
+    /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
+    pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(Self::decode(bytes)?)
     }
 }

@@ -9,9 +9,10 @@
  */
 
 use crate::models;
+use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
 
-use crate::models::ApplicationKvstorage;
+use crate::models::ApplicationKvStorage;
 
 /// An application's initial global/local/box states that were accessed during simulation.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
@@ -21,11 +22,15 @@ pub struct ApplicationInitialStates {
     pub id: i32,
     /// An application's initial local states tied to different accounts.
     #[serde(rename = "app-locals", skip_serializing_if = "Option::is_none")]
-    pub app_locals: Option<Vec<ApplicationKvstorage>>,
+    pub app_locals: Option<Vec<ApplicationKvStorage>>,
     #[serde(rename = "app-globals", skip_serializing_if = "Option::is_none")]
-    pub app_globals: Option<ApplicationKvstorage>,
+    pub app_globals: Option<ApplicationKvStorage>,
     #[serde(rename = "app-boxes", skip_serializing_if = "Option::is_none")]
-    pub app_boxes: Option<ApplicationKvstorage>,
+    pub app_boxes: Option<ApplicationKvStorage>,
+}
+
+impl AlgorandMsgpack for ApplicationInitialStates {
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
 }
 
 impl ApplicationInitialStates {
@@ -37,5 +42,15 @@ impl ApplicationInitialStates {
             app_globals: None,
             app_boxes: None,
         }
+    }
+
+    /// Encode this struct to msgpack bytes using AlgorandMsgpack trait
+    pub fn to_msgpack(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        Ok(self.encode()?)
+    }
+
+    /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
+    pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(Self::decode(bytes)?)
     }
 }

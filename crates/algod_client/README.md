@@ -60,7 +60,7 @@ This client provides access to 55 API operations:
 - `get_ready` - Returns OK if healthy and fully caught up.
 - `metrics` - Return metrics about algod functioning.
 - `get_genesis` - Gets the genesis information.
-- `swagger_j_s_o_n` - Gets the current swagger spec.
+- `swagger_json` - Gets the current swagger spec.
 - `get_version` - Retrieves the supported API versions, binary build versions, and genesis information.
 - `get_debug_settings_prof` - Retrieves the current settings for blocking and mutex profiles
 - `put_debug_settings_prof` - Enables blocking and mutex profiles, and returns the old settings
@@ -79,9 +79,9 @@ This client provides access to 55 API operations:
 - `get_participation_keys` - Return a list of participation keys
 - `add_participation_key` - Add a participation key to the node
 - `generate_participation_keys` - Generate and install participation keys to the node.
-- `get_participation_key_by_i_d` - Get participation key info given a participation ID
+- `get_participation_key_by_id` - Get participation key info given a participation ID
 - `append_keys` - Append state proof keys to a participation key
-- `delete_participation_key_by_i_d` - Delete a given participation key by ID
+- `delete_participation_key_by_id` - Delete a given participation key by ID
 - `shutdown_node` - Special management endpoint to shutdown the node. Optionally provide a timeout parameter to indicate that the node should begin shutting down after a number of seconds.
 - `get_status` - Gets the current node status.
 - `wait_for_block` - Gets the node status after waiting for a round after the given round.
@@ -96,10 +96,10 @@ This client provides access to 55 API operations:
 - `get_ledger_state_delta_for_transaction_group` - Get a LedgerStateDelta object for a given transaction group
 - `get_state_proof` - Get a state proof that covers a given round
 - `get_light_block_header_proof` - Gets a proof for a given light block header inside a state proof commitment
-- `get_application_by_i_d` - Get application information.
+- `get_application_by_id` - Get application information.
 - `get_application_boxes` - Get all box names for a given application.
 - `get_application_box_by_name` - Get box information for a given application.
-- `get_asset_by_i_d` - Get asset information.
+- `get_asset_by_id` - Get asset information.
 - `get_sync_round` - Returns the minimum sync round the ledger is keeping in cache.
 - `unset_sync_round` - Removes minimum sync round restriction from the ledger.
 - `set_sync_round` - Given a round, tells the ledger to keep that round in its cache.
@@ -178,7 +178,7 @@ data/transactions/asset.go : AssetParams
 - `SimulationEvalOverrides` - The set of parameters and limits override during simulation. If this set of parameters is present, then evaluation parameters may differ from standard evaluation in certain ways.
 - `ScratchChange` - A write operation into a scratch slot.
 - `ApplicationStateOperation` - An operation against an application's global/local/box state.
-- `ApplicationKvstorage` - An application's global/local/box state.
+- `ApplicationKvStorage` - An application's global/local/box state.
 - `ApplicationInitialStates` - An application's initial global/local/box states that were accessed during simulation.
 - `SimulationOpcodeTraceUnit` - The set of trace information and effect from evaluating a single opcode.
 - `SimulationTransactionExecTrace` - The execution trace of calling an app or a logic sig, containing the inner app call trace in a recursive way.

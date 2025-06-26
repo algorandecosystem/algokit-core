@@ -9,6 +9,7 @@
  */
 
 use crate::models;
+use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
 
 /// The logged messages from an app call along with the app ID and outer transaction ID. Logs appear in the same order that they were emitted.
@@ -25,6 +26,10 @@ pub struct AppCallLogs {
     pub tx_id: String,
 }
 
+impl AlgorandMsgpack for AppCallLogs {
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
+}
+
 impl AppCallLogs {
     /// Constructor for AppCallLogs
     pub fn new(logs: Vec<String>, application_index: i32, tx_id: String) -> AppCallLogs {
@@ -33,5 +38,15 @@ impl AppCallLogs {
             application_index,
             tx_id,
         }
+    }
+
+    /// Encode this struct to msgpack bytes using AlgorandMsgpack trait
+    pub fn to_msgpack(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        Ok(self.encode()?)
+    }
+
+    /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
+    pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(Self::decode(bytes)?)
     }
 }
