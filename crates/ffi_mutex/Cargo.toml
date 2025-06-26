@@ -9,8 +9,6 @@ ffi_uniffi = ["dep:uniffi", "dep:tokio"]
 ffi_wasm = ["dep:wasm-bindgen"]
 
 [dependencies]
-tokio = { version = "1.45.1", default-features = false, features = [
-  "sync",
-], optional = true }
+tokio = { version = "1.45.1", default-features = false, features = ["sync"], optional = true }
 uniffi = { workspace = true, optional = true }
-wasm-bindgen = { workspace = true, optional = true }
+wasm-bindgen  = { workspace = true, optional = true }

@@ -28,7 +28,7 @@ async fn test_get_transaction_params() {
         "Genesis ID should not be empty"
     );
     assert!(
-        response.genesis_hash.len() > 0,
+        !response.genesis_hash.is_empty(),
         "Genesis hash should not be empty"
     );
 

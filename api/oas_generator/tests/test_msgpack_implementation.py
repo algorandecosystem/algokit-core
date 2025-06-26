@@ -57,7 +57,6 @@ class TestMsgpackImplementation:
 
         assert len(msgpack_request_ops) > 0, "Should find operations with msgpack request bodies"
 
-
     def test_root_msgpack_schemas_identified(self, parsed_spec: tuple[ParsedSpec, OASParser]) -> None:
         """Test that root msgpack schemas are correctly identified."""
         spec, parser = parsed_spec

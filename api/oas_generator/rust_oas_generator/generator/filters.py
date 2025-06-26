@@ -49,7 +49,7 @@ def rust_doc_comment(text: str, indent: int = 0) -> str:
     if len(lines) == 1:
         return f"{indent_str}{_DOC_NORMAL_PREFIX}{lines[0]}"
 
-    result = []
+    result: list[str] = []
     for i, line in enumerate(lines):
         stripped_line = line.strip()
 

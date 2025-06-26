@@ -55,7 +55,7 @@ jobs:
 
       - name: Install uv dependencies
         working-directory: ${{ env.API_DIR }}/oas_generator
-        run: uv sync
+        run: uv sync --extra dev
 
       - name: Run OAS generator linting
         working-directory: ${{ env.API_DIR }}
