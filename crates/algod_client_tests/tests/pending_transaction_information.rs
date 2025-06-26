@@ -56,9 +56,9 @@ async fn test_pending_transaction_broadcast() {
     // Build transaction header
     let header = TransactionHeaderBuilder::default()
         .sender(sender_addr.clone())
-        .fee(params.min_fee as u64)
-        .first_valid(params.last_round as u64)
-        .last_valid((params.last_round + 1000) as u64)
+        .fee(params.min_fee)
+        .first_valid(params.last_round)
+        .last_valid(params.last_round + 1000)
         .genesis_id(params.genesis_id.clone())
         .genesis_hash(genesis_hash_bytes)
         .note(b"Test payment transaction".to_vec())

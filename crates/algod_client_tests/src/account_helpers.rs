@@ -252,9 +252,9 @@ impl LocalNetDispenser {
         // Build funding transaction
         let header = TransactionHeaderBuilder::default()
             .sender(dispenser.address()?)
-            .fee(params.min_fee as u64)
-            .first_valid(params.last_round as u64)
-            .last_valid((params.last_round + 1000) as u64)
+            .fee(params.min_fee)
+            .first_valid(params.last_round)
+            .last_valid(params.last_round + 1000)
             .genesis_id(params.genesis_id.clone())
             .genesis_hash(genesis_hash_bytes)
             .note(b"LocalNet test funding".to_vec())
