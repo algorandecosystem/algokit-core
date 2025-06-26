@@ -18,7 +18,7 @@
         "vitest": "^3.1.2",
       },
       "peerDependencies": {
-        "@algorandfoundation/algokit-transact": "^1.0.0-alpha.18",
+        "@algorandfoundation/algokit-transact": "^1.0.0-alpha.21",
       },
     },
   },
