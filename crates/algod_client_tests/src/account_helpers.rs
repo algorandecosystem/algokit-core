@@ -1,4 +1,4 @@
-use algod_client::apis::{configuration::Configuration, raw_transaction, transaction_params};
+use algod_client::AlgodClient;
 use algokit_transact::{
     Address, AlgorandMsgpack, PaymentTransactionBuilder, SignedTransaction, Transaction,
     TransactionHeaderBuilder,
@@ -126,17 +126,16 @@ impl TestAccount {
 }
 
 /// LocalNet dispenser for funding test accounts using AlgoKit CLI
-#[derive(Debug)]
 pub struct LocalNetDispenser {
-    config: Configuration,
+    client: AlgodClient,
     dispenser_account: Option<TestAccount>,
 }
 
 impl LocalNetDispenser {
     /// Create a new LocalNet dispenser
-    pub fn new(config: Configuration) -> Self {
+    pub fn new(client: AlgodClient) -> Self {
         Self {
-            config,
+            client,
             dispenser_account: None,
         }
     }
@@ -214,14 +213,10 @@ impl LocalNetDispenser {
         let export_output = String::from_utf8_lossy(&output.stdout);
 
         // Parse mnemonic from output
-        let mnemonic_re = Regex::new(r#"Exported key for account [A-Z0-9]+: "([^"]+)""#)?;
-        let mnemonic = mnemonic_re
-            .captures(&export_output)
-            .and_then(|cap| cap.get(1))
-            .ok_or("Could not extract mnemonic from algokit output")?
-            .as_str();
-
-        println!("✓ Successfully extracted mnemonic for LocalNet dispenser");
+        let mnemonic = export_output
+            .split('"')
+            .nth(1)
+            .ok_or("Could not extract mnemonic from algokit output")?;
 
         // Create account from mnemonic using proper Algorand mnemonic parsing
         let mut test_account = TestAccount::from_mnemonic(mnemonic)?;
@@ -237,7 +232,9 @@ impl LocalNetDispenser {
         amount: u64,
     ) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
         // Get transaction parameters first (before borrowing self mutably)
-        let params = transaction_params::transaction_params(&self.config)
+        let params = self
+            .client
+            .transaction_params()
             .await
             .map_err(|e| format!("Failed to get transaction params: {:?}", e))?;
 
@@ -273,7 +270,9 @@ impl LocalNetDispenser {
         let signed_bytes = dispenser.sign_transaction(&transaction)?;
 
         // Submit transaction
-        let response = raw_transaction::raw_transaction(&self.config, signed_bytes)
+        let response = self
+            .client
+            .raw_transaction(signed_bytes)
             .await
             .map_err(|e| format!("Failed to submit transaction: {:?}", e))?;
 
@@ -287,15 +286,14 @@ impl LocalNetDispenser {
 }
 
 /// Test account manager for generating and managing test accounts
-#[derive(Debug)]
 pub struct TestAccountManager {
     dispenser: LocalNetDispenser,
 }
 
 impl TestAccountManager {
     /// Create a new test account manager
-    pub fn new(config: Configuration) -> Self {
-        let dispenser = LocalNetDispenser::new(config.clone());
+    pub fn new(client: AlgodClient) -> Self {
+        let dispenser = LocalNetDispenser::new(client);
         Self { dispenser }
     }
 

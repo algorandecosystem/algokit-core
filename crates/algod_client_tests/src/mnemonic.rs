@@ -6,7 +6,6 @@ const KEY_LEN_BYTES: usize = 32;
 const MNEM_LEN_WORDS: usize = 25; // includes checksum word
 const MNEMONIC_DELIM: &str = " ";
 
-// BIP39 wordlist (first 100 words for testing - in production use full 2048 words)
 static WORDLIST: &[&str] = &[
     "abandon", "ability", "able", "about", "above", "absent", "absorb", "abstract", "absurd",
     "abuse", "access", "accident", "account", "accuse", "achieve", "acid", "acoustic", "acquire",

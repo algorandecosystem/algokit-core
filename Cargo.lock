@@ -38,21 +38,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "algod_api"
-version = "0.1.0"
-dependencies = [
- "algokit_http_client",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "algod_client"
 version = "0.0.1"
 dependencies = [
+ "algokit_http_client",
  "algokit_transact",
  "base64 0.22.1",
- "reqwest",
  "rmp-serde",
  "serde",
  "serde_bytes",
@@ -71,6 +62,7 @@ name = "algod_client_tests"
 version = "0.1.0"
 dependencies = [
  "algod_client",
+ "algokit_http_client",
  "algokit_transact",
  "base64 0.22.1",
  "criterion",
@@ -96,7 +88,10 @@ dependencies = [
  "async-trait",
  "js-sys",
  "reqwest",
+ "serde",
+ "serde-wasm-bindgen",
  "thiserror 2.0.7",
+ "tsify-next",
  "uniffi",
  "wasm-bindgen",
  "wasm-bindgen-futures",
@@ -149,7 +144,7 @@ dependencies = [
 name = "algokit_utils"
 version = "0.1.0"
 dependencies = [
- "algod_api",
+ "algod_client",
  "algokit_http_client",
  "algokit_transact",
  "async-trait",
@@ -3096,7 +3091,6 @@ dependencies = [
  "js-sys",
  "log",
  "mime",
- "mime_guess",
  "native-tls",
  "once_cell",
  "percent-encoding",

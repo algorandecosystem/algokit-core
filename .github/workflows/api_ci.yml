@@ -1,4 +1,8 @@
-name: API CI
+name: API OAS Generator CI
+# This workflow tests the OpenAPI Specification (OAS) generator in the api/ folder.
+# It validates the Python-based Jinja2 generator, ensures generated Rust code compiles,
+# and checks for output stability. For testing the generated algod_client crate itself,
+# see the algod_client_tests.yml workflow.
 
 on:
   push:
@@ -23,7 +27,7 @@ env:
   OUTPUT_DIR: crates/algod_client
 
 jobs:
-  api_check:
+  oas_generator_check:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -69,7 +73,7 @@ jobs:
 
       - name: Generate algod API client
         working-directory: ${{ env.API_DIR }}
-        run: bun run generate:algod_api
+        run: bun run generate:algod_client
 
       - name: Check for output stability
         run: |
@@ -84,7 +88,7 @@ jobs:
             git diff --no-pager ${{ env.OUTPUT_DIR }}
             echo ""
             echo "💡 This indicates that the generated code is not in sync with the current specification."
-            echo "   Please run 'bun run generate:algod_api' in the api directory and commit the changes."
+            echo "   Please run 'bun run generate:algod_client' in the api directory and commit the changes."
             exit 1
           else
             echo "✅ Output stability check passed - no unexpected changes detected"

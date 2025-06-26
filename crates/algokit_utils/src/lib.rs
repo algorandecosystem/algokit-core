@@ -1,14 +1,11 @@
-use algod_api::AlgodClient;
-
-use algod_api::TransactionParams;
-use algokit_transact::Address;
-use algokit_transact::FeeParams;
-use algokit_transact::PaymentTransactionFields;
-use algokit_transact::SignedTransaction;
-use algokit_transact::Transaction;
-use algokit_transact::TransactionHeader;
-use algokit_transact::Transactions;
-use base64::{Engine as _, engine::general_purpose};
+use algod_client::{
+    AlgodClient, apis::Error as AlgodError,
+    models::TransactionParams200Response as TransactionParams,
+};
+use algokit_transact::{
+    Address, FeeParams, PaymentTransactionFields, SignedTransaction, Transaction,
+    TransactionHeader, Transactions,
+};
 use derive_more::Debug;
 use std::sync::Arc;
 
@@ -16,8 +13,8 @@ use async_trait::async_trait;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ComposerError {
-    #[error(transparent)]
-    HttpError(#[from] algokit_http_client::HttpError),
+    #[error("Algod client error: {0}")]
+    AlgodClientError(#[from] AlgodError),
     #[error("Decode Error: {0}")]
     DecodeError(String),
     #[error("Transaction Error: {0}")]
@@ -183,7 +180,7 @@ impl Composer {
         self.algod_client
             .transaction_params()
             .await
-            .map_err(ComposerError::HttpError)
+            .map_err(Into::into)
     }
 
     pub async fn build(&mut self) -> Result<&mut Self, ComposerError> {
@@ -193,32 +190,22 @@ impl Composer {
 
         let suggested_params = self.get_suggested_params().await?;
 
-        let default_header = TransactionHeader {
-            fee: Some(suggested_params.fee),
-            genesis_id: Some(suggested_params.genesis_id),
-            genesis_hash: Some(
-                general_purpose::STANDARD
-                    .decode(suggested_params.genesis_hash)
-                    .map_err(|e| {
-                        ComposerError::DecodeError(format!("Failed to decode genesis hash: {}", e))
-                    })?
-                    .try_into()
-                    .map_err(|e| {
-                        ComposerError::DecodeError(format!(
-                            "Failed to convert genesis hash: {:?}",
-                            e
-                        ))
-                    })?,
-            ),
-            // The rest of these fields are set further down per txn
-            first_valid: 0,
-            last_valid: 0,
-            sender: Address::default(),
-            rekey_to: None,
-            note: None,
-            lease: None,
-            group: None,
-        };
+        let default_header =
+            TransactionHeader {
+                fee: Some(suggested_params.fee),
+                genesis_id: Some(suggested_params.genesis_id),
+                genesis_hash: Some(suggested_params.genesis_hash.try_into().map_err(|_e| {
+                    ComposerError::DecodeError("Invalid genesis hash".to_string())
+                })?),
+                // The rest of these fields are set further down per txn
+                first_valid: 0,
+                last_valid: 0,
+                sender: Address::default(),
+                rekey_to: None,
+                note: None,
+                lease: None,
+                group: None,
+            };
 
         let txs = self
             .transactions
@@ -297,6 +284,7 @@ impl Composer {
 mod tests {
     use super::*;
     use algokit_transact::test_utils::{AddressMother, TransactionMother};
+    use base64::{Engine, prelude::BASE64_STANDARD};
 
     #[test]
     fn test_add_transaction() {
@@ -323,7 +311,9 @@ mod tests {
 
         assert_eq!(
             response.genesis_hash,
-            "SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI="
+            BASE64_STANDARD
+                .decode("SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=")
+                .unwrap()
         );
     }
 

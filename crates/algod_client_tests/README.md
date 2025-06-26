@@ -4,7 +4,7 @@ Integration tests for the `algod_client` crate, demonstrating usage patterns and
 
 ## Overview
 
-This crate provides integration tests for the Algod API client, using a local Algorand network (sandbox) for testing. The tests showcase:
+This crate provides integration tests for the Algod API client, using a local Algorand network (localnet) for testing. The tests showcase:
 
 - **Transaction parameter retrieval**
 - **Raw transaction broadcasting**
@@ -73,7 +73,7 @@ let result = get_algod_client().transaction_params().await;
 
 ## Running Tests
 
-Tests require a running Algorand sandbox/localnet:
+Tests require a algokit-cli installed with docker available. Tests will programmatically invoke localnet via algokit-cli:
 
 ```bash
 # Run all integration tests
@@ -91,7 +91,7 @@ cargo check -p algod_client_tests
 The global client uses environment variables with sensible defaults:
 
 - `ALGORAND_HOST` (default: `http://localhost:4001`)
-- `ALGORAND_API_TOKEN` (default: sandbox token)
+- `ALGORAND_API_TOKEN` (default: localnet token)
 
 ## Test Structure
 

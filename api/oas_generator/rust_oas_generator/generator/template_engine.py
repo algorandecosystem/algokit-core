@@ -385,9 +385,6 @@ class RustCodeGenerator:
         src_dir = output_dir / "src"
         return {
             src_dir / "lib.rs": self.template_engine.render_template("base/lib.rs.j2", context),
-            src_dir / "apis" / "configuration.rs": self.template_engine.render_template(
-                "base/configuration.rs.j2", context
-            ),
         }
 
     def _generate_model_files(

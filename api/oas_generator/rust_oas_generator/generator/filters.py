@@ -15,7 +15,7 @@ _MAX_SEMVER_PARTS = 3
 _DEFAULT_VERSION = "0.1.0"
 
 # Documentation patterns for Rust
-_DOC_BULLET_PREFIXES = frozenset({"* ", "- ", "+ ", "Or ", "And ", "But "})
+_DOC_BULLET_PREFIXES = frozenset({"* ", "- ", "+ "})
 _DOC_INDENT_PREFIX = "///   "
 _DOC_NORMAL_PREFIX = "/// "
 
@@ -50,11 +50,24 @@ def rust_doc_comment(text: str, indent: int = 0) -> str:
         return f"{indent_str}{_DOC_NORMAL_PREFIX}{lines[0]}"
 
     result = []
-    for line in lines:
+    for i, line in enumerate(lines):
         stripped_line = line.strip()
-        prefix = (
-            _DOC_INDENT_PREFIX if any(stripped_line.startswith(p) for p in _DOC_BULLET_PREFIXES) else _DOC_NORMAL_PREFIX
-        )
+
+        # Check if this line is a bullet point
+        is_bullet = any(stripped_line.startswith(p) for p in _DOC_BULLET_PREFIXES)
+
+        # Check if we need a blank line before this line for proper formatting
+        if (
+            i > 0
+            and stripped_line
+            and not is_bullet
+            and not result[-1].strip().endswith("///")
+            and any(lines[j].strip().startswith(p) for p in _DOC_BULLET_PREFIXES for j in range(max(0, i - 3), i))
+        ):
+            # Add blank doc comment line before starting new paragraph after bullet points
+            result.append(f"{indent_str}///")
+
+        prefix = _DOC_INDENT_PREFIX if is_bullet else _DOC_NORMAL_PREFIX
         result.append(f"{indent_str}{prefix}{stripped_line}")
 
     return "\n".join(result)

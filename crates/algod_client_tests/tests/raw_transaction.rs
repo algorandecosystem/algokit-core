@@ -12,7 +12,7 @@ async fn test_raw_transaction_broadcast() {
         .expect("Failed to start localnet");
 
     // Create account manager and generate test accounts
-    let mut account_manager = TestAccountManager::new(get_algod_client().configuration().clone());
+    let mut account_manager = TestAccountManager::new(get_algod_client());
 
     let sender_config = TestAccountConfig {
         initial_funds: 10_000_000, // 10 ALGO

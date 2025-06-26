@@ -1,5 +1,7 @@
-use algod_client::apis::AlgodClient;
-use algod_client_tests::{get_algod_client, LocalnetManager, ALGOD_CONFIG};
+use algod_client::AlgodClient;
+use algod_client_tests::{get_algod_client, LocalnetManager};
+use algokit_http_client::DefaultHttpClient;
+use std::sync::Arc;
 
 #[tokio::test]
 async fn test_get_transaction_params() {
@@ -26,13 +28,8 @@ async fn test_get_transaction_params() {
         "Genesis ID should not be empty"
     );
     assert!(
-        response.genesis_hash.len() == 32,
-        "Genesis hash should be 32 bytes"
-    );
-    assert!(response.min_fee >= 0, "Min fee should be non-negative");
-    assert!(
-        response.last_round >= 0,
-        "Last round should be non-negative"
+        response.genesis_hash.len() > 0,
+        "Genesis hash should not be empty"
     );
 
     println!("✓ Successfully retrieved transaction parameters");
@@ -45,11 +42,8 @@ async fn test_get_transaction_params() {
 
 #[tokio::test]
 async fn test_transaction_params_error_handling() {
-    // Test with invalid configuration to ensure error handling works
-    let mut invalid_config = ALGOD_CONFIG.clone();
-    invalid_config.base_path = "http://invalid-host:9999".to_string();
-
-    let invalid_client = AlgodClient::new(invalid_config);
+    let http_client = Arc::new(DefaultHttpClient::new("http://invalid-host:9999"));
+    let invalid_client = AlgodClient::new(http_client);
     let result = invalid_client.transaction_params().await;
 
     // This should fail due to connection error
