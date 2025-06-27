@@ -2,18 +2,26 @@ import { describe, test, expect, beforeAll } from "vitest";
 import { algorandFixture } from "@algorandfoundation/algokit-utils/testing";
 import * as algosdk from "algosdk";
 import * as algodPackage from "@algorandfoundation/algokit-algod-api";
-import { encodeTransaction, Transaction, Address } from "@algorandfoundation/algokit-transact";
+import {
+  encodeTransaction,
+  Transaction,
+  TransactionType,
+  PaymentTransactionFields, AssetTransferTransactionFields
+} from "@algorandfoundation/algokit-transact";
 import { Blob } from "buffer";
 import { HttpFile } from "../http/http";
 import { TransactionSignerAccount } from "@algorandfoundation/algokit-utils/types/account";
+import {AlgoAmount} from "@algorandfoundation/algokit-utils/types/amount";
+import {PendingTransactionResponse} from "../models/PendingTransactionResponse";
 
 // Helper function to create and sign a transaction, then return it as an HttpFile
 const createSignedTxnHttpFile = (
-  sender: algosdk.Address & TransactionSignerAccount & algosdk.Account,
-  receiver: Address,
-  amount: number | bigint,
-  apiSuggestedParams: algodPackage.TransactionParams200Response,
-  note?: Uint8Array,
+    sender: algosdk.Address & TransactionSignerAccount & algosdk.Account,
+    apiSuggestedParams: algodPackage.TransactionParams200Response,
+    transactionType: TransactionType,
+    payment?: PaymentTransactionFields,
+    assetTransfer?: AssetTransferTransactionFields,
+    note?: Uint8Array,
 ): HttpFile => {
   const transactionHeaderParams = {
     fee: BigInt(apiSuggestedParams.minFee || apiSuggestedParams.fee),
@@ -24,11 +32,9 @@ const createSignedTxnHttpFile = (
   };
 
   const txn: Transaction = {
-    transactionType: "Payment",
-    payment: {
-      amount: BigInt(amount),
-      receiver: receiver,
-    },
+    transactionType,
+    payment,
+    assetTransfer,
     sender: { address: String(sender.addr), pubKey: sender.publicKey },
     note: note,
     ...transactionHeaderParams,
@@ -44,6 +50,18 @@ const createSignedTxnHttpFile = (
   const httpFile: HttpFile = Object.assign(binaryData, { name: "transaction.txn" });
   return httpFile;
 };
+
+async function waitForConfirmation(
+    algodApi: algodPackage.AlgodApi,
+    txId: string,
+): Promise<PendingTransactionResponse> {
+  while (true) {
+    const pendingInfo = await algodApi.pendingTransactionInformation(txId);
+    if (pendingInfo?.confirmedRound) {
+      return pendingInfo;
+    }
+  }
+}
 
 describe("Transaction API Tests", () => {
   const fixture = algorandFixture();
@@ -80,7 +98,15 @@ describe("Transaction API Tests", () => {
     const { testAccount: sender } = fixture.context;
     const suggestedParams = await algodApi.transactionParams();
 
-    const httpFile = createSignedTxnHttpFile(sender, { address: String(sender.addr), pubKey: sender.publicKey }, 100000, suggestedParams);
+    const httpFile = createSignedTxnHttpFile(
+      sender,
+        suggestedParams,
+      "Payment",
+      {
+        amount: BigInt(100000),
+        receiver: { address: String(sender.addr), pubKey: sender.publicKey },
+      },
+    );
 
     const result = await algodApi.rawTransaction(httpFile);
     expect(result).not.toBeNull();
@@ -94,9 +120,13 @@ describe("Transaction API Tests", () => {
 
     const httpFile = createSignedTxnHttpFile(
       sender,
-      { address: String(sender.addr), pubKey: sender.publicKey },
-      100000,
       suggestedParams,
+      "Payment",
+      {
+        amount: BigInt(100000),
+        receiver: { address: String(sender.addr), pubKey: sender.publicKey },
+      },
+      undefined,
       note,
     );
 
@@ -115,9 +145,12 @@ describe("Transaction API Tests", () => {
     const suggestedParams = await algodApi.transactionParams();
     const signedTxnFile = createSignedTxnHttpFile(
       sender,
-      { address: String(sender.addr), pubKey: sender.publicKey },
-      100000,
       suggestedParams,
+      "Payment",
+      {
+        amount: BigInt(100000),
+        receiver: {address: String(sender.addr), pubKey: sender.publicKey}
+      },
     );
 
     // Note: This implementation differs from algosdk's simulateTransaction method.
@@ -150,4 +183,63 @@ describe("Transaction API Tests", () => {
   });
 
   // TODO: Add more tests based on other endpoints in AlgodApi related to transactions
+
+  test('should submit an asset transfer transaction and await confirmation', async () => {
+    const { testAccount: sender, generateAccount, algod } = fixture.context;
+    const ephemeralAccount = await generateAccount({initialFunds: AlgoAmount.Algo(10)});
+
+    // TODO: Use algokit-transact for the asset create transaction
+    const suggestedParamsAssetCreate = await algod.getTransactionParams().do();
+    const assetCreate = algosdk.makeAssetCreateTxnWithSuggestedParamsFromObject({
+      sender,
+      total: 10,
+      decimals: 0,
+      defaultFrozen: false,
+      clawback: sender,
+      suggestedParams: suggestedParamsAssetCreate,
+    })
+    const signedAssetCreate = algosdk.signTransaction(assetCreate, sender.sk)
+    await algod.sendRawTransaction(signedAssetCreate.blob).do()
+    const { assetIndex } = await algosdk.waitForConfirmation(algod, signedAssetCreate.txID, 10)
+
+    const suggestedParamsAssetOptIn = await algodApi.transactionParams();
+    const signedAssetOptIn = createSignedTxnHttpFile(
+      ephemeralAccount,
+      suggestedParamsAssetOptIn,
+        "AssetTransfer",
+        undefined,
+        {
+            assetId: assetIndex!,
+            amount: BigInt(0),
+            receiver: { address: String(ephemeralAccount.addr), pubKey: ephemeralAccount.publicKey },
+        }
+    )
+
+    const resultAssetOptIn = await algodApi.rawTransaction(signedAssetOptIn);
+    expect(resultAssetOptIn).not.toBeNull();
+    expect(resultAssetOptIn?.txId).toBeDefined();
+    await waitForConfirmation(algodApi, resultAssetOptIn.txId);
+
+    const suggestedParamsAssetTransfer = await algodApi.transactionParams();
+    const signedAssetTransfer = createSignedTxnHttpFile(
+      sender,
+      suggestedParamsAssetTransfer,
+        "AssetTransfer",
+        undefined,
+        {
+            assetId: assetIndex!,
+            amount: BigInt(1),
+            receiver: { address: String(ephemeralAccount.addr), pubKey: ephemeralAccount.publicKey },
+        }
+    )
+
+    const resultAssetTransfer = await algodApi.rawTransaction(signedAssetTransfer);
+    expect(resultAssetTransfer).not.toBeNull();
+    expect(resultAssetTransfer?.txId).toBeDefined();
+    await waitForConfirmation(algodApi, resultAssetTransfer.txId);
+
+    const { assetHolding } = await algodApi.accountAssetInformation(ephemeralAccount.toString(), Number(assetIndex!))
+    expect(assetHolding).not.toBeNull()
+    expect(assetHolding?.amount).toBe(1);
+  });
 });
