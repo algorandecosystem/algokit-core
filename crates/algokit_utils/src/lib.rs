@@ -1,7 +1,4 @@
-use algod_client::{
-    AlgodClient, apis::Error as AlgodError,
-    models::TransactionParams200Response as TransactionParams,
-};
+use algod_client::{AlgodClient, apis::Error as AlgodError, models::TransactionParams};
 use algokit_transact::{
     Address, FeeParams, PaymentTransactionFields, SignedTransaction, Transaction,
     TransactionHeader, Transactions,

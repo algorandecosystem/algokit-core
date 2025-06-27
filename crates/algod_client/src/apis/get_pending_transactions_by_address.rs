@@ -16,7 +16,7 @@ use super::{AlgodApiError, ContentType, Error};
 use algokit_transact::AlgorandMsgpack;
 
 // Import all custom types used by this endpoint
-use crate::models::{ErrorResponse, GetPendingTransactionsByAddress200Response};
+use crate::models::{ErrorResponse, GetPendingTransactionsByAddress};
 
 // Import request body type if needed
 
@@ -39,7 +39,7 @@ pub async fn get_pending_transactions_by_address(
     address: &str,
     max: Option<i32>,
     format: Option<&str>,
-) -> Result<GetPendingTransactionsByAddress200Response, Error> {
+) -> Result<GetPendingTransactionsByAddress, Error> {
     let p_address = address;
     let p_max = max;
     let p_format = format;

@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 
 /// PendingTransactions is an array of signed transactions exactly as they were submitted.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct GetPendingTransactionsByAddress200Response {
+pub struct GetPendingTransactionsByAddress {
     /// An array of signed transaction objects.
     #[serde(rename = "top-transactions")]
     pub top_transactions: Vec<AlgokitSignedTransaction>,
@@ -23,17 +23,17 @@ pub struct GetPendingTransactionsByAddress200Response {
     pub total_transactions: i32,
 }
 
-impl AlgorandMsgpack for GetPendingTransactionsByAddress200Response {
+impl AlgorandMsgpack for GetPendingTransactionsByAddress {
     const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
 }
 
-impl GetPendingTransactionsByAddress200Response {
-    /// Constructor for GetPendingTransactionsByAddress200Response
+impl GetPendingTransactionsByAddress {
+    /// Constructor for GetPendingTransactionsByAddress
     pub fn new(
         top_transactions: Vec<AlgokitSignedTransaction>,
         total_transactions: i32,
-    ) -> GetPendingTransactionsByAddress200Response {
-        GetPendingTransactionsByAddress200Response {
+    ) -> GetPendingTransactionsByAddress {
+        GetPendingTransactionsByAddress {
             top_transactions,
             total_transactions,
         }

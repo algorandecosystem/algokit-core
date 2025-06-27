@@ -10,7 +10,7 @@ This tool replaces traditional OpenAPI generators with a custom implementation o
 
 ```bash
 cd api/oas_generator
-uv install
+uv sync
 ```
 
 ## Usage

@@ -15,7 +15,7 @@ use std::collections::HashMap;
 use super::{AlgodApiError, ContentType, Error};
 
 // Import all custom types used by this endpoint
-use crate::models::{ErrorResponse, GetSupply200Response};
+use crate::models::{ErrorResponse, GetSupply};
 
 // Import request body type if needed
 
@@ -30,7 +30,7 @@ pub enum GetSupplyError {
 }
 
 /// Get the current supply reported by the ledger.
-pub async fn get_supply(http_client: &dyn HttpClient) -> Result<GetSupply200Response, Error> {
+pub async fn get_supply(http_client: &dyn HttpClient) -> Result<GetSupply, Error> {
     let use_msgpack = false;
 
     let path = "/v2/ledger/supply".to_string();

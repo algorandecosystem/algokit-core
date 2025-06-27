@@ -12,22 +12,31 @@ use crate::models;
 use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
 
-/// An catchpoint abort response.
+/// PendingTransactions is an array of signed transactions exactly as they were submitted.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct AbortCatchup200Response {
-    /// Catchup abort response string
-    #[serde(rename = "catchup-message")]
-    pub catchup_message: String,
+pub struct GetPendingTransactions {
+    /// An array of signed transaction objects.
+    #[serde(rename = "top-transactions")]
+    pub top_transactions: Vec<AlgokitSignedTransaction>,
+    /// Total number of transactions in the pool.
+    #[serde(rename = "total-transactions")]
+    pub total_transactions: i32,
 }
 
-impl AlgorandMsgpack for AbortCatchup200Response {
+impl AlgorandMsgpack for GetPendingTransactions {
     const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
 }
 
-impl AbortCatchup200Response {
-    /// Constructor for AbortCatchup200Response
-    pub fn new(catchup_message: String) -> AbortCatchup200Response {
-        AbortCatchup200Response { catchup_message }
+impl GetPendingTransactions {
+    /// Constructor for GetPendingTransactions
+    pub fn new(
+        top_transactions: Vec<AlgokitSignedTransaction>,
+        total_transactions: i32,
+    ) -> GetPendingTransactions {
+        GetPendingTransactions {
+            top_transactions,
+            total_transactions,
+        }
     }
 
     /// Encode this struct to msgpack bytes using AlgorandMsgpack trait

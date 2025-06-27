@@ -9,14 +9,13 @@
  */
 
 use crate::models;
-use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
 /// Teal compile Result
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct TealCompile200Response {
+pub struct TealCompile {
     /// base32 SHA512_256 of program bytes (Address style)
     #[serde(rename = "hash")]
     pub hash: String,
@@ -29,27 +28,13 @@ pub struct TealCompile200Response {
     pub sourcemap: Option<serde_json::Value>,
 }
 
-impl AlgorandMsgpack for TealCompile200Response {
-    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
-}
-
-impl TealCompile200Response {
-    /// Constructor for TealCompile200Response
-    pub fn new(hash: String, result: Vec<u8>) -> TealCompile200Response {
-        TealCompile200Response {
+impl TealCompile {
+    /// Constructor for TealCompile
+    pub fn new(hash: String, result: Vec<u8>) -> TealCompile {
+        TealCompile {
             hash,
             result,
             sourcemap: None,
         }
-    }
-
-    /// Encode this struct to msgpack bytes using AlgorandMsgpack trait
-    pub fn to_msgpack(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-        Ok(self.encode()?)
-    }
-
-    /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
-    pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
-        Ok(Self::decode(bytes)?)
     }
 }

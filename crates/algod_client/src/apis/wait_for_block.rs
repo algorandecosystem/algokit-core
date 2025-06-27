@@ -15,7 +15,7 @@ use std::collections::HashMap;
 use super::{AlgodApiError, ContentType, Error};
 
 // Import all custom types used by this endpoint
-use crate::models::{ErrorResponse, WaitForBlock200Response};
+use crate::models::{ErrorResponse, WaitForBlock};
 
 // Import request body type if needed
 
@@ -36,7 +36,7 @@ pub enum WaitForBlockError {
 pub async fn wait_for_block(
     http_client: &dyn HttpClient,
     round: i32,
-) -> Result<WaitForBlock200Response, Error> {
+) -> Result<WaitForBlock, Error> {
     let p_round = round;
 
     let use_msgpack = false;

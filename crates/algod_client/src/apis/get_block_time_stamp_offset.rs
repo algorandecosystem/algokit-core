@@ -15,7 +15,7 @@ use std::collections::HashMap;
 use super::{AlgodApiError, ContentType, Error};
 
 // Import all custom types used by this endpoint
-use crate::models::{ErrorResponse, GetBlockTimeStampOffset200Response};
+use crate::models::{ErrorResponse, GetBlockTimeStampOffset};
 
 // Import request body type if needed
 
@@ -32,7 +32,7 @@ pub enum GetBlockTimeStampOffsetError {
 /// Gets the current timestamp offset.
 pub async fn get_block_time_stamp_offset(
     http_client: &dyn HttpClient,
-) -> Result<GetBlockTimeStampOffset200Response, Error> {
+) -> Result<GetBlockTimeStampOffset, Error> {
     let use_msgpack = false;
 
     let path = "/v2/devmode/blocks/offset".to_string();

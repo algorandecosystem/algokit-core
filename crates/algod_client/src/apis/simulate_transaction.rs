@@ -16,7 +16,7 @@ use super::{AlgodApiError, ContentType, Error};
 use algokit_transact::AlgorandMsgpack;
 
 // Import all custom types used by this endpoint
-use crate::models::{ErrorResponse, SimulateTransaction200Response};
+use crate::models::{ErrorResponse, SimulateTransaction};
 
 // Import request body type if needed
 use crate::models::SimulateRequest;
@@ -39,7 +39,7 @@ pub async fn simulate_transaction(
     http_client: &dyn HttpClient,
     request: SimulateRequest,
     format: Option<&str>,
-) -> Result<SimulateTransaction200Response, Error> {
+) -> Result<SimulateTransaction, Error> {
     let p_format = format;
     let p_request = request;
 

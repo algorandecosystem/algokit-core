@@ -15,7 +15,7 @@ use std::collections::HashMap;
 use super::{AlgodApiError, ContentType, Error};
 
 // Import all custom types used by this endpoint
-use crate::models::{ErrorResponse, GetBlockTxids200Response};
+use crate::models::{ErrorResponse, GetBlockTxids};
 
 // Import request body type if needed
 
@@ -36,7 +36,7 @@ pub enum GetBlockTxidsError {
 pub async fn get_block_txids(
     http_client: &dyn HttpClient,
     round: i32,
-) -> Result<GetBlockTxids200Response, Error> {
+) -> Result<GetBlockTxids, Error> {
     let p_round = round;
 
     let use_msgpack = false;

@@ -15,7 +15,7 @@ use std::collections::HashMap;
 use super::{AlgodApiError, ContentType, Error};
 
 // Import all custom types used by this endpoint
-use crate::models::{ErrorResponse, GetApplicationBoxes200Response};
+use crate::models::{ErrorResponse, GetApplicationBoxes};
 
 // Import request body type if needed
 
@@ -36,7 +36,7 @@ pub async fn get_application_boxes(
     http_client: &dyn HttpClient,
     application_id: i32,
     max: Option<i32>,
-) -> Result<GetApplicationBoxes200Response, Error> {
+) -> Result<GetApplicationBoxes, Error> {
     let p_application_id = application_id;
     let p_max = max;
 

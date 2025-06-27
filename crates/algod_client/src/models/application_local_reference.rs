@@ -9,7 +9,6 @@
  */
 
 use crate::models;
-use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
 
 /// References an account's local state for an application.
@@ -23,23 +22,9 @@ pub struct ApplicationLocalReference {
     pub app: u64,
 }
 
-impl AlgorandMsgpack for ApplicationLocalReference {
-    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
-}
-
 impl ApplicationLocalReference {
     /// Constructor for ApplicationLocalReference
     pub fn new(account: String, app: u64) -> ApplicationLocalReference {
         ApplicationLocalReference { account, app }
-    }
-
-    /// Encode this struct to msgpack bytes using AlgorandMsgpack trait
-    pub fn to_msgpack(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-        Ok(self.encode()?)
-    }
-
-    /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
-    pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
-        Ok(Self::decode(bytes)?)
     }
 }

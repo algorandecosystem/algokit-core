@@ -15,7 +15,7 @@ use std::collections::HashMap;
 use super::{AlgodApiError, ContentType, Error};
 
 // Import all custom types used by this endpoint
-use crate::models::{ErrorResponse, GetSyncRound200Response};
+use crate::models::{ErrorResponse, GetSyncRound};
 
 // Import request body type if needed
 
@@ -33,9 +33,7 @@ pub enum GetSyncRoundError {
 }
 
 /// Gets the minimum sync round for the ledger.
-pub async fn get_sync_round(
-    http_client: &dyn HttpClient,
-) -> Result<GetSyncRound200Response, Error> {
+pub async fn get_sync_round(http_client: &dyn HttpClient) -> Result<GetSyncRound, Error> {
     let use_msgpack = false;
 
     let path = "/v2/ledger/sync".to_string();

@@ -15,7 +15,7 @@ use std::collections::HashMap;
 use super::{AlgodApiError, ContentType, Error};
 
 // Import all custom types used by this endpoint
-use crate::models::{ErrorResponse, GetStatus200Response};
+use crate::models::{ErrorResponse, GetStatus};
 
 // Import request body type if needed
 
@@ -31,7 +31,7 @@ pub enum GetStatusError {
 }
 
 /// Gets the current node status.
-pub async fn get_status(http_client: &dyn HttpClient) -> Result<GetStatus200Response, Error> {
+pub async fn get_status(http_client: &dyn HttpClient) -> Result<GetStatus, Error> {
     let use_msgpack = false;
 
     let path = "/v2/status".to_string();

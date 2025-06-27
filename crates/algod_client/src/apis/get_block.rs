@@ -16,7 +16,7 @@ use super::{AlgodApiError, ContentType, Error};
 use algokit_transact::AlgorandMsgpack;
 
 // Import all custom types used by this endpoint
-use crate::models::{ErrorResponse, GetBlock200Response};
+use crate::models::{ErrorResponse, GetBlock};
 
 // Import request body type if needed
 
@@ -39,7 +39,7 @@ pub async fn get_block(
     format: Option<&str>,
     round: i32,
     header_only: Option<bool>,
-) -> Result<GetBlock200Response, Error> {
+) -> Result<GetBlock, Error> {
     let p_format = format;
     let p_round = round;
     let p_header_only = header_only;
