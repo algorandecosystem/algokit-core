@@ -687,7 +687,7 @@ class OASParser:
         schema = first_content.get("schema", {})
 
         if self._should_create_response_model(schema, status_code):
-            response_model_name = f"{operation_id}{status_code}Response"
+            response_model_name = operation_id
 
             self.schemas[response_model_name] = self._create_response_schema(
                 response_model_name,

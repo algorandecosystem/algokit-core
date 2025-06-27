@@ -9,7 +9,6 @@
  */
 
 use crate::models;
-use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
@@ -36,10 +35,6 @@ pub struct ApplicationStateOperation {
     pub account: Option<String>,
 }
 
-impl AlgorandMsgpack for ApplicationStateOperation {
-    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
-}
-
 impl ApplicationStateOperation {
     /// Constructor for ApplicationStateOperation
     pub fn new(
@@ -54,15 +49,5 @@ impl ApplicationStateOperation {
             new_value: None,
             account: None,
         }
-    }
-
-    /// Encode this struct to msgpack bytes using AlgorandMsgpack trait
-    pub fn to_msgpack(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-        Ok(self.encode()?)
-    }
-
-    /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
-    pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
-        Ok(Self::decode(bytes)?)
     }
 }

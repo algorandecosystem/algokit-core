@@ -9,7 +9,6 @@
  */
 
 use crate::models;
-use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
 
 use crate::models::PendingTransactionResponse;
@@ -45,10 +44,6 @@ pub struct SimulateTransactionResult {
     pub fixed_signer: Option<String>,
 }
 
-impl AlgorandMsgpack for SimulateTransactionResult {
-    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
-}
-
 impl SimulateTransactionResult {
     /// Constructor for SimulateTransactionResult
     pub fn new(txn_result: PendingTransactionResponse) -> SimulateTransactionResult {
@@ -60,15 +55,5 @@ impl SimulateTransactionResult {
             unnamed_resources_accessed: None,
             fixed_signer: None,
         }
-    }
-
-    /// Encode this struct to msgpack bytes using AlgorandMsgpack trait
-    pub fn to_msgpack(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-        Ok(self.encode()?)
-    }
-
-    /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
-    pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
-        Ok(Self::decode(bytes)?)
     }
 }

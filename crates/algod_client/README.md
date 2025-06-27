@@ -185,34 +185,33 @@ data/transactions/asset.go : AssetParams
 - `SimulateUnnamedResourcesAccessed` - These are resources that were accessed by this group that would normally have caused failure, but were allowed in simulation. Depending on where this object is in the response, the unnamed resources it contains may or may not qualify for group resource sharing. If this is a field in SimulateTransactionGroupResult, the resources do qualify, but if this is a field in SimulateTransactionResult, they do not qualify. In order to make this group valid for actual submission, resources that qualify for group sharing can be made available by any transaction of the group; otherwise, resources must be placed in the same transaction which accessed them.
 - `SimulateInitialStates` - Initial states of resources that were accessed during simulation.
 - `AppCallLogs` - The logged messages from an app call along with the app ID and outer transaction ID. Logs appear in the same order that they were emitted.
-- `AccountAssetInformation200Response` - AccountAssetResponse describes the account's asset holding and asset parameters (if either exist) for a specific asset ID. Asset parameters will only be returned if the provided address is the asset's creator.
-- `AccountAssetsInformation200Response` - AccountAssetsInformationResponse contains a list of assets held by an account.
-- `AccountApplicationInformation200Response` - AccountApplicationResponse describes the account's application local state and global state (AppLocalState and AppParams, if either exists) for a specific application ID. Global state will only be returned if the provided address is the application's creator.
-- `GetPendingTransactionsByAddress200Response` - PendingTransactions is an array of signed transactions exactly as they were submitted.
-- `GetBlock200Response` - Encoded block object.
-- `GetBlockTxids200Response` - Top level transaction IDs in a block.
-- `GetBlockHash200Response` - Hash of a block header.
-- `GetTransactionProof200Response` - Proof of transaction in a block.
-- `GetBlockLogs200Response` - All logs emitted in the given round. Each app call, whether top-level or inner, that contains logs results in a separate AppCallLogs object. Therefore there may be multiple AppCallLogs with the same application ID and outer transaction ID in the event of multiple inner app calls to the same app. App calls with no logs are not included in the response. AppCallLogs are returned in the same order that their corresponding app call appeared in the block (pre-order traversal of inner app calls)
-- `GetSupply200Response` - Supply represents the current supply of MicroAlgos in the system
-- `AddParticipationKey200Response` - Participation ID of the submission
-- `GetStatus200Response` - NodeStatus contains the information about a node status
-- `WaitForBlock200Response` - NodeStatus contains the information about a node status
-- `RawTransaction200Response` - Transaction ID of the submission.
-- `SimulateTransaction200Response` - Result of a transaction group simulation.
-- `TransactionParams200Response` - TransactionParams contains the parameters that help a client construct
+- `AccountAssetInformation` - AccountAssetResponse describes the account's asset holding and asset parameters (if either exist) for a specific asset ID. Asset parameters will only be returned if the provided address is the asset's creator.
+- `AccountAssetsInformation` - AccountAssetsInformationResponse contains a list of assets held by an account.
+- `AccountApplicationInformation` - AccountApplicationResponse describes the account's application local state and global state (AppLocalState and AppParams, if either exists) for a specific application ID. Global state will only be returned if the provided address is the application's creator.
+- `GetPendingTransactionsByAddress` - PendingTransactions is an array of signed transactions exactly as they were submitted.
+- `GetBlock` - Encoded block object.
+- `GetBlockTxids` - Top level transaction IDs in a block.
+- `GetBlockHash` - Hash of a block header.
+- `GetTransactionProof` - Proof of transaction in a block.
+- `GetBlockLogs` - All logs emitted in the given round. Each app call, whether top-level or inner, that contains logs results in a separate AppCallLogs object. Therefore there may be multiple AppCallLogs with the same application ID and outer transaction ID in the event of multiple inner app calls to the same app. App calls with no logs are not included in the response. AppCallLogs are returned in the same order that their corresponding app call appeared in the block (pre-order traversal of inner app calls)
+- `GetSupply` - Supply represents the current supply of MicroAlgos in the system
+- `AddParticipationKey` - Participation ID of the submission
+- `GetStatus` - NodeStatus contains the information about a node status
+- `WaitForBlock` - NodeStatus contains the information about a node status
+- `RawTransaction` - Transaction ID of the submission.
+- `SimulateTransaction` - Result of a transaction group simulation.
+- `TransactionParams` - TransactionParams contains the parameters that help a client construct
 a new transaction.
-- `GetPendingTransactions200Response` - PendingTransactions is an array of signed transactions exactly as they were submitted.
-- `GetTransactionGroupLedgerStateDeltasForRound200Response` - Response containing all ledger state deltas for transaction groups, with their associated Ids, in a single round.
-- `GetApplicationBoxes200Response` - Box names of an application
-- `GetSyncRound200Response` - Response containing the ledger's minimum sync round
-- `TealCompile200Response` - Teal compile Result
-- `TealDisassemble200Response` - Teal disassembly Result
-- `StartCatchup200Response` - An catchpoint start response.
-- `StartCatchup201Response` - An catchpoint start response.
-- `AbortCatchup200Response` - An catchpoint abort response.
-- `TealDryrun200Response` - DryrunResponse contains per-txn debug information from a dryrun.
-- `GetBlockTimeStampOffset200Response` - Response containing the timestamp offset in seconds
+- `GetPendingTransactions` - PendingTransactions is an array of signed transactions exactly as they were submitted.
+- `GetTransactionGroupLedgerStateDeltasForRound` - Response containing all ledger state deltas for transaction groups, with their associated Ids, in a single round.
+- `GetApplicationBoxes` - Box names of an application
+- `GetSyncRound` - Response containing the ledger's minimum sync round
+- `TealCompile` - Teal compile Result
+- `TealDisassemble` - Teal disassembly Result
+- `StartCatchup` - An catchpoint start response.
+- `AbortCatchup` - An catchpoint abort response.
+- `TealDryrun` - DryrunResponse contains per-txn debug information from a dryrun.
+- `GetBlockTimeStampOffset` - Response containing the timestamp offset in seconds
 
 ## Error Handling
 

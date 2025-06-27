@@ -9,14 +9,13 @@
  */
 
 use crate::models;
-use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
 
 use crate::models::AccountAssetHolding;
 
 /// AccountAssetsInformationResponse contains a list of assets held by an account.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct AccountAssetsInformation200Response {
+pub struct AccountAssetsInformation {
     /// The round for which this information is relevant.
     #[serde(rename = "round")]
     pub round: u64,
@@ -27,27 +26,13 @@ pub struct AccountAssetsInformation200Response {
     pub asset_holdings: Option<Vec<AccountAssetHolding>>,
 }
 
-impl AlgorandMsgpack for AccountAssetsInformation200Response {
-    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
-}
-
-impl AccountAssetsInformation200Response {
-    /// Constructor for AccountAssetsInformation200Response
-    pub fn new(round: u64) -> AccountAssetsInformation200Response {
-        AccountAssetsInformation200Response {
+impl AccountAssetsInformation {
+    /// Constructor for AccountAssetsInformation
+    pub fn new(round: u64) -> AccountAssetsInformation {
+        AccountAssetsInformation {
             round,
             next_token: None,
             asset_holdings: None,
         }
-    }
-
-    /// Encode this struct to msgpack bytes using AlgorandMsgpack trait
-    pub fn to_msgpack(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-        Ok(self.encode()?)
-    }
-
-    /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
-    pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
-        Ok(Self::decode(bytes)?)
     }
 }

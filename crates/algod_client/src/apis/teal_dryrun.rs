@@ -16,7 +16,7 @@ use super::{AlgodApiError, ContentType, Error};
 use algokit_transact::AlgorandMsgpack;
 
 // Import all custom types used by this endpoint
-use crate::models::{ErrorResponse, TealDryrun200Response};
+use crate::models::{ErrorResponse, TealDryrun};
 
 // Import request body type if needed
 use crate::models::DryrunRequest;
@@ -38,7 +38,7 @@ pub enum TealDryrunError {
 pub async fn teal_dryrun(
     http_client: &dyn HttpClient,
     request: Option<DryrunRequest>,
-) -> Result<TealDryrun200Response, Error> {
+) -> Result<TealDryrun, Error> {
     let p_request = request;
 
     let use_msgpack = true;

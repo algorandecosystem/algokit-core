@@ -15,7 +15,7 @@ use std::collections::HashMap;
 use super::{AlgodApiError, ContentType, Error};
 
 // Import all custom types used by this endpoint
-use crate::models::{ErrorResponse, GetBlockLogs200Response};
+use crate::models::{ErrorResponse, GetBlockLogs};
 
 // Import request body type if needed
 
@@ -35,7 +35,7 @@ pub enum GetBlockLogsError {
 pub async fn get_block_logs(
     http_client: &dyn HttpClient,
     round: i32,
-) -> Result<GetBlockLogs200Response, Error> {
+) -> Result<GetBlockLogs, Error> {
     let p_round = round;
 
     let use_msgpack = false;

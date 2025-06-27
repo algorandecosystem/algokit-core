@@ -16,7 +16,7 @@ use super::{AlgodApiError, ContentType, Error};
 use algokit_transact::AlgorandMsgpack;
 
 // Import all custom types used by this endpoint
-use crate::models::{AccountApplicationInformation200Response, ErrorResponse};
+use crate::models::{AccountApplicationInformation, ErrorResponse};
 
 // Import request body type if needed
 
@@ -38,7 +38,7 @@ pub async fn account_application_information(
     format: Option<&str>,
     address: &str,
     application_id: i32,
-) -> Result<AccountApplicationInformation200Response, Error> {
+) -> Result<AccountApplicationInformation, Error> {
     let p_format = format;
     let p_address = address;
     let p_application_id = application_id;

@@ -9,7 +9,6 @@
  */
 
 use crate::models;
-use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
 
 use crate::models::ApplicationKvStorage;
@@ -29,10 +28,6 @@ pub struct ApplicationInitialStates {
     pub app_boxes: Option<ApplicationKvStorage>,
 }
 
-impl AlgorandMsgpack for ApplicationInitialStates {
-    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
-}
-
 impl ApplicationInitialStates {
     /// Constructor for ApplicationInitialStates
     pub fn new(id: u64) -> ApplicationInitialStates {
@@ -42,15 +37,5 @@ impl ApplicationInitialStates {
             app_globals: None,
             app_boxes: None,
         }
-    }
-
-    /// Encode this struct to msgpack bytes using AlgorandMsgpack trait
-    pub fn to_msgpack(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-        Ok(self.encode()?)
-    }
-
-    /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
-    pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
-        Ok(Self::decode(bytes)?)
     }
 }

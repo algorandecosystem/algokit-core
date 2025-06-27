@@ -9,7 +9,6 @@
  */
 
 use crate::models;
-use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
 
 use crate::models::TealValue;
@@ -32,10 +31,6 @@ pub struct DryrunState {
     pub error: Option<String>,
 }
 
-impl AlgorandMsgpack for DryrunState {
-    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
-}
-
 impl DryrunState {
     /// Constructor for DryrunState
     pub fn new(line: i32, pc: i32, stack: Vec<TealValue>) -> DryrunState {
@@ -46,15 +41,5 @@ impl DryrunState {
             scratch: None,
             error: None,
         }
-    }
-
-    /// Encode this struct to msgpack bytes using AlgorandMsgpack trait
-    pub fn to_msgpack(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-        Ok(self.encode()?)
-    }
-
-    /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
-    pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
-        Ok(Self::decode(bytes)?)
     }
 }

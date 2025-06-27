@@ -16,7 +16,7 @@ use super::{AlgodApiError, ContentType, Error};
 use algokit_transact::AlgorandMsgpack;
 
 // Import all custom types used by this endpoint
-use crate::models::{ErrorResponse, GetPendingTransactions200Response};
+use crate::models::{ErrorResponse, GetPendingTransactions};
 
 // Import request body type if needed
 
@@ -37,7 +37,7 @@ pub async fn get_pending_transactions(
     http_client: &dyn HttpClient,
     max: Option<i32>,
     format: Option<&str>,
-) -> Result<GetPendingTransactions200Response, Error> {
+) -> Result<GetPendingTransactions, Error> {
     let p_max = max;
     let p_format = format;
 

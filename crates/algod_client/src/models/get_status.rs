@@ -9,12 +9,11 @@
  */
 
 use crate::models;
-use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
 
 /// NodeStatus contains the information about a node status
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct WaitForBlock200Response {
+pub struct GetStatus {
     /// CatchupTime in nanoseconds
     #[serde(rename = "catchup-time")]
     pub catchup_time: i32,
@@ -128,12 +127,8 @@ pub struct WaitForBlock200Response {
     pub upgrade_vote_rounds: Option<i32>,
 }
 
-impl AlgorandMsgpack for WaitForBlock200Response {
-    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
-}
-
-impl WaitForBlock200Response {
-    /// Constructor for WaitForBlock200Response
+impl GetStatus {
+    /// Constructor for GetStatus
     pub fn new(
         catchup_time: i32,
         last_round: u64,
@@ -143,8 +138,8 @@ impl WaitForBlock200Response {
         next_version_supported: bool,
         stopped_at_unsupported_round: bool,
         time_since_last_round: i32,
-    ) -> WaitForBlock200Response {
-        WaitForBlock200Response {
+    ) -> GetStatus {
+        GetStatus {
             catchup_time,
             last_round,
             last_version,
@@ -172,15 +167,5 @@ impl WaitForBlock200Response {
             upgrade_next_protocol_vote_before: None,
             upgrade_vote_rounds: None,
         }
-    }
-
-    /// Encode this struct to msgpack bytes using AlgorandMsgpack trait
-    pub fn to_msgpack(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-        Ok(self.encode()?)
-    }
-
-    /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
-    pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
-        Ok(Self::decode(bytes)?)
     }
 }

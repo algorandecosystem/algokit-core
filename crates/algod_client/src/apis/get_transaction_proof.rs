@@ -15,7 +15,7 @@ use std::collections::HashMap;
 use super::{AlgodApiError, ContentType, Error};
 
 // Import all custom types used by this endpoint
-use crate::models::{ErrorResponse, GetTransactionProof200Response};
+use crate::models::{ErrorResponse, GetTransactionProof};
 
 // Import request body type if needed
 
@@ -39,7 +39,7 @@ pub async fn get_transaction_proof(
     txid: &str,
     hashtype: Option<&str>,
     format: Option<&str>,
-) -> Result<GetTransactionProof200Response, Error> {
+) -> Result<GetTransactionProof, Error> {
     let p_round = round;
     let p_txid = txid;
     let p_hashtype = hashtype;

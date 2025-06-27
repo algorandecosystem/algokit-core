@@ -9,7 +9,6 @@
  */
 
 use crate::models;
-use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
@@ -17,7 +16,7 @@ use serde_with::serde_as;
 /// a new transaction.
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct TransactionParams200Response {
+pub struct TransactionParams {
     /// ConsensusVersion indicates the consensus protocol version
     /// as of LastRound.
     #[serde(rename = "consensus-version")]
@@ -44,12 +43,8 @@ pub struct TransactionParams200Response {
     pub min_fee: u64,
 }
 
-impl AlgorandMsgpack for TransactionParams200Response {
-    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
-}
-
-impl TransactionParams200Response {
-    /// Constructor for TransactionParams200Response
+impl TransactionParams {
+    /// Constructor for TransactionParams
     pub fn new(
         consensus_version: String,
         fee: u64,
@@ -57,8 +52,8 @@ impl TransactionParams200Response {
         genesis_id: String,
         last_round: u64,
         min_fee: u64,
-    ) -> TransactionParams200Response {
-        TransactionParams200Response {
+    ) -> TransactionParams {
+        TransactionParams {
             consensus_version,
             fee,
             genesis_hash,
@@ -66,15 +61,5 @@ impl TransactionParams200Response {
             last_round,
             min_fee,
         }
-    }
-
-    /// Encode this struct to msgpack bytes using AlgorandMsgpack trait
-    pub fn to_msgpack(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-        Ok(self.encode()?)
-    }
-
-    /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
-    pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
-        Ok(Self::decode(bytes)?)
     }
 }

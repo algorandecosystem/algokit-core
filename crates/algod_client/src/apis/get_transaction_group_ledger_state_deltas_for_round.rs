@@ -16,7 +16,7 @@ use super::{AlgodApiError, ContentType, Error};
 use algokit_transact::AlgorandMsgpack;
 
 // Import all custom types used by this endpoint
-use crate::models::{ErrorResponse, GetTransactionGroupLedgerStateDeltasForRound200Response};
+use crate::models::{ErrorResponse, GetTransactionGroupLedgerStateDeltasForRound};
 
 // Import request body type if needed
 
@@ -39,7 +39,7 @@ pub async fn get_transaction_group_ledger_state_deltas_for_round(
     http_client: &dyn HttpClient,
     round: i32,
     format: Option<&str>,
-) -> Result<GetTransactionGroupLedgerStateDeltasForRound200Response, Error> {
+) -> Result<GetTransactionGroupLedgerStateDeltasForRound, Error> {
     let p_round = round;
     let p_format = format;
 
