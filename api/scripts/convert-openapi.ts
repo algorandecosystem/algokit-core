@@ -219,6 +219,8 @@ function fixBigInt(spec: OpenAPISpec): number {
     { fieldName: "vote-first-valid" },
     { fieldName: "vote-key-dilution" },
     { fieldName: "vote-last-valid" },
+    { fieldName: "catchup-time" },
+    { fieldName: "time-since-last-round" },
   ];
 
   const processObject = (obj: any, objName?: string): void => {

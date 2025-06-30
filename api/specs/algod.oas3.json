@@ -2094,7 +2094,8 @@
                   "properties": {
                     "catchup-time": {
                       "type": "integer",
-                      "description": "CatchupTime in nanoseconds"
+                      "description": "CatchupTime in nanoseconds",
+                      "x-algokit-bigint": true
                     },
                     "last-round": {
                       "type": "integer",
@@ -2123,7 +2124,8 @@
                     },
                     "time-since-last-round": {
                       "type": "integer",
-                      "description": "TimeSinceLastRound in nanoseconds"
+                      "description": "TimeSinceLastRound in nanoseconds",
+                      "x-algokit-bigint": true
                     },
                     "last-catchpoint": {
                       "type": "string",
@@ -2271,7 +2273,8 @@
                   "properties": {
                     "catchup-time": {
                       "type": "integer",
-                      "description": "CatchupTime in nanoseconds"
+                      "description": "CatchupTime in nanoseconds",
+                      "x-algokit-bigint": true
                     },
                     "last-round": {
                       "type": "integer",
@@ -2300,7 +2303,8 @@
                     },
                     "time-since-last-round": {
                       "type": "integer",
-                      "description": "TimeSinceLastRound in nanoseconds"
+                      "description": "TimeSinceLastRound in nanoseconds",
+                      "x-algokit-bigint": true
                     },
                     "last-catchpoint": {
                       "type": "string",
@@ -7056,7 +7060,8 @@
               "properties": {
                 "catchup-time": {
                   "type": "integer",
-                  "description": "CatchupTime in nanoseconds"
+                  "description": "CatchupTime in nanoseconds",
+                  "x-algokit-bigint": true
                 },
                 "last-round": {
                   "type": "integer",
@@ -7085,7 +7090,8 @@
                 },
                 "time-since-last-round": {
                   "type": "integer",
-                  "description": "TimeSinceLastRound in nanoseconds"
+                  "description": "TimeSinceLastRound in nanoseconds",
+                  "x-algokit-bigint": true
                 },
                 "last-catchpoint": {
                   "type": "string",
