@@ -5,7 +5,7 @@
 
 use crate::address::Address;
 use crate::utils::{is_empty_vec_opt, is_zero, is_zero_opt};
-use crate::TransactionHeader;
+use crate::{Transaction, TransactionHeader};
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
@@ -216,6 +216,12 @@ pub struct ApplicationCallTransactionFields {
     #[serde(default)]
     #[builder(default)]
     pub box_references: Option<Vec<BoxReference>>,
+}
+
+impl ApplicationCallTransactionBuilder {
+    pub fn build(&self) -> Result<Transaction, ApplicationCallTransactionBuilderError> {
+        self.build_fields().map(Transaction::ApplicationCall)
+    }
 }
 
 fn is_default_on_complete(on_complete: &OnApplicationComplete) -> bool {
