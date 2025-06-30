@@ -82,20 +82,28 @@ impl DefaultHttpClient {
         }
     }
 
-    pub fn with_header(base_url: &str, header_name: &str, header_value: &str) -> Self {
+    pub fn with_header(
+        base_url: &str,
+        header_name: &str,
+        header_value: &str,
+    ) -> Result<Self, HttpError> {
         let mut headers = reqwest::header::HeaderMap::new();
         headers.insert(
-            reqwest::header::HeaderName::from_bytes(header_name.as_bytes()).unwrap(),
-            reqwest::header::HeaderValue::from_str(header_value).unwrap(),
+            reqwest::header::HeaderName::from_bytes(header_name.as_bytes()).map_err(|e| {
+                HttpError::HttpError(format!("Invalid header name '{}': {}", header_name, e))
+            })?,
+            reqwest::header::HeaderValue::from_str(header_value).map_err(|e| {
+                HttpError::HttpError(format!("Invalid header value '{}': {}", header_value, e))
+            })?,
         );
         let client = reqwest::Client::builder()
             .default_headers(headers)
             .build()
-            .unwrap();
-        DefaultHttpClient {
+            .map_err(|e| HttpError::HttpError(format!("Failed to build HTTP client: {}", e)))?;
+        Ok(DefaultHttpClient {
             client,
             base_url: base_url.to_string(),
-        }
+        })
     }
 }
 

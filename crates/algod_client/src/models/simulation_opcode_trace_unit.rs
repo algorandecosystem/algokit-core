@@ -9,6 +9,7 @@
  */
 
 use crate::models;
+use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
 
 use crate::models::ApplicationStateOperation;
@@ -38,6 +39,10 @@ pub struct SimulationOpcodeTraceUnit {
     pub stack_additions: Option<Vec<AvmValue>>,
 }
 
+impl AlgorandMsgpack for SimulationOpcodeTraceUnit {
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
+}
+
 impl SimulationOpcodeTraceUnit {
     /// Constructor for SimulationOpcodeTraceUnit
     pub fn new(pc: i32) -> SimulationOpcodeTraceUnit {
@@ -49,5 +54,15 @@ impl SimulationOpcodeTraceUnit {
             stack_pop_count: None,
             stack_additions: None,
         }
+    }
+
+    /// Encode this struct to msgpack bytes using AlgorandMsgpack trait
+    pub fn to_msgpack(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        Ok(self.encode()?)
+    }
+
+    /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
+    pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(Self::decode(bytes)?)
     }
 }

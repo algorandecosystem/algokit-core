@@ -446,12 +446,26 @@ class OASParser:
         root_schemas = self._get_msgpack_schemas_from_operations()
         root_schemas.update(self._get_msgpack_schemas_from_extensions())
 
-        # The old logic seemed to imply that if any msgpack operations exist,
-        # all response models are candidates for msgpack.
-        if self.msgpack_operations:
-            for schema_name in self.schemas:
-                if schema_name.endswith("Response"):
-                    root_schemas.add(schema_name)
+        # Also include response schemas from msgpack operations that were created during parsing
+        # This covers cases where inline response schemas get converted to named schemas
+        if self.msgpack_operations and self.spec_data:
+            for path_item in self.spec_data.get("paths", {}).values():
+                for method, op_data in path_item.items():
+                    if (
+                        method not in _HTTP_METHODS
+                        or not detect_msgpack_support_for_operation(op_data)
+                        or op_data.get("operationId") not in self.msgpack_operations
+                    ):
+                        continue
+
+                    # Check response schemas for this msgpack operation
+                    for resp_data in op_data.get("responses", {}).values():
+                        content = resp_data.get("content", {})
+                        for ct, _ in content.items():
+                            if ct in _MSGPACK_CONTENT_TYPES:
+                                operation_id = op_data.get("operationId")
+                                if operation_id and operation_id in self.schemas:
+                                    root_schemas.add(operation_id)
 
         return root_schemas
 

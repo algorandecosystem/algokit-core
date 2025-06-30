@@ -9,6 +9,7 @@
  */
 
 use crate::models;
+use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
 
 /// References an asset held by an account.
@@ -22,9 +23,23 @@ pub struct AssetHoldingReference {
     pub asset: u64,
 }
 
+impl AlgorandMsgpack for AssetHoldingReference {
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
+}
+
 impl AssetHoldingReference {
     /// Constructor for AssetHoldingReference
     pub fn new(account: String, asset: u64) -> AssetHoldingReference {
         AssetHoldingReference { account, asset }
+    }
+
+    /// Encode this struct to msgpack bytes using AlgorandMsgpack trait
+    pub fn to_msgpack(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        Ok(self.encode()?)
+    }
+
+    /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
+    pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(Self::decode(bytes)?)
     }
 }

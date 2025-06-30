@@ -76,7 +76,7 @@ impl AlgodClient {
             "http://localhost:4001",
             "X-Algo-API-Token",
             "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        ));
+        ).expect("Failed to create HTTP client with X-Algo-API-Token header"));
         Self::new(http_client)
     }
 

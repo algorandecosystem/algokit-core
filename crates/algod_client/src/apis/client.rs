@@ -60,11 +60,14 @@ impl AlgodClient {
     /// Create a new AlgodClient for a local localnet environment.
     #[cfg(feature = "default_client")]
     pub fn localnet() -> Self {
-        let http_client = Arc::new(DefaultHttpClient::with_header(
-            "http://localhost:4001",
-            "X-Algo-API-Token",
-            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        ));
+        let http_client = Arc::new(
+            DefaultHttpClient::with_header(
+                "http://localhost:4001",
+                "X-Algo-API-Token",
+                "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            )
+            .expect("Failed to create HTTP client with X-Algo-API-Token header"),
+        );
         Self::new(http_client)
     }
 
