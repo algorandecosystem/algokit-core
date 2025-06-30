@@ -2,6 +2,8 @@
 
 Integration tests for the `algod_client` crate, demonstrating usage patterns and ensuring compatibility with the Algorand network.
 
+> TODO: Temporary crate! Tests are to be merged into the algokit_utils crate.
+
 ## Overview
 
 This crate provides integration tests for the Algod API client, using a local Algorand network (localnet) for testing. The tests showcase:
