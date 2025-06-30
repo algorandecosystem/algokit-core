@@ -77,7 +77,7 @@ pub use self::simulate_request_transaction_group::SimulateRequestTransactionGrou
 pub mod simulate_trace_config;
 pub use self::simulate_trace_config::SimulateTraceConfig;
 pub mod model_box;
-pub use self::model_box::ModelBox;
+pub use self::model_box::Box;
 pub mod box_descriptor;
 pub use self::box_descriptor::BoxDescriptor;
 pub mod box_reference;

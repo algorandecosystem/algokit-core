@@ -1,5 +1,5 @@
 use algod_client::AlgodClient;
-use algod_client_tests::{get_algod_client, LocalnetManager};
+use algod_client_tests::{LocalnetManager, get_algod_client};
 use algokit_http_client::DefaultHttpClient;
 use std::sync::Arc;
 
@@ -31,13 +31,6 @@ async fn test_get_transaction_params() {
         !response.genesis_hash.is_empty(),
         "Genesis hash should not be empty"
     );
-
-    println!("✓ Successfully retrieved transaction parameters");
-    println!("  Genesis ID: {}", response.genesis_id);
-    println!("  Genesis Hash: {:?}", response.genesis_hash);
-    println!("  Min Fee: {}", response.min_fee);
-    println!("  Last Round: {}", response.last_round);
-    println!("  Consensus Version: {}", response.consensus_version);
 }
 
 #[tokio::test]
@@ -48,6 +41,4 @@ async fn test_transaction_params_error_handling() {
 
     // This should fail due to connection error
     assert!(result.is_err(), "Invalid host should result in error");
-
-    println!("✓ Error handling test passed - correctly failed with invalid host");
 }

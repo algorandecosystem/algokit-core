@@ -11,6 +11,35 @@ pub enum HttpError {
     HttpError(String),
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Enum))]
+#[cfg_attr(feature = "ffi_wasm", derive(tsify_next::Tsify))]
+#[cfg_attr(feature = "ffi_wasm", tsify(into_wasm_abi, from_wasm_abi))]
+#[cfg_attr(feature = "ffi_wasm", derive(serde::Serialize, serde::Deserialize))]
+pub enum HttpMethod {
+    Get,
+    Post,
+    Put,
+    Delete,
+    Patch,
+    Head,
+    Options,
+}
+
+impl HttpMethod {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            HttpMethod::Get => "GET",
+            HttpMethod::Post => "POST",
+            HttpMethod::Put => "PUT",
+            HttpMethod::Delete => "DELETE",
+            HttpMethod::Patch => "PATCH",
+            HttpMethod::Head => "HEAD",
+            HttpMethod::Options => "OPTIONS",
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 #[cfg_attr(feature = "ffi_wasm", derive(tsify_next::Tsify))]
@@ -32,39 +61,12 @@ pub struct HttpResponse {
 pub trait HttpClient: Send + Sync {
     async fn request(
         &self,
-        method: String,
+        method: HttpMethod,
         path: String,
         query: Option<HashMap<String, String>>,
         body: Option<Vec<u8>>,
         headers: Option<HashMap<String, String>>,
     ) -> Result<HttpResponse, HttpError>;
-
-    async fn get(
-        &self,
-        path: String,
-        query: Option<HashMap<String, String>>,
-        headers: Option<HashMap<String, String>>,
-    ) -> Result<HttpResponse, HttpError> {
-        self.request("GET".to_string(), path, query, None, headers)
-            .await
-    }
-
-    async fn post(
-        &self,
-        path: String,
-        query: Option<HashMap<String, String>>,
-        body: Option<Vec<u8>>,
-        headers: Option<HashMap<String, String>>,
-    ) -> Result<HttpResponse, HttpError> {
-        self.request("POST".to_string(), path, query, body, headers)
-            .await
-    }
-
-    // Simple get method for backward compatibility
-    async fn simple_get(&self, path: String) -> Result<Vec<u8>, HttpError> {
-        let response = self.get(path, None, None).await?;
-        Ok(response.body)
-    }
 }
 
 #[cfg(feature = "default_client")]
@@ -113,14 +115,14 @@ impl DefaultHttpClient {
 impl HttpClient for DefaultHttpClient {
     async fn request(
         &self,
-        method: String,
+        method: HttpMethod,
         path: String,
         query: Option<HashMap<String, String>>,
         body: Option<Vec<u8>>,
         headers: Option<HashMap<String, String>>,
     ) -> Result<HttpResponse, HttpError> {
         let url = format!("{}{}", self.base_url, path);
-        let method = reqwest::Method::from_bytes(method.as_bytes())
+        let method = reqwest::Method::from_bytes(method.as_str().as_bytes())
             .map_err(|e| HttpError::HttpError(e.to_string()))?;
 
         let mut request_builder = self.client.request(method, &url);
@@ -190,39 +192,12 @@ use tsify_next::Tsify;
 pub trait HttpClient {
     async fn request(
         &self,
-        method: String,
+        method: HttpMethod,
         path: String,
         query: Option<HashMap<String, String>>,
         body: Option<Vec<u8>>,
         headers: Option<HashMap<String, String>>,
     ) -> Result<HttpResponse, HttpError>;
-
-    async fn get(
-        &self,
-        path: String,
-        query: Option<HashMap<String, String>>,
-        headers: Option<HashMap<String, String>>,
-    ) -> Result<HttpResponse, HttpError> {
-        self.request("GET".to_string(), path, query, None, headers)
-            .await
-    }
-
-    async fn post(
-        &self,
-        path: String,
-        query: Option<HashMap<String, String>>,
-        body: Option<Vec<u8>>,
-        headers: Option<HashMap<String, String>>,
-    ) -> Result<HttpResponse, HttpError> {
-        self.request("POST".to_string(), path, query, body, headers)
-            .await
-    }
-
-    // Simple get method for backward compatibility
-    async fn simple_get(&self, path: String) -> Result<Vec<u8>, HttpError> {
-        let response = self.get(path, None, None).await?;
-        Ok(response.body)
-    }
 }
 
 #[wasm_bindgen]
@@ -232,9 +207,6 @@ extern "C" {
     ///
     /// This mirrors the `HttpClient` trait, but wasm-bindgen doesn't support foreign traits so we define it separately.
     pub type WasmHttpClient;
-
-    #[wasm_bindgen(method, catch)]
-    async fn get(this: &WasmHttpClient, path: &str) -> Result<Uint8Array, JsValue>;
 
     #[wasm_bindgen(method, catch)]
     async fn request(
@@ -252,7 +224,7 @@ extern "C" {
 impl HttpClient for WasmHttpClient {
     async fn request(
         &self,
-        method: String,
+        method: HttpMethod,
         path: String,
         query: Option<HashMap<String, String>>,
         body: Option<Vec<u8>>,
@@ -278,7 +250,7 @@ impl HttpClient for WasmHttpClient {
         };
 
         let result = self
-            .request(&method, &path, &query_js, &body_js, &headers_js)
+            .request(method.as_str(), &path, &query_js, &body_js, &headers_js)
             .await
             .map_err(|e| {
                 HttpError::HttpError(
@@ -294,18 +266,5 @@ impl HttpClient for WasmHttpClient {
             .map_err(|e| HttpError::HttpError(format!("Failed to parse response: {:?}", e)))?;
 
         Ok(response)
-    }
-
-    async fn simple_get(&self, path: String) -> Result<Vec<u8>, HttpError> {
-        let result = self.get(&path).await.map_err(|e| {
-            HttpError::HttpError(
-                e.as_string().unwrap_or(
-                    "A HTTP error occurred in JavaScript, but it cannot be converted to a string"
-                        .to_string(),
-                ),
-            )
-        })?;
-
-        Ok(result.to_vec())
     }
 }

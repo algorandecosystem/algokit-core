@@ -7,7 +7,7 @@ name = "rust-oas-generator"
 version = "1.0.0"
 description = "A Jinja2-based generator that produces Rust API clients from OpenAPI specifications"
 readme = "README.md"
-authors = [{ name = "OpenAPI Rust Generator" }]
+authors = [{ name = "AlgoKit Core Team" }]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",

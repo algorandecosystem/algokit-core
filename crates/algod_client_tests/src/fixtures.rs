@@ -1,6 +1,6 @@
 use algod_client::AlgodClient;
 use algokit_transact::{PaymentTransactionBuilder, TransactionHeaderBuilder};
-use base64::{prelude::BASE64_STANDARD, Engine};
+use base64::{Engine, prelude::BASE64_STANDARD};
 
 /// Global algod client instance - shared across all tests
 /// Note: We use a function that returns a reference to avoid circular imports

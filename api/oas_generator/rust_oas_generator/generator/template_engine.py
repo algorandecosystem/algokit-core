@@ -36,8 +36,6 @@ PRIMITIVE_TYPES = frozenset(
     {
         "String",
         "str",
-        "i32",
-        "i64",
         "u32",
         "u64",
         "f32",
@@ -45,14 +43,38 @@ PRIMITIVE_TYPES = frozenset(
         "bool",
         "Vec<u8>",
         "Vec<String>",
-        "Vec<i32>",
-        "Vec<i64>",
+        "Vec<u32>",
+        "Vec<u64>",
         "serde_json::Value",
         "std::path::PathBuf",
         "()",
-        "Box",
     }
 )
+
+# Types that conflict with std types and need qualification
+STD_CONFLICTING_TYPES = frozenset({"Box"})
+
+
+def qualify_type_name(type_name: str | None) -> str | None:
+    """Qualify type names that conflict with std types."""
+    if not type_name:
+        return type_name
+
+    # Extract base type from generics
+    base_type = type_name
+    if "<" in type_name:
+        base_type = type_name.split("<")[0]
+
+    # If the base type conflicts with std types, qualify it
+    if base_type in STD_CONFLICTING_TYPES:
+        if "<" in type_name:
+            # Handle generic types like Vec<Box>
+            generic_part = type_name[type_name.index("<") :]
+            return f"crate::models::{base_type}{generic_part}"
+        return f"crate::models::{type_name}"
+
+    return type_name
+
 
 RUST_KEYWORDS = frozenset(
     {
@@ -79,6 +101,28 @@ RUST_KEYWORDS = frozenset(
         "return",
     }
 )
+
+
+class ParameterEnumAnalyzer:
+    """Analyzes parameters to collect enum definitions."""
+
+    @staticmethod
+    def collect_parameter_enums(operations: list[Operation]) -> dict[str, dict[str, Any]]:
+        """Collect all unique parameter enums from operations."""
+        enums = {}
+
+        for operation in operations:
+            for param in operation.parameters:
+                if param.is_enum_parameter:
+                    enum_name = param.rust_enum_type
+                    if enum_name and enum_name not in enums:
+                        enums[enum_name] = {
+                            "enum_values": param.enum_values,
+                            "description": param.description,
+                            "parameter_name": param.name,
+                        }
+
+        return enums
 
 
 class OperationAnalyzer:
@@ -124,7 +168,8 @@ class OperationAnalyzer:
 
         if "$ref" in schema:
             ref_name = schema["$ref"].split("/")[-1]
-            return rust_pascal_case(ref_name)
+            type_name = rust_pascal_case(ref_name)
+            return qualify_type_name(type_name)
 
         return rust_type_from_openapi(schema, {})
 
@@ -142,7 +187,7 @@ class ResponseAnalyzer:
         """Get the success response type for an operation."""
         for status_code, response in operation.responses.items():
             if status_code.startswith("2"):
-                return response.rust_type
+                return qualify_type_name(response.rust_type)
         return None
 
     @staticmethod
@@ -151,9 +196,8 @@ class ResponseAnalyzer:
         error_types = []
         for status_code, response in operation.responses.items():
             if ResponseAnalyzer.is_error_status(status_code):
-                error_type = (
-                    f"Status{status_code}({response.rust_type})" if response.rust_type else f"Status{status_code}()"
-                )
+                qualified_type = qualify_type_name(response.rust_type)
+                error_type = f"Status{status_code}({qualified_type})" if qualified_type else f"Status{status_code}()"
                 error_types.append(error_type)
 
         if not any("DefaultResponse" in t for t in error_types):
@@ -284,11 +328,14 @@ class RustTemplateEngine:
     def _register_globals(self) -> None:
         """Register global functions available in templates."""
         # Create analyzers
+        param_enum_analyzer = ParameterEnumAnalyzer()
         op_analyzer = OperationAnalyzer()
         resp_analyzer = ResponseAnalyzer()
         type_analyzer = TypeAnalyzer()
 
         globals_map: dict[str, Any] = {
+            # Parameter enum analysis
+            "collect_parameter_enums": param_enum_analyzer.collect_parameter_enums,
             # Operation analysis
             "get_unique_tags": op_analyzer.get_unique_tags,
             "group_operations_by_tag": op_analyzer.group_operations_by_tag,
@@ -301,6 +348,7 @@ class RustTemplateEngine:
             "get_all_used_types": type_analyzer.get_all_used_types,
             "get_operation_used_types": type_analyzer.get_operation_used_types,
             # Parameter-related functions
+            "has_format_parameter": lambda op: any(param.name == "format" for param in op.parameters),
             "has_path_parameters": partial(op_analyzer.has_parameter_type, param_type="path"),
             "has_query_parameters": partial(op_analyzer.has_parameter_type, param_type="query"),
             "has_header_parameters": partial(op_analyzer.has_parameter_type, param_type="header"),
@@ -375,6 +423,7 @@ class RustCodeGenerator:
         files = {}
         files.update(self._generate_base_files(context, output_dir))
         files.update(self._generate_model_files(spec.schemas, context, output_dir))
+        files.update(self._generate_parameter_enums(spec.operations, context, output_dir))
         files.update(self._generate_api_files(spec.operations, context, output_dir))
         files.update(self._generate_project_files(context, output_dir))
 
@@ -397,16 +446,33 @@ class RustCodeGenerator:
         files = {}
         models_dir = output_dir / "src" / "models"
 
-        for schema_name, schema in schemas.items():
+        for _, schema in schemas.items():
             model_context = {**context, "schema": schema}
             content = self.template_engine.render_template("models/model.rs.j2", model_context)
 
-            snake_case_name = rust_snake_case(schema_name)
-            filename = f"model_{snake_case_name}.rs" if snake_case_name in RUST_KEYWORDS else f"{snake_case_name}.rs"
+            filename = f"{schema.rust_file_name}.rs"
             files[models_dir / filename] = content
 
         models_context = {**context, "schemas": schemas}
         files[models_dir / "mod.rs"] = self.template_engine.render_template("models/mod.rs.j2", models_context)
+
+        return files
+
+    def _generate_parameter_enums(
+        self,
+        operations: list[Operation],
+        context: dict[str, Any],
+        output_dir: Path,
+    ) -> dict[Path, str]:
+        """Generate parameter enum files."""
+        files = {}
+        param_enums = ParameterEnumAnalyzer.collect_parameter_enums(operations)
+
+        if param_enums:
+            apis_dir = output_dir / "src" / "apis"
+            enum_context = {**context, "parameter_enums": param_enums}
+            content = self.template_engine.render_template("apis/parameter_enums.rs.j2", enum_context)
+            files[apis_dir / "parameter_enums.rs"] = content
 
         return files
 

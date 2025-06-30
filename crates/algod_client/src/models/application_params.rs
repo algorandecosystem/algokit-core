@@ -36,7 +36,7 @@ pub struct ApplicationParams {
         rename = "extra-program-pages",
         skip_serializing_if = "Option::is_none"
     )]
-    pub extra_program_pages: Option<i32>,
+    pub extra_program_pages: Option<u64>,
     #[serde(rename = "local-state-schema", skip_serializing_if = "Option::is_none")]
     pub local_state_schema: Option<ApplicationStateSchema>,
     #[serde(
@@ -48,7 +48,7 @@ pub struct ApplicationParams {
     pub global_state: Option<TealKeyValueStore>,
     /// \[v\] the number of updates to the application programs
     #[serde(rename = "version", skip_serializing_if = "Option::is_none")]
-    pub version: Option<i32>,
+    pub version: Option<u64>,
 }
 
 impl AlgorandMsgpack for ApplicationParams {

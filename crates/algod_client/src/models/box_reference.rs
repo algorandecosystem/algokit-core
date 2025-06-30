@@ -19,7 +19,7 @@ use serde_with::serde_as;
 pub struct BoxReference {
     /// Application ID which this box belongs to
     #[serde(rename = "app")]
-    pub app: i32,
+    pub app: u64,
     /// Base64 encoded box name
     #[serde_as(as = "serde_with::base64::Base64")]
     #[serde(rename = "name")]
@@ -32,7 +32,7 @@ impl AlgorandMsgpack for BoxReference {
 
 impl BoxReference {
     /// Constructor for BoxReference
-    pub fn new(app: i32, name: Vec<u8>) -> BoxReference {
+    pub fn new(app: u64, name: Vec<u8>) -> BoxReference {
         BoxReference { app, name }
     }
 

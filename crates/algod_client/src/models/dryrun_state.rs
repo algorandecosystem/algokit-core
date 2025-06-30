@@ -18,10 +18,10 @@ use crate::models::TealValue;
 pub struct DryrunState {
     /// Line number
     #[serde(rename = "line")]
-    pub line: i32,
+    pub line: u64,
     /// Program counter
     #[serde(rename = "pc")]
-    pub pc: i32,
+    pub pc: u64,
     #[serde(rename = "stack")]
     pub stack: Vec<TealValue>,
     #[serde(rename = "scratch", skip_serializing_if = "Option::is_none")]
@@ -33,7 +33,7 @@ pub struct DryrunState {
 
 impl DryrunState {
     /// Constructor for DryrunState
-    pub fn new(line: i32, pc: i32, stack: Vec<TealValue>) -> DryrunState {
+    pub fn new(line: u64, pc: u64, stack: Vec<TealValue>) -> DryrunState {
         DryrunState {
             line,
             pc,

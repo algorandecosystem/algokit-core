@@ -22,7 +22,7 @@ use crate::models::SimulationEvalOverrides;
 pub struct SimulateTransaction {
     /// The version of this response object.
     #[serde(rename = "version")]
-    pub version: i32,
+    pub version: u64,
     /// The round immediately preceding this simulation. State changes through this round were used to run this simulation.
     #[serde(rename = "last-round")]
     pub last_round: u64,
@@ -44,7 +44,7 @@ impl AlgorandMsgpack for SimulateTransaction {
 impl SimulateTransaction {
     /// Constructor for SimulateTransaction
     pub fn new(
-        version: i32,
+        version: u64,
         last_round: u64,
         txn_groups: Vec<SimulateTransactionGroupResult>,
     ) -> SimulateTransaction {

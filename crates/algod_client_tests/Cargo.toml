@@ -3,8 +3,8 @@ name = "algod_client_tests"
 version = "0.1.0"
 authors = ["AlgoKit Core Team"]
 description = "Integration tests for algod_client crate"
-license = "MIT OR Apache-2.0"
-edition = "2021"
+license = "MIT"
+edition = "2024"
 
 [dependencies]
 # Test dependencies

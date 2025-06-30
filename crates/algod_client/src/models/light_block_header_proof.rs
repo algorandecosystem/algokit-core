@@ -18,10 +18,10 @@ use serde_with::serde_as;
 pub struct LightBlockHeaderProof {
     /// The index of the light block header in the vector commitment tree
     #[serde(rename = "index")]
-    pub index: i32,
+    pub index: u64,
     /// Represents the depth of the tree that is being proven, i.e. the number of edges from a leaf to the root.
     #[serde(rename = "treedepth")]
-    pub treedepth: i32,
+    pub treedepth: u64,
     /// The encoded proof.
     #[serde_as(as = "serde_with::base64::Base64")]
     #[serde(rename = "proof")]
@@ -30,7 +30,7 @@ pub struct LightBlockHeaderProof {
 
 impl LightBlockHeaderProof {
     /// Constructor for LightBlockHeaderProof
-    pub fn new(index: i32, treedepth: i32, proof: Vec<u8>) -> LightBlockHeaderProof {
+    pub fn new(index: u64, treedepth: u64, proof: Vec<u8>) -> LightBlockHeaderProof {
         LightBlockHeaderProof {
             index,
             treedepth,

@@ -11,6 +11,9 @@
 // Consolidated client
 pub mod client;
 
+// Parameter enums for type-safe API parameters
+pub mod parameter_enums;
+
 // Individual endpoint modules
 pub mod abort_catchup;
 pub mod account_application_information;
@@ -563,76 +566,79 @@ pub fn urlencode<T: AsRef<str>>(s: T) -> String {
 // Re-export the consolidated client
 pub use client::AlgodClient;
 
+// Re-export parameter enums
+pub use parameter_enums::*;
+
 // Re-export all endpoint functions
-pub use abort_catchup::{abort_catchup, AbortCatchupError};
+pub use abort_catchup::{AbortCatchupError, abort_catchup};
 pub use account_application_information::{
-    account_application_information, AccountApplicationInformationError,
+    AccountApplicationInformationError, account_application_information,
 };
-pub use account_asset_information::{account_asset_information, AccountAssetInformationError};
-pub use account_assets_information::{account_assets_information, AccountAssetsInformationError};
-pub use account_information::{account_information, AccountInformationError};
-pub use add_participation_key::{add_participation_key, AddParticipationKeyError};
-pub use append_keys::{append_keys, AppendKeysError};
+pub use account_asset_information::{AccountAssetInformationError, account_asset_information};
+pub use account_assets_information::{AccountAssetsInformationError, account_assets_information};
+pub use account_information::{AccountInformationError, account_information};
+pub use add_participation_key::{AddParticipationKeyError, add_participation_key};
+pub use append_keys::{AppendKeysError, append_keys};
 pub use delete_participation_key_by_id::{
-    delete_participation_key_by_id, DeleteParticipationKeyByIdError,
+    DeleteParticipationKeyByIdError, delete_participation_key_by_id,
 };
-pub use experimental_check::{experimental_check, ExperimentalCheckError};
+pub use experimental_check::{ExperimentalCheckError, experimental_check};
 pub use generate_participation_keys::{
-    generate_participation_keys, GenerateParticipationKeysError,
+    GenerateParticipationKeysError, generate_participation_keys,
 };
-pub use get_application_box_by_name::{get_application_box_by_name, GetApplicationBoxByNameError};
-pub use get_application_boxes::{get_application_boxes, GetApplicationBoxesError};
-pub use get_application_by_id::{get_application_by_id, GetApplicationByIdError};
-pub use get_asset_by_id::{get_asset_by_id, GetAssetByIdError};
-pub use get_block::{get_block, GetBlockError};
-pub use get_block_hash::{get_block_hash, GetBlockHashError};
-pub use get_block_logs::{get_block_logs, GetBlockLogsError};
-pub use get_block_time_stamp_offset::{get_block_time_stamp_offset, GetBlockTimeStampOffsetError};
-pub use get_block_txids::{get_block_txids, GetBlockTxidsError};
-pub use get_config::{get_config, GetConfigError};
-pub use get_debug_settings_prof::{get_debug_settings_prof, GetDebugSettingsProfError};
-pub use get_genesis::{get_genesis, GetGenesisError};
-pub use get_ledger_state_delta::{get_ledger_state_delta, GetLedgerStateDeltaError};
+pub use get_application_box_by_name::{GetApplicationBoxByNameError, get_application_box_by_name};
+pub use get_application_boxes::{GetApplicationBoxesError, get_application_boxes};
+pub use get_application_by_id::{GetApplicationByIdError, get_application_by_id};
+pub use get_asset_by_id::{GetAssetByIdError, get_asset_by_id};
+pub use get_block::{GetBlockError, get_block};
+pub use get_block_hash::{GetBlockHashError, get_block_hash};
+pub use get_block_logs::{GetBlockLogsError, get_block_logs};
+pub use get_block_time_stamp_offset::{GetBlockTimeStampOffsetError, get_block_time_stamp_offset};
+pub use get_block_txids::{GetBlockTxidsError, get_block_txids};
+pub use get_config::{GetConfigError, get_config};
+pub use get_debug_settings_prof::{GetDebugSettingsProfError, get_debug_settings_prof};
+pub use get_genesis::{GetGenesisError, get_genesis};
+pub use get_ledger_state_delta::{GetLedgerStateDeltaError, get_ledger_state_delta};
 pub use get_ledger_state_delta_for_transaction_group::{
-    get_ledger_state_delta_for_transaction_group, GetLedgerStateDeltaForTransactionGroupError,
+    GetLedgerStateDeltaForTransactionGroupError, get_ledger_state_delta_for_transaction_group,
 };
 pub use get_light_block_header_proof::{
-    get_light_block_header_proof, GetLightBlockHeaderProofError,
+    GetLightBlockHeaderProofError, get_light_block_header_proof,
 };
-pub use get_participation_key_by_id::{get_participation_key_by_id, GetParticipationKeyByIdError};
-pub use get_participation_keys::{get_participation_keys, GetParticipationKeysError};
-pub use get_pending_transactions::{get_pending_transactions, GetPendingTransactionsError};
+pub use get_participation_key_by_id::{GetParticipationKeyByIdError, get_participation_key_by_id};
+pub use get_participation_keys::{GetParticipationKeysError, get_participation_keys};
+pub use get_pending_transactions::{GetPendingTransactionsError, get_pending_transactions};
 pub use get_pending_transactions_by_address::{
-    get_pending_transactions_by_address, GetPendingTransactionsByAddressError,
+    GetPendingTransactionsByAddressError, get_pending_transactions_by_address,
 };
-pub use get_ready::{get_ready, GetReadyError};
-pub use get_state_proof::{get_state_proof, GetStateProofError};
-pub use get_status::{get_status, GetStatusError};
-pub use get_supply::{get_supply, GetSupplyError};
-pub use get_sync_round::{get_sync_round, GetSyncRoundError};
+pub use get_ready::{GetReadyError, get_ready};
+pub use get_state_proof::{GetStateProofError, get_state_proof};
+pub use get_status::{GetStatusError, get_status};
+pub use get_supply::{GetSupplyError, get_supply};
+pub use get_sync_round::{GetSyncRoundError, get_sync_round};
 pub use get_transaction_group_ledger_state_deltas_for_round::{
-    get_transaction_group_ledger_state_deltas_for_round,
     GetTransactionGroupLedgerStateDeltasForRoundError,
+    get_transaction_group_ledger_state_deltas_for_round,
 };
-pub use get_transaction_proof::{get_transaction_proof, GetTransactionProofError};
-pub use get_version::{get_version, GetVersionError};
-pub use health_check::{health_check, HealthCheckError};
-pub use metrics::{metrics, MetricsError};
+pub use get_transaction_proof::{GetTransactionProofError, get_transaction_proof};
+pub use get_version::{GetVersionError, get_version};
+pub use health_check::{HealthCheckError, health_check};
+pub use metrics::{MetricsError, metrics};
 pub use pending_transaction_information::{
-    pending_transaction_information, PendingTransactionInformationError,
+    PendingTransactionInformationError, pending_transaction_information,
 };
-pub use put_debug_settings_prof::{put_debug_settings_prof, PutDebugSettingsProfError};
-pub use raw_transaction::{raw_transaction, RawTransactionError};
-pub use raw_transaction_async::{raw_transaction_async, RawTransactionAsyncError};
-pub use set_block_time_stamp_offset::{set_block_time_stamp_offset, SetBlockTimeStampOffsetError};
-pub use set_sync_round::{set_sync_round, SetSyncRoundError};
-pub use shutdown_node::{shutdown_node, ShutdownNodeError};
-pub use simulate_transaction::{simulate_transaction, SimulateTransactionError};
-pub use start_catchup::{start_catchup, StartCatchupError};
-pub use swagger_json::{swagger_json, SwaggerJsonError};
-pub use teal_compile::{teal_compile, TealCompileError};
-pub use teal_disassemble::{teal_disassemble, TealDisassembleError};
-pub use teal_dryrun::{teal_dryrun, TealDryrunError};
-pub use transaction_params::{transaction_params, TransactionParamsError};
-pub use unset_sync_round::{unset_sync_round, UnsetSyncRoundError};
-pub use wait_for_block::{wait_for_block, WaitForBlockError};
+pub use put_debug_settings_prof::{PutDebugSettingsProfError, put_debug_settings_prof};
+pub use raw_transaction::{RawTransactionError, raw_transaction};
+pub use raw_transaction_async::{RawTransactionAsyncError, raw_transaction_async};
+pub use set_block_time_stamp_offset::{SetBlockTimeStampOffsetError, set_block_time_stamp_offset};
+pub use set_sync_round::{SetSyncRoundError, set_sync_round};
+pub use shutdown_node::{ShutdownNodeError, shutdown_node};
+pub use simulate_transaction::{SimulateTransactionError, simulate_transaction};
+pub use start_catchup::{StartCatchupError, start_catchup};
+pub use swagger_json::{SwaggerJsonError, swagger_json};
+pub use teal_compile::{TealCompileError, teal_compile};
+pub use teal_disassemble::{TealDisassembleError, teal_disassemble};
+pub use teal_dryrun::{TealDryrunError, teal_dryrun};
+pub use transaction_params::{TransactionParamsError, transaction_params};
+pub use unset_sync_round::{UnsetSyncRoundError, unset_sync_round};
+pub use wait_for_block::{WaitForBlockError, wait_for_block};

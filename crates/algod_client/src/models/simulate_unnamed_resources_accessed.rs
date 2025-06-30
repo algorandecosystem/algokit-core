@@ -33,7 +33,7 @@ pub struct SimulateUnnamedResourcesAccessed {
     pub boxes: Option<Vec<BoxReference>>,
     /// The number of extra box references used to increase the IO budget. This is in addition to the references defined in the input transaction group and any referenced to unnamed boxes.
     #[serde(rename = "extra-box-refs", skip_serializing_if = "Option::is_none")]
-    pub extra_box_refs: Option<i32>,
+    pub extra_box_refs: Option<u64>,
     /// The unnamed asset holdings that were referenced. The order of this array is arbitrary.
     #[serde(rename = "asset-holdings", skip_serializing_if = "Option::is_none")]
     pub asset_holdings: Option<Vec<AssetHoldingReference>>,

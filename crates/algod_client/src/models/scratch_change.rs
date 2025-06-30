@@ -19,7 +19,7 @@ use crate::models::AvmValue;
 pub struct ScratchChange {
     /// The scratch slot written.
     #[serde(rename = "slot")]
-    pub slot: i32,
+    pub slot: u64,
     #[serde(rename = "new-value")]
     pub new_value: AvmValue,
 }
@@ -30,7 +30,7 @@ impl AlgorandMsgpack for ScratchChange {
 
 impl ScratchChange {
     /// Constructor for ScratchChange
-    pub fn new(slot: i32, new_value: AvmValue) -> ScratchChange {
+    pub fn new(slot: u64, new_value: AvmValue) -> ScratchChange {
         ScratchChange { slot, new_value }
     }
 

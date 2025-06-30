@@ -26,10 +26,10 @@ pub struct GetTransactionProof {
     pub stibhash: Vec<u8>,
     /// Represents the depth of the tree that is being proven, i.e. the number of edges from a leaf to the root.
     #[serde(rename = "treedepth")]
-    pub treedepth: i32,
+    pub treedepth: u64,
     /// Index of the transaction in the block's payset.
     #[serde(rename = "idx")]
-    pub idx: i32,
+    pub idx: u64,
     /// The type of hash function used to create the proof, must be one of:
     ///   * sha512_256
     ///   * sha256
@@ -42,8 +42,8 @@ impl GetTransactionProof {
     pub fn new(
         proof: Vec<u8>,
         stibhash: Vec<u8>,
-        treedepth: i32,
-        idx: i32,
+        treedepth: u64,
+        idx: u64,
         hashtype: String,
     ) -> GetTransactionProof {
         GetTransactionProof {

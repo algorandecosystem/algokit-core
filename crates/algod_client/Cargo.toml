@@ -1,10 +1,10 @@
 [package]
 name = "algod_client"
 version = "0.0.1"
-authors = ["OpenAPI Generator"]
+authors = ["AlgoKit Core Team"]
 description = "API endpoint for algod operations."
-license = "MIT OR Apache-2.0"
-edition = "2021"
+license = "MIT"
+edition = "2024"
 
 [features]
 default = ["default_client"]

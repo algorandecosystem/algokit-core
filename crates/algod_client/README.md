@@ -19,37 +19,122 @@ algod_client = "0.0.1"
 ## Usage
 
 ```rust
-use algod_client::apis::{configuration, default_api};
+use algod_client::AlgodClient;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let configuration = configuration::Configuration::new();
-    
-    // Example API call
-    // let result = default_api::some_operation(&configuration, param1, param2).await?;
-    // println!("{:?}", result);
-    
+    // Initialize client (choose one based on your network)
+    let client = AlgodClient::localnet();  // For local development
+    // let client = AlgodClient::testnet();  // For TestNet
+    // let client = AlgodClient::mainnet();  // For MainNet
+
+    // Example: Get network status
+    let status = client.get_status().await?;
+    println!("Network status: {:?}", status);
+
+    // Example: Get transaction parameters
+    let params = client.transaction_params().await?;
+    println!("Min fee: {}", params.min_fee);
+    println!("Last round: {}", params.last_round);
+
+    // Example: Get account information
+    let account_address = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+    let account_info = client.account_information(
+        None,  // format
+        account_address,
+        None,  // exclude
+    ).await?;
+    println!("Account balance: {}", account_info.amount);
+
     Ok(())
 }
 ```
 
 ## Configuration
 
-The client can be configured with:
-
-- **Base URL**: Set the API base URL
-- **Authentication**: API keys, bearer tokens, basic auth
-- **HTTP Client**: Custom reqwest client with timeouts, proxies, etc.
+The client provides convenient constructors for different networks:
 
 ```rust
-use algod_client::apis::configuration::{Configuration, ApiKey};
+use algod_client::AlgodClient;
 
-let mut config = Configuration::new();
-config.base_path = "http://localhost/".to_string();
-config.api_key = Some(ApiKey {
-    prefix: Some("Bearer".to_string()),
-    key: "your-api-key".to_string(),
-});
+// For local development (uses localhost:4001 with default API token)
+let client = AlgodClient::localnet();
+
+// For Algorand TestNet
+let client = AlgodClient::testnet();
+
+// For Algorand MainNet
+let client = AlgodClient::mainnet();
+```
+
+For custom configurations, you can use a custom HTTP client:
+
+```rust
+use algod_client::AlgodClient;
+use algokit_http_client::DefaultHttpClient;
+use std::sync::Arc;
+
+// Custom endpoint with API token
+let http_client = Arc::new(
+    DefaultHttpClient::with_header(
+        "http://localhost/",
+        "X-API-Key",
+        "your-api-key"
+    )?
+);
+let client = AlgodClient::new(http_client);
+```
+
+## Complete Example
+
+Here's a more comprehensive example showing how to check network status, get account information, and prepare for transactions:
+
+```rust
+use algod_client::AlgodClient;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Connect to localnet
+    let client = AlgodClient::localnet();
+
+    // Check if the node is healthy and ready
+    client.health_check().await?;
+    client.get_ready().await?;
+    println!("✓ Node is healthy and ready");
+
+    // Get network information
+    let status = client.get_status().await?;
+    println!("✓ Connected to network");
+    println!("  Last round: {}", status.last_round);
+    println!("  Catching up: {}", status.catchup_time.unwrap_or(0));
+
+    // Get transaction parameters needed for building transactions
+    let params = client.transaction_params().await?;
+    println!("✓ Retrieved transaction parameters");
+    println!("  Genesis ID: {}", params.genesis_id);
+    println!("  Min fee: {}", params.min_fee);
+
+    // Example: Get account information
+    let test_address = "7ZUECA7HFLZTXENRV24SHLU4AVPUTMTTDUFUBNBD64C73F3UHRTHAIOF6Q";
+    match client.account_information(None, test_address, None).await {
+        Ok(account) => {
+            println!("✓ Account information retrieved");
+            println!("  Address: {}", account.address);
+            println!("  Balance: {} microAlgos", account.amount);
+            println!("  Min balance: {} microAlgos", account.min_balance);
+        }
+        Err(e) => {
+            println!("⚠ Could not retrieve account info: {}", e);
+        }
+    }
+
+    // Example: Get application information (if you have an app ID)
+    // let app_id = 123456;
+    // let app_info = client.get_application_by_id(app_id).await?;
+    // println!("App global state: {:?}", app_info.params.global_state);
+
+    Ok(())
+}
 ```
 
 ## API Operations
@@ -162,7 +247,7 @@ data/transactions/asset.go : AssetParams
 - `SimulateRequest` - Request type for simulation endpoint.
 - `SimulateRequestTransactionGroup` - A transaction group to simulate.
 - `SimulateTraceConfig` - An object that configures simulation execution trace.
-- `ModelBox` - Box name and its content.
+- `Box` - Box name and its content.
 - `BoxDescriptor` - Box descriptor describes a Box.
 - `BoxReference` - References a box of an application.
 - `KvDelta` - A single Delta containing the key, the previous value and the current value for a single round.
@@ -222,10 +307,20 @@ All API operations return a `Result` type. Errors include:
 - Serialization errors (invalid JSON responses)
 
 ```rust
-match default_api::some_operation(&config, param).await {
-    Ok(result) => println!("Success: {:?}", result),
-    Err(error) => eprintln!("Error: {:?}", error),
+// Example error handling
+match client.get_status().await {
+    Ok(status) => {
+        println!("Node is running on round: {}", status.last_round);
+    }
+    Err(error) => {
+        eprintln!("Failed to get node status: {:?}", error);
+        // Handle specific error types if needed
+    }
 }
+
+// Or use the ? operator for early returns
+let params = client.transaction_params().await
+    .map_err(|e| format!("Failed to get transaction params: {}", e))?;
 ```
 
 ## Generated Code

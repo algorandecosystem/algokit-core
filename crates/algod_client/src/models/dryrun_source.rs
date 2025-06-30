@@ -21,7 +21,7 @@ pub struct DryrunSource {
     #[serde(rename = "source")]
     pub source: String,
     #[serde(rename = "txn-index")]
-    pub txn_index: i32,
+    pub txn_index: u64,
     #[serde(rename = "app-index")]
     pub app_index: u64,
 }
@@ -32,7 +32,7 @@ impl AlgorandMsgpack for DryrunSource {
 
 impl DryrunSource {
     /// Constructor for DryrunSource
-    pub fn new(field_name: String, source: String, txn_index: i32, app_index: u64) -> DryrunSource {
+    pub fn new(field_name: String, source: String, txn_index: u64, app_index: u64) -> DryrunSource {
         DryrunSource {
             field_name,
             source,

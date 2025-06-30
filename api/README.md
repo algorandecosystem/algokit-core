@@ -4,32 +4,33 @@ This package contains tools for working with the Algorand API specifications and
 
 ## Prerequisites
 
-- [Bun](https://bun.sh/) - JavaScript runtime and package manager  
 - [Python 3.12+](https://www.python.org/) - Required for the custom OAS generator
 - [uv](https://docs.astral.sh/uv/) - Python package manager
-- [Rust](https://rustup.rs/) - Required for compiling generated clients
+- [Rust](https://rustup.rs/) - Required for compiling generated clients and running API tools
+- [Bun](https://bun.sh/) - JavaScript runtime (only for convert-openapi script)
 
 ## Setup
 
 ```bash
-# Install JavaScript dependencies
-bun install
-
 # Install Python dependencies for the OAS generator
-cd oas_generator
+cd api/oas_generator
 uv install
+
+# Install JavaScript dependencies (only needed for convert-openapi)
+cd ../
+bun install
 ```
 
 ## Available Scripts
 
-> NOTE: These scripts must be run inside the `./api` directory.
+> NOTE: These scripts can be run from the repository root using `cargo api <command>`.
 
 ### Convert OpenAPI 2.0 to OpenAPI 3.0
 
 Converts the Algod OpenAPI 2.0 spec to OpenAPI 3.0:
 
 ```bash
-bun run convert-openapi
+cargo api convert-openapi
 ```
 
 The converted spec will be available at `specs/algod.oas3.json`.
@@ -39,7 +40,7 @@ The converted spec will be available at `specs/algod.oas3.json`.
 Generates Rust API clients using the custom Jinja2-based generator:
 
 ```bash
-bun run generate:algod_client
+cargo api generate-algod
 ```
 
 The generated Rust client will be available at `../crates/algod_client/`.
@@ -48,16 +49,16 @@ The generated Rust client will be available at `../crates/algod_client/`.
 
 ```bash
 # Test the OAS generator
-bun run test:oas_generator
+cargo api test-oas
 
 # Format the OAS generator code
-bun run format:oas_generator
+cargo api format-oas
 
 # Lint and type-check the OAS generator
-bun run lint:oas_generator
+cargo api lint-oas
 
 # Format generated Rust code
-bun run format:algod_client
+cargo api format-algod
 ```
 
 ## Custom Rust OAS Generator
@@ -95,7 +96,7 @@ crates/algod_client/
 
 ### Algod
 
-The `algod.oas2.json` is taken directly from [go-algorand](https://github.com/algorand/go-algorand/blob/master/daemon/algod/api/algod.oas2.json). The script under [scripts/convert-openapi.ts](scripts/convert-openapi.ts) is used to convert the spec to OpenAPI 3.0 via [swagger converter](https://converter.swagger.io/) endpoint.
+The `algod.oas2.json` is taken directly from [go-algorand](https://github.com/algorand/go-algorand/blob/master/daemon/algod/api/algod.oas2.json). To convert the spec to OpenAPI 3.0, use `cargo api convert-openapi` which runs the TypeScript script [scripts/convert-openapi.ts](scripts/convert-openapi.ts) via [swagger converter](https://converter.swagger.io/) endpoint.
 
 The current approach is to manually edit and tweak the algod.oas2.json fixing known issues from the go-algorand spec, then use the custom Rust OAS generator to generate clients from the v3 spec. OpenAPI v3 is preferred for client generation as it offers enhanced schema features, better component reusability, and improved type definitions compared to v2.
 
@@ -105,7 +106,7 @@ The custom Rust generator is configured with:
 
 - **Package name**: `algod_client`
 - **Msgpack detection**: Automatic handling of binary-encoded fields
-- **Algorand extensions**: Support for signed transaction vendor extensions
+- **Algorand extensions**: Support for signed transaction via a vendor extension
 - **Type safety**: Complete OpenAPI to Rust type mapping
 - **Error handling**: Comprehensive error types and response handling
 

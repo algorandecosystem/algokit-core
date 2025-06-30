@@ -54,10 +54,10 @@ jobs:
           which algokit
 
       - name: Build algod_client
-        run: cargo build --manifest-path Cargo.toml -p algod_client
+        run: cargo build -p algod_client
 
       - name: Build algod_client_tests
-        run: cargo build --manifest-path Cargo.toml -p algod_client_tests
+        run: cargo build -p algod_client_tests
 
       - name: Run algod_client integration tests
-        run: cargo test --manifest-path Cargo.toml -p algod_client_tests --verbose
+        run: cargo test -p algod_client_tests --verbose

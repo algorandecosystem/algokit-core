@@ -1,12 +1,11 @@
 use algod_client_tests::{
-    get_algod_client, LocalnetManager, NetworkType, TestAccountConfig, TestAccountManager,
+    LocalnetManager, NetworkType, TestAccountConfig, TestAccountManager, get_algod_client,
 };
 use algokit_transact::{PaymentTransactionBuilder, Transaction, TransactionHeaderBuilder};
 use std::convert::TryInto;
 
 #[tokio::test]
 async fn test_raw_transaction_broadcast() {
-    // ARRANGE - Set up test environment and create a real transaction
     LocalnetManager::ensure_running()
         .await
         .expect("Failed to start localnet");
@@ -78,20 +77,13 @@ async fn test_raw_transaction_broadcast() {
         .sign_transaction(&transaction)
         .expect("Failed to sign transaction");
 
-    // ACT - Broadcast the transaction
     let response = get_algod_client()
         .raw_transaction(signed_bytes)
         .await
         .expect("Failed to broadcast transaction");
 
-    // ASSERT - Verify response has transaction ID
     assert!(
         !response.tx_id.is_empty(),
         "Response should contain a transaction ID"
-    );
-
-    println!(
-        "✓ Successfully broadcast transaction with ID: {}",
-        response.tx_id
     );
 }

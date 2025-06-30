@@ -26,7 +26,7 @@ pub struct PendingTransactionResponse {
     pub application_index: Option<u64>,
     /// Rewards in microalgos applied to the close remainder to account.
     #[serde(rename = "close-rewards", skip_serializing_if = "Option::is_none")]
-    pub close_rewards: Option<i32>,
+    pub close_rewards: Option<u64>,
     /// Closing amount for the transaction.
     #[serde(rename = "closing-amount", skip_serializing_if = "Option::is_none")]
     pub closing_amount: Option<u64>,
@@ -44,10 +44,10 @@ pub struct PendingTransactionResponse {
     pub pool_error: String,
     /// Rewards in microalgos applied to the receiver account.
     #[serde(rename = "receiver-rewards", skip_serializing_if = "Option::is_none")]
-    pub receiver_rewards: Option<i32>,
+    pub receiver_rewards: Option<u64>,
     /// Rewards in microalgos applied to the sender account.
     #[serde(rename = "sender-rewards", skip_serializing_if = "Option::is_none")]
-    pub sender_rewards: Option<i32>,
+    pub sender_rewards: Option<u64>,
     /// Local state key/value changes for the application being executed by this transaction.
     #[serde(rename = "local-state-delta", skip_serializing_if = "Option::is_none")]
     pub local_state_delta: Option<Vec<AccountStateDelta>>,

@@ -10,7 +10,7 @@ use regex::Regex;
 use std::convert::TryInto;
 use std::process::Command;
 use std::str::FromStr;
-use tokio::time::{sleep, Duration};
+use tokio::time::{Duration, sleep};
 
 use crate::mnemonic::{from_key, to_key};
 

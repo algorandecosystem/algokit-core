@@ -16,12 +16,12 @@ use serde::{Deserialize, Serialize};
 pub struct GetBlockTimeStampOffset {
     /// Timestamp offset in seconds.
     #[serde(rename = "offset")]
-    pub offset: i32,
+    pub offset: u64,
 }
 
 impl GetBlockTimeStampOffset {
     /// Constructor for GetBlockTimeStampOffset
-    pub fn new(offset: i32) -> GetBlockTimeStampOffset {
+    pub fn new(offset: u64) -> GetBlockTimeStampOffset {
         GetBlockTimeStampOffset { offset }
     }
 }

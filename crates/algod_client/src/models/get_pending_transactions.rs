@@ -20,7 +20,7 @@ pub struct GetPendingTransactions {
     pub top_transactions: Vec<AlgokitSignedTransaction>,
     /// Total number of transactions in the pool.
     #[serde(rename = "total-transactions")]
-    pub total_transactions: i32,
+    pub total_transactions: u64,
 }
 
 impl AlgorandMsgpack for GetPendingTransactions {
@@ -31,7 +31,7 @@ impl GetPendingTransactions {
     /// Constructor for GetPendingTransactions
     pub fn new(
         top_transactions: Vec<AlgokitSignedTransaction>,
-        total_transactions: i32,
+        total_transactions: u64,
     ) -> GetPendingTransactions {
         GetPendingTransactions {
             top_transactions,

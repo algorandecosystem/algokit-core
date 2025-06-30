@@ -9,12 +9,16 @@
  */
 
 use serde::{Deserialize, Serialize};
-use algokit_http_client::HttpClient;
+use algokit_http_client::{HttpClient, HttpMethod};
 use std::collections::HashMap;
 
 use super::{Error, AlgodApiError, ContentType};
 {% if operation.supports_msgpack %}
 use algokit_transact::AlgorandMsgpack;
+{% endif %}
+{% set param_enums = collect_parameter_enums([operation]) %}
+{% if param_enums %}
+use super::parameter_enums::*;
 {% endif %}
 
 // Import all custom types used by this endpoint
@@ -60,8 +64,14 @@ pub async fn {{ operation.rust_function_name }}(
     {% endif %}
 {% endif %}
 {% for param in operation.parameters %}
-    {% if param.required %}{{ param.rust_name }}: {% if param.rust_type == "String" %}&str{% else %}{{ param.rust_type }}{% endif %},
-    {% else %}{{ param.rust_name }}: Option<{% if param.rust_type == "String" %}&str{% else %}{{ param.rust_type }}{% endif %}>,
+    {% if param.is_enum_parameter %}
+        {% if param.required %}{{ param.rust_name }}: {{ param.rust_enum_type }},
+        {% else %}{{ param.rust_name }}: Option<{{ param.rust_enum_type }}>,
+        {% endif %}
+    {% else %}
+        {% if param.required %}{{ param.rust_name }}: {% if param.rust_type == "String" %}&str{% else %}{{ param.rust_type }}{% endif %},
+        {% else %}{{ param.rust_name }}: Option<{% if param.rust_type == "String" %}&str{% else %}{{ param.rust_type }}{% endif %}>,
+        {% endif %}
     {% endif %}
 {% endfor %}
 
@@ -72,8 +82,6 @@ pub async fn {{ operation.rust_function_name }}(
     {% if has_request_body(operation) %}
     let p_{{ get_request_body_name(operation) }} = {{ get_request_body_name(operation) }};
     {% endif %}
-
-    let use_msgpack = {% if operation.supports_msgpack %}{% for param in operation.parameters if param.name == "format" %}p_{{ param.rust_name }}.map(|f| f != "json").unwrap_or(true){% else %}true{% endfor %}{% else %}false{% endif %};
 
     {% set rust_path = operation.path.replace('-', '_') %}
     {% set path_params = get_path_parameters(operation) %}
@@ -93,6 +101,37 @@ pub async fn {{ operation.rust_function_name }}(
     }
     {% endif %}
     {% endfor %}
+
+    {% if not operation.supports_msgpack %}
+    let mut headers: HashMap<String, String> = HashMap::new();
+    headers.insert("Content-Type".to_string(), "application/json".to_string());
+    headers.insert("Accept".to_string(), "application/json".to_string());
+
+    let body = {% if has_request_body(operation) %}
+        Some(serde_json::to_vec(&p_{{ get_request_body_name(operation) }}).map_err(|e| Error::Serde(e.to_string()))?)
+    {% else %}
+    None
+    {% endif %};
+    {% elif not has_format_parameter(operation) %}
+    let mut headers: HashMap<String, String> = HashMap::new();
+    headers.insert("Content-Type".to_string(), "application/msgpack".to_string());
+    headers.insert("Accept".to_string(), "application/msgpack".to_string());
+
+    let body = {% if has_request_body(operation) %}
+        {% if operation.request_body_supports_msgpack %}
+        {% if request_body_type == "Vec<u8>" %}
+        Some(p_{{ get_request_body_name(operation) }})
+        {% else %}
+        Some(rmp_serde::to_vec_named(&p_{{ get_request_body_name(operation) }}).map_err(|e| Error::Serde(e.to_string()))?)
+        {% endif %}
+        {% else %}
+        Some(serde_json::to_vec(&p_{{ get_request_body_name(operation) }}).map_err(|e| Error::Serde(e.to_string()))?)
+        {% endif %}
+    {% else %}
+    None
+    {% endif %};
+    {% else %}
+    let use_msgpack = {% for param in operation.parameters if param.name == "format" %}{% if param.is_enum_parameter %}p_{{ param.rust_name }}.map(|f| f != Format::Json).unwrap_or(true){% else %}p_{{ param.rust_name }}.map(|f| f != "json").unwrap_or(true){% endif %}{% endfor %};
 
     let mut headers: HashMap<String, String> = HashMap::new();
     if use_msgpack {
@@ -120,10 +159,11 @@ pub async fn {{ operation.rust_function_name }}(
     {% else %}
     None
     {% endif %};
+    {% endif %}
 
     let response = http_client
         .request(
-            "{{ operation.method }}".to_string(),
+            {{ operation.method | http_method_enum }},
             path,
             Some(query_params),
             body,

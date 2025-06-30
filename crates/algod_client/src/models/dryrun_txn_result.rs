@@ -43,10 +43,10 @@ pub struct DryrunTxnResult {
     pub logs: Option<Vec<String>>,
     /// Budget added during execution of app call transaction.
     #[serde(rename = "budget-added", skip_serializing_if = "Option::is_none")]
-    pub budget_added: Option<i32>,
+    pub budget_added: Option<u64>,
     /// Budget consumed during execution of app call transaction.
     #[serde(rename = "budget-consumed", skip_serializing_if = "Option::is_none")]
-    pub budget_consumed: Option<i32>,
+    pub budget_consumed: Option<u64>,
 }
 
 impl DryrunTxnResult {

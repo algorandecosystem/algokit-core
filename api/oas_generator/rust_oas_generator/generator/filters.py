@@ -73,7 +73,7 @@ def rust_doc_comment(text: str, indent: int = 0) -> str:
     return "\n".join(result)
 
 
-def detect_signed_transaction_field(vendor_extensions: dict[str, Any]) -> bool:
+def is_signed_transaction_field(vendor_extensions: dict[str, Any]) -> bool:
     """Detect if this schema represents a SignedTransaction.
 
     Args:
@@ -234,14 +234,37 @@ def sanitize_rust_string_literal(text: str) -> str:
     return result
 
 
+def http_method_enum(method: str) -> str:
+    """Convert HTTP method string to HttpMethod enum variant.
+
+    Args:
+        method: HTTP method string (e.g., "GET", "POST").
+
+    Returns:
+        HttpMethod enum variant (e.g., "HttpMethod::Get", "HttpMethod::Post").
+    """
+    method_mapping = {
+        "GET": "HttpMethod::Get",
+        "POST": "HttpMethod::Post",
+        "PUT": "HttpMethod::Put",
+        "DELETE": "HttpMethod::Delete",
+        "PATCH": "HttpMethod::Patch",
+        "HEAD": "HttpMethod::Head",
+        "OPTIONS": "HttpMethod::Options",
+    }
+
+    return method_mapping.get(method.upper(), f"HttpMethod::{method.title()}")
+
+
 # Register filters that will be available in Jinja templates
 FILTERS = {
     "rust_doc_comment": rust_doc_comment,
-    "detect_signed_transaction_field": detect_signed_transaction_field,
+    "is_signed_transaction_field": is_signed_transaction_field,
     "needs_msgpack_trait": needs_msgpack_trait,
     "get_dependencies_for_schema": get_dependencies_for_schema,
     "ensure_semver": ensure_semver,
     "semver_string": semver_string,
     "is_valid_rust_identifier": is_valid_rust_identifier,
     "sanitize_rust_string_literal": sanitize_rust_string_literal,
+    "http_method_enum": http_method_enum,
 }

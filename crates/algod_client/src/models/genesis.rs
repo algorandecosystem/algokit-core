@@ -32,7 +32,7 @@ pub struct Genesis {
     #[serde(rename = "rwd")]
     pub rwd: String,
     #[serde(rename = "timestamp")]
-    pub timestamp: i64,
+    pub timestamp: u64,
 }
 
 impl Genesis {
@@ -44,7 +44,7 @@ impl Genesis {
         network: String,
         proto: String,
         rwd: String,
-        timestamp: i64,
+        timestamp: u64,
     ) -> Genesis {
         Genesis {
             alloc,

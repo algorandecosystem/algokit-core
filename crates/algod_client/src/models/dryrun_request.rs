@@ -33,7 +33,7 @@ pub struct DryrunRequest {
     pub round: u64,
     /// LatestTimestamp is available to some TEAL scripts. Defaults to the latest confirmed timestamp this algod is attached to.
     #[serde(rename = "latest-timestamp")]
-    pub latest_timestamp: i64,
+    pub latest_timestamp: u64,
     #[serde(rename = "sources")]
     pub sources: Vec<DryrunSource>,
 }
@@ -50,7 +50,7 @@ impl DryrunRequest {
         apps: Vec<Application>,
         protocol_version: String,
         round: u64,
-        latest_timestamp: i64,
+        latest_timestamp: u64,
         sources: Vec<DryrunSource>,
     ) -> DryrunRequest {
         DryrunRequest {

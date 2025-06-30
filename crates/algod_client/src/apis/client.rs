@@ -9,14 +9,15 @@
  */
 
 use super::Error;
+use super::parameter_enums::*;
 use crate::models::{
     AbortCatchup, Account, AccountApplicationInformation, AccountAssetInformation,
-    AccountAssetsInformation, AddParticipationKey, Application, Asset, DebugSettingsProf,
+    AccountAssetsInformation, AddParticipationKey, Application, Asset, Box, DebugSettingsProf,
     DryrunRequest, ErrorResponse, Genesis, GetApplicationBoxes, GetBlock, GetBlockHash,
     GetBlockLogs, GetBlockTimeStampOffset, GetBlockTxids, GetPendingTransactions,
     GetPendingTransactionsByAddress, GetStatus, GetSupply, GetSyncRound,
     GetTransactionGroupLedgerStateDeltasForRound, GetTransactionProof, LedgerStateDelta,
-    LightBlockHeaderProof, ModelBox, ParticipationKey, PendingTransactionResponse, RawTransaction,
+    LightBlockHeaderProof, ParticipationKey, PendingTransactionResponse, RawTransaction,
     SimulateRequest, SimulateTransaction, StartCatchup, StateProof, TealCompile, TealDisassemble,
     TealDryrun, TransactionParams, Version, WaitForBlock,
 };
@@ -119,9 +120,9 @@ impl AlgodClient {
     /// Get account information.
     pub async fn account_information(
         &self,
-        format: Option<&str>,
+        format: Option<Format>,
         address: &str,
-        exclude: Option<&str>,
+        exclude: Option<Exclude>,
     ) -> Result<Account, Error> {
         super::account_information::account_information(
             self.http_client.as_ref(),
@@ -135,9 +136,9 @@ impl AlgodClient {
     /// Get account information about a given asset.
     pub async fn account_asset_information(
         &self,
-        format: Option<&str>,
+        format: Option<Format>,
         address: &str,
-        asset_id: i32,
+        asset_id: u64,
     ) -> Result<AccountAssetInformation, Error> {
         super::account_asset_information::account_asset_information(
             self.http_client.as_ref(),
@@ -152,7 +153,7 @@ impl AlgodClient {
     pub async fn account_assets_information(
         &self,
         address: &str,
-        limit: Option<i32>,
+        limit: Option<u64>,
         next: Option<&str>,
     ) -> Result<AccountAssetsInformation, Error> {
         super::account_assets_information::account_assets_information(
@@ -167,9 +168,9 @@ impl AlgodClient {
     /// Get account information about a given app.
     pub async fn account_application_information(
         &self,
-        format: Option<&str>,
+        format: Option<Format>,
         address: &str,
-        application_id: i32,
+        application_id: u64,
     ) -> Result<AccountApplicationInformation, Error> {
         super::account_application_information::account_application_information(
             self.http_client.as_ref(),
@@ -184,8 +185,8 @@ impl AlgodClient {
     pub async fn get_pending_transactions_by_address(
         &self,
         address: &str,
-        max: Option<i32>,
-        format: Option<&str>,
+        max: Option<u64>,
+        format: Option<Format>,
     ) -> Result<GetPendingTransactionsByAddress, Error> {
         super::get_pending_transactions_by_address::get_pending_transactions_by_address(
             self.http_client.as_ref(),
@@ -199,30 +200,30 @@ impl AlgodClient {
     /// Get the block for the given round.
     pub async fn get_block(
         &self,
-        format: Option<&str>,
-        round: i32,
+        format: Option<Format>,
+        round: u64,
         header_only: Option<bool>,
     ) -> Result<GetBlock, Error> {
         super::get_block::get_block(self.http_client.as_ref(), format, round, header_only).await
     }
 
     /// Get the top level transaction IDs for the block on the given round.
-    pub async fn get_block_txids(&self, round: i32) -> Result<GetBlockTxids, Error> {
+    pub async fn get_block_txids(&self, round: u64) -> Result<GetBlockTxids, Error> {
         super::get_block_txids::get_block_txids(self.http_client.as_ref(), round).await
     }
 
     /// Get the block hash for the block on the given round.
-    pub async fn get_block_hash(&self, round: i32) -> Result<GetBlockHash, Error> {
+    pub async fn get_block_hash(&self, round: u64) -> Result<GetBlockHash, Error> {
         super::get_block_hash::get_block_hash(self.http_client.as_ref(), round).await
     }
 
     /// Get a proof for a transaction in a block.
     pub async fn get_transaction_proof(
         &self,
-        round: i32,
+        round: u64,
         txid: &str,
-        hashtype: Option<&str>,
-        format: Option<&str>,
+        hashtype: Option<Hashtype>,
+        format: Option<Format>,
     ) -> Result<GetTransactionProof, Error> {
         super::get_transaction_proof::get_transaction_proof(
             self.http_client.as_ref(),
@@ -235,7 +236,7 @@ impl AlgodClient {
     }
 
     /// Get all of the logs from outer and inner app calls in the given round
-    pub async fn get_block_logs(&self, round: i32) -> Result<GetBlockLogs, Error> {
+    pub async fn get_block_logs(&self, round: u64) -> Result<GetBlockLogs, Error> {
         super::get_block_logs::get_block_logs(self.http_client.as_ref(), round).await
     }
 
@@ -262,9 +263,9 @@ impl AlgodClient {
     pub async fn generate_participation_keys(
         &self,
         address: &str,
-        dilution: Option<i32>,
-        first: i32,
-        last: i32,
+        dilution: Option<u64>,
+        first: u64,
+        last: u64,
     ) -> Result<String, Error> {
         super::generate_participation_keys::generate_participation_keys(
             self.http_client.as_ref(),
@@ -310,7 +311,7 @@ impl AlgodClient {
     }
 
     /// Special management endpoint to shutdown the node. Optionally provide a timeout parameter to indicate that the node should begin shutting down after a number of seconds.
-    pub async fn shutdown_node(&self, timeout: Option<i32>) -> Result<serde_json::Value, Error> {
+    pub async fn shutdown_node(&self, timeout: Option<u64>) -> Result<serde_json::Value, Error> {
         super::shutdown_node::shutdown_node(self.http_client.as_ref(), timeout).await
     }
 
@@ -320,7 +321,7 @@ impl AlgodClient {
     }
 
     /// Gets the node status after waiting for a round after the given round.
-    pub async fn wait_for_block(&self, round: i32) -> Result<WaitForBlock, Error> {
+    pub async fn wait_for_block(&self, round: u64) -> Result<WaitForBlock, Error> {
         super::wait_for_block::wait_for_block(self.http_client.as_ref(), round).await
     }
 
@@ -339,7 +340,7 @@ impl AlgodClient {
     pub async fn simulate_transaction(
         &self,
         request: SimulateRequest,
-        format: Option<&str>,
+        format: Option<Format>,
     ) -> Result<SimulateTransaction, Error> {
         super::simulate_transaction::simulate_transaction(
             self.http_client.as_ref(),
@@ -357,8 +358,8 @@ impl AlgodClient {
     /// Get a list of unconfirmed transactions currently in the transaction pool.
     pub async fn get_pending_transactions(
         &self,
-        max: Option<i32>,
-        format: Option<&str>,
+        max: Option<u64>,
+        format: Option<Format>,
     ) -> Result<GetPendingTransactions, Error> {
         super::get_pending_transactions::get_pending_transactions(
             self.http_client.as_ref(),
@@ -372,7 +373,7 @@ impl AlgodClient {
     pub async fn pending_transaction_information(
         &self,
         txid: &str,
-        format: Option<&str>,
+        format: Option<Format>,
     ) -> Result<PendingTransactionResponse, Error> {
         super::pending_transaction_information::pending_transaction_information(
             self.http_client.as_ref(),
@@ -385,8 +386,8 @@ impl AlgodClient {
     /// Get a LedgerStateDelta object for a given round
     pub async fn get_ledger_state_delta(
         &self,
-        round: i32,
-        format: Option<&str>,
+        round: u64,
+        format: Option<Format>,
     ) -> Result<LedgerStateDelta, Error> {
         super::get_ledger_state_delta::get_ledger_state_delta(
             self.http_client.as_ref(),
@@ -399,8 +400,8 @@ impl AlgodClient {
     /// Get LedgerStateDelta objects for all transaction groups in a given round
     pub async fn get_transaction_group_ledger_state_deltas_for_round(
         &self,
-        round: i32,
-        format: Option<&str>,
+        round: u64,
+        format: Option<Format>,
     ) -> Result<GetTransactionGroupLedgerStateDeltasForRound, Error> {
         super::get_transaction_group_ledger_state_deltas_for_round::get_transaction_group_ledger_state_deltas_for_round(
             self.http_client.as_ref(),
@@ -413,7 +414,7 @@ impl AlgodClient {
     pub async fn get_ledger_state_delta_for_transaction_group(
         &self,
         id: &str,
-        format: Option<&str>,
+        format: Option<Format>,
     ) -> Result<LedgerStateDelta, Error> {
         super::get_ledger_state_delta_for_transaction_group::get_ledger_state_delta_for_transaction_group(
             self.http_client.as_ref(),
@@ -423,14 +424,14 @@ impl AlgodClient {
     }
 
     /// Get a state proof that covers a given round
-    pub async fn get_state_proof(&self, round: i32) -> Result<StateProof, Error> {
+    pub async fn get_state_proof(&self, round: u64) -> Result<StateProof, Error> {
         super::get_state_proof::get_state_proof(self.http_client.as_ref(), round).await
     }
 
     /// Gets a proof for a given light block header inside a state proof commitment
     pub async fn get_light_block_header_proof(
         &self,
-        round: i32,
+        round: u64,
     ) -> Result<LightBlockHeaderProof, Error> {
         super::get_light_block_header_proof::get_light_block_header_proof(
             self.http_client.as_ref(),
@@ -440,7 +441,7 @@ impl AlgodClient {
     }
 
     /// Get application information.
-    pub async fn get_application_by_id(&self, application_id: i32) -> Result<Application, Error> {
+    pub async fn get_application_by_id(&self, application_id: u64) -> Result<Application, Error> {
         super::get_application_by_id::get_application_by_id(
             self.http_client.as_ref(),
             application_id,
@@ -451,8 +452,8 @@ impl AlgodClient {
     /// Get all box names for a given application.
     pub async fn get_application_boxes(
         &self,
-        application_id: i32,
-        max: Option<i32>,
+        application_id: u64,
+        max: Option<u64>,
     ) -> Result<GetApplicationBoxes, Error> {
         super::get_application_boxes::get_application_boxes(
             self.http_client.as_ref(),
@@ -465,9 +466,9 @@ impl AlgodClient {
     /// Get box information for a given application.
     pub async fn get_application_box_by_name(
         &self,
-        application_id: i32,
+        application_id: u64,
         name: &str,
-    ) -> Result<ModelBox, Error> {
+    ) -> Result<crate::models::Box, Error> {
         super::get_application_box_by_name::get_application_box_by_name(
             self.http_client.as_ref(),
             application_id,
@@ -477,7 +478,7 @@ impl AlgodClient {
     }
 
     /// Get asset information.
-    pub async fn get_asset_by_id(&self, asset_id: i32) -> Result<Asset, Error> {
+    pub async fn get_asset_by_id(&self, asset_id: u64) -> Result<Asset, Error> {
         super::get_asset_by_id::get_asset_by_id(self.http_client.as_ref(), asset_id).await
     }
 
@@ -492,7 +493,7 @@ impl AlgodClient {
     }
 
     /// Given a round, tells the ledger to keep that round in its cache.
-    pub async fn set_sync_round(&self, round: i32) -> Result<(), Error> {
+    pub async fn set_sync_round(&self, round: u64) -> Result<(), Error> {
         super::set_sync_round::set_sync_round(self.http_client.as_ref(), round).await
     }
 
@@ -514,7 +515,7 @@ impl AlgodClient {
     pub async fn start_catchup(
         &self,
         catchpoint: &str,
-        min: Option<i32>,
+        min: Option<u64>,
     ) -> Result<StartCatchup, Error> {
         super::start_catchup::start_catchup(self.http_client.as_ref(), catchpoint, min).await
     }
@@ -541,7 +542,7 @@ impl AlgodClient {
     }
 
     /// Given a timestamp offset in seconds, adds the offset to every subsequent block header's timestamp.
-    pub async fn set_block_time_stamp_offset(&self, offset: i32) -> Result<(), Error> {
+    pub async fn set_block_time_stamp_offset(&self, offset: u64) -> Result<(), Error> {
         super::set_block_time_stamp_offset::set_block_time_stamp_offset(
             self.http_client.as_ref(),
             offset,

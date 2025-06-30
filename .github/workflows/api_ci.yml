@@ -10,12 +10,14 @@ on:
       - main
     paths:
       - "api/**"
+      - "tools/api_tools/**"
       - ".github/workflows/api_ci.yml"
   pull_request:
     branches:
       - main
     paths:
       - "api/**"
+      - "tools/api_tools/**"
       - ".github/workflows/api_ci.yml"
   workflow_dispatch:
 
@@ -58,26 +60,21 @@ jobs:
         run: uv sync --extra dev
 
       - name: Run OAS generator linting
-        working-directory: ${{ env.API_DIR }}
-        run: bun run lint:oas_generator
+        run: cargo api lint-oas
 
       - name: Run OAS generator tests
-        working-directory: ${{ env.API_DIR }}
-        run: bun run test:oas_generator
+        run: cargo api test-oas
 
       - name: Store original state for stability check
         run: |
-          # Create a snapshot of the current algod_client state
           git diff --name-only HEAD~1..HEAD -- ${{ env.OUTPUT_DIR }} > /tmp/initial_changes.txt || true
           git status --porcelain ${{ env.OUTPUT_DIR }} > /tmp/initial_status.txt || true
 
       - name: Generate algod API client
-        working-directory: ${{ env.API_DIR }}
-        run: bun run generate:algod_client
+        run: cargo api generate-algod
 
       - name: Check for output stability
         run: |
-          # Check if any new files were created or modified in the output directory
           git status --porcelain ${{ env.OUTPUT_DIR }} > /tmp/post_generation_status.txt
 
           if [ -s /tmp/post_generation_status.txt ]; then
@@ -88,7 +85,7 @@ jobs:
             git diff --no-pager ${{ env.OUTPUT_DIR }}
             echo ""
             echo "💡 This indicates that the generated code is not in sync with the current specification."
-            echo "   Please run 'bun run generate:algod_client' in the api directory and commit the changes."
+            echo "   Please run 'cargo api generate-algod' and commit the changes."
             exit 1
           else
             echo "✅ Output stability check passed - no unexpected changes detected"
@@ -96,5 +93,4 @@ jobs:
 
       - name: Verify generated code compiles
         run: |
-          # Ensure the generated Rust code compiles
           cargo check --manifest-path Cargo.toml -p algod_client

@@ -44,7 +44,7 @@ pub struct SimulateRequest {
         rename = "extra-opcode-budget",
         skip_serializing_if = "Option::is_none"
     )]
-    pub extra_opcode_budget: Option<i32>,
+    pub extra_opcode_budget: Option<u64>,
     #[serde(rename = "exec-trace-config", skip_serializing_if = "Option::is_none")]
     pub exec_trace_config: Option<SimulateTraceConfig>,
     /// If true, signers for transactions that are missing signatures will be fixed during evaluation.

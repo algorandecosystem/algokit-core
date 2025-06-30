@@ -15,7 +15,7 @@ use serde_with::serde_as;
 /// Box name and its content.
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct ModelBox {
+pub struct Box {
     /// The round for which this information is relevant
     #[serde(rename = "round")]
     pub round: u64,
@@ -29,9 +29,9 @@ pub struct ModelBox {
     pub value: Vec<u8>,
 }
 
-impl ModelBox {
-    /// Constructor for ModelBox
-    pub fn new(round: u64, name: Vec<u8>, value: Vec<u8>) -> ModelBox {
-        ModelBox { round, name, value }
+impl Box {
+    /// Constructor for Box
+    pub fn new(round: u64, name: Vec<u8>, value: Vec<u8>) -> Box {
+        Box { round, name, value }
     }
 }

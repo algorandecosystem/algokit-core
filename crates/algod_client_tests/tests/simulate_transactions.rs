@@ -1,8 +1,11 @@
 // Simulate transaction tests
 // These tests demonstrate the integration test structure and API communication
 
-use algod_client::models::{SimulateRequest, SimulateRequestTransactionGroup, SimulateTraceConfig};
-use algod_client_tests::{get_algod_client, LocalnetManager, LocalnetTransactionMother};
+use algod_client::{
+    apis::Format,
+    models::{SimulateRequest, SimulateRequestTransactionGroup, SimulateTraceConfig},
+};
+use algod_client_tests::{LocalnetManager, LocalnetTransactionMother, get_algod_client};
 use algokit_transact::SignedTransaction;
 
 #[tokio::test]
@@ -54,7 +57,7 @@ async fn test_simulate_transactions() {
 
     // Call the simulate transaction endpoint
     let result = get_algod_client()
-        .simulate_transaction(simulate_request, Some("msgpack"))
+        .simulate_transaction(simulate_request, Some(Format::Msgpack))
         .await;
 
     assert!(
@@ -73,13 +76,5 @@ async fn test_simulate_transactions() {
         response.txn_groups[0].txn_results.len(),
         2,
         "Should have two transaction results"
-    );
-
-    println!("✓ Successfully simulated multiple transactions");
-    println!("  Transaction count: {}", signed_transactions.len());
-    println!("  Response version: {}", response.version);
-    println!(
-        "  Response txn_groups: {:?}",
-        serde_json::to_string(&response.txn_groups).unwrap()
     );
 }

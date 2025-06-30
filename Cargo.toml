@@ -13,6 +13,7 @@ members = [
   "crates/uniffi-bindgen",
   "docs",
   "tools/cargo-bin",
+  "tools/api_tools",
 ]
 
 [workspace.dependencies]

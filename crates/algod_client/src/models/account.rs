@@ -46,7 +46,7 @@ pub struct Account {
     pub apps_local_state: Option<Vec<ApplicationLocalState>>,
     /// The count of all applications that have been opted in, equivalent to the count of application local data (AppLocalState objects) stored in this account.
     #[serde(rename = "total-apps-opted-in")]
-    pub total_apps_opted_in: i32,
+    pub total_apps_opted_in: u64,
     #[serde(rename = "apps-total-schema", skip_serializing_if = "Option::is_none")]
     pub apps_total_schema: Option<ApplicationStateSchema>,
     /// \[teap\] the sum of all extra application program pages for this account.
@@ -54,7 +54,7 @@ pub struct Account {
         rename = "apps-total-extra-pages",
         skip_serializing_if = "Option::is_none"
     )]
-    pub apps_total_extra_pages: Option<i32>,
+    pub apps_total_extra_pages: Option<u64>,
     /// \[asset\] assets held by this account.
     ///
     /// Note the raw object uses `map[int] -> AssetHolding` for this type.
@@ -62,7 +62,7 @@ pub struct Account {
     pub assets: Option<Vec<AssetHolding>>,
     /// The count of all assets that have been opted in, equivalent to the count of AssetHolding objects held by this account.
     #[serde(rename = "total-assets-opted-in")]
-    pub total_assets_opted_in: i32,
+    pub total_assets_opted_in: u64,
     /// \[appp\] parameters of applications created by this account including app global data.
     ///
     /// Note: the raw account uses `map[int] -> AppParams` for this type.
@@ -70,7 +70,7 @@ pub struct Account {
     pub created_apps: Option<Vec<Application>>,
     /// The count of all apps (AppParams objects) created by this account.
     #[serde(rename = "total-created-apps")]
-    pub total_created_apps: i32,
+    pub total_created_apps: u64,
     /// \[apar\] parameters of assets created by this account.
     ///
     /// Note: the raw account uses `map[int] -> Asset` for this type.
@@ -78,13 +78,13 @@ pub struct Account {
     pub created_assets: Option<Vec<Asset>>,
     /// The count of all assets (AssetParams objects) created by this account.
     #[serde(rename = "total-created-assets")]
-    pub total_created_assets: i32,
+    pub total_created_assets: u64,
     /// \[tbx\] The number of existing boxes created by this account's app.
     #[serde(rename = "total-boxes", skip_serializing_if = "Option::is_none")]
-    pub total_boxes: Option<i32>,
+    pub total_boxes: Option<u64>,
     /// \[tbxb\] The total number of bytes used by this account's app's box keys and values.
     #[serde(rename = "total-box-bytes", skip_serializing_if = "Option::is_none")]
-    pub total_box_bytes: Option<i32>,
+    pub total_box_bytes: Option<u64>,
     #[serde(rename = "participation", skip_serializing_if = "Option::is_none")]
     pub participation: Option<AccountParticipation>,
     /// Whether or not the account can receive block incentives if its balance is in range at proposal time.
@@ -136,10 +136,10 @@ impl Account {
         amount: u64,
         min_balance: u64,
         amount_without_pending_rewards: u64,
-        total_apps_opted_in: i32,
-        total_assets_opted_in: i32,
-        total_created_apps: i32,
-        total_created_assets: i32,
+        total_apps_opted_in: u64,
+        total_assets_opted_in: u64,
+        total_created_apps: u64,
+        total_created_assets: u64,
         pending_rewards: u64,
         rewards: u64,
         round: u64,

@@ -1,10 +1,10 @@
 [package]
 name = "{{ package_name | snake_case }}"
 version = "{{ spec.info.version | ensure_semver }}"
-authors = ["OpenAPI Generator"]
+authors = ["AlgoKit Core Team"]
 description = "{{ spec.info.description or spec.info.title }}"
-license = "MIT OR Apache-2.0"
-edition = "2021"
+license = "MIT"
+edition = "2024"
 
 [features]
 default = ["default_client"]

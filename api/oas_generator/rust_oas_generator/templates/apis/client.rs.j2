@@ -11,6 +11,9 @@
 use super::Error;
 use algokit_http_client::{DefaultHttpClient, HttpClient};
 use std::sync::Arc;
+{% if collect_parameter_enums(operations) %}
+use super::parameter_enums::*;
+{% endif %}
 {% if operations %}
 {% set used_types = [] %}
 {% for operation in operations %}
@@ -99,8 +102,14 @@ impl AlgodClient {
         {% endif %}
     {% endif %}
     {% for param in operation.parameters %}
+        {% if param.is_enum_parameter %}
+        {% if param.required %}{{ param.rust_name }}: {{ param.rust_enum_type }},
+        {% else %}{{ param.rust_name }}: Option<{{ param.rust_enum_type }}>,
+        {% endif %}
+        {% else %}
         {% if param.required %}{{ param.rust_name }}: {% if param.rust_type == "String" %}&str{% else %}{{ param.rust_type }}{% endif %},
         {% else %}{{ param.rust_name }}: Option<{% if param.rust_type == "String" %}&str{% else %}{{ param.rust_type }}{% endif %}>,
+        {% endif %}
         {% endif %}
     {% endfor %}
     ) -> Result<{% if get_success_response_type(operation) %}{{ get_success_response_type(operation) }}{% else %}(){% endif %}, Error> {
@@ -110,7 +119,11 @@ impl AlgodClient {
             {{ get_request_body_name(operation) }},
         {% endif %}
         {% for param in operation.parameters %}
+            {% if param.is_enum_parameter %}
             {{ param.rust_name }},
+            {% else %}
+            {{ param.rust_name }},
+            {% endif %}
         {% endfor %}
         ).await
     }

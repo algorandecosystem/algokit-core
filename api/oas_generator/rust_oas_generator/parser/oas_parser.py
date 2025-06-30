@@ -27,9 +27,10 @@ _OPENAPI_TYPE_MAPPING: Final = {
         "binary": "Vec<u8>",
     },
     "integer": {
-        None: "i32",
-        "int32": "i32",
-        "int64": "i64",
+        None: "u64",
+        "int32": "u32",
+        "int64": "u64",
+        "uint64": "u64",
     },
     "number": {
         None: "f64",
@@ -85,15 +86,15 @@ def rust_type_from_openapi(
     schemas: dict[str, Any],
     visited: set[str] | None = None,
 ) -> str:
-    """Convert OpenAPI schema type to Rust type.
+    """Convert OpenAPI schema type to Rust type string.
 
     Args:
-        schema: The OpenAPI schema dictionary.
+        schema: The schema dictionary from OpenAPI spec.
         schemas: All available schemas for reference resolution.
-        visited: Set of visited reference names to prevent infinite recursion.
+        visited: Set of visited references to prevent cycles.
 
     Returns:
-        The corresponding Rust type string.
+        Rust type string.
     """
     if visited is None:
         visited = set()
@@ -102,7 +103,7 @@ def rust_type_from_openapi(
     if schema.get("x-algokit-bigint") is True:
         return "u64"
 
-    # Handle $ref references
+    # Handle references
     if "$ref" in schema:
         ref_name = _extract_ref_name(schema["$ref"])
 
@@ -111,10 +112,7 @@ def rust_type_from_openapi(
 
         visited.add(ref_name)
 
-        # Special case for "Box" to avoid naming conflicts
-        if ref_name == "Box":
-            return "ModelBox"
-
+        # Return the original name without ModelBox renaming
         return rust_pascal_case(ref_name)
 
     schema_type = schema.get("type", "string")
@@ -245,12 +243,32 @@ class Parameter:
     rust_type: str
     required: bool
     description: str | None = None
+    enum_values: list[str] = field(default_factory=list)
     rust_name: str = field(init=False)
     rust_field_name: str = field(init=False)
 
     def __post_init__(self) -> None:
         self.rust_name = rust_snake_case(self.name)
         self.rust_field_name = escape_rust_keyword(self.rust_name)
+
+    @property
+    def rust_enum_type(self) -> str | None:
+        """Generate Rust enum type name if this parameter has enum constraints."""
+        if not self.enum_values:
+            return None
+        return rust_pascal_case(self.name)
+
+    @property
+    def is_enum_parameter(self) -> bool:
+        """Check if this parameter should use an enum type."""
+        return bool(self.enum_values)
+
+    @property
+    def effective_rust_type(self) -> str:
+        """Get the effective Rust type, using enum if available, otherwise the original rust_type."""
+        if self.is_enum_parameter and self.rust_enum_type:
+            return self.rust_enum_type
+        return self.rust_type
 
 
 @dataclass
@@ -332,13 +350,17 @@ class Schema:
     required_fields: list[str]
     vendor_extensions: dict[str, Any] = field(default_factory=dict)
     rust_struct_name: str = field(init=False)
+    rust_file_name: str = field(init=False)
     has_msgpack_fields: bool = field(init=False)
     has_required_fields: bool = field(init=False)
     implements_algokit_msgpack: bool = field(init=False)
     has_signed_transaction_fields: bool = field(init=False)
 
     def __post_init__(self) -> None:
-        self.rust_struct_name = "ModelBox" if self.name == "Box" else rust_pascal_case(self.name)
+        # Keep the original struct name without renaming
+        self.rust_struct_name = rust_pascal_case(self.name)
+        # Use model_ prefix for file name only when there's a conflict (like Box)
+        self.rust_file_name = f"model_{self.name.lower()}" if self.name == "Box" else rust_snake_case(self.name)
         self.has_msgpack_fields = any(prop.is_base64_encoded for prop in self.properties)
         self.has_required_fields = len(self.required_fields) > 0
         self.has_signed_transaction_fields = any(prop.is_signed_transaction for prop in self.properties)
@@ -636,6 +658,7 @@ class OASParser:
 
         schema = param_data.get("schema", {})
         rust_type = rust_type_from_openapi(schema, self.schemas, set())
+        enum_values = schema.get("enum", []) if schema.get("type") == "string" else []
 
         return Parameter(
             name=name,
@@ -643,6 +666,7 @@ class OASParser:
             rust_type=rust_type,
             required=param_data.get("required", False),
             description=param_data.get("description"),
+            enum_values=enum_values,
         )
 
     def _resolve_reference(self, ref: str) -> dict[str, Any]:

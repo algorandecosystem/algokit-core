@@ -41,7 +41,7 @@ Custom Jinja2 filters for Rust code generation:
 
 - `rust_doc_comment`: Format documentation strings
 - `ensure_semver`: Validate semantic versioning
-- `detect_signed_transaction_field`: Algorand transaction detection
+- `is_signed_transaction_field`: Algorand transaction detection
 - `get_dependencies_for_schema`: Dynamic import generation
 
 ### 5. Templates (`templates/`)
@@ -70,7 +70,7 @@ templates/
 | OpenAPI Type | Rust Type |
 |--------------|-----------|
 | `string` | `String` |
-| `integer` | `i32`/`i64` |
+| `integer` | `u64` |
 | `number` | `f32`/`f64` |
 | `boolean` | `bool` |
 | `array` | `Vec<T>` |
@@ -81,7 +81,8 @@ templates/
 - **References**: `#/components/schemas/Model` → `Model`
 - **Msgpack Fields**: Base64-encoded properties → `Vec<u8>`
 - **Keywords**: Rust reserved words escaped with `r#` prefix
-- **Box Conflict**: `Box` schema renamed to `ModelBox`
+- **Integers**: Default to `u64` (unsigned) since blockchain values (amounts, rounds, IDs) are inherently non-negative and can be very large
+- **x-algokit-bigint**: Fields marked with this extension explicitly use `u64` for 64-bit precision
 
 ## Msgpack Integration
 

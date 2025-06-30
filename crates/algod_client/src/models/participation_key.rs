@@ -36,16 +36,16 @@ pub struct ParticipationKey {
     pub effective_last_valid: Option<u64>,
     /// Round when this key was last used to vote.
     #[serde(rename = "last-vote", skip_serializing_if = "Option::is_none")]
-    pub last_vote: Option<i32>,
+    pub last_vote: Option<u64>,
     /// Round when this key was last used to propose a block.
     #[serde(
         rename = "last-block-proposal",
         skip_serializing_if = "Option::is_none"
     )]
-    pub last_block_proposal: Option<i32>,
+    pub last_block_proposal: Option<u64>,
     /// Round when this key was last used to generate a state proof.
     #[serde(rename = "last-state-proof", skip_serializing_if = "Option::is_none")]
-    pub last_state_proof: Option<i32>,
+    pub last_state_proof: Option<u64>,
     #[serde(rename = "key")]
     pub key: AccountParticipation,
 }

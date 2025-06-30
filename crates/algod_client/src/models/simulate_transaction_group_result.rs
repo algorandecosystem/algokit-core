@@ -26,16 +26,16 @@ pub struct SimulateTransactionGroupResult {
     pub failure_message: Option<String>,
     /// If present, indicates which transaction in this group caused the failure. This array represents the path to the failing transaction. Indexes are zero based, the first element indicates the top-level transaction, and successive elements indicate deeper inner transactions.
     #[serde(rename = "failed-at", skip_serializing_if = "Option::is_none")]
-    pub failed_at: Option<Vec<i32>>,
+    pub failed_at: Option<Vec<u64>>,
     /// Total budget added during execution of app calls in the transaction group.
     #[serde(rename = "app-budget-added", skip_serializing_if = "Option::is_none")]
-    pub app_budget_added: Option<i32>,
+    pub app_budget_added: Option<u64>,
     /// Total budget consumed during execution of app calls in the transaction group.
     #[serde(
         rename = "app-budget-consumed",
         skip_serializing_if = "Option::is_none"
     )]
-    pub app_budget_consumed: Option<i32>,
+    pub app_budget_consumed: Option<u64>,
     #[serde(
         rename = "unnamed-resources-accessed",
         skip_serializing_if = "Option::is_none"

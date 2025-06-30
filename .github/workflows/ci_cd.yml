@@ -35,13 +35,9 @@ jobs:
     outputs:
       # The packages that use Uniffi bindings
       ffi_packages: ${{ steps.set_ffi_packages.outputs.ffi_packages }}
-      # The API client packages
-      api_packages: ${{ steps.set_api_packages.outputs.api_packages }}
     steps:
       - id: set_ffi_packages
         run: echo 'ffi_packages=["algokit_transact"]' >> $GITHUB_OUTPUT
-      - id: set_api_packages
-        run: echo 'api_packages=["algod_api"]' >> $GITHUB_OUTPUT
 
   typescript_wasm_ci_cd:
     needs: setup

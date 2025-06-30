@@ -29,16 +29,16 @@ pub struct SimulationEvalOverrides {
     pub allow_unnamed_resources: Option<bool>,
     /// The maximum log calls one can make during simulation
     #[serde(rename = "max-log-calls", skip_serializing_if = "Option::is_none")]
-    pub max_log_calls: Option<i32>,
+    pub max_log_calls: Option<u64>,
     /// The maximum byte number to log during simulation
     #[serde(rename = "max-log-size", skip_serializing_if = "Option::is_none")]
-    pub max_log_size: Option<i32>,
+    pub max_log_size: Option<u64>,
     /// The extra opcode budget added to each transaction group during simulation
     #[serde(
         rename = "extra-opcode-budget",
         skip_serializing_if = "Option::is_none"
     )]
-    pub extra_opcode_budget: Option<i32>,
+    pub extra_opcode_budget: Option<u64>,
     /// If true, signers for transactions that are missing signatures will be fixed during evaluation.
     #[serde(rename = "fix-signers", skip_serializing_if = "Option::is_none")]
     pub fix_signers: Option<bool>,
