@@ -285,6 +285,7 @@ impl TransactionTestData {
             transaction: transaction.clone(),
             signature: Some(signature.to_bytes()),
             auth_address: None,
+            multisig: None,
         };
         let signed_bytes = signed_txn.encode().unwrap();
 
@@ -295,6 +296,7 @@ impl TransactionTestData {
             transaction: transaction.clone(),
             signature: Some(signature.to_bytes()),
             auth_address: Some(rekeyed_sender_auth_address.clone()),
+            multisig: None,
         };
         let rekeyed_sender_signed_bytes = signer_signed_txn.encode().unwrap();
 

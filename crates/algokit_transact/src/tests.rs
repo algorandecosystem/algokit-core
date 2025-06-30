@@ -21,6 +21,7 @@ pub fn check_transaction_encoding(tx: &Transaction, expected_encoded_len: usize)
         transaction: tx.clone(),
         signature: Some([0; ALGORAND_SIGNATURE_BYTE_LENGTH]),
         auth_address: None,
+        multisig: None,
     };
     let encoded_stx = signed_tx.encode().unwrap();
     let decoded_stx = SignedTransaction::decode(&encoded_stx).unwrap();
@@ -44,6 +45,7 @@ pub fn check_signed_transaction_encoding(
         transaction: tx.clone(),
         signature: Some([0; ALGORAND_SIGNATURE_BYTE_LENGTH]),
         auth_address: auth_address.clone(),
+        multisig: None,
     };
     let encoded_stx = signed_tx.encode().unwrap();
     assert_eq!(encoded_stx.len(), expected_encoded_len);
@@ -56,6 +58,7 @@ pub fn check_transaction_id(tx: &Transaction, expected_tx_id: &str) {
         transaction: tx.clone(),
         signature: Some([0; ALGORAND_SIGNATURE_BYTE_LENGTH]),
         auth_address: None,
+        multisig: None,
     };
 
     assert_eq!(tx.id().unwrap(), expected_tx_id);
@@ -159,6 +162,7 @@ fn test_pay_estimate_transaction_size() {
         transaction: payment_tx.clone(),
         signature: Some([0; ALGORAND_SIGNATURE_BYTE_LENGTH]),
         auth_address: None,
+        multisig: None,
     };
     let actual_size = signed_tx.encode().unwrap().len();
 
@@ -180,6 +184,7 @@ fn test_axfer_estimate_transaction_size() {
         transaction: asset_transfer_tx.clone(),
         signature: Some([0; ALGORAND_SIGNATURE_BYTE_LENGTH]),
         auth_address: None,
+        multisig: None,
     };
     let actual_size = signed_tx.encode().unwrap().len();
 
@@ -387,6 +392,7 @@ fn test_signed_transaction_group_encoding() {
             transaction: tx.clone(),
             signature: Some([0; ALGORAND_SIGNATURE_BYTE_LENGTH]),
             auth_address: None,
+            multisig: None,
         })
         .collect::<Vec<SignedTransaction>>();
 
