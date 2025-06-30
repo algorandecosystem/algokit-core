@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 pub struct WaitForBlock {
     /// CatchupTime in nanoseconds
     #[serde(rename = "catchup-time")]
-    pub catchup_time: i32,
+    pub catchup_time: u64,
     /// LastRound indicates the last round seen
     #[serde(rename = "last-round")]
     pub last_round: u64,
@@ -37,7 +37,7 @@ pub struct WaitForBlock {
     pub stopped_at_unsupported_round: bool,
     /// TimeSinceLastRound in nanoseconds
     #[serde(rename = "time-since-last-round")]
-    pub time_since_last_round: i32,
+    pub time_since_last_round: u64,
     /// The last catchpoint seen by the node
     #[serde(rename = "last-catchpoint", skip_serializing_if = "Option::is_none")]
     pub last_catchpoint: Option<String>,
@@ -130,14 +130,14 @@ pub struct WaitForBlock {
 impl WaitForBlock {
     /// Constructor for WaitForBlock
     pub fn new(
-        catchup_time: i32,
+        catchup_time: u64,
         last_round: u64,
         last_version: String,
         next_version: String,
         next_version_round: i32,
         next_version_supported: bool,
         stopped_at_unsupported_round: bool,
-        time_since_last_round: i32,
+        time_since_last_round: u64,
     ) -> WaitForBlock {
         WaitForBlock {
             catchup_time,
