@@ -1,5 +1,5 @@
 use crate::client_manager::ClientManager;
-use crate::network_client::AlgoConfig;
+use crate::network_client::{AlgoConfig, AlgorandService};
 use algod_client::models::TransactionParams;
 
 pub struct AlgorandClient {
@@ -25,19 +25,19 @@ impl AlgorandClient {
 
     pub fn default_localnet() -> Self {
         Self::new(AlgoConfig {
-            algod_config: ClientManager::get_default_localnet_config("algod"),
+            algod_config: ClientManager::get_default_localnet_config(AlgorandService::Algod),
         })
     }
 
     pub fn testnet() -> Self {
         Self::new(AlgoConfig {
-            algod_config: ClientManager::get_algonode_config("testnet", "algod"),
+            algod_config: ClientManager::get_algonode_config("testnet", AlgorandService::Algod),
         })
     }
 
     pub fn mainnet() -> Self {
         Self::new(AlgoConfig {
-            algod_config: ClientManager::get_algonode_config("mainnet", "algod"),
+            algod_config: ClientManager::get_algonode_config("mainnet", AlgorandService::Algod),
         })
     }
 

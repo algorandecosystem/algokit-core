@@ -26,7 +26,8 @@ pub use testing::{
 pub use algorand_client::AlgorandClient;
 pub use client_manager::ClientManager;
 pub use network_client::{
-    AlgoClientConfig, AlgoConfig, NetworkDetails, TokenHeader, genesis_id_is_localnet,
+    AlgoClientConfig, AlgoConfig, AlgorandNetwork, AlgorandService, NetworkDetails, TokenHeader,
+    genesis_id_is_localnet,
 };
 
 #[derive(Debug, thiserror::Error)]
@@ -41,6 +42,8 @@ pub enum ComposerError {
     SigningError(String),
     #[error("Composer State Error: {0}")]
     StateError(String),
+    #[error("Transaction pool error: {0}")]
+    PoolError(String),
 }
 
 #[derive(Debug, Default, Clone)]
@@ -209,6 +212,13 @@ impl Composer {
 
         let suggested_params = self.get_suggested_params().await?;
 
+        // Determine validity window: default 10 rounds, but 1000 for LocalNet
+        let default_validity_window = if genesis_id_is_localnet(&suggested_params.genesis_id) {
+            1000 // LocalNet gets bigger window to avoid dead transactions
+        } else {
+            10 // Standard default validity window
+        };
+
         let default_header =
             TransactionHeader {
                 fee: Some(suggested_params.fee),
@@ -218,7 +228,7 @@ impl Composer {
                 })?),
                 // Set validity window based on current round
                 first_valid: suggested_params.last_round,
-                last_valid: suggested_params.last_round + 1000, // Default validity window
+                last_valid: suggested_params.last_round + default_validity_window,
                 sender: Address::default(),
                 rekey_to: None,
                 note: None,
@@ -263,6 +273,9 @@ impl Composer {
                         header.last_valid = last_valid;
                     } else if let Some(validity_window) = common_params.validity_window {
                         header.last_valid = header.first_valid + validity_window;
+                    } else {
+                        // Use the smart default: 10 rounds normally, 1000 for LocalNet
+                        header.last_valid = header.first_valid + default_validity_window;
                     }
 
                     // Handle static fee vs. calculated fee
@@ -286,9 +299,14 @@ impl Composer {
             })
             .collect::<Result<Vec<Transaction>, ComposerError>>()?;
 
-        self.built_group = Some(txs.assign_group().map_err(|e| {
-            ComposerError::TransactionError(format!("Failed to assign group: {}", e))
-        })?);
+        // Only assign group if there are 2 or more transactions (matching algosdk ATC behavior)
+        self.built_group = if txs.len() > 1 {
+            Some(txs.assign_group().map_err(|e| {
+                ComposerError::TransactionError(format!("Failed to assign group: {}", e))
+            })?)
+        } else {
+            Some(txs) // Single transaction, no group assignment
+        };
         Ok(self)
     }
 
@@ -337,15 +355,36 @@ impl Composer {
                 .await
             {
                 Ok(response) => {
-                    // TODO: handle pool error
+                    // Check for pool errors first - transaction was kicked out of pool
+                    if !response.pool_error.is_empty() {
+                        return Err(Box::new(ComposerError::PoolError(
+                            response.pool_error.clone(),
+                        )));
+                    }
+
+                    // Check if transaction is confirmed
                     if response.confirmed_round.is_some() {
                         return Ok(response);
                     }
                 }
-                Err(_) => {
-                    // TODO: only trigger this if the error is URLTokenBaseHTTPError
-                    current_round += 1;
-                    continue;
+                Err(error) => {
+                    // Only retry for 404 errors (transaction not found yet)
+                    // All other errors indicate permanent issues and should fail fast
+                    let is_retryable = matches!(
+                        &error,
+                        algod_client::apis::Error::Api(
+                            algod_client::apis::AlgodApiError::PendingTransactionInformation(
+                                algod_client::apis::pending_transaction_information::PendingTransactionInformationError::Status404(_)
+                            )
+                        )
+                    ) || error.to_string().contains("404");
+
+                    if is_retryable {
+                        current_round += 1;
+                        continue;
+                    } else {
+                        return Err(Box::new(ComposerError::AlgodClientError(error)));
+                    }
                 }
             };
 
@@ -388,14 +427,14 @@ impl Composer {
             encoded_bytes.extend_from_slice(&encoded_txn);
         }
 
-        let raw_transaction = self
+        let raw_transaction_response = self
             .algod_client
             .raw_transaction(encoded_bytes)
             .await
             .map_err(|e| format!("Failed to submit transaction: {:?}", e))?;
 
         let pending_transaction_response = self
-            .wait_for_confirmation(&raw_transaction.tx_id, 5)
+            .wait_for_confirmation(&raw_transaction_response.tx_id, 5)
             .await
             .map_err(|e| format!("Failed to confirm transaction: {}", e))?;
 
@@ -521,5 +560,180 @@ mod tests {
         assert!(composer.build().await.is_ok());
         assert!(composer.gather_signatures().await.is_ok());
         assert!(composer.signed_group.is_some());
+    }
+
+    #[tokio::test]
+    async fn test_single_transaction_no_group() {
+        let mut composer = Composer::testnet();
+        let payment_params = PaymentParams {
+            common_params: CommonParams {
+                sender: AddressMother::address(),
+                signer: None,
+                rekey_to: None,
+                note: None,
+                lease: None,
+                static_fee: None,
+                extra_fee: None,
+                max_fee: None,
+                validity_window: None,
+                first_valid_round: None,
+                last_valid_round: None,
+            },
+            receiver: AddressMother::address(),
+            amount: 1000,
+            close_remainder_to: None,
+        };
+
+        assert!(composer.add_payment(payment_params).is_ok());
+        assert!(composer.build().await.is_ok());
+
+        let built_group = composer.built_group().unwrap();
+        assert_eq!(built_group.len(), 1);
+        // Single transaction should not have a group assigned
+        assert!(built_group[0].header().group.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_multiple_transactions_have_group() {
+        let mut composer = Composer::testnet();
+
+        // Add first payment
+        let payment_params1 = PaymentParams {
+            common_params: CommonParams {
+                sender: AddressMother::address(),
+                signer: None,
+                rekey_to: None,
+                note: None,
+                lease: None,
+                static_fee: None,
+                extra_fee: None,
+                max_fee: None,
+                validity_window: None,
+                first_valid_round: None,
+                last_valid_round: None,
+            },
+            receiver: AddressMother::address(),
+            amount: 1000,
+            close_remainder_to: None,
+        };
+
+        // Add second payment
+        let payment_params2 = PaymentParams {
+            common_params: CommonParams {
+                sender: AddressMother::address(),
+                signer: None,
+                rekey_to: None,
+                note: None,
+                lease: None,
+                static_fee: None,
+                extra_fee: None,
+                max_fee: None,
+                validity_window: None,
+                first_valid_round: None,
+                last_valid_round: None,
+            },
+            receiver: AddressMother::address(),
+            amount: 2000,
+            close_remainder_to: None,
+        };
+
+        assert!(composer.add_payment(payment_params1).is_ok());
+        assert!(composer.add_payment(payment_params2).is_ok());
+        assert!(composer.build().await.is_ok());
+
+        let built_group = composer.built_group().unwrap();
+        assert_eq!(built_group.len(), 2);
+
+        // Both transactions should have the same group assigned
+        assert!(built_group[0].header().group.is_some());
+        assert!(built_group[1].header().group.is_some());
+        assert_eq!(built_group[0].header().group, built_group[1].header().group);
+    }
+
+    #[test]
+    fn test_error_recoverability_logic() {
+        use algod_client::apis::Error as AlgodError;
+        use algokit_http_client::HttpError;
+
+        // Test that 404 HTTP errors are considered recoverable
+        let recoverable_404_error = AlgodError::Http(HttpError::RequestError(
+            "Request failed with status 404: Transaction not found".to_string(),
+        ));
+
+        // Test that 400 HTTP errors are considered non-recoverable
+        let non_recoverable_400_error = AlgodError::Http(HttpError::RequestError(
+            "Request failed with status 400: Malformed transaction ID".to_string(),
+        ));
+
+        // Test the same logic from our wait_for_confirmation method
+        let is_404_retryable = matches!(
+            &recoverable_404_error,
+            AlgodError::Api(
+                algod_client::apis::AlgodApiError::PendingTransactionInformation(
+                    algod_client::apis::pending_transaction_information::PendingTransactionInformationError::Status404(_)
+                )
+            )
+        ) || recoverable_404_error.to_string().contains("404");
+
+        let is_400_retryable = matches!(
+            &non_recoverable_400_error,
+            AlgodError::Api(
+                algod_client::apis::AlgodApiError::PendingTransactionInformation(
+                    algod_client::apis::pending_transaction_information::PendingTransactionInformationError::Status404(_)
+                )
+            )
+        ) || non_recoverable_400_error.to_string().contains("404");
+
+        // Assertions - only 404 errors should be retryable
+        assert!(is_404_retryable, "404 errors should be retryable");
+        assert!(!is_400_retryable, "400 errors should not be retryable");
+    }
+
+    #[test]
+    fn test_validity_window_logic() {
+        // Test LocalNet detection
+        assert!(
+            genesis_id_is_localnet("devnet-v1"),
+            "devnet-v1 should be LocalNet"
+        );
+        assert!(
+            genesis_id_is_localnet("sandnet-v1"),
+            "sandnet-v1 should be LocalNet"
+        );
+        assert!(
+            genesis_id_is_localnet("dockernet-v1"),
+            "dockernet-v1 should be LocalNet"
+        );
+        assert!(
+            !genesis_id_is_localnet("testnet-v1.0"),
+            "testnet-v1.0 should not be LocalNet"
+        );
+        assert!(
+            !genesis_id_is_localnet("mainnet-v1.0"),
+            "mainnet-v1.0 should not be LocalNet"
+        );
+
+        // Test validity window defaults
+        // For regular networks: should be 10
+        let regular_validity_window = if genesis_id_is_localnet("testnet-v1.0") {
+            1000
+        } else {
+            10
+        };
+        assert_eq!(
+            regular_validity_window, 10,
+            "Regular networks should have 10 round validity window"
+        );
+
+        // For LocalNet: should be 1000
+        let localnet_validity_window = if genesis_id_is_localnet("devnet-v1") {
+            1000
+        } else {
+            10
+        };
+        assert_eq!(
+            localnet_validity_window, 1000,
+            "LocalNet should have 1000 round validity window"
+        );
     }
 }

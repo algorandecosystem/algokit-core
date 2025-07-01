@@ -1,16 +1,18 @@
 use crate::network_client::{
-    AlgoClientConfig, AlgoClients, AlgoConfig, NetworkDetails, TokenHeader, genesis_id_is_localnet,
+    AlgoClientConfig, AlgoClients, AlgoConfig, AlgorandService, NetworkDetails, TokenHeader,
+    genesis_id_is_localnet,
 };
-use algod_client::{AlgodClient, models::TransactionParams};
+use algod_client::AlgodClient;
 use algokit_http_client::DefaultHttpClient;
 use base64::{Engine, engine::general_purpose};
 use std::{env, sync::Arc};
+use tokio::sync::OnceCell;
 
-pub struct AlgoSdkClientsImpl {
+pub struct AlgoClientsImpl {
     pub algod: AlgodClient,
 }
 
-impl AlgoClients for AlgoSdkClientsImpl {
+impl AlgoClients for AlgoClientsImpl {
     type AlgodClient = AlgodClient;
 
     fn algod(&self) -> &Self::AlgodClient {
@@ -19,19 +21,19 @@ impl AlgoClients for AlgoSdkClientsImpl {
 }
 
 pub struct ClientManager {
-    clients: AlgoSdkClientsImpl,
-    network_promise: Option<TransactionParams>,
+    clients: AlgoClientsImpl,
+    cached_network_details: OnceCell<NetworkDetails>,
 }
 
 impl ClientManager {
     pub fn new(config: AlgoConfig) -> Self {
-        let clients = AlgoSdkClientsImpl {
+        let clients = AlgoClientsImpl {
             algod: Self::get_algod_client(&config.algod_config),
         };
 
         Self {
             clients,
-            network_promise: None,
+            cached_network_details: OnceCell::new(),
         }
     }
 
@@ -40,32 +42,32 @@ impl ClientManager {
     }
 
     pub async fn network(
-        &mut self,
-    ) -> Result<NetworkDetails, Box<dyn std::error::Error + Send + Sync>> {
-        if self.network_promise.is_none() {
-            self.network_promise = Some(self.algod().transaction_params().await?);
-        }
-
-        let params = self.network_promise.as_ref().unwrap();
-        Ok(NetworkDetails::new(
-            params.genesis_id.clone(),
-            general_purpose::STANDARD.encode(&params.genesis_hash),
-        ))
+        &self,
+    ) -> Result<&NetworkDetails, Box<dyn std::error::Error + Send + Sync>> {
+        self.cached_network_details
+            .get_or_try_init(|| async {
+                let params = self.algod().transaction_params().await?;
+                Ok(NetworkDetails::new(
+                    params.genesis_id.clone(),
+                    general_purpose::STANDARD.encode(&params.genesis_hash),
+                ))
+            })
+            .await
     }
 
     pub fn genesis_id_is_localnet(genesis_id: &str) -> bool {
         genesis_id_is_localnet(genesis_id)
     }
 
-    pub async fn is_localnet(&mut self) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
+    pub async fn is_localnet(&self) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
         Ok(self.network().await?.is_localnet)
     }
 
-    pub async fn is_testnet(&mut self) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
+    pub async fn is_testnet(&self) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
         Ok(self.network().await?.is_testnet)
     }
 
-    pub async fn is_mainnet(&mut self) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
+    pub async fn is_mainnet(&self) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
         Ok(self.network().await?.is_mainnet)
     }
 
@@ -77,7 +79,7 @@ impl ClientManager {
                 AlgoConfig { algod_config }
             }
             Err(_) => AlgoConfig {
-                algod_config: Self::get_default_localnet_config("algod"),
+                algod_config: Self::get_default_localnet_config(AlgorandService::Algod),
             },
         }
     }
@@ -100,20 +102,15 @@ impl ClientManager {
         config
     }
 
-    pub fn get_algonode_config(network: &str, service: &str) -> AlgoClientConfig {
-        let subdomain = if service == "algod" { "api" } else { "idx" };
+    pub fn get_algonode_config(network: &str, service: AlgorandService) -> AlgoClientConfig {
+        let subdomain = service.algonode_subdomain();
 
         AlgoClientConfig::new(format!("https://{}-{}.algonode.cloud/", network, subdomain))
             .with_port(443)
     }
 
-    pub fn get_default_localnet_config(service: &str) -> AlgoClientConfig {
-        let port = match service {
-            "algod" => 4001,
-            "indexer" => 8980,
-            "kmd" => 4002,
-            _ => panic!("Unknown service: {}", service),
-        };
+    pub fn get_default_localnet_config(service: AlgorandService) -> AlgoClientConfig {
+        let port = service.default_localnet_port();
 
         AlgoClientConfig::new("http://localhost".to_string())
             .with_port(port)
