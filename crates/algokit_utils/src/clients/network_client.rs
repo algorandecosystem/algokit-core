@@ -74,11 +74,11 @@ impl AlgorandService {
     }
 
     /// Get the subdomain for this service on algonode
-    pub fn algonode_subdomain(&self) -> &'static str {
+    pub fn algonode_subdomain(&self) -> Result<&'static str, &'static str> {
         match self {
-            AlgorandService::Algod => "api",
-            AlgorandService::Indexer => "idx",
-            AlgorandService::Kmd => panic!("KMD is not available on algonode"),
+            AlgorandService::Algod => Ok("api"),
+            AlgorandService::Indexer => Ok("idx"),
+            AlgorandService::Kmd => Err("KMD is not available on algonode"),
         }
     }
 

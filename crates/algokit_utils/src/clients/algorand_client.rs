@@ -1,5 +1,5 @@
-use crate::client_manager::ClientManager;
-use crate::network_client::{AlgoConfig, AlgorandService};
+use crate::clients::client_manager::ClientManager;
+use crate::clients::network_client::{AlgoConfig, AlgorandService};
 use algod_client::models::TransactionParams;
 
 pub struct AlgorandClient {

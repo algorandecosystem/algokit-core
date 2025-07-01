@@ -8,8 +8,12 @@ use algod_client::{
 use algokit_transact::{SignedTransaction, test_utils::TransactionMother};
 use algokit_utils::{ClientManager, testing::LocalnetManager};
 
+use crate::common::init_test_logging;
+
 #[tokio::test]
 async fn test_simulate_transactions() {
+    init_test_logging();
+
     LocalnetManager::ensure_running()
         .await
         .expect("Failed to start localnet");

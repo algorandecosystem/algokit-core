@@ -5,8 +5,12 @@ use algokit_utils::{
 };
 use std::convert::TryInto;
 
+use crate::common::init_test_logging;
+
 #[tokio::test]
 async fn test_raw_transaction_broadcast() {
+    init_test_logging();
+
     LocalnetManager::ensure_running()
         .await
         .expect("Failed to start localnet");
