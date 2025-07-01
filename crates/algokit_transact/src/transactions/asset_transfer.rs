@@ -2,7 +2,7 @@
 //!
 //! This module provides functionality for creating and managing asset transfer transactions.
 
-use crate::address::Address;
+use crate::account::Account;
 use crate::transactions::common::TransactionHeader;
 use crate::utils::{is_zero, is_zero_addr, is_zero_addr_opt};
 use crate::Transaction;
@@ -51,7 +51,7 @@ pub struct AssetTransferTransactionFields {
     #[serde(rename = "arcv")]
     #[serde(skip_serializing_if = "is_zero_addr")]
     #[serde(default)]
-    pub receiver: Address,
+    pub receiver: Account,
 
     /// Optional address of the account that actually holds the asset being transferred.
     ///
@@ -62,7 +62,7 @@ pub struct AssetTransferTransactionFields {
     #[serde(skip_serializing_if = "is_zero_addr_opt")]
     #[serde(default)]
     #[builder(default)]
-    pub asset_sender: Option<Address>,
+    pub asset_sender: Option<Account>,
 
     /// Optional address to send all remaining asset units to after the transfer.
     ///
@@ -73,7 +73,7 @@ pub struct AssetTransferTransactionFields {
     #[serde(skip_serializing_if = "is_zero_addr_opt")]
     #[serde(default)]
     #[builder(default)]
-    pub close_remainder_to: Option<Address>,
+    pub close_remainder_to: Option<Account>,
 }
 
 impl AssetTransferTransactionBuilder {

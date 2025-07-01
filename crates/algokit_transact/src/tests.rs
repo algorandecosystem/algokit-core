@@ -6,7 +6,7 @@ use crate::{
         AddressMother, TransactionGroupMother, TransactionHeaderMother, TransactionMother,
     },
     transactions::FeeParams,
-    Address, AlgorandMsgpack, EstimateTransactionSize, SignedTransaction, Transaction,
+    Account, AlgorandMsgpack, EstimateTransactionSize, SignedTransaction, Transaction,
     TransactionId, Transactions,
 };
 use base64::{prelude::BASE64_STANDARD, Engine};
@@ -39,7 +39,7 @@ pub fn check_transaction_encoding(tx: &Transaction, expected_encoded_len: usize)
 pub fn check_signed_transaction_encoding(
     tx: &Transaction,
     expected_encoded_len: usize,
-    auth_address: Option<Address>,
+    auth_address: Option<Account>,
 ) {
     let signed_tx = SignedTransaction {
         transaction: tx.clone(),
@@ -135,7 +135,7 @@ fn test_zero_address() {
         "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ"
     );
 
-    let addr_from_str = addr.to_string().parse::<Address>().unwrap();
+    let addr_from_str = addr.to_string().parse::<Account>().unwrap();
     assert_eq!(addr, addr_from_str);
 }
 
@@ -147,7 +147,7 @@ fn test_address() {
         "RIMARGKZU46OZ77OLPDHHPUJ7YBSHRTCYMQUC64KZCCMESQAFQMYU6SL2Q"
     );
 
-    let addr_from_str = addr.to_string().parse::<Address>().unwrap();
+    let addr_from_str = addr.to_string().parse::<Account>().unwrap();
     assert_eq!(addr, addr_from_str);
 }
 

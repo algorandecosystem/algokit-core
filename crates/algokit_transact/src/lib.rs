@@ -1,4 +1,4 @@
-mod address;
+mod account;
 pub mod constants;
 mod error;
 pub mod multisig;
@@ -7,7 +7,7 @@ mod transactions;
 mod utils;
 
 // Re-export all the public items
-pub use address::Address;
+pub use account::Account;
 pub use constants::*;
 pub use error::AlgoKitTransactError;
 pub use multisig::*;
@@ -24,5 +24,6 @@ pub use transactions::{
 #[cfg(test)]
 mod tests;
 
+mod address;
 #[cfg(feature = "test_utils")]
 pub mod test_utils;

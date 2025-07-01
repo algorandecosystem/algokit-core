@@ -3,7 +3,7 @@
 //! This module provides functionality for creating and managing asset configuration transactions,
 //! which are used to create, reconfige, or destroy Algorand Standard Assets (ASAs).
 
-use crate::address::Address;
+use crate::account::Account;
 use crate::traits::Validate;
 use crate::transactions::common::{TransactionHeader, TransactionValidationError};
 use crate::utils::{is_false_opt, is_zero, is_zero_addr_opt, is_zero_opt};
@@ -56,22 +56,22 @@ struct AssetParams {
     #[serde(rename = "m")]
     #[serde(skip_serializing_if = "is_zero_addr_opt")]
     #[serde(default)]
-    pub manager: Option<Address>,
+    pub manager: Option<Account>,
 
     #[serde(rename = "r")]
     #[serde(skip_serializing_if = "is_zero_addr_opt")]
     #[serde(default)]
-    pub reserve: Option<Address>,
+    pub reserve: Option<Account>,
 
     #[serde(rename = "f")]
     #[serde(skip_serializing_if = "is_zero_addr_opt")]
     #[serde(default)]
-    pub freeze: Option<Address>,
+    pub freeze: Option<Account>,
 
     #[serde(rename = "c")]
     #[serde(skip_serializing_if = "is_zero_addr_opt")]
     #[serde(default)]
-    pub clawback: Option<Address>,
+    pub clawback: Option<Account>,
 }
 
 /// Represents an asset configuration transaction that creates, reconfigures, or destroys assets.
@@ -164,7 +164,7 @@ pub struct AssetConfigTransactionFields {
     ///
     /// If not set or set to the Zero address the asset becomes permanently immutable.
     #[builder(default)]
-    pub manager: Option<Address>,
+    pub manager: Option<Account>,
 
     /// The address of the optional account that holds the reserve (uncirculated supply) units of the asset.
     ///
@@ -178,7 +178,7 @@ pub struct AssetConfigTransactionFields {
     ///
     /// If not set or set to the Zero address the field is permanently empty.
     #[builder(default)]
-    pub reserve: Option<Address>,
+    pub reserve: Option<Account>,
 
     /// The address of the optional account that can be used to freeze or unfreeze holdings of this asset for any account.
     ///
@@ -186,7 +186,7 @@ pub struct AssetConfigTransactionFields {
     ///
     /// If not set or set to the Zero address the field is permanently empty.
     #[builder(default)]
-    pub freeze: Option<Address>,
+    pub freeze: Option<Account>,
 
     /// The address of the optional account that can clawback holdings of this asset from any account.
     ///
@@ -196,7 +196,7 @@ pub struct AssetConfigTransactionFields {
     ///
     /// If not set or set to the Zero address the field is permanently empty.
     #[builder(default)]
-    pub clawback: Option<Address>,
+    pub clawback: Option<Account>,
 }
 
 #[serde_as]
@@ -481,9 +481,9 @@ impl Validate for AssetConfigTransactionFields {
 mod tests {
     use super::*;
     use crate::test_utils::TransactionHeaderMother;
-    use crate::Address;
+    use crate::Account;
 
-    fn create_test_address() -> Address {
+    fn create_test_address() -> Account {
         // Use a valid Algorand address for testing
         "JB3K6HTAXODO4THESLNYTSG6GQUFNEVIQG7A6ZYVDACR6WA3ZF52TKU5NA"
             .parse()

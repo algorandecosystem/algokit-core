@@ -4,7 +4,7 @@ mod key_registration;
 
 use crate::{
     transactions::{AssetTransferTransactionBuilder, PaymentTransactionBuilder},
-    Address, AlgorandMsgpack, Byte32, SignedTransaction, Transaction, TransactionHeaderBuilder,
+    Account, AlgorandMsgpack, Byte32, SignedTransaction, Transaction, TransactionHeaderBuilder,
     TransactionId, ALGORAND_PUBLIC_KEY_BYTE_LENGTH, HASH_BYTES_LENGTH,
 };
 use base64::{prelude::BASE64_STANDARD, Engine};
@@ -162,29 +162,29 @@ impl TransactionMother {
 
 pub struct AddressMother {}
 impl AddressMother {
-    pub fn zero_address() -> Address {
-        Address::from_pubkey(&[0; ALGORAND_PUBLIC_KEY_BYTE_LENGTH])
+    pub fn zero_address() -> Account {
+        Account::from_pubkey(&[0; ALGORAND_PUBLIC_KEY_BYTE_LENGTH])
     }
 
-    pub fn address() -> Address {
+    pub fn address() -> Account {
         "RIMARGKZU46OZ77OLPDHHPUJ7YBSHRTCYMQUC64KZCCMESQAFQMYU6SL2Q"
             .parse()
             .unwrap()
     }
 
-    pub fn neil() -> Address {
+    pub fn neil() -> Account {
         "JB3K6HTAXODO4THESLNYTSG6GQUFNEVIQG7A6ZYVDACR6WA3ZF52TKU5NA"
             .parse()
             .unwrap()
     }
 
-    pub fn nfd_testnet() -> Address {
+    pub fn nfd_testnet() -> Account {
         "3Y62HTJ4WYSIEKC74XE3F2JFCS7774EN3CYNUHQCEFIN7QBYFAWLKE5MFY"
             .parse()
             .unwrap()
     }
 
-    pub fn example() -> Address {
+    pub fn example() -> Account {
         "ALGOC4J2BCZ33TCKSSAMV5GAXQBMV3HDCHDBSPRBZRNSR7BM2FFDZRFGXA"
             .parse()
             .unwrap()
@@ -270,7 +270,7 @@ pub struct TransactionTestData {
     pub unsigned_bytes: Vec<u8>,
     pub signing_private_key: Byte32,
     pub signed_bytes: Vec<u8>,
-    pub rekeyed_sender_auth_address: Address,
+    pub rekeyed_sender_auth_address: Account,
     pub rekeyed_sender_signed_bytes: Vec<u8>,
 }
 
@@ -290,7 +290,7 @@ impl TransactionTestData {
         let signed_bytes = signed_txn.encode().unwrap();
 
         let rekeyed_sender_auth_address =
-            Address::from_str("BKDYDIDVSZCP75JVCB76P3WBJRY6HWAIFDSEOKYHJY5WMNJ2UWJ65MYETU")
+            Account::from_str("BKDYDIDVSZCP75JVCB76P3WBJRY6HWAIFDSEOKYHJY5WMNJ2UWJ65MYETU")
                 .unwrap();
         let signer_signed_txn = SignedTransaction {
             transaction: transaction.clone(),

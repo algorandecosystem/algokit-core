@@ -1,4 +1,4 @@
-use crate::address::Address;
+use crate::account::Account;
 use crate::constants::{
     Byte32, ALGORAND_CHECKSUM_BYTE_LENGTH, ALGORAND_PUBLIC_KEY_BYTE_LENGTH, HASH_BYTES_LENGTH,
 };
@@ -51,11 +51,11 @@ where
     n.as_ref().is_none_or(is_zero)
 }
 
-pub fn is_zero_addr(addr: &Address) -> bool {
+pub fn is_zero_addr(addr: &Account) -> bool {
     addr.pub_key == [0u8; ALGORAND_PUBLIC_KEY_BYTE_LENGTH]
 }
 
-pub fn is_zero_addr_opt(addr: &Option<Address>) -> bool {
+pub fn is_zero_addr_opt(addr: &Option<Account>) -> bool {
     addr.as_ref().is_none_or(is_zero_addr)
 }
 

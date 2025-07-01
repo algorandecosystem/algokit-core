@@ -3,7 +3,7 @@
 //! This module provides functionality for creating and managing payment transactions,
 //! which are used to transfer ALGO between accounts.
 
-use crate::address::Address;
+use crate::account::Account;
 use crate::transactions::common::TransactionHeader;
 use crate::utils::{is_zero, is_zero_addr, is_zero_addr_opt};
 use crate::Transaction;
@@ -29,7 +29,7 @@ pub struct PaymentTransactionFields {
     #[serde(rename = "rcv")]
     #[serde(skip_serializing_if = "is_zero_addr")]
     #[serde(default)]
-    pub receiver: Address,
+    pub receiver: Account,
 
     /// The amount of microALGO to send.
     ///
@@ -48,7 +48,7 @@ pub struct PaymentTransactionFields {
     #[serde(skip_serializing_if = "is_zero_addr_opt")]
     #[serde(default)]
     #[builder(default)]
-    pub close_remainder_to: Option<Address>,
+    pub close_remainder_to: Option<Account>,
 }
 
 impl PaymentTransactionBuilder {
