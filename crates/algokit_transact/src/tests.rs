@@ -3,7 +3,7 @@ use crate::{
         ALGORAND_SIGNATURE_BYTE_LENGTH, ALGORAND_SIGNATURE_ENCODING_INCR, MAX_TX_GROUP_SIZE,
     },
     test_utils::{
-        AddressMother, TransactionGroupMother, TransactionHeaderMother, TransactionMother,
+        AccountMother, TransactionGroupMother, TransactionHeaderMother, TransactionMother,
     },
     transactions::FeeParams,
     Account, AlgorandMsgpack, EstimateTransactionSize, SignedTransaction, Transaction,
@@ -102,7 +102,7 @@ fn test_asset_opt_in_transaction_encoding() {
 fn test_payment_signed_transaction_encoding() {
     let payment_tx = TransactionMother::simple_payment().build().unwrap();
     check_signed_transaction_encoding(&payment_tx, 247, None);
-    check_signed_transaction_encoding(&payment_tx, 286, Some(AddressMother::address().clone()));
+    check_signed_transaction_encoding(&payment_tx, 286, Some(AccountMother::account().clone()));
 }
 
 #[test]
@@ -112,7 +112,7 @@ fn test_asset_transfer_signed_transaction_encoding() {
     check_signed_transaction_encoding(
         &asset_transfer_tx,
         298,
-        Some(AddressMother::address().clone()),
+        Some(AccountMother::account().clone()),
     );
 }
 
@@ -123,13 +123,13 @@ fn test_asset_opt_in_signed_transaction_encoding() {
     check_signed_transaction_encoding(
         &asset_opt_in_tx,
         290,
-        Some(AddressMother::address().clone()),
+        Some(AccountMother::account().clone()),
     );
 }
 
 #[test]
 fn test_zero_address() {
-    let addr = AddressMother::zero_address();
+    let addr = AccountMother::zero_address();
     assert_eq!(
         addr.to_string(),
         "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ"
@@ -141,7 +141,7 @@ fn test_zero_address() {
 
 #[test]
 fn test_address() {
-    let addr = AddressMother::address();
+    let addr = AccountMother::account();
     assert_eq!(
         addr.to_string(),
         "RIMARGKZU46OZ77OLPDHHPUJ7YBSHRTCYMQUC64KZCCMESQAFQMYU6SL2Q"
