@@ -2,7 +2,7 @@
 name = "algod_client"
 version = "0.0.1"
 authors = ["AlgoKit Core Team"]
-description = "API endpoint for algod operations."
+description = "API client for algod interaction."
 license = "MIT"
 edition = "2024"
 

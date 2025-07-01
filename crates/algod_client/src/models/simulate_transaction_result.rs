@@ -26,13 +26,13 @@ pub struct SimulateTransactionResult {
         rename = "app-budget-consumed",
         skip_serializing_if = "Option::is_none"
     )]
-    pub app_budget_consumed: Option<u64>,
+    pub app_budget_consumed: Option<u32>,
     /// Budget used during execution of a logic sig transaction.
     #[serde(
         rename = "logic-sig-budget-consumed",
         skip_serializing_if = "Option::is_none"
     )]
-    pub logic_sig_budget_consumed: Option<u64>,
+    pub logic_sig_budget_consumed: Option<u32>,
     #[serde(rename = "exec-trace", skip_serializing_if = "Option::is_none")]
     pub exec_trace: Option<SimulationTransactionExecTrace>,
     #[serde(

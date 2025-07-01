@@ -409,6 +409,7 @@ class RustCodeGenerator:
         spec: ParsedSpec,
         output_dir: Path,
         package_name: str = "api_client",
+        custom_description: str | None = None,
     ) -> dict[Path, str]:
         """Generate complete Rust client from OpenAPI spec."""
         output_dir = Path(output_dir)
@@ -418,6 +419,7 @@ class RustCodeGenerator:
             "operations": spec.operations,
             "schemas": spec.schemas,
             "content_types": spec.content_types,
+            "custom_description": custom_description,
         }
 
         files = {}

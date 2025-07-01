@@ -103,7 +103,7 @@ fn execute_command(command: &Commands) -> Result<()> {
         Commands::GenerateAlgod => {
             // Generate the client
             run(
-                "uv run python -m rust_oas_generator.cli ../specs/algod.oas3.json --output ../../crates/algod_client/ --package-name algod_client",
+                "uv run python -m rust_oas_generator.cli ../specs/algod.oas3.json --output ../../crates/algod_client/ --package-name algod_client --description \"API client for algod interaction.\"",
                 Some(Path::new("api/oas_generator")),
                 None,
             )?;

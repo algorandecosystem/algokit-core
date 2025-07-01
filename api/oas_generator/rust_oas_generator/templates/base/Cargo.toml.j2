@@ -2,7 +2,7 @@
 name = "{{ package_name | snake_case }}"
 version = "{{ spec.info.version | ensure_semver }}"
 authors = ["AlgoKit Core Team"]
-description = "{{ spec.info.description or spec.info.title }}"
+description = "{{ custom_description or spec.info.description or spec.info.title }}"
 license = "MIT"
 edition = "2024"
 

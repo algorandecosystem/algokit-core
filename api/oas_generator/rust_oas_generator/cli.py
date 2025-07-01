@@ -68,6 +68,12 @@ Examples:
         action="store_true",
         help="Enable verbose output",
     )
+    parser.add_argument(
+        "--description",
+        "-d",
+        help="Custom description for the generated package (overrides spec description)",
+        dest="custom_description",
+    )
 
     parsed_args = parser.parse_args(args)
 
@@ -128,6 +134,7 @@ def generate_rust_client_from_spec(
     output_dir: Path,
     package_name: str,
     verbose: bool,
+    custom_description: str | None = None,
 ) -> dict[Path, str]:
     """Generate Rust client from OpenAPI specification file."""
     # Parse OpenAPI specification
@@ -146,6 +153,7 @@ def generate_rust_client_from_spec(
         parsed_spec,
         output_dir,
         package_name,
+        custom_description=custom_description,
     )
 
 
@@ -160,6 +168,7 @@ def main(args: list[str] | None = None) -> int:
                 output_dir=parsed_args.output_dir,
                 package_name=parsed_args.package_name,
                 verbose=parsed_args.verbose,
+                custom_description=parsed_args.custom_description,
             )
 
             # Write files to disk

@@ -45,11 +45,53 @@ _OPENAPI_TYPE_MAPPING: Final = {
     },
 }
 
+# Constants for integer type selection
+_U32_MAX_VALUE: Final = 4294967295  # Value of u32::MAX
+_SMALL_INTEGER_MAX: Final = 100  # Threshold for small bounded integers
+_ENUM_KEYWORDS: Final = frozenset(
+    ["value `1`", "value `2`", "value 1", "value 2", "refers to", "type.", "action.", "enum"]
+)
+
 # HTTP methods supported by OpenAPI
 _HTTP_METHODS: Final = frozenset({"get", "post", "put", "delete", "patch", "head", "options"})
 
 # Content types that indicate msgpack support
 _MSGPACK_CONTENT_TYPES: Final = frozenset({"application/msgpack", "application/x-binary"})
+
+
+def _select_integer_rust_type(schema: dict[str, Any]) -> str:
+    """Select appropriate Rust integer type based on schema constraints.
+
+    Args:
+        schema: OpenAPI schema dictionary for an integer type.
+
+    Returns:
+        Rust type string: either "u32" or "u64".
+    """
+    # Check if explicit format is provided
+    schema_format = schema.get("format")
+    if schema_format:
+        return _get_openapi_type_mapping("integer", schema_format)
+
+    # Auto-detect u32 vs u64 based on constraints
+    maximum = schema.get("maximum")
+    minimum = schema.get("minimum")
+
+    # Use u32 if maximum is within u32 range
+    if maximum is not None and maximum <= _U32_MAX_VALUE:
+        return "u32"
+
+    # Use u32 for small bounded integers (common patterns)
+    if minimum is not None and minimum >= 0 and maximum is not None and maximum <= _SMALL_INTEGER_MAX:
+        return "u32"
+
+    # Use u32 for enum-like descriptions (type discriminators)
+    description = schema.get("description", "").lower()
+    if any(keyword in description for keyword in _ENUM_KEYWORDS):
+        return "u32"
+
+    # Default to u64 for potentially large blockchain values
+    return "u64"
 
 
 def _extract_ref_name(ref_string: str) -> str:
@@ -116,7 +158,6 @@ def rust_type_from_openapi(
         return rust_pascal_case(ref_name)
 
     schema_type = schema.get("type", "string")
-    schema_format = schema.get("format")
 
     # Handle array types
     if schema_type == "array":
@@ -124,7 +165,12 @@ def rust_type_from_openapi(
         items_type = rust_type_from_openapi(items_schema, schemas, visited)
         return f"Vec<{items_type}>"
 
+    # Smart integer type selection for non-bigint fields
+    if schema_type == "integer" and not schema.get("x-algokit-bigint"):
+        return _select_integer_rust_type(schema)
+
     # Handle primitive types
+    schema_format = schema.get("format")
     return _get_openapi_type_mapping(schema_type, schema_format)
 
 
@@ -359,8 +405,8 @@ class Schema:
     def __post_init__(self) -> None:
         # Keep the original struct name without renaming
         self.rust_struct_name = rust_pascal_case(self.name)
-        # Use model_ prefix for file name only when there's a conflict (like Box)
-        self.rust_file_name = f"model_{self.name.lower()}" if self.name == "Box" else rust_snake_case(self.name)
+        # Use _model suffix for file name only when there's a conflict (like Box)
+        self.rust_file_name = f"{self.name.lower()}_model" if self.name == "Box" else rust_snake_case(self.name)
         self.has_msgpack_fields = any(prop.is_base64_encoded for prop in self.properties)
         self.has_required_fields = len(self.required_fields) > 0
         self.has_signed_transaction_fields = any(prop.is_signed_transaction for prop in self.properties)

@@ -70,7 +70,7 @@ templates/
 | OpenAPI Type | Rust Type |
 |--------------|-----------|
 | `string` | `String` |
-| `integer` | `u64` |
+| `integer` | `u32` or `u64` |
 | `number` | `f32`/`f64` |
 | `boolean` | `bool` |
 | `array` | `Vec<T>` |
@@ -81,7 +81,13 @@ templates/
 - **References**: `#/components/schemas/Model` → `Model`
 - **Msgpack Fields**: Base64-encoded properties → `Vec<u8>`
 - **Keywords**: Rust reserved words escaped with `r#` prefix
-- **Integers**: Default to `u64` (unsigned) since blockchain values (amounts, rounds, IDs) are inherently non-negative and can be very large
+- **Integers**: Type selection based on:
+  - `u64` for fields marked with `x-algokit-bigint: true`
+  - `u32` for fields with `format: "int32"`
+  - `u32` for fields with `maximum ≤ 4,294,967,295`
+  - `u32` for small bounded fields (e.g., `maximum ≤ 100`)
+  - `u32` for enum-like fields (descriptions containing "value `1`", "type.", etc.)
+  - `u64` as default for potentially large blockchain values
 - **x-algokit-bigint**: Fields marked with this extension explicitly use `u64` for 64-bit precision
 
 ## Msgpack Integration
