@@ -1,35 +1,34 @@
-name: Algod Client Tests
+name: Rust Tests
 
 on:
   push:
     branches:
       - main
     paths:
-      - "crates/algod_client/**"
-      - "crates/algod_client_tests/**"
-      - "crates/algokit_http_client/**"
-      - "crates/algokit_transact/**"
-      - ".github/workflows/algod_client_tests.yml"
+      - "crates/**"
+      - ".github/workflows/rust_tests.yml"
   pull_request:
     branches:
       - main
     paths:
-      - "crates/algod_client/**"
-      - "crates/algod_client_tests/**"
-      - "crates/algokit_http_client/**"
-      - "crates/algokit_transact/**"
-      - ".github/workflows/algod_client_tests.yml"
+      - "crates/**"
+      - ".github/workflows/rust_tests.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  algod_client_tests:
+  rust_tests:
     runs-on: ubuntu-latest
     defaults:
       run:
         shell: bash
+    env:
+      # Enable verbose logging for debugging localnet and test issues
+      RUST_LOG: debug
+      # Ensure output is not buffered for immediate feedback
+      RUST_BACKTRACE: 1
     steps:
       - uses: actions/checkout@v4
         with:
@@ -53,11 +52,8 @@ jobs:
           algokit --version
           which algokit
 
-      - name: Build algod_client
-        run: cargo build -p algod_client
+      - name: Build all crates
+        run: cargo build --workspace
 
-      - name: Build algod_client_tests
-        run: cargo build -p algod_client_tests
-
-      - name: Run algod_client integration tests
-        run: cargo test -p algod_client_tests --verbose
+      - name: Run all Rust tests with verbose output
+        run: cargo test --workspace --verbose -- --nocapture

@@ -130,22 +130,20 @@ impl ClientManager {
         };
 
         let http_client = match &config.token {
-            Some(TokenHeader::String(token)) => Arc::new(DefaultHttpClient::with_header(
-                &base_url,
-                "X-Algo-API-Token",
-                token,
-            )),
+            Some(TokenHeader::String(token)) => Arc::new(
+                DefaultHttpClient::with_header(&base_url, "X-Algo-API-Token", token)
+                    .expect("Failed to create HTTP client with token header"),
+            ),
             Some(TokenHeader::Headers(headers)) => {
                 let (header_name, header_value) = headers
                     .iter()
                     .next()
                     .map(|(k, v)| (k.as_str(), v.as_str()))
                     .unwrap_or(("X-Algo-API-Token", ""));
-                Arc::new(DefaultHttpClient::with_header(
-                    &base_url,
-                    header_name,
-                    header_value,
-                ))
+                Arc::new(
+                    DefaultHttpClient::with_header(&base_url, header_name, header_value)
+                        .expect("Failed to create HTTP client with custom header"),
+                )
             }
             None => Arc::new(DefaultHttpClient::new(&base_url)),
         };

@@ -1,8 +1,9 @@
 use algod_client::apis::Format;
-use algod_client_tests::{
-    LocalnetManager, NetworkType, TestAccountConfig, TestAccountManager, get_algod_client,
-};
 use algokit_transact::{PaymentTransactionBuilder, Transaction, TransactionHeaderBuilder};
+use algokit_utils::{
+    ClientManager,
+    testing::{LocalnetManager, NetworkType, TestAccountConfig, TestAccountManager},
+};
 use std::convert::TryInto;
 
 #[tokio::test]
@@ -11,8 +12,12 @@ async fn test_pending_transaction_broadcast() {
         .await
         .expect("Failed to start localnet");
 
+    // Create algod client using ClientManager
+    let config = ClientManager::get_config_from_environment_or_localnet();
+    let algod_client = ClientManager::get_algod_client(&config.algod_config);
+
     // Create account manager and generate test accounts
-    let mut account_manager = TestAccountManager::new(get_algod_client());
+    let mut account_manager = TestAccountManager::new(algod_client.clone());
 
     let sender_config = TestAccountConfig {
         initial_funds: 10_000_000, // 10 ALGO
@@ -42,7 +47,7 @@ async fn test_pending_transaction_broadcast() {
     let receiver_addr = receiver.address().expect("Failed to get receiver address");
 
     // Get transaction parameters
-    let params = get_algod_client()
+    let params = algod_client
         .transaction_params()
         .await
         .expect("Failed to get transaction params");
@@ -78,7 +83,7 @@ async fn test_pending_transaction_broadcast() {
         .sign_transaction(&transaction)
         .expect("Failed to sign transaction");
 
-    let response = get_algod_client()
+    let response = algod_client
         .raw_transaction(signed_bytes)
         .await
         .expect("Failed to broadcast transaction");
@@ -88,7 +93,7 @@ async fn test_pending_transaction_broadcast() {
         "Response should contain a transaction ID"
     );
 
-    let pending_transaction = get_algod_client()
+    let pending_transaction = algod_client
         .pending_transaction_information(&response.tx_id, Some(Format::Msgpack))
         .await
         .expect("Failed to get pending transaction information");

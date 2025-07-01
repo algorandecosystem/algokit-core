@@ -1,9 +1,16 @@
 use algokit_utils::testing::*;
 use algokit_utils::{CommonParams, PaymentParams};
 
+use crate::common::init_test_logging;
+
 #[tokio::test]
 async fn test_basic_payment_transaction() {
-    // ARRANGE - Create fixture and new scope
+    init_test_logging();
+
+    LocalnetManager::ensure_running()
+        .await
+        .expect("Failed to start localnet");
+
     let mut fixture = algorand_fixture().await.expect("Failed to create fixture");
 
     fixture
@@ -42,7 +49,6 @@ async fn test_basic_payment_transaction() {
     let result = composer.send().await.expect("Failed to send payment");
     let transaction = result.txn.transaction;
 
-    // ASSERT - Verify transaction is a payment with amount 500_000
     match transaction {
         algokit_transact::Transaction::Payment(payment_fields) => {
             assert_eq!(
@@ -52,6 +58,4 @@ async fn test_basic_payment_transaction() {
         }
         _ => panic!("Transaction should be a payment transaction"),
     }
-
-    println!("✓ Basic payment test completed successfully");
 }

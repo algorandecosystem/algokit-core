@@ -5,7 +5,7 @@ pub mod testing;
 
 use algod_client::{
     AlgodClient,
-    apis::Error as AlgodError,
+    apis::{Error as AlgodError, Format},
     models::{PendingTransactionResponse, TransactionParams},
 };
 use algokit_transact::{
@@ -331,9 +331,9 @@ impl Composer {
         let mut current_round = start_round;
 
         while current_round < start_round + max_rounds {
-            let _ = match self
+            match self
                 .algod_client
-                .pending_transaction_information(tx_id, Some("msgpack"))
+                .pending_transaction_information(tx_id, Some(Format::Msgpack))
                 .await
             {
                 Ok(response) => {
@@ -344,16 +344,13 @@ impl Composer {
                 }
                 Err(_) => {
                     // TODO: only trigger this if the error is URLTokenBaseHTTPError
-                    current_round = current_round + 1;
+                    current_round += 1;
                     continue;
                 }
             };
 
-            let _ = self
-                .algod_client
-                .wait_for_block(current_round.try_into().expect("Failed to convert"))
-                .await;
-            current_round = current_round + 1;
+            let _ = self.algod_client.wait_for_block(current_round).await;
+            current_round += 1;
         }
 
         Err(format!(
@@ -370,7 +367,7 @@ impl Composer {
             .await
             .map_err(|e| format!("Failed to build transaction: {}", e))?;
 
-        let transactions = self.built_group().ok_or_else(|| "No transactions built")?;
+        let transactions = self.built_group().ok_or("No transactions built")?;
 
         if transactions.is_empty() {
             return Err("No transactions to send".into());
@@ -381,10 +378,7 @@ impl Composer {
             .map_err(|e| format!("Failed to sign transaction: {}", e))?;
 
         // Encode each signed transaction and concatenate them
-        let signed_transactions = self
-            .signed_group
-            .as_ref()
-            .ok_or_else(|| "No signed transactions")?;
+        let signed_transactions = self.signed_group.as_ref().ok_or("No signed transactions")?;
         let mut encoded_bytes = Vec::new();
 
         for signed_txn in signed_transactions {

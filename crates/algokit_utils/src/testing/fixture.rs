@@ -1,10 +1,47 @@
 use std::sync::Arc;
 
+use super::account_helpers::{NetworkType, TestAccount, TestAccountConfig, TestAccountManager};
 use crate::{AlgoConfig, ClientManager, Composer, TxnSigner, TxnSignerGetter};
 use algod_client::AlgodClient;
-use algod_client_tests::{NetworkType, TestAccount, TestAccountConfig, TestAccountManager};
-use algokit_transact::{Address, SignedTransaction, Transaction};
+use algokit_transact::{Address, AlgorandMsgpack, SignedTransaction, Transaction};
 use async_trait::async_trait;
+
+// Implement TxnSigner for TestAccount directly, eliminating the need for TestAccountSigner wrapper
+#[async_trait]
+impl TxnSigner for TestAccount {
+    async fn sign_txns(&self, txns: &[Transaction], indices: &[usize]) -> Vec<SignedTransaction> {
+        indices
+            .iter()
+            .map(|&idx| {
+                if idx < txns.len() {
+                    // Use the TestAccount's sign_transaction method to get signed bytes
+                    let signed_bytes = self
+                        .sign_transaction(&txns[idx])
+                        .expect("Failed to sign transaction");
+
+                    // Decode the signed bytes back to SignedTransaction
+                    SignedTransaction::decode(&signed_bytes)
+                        .expect("Failed to decode signed transaction")
+                } else {
+                    panic!("Index out of bounds for transactions");
+                }
+            })
+            .collect()
+    }
+}
+
+// Implement TxnSignerGetter for TestAccount as well
+#[async_trait]
+impl TxnSignerGetter for TestAccount {
+    async fn get_signer(&self, address: Address) -> Option<&dyn TxnSigner> {
+        let test_account_address = self.address().expect("Failed to get test account address");
+        if address == test_account_address {
+            Some(self)
+        } else {
+            None
+        }
+    }
+}
 
 pub struct AlgorandFixture {
     config: AlgoConfig,
@@ -26,62 +63,6 @@ pub struct TransactionResult {
     pub transaction: Transaction,
     pub tx_id: String,
     pub signed_bytes: Vec<u8>,
-}
-
-// TODO: We will need to implement account signer to replace this struct
-// It is only here initially to get the tests working
-#[derive(Clone)]
-pub struct TestAccountSigner {
-    pub test_account: TestAccount,
-}
-
-impl TestAccountSigner {
-    fn sign_single_transaction(&self, transaction: &Transaction) -> SignedTransaction {
-        // For now, let's just use the sign_transaction method and decode the result
-        // This is not the most efficient, but it will work
-        let signed_bytes = self
-            .test_account
-            .sign_transaction(transaction)
-            .expect("Failed to sign transaction");
-
-        // The signed_bytes contain a full SignedTransaction encoded as msgpack
-        // We'll decode it to get the SignedTransaction
-        use algokit_transact::AlgorandMsgpack;
-        SignedTransaction::decode(&signed_bytes).expect("Failed to decode signed transaction")
-    }
-}
-
-#[async_trait]
-impl TxnSigner for TestAccountSigner {
-    async fn sign_txns(&self, txns: &[Transaction], indices: &[usize]) -> Vec<SignedTransaction> {
-        indices
-            .iter()
-            .map(|&idx| {
-                if idx < txns.len() {
-                    // We'll create a SignedTransaction that matches what TestAccount.sign_transaction does
-                    // but without encoding it to bytes
-                    self.sign_single_transaction(&txns[idx])
-                } else {
-                    panic!("Index out of bounds for transactions");
-                }
-            })
-            .collect()
-    }
-}
-
-#[async_trait]
-impl TxnSignerGetter for TestAccountSigner {
-    async fn get_signer(&self, address: Address) -> Option<&dyn TxnSigner> {
-        let test_account_address = self
-            .test_account
-            .address()
-            .expect("Failed to get test account address");
-        if address == test_account_address {
-            Some(self)
-        } else {
-            None
-        }
-    }
 }
 
 impl AlgorandFixture {
@@ -117,11 +98,8 @@ impl AlgorandFixture {
             .await
             .map_err(|e| format!("Failed to create test account: {}", e))?;
 
-        let signer = TestAccountSigner {
-            test_account: test_account.clone(),
-        };
-
-        let composer = Composer::new(algod.clone(), Some(Arc::new(signer)));
+        // Now TestAccount implements TxnSignerGetter directly, so we can use it without a wrapper
+        let composer = Composer::new(algod.clone(), Some(Arc::new(test_account.clone())));
 
         self.context = Some(AlgorandTestContext {
             algod,
@@ -140,7 +118,7 @@ impl AlgorandFixture {
         let context = self
             .context
             .as_mut()
-            .ok_or_else(|| "Context not initialized; call new_scope() first")?;
+            .ok_or("Context not initialized; call new_scope() first")?;
 
         let account = context
             .account_manager

@@ -12,7 +12,7 @@ use std::process::Command;
 use std::str::FromStr;
 use tokio::time::{Duration, sleep};
 
-use crate::mnemonic::{from_key, to_key};
+use super::mnemonic::{from_key, to_key};
 
 /// Test account configuration
 #[derive(Debug, Clone)]
