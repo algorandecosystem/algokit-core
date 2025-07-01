@@ -145,11 +145,13 @@ name = "algokit_utils"
 version = "0.1.0"
 dependencies = [
  "algod_client",
+ "algod_client_tests",
  "algokit_http_client",
  "algokit_transact",
  "async-trait",
  "base64 0.22.1",
  "derive_more",
+ "dotenvy",
  "reqwest",
  "thiserror 2.0.7",
  "tokio",
@@ -1157,6 +1159,12 @@ version = "0.1.0"
 dependencies = [
  "mdbook",
 ]
+
+[[package]]
+name = "dotenvy"
+version = "0.15.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1aaf95b3e5c8f23aa320147307562d361db0ae0d51242340f558153b4eb2439b"
 
 [[package]]
 name = "dtoa"

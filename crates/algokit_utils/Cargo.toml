@@ -12,6 +12,7 @@ default_http_client = [
 
 [dependencies]
 algod_client = { path = "../algod_client" }
+algod_client_tests = { path = "../algod_client_tests" }
 algokit_http_client = { version = "0.1.0", path = "../algokit_http_client", default-features = false }
 algokit_transact = { version = "0.1.0", path = "../algokit_transact", features = [
     "test_utils",
@@ -19,8 +20,10 @@ algokit_transact = { version = "0.1.0", path = "../algokit_transact", features =
 async-trait = { version = "0.1.88" }
 base64 = "0.22.1"
 derive_more = { version = "2.0.1", features = ["full"] }
+dotenvy = "0.15"
 reqwest = { version = "0.12.19", features = ["blocking"], optional = true }
 thiserror.workspace = true
+tokio = { version = "1.45.1", features = ["time"] }
 
 [dev-dependencies]
-tokio = { version = "1.45.1", features = ["full", "test-util"] }
+tokio = { version = "1.45.1", features = ["full", "test-util", "time"] }

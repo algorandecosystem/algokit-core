@@ -1,12 +1,33 @@
-use algod_client::{AlgodClient, apis::Error as AlgodError, models::TransactionParams};
+pub mod algorand_client;
+pub mod client_manager;
+pub mod network_client;
+pub mod testing;
+
+use algod_client::{
+    AlgodClient,
+    apis::Error as AlgodError,
+    models::{PendingTransactionResponse, TransactionParams},
+};
 use algokit_transact::{
-    Address, FeeParams, PaymentTransactionFields, SignedTransaction, Transaction,
+    Address, AlgorandMsgpack, FeeParams, PaymentTransactionFields, SignedTransaction, Transaction,
     TransactionHeader, Transactions,
 };
 use derive_more::Debug;
 use std::sync::Arc;
 
 use async_trait::async_trait;
+
+// Re-export testing utilities for convenience
+pub use testing::{
+    AlgorandFixture, AlgorandTestContext, algorand_fixture, algorand_fixture_with_config,
+};
+
+// Re-export network client types for convenience
+pub use algorand_client::AlgorandClient;
+pub use client_manager::ClientManager;
+pub use network_client::{
+    AlgoClientConfig, AlgoConfig, NetworkDetails, TokenHeader, genesis_id_is_localnet,
+};
 
 #[derive(Debug, thiserror::Error)]
 pub enum ComposerError {
@@ -38,7 +59,7 @@ pub struct CommonParams {
     pub last_valid_round: Option<u64>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PaymentParams {
     pub common_params: CommonParams,
     pub receiver: Address,
@@ -47,7 +68,7 @@ pub struct PaymentParams {
 }
 
 // TODO: TransactionWithSigner
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ComposerTxn {
     Transaction(Transaction),
     Payment(PaymentParams),
@@ -114,6 +135,7 @@ impl TxnSignerGetter for EmptySigner {
     }
 }
 
+#[derive(Clone)]
 pub struct Composer {
     transactions: Vec<ComposerTxn>,
     algod_client: AlgodClient,
@@ -194,9 +216,9 @@ impl Composer {
                 genesis_hash: Some(suggested_params.genesis_hash.try_into().map_err(|_e| {
                     ComposerError::DecodeError("Invalid genesis hash".to_string())
                 })?),
-                // The rest of these fields are set further down per txn
-                first_valid: 0,
-                last_valid: 0,
+                // Set validity window based on current round
+                first_valid: suggested_params.last_round,
+                last_valid: suggested_params.last_round + 1000, // Default validity window
                 sender: Address::default(),
                 rekey_to: None,
                 note: None,
@@ -233,14 +255,31 @@ impl Composer {
                     header.note = common_params.note;
                     header.lease = common_params.lease;
 
-                    transaction
-                        .assign_fee(FeeParams {
-                            fee_per_byte: suggested_params.fee,
-                            min_fee: suggested_params.min_fee,
-                            extra_fee: common_params.extra_fee,
-                            max_fee: common_params.max_fee,
-                        })
-                        .map_err(|e| ComposerError::TransactionError(e.to_string()))?;
+                    // Set validity window if provided in common params
+                    if let Some(first_valid) = common_params.first_valid_round {
+                        header.first_valid = first_valid;
+                    }
+                    if let Some(last_valid) = common_params.last_valid_round {
+                        header.last_valid = last_valid;
+                    } else if let Some(validity_window) = common_params.validity_window {
+                        header.last_valid = header.first_valid + validity_window;
+                    }
+
+                    // Handle static fee vs. calculated fee
+                    if let Some(static_fee) = common_params.static_fee {
+                        // Set static fee directly
+                        header.fee = Some(static_fee);
+                    } else {
+                        // Use the standard fee calculation
+                        transaction = transaction
+                            .assign_fee(FeeParams {
+                                fee_per_byte: suggested_params.fee,
+                                min_fee: suggested_params.min_fee,
+                                extra_fee: common_params.extra_fee,
+                                max_fee: common_params.max_fee,
+                            })
+                            .map_err(|e| ComposerError::TransactionError(e.to_string()))?;
+                    }
                 }
 
                 Ok(transaction)
@@ -276,7 +315,100 @@ impl Composer {
 
         Ok(self)
     }
+
+    pub async fn wait_for_confirmation(
+        &self,
+        tx_id: &str,
+        max_rounds: u64,
+    ) -> Result<PendingTransactionResponse, Box<dyn std::error::Error + Send + Sync>> {
+        let status = self
+            .algod_client
+            .get_status()
+            .await
+            .map_err(|e| format!("Failed to get status: {:?}", e))?;
+
+        let start_round = status.last_round + 1;
+        let mut current_round = start_round;
+
+        while current_round < start_round + max_rounds {
+            let _ = match self
+                .algod_client
+                .pending_transaction_information(tx_id, Some("msgpack"))
+                .await
+            {
+                Ok(response) => {
+                    // TODO: handle pool error
+                    if response.confirmed_round.is_some() {
+                        return Ok(response);
+                    }
+                }
+                Err(_) => {
+                    // TODO: only trigger this if the error is URLTokenBaseHTTPError
+                    current_round = current_round + 1;
+                    continue;
+                }
+            };
+
+            let _ = self
+                .algod_client
+                .wait_for_block(current_round.try_into().expect("Failed to convert"))
+                .await;
+            current_round = current_round + 1;
+        }
+
+        Err(format!(
+            "Transaction {} not confirmed after {} rounds",
+            tx_id, max_rounds
+        )
+        .into())
+    }
+
+    pub async fn send(
+        &mut self,
+    ) -> Result<PendingTransactionResponse, Box<dyn std::error::Error + Send + Sync>> {
+        self.build()
+            .await
+            .map_err(|e| format!("Failed to build transaction: {}", e))?;
+
+        let transactions = self.built_group().ok_or_else(|| "No transactions built")?;
+
+        if transactions.is_empty() {
+            return Err("No transactions to send".into());
+        }
+
+        self.gather_signatures()
+            .await
+            .map_err(|e| format!("Failed to sign transaction: {}", e))?;
+
+        // Encode each signed transaction and concatenate them
+        let signed_transactions = self
+            .signed_group
+            .as_ref()
+            .ok_or_else(|| "No signed transactions")?;
+        let mut encoded_bytes = Vec::new();
+
+        for signed_txn in signed_transactions {
+            let encoded_txn = signed_txn
+                .encode()
+                .map_err(|e| format!("Failed to encode signed transaction: {}", e))?;
+            encoded_bytes.extend_from_slice(&encoded_txn);
+        }
+
+        let raw_transaction = self
+            .algod_client
+            .raw_transaction(encoded_bytes)
+            .await
+            .map_err(|e| format!("Failed to submit transaction: {:?}", e))?;
+
+        let pending_transaction_response = self
+            .wait_for_confirmation(&raw_transaction.tx_id, 5)
+            .await
+            .map_err(|e| format!("Failed to confirm transaction: {}", e))?;
+
+        Ok(pending_transaction_response)
+    }
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;
