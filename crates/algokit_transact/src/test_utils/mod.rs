@@ -4,8 +4,8 @@ mod key_registration;
 
 use crate::{
     transactions::{AssetTransferTransactionBuilder, PaymentTransactionBuilder},
-    Account, AlgorandMsgpack, Byte32, SignedTransaction, Transaction, TransactionHeaderBuilder,
-    TransactionId, ALGORAND_PUBLIC_KEY_BYTE_LENGTH, HASH_BYTES_LENGTH,
+    Account, AlgorandMsgpack, Byte32, MultisigAccount, SignedTransaction, Transaction,
+    TransactionHeaderBuilder, TransactionId, ALGORAND_PUBLIC_KEY_BYTE_LENGTH, HASH_BYTES_LENGTH,
 };
 use base64::{prelude::BASE64_STANDARD, Engine};
 use convert_case::{Case, Casing};
@@ -188,6 +188,14 @@ impl AccountMother {
         "ALGOC4J2BCZ33TCKSSAMV5GAXQBMV3HDCHDBSPRBZRNSR7BM2FFDZRFGXA"
             .parse()
             .unwrap()
+    }
+
+    pub fn msig() -> MultisigAccount {
+        MultisigAccount {
+            version: 1,
+            threshold: 2,
+            addrs: vec![Self::account().into(), Self::example().into()],
+        }
     }
 }
 

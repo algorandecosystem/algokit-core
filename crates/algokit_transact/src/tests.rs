@@ -140,7 +140,7 @@ fn test_zero_address() {
 }
 
 #[test]
-fn test_address() {
+fn test_account() {
     let addr = AccountMother::account();
     assert_eq!(
         addr.to_string(),
@@ -149,6 +149,18 @@ fn test_address() {
 
     let addr_from_str = addr.to_string().parse::<Account>().unwrap();
     assert_eq!(addr, addr_from_str);
+}
+
+#[test]
+fn test_msig_account() {
+    let msig = AccountMother::msig();
+    assert_eq!(
+        msig.to_string(),
+        "RIMARGKZU46OZ77OLPDHHPUJ7YBSHRTCYMQUC64KZCCMESQAFQMYU6SL2Q"
+    );
+
+    let msig_from_str = msig.to_string().parse::<Account>().unwrap();
+    assert_eq!(msig, msig_from_str);
 }
 
 #[test]

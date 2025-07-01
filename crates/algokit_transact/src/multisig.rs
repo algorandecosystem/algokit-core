@@ -5,6 +5,7 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, Bytes};
+use std::fmt::{Display, Formatter, Result as FmtResult};
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct MultisigAccount {
@@ -46,5 +47,11 @@ impl From<MultisigAccount> for Address {
             buffer.extend_from_slice(addr.as_bytes());
         }
         Address(hash(&buffer).to_vec())
+    }
+}
+
+impl Display for MultisigAccount {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        write!(f, "{}", Address::from(self.clone()).as_str())
     }
 }

@@ -6,7 +6,7 @@ pub struct AssetConfigTransactionMother {}
 impl AssetConfigTransactionMother {
     pub fn asset_create() -> AssetConfigTransactionBuilder {
         // mainnet - NXAHS2NA46DJHIULXYPJV2NOJSKKFFNFFXRZP35TA5IDCZNE2MUA
-        let sender: Account= "KPVZ66IFE7KHQ6623XHTPVS3IL7BXBE3HXQG35J65CVDA54VLRPP4SVOU4"
+        let sender: Account = "KPVZ66IFE7KHQ6623XHTPVS3IL7BXBE3HXQG35J65CVDA54VLRPP4SVOU4"
             .parse()
             .unwrap();
         let reserve: Account = "YQTVEPKB4O5F26H76L5I7BA6VGCMRC6P2QSWRKG4KVJLJ62MVYTDJPM6KE"

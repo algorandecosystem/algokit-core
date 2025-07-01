@@ -113,7 +113,6 @@ impl FromStr for Account {
     }
 }
 
-
 impl Display for Account {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         write!(f, "{}", Address::from(self.clone()).as_str())
