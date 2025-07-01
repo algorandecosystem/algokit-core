@@ -46,7 +46,9 @@ impl From<MultisigAccount> for Address {
         for addr in &msig.addrs {
             buffer.extend_from_slice(addr.as_bytes());
         }
-        Address(hash(&buffer).to_vec())
+        let digest = hash(&buffer);
+
+        Address { 0: digest }
     }
 }
 

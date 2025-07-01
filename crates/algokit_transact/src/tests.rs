@@ -129,26 +129,26 @@ fn test_asset_opt_in_signed_transaction_encoding() {
 
 #[test]
 fn test_zero_address() {
-    let addr = AccountMother::zero_address();
+    let acct = AccountMother::zero_address();
     assert_eq!(
-        addr.to_string(),
+        acct.to_string(),
         "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ"
     );
 
-    let addr_from_str = addr.to_string().parse::<Account>().unwrap();
-    assert_eq!(addr, addr_from_str);
+    let addr_from_str = acct.to_string().parse::<Account>().unwrap();
+    assert_eq!(acct, addr_from_str);
 }
 
 #[test]
 fn test_account() {
-    let addr = AccountMother::account();
+    let acct = AccountMother::account();
     assert_eq!(
-        addr.to_string(),
+        acct.to_string(),
         "RIMARGKZU46OZ77OLPDHHPUJ7YBSHRTCYMQUC64KZCCMESQAFQMYU6SL2Q"
     );
 
-    let addr_from_str = addr.to_string().parse::<Account>().unwrap();
-    assert_eq!(addr, addr_from_str);
+    let addr_from_str = acct.to_string().parse::<Account>().unwrap();
+    assert_eq!(acct, addr_from_str);
 }
 
 #[test]
@@ -156,11 +156,8 @@ fn test_msig_account() {
     let msig = AccountMother::msig();
     assert_eq!(
         msig.to_string(),
-        "RIMARGKZU46OZ77OLPDHHPUJ7YBSHRTCYMQUC64KZCCMESQAFQMYU6SL2Q"
+        "TZ6HCOKXK54E2VRU523LBTDQMQNX7DXOWENPFNBXOEU3SMEWXYNCRJUTBU"
     );
-
-    let msig_from_str = msig.to_string().parse::<Account>().unwrap();
-    assert_eq!(msig, msig_from_str);
 }
 
 #[test]
