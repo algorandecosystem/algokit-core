@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use algod_client::AlgodClient;
+
 #[derive(Debug, Clone)]
 pub enum TokenHeader {
     String(String),
@@ -159,7 +161,12 @@ pub fn genesis_id_is_localnet(genesis_id: &str) -> bool {
     genesis_id == "devnet-v1" || genesis_id == "sandnet-v1" || genesis_id == "dockernet-v1"
 }
 
-pub trait AlgoClients {
-    type AlgodClient;
-    fn algod(&self) -> &Self::AlgodClient;
+pub struct AlgoClients {
+    pub algod: AlgodClient,
+}
+
+impl AlgoClients {
+    pub fn algod(&self) -> &AlgodClient {
+        &self.algod
+    }
 }

@@ -8,26 +8,14 @@ use base64::{Engine, engine::general_purpose};
 use std::{env, sync::Arc};
 use tokio::sync::RwLock;
 
-pub struct AlgoClientsImpl {
-    pub algod: AlgodClient,
-}
-
-impl AlgoClients for AlgoClientsImpl {
-    type AlgodClient = AlgodClient;
-
-    fn algod(&self) -> &Self::AlgodClient {
-        &self.algod
-    }
-}
-
 pub struct ClientManager {
-    clients: AlgoClientsImpl,
+    clients: AlgoClients,
     cached_network_details: RwLock<Option<Arc<NetworkDetails>>>,
 }
 
 impl ClientManager {
     pub fn new(config: AlgoConfig) -> Self {
-        let clients = AlgoClientsImpl {
+        let clients = AlgoClients {
             algod: Self::get_algod_client(&config.algod_config),
         };
 
