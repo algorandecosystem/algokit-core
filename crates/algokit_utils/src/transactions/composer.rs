@@ -200,80 +200,62 @@ impl Composer {
             10 // Standard default validity window
         };
 
-        let default_header =
-            TransactionHeader {
-                fee: Some(suggested_params.fee),
-                genesis_id: Some(suggested_params.genesis_id),
-                genesis_hash: Some(suggested_params.genesis_hash.try_into().map_err(|_e| {
-                    ComposerError::DecodeError("Invalid genesis hash".to_string())
-                })?),
-                // Set validity window based on current round
-                first_valid: suggested_params.last_round,
-                last_valid: suggested_params.last_round + default_validity_window,
-                sender: Address::default(),
-                rekey_to: None,
-                note: None,
-                lease: None,
-                group: None,
-            };
-
         let txs = self
             .transactions
             .iter()
-            .map(|composer_txn| {
-                let already_formed_txn = matches!(composer_txn, ComposerTxn::Transaction(_));
+            .map(|tx| {
+                let common_params = tx.common_params();
 
-                let mut transaction: algokit_transact::Transaction = match composer_txn {
-                    ComposerTxn::Transaction(txn) => txn.clone(),
+                let first_valid = common_params
+                    .first_valid_round
+                    .unwrap_or(suggested_params.last_round);
+
+                let header: TransactionHeader = TransactionHeader {
+                    sender: common_params.sender.clone(),
+                    rekey_to: common_params.rekey_to.clone(),
+                    note: common_params.note.clone(),
+                    lease: common_params.lease,
+                    fee: common_params.static_fee,
+                    genesis_id: Some(suggested_params.genesis_id.clone()),
+                    genesis_hash: Some(suggested_params.genesis_hash.clone().try_into().map_err(
+                        |_e| ComposerError::DecodeError("Invalid genesis hash".to_string()),
+                    )?),
+                    first_valid,
+                    last_valid: common_params.last_valid_round.unwrap_or_else(|| {
+                        common_params
+                            .validity_window
+                            .map(|window| first_valid + window)
+                            .unwrap_or(first_valid + default_validity_window)
+                    }),
+                    group: None,
+                };
+                let mut calculate_fee = header.fee.is_none();
+
+                let mut transaction = match tx {
+                    ComposerTxn::Transaction(tx) => {
+                        calculate_fee = false;
+                        tx.clone()
+                    }
                     ComposerTxn::Payment(pay_params) => {
                         let pay_params = PaymentTransactionFields {
-                            header: default_header.clone(),
+                            header: header,
                             receiver: pay_params.receiver.clone(),
                             amount: pay_params.amount,
                             close_remainder_to: pay_params.close_remainder_to.clone(),
                         };
-
                         Transaction::Payment(pay_params)
                     }
                 };
 
-                if !already_formed_txn {
-                    let common_params = composer_txn.common_params();
-                    let header = transaction.header_mut();
-
-                    header.sender = common_params.sender;
-                    header.rekey_to = common_params.rekey_to;
-                    header.note = common_params.note;
-                    header.lease = common_params.lease;
-
-                    // Set validity window if provided in common params
-                    if let Some(first_valid) = common_params.first_valid_round {
-                        header.first_valid = first_valid;
-                    }
-                    if let Some(last_valid) = common_params.last_valid_round {
-                        header.last_valid = last_valid;
-                    } else if let Some(validity_window) = common_params.validity_window {
-                        header.last_valid = header.first_valid + validity_window;
-                    } else {
-                        // Use the smart default: 10 rounds normally, 1000 for LocalNet
-                        header.last_valid = header.first_valid + default_validity_window;
-                    }
-
-                    // Handle static fee vs. calculated fee
-                    if let Some(static_fee) = common_params.static_fee {
-                        // Set static fee directly
-                        header.fee = Some(static_fee);
-                    } else {
-                        // Use the standard fee calculation
-                        transaction = transaction
-                            .assign_fee(FeeParams {
-                                fee_per_byte: suggested_params.fee,
-                                min_fee: suggested_params.min_fee,
-                                extra_fee: common_params.extra_fee,
-                                max_fee: common_params.max_fee,
-                            })
-                            .map_err(|e| ComposerError::TransactionError(e.to_string()))?;
-                    }
+                if calculate_fee {
+                    transaction = transaction
+                        .assign_fee(FeeParams {
+                            fee_per_byte: suggested_params.fee,
+                            min_fee: suggested_params.min_fee,
+                            extra_fee: common_params.extra_fee,
+                            max_fee: common_params.max_fee,
+                        })
+                        .map_err(|e| ComposerError::TransactionError(e.to_string()))?;
                 }
 
                 Ok(transaction)
