@@ -88,7 +88,7 @@ impl FromStr for Address {
                 "Checksum is invalid".to_string(),
             ));
         }
-        Ok(Address { 0: pub_key })
+        Ok(Address(pub_key))
     }
 }
 

@@ -53,7 +53,7 @@ impl From<Address> for Account {
 impl From<Account> for Address {
     /// Converts an [`Account`] into an [`Address`] by wrapping its public key.
     fn from(account: Account) -> Address {
-        Address { 0: account.pub_key }
+        Address(account.pub_key)
     }
 }
 

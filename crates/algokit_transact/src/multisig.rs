@@ -76,7 +76,7 @@ impl From<MultisigAccount> for Address {
         }
         let digest = hash(&buffer);
 
-        Address { 0: digest }
+        Address(digest)
     }
 }
 
