@@ -21,6 +21,20 @@ const defaultReviver = (key: string, value: unknown) => {
     return BigInt(value);
   }
 
+  // Handle assetFreeze objects - ensure frozen field defaults to false if missing
+  // The Rust side uses #[serde(default)] on the frozen field, which means:
+  // 1. When serializing, false values may be omitted from JSON
+  // 2. When deserializing, missing values default to false
+  // The TypeScript WASM bindings expect the field to always be present,
+  // so we need to add it with the default value when missing from test data
+  if (key === "assetFreeze" && typeof value === "object" && value !== null) {
+    const assetFreeze = value as any;
+    if (assetFreeze.frozen === undefined) {
+      assetFreeze.frozen = false;  // Default value matching Rust #[serde(default)]
+    }
+    return assetFreeze;
+  }
+
   return value;
 };
 
@@ -50,7 +64,9 @@ export const testData =
       | "applicationCall"
       | "applicationCreate"
       | "applicationUpdate"
-      | "applicationDelete",
+      | "applicationDelete"
+      | "assetFreeze"
+      | "assetUnfreeze",
       TransactionTestData
     >
   >(jsonString);

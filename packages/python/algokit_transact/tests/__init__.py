@@ -9,6 +9,7 @@ from algokit_transact import (
     Transaction,
     AssetTransferTransactionFields,
     AssetConfigTransactionFields,
+    AssetFreezeTransactionFields,
     ApplicationCallTransactionFields,
     OnApplicationComplete,
     StateSchema,
@@ -35,6 +36,8 @@ class TestData:
     asset_create: TransactionTestData
     asset_destroy: TransactionTestData
     asset_reconfigure: TransactionTestData
+    asset_freeze: TransactionTestData
+    asset_unfreeze: TransactionTestData
     application_call: TransactionTestData
     application_create: TransactionTestData
     application_update: TransactionTestData
@@ -126,6 +129,11 @@ def create_transaction_test_data(test_data: dict[str, Any]) -> TransactionTestDa
             "type": TransactionType.ASSET_CONFIG,
             "field_name": "asset_config",
             "field_class": AssetConfigTransactionFields,
+        },
+        "AssetFreeze": {
+            "type": TransactionType.ASSET_FREEZE,
+            "field_name": "asset_freeze",
+            "field_class": AssetFreezeTransactionFields,
         },
         "ApplicationCall": {
             "type": TransactionType.APPLICATION_CALL,
