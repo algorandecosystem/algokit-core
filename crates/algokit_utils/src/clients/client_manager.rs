@@ -1,5 +1,5 @@
 use crate::clients::network_client::{
-    AlgoClientConfig, AlgoClients, AlgoConfig, AlgorandService, NetworkDetails, TokenHeader,
+    AlgoClientConfig, AlgoConfig, AlgorandService, NetworkDetails, TokenHeader,
     genesis_id_is_localnet,
 };
 use algod_client::AlgodClient;
@@ -9,24 +9,20 @@ use std::{env, sync::Arc};
 use tokio::sync::RwLock;
 
 pub struct ClientManager {
-    clients: AlgoClients,
+    algod: AlgodClient,
     cached_network_details: RwLock<Option<Arc<NetworkDetails>>>,
 }
 
 impl ClientManager {
     pub fn new(config: AlgoConfig) -> Self {
-        let clients = AlgoClients {
-            algod: Self::get_algod_client(&config.algod_config),
-        };
-
         Self {
-            clients,
+            algod: Self::get_algod_client(&config.algod_config),
             cached_network_details: RwLock::new(None),
         }
     }
 
     pub fn algod(&self) -> &AlgodClient {
-        self.clients.algod()
+        return &self.algod;
     }
 
     /// Most laconic, efficient, and idiomatic async lazy initialization
