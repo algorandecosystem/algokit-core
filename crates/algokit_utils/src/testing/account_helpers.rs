@@ -1,6 +1,6 @@
 use algod_client::AlgodClient;
 use algokit_transact::{
-    Address, AlgorandMsgpack, PaymentTransactionBuilder, SignedTransaction, Transaction,
+    Account, AlgorandMsgpack, PaymentTransactionBuilder, SignedTransaction, Transaction,
     TransactionHeaderBuilder,
 };
 use ed25519_dalek::{Signer, SigningKey};
@@ -9,7 +9,6 @@ use rand::rngs::OsRng;
 use regex::Regex;
 use std::convert::TryInto;
 use std::process::Command;
-use std::str::FromStr;
 use tokio::time::{Duration, sleep};
 
 use super::mnemonic::{from_key, to_key};
@@ -81,10 +80,10 @@ impl TestAccount {
     }
 
     /// Get the account's address using algokit_transact
-    pub fn address(&self) -> Result<Address, Box<dyn std::error::Error + Send + Sync>> {
+    pub fn address(&self) -> Result<Account, Box<dyn std::error::Error + Send + Sync>> {
         let verifying_key = self.signing_key.verifying_key();
         let public_key_bytes = verifying_key.to_bytes();
-        let address = Address::from_pubkey(&public_key_bytes);
+        let address = Account::from_pubkey(&public_key_bytes);
         Ok(address)
     }
 
@@ -113,6 +112,7 @@ impl TestAccount {
             transaction: transaction.clone(),
             signature: Some(signature.to_bytes()),
             auth_address: None,
+            multisig: None,
         };
 
         // Encode the signed transaction to msgpack bytes
@@ -238,7 +238,7 @@ impl LocalNetDispenser {
         let dispenser = self.get_dispenser_account().await?;
 
         // Convert recipient address string to algokit_transact::Address
-        let recipient = Address::from_str(recipient_address)?;
+        let recipient = recipient_address.parse()?;
 
         // Convert genesis hash Vec<u8> to 32-byte array (already decoded from base64)
         let genesis_hash_bytes: [u8; 32] =
