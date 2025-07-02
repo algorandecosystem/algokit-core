@@ -14,7 +14,7 @@ use std::str::FromStr;
 
 /// Represents an Algorand address as decoded bytes without the checksum from a 58-character base32 string.
 ///
-/// The `Address` type stores the 32 bytes of the address (the public key or hash digest),
+/// The [`Address`] type stores the 32 bytes of the address (the public key or hash digest),
 /// and provides methods for encoding to and decoding from the standard Algorand base32 string format.
 /// The checksum is automatically calculated and validated as part of parsing and formatting.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
