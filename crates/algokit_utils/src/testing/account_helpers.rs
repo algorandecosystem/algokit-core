@@ -25,7 +25,6 @@ pub struct TestAccountConfig {
     pub funding_note: Option<String>,
 }
 
-// NOTE: TestAccountConfig
 impl Default for TestAccountConfig {
     fn default() -> Self {
         Self {

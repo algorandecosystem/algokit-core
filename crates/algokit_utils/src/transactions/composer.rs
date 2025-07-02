@@ -54,15 +54,76 @@ pub struct PaymentParams {
 }
 
 #[derive(Debug, Clone)]
+pub struct AssetTransferParams {
+    /// Part of the "specialized" asset transaction types.
+    /// Based on the primitive asset transfer, this struct implements asset transfers
+    /// without additional side effects.
+    /// Only in the case where the receiver is equal to the sender and the amount is zero,
+    /// this is an asset opt-in transaction.
+    pub common_params: CommonParams,
+    pub asset_id: u64,
+    pub amount: u64,
+    pub receiver: Address,
+}
+
+#[derive(Debug, Clone)]
+pub struct AssetOptInParams {
+    /// Part of the "specialized" asset transaction types.
+    /// Based on the primitive asset transfer, this struct implements asset opt-in
+    /// without additional side effects.
+    pub common_params: CommonParams,
+    pub asset_id: u64,
+}
+
+#[derive(Debug, Clone)]
+pub struct AssetOptOutParams {
+    /// Part of the "specialized" asset transaction types.
+    /// Based on the primitive asset transfer, this struct implements asset opt-out
+    /// without additional side effects.
+    pub common_params: CommonParams,
+    pub asset_id: u64,
+    pub close_remainder_to: Option<Address>,
+}
+
+#[derive(Debug, Clone)]
+pub struct AssetClawbackParams {
+    /// Part of the "specialized" asset transaction types.
+    /// Based on the primitive asset transfer, this struct implements asset clawback
+    /// without additional side effects.
+    pub common_params: CommonParams,
+    pub asset_id: u64,
+    pub amount: u64,
+    pub receiver: Address,
+    // The address from which ASAs are taken.
+    pub clawback_target: Address,
+}
+
+#[derive(Debug, Clone)]
 pub enum ComposerTxn {
     Transaction(Transaction),
     Payment(PaymentParams),
+    AssetTransfer(AssetTransferParams),
+    AssetOptIn(AssetOptInParams),
+    AssetOptOut(AssetOptOutParams),
+    AssetClawback(AssetClawbackParams),
 }
 
 impl ComposerTxn {
     pub fn common_params(&self) -> CommonParams {
         match self {
             ComposerTxn::Payment(payment_params) => payment_params.common_params.clone(),
+            ComposerTxn::AssetTransfer(asset_transfer_params) => {
+                asset_transfer_params.common_params.clone()
+            }
+            ComposerTxn::AssetOptIn(asset_opt_in_params) => {
+                asset_opt_in_params.common_params.clone()
+            }
+            ComposerTxn::AssetOptOut(asset_opt_out_params) => {
+                asset_opt_out_params.common_params.clone()
+            }
+            ComposerTxn::AssetClawback(asset_clawback_params) => {
+                asset_clawback_params.common_params.clone()
+            }
             _ => CommonParams::default(),
         }
     }
@@ -167,6 +228,34 @@ impl Composer {
         self.push(ComposerTxn::Payment(payment_params))
     }
 
+    pub fn add_asset_transfer(
+        &mut self,
+        asset_transfer_params: AssetTransferParams,
+    ) -> Result<(), String> {
+        self.push(ComposerTxn::AssetTransfer(asset_transfer_params))
+    }
+
+    pub fn add_asset_opt_in(
+        &mut self,
+        asset_opt_in_params: AssetOptInParams,
+    ) -> Result<(), String> {
+        self.push(ComposerTxn::AssetOptIn(asset_opt_in_params))
+    }
+
+    pub fn add_asset_opt_out(
+        &mut self,
+        asset_opt_out_params: AssetOptOutParams,
+    ) -> Result<(), String> {
+        self.push(ComposerTxn::AssetOptOut(asset_opt_out_params))
+    }
+
+    pub fn add_asset_clawback(
+        &mut self,
+        asset_clawback_params: AssetClawbackParams,
+    ) -> Result<(), String> {
+        self.push(ComposerTxn::AssetClawback(asset_clawback_params))
+    }
+
     pub fn add_transaction(&mut self, transaction: Transaction) -> Result<(), String> {
         self.push(ComposerTxn::Transaction(transaction))
     }
@@ -244,6 +333,50 @@ impl Composer {
                             close_remainder_to: pay_params.close_remainder_to.clone(),
                         };
                         Transaction::Payment(pay_params)
+                    }
+                    ComposerTxn::AssetTransfer(asset_transfer_params) => {
+                        Transaction::AssetTransfer(
+                            algokit_transact::AssetTransferTransactionFields {
+                                header,
+                                asset_id: asset_transfer_params.asset_id,
+                                amount: asset_transfer_params.amount,
+                                receiver: asset_transfer_params.receiver.clone(),
+                                asset_sender: None,
+                                close_remainder_to: None,
+                            },
+                        )
+                    }
+                    ComposerTxn::AssetOptIn(asset_opt_in_params) => Transaction::AssetTransfer(
+                        algokit_transact::AssetTransferTransactionFields {
+                            header,
+                            asset_id: asset_opt_in_params.asset_id,
+                            amount: 0,
+                            receiver: asset_opt_in_params.common_params.sender.clone(),
+                            asset_sender: None,
+                            close_remainder_to: None,
+                        },
+                    ),
+                    ComposerTxn::AssetOptOut(asset_opt_out_params) => Transaction::AssetTransfer(
+                        algokit_transact::AssetTransferTransactionFields {
+                            header,
+                            asset_id: asset_opt_out_params.asset_id,
+                            amount: 0,
+                            receiver: asset_opt_out_params.common_params.sender.clone(),
+                            asset_sender: None,
+                            close_remainder_to: asset_opt_out_params.close_remainder_to.clone(),
+                        },
+                    ),
+                    ComposerTxn::AssetClawback(asset_clawback_params) => {
+                        Transaction::AssetTransfer(
+                            algokit_transact::AssetTransferTransactionFields {
+                                header,
+                                asset_id: asset_clawback_params.asset_id,
+                                amount: asset_clawback_params.amount,
+                                receiver: asset_clawback_params.receiver.clone(),
+                                asset_sender: Some(asset_clawback_params.clawback_target.clone()),
+                                close_remainder_to: None,
+                            },
+                        )
                     }
                 };
 
@@ -494,6 +627,108 @@ mod tests {
 
         let built_group = composer.built_group().unwrap();
         assert_eq!(built_group.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn test_build_asset_transfer() {
+        let mut composer = Composer::testnet();
+        let asset_transfer_params = AssetTransferParams {
+            common_params: CommonParams {
+                sender: AddressMother::address(),
+                signer: None,
+                rekey_to: None,
+                note: None,
+                lease: None,
+                static_fee: None,
+                extra_fee: None,
+                max_fee: None,
+                validity_window: None,
+                first_valid_round: None,
+                last_valid_round: None,
+            },
+            asset_id: 12345,
+            amount: 1000,
+            receiver: AddressMother::address(),
+        };
+        assert!(composer.add_asset_transfer(asset_transfer_params).is_ok());
+        assert!(composer.build().await.is_ok());
+        assert!(composer.built_group().is_some());
+    }
+
+    #[tokio::test]
+    async fn test_build_asset_opt_in() {
+        let mut composer = Composer::testnet();
+        let asset_opt_in_params = AssetOptInParams {
+            common_params: CommonParams {
+                sender: AddressMother::address(),
+                signer: None,
+                rekey_to: None,
+                note: None,
+                lease: None,
+                static_fee: None,
+                extra_fee: None,
+                max_fee: None,
+                validity_window: None,
+                first_valid_round: None,
+                last_valid_round: None,
+            },
+            asset_id: 12345,
+        };
+        assert!(composer.add_asset_opt_in(asset_opt_in_params).is_ok());
+        assert!(composer.build().await.is_ok());
+        assert!(composer.built_group().is_some());
+    }
+
+    #[tokio::test]
+    async fn test_build_asset_opt_out() {
+        let mut composer = Composer::testnet();
+        let asset_opt_out_params = AssetOptOutParams {
+            common_params: CommonParams {
+                sender: AddressMother::address(),
+                signer: None,
+                rekey_to: None,
+                note: None,
+                lease: None,
+                static_fee: None,
+                extra_fee: None,
+                max_fee: None,
+                validity_window: None,
+                first_valid_round: None,
+                last_valid_round: None,
+            },
+            asset_id: 12345,
+            close_remainder_to: Some(AddressMother::neil()),
+        };
+        assert!(composer.add_asset_opt_out(asset_opt_out_params).is_ok());
+        assert!(composer.build().await.is_ok());
+        assert!(composer.built_group().is_some());
+    }
+
+    #[tokio::test]
+    async fn test_build_asset_clawback() {
+        let mut composer = Composer::testnet();
+        let asset_clawback_params = AssetClawbackParams {
+            common_params: CommonParams {
+                sender: AddressMother::address(),
+                signer: None,
+                rekey_to: None,
+                note: None,
+                lease: None,
+                static_fee: None,
+                extra_fee: None,
+                max_fee: None,
+                validity_window: None,
+                first_valid_round: None,
+                last_valid_round: None,
+            },
+            asset_id: 12345,
+            amount: 1000,
+            receiver: AddressMother::address(),
+            clawback_target: AddressMother::neil(),
+        };
+        assert!(composer.add_asset_clawback(asset_clawback_params).is_ok());
+        assert!(composer.build().await.is_ok());
+        assert!(composer.built_group().is_some());
     }
 
     #[tokio::test]
