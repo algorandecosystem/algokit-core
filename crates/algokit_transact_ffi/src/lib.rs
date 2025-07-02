@@ -118,6 +118,15 @@ pub struct Account {
     pub_key: ByteBuf,
 }
 
+#[ffi_record]
+pub struct MultisigAccount {
+    address: String,
+    version: u8,
+    threshold: u8,
+    // TODO: Since this FFI equivalent structure contains address and addrs, find less ambiguous names.
+    addrs: Vec<Account>,
+}
+
 impl From<algokit_transact::Account> for Account {
     fn from(value: algokit_transact::Account) -> Self {
         Self {
@@ -143,6 +152,46 @@ impl TryFrom<Account> for algokit_transact::Account {
             })?;
 
         Ok(algokit_transact::Account::from_pubkey(&pub_key))
+    }
+}
+
+impl From<algokit_transact::MultisigAccount> for MultisigAccount {
+    fn from(value: algokit_transact::MultisigAccount) -> Self {
+        Self {
+            address: value.to_string(),
+            version: value.version,
+            threshold: value.threshold,
+            addrs: value
+                .addrs
+                .into_iter()
+                .map(Into::<algokit_transact::Account>::into)
+                .map(Into::<Account>::into)
+                .collect(),
+        }
+    }
+}
+
+impl TryFrom<MultisigAccount> for algokit_transact::MultisigAccount {
+    type Error = AlgoKitTransactError;
+
+    fn try_from(value: MultisigAccount) -> Result<Self, Self::Error> {
+        Ok(Self {
+            version: value.version,
+            threshold: value.threshold,
+            addrs: value
+                .addrs
+                .into_iter()
+                .map(TryInto::<algokit_transact::Account>::try_into)
+                .collect::<Result<Vec<_>, _>>()
+                .map_err(|_| {
+                    AlgoKitTransactError::EncodingError(
+                        "Failed to convert accounts in multisig".to_string(),
+                    )
+                })?
+                .into_iter()
+                .map(Into::<algokit_transact::Address>::into)
+                .collect(),
+        })
     }
 }
 
