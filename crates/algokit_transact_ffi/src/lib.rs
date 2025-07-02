@@ -10,6 +10,7 @@ use serde_bytes::ByteBuf;
 
 pub use transactions::ApplicationCallTransactionFields;
 pub use transactions::AssetConfigTransactionFields;
+pub use transactions::AssetFreezeTransactionFields;
 
 // thiserror is used to easily create errors than can be propagated to the language bindings
 // UniFFI will create classes for errors (i.e. `MsgPackError.EncodingError` in Python)
@@ -175,12 +176,6 @@ pub struct AssetTransferTransactionFields {
     close_remainder_to: Option<Address>,
 }
 
-#[ffi_record]
-pub struct AssetFreezeTransactionFields {
-    asset_id: u64,
-    freeze_target: Address,
-    frozen: bool,
-}
 
 #[ffi_record]
 pub struct Transaction {
@@ -352,37 +347,6 @@ impl TryFrom<Transaction> for algokit_transact::AssetTransferTransactionFields {
     }
 }
 
-impl From<algokit_transact::AssetFreezeTransactionFields> for AssetFreezeTransactionFields {
-    fn from(tx: algokit_transact::AssetFreezeTransactionFields) -> Self {
-        Self {
-            asset_id: tx.asset_id,
-            freeze_target: tx.freeze_target.into(),
-            frozen: tx.frozen,
-        }
-    }
-}
-
-impl TryFrom<Transaction> for algokit_transact::AssetFreezeTransactionFields {
-    type Error = AlgoKitTransactError;
-
-    fn try_from(tx: Transaction) -> Result<Self, Self::Error> {
-        if tx.transaction_type != TransactionType::AssetFreeze || tx.asset_freeze.is_none() {
-            return Err(Self::Error::DecodingError(
-                "Asset Freeze data missing".to_string(),
-            ));
-        }
-
-        let data = tx.clone().asset_freeze.unwrap();
-        let header: algokit_transact::TransactionHeader = tx.try_into()?;
-
-        Ok(Self {
-            header,
-            asset_id: data.asset_id,
-            freeze_target: data.freeze_target.try_into()?,
-            frozen: data.frozen,
-        })
-    }
-}
 
 impl TryFrom<algokit_transact::Transaction> for Transaction {
     type Error = AlgoKitTransactError;
