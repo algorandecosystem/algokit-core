@@ -1,7 +1,7 @@
 use algokit_transact::{PaymentTransactionBuilder, Transaction, TransactionHeaderBuilder};
 use algokit_utils::{
     ClientManager,
-    testing::{LocalnetManager, NetworkType, TestAccountConfig, TestAccountManager},
+    testing::{NetworkType, TestAccountConfig, TestAccountManager},
 };
 use std::convert::TryInto;
 
@@ -10,10 +10,6 @@ use crate::common::init_test_logging;
 #[tokio::test]
 async fn test_raw_transaction_broadcast() {
     init_test_logging();
-
-    LocalnetManager::ensure_running()
-        .await
-        .expect("Failed to start localnet");
 
     // Create algod client using ClientManager
     let config = ClientManager::get_config_from_environment_or_localnet();
@@ -24,14 +20,12 @@ async fn test_raw_transaction_broadcast() {
 
     let sender_config = TestAccountConfig {
         initial_funds: 10_000_000, // 10 ALGO
-        suppress_log: true,
         network_type: NetworkType::LocalNet,
         funding_note: Some("Test sender account".to_string()),
     };
 
     let receiver_config = TestAccountConfig {
         initial_funds: 1_000_000, // 1 ALGO
-        suppress_log: true,
         network_type: NetworkType::LocalNet,
         funding_note: Some("Test receiver account".to_string()),
     };

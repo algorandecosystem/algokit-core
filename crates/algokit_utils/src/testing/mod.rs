@@ -1,6 +1,5 @@
 pub mod account_helpers;
 pub mod fixture;
-pub mod localnet;
 pub mod mnemonic;
 
 pub use fixture::{
@@ -11,4 +10,3 @@ pub use fixture::{
 pub use account_helpers::{
     LocalNetDispenser, NetworkType, TestAccount, TestAccountConfig, TestAccountManager,
 };
-pub use localnet::LocalnetManager;

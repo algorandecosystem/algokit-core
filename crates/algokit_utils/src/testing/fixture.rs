@@ -88,7 +88,6 @@ impl AlgorandFixture {
 
         let test_account_config = TestAccountConfig {
             initial_funds: 10_000_000,
-            suppress_log: false,
             network_type: NetworkType::LocalNet,
             funding_note: Some("AlgorandFixture test account".to_string()),
         };

@@ -1,6 +1,6 @@
 use algod_client::AlgodClient;
 use algokit_http_client::DefaultHttpClient;
-use algokit_utils::{ClientManager, testing::LocalnetManager};
+use algokit_utils::ClientManager;
 use std::sync::Arc;
 
 use crate::common::init_test_logging;
@@ -8,11 +8,6 @@ use crate::common::init_test_logging;
 #[tokio::test]
 async fn test_get_transaction_params() {
     init_test_logging();
-
-    // Ensure localnet is running
-    LocalnetManager::ensure_running()
-        .await
-        .expect("Failed to start localnet");
 
     // Create algod client using ClientManager
     let config = ClientManager::get_config_from_environment_or_localnet();

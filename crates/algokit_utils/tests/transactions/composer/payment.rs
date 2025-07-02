@@ -7,10 +7,6 @@ use crate::common::init_test_logging;
 async fn test_basic_payment_transaction() {
     init_test_logging();
 
-    LocalnetManager::ensure_running()
-        .await
-        .expect("Failed to start localnet");
-
     let mut fixture = algorand_fixture().await.expect("Failed to create fixture");
 
     fixture

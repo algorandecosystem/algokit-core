@@ -238,7 +238,7 @@ impl Composer {
                     }
                     ComposerTxn::Payment(pay_params) => {
                         let pay_params = PaymentTransactionFields {
-                            header: header,
+                            header,
                             receiver: pay_params.receiver.clone(),
                             amount: pay_params.amount,
                             close_remainder_to: pay_params.close_remainder_to.clone(),

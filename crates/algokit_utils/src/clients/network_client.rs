@@ -64,24 +64,6 @@ pub enum AlgorandService {
 }
 
 impl AlgorandService {
-    /// Get the default port for this service on localnet
-    pub fn default_localnet_port(&self) -> u16 {
-        match self {
-            AlgorandService::Algod => 4001,
-            AlgorandService::Indexer => 8980,
-            AlgorandService::Kmd => 4002,
-        }
-    }
-
-    /// Get the subdomain for this service on algonode
-    pub fn algonode_subdomain(&self) -> Result<&'static str, &'static str> {
-        match self {
-            AlgorandService::Algod => Ok("api"),
-            AlgorandService::Indexer => Ok("idx"),
-            AlgorandService::Kmd => Err("KMD is not available on algonode"),
-        }
-    }
-
     /// Get the string representation of the service
     pub fn as_str(&self) -> &'static str {
         match self {

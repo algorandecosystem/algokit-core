@@ -1,15 +1,11 @@
 use crate::common::init_test_logging;
-use algokit_utils::{ClientManager, testing::LocalnetManager};
+use algokit_utils::ClientManager;
 use std::{collections::HashSet, sync::Arc, time::Duration};
 use tokio::time::timeout;
 
 #[tokio::test]
 async fn test_network_caching_with_localnet() {
     init_test_logging();
-
-    LocalnetManager::ensure_running()
-        .await
-        .expect("Failed to start localnet");
 
     let config = ClientManager::get_config_from_environment_or_localnet();
     let manager = ClientManager::new(config);
@@ -31,10 +27,6 @@ async fn test_network_caching_with_localnet() {
 #[tokio::test]
 async fn test_concurrent_network_calls() {
     init_test_logging();
-
-    LocalnetManager::ensure_running()
-        .await
-        .expect("Failed to start localnet");
 
     let config = ClientManager::get_config_from_environment_or_localnet();
     let manager = Arc::new(ClientManager::new(config));
@@ -75,10 +67,6 @@ async fn test_concurrent_network_calls() {
 async fn test_convenience_methods_with_cache() {
     init_test_logging();
 
-    LocalnetManager::ensure_running()
-        .await
-        .expect("Failed to start localnet");
-
     let config = ClientManager::get_config_from_environment_or_localnet();
     let manager = ClientManager::new(config);
 
@@ -102,10 +90,6 @@ async fn test_convenience_methods_with_cache() {
 #[tokio::test]
 async fn test_network_details_localnet() {
     init_test_logging();
-
-    LocalnetManager::ensure_running()
-        .await
-        .expect("Failed to start localnet");
 
     let config = ClientManager::get_config_from_environment_or_localnet();
     let manager = ClientManager::new(config);

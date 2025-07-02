@@ -22,16 +22,9 @@ impl ClientManager {
     }
 
     pub fn algod(&self) -> &AlgodClient {
-        return &self.algod;
+        &self.algod
     }
 
-    /// Most laconic, efficient, and idiomatic async lazy initialization
-    ///
-    /// Features:
-    /// - Only caches successful results (failures can be retried)
-    /// - Concurrent reads don't block each other
-    /// - Double-checked locking pattern prevents race conditions
-    /// - Returns Arc<T> for efficient shared ownership
     pub async fn network(
         &self,
     ) -> Result<Arc<NetworkDetails>, Box<dyn std::error::Error + Send + Sync>> {
@@ -111,16 +104,22 @@ impl ClientManager {
     }
 
     pub fn get_algonode_config(network: &str, service: AlgorandService) -> AlgoClientConfig {
-        let subdomain = service
-            .algonode_subdomain()
-            .expect("Service must be supported on algonode");
+        let subdomain = match service {
+            AlgorandService::Algod => "api",
+            AlgorandService::Indexer => "idx",
+            AlgorandService::Kmd => panic!("KMD is not available on algonode"),
+        };
 
         AlgoClientConfig::new(format!("https://{}-{}.algonode.cloud/", network, subdomain))
             .with_port(443)
     }
 
     pub fn get_default_localnet_config(service: AlgorandService) -> AlgoClientConfig {
-        let port = service.default_localnet_port();
+        let port = match service {
+            AlgorandService::Algod => 4001,
+            AlgorandService::Indexer => 8980,
+            AlgorandService::Kmd => 4002,
+        };
 
         AlgoClientConfig::new("http://localhost".to_string())
             .with_port(port)

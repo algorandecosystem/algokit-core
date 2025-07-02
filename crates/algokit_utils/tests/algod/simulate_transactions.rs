@@ -6,17 +6,13 @@ use algod_client::{
     models::{SimulateRequest, SimulateRequestTransactionGroup, SimulateTraceConfig},
 };
 use algokit_transact::{SignedTransaction, test_utils::TransactionMother};
-use algokit_utils::{ClientManager, testing::LocalnetManager};
+use algokit_utils::ClientManager;
 
 use crate::common::init_test_logging;
 
 #[tokio::test]
 async fn test_simulate_transactions() {
     init_test_logging();
-
-    LocalnetManager::ensure_running()
-        .await
-        .expect("Failed to start localnet");
 
     // Create algod client using ClientManager
     let config = ClientManager::get_config_from_environment_or_localnet();
