@@ -27,11 +27,13 @@ async fn test_simulate_transactions() {
             transaction: transaction1,
             signature: None,
             auth_address: None,
+            multisig: None,
         },
         SignedTransaction {
             transaction: transaction2,
             signature: None,
             auth_address: None,
+            multisig: None,
         },
     ];
 
