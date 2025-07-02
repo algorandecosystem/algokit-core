@@ -38780,6 +38780,7 @@
             94
           ]
         },
+        "defaultFrozen": false,
         "freeze": {
           "address": "KPVZ66IFE7KHQ6623XHTPVS3IL7BXBE3HXQG35J65CVDA54VLRPP4SVOU4",
           "pubKey": [
@@ -46845,7 +46846,8 @@
             201,
             123
           ]
-        }
+        },
+        "frozen": false
       },
       "fee": 1000,
       "firstValid": 50659540,
