@@ -183,14 +183,16 @@ impl TransactionMother {
         // Based on a real mainnet asset freeze transaction
         // https://algoexplorer.io/tx/EXAMPLE_FREEZE_TXN_ID
         AssetFreezeTransactionBuilder::default()
-            .header(TransactionHeaderMother::mainnet()
-                .sender(AddressMother::address())
-                .first_valid(39000000)
-                .last_valid(39001000)
-                .fee(1000)
-                .build()
-                .unwrap())
-            .asset_id(31566704)  // USDC on mainnet
+            .header(
+                TransactionHeaderMother::mainnet()
+                    .sender(AddressMother::address())
+                    .first_valid(39000000)
+                    .last_valid(39001000)
+                    .fee(1000)
+                    .build()
+                    .unwrap(),
+            )
+            .asset_id(31566704) // USDC on mainnet
             .freeze_target(AddressMother::neil())
             .frozen(true)
             .to_owned()
@@ -199,15 +201,17 @@ impl TransactionMother {
     pub fn asset_freeze_testnet() -> AssetFreezeTransactionBuilder {
         // Based on a real testnet asset freeze transaction
         AssetFreezeTransactionBuilder::default()
-            .header(TransactionHeaderMother::testnet()
-                .sender(AddressMother::address())
-                .first_valid(42000000)
-                .last_valid(42001000)
-                .fee(1000)
-                .note(BASE64_STANDARD.decode("VGVzdCBhc3NldCBmcmVlemU=").unwrap())
-                .build()
-                .unwrap())
-            .asset_id(150000000)  // Test asset on testnet
+            .header(
+                TransactionHeaderMother::testnet()
+                    .sender(AddressMother::address())
+                    .first_valid(42000000)
+                    .last_valid(42001000)
+                    .fee(1000)
+                    .note(BASE64_STANDARD.decode("VGVzdCBhc3NldCBmcmVlemU=").unwrap())
+                    .build()
+                    .unwrap(),
+            )
+            .asset_id(150000000) // Test asset on testnet
             .freeze_target(AddressMother::neil())
             .frozen(true)
             .to_owned()
@@ -216,14 +220,16 @@ impl TransactionMother {
     pub fn asset_unfreeze_mainnet() -> AssetFreezeTransactionBuilder {
         // Based on a real mainnet asset unfreeze transaction
         AssetFreezeTransactionBuilder::default()
-            .header(TransactionHeaderMother::mainnet()
-                .sender(AddressMother::address())
-                .first_valid(39002000)
-                .last_valid(39003000)
-                .fee(1000)
-                .build()
-                .unwrap())
-            .asset_id(31566704)  // USDC on mainnet
+            .header(
+                TransactionHeaderMother::mainnet()
+                    .sender(AddressMother::address())
+                    .first_valid(39002000)
+                    .last_valid(39003000)
+                    .fee(1000)
+                    .build()
+                    .unwrap(),
+            )
+            .asset_id(31566704) // USDC on mainnet
             .freeze_target(AddressMother::neil())
             .frozen(false)
             .to_owned()
@@ -232,14 +238,22 @@ impl TransactionMother {
     pub fn asset_freeze_with_group() -> AssetFreezeTransactionBuilder {
         // Asset freeze transaction as part of a group
         AssetFreezeTransactionBuilder::default()
-            .header(TransactionHeaderMother::testnet()
-                .sender(AddressMother::address())
-                .first_valid(21000000)
-                .last_valid(21001000)
-                .fee(1000)
-                .group(BASE64_STANDARD.decode("VZOPGVBJhOB3AiX8mqxKb7FQD1faupdSuZixhd8xpqI=").unwrap().try_into().unwrap())
-                .build()
-                .unwrap())
+            .header(
+                TransactionHeaderMother::testnet()
+                    .sender(AddressMother::address())
+                    .first_valid(21000000)
+                    .last_valid(21001000)
+                    .fee(1000)
+                    .group(
+                        BASE64_STANDARD
+                            .decode("VZOPGVBJhOB3AiX8mqxKb7FQD1faupdSuZixhd8xpqI=")
+                            .unwrap()
+                            .try_into()
+                            .unwrap(),
+                    )
+                    .build()
+                    .unwrap(),
+            )
             .asset_id(84366776)
             .freeze_target(AddressMother::neil())
             .frozen(true)

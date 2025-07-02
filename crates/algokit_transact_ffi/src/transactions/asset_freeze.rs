@@ -8,10 +8,10 @@ use crate::*;
 pub struct AssetFreezeTransactionFields {
     /// The ID of the asset being frozen/unfrozen.
     asset_id: u64,
-    
+
     /// The target account whose asset holdings will be affected.
     freeze_target: Address,
-    
+
     /// The new freeze status.
     ///
     /// `true` to freeze the asset holdings (prevent transfers),
@@ -38,10 +38,10 @@ impl TryFrom<Transaction> for algokit_transact::AssetFreezeTransactionFields {
                 "Asset Freeze data missing".to_string(),
             ));
         }
-        
+
         let data = tx.clone().asset_freeze.unwrap();
         let header: algokit_transact::TransactionHeader = tx.try_into()?;
-        
+
         Ok(Self {
             header,
             asset_id: data.asset_id,
