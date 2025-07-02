@@ -81,26 +81,6 @@ pub struct AlgoClientConfig {
     pub token: Option<TokenHeader>,
 }
 
-impl AlgoClientConfig {
-    pub fn new(server: String) -> Self {
-        Self {
-            server,
-            port: None,
-            token: None,
-        }
-    }
-
-    pub fn with_port(mut self, port: u16) -> Self {
-        self.port = Some(port);
-        self
-    }
-
-    pub fn with_token(mut self, token: TokenHeader) -> Self {
-        self.token = Some(token);
-        self
-    }
-}
-
 #[derive(Debug, Clone)]
 pub struct AlgoConfig {
     pub algod_config: AlgoClientConfig,

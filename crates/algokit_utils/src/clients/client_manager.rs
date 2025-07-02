@@ -88,19 +88,14 @@ impl ClientManager {
     pub fn get_algod_config_from_environment() -> AlgoClientConfig {
         let server =
             env::var("ALGOD_SERVER").expect("ALGOD_SERVER environment variable must be defined");
-        let mut config = AlgoClientConfig::new(server);
-
         let port = env::var("ALGOD_PORT").ok().and_then(|p| p.parse().ok());
-        if let Some(port) = port {
-            config = config.with_port(port);
-        }
+        let token = env::var("ALGOD_TOKEN").ok().map(TokenHeader::String);
 
-        let token = env::var("ALGOD_TOKEN").ok();
-        if let Some(token) = token {
-            config = config.with_token(TokenHeader::String(token));
+        AlgoClientConfig {
+            server,
+            port,
+            token,
         }
-
-        config
     }
 
     pub fn get_algonode_config(network: &str, service: AlgorandService) -> AlgoClientConfig {
@@ -110,8 +105,11 @@ impl ClientManager {
             AlgorandService::Kmd => panic!("KMD is not available on algonode"),
         };
 
-        AlgoClientConfig::new(format!("https://{}-{}.algonode.cloud/", network, subdomain))
-            .with_port(443)
+        AlgoClientConfig {
+            server: format!("https://{}-{}.algonode.cloud/", network, subdomain),
+            port: Some(443),
+            token: None,
+        }
     }
 
     pub fn get_default_localnet_config(service: AlgorandService) -> AlgoClientConfig {
@@ -121,11 +119,13 @@ impl ClientManager {
             AlgorandService::Kmd => 4002,
         };
 
-        AlgoClientConfig::new("http://localhost".to_string())
-            .with_port(port)
-            .with_token(TokenHeader::String(
+        AlgoClientConfig {
+            server: "http://localhost".to_string(),
+            port: Some(port),
+            token: Some(TokenHeader::String(
                 "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
-            ))
+            )),
+        }
     }
 
     pub fn get_algod_client(config: &AlgoClientConfig) -> AlgodClient {
@@ -170,7 +170,11 @@ mod tests {
     #[test]
     fn test_cache_initially_empty() {
         let config = AlgoConfig {
-            algod_config: AlgoClientConfig::new("http://localhost:4001".to_string()),
+            algod_config: AlgoClientConfig {
+                server: "http://localhost:4001".to_string(),
+                port: None,
+                token: None,
+            },
         };
         let manager = ClientManager::new(config);
 
@@ -182,8 +186,11 @@ mod tests {
     #[tokio::test]
     async fn test_error_not_cached() {
         let config = AlgoConfig {
-            algod_config: AlgoClientConfig::new("http://invalid-host:65534".to_string())
-                .with_port(65534),
+            algod_config: AlgoClientConfig {
+                server: "http://invalid-host:65534".to_string(),
+                port: Some(65534),
+                token: None,
+            },
         };
         let manager = ClientManager::new(config);
 
@@ -198,9 +205,11 @@ mod tests {
 
     #[test]
     fn test_client_config_builder() {
-        let config = AlgoClientConfig::new("http://localhost".to_string())
-            .with_port(4001)
-            .with_token(TokenHeader::String("test-token".to_string()));
+        let config = AlgoClientConfig {
+            server: "http://localhost".to_string(),
+            port: Some(4001),
+            token: Some(TokenHeader::String("test-token".to_string())),
+        };
 
         assert_eq!(config.server, "http://localhost");
         assert_eq!(config.port, Some(4001));
