@@ -176,7 +176,6 @@ pub struct AssetTransferTransactionFields {
     close_remainder_to: Option<Address>,
 }
 
-
 #[ffi_record]
 pub struct Transaction {
     /// The type of transaction
@@ -346,7 +345,6 @@ impl TryFrom<Transaction> for algokit_transact::AssetTransferTransactionFields {
         })
     }
 }
-
 
 impl TryFrom<algokit_transact::Transaction> for Transaction {
     type Error = AlgoKitTransactError;
