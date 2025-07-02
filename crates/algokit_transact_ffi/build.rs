@@ -17,7 +17,7 @@ fn generate_test_data() {
         transaction: Transaction,
         unsigned_bytes: Vec<u8>,
         signed_bytes: Vec<u8>,
-        rekeyed_sender_auth_address: Address,
+        rekeyed_sender_auth_address: Account,
         rekeyed_sender_signed_bytes: Vec<u8>,
         id: String,
         id_raw: [u8; HASH_BYTES_LENGTH],

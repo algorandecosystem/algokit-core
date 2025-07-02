@@ -113,12 +113,12 @@ pub enum TransactionType {
 }
 
 #[ffi_record]
-pub struct Address {
+pub struct Account {
     address: String,
     pub_key: ByteBuf,
 }
 
-impl From<algokit_transact::Account> for Address {
+impl From<algokit_transact::Account> for Account {
     fn from(value: algokit_transact::Account) -> Self {
         Self {
             address: value.to_string(),
@@ -127,10 +127,10 @@ impl From<algokit_transact::Account> for Address {
     }
 }
 
-impl TryFrom<Address> for algokit_transact::Account {
+impl TryFrom<Account> for algokit_transact::Account {
     type Error = AlgoKitTransactError;
 
-    fn try_from(value: Address) -> Result<Self, Self::Error> {
+    fn try_from(value: Account) -> Result<Self, Self::Error> {
         let pub_key: [u8; ALGORAND_PUBLIC_KEY_BYTE_LENGTH] =
             value.pub_key.to_vec().try_into().map_err(|_| {
                 AlgoKitTransactError::EncodingError(
@@ -156,11 +156,11 @@ pub struct FeeParams {
 
 #[ffi_record]
 pub struct PaymentTransactionFields {
-    receiver: Address,
+    receiver: Account,
 
     amount: u64,
 
-    close_remainder_to: Option<Address>,
+    close_remainder_to: Option<Account>,
 }
 
 #[ffi_record]
@@ -169,11 +169,11 @@ pub struct AssetTransferTransactionFields {
 
     amount: u64,
 
-    receiver: Address,
+    receiver: Account,
 
-    asset_sender: Option<Address>,
+    asset_sender: Option<Account>,
 
-    close_remainder_to: Option<Address>,
+    close_remainder_to: Option<Account>,
 }
 
 #[ffi_record]
@@ -182,7 +182,7 @@ pub struct Transaction {
     transaction_type: TransactionType,
 
     /// The sender of the transaction
-    sender: Address,
+    sender: Account,
 
     /// Optional transaction fee in microALGO.
     ///
@@ -199,7 +199,7 @@ pub struct Transaction {
 
     note: Option<ByteBuf>,
 
-    rekey_to: Option<Address>,
+    rekey_to: Option<Account>,
 
     lease: Option<ByteBuf>,
 
@@ -433,7 +433,7 @@ pub struct SignedTransaction {
     pub signature: Option<ByteBuf>,
 
     /// Optional auth address applicable if the transaction sender is a rekeyed account.
-    pub auth_address: Option<Address>,
+    pub auth_address: Option<Account>,
 }
 
 impl From<algokit_transact::SignedTransaction> for SignedTransaction {
@@ -644,7 +644,7 @@ pub fn estimate_transaction_size(transaction: Transaction) -> Result<u64, AlgoKi
 }
 
 #[ffi_func]
-pub fn address_from_pub_key(pub_key: &[u8]) -> Result<Address, AlgoKitTransactError> {
+pub fn address_from_pub_key(pub_key: &[u8]) -> Result<Account, AlgoKitTransactError> {
     Ok(
         algokit_transact::Account::from_pubkey(pub_key.try_into().map_err(|_| {
             AlgoKitTransactError::EncodingError(
@@ -660,7 +660,7 @@ pub fn address_from_pub_key(pub_key: &[u8]) -> Result<Address, AlgoKitTransactEr
 }
 
 #[ffi_func]
-pub fn address_from_string(address: &str) -> Result<Address, AlgoKitTransactError> {
+pub fn address_from_string(address: &str) -> Result<Account, AlgoKitTransactError> {
     address
         .parse::<algokit_transact::Account>()
         .map(Into::into)

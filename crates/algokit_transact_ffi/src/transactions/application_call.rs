@@ -54,7 +54,7 @@ pub struct ApplicationCallTransactionFields {
 
     /// List of accounts in addition to the sender that may be accessed
     /// from the application's approval program and clear state program.
-    account_references: Option<Vec<Address>>,
+    account_references: Option<Vec<Account>>,
 
     /// List of applications in addition to the current application that may be called
     /// from the application's approval program and clear state program.

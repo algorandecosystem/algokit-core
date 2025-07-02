@@ -82,7 +82,7 @@ pub struct AssetConfigTransactionFields {
     /// The fields it can change are `manager`, `reserve`, `clawback`, and `freeze`.
     ///
     /// If not set or set to the Zero address the asset becomes permanently immutable.
-    manager: Option<Address>,
+    manager: Option<Account>,
 
     /// The address of the optional account that holds the reserve (uncirculated supply) units of the asset.
     ///
@@ -95,14 +95,14 @@ pub struct AssetConfigTransactionFields {
     /// of the asset reside in an account that is different from the default creator account.
     ///
     /// If not set or set to the Zero address is permanently empty.
-    reserve: Option<Address>,
+    reserve: Option<Account>,
 
     /// The address of the optional account that can be used to freeze or unfreeze holdings of this asset for any account.
     ///
     /// If empty, freezing is not permitted.
     ///
     /// If not set or set to the Zero address is permanently empty.
-    freeze: Option<Address>,
+    freeze: Option<Account>,
 
     /// The address of the optional account that can clawback holdings of this asset from any account.
     ///
@@ -111,7 +111,7 @@ pub struct AssetConfigTransactionFields {
     /// If empty, clawback is not permitted.
     ///
     /// If not set or set to the Zero address is permanently empty.
-    clawback: Option<Address>,
+    clawback: Option<Account>,
 }
 
 impl From<algokit_transact::AssetConfigTransactionFields> for AssetConfigTransactionFields {
