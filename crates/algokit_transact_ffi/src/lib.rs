@@ -558,7 +558,10 @@ impl TryFrom<SignedTransaction> for algokit_transact::SignedTransaction {
             transaction: signed_tx.transaction.try_into()?,
             signature,
             auth_address: signed_tx.auth_address.map(TryInto::try_into).transpose()?,
-            multisig: signed_tx.multisig_signature.map(TryInto::try_into).transpose()?,
+            multisig: signed_tx
+                .multisig_signature
+                .map(TryInto::try_into)
+                .transpose()?,
         })
     }
 }
