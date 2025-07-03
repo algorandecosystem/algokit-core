@@ -51,7 +51,7 @@ impl TransactionHeaderMother {
 
     pub fn simple_testnet() -> TransactionHeaderBuilder {
         Self::testnet()
-            .sender(AccountMother::account())
+            .sender(AccountMother::account().address())
             .first_valid(50659540)
             .last_valid(50660540)
             .to_owned()
@@ -70,7 +70,7 @@ impl TransactionHeaderMother {
             .first_valid(1)
             .last_valid(999)
             .fee(1000)
-            .sender(AccountMother::example())
+            .sender(AccountMother::example().address())
             .to_owned()
     }
 }
@@ -140,7 +140,7 @@ impl TransactionMother {
         AssetTransferTransactionBuilder::default()
             .header(
                 TransactionHeaderMother::simple_testnet()
-                    .sender(AccountMother::neil())
+                    .sender(AccountMother::neil().address())
                     .first_valid(51183672)
                     .last_valid(51183872)
                     .build()
@@ -148,14 +148,14 @@ impl TransactionMother {
             )
             .asset_id(107686045)
             .amount(1000)
-            .receiver(AccountMother::account())
+            .receiver(AccountMother::account().address())
             .to_owned()
     }
 
     pub fn opt_in_asset_transfer() -> AssetTransferTransactionBuilder {
         Self::simple_asset_transfer()
             .amount(0)
-            .receiver(AccountMother::neil())
+            .receiver(AccountMother::neil().address())
             .to_owned()
     }
 }
@@ -209,7 +209,7 @@ impl TransactionGroupMother {
     pub fn testnet_payment_group() -> Vec<Transaction> {
         // This is a real TestNet transaction group with two payment transactions.
         let header_builder = TransactionHeaderMother::testnet()
-            .sender(AccountMother::neil())
+            .sender(AccountMother::neil().address())
             .first_valid(51532821)
             .last_valid(51533021)
             .to_owned();
@@ -222,7 +222,7 @@ impl TransactionGroupMother {
                     .build()
                     .unwrap(),
             )
-            .receiver(AccountMother::neil())
+            .receiver(AccountMother::neil().address())
             .amount(1000000)
             .build()
             .unwrap();
@@ -235,7 +235,7 @@ impl TransactionGroupMother {
                     .build()
                     .unwrap(),
             )
-            .receiver(AccountMother::neil())
+            .receiver(AccountMother::neil().address())
             .amount(200000)
             .build()
             .unwrap();
@@ -245,7 +245,7 @@ impl TransactionGroupMother {
 
     pub fn group_of(number_of_transactions: usize) -> Vec<Transaction> {
         let header_builder = TransactionHeaderMother::testnet()
-            .sender(AccountMother::neil())
+            .sender(AccountMother::neil().address())
             .first_valid(51532821)
             .last_valid(51533021)
             .to_owned();
@@ -260,7 +260,7 @@ impl TransactionGroupMother {
                         .build()
                         .unwrap(),
                 )
-                .receiver(AccountMother::neil())
+                .receiver(AccountMother::neil().address())
                 .amount(200000)
                 .build()
                 .unwrap();
@@ -303,7 +303,7 @@ impl TransactionTestData {
         let signer_signed_txn = SignedTransaction {
             transaction: transaction.clone(),
             signature: Some(signature.to_bytes()),
-            auth_address: Some(rekeyed_sender_auth_address.clone()),
+            auth_address: Some(rekeyed_sender_auth_address.clone().address()),
             multisig: None,
         };
         let rekeyed_sender_signed_bytes = signer_signed_txn.encode().unwrap();

@@ -35,6 +35,9 @@ impl Account {
     pub fn from_pubkey(pub_key: &Byte32) -> Self {
         Account { pub_key: *pub_key }
     }
+    pub fn address(&self) -> Address {
+        Address::from(self.clone())
+    }
 }
 
 impl From<Address> for Account {

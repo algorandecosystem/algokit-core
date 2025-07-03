@@ -44,7 +44,7 @@ pub fn check_signed_transaction_encoding(
     let signed_tx = SignedTransaction {
         transaction: tx.clone(),
         signature: Some([0; ALGORAND_SIGNATURE_BYTE_LENGTH]),
-        auth_address: auth_address.clone(),
+        auth_address: auth_address.map(|acc| acc.address()),
         multisig: None,
     };
     let encoded_stx = signed_tx.encode().unwrap();

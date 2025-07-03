@@ -22,7 +22,7 @@ impl AssetConfigTransactionMother {
         AssetConfigTransactionBuilder::default()
             .header(
                 TransactionHeaderBuilder::default()
-                    .sender(sender.clone())
+                    .sender(sender.clone().address())
                     .fee(1000)
                     .first_valid(26594258)
                     .last_valid(26595258)
@@ -61,7 +61,7 @@ impl AssetConfigTransactionMother {
         AssetConfigTransactionBuilder::default()
             .header(
                 TransactionHeaderBuilder::default()
-                    .sender(sender)
+                    .sender(sender.address())
                     .fee(1000)
                     .first_valid(6354623)
                     .last_valid(6355623)
@@ -95,7 +95,7 @@ impl AssetConfigTransactionMother {
         AssetConfigTransactionBuilder::default()
             .header(
                 TransactionHeaderBuilder::default()
-                    .sender(sender)
+                    .sender(sender.address())
                     // .auth(auth)
                     .fee(1000)
                     .first_valid(37544842)

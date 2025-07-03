@@ -9,6 +9,7 @@ use crate::error::AlgoKitTransactError;
 use crate::utils::pub_key_to_checksum;
 use crate::{ALGORAND_CHECKSUM_BYTE_LENGTH, ALGORAND_PUBLIC_KEY_BYTE_LENGTH};
 use serde::{Deserialize, Serialize};
+use serde_with::{serde_as, Bytes};
 use std::fmt::{Display, Formatter, Result as FmtResult};
 use std::str::FromStr;
 
@@ -17,8 +18,10 @@ use std::str::FromStr;
 /// The [`Address`] type stores the 32 bytes of the address (the public key or hash digest),
 /// and provides methods for encoding to and decoding from the standard Algorand base32 string format.
 /// The checksum is automatically calculated and validated as part of parsing and formatting.
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Address(pub Byte32);
+#[serde_as]
+#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
+#[serde(transparent)]
+pub struct Address(#[serde_as(as = "Bytes")] pub Byte32);
 
 impl Address {
     /// Returns the 32 bytes of the address as a byte array reference.

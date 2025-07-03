@@ -80,7 +80,7 @@ impl TestAccount {
     }
 
     /// Get the account's address using algokit_transact
-    pub fn address(&self) -> Result<Account, Box<dyn std::error::Error + Send + Sync>> {
+    pub fn account(&self) -> Result<Account, Box<dyn std::error::Error + Send + Sync>> {
         let verifying_key = self.signing_key.verifying_key();
         let public_key_bytes = verifying_key.to_bytes();
         let address = Account::from_pubkey(&public_key_bytes);
@@ -248,7 +248,7 @@ impl LocalNetDispenser {
 
         // Build funding transaction
         let header = TransactionHeaderBuilder::default()
-            .sender(dispenser.address()?)
+            .sender(dispenser.account()?.address())
             .fee(params.min_fee)
             .first_valid(params.last_round)
             .last_valid(params.last_round + 1000)
@@ -303,7 +303,7 @@ impl TestAccountManager {
 
         // Generate new account using ed25519_dalek
         let test_account = TestAccount::generate()?;
-        let address_str = test_account.address()?.to_string();
+        let address_str = test_account.account()?.to_string();
 
         // Fund the account based on network type
         match config.network_type {
@@ -379,7 +379,7 @@ mod tests {
     async fn test_account_generation_with_algokit_transact() {
         // Test basic account generation using algokit_transact and ed25519_dalek with proper mnemonics
         let account = TestAccount::generate().expect("Failed to generate test account");
-        let address = account.address().expect("Failed to get address");
+        let address = account.account().expect("Failed to get address");
 
         assert!(!address.to_string().is_empty());
         let mnemonic = account.mnemonic();
@@ -404,9 +404,9 @@ mod tests {
                 .expect("Failed to recover account from mnemonic");
 
             // Both should have the same address
-            let original_addr = original.address().expect("Failed to get original address");
+            let original_addr = original.account().expect("Failed to get original address");
             let recovered_addr = recovered
-                .address()
+                .account()
                 .expect("Failed to get recovered address");
 
             assert_eq!(original_addr.to_string(), recovered_addr.to_string());

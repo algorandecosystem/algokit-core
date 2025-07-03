@@ -2,7 +2,7 @@ mod transactions;
 
 use algokit_transact::constants::*;
 use algokit_transact::{
-    AlgorandMsgpack, Byte32, EstimateTransactionSize, TransactionId, Transactions, Validate,
+    AlgorandMsgpack, EstimateTransactionSize, TransactionId, Transactions, Validate,
 };
 use ffi_macros::{ffi_enum, ffi_func, ffi_record};
 use serde::{Deserialize, Serialize};
@@ -152,6 +152,23 @@ impl TryFrom<Account> for algokit_transact::Account {
             })?;
 
         Ok(algokit_transact::Account::from_pubkey(&pub_key))
+    }
+}
+
+impl From<algokit_transact::Address> for Account {
+    fn from(value: algokit_transact::Address) -> Self {
+        Self {
+            address: value.to_string(),
+            pub_key: value.as_bytes().to_vec().into(),
+        }
+    }
+}
+
+impl TryFrom<Account> for algokit_transact::Address {
+    type Error = AlgoKitTransactError;
+
+    fn try_from(value: Account) -> Result<Self, Self::Error> {
+        value.address.parse().map_err(Self::Error::from)
     }
 }
 
@@ -313,7 +330,7 @@ impl TryFrom<Transaction> for algokit_transact::TransactionHeader {
 
     fn try_from(tx: Transaction) -> Result<Self, AlgoKitTransactError> {
         Ok(Self {
-            sender: tx.sender.try_into()?,
+            sender: tx.sender.address.parse()?,
             fee: tx.fee,
             first_valid: tx.first_valid,
             last_valid: tx.last_valid,
@@ -323,7 +340,7 @@ impl TryFrom<Transaction> for algokit_transact::TransactionHeader {
                 .map(|buf| bytebuf_to_bytes::<32>(&buf))
                 .transpose()?,
             note: tx.note.map(ByteBuf::into_vec),
-            rekey_to: tx.rekey_to.map(TryInto::try_into).transpose()?,
+            rekey_to: tx.rekey_to.map(|acc| acc.address.parse()).transpose()?,
             lease: tx
                 .lease
                 .map(|buf| bytebuf_to_bytes::<32>(&buf))

@@ -1,8 +1,7 @@
-use crate::account::Account;
 use crate::constants::{
     Byte32, ALGORAND_CHECKSUM_BYTE_LENGTH, ALGORAND_PUBLIC_KEY_BYTE_LENGTH, HASH_BYTES_LENGTH,
 };
-use crate::{AlgoKitTransactError, AlgorandMsgpack, Transaction, TransactionId};
+use crate::{Address, AlgoKitTransactError, AlgorandMsgpack, Transaction, TransactionId};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, skip_serializing_none, Bytes};
 use sha2::{Digest, Sha512_256};
@@ -51,11 +50,11 @@ where
     n.as_ref().is_none_or(is_zero)
 }
 
-pub fn is_zero_addr(addr: &Account) -> bool {
-    addr.pub_key == [0u8; ALGORAND_PUBLIC_KEY_BYTE_LENGTH]
+pub fn is_zero_addr(addr: &Address) -> bool {
+    addr.as_bytes() == &[0u8; ALGORAND_PUBLIC_KEY_BYTE_LENGTH]
 }
 
-pub fn is_zero_addr_opt(addr: &Option<Account>) -> bool {
+pub fn is_zero_addr_opt(addr: &Option<Address>) -> bool {
     addr.as_ref().is_none_or(is_zero_addr)
 }
 

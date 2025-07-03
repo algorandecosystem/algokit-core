@@ -7,7 +7,7 @@ use crate::account::Account;
 use crate::traits::Validate;
 use crate::transactions::common::{TransactionHeader, TransactionValidationError};
 use crate::utils::{is_false_opt, is_zero, is_zero_addr_opt, is_zero_opt};
-use crate::Transaction;
+use crate::{Address, Transaction};
 use derive_builder::Builder;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_with::{serde_as, skip_serializing_none, Bytes};
@@ -56,22 +56,22 @@ struct AssetParams {
     #[serde(rename = "m")]
     #[serde(skip_serializing_if = "is_zero_addr_opt")]
     #[serde(default)]
-    pub manager: Option<Account>,
+    pub manager: Option<Address>,
 
     #[serde(rename = "r")]
     #[serde(skip_serializing_if = "is_zero_addr_opt")]
     #[serde(default)]
-    pub reserve: Option<Account>,
+    pub reserve: Option<Address>,
 
     #[serde(rename = "f")]
     #[serde(skip_serializing_if = "is_zero_addr_opt")]
     #[serde(default)]
-    pub freeze: Option<Account>,
+    pub freeze: Option<Address>,
 
     #[serde(rename = "c")]
     #[serde(skip_serializing_if = "is_zero_addr_opt")]
     #[serde(default)]
-    pub clawback: Option<Account>,
+    pub clawback: Option<Address>,
 }
 
 /// Represents an asset configuration transaction that creates, reconfigures, or destroys assets.
@@ -246,10 +246,10 @@ where
             unit_name: fields.unit_name,
             url: fields.url,
             metadata_hash: fields.metadata_hash,
-            manager: fields.manager,
-            reserve: fields.reserve,
-            freeze: fields.freeze,
-            clawback: fields.clawback,
+            manager: fields.manager.map(Into::into),
+            reserve: fields.reserve.map(Into::into),
+            freeze: fields.freeze.map(Into::into),
+            clawback: fields.clawback.map(Into::into),
         }),
         false => None,
     };
@@ -312,10 +312,10 @@ where
         unit_name,
         url,
         metadata_hash,
-        manager,
-        reserve,
-        freeze,
-        clawback,
+        manager: manager.map(Into::into),
+        reserve: reserve.map(Into::into),
+        freeze: freeze.map(Into::into),
+        clawback: clawback.map(Into::into),
     })
 }
 
