@@ -4,8 +4,9 @@ mod key_registration;
 
 use crate::{
     transactions::{AssetTransferTransactionBuilder, PaymentTransactionBuilder},
-    Account, AlgorandMsgpack, Byte32, MultisigAccount, SignedTransaction, Transaction,
-    TransactionHeaderBuilder, TransactionId, ALGORAND_PUBLIC_KEY_BYTE_LENGTH, HASH_BYTES_LENGTH,
+    Account, Address, AlgorandMsgpack, Byte32, MultisigSignature, MultisigSubsig,
+    SignedTransaction, Transaction, TransactionHeaderBuilder, TransactionId,
+    ALGORAND_PUBLIC_KEY_BYTE_LENGTH, HASH_BYTES_LENGTH,
 };
 use base64::{prelude::BASE64_STANDARD, Engine};
 use convert_case::{Case, Casing};
@@ -190,12 +191,8 @@ impl AccountMother {
             .unwrap()
     }
 
-    pub fn msig() -> MultisigAccount {
-        MultisigAccount {
-            version: 1,
-            threshold: 2,
-            addrs: vec![Self::account().into(), Self::example().into()],
-        }
+    pub fn msig() -> MultisigSignature {
+        MultisigSignature::new(1, 2, vec![Self::account().into(), Self::example().into()])
     }
 }
 
@@ -278,8 +275,10 @@ pub struct TransactionTestData {
     pub unsigned_bytes: Vec<u8>,
     pub signing_private_key: Byte32,
     pub signed_bytes: Vec<u8>,
-    pub rekeyed_sender_auth_address: Account,
+    pub rekeyed_sender_auth_address: Address,
     pub rekeyed_sender_signed_bytes: Vec<u8>,
+    pub multisig_address: Address,
+    pub multisig_signed_bytes: Vec<u8>,
 }
 
 impl TransactionTestData {
@@ -298,15 +297,41 @@ impl TransactionTestData {
         let signed_bytes = signed_txn.encode().unwrap();
 
         let rekeyed_sender_auth_address =
-            Account::from_str("BKDYDIDVSZCP75JVCB76P3WBJRY6HWAIFDSEOKYHJY5WMNJ2UWJ65MYETU")
+            Address::from_str("BKDYDIDVSZCP75JVCB76P3WBJRY6HWAIFDSEOKYHJY5WMNJ2UWJ65MYETU")
                 .unwrap();
         let signer_signed_txn = SignedTransaction {
             transaction: transaction.clone(),
             signature: Some(signature.to_bytes()),
-            auth_address: Some(rekeyed_sender_auth_address.clone().address()),
+            auth_address: Some(rekeyed_sender_auth_address.clone()),
             multisig: None,
         };
         let rekeyed_sender_signed_bytes = signer_signed_txn.encode().unwrap();
+
+        let multisig_address = rekeyed_sender_auth_address.clone();
+        let multisig_signed_txn = SignedTransaction {
+            transaction: transaction.clone(),
+            signature: None,
+            auth_address: None,
+            multisig: Some(MultisigSignature {
+                version: 1,
+                threshold: 2,
+                subsigs: vec![
+                    MultisigSubsig {
+                        addr: "424ZV7KBBUJ52DUKP2KLQ6I5GBOHKBXOW7Q7UQIOOYNDWYRM4EKOSMVVRI"
+                            .parse()
+                            .unwrap(),
+                        sig: Some(signature.to_bytes()),
+                    },
+                    MultisigSubsig {
+                        addr: "NY6DHEEFW73R2NUWY562U2NNKSKBKVYY5OOQFLD3M2II5RUNKRZDEGUGEA"
+                            .parse()
+                            .unwrap(),
+                        sig: Some(signature.to_bytes()),
+                    },
+                ],
+            }),
+        };
+        let multisig_signed_bytes = multisig_signed_txn.encode().unwrap();
 
         Self {
             transaction,
@@ -317,6 +342,8 @@ impl TransactionTestData {
             signed_bytes,
             rekeyed_sender_auth_address,
             rekeyed_sender_signed_bytes,
+            multisig_address,
+            multisig_signed_bytes,
         }
     }
 
@@ -491,6 +518,39 @@ mod tests {
             data.id,
             String::from("TZM3P4ZL4DLIEZ3WOEP67MQ6JITTO4D3NJN3RCA5YDBC3V4LA5LA")
         );
+        assert_eq!(
+            data.multisig_signed_bytes,
+            [
+                131, 164, 109, 115, 105, 103, 131, 166, 115, 117, 98, 115, 105, 103, 146, 130, 162,
+                112, 107, 196, 32, 230, 185, 154, 253, 65, 13, 19, 221, 14, 138, 126, 148, 184,
+                121, 29, 48, 92, 117, 6, 238, 183, 225, 250, 65, 14, 118, 26, 59, 98, 44, 225, 20,
+                161, 115, 217, 88, 51, 75, 104, 109, 65, 82, 69, 55, 55, 113, 107, 76, 43, 83, 118,
+                50, 115, 65, 89, 50, 67, 105, 73, 48, 77, 106, 82, 80, 43, 112, 122, 120, 114, 116,
+                114, 108, 114, 70, 69, 56, 70, 121, 81, 51, 51, 118, 55, 74, 122, 70, 112, 70, 108,
+                122, 121, 115, 117, 71, 49, 90, 56, 56, 116, 49, 114, 43, 72, 106, 67, 114, 100,
+                69, 49, 90, 82, 84, 122, 77, 105, 81, 112, 69, 85, 52, 68, 65, 61, 61, 130, 162,
+                112, 107, 196, 32, 110, 60, 51, 144, 133, 183, 247, 29, 54, 150, 199, 125, 170,
+                105, 173, 84, 148, 21, 87, 24, 235, 157, 2, 172, 123, 102, 144, 142, 198, 141, 84,
+                114, 161, 115, 217, 88, 51, 75, 104, 109, 65, 82, 69, 55, 55, 113, 107, 76, 43, 83,
+                118, 50, 115, 65, 89, 50, 67, 105, 73, 48, 77, 106, 82, 80, 43, 112, 122, 120, 114,
+                116, 114, 108, 114, 70, 69, 56, 70, 121, 81, 51, 51, 118, 55, 74, 122, 70, 112, 70,
+                108, 122, 121, 115, 117, 71, 49, 90, 56, 56, 116, 49, 114, 43, 72, 106, 67, 114,
+                100, 69, 49, 90, 82, 84, 122, 77, 105, 81, 112, 69, 85, 52, 68, 65, 61, 61, 163,
+                116, 104, 114, 2, 161, 118, 1, 164, 115, 103, 110, 114, 196, 32, 232, 109, 24, 122,
+                91, 132, 132, 185, 92, 189, 84, 177, 89, 55, 12, 132, 228, 177, 51, 233, 89, 215,
+                137, 151, 170, 73, 129, 235, 85, 144, 216, 77, 163, 116, 120, 110, 137, 163, 97,
+                109, 116, 206, 0, 1, 138, 136, 163, 102, 101, 101, 206, 0, 3, 196, 216, 162, 102,
+                118, 206, 3, 5, 0, 212, 163, 103, 101, 110, 172, 116, 101, 115, 116, 110, 101, 116,
+                45, 118, 49, 46, 48, 162, 103, 104, 196, 32, 72, 99, 181, 24, 164, 179, 200, 78,
+                200, 16, 242, 45, 79, 16, 129, 203, 15, 113, 240, 89, 167, 172, 32, 222, 198, 47,
+                127, 112, 229, 9, 58, 34, 162, 108, 118, 206, 3, 5, 4, 188, 163, 114, 99, 118, 196,
+                32, 173, 207, 218, 63, 201, 93, 52, 35, 35, 15, 161, 115, 204, 245, 211, 90, 68,
+                182, 3, 164, 184, 247, 131, 205, 149, 104, 201, 215, 253, 11, 206, 245, 163, 115,
+                110, 100, 196, 32, 138, 24, 8, 153, 89, 167, 60, 236, 255, 238, 91, 198, 115, 190,
+                137, 254, 3, 35, 198, 98, 195, 33, 65, 123, 138, 200, 132, 194, 74, 0, 44, 25, 164,
+                116, 121, 112, 101, 163, 112, 97, 121
+            ]
+        )
     }
 
     #[test]

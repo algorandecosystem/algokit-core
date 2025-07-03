@@ -119,12 +119,17 @@ pub struct Account {
 }
 
 #[ffi_record]
-pub struct MultisigAccount {
+pub struct MultisigSignature {
     address: String,
     version: u8,
     threshold: u8,
-    // TODO: Since this FFI equivalent structure contains address and addrs, find less ambiguous names.
-    addrs: Vec<Account>,
+    subsigs: Vec<MultisigSubsig>,
+}
+
+#[ffi_record]
+pub struct MultisigSubsig {
+    addr: Account,
+    sig: Option<ByteBuf>,
 }
 
 impl From<algokit_transact::Account> for Account {
@@ -172,43 +177,60 @@ impl TryFrom<Account> for algokit_transact::Address {
     }
 }
 
-impl From<algokit_transact::MultisigAccount> for MultisigAccount {
-    fn from(value: algokit_transact::MultisigAccount) -> Self {
+impl From<algokit_transact::MultisigSignature> for MultisigSignature {
+    fn from(value: algokit_transact::MultisigSignature) -> Self {
         Self {
             address: value.to_string(),
             version: value.version,
             threshold: value.threshold,
-            addrs: value
-                .addrs
-                .into_iter()
-                .map(Into::<algokit_transact::Account>::into)
-                .map(Into::<Account>::into)
-                .collect(),
+            subsigs: value.subsigs.into_iter().map(Into::into).collect(),
         }
     }
 }
 
-impl TryFrom<MultisigAccount> for algokit_transact::MultisigAccount {
+impl TryFrom<MultisigSignature> for algokit_transact::MultisigSignature {
     type Error = AlgoKitTransactError;
 
-    fn try_from(value: MultisigAccount) -> Result<Self, Self::Error> {
+    fn try_from(value: MultisigSignature) -> Result<Self, Self::Error> {
         Ok(Self {
             version: value.version,
             threshold: value.threshold,
-            addrs: value
-                .addrs
+            subsigs: value
+                .subsigs
                 .into_iter()
-                .map(TryInto::<algokit_transact::Account>::try_into)
-                .collect::<Result<Vec<_>, _>>()
-                .map_err(|_| {
-                    AlgoKitTransactError::EncodingError(
-                        "Failed to convert accounts in multisig".to_string(),
-                    )
-                })?
-                .into_iter()
-                .map(Into::<algokit_transact::Address>::into)
-                .collect(),
+                .map(TryInto::try_into)
+                .collect::<Result<Vec<_>, _>>()?,
         })
+    }
+}
+
+impl From<algokit_transact::MultisigSubsig> for MultisigSubsig {
+    fn from(value: algokit_transact::MultisigSubsig) -> Self {
+        Self {
+            addr: value.addr.into(),
+            sig: value.sig.map(|sig| sig.to_vec().into()),
+        }
+    }
+}
+
+impl TryFrom<MultisigSubsig> for algokit_transact::MultisigSubsig {
+    type Error = AlgoKitTransactError;
+
+    fn try_from(value: MultisigSubsig) -> Result<Self, Self::Error> {
+        let addr = value.addr.try_into()?;
+        let sig = value
+            .sig
+            .map(|sig| {
+                sig.to_vec().try_into().map_err(|_| {
+                    AlgoKitTransactError::EncodingError(format!(
+                        "signature should be {} bytes",
+                        ALGORAND_SIGNATURE_BYTE_LENGTH
+                    ))
+                })
+            })
+            .transpose()?;
+
+        Ok(Self { addr, sig })
     }
 }
 
@@ -500,6 +522,9 @@ pub struct SignedTransaction {
 
     /// Optional auth address applicable if the transaction sender is a rekeyed account.
     pub auth_address: Option<Account>,
+
+    /// Optional multisig signature if the transaction is a multisig transaction.
+    pub multisig_signature: Option<MultisigSignature>,
 }
 
 impl From<algokit_transact::SignedTransaction> for SignedTransaction {
@@ -508,6 +533,7 @@ impl From<algokit_transact::SignedTransaction> for SignedTransaction {
             transaction: signed_tx.transaction.try_into().unwrap(),
             signature: signed_tx.signature.map(|sig| sig.to_vec().into()),
             auth_address: signed_tx.auth_address.map(Into::into),
+            multisig_signature: signed_tx.multisig.map(Into::into),
         }
     }
 }
@@ -532,7 +558,7 @@ impl TryFrom<SignedTransaction> for algokit_transact::SignedTransaction {
             transaction: signed_tx.transaction.try_into()?,
             signature,
             auth_address: signed_tx.auth_address.map(TryInto::try_into).transpose()?,
-            multisig: None,
+            multisig: signed_tx.multisig_signature.map(TryInto::try_into).transpose()?,
         })
     }
 }
@@ -789,7 +815,7 @@ pub enum AlgorandConstant {
     /// Increment in the encoded byte size when a signature is attached to a transaction (75)
     SignatureEncodingIncrLength,
 
-    // The maximum number of transactions in a group (16)
+    /// The maximum number of transactions in a group (16)
     MaxTxGroupSize,
 }
 
