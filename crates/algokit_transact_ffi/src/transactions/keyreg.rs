@@ -1,4 +1,9 @@
-use crate::{bytebuf_to_32_bytes, bytebuf_to_64_bytes, AlgoKitTransactError};
+//! FFI-safe key registration transaction types for AlgoKit Core.
+//!
+//! This module provides FFI-compatible structures and conversions for key registration
+//! transactions that can be used across language bindings.
+
+use crate::{bytebuf_to_bytes, AlgoKitTransactError};
 use ffi_macros::ffi_record;
 use serde::{Deserialize, Serialize};
 use serde_bytes::ByteBuf;
@@ -65,15 +70,15 @@ impl TryFrom<crate::Transaction> for algokit_transact::KeyRegistrationTransactio
             header,
             vote_key: data
                 .vote_key
-                .map(|buf| bytebuf_to_32_bytes(&buf))
+                .map(|buf| bytebuf_to_bytes::<32>(&buf))
                 .transpose()?,
             selection_key: data
                 .selection_key
-                .map(|buf| bytebuf_to_32_bytes(&buf))
+                .map(|buf| bytebuf_to_bytes::<32>(&buf))
                 .transpose()?,
             state_proof_key: data
                 .state_proof_key
-                .map(|buf| bytebuf_to_64_bytes(&buf))
+                .map(|buf| bytebuf_to_bytes::<64>(&buf))
                 .transpose()?,
             vote_first: data.vote_first,
             vote_last: data.vote_last,

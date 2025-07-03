@@ -485,17 +485,23 @@ fn test_non_participating_key_registration_transaction_encoding() {
 #[test]
 fn test_key_registration_online_offline_detection() {
     // Test online key registration
-    let online_tx = TransactionMother::online_key_registration().build_fields().unwrap();
+    let online_tx = TransactionMother::online_key_registration()
+        .build_fields()
+        .unwrap();
     assert!(online_tx.is_online());
     assert!(!online_tx.is_offline());
 
     // Test offline key registration
-    let offline_tx = TransactionMother::offline_key_registration().build_fields().unwrap();
+    let offline_tx = TransactionMother::offline_key_registration()
+        .build_fields()
+        .unwrap();
     assert!(offline_tx.is_offline());
     assert!(!offline_tx.is_online());
 
     // Test non-participating key registration
-    let non_part_tx = TransactionMother::non_participating_key_registration().build_fields().unwrap();
+    let non_part_tx = TransactionMother::non_participating_key_registration()
+        .build_fields()
+        .unwrap();
     assert!(non_part_tx.is_offline());
     assert!(!non_part_tx.is_online());
 }
@@ -504,7 +510,7 @@ fn test_key_registration_online_offline_detection() {
 fn test_key_registration_transaction_id() {
     let tx_builder = TransactionMother::online_key_registration();
     let key_reg_tx = tx_builder.build().unwrap();
-    
+
     let signed_tx = SignedTransaction {
         transaction: key_reg_tx.clone(),
         signature: Some([0; ALGORAND_SIGNATURE_BYTE_LENGTH]),
@@ -514,10 +520,10 @@ fn test_key_registration_transaction_id() {
     // Test that transaction ID can be generated
     let tx_id = key_reg_tx.id().unwrap();
     let tx_id_raw = key_reg_tx.id_raw().unwrap();
-    
+
     assert_eq!(signed_tx.id().unwrap(), tx_id);
     assert_eq!(signed_tx.id_raw().unwrap(), tx_id_raw);
-    
+
     // Transaction ID should be non-empty
     assert!(!tx_id.is_empty());
     assert_ne!(tx_id_raw, [0u8; 32]);
@@ -525,7 +531,9 @@ fn test_key_registration_transaction_id() {
 
 #[test]
 fn test_key_registration_fee_calculation() {
-    let key_reg_tx = TransactionMother::online_key_registration().build().unwrap();
+    let key_reg_tx = TransactionMother::online_key_registration()
+        .build()
+        .unwrap();
 
     let updated_transaction = key_reg_tx
         .assign_fee(FeeParams {
@@ -535,7 +543,7 @@ fn test_key_registration_fee_calculation() {
             max_fee: None,
         })
         .unwrap();
-    
+
     // Fee should be calculated based on transaction size
     assert!(updated_transaction.header().fee.unwrap() >= 1000);
 }
@@ -562,11 +570,11 @@ fn test_key_registration_in_transaction_group() {
     let grouped_txs = txs.assign_group().unwrap();
 
     assert_eq!(grouped_txs.len(), 2);
-    
+
     // Both transactions should have the same group ID
     let group_id = grouped_txs[0].header().group.unwrap();
     assert_eq!(grouped_txs[1].header().group.unwrap(), group_id);
-    
+
     // Group ID should be non-zero
     assert_ne!(group_id, [0u8; 32]);
 }

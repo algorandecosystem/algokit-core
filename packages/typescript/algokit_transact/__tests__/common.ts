@@ -14,11 +14,10 @@ const defaultReviver = (key: string, value: unknown) => {
 
   if (
     typeof value === "number" &&
-    ["fee", "amount", "firstValid", "lastValid", "assetId", "total", "appId", "extraProgramPages", "numUints", "numByteSlices"].includes(
+    ["fee", "amount", "firstValid", "lastValid", "assetId", "total", "appId", "extraProgramPages", "numUints", "numByteSlices", "voteFirst", "voteLast", "voteKeyDilution"].includes(
       key,
     )
   ) {
-  if (typeof value === "number" && ["fee", "amount", "firstValid", "lastValid", "voteFirst", "voteLast", "voteKeyDilution"].includes(key)) {
     return BigInt(value);
   }
 
@@ -40,19 +39,20 @@ export type TransactionTestData = {
   rekeyedSenderSignedBytes: Uint8Array;
 };
 
-export const testData =
-  parseJson<
-    Record<
-      | "simplePayment"
-      | "optInAssetTransfer"
-      | "assetCreate"
-      | "assetDestroy"
-      | "assetReconfigure"
-      | "applicationCall"
-      | "applicationCreate"
-      | "applicationUpdate"
-      | "applicationDelete",
-      TransactionTestData
-    >
-  >(jsonString);
-export const testData = parseJson<Record<"simplePayment" | "optInAssetTransfer" | "onlineKeyRegistration" | "offlineKeyRegistration" | "nonParticipatingKeyRegistration", TransactionTestData>>(jsonString);
+export const testData = parseJson<
+  Record<
+    | "simplePayment"
+    | "optInAssetTransfer"
+    | "assetCreate"
+    | "assetDestroy"
+    | "assetReconfigure"
+    | "applicationCall"
+    | "applicationCreate"
+    | "applicationUpdate"
+    | "applicationDelete"
+    | "onlineKeyRegistration"
+    | "offlineKeyRegistration"
+    | "nonParticipatingKeyRegistration",
+    TransactionTestData
+  >
+>(jsonString);

@@ -13,13 +13,10 @@ pub use traits::{AlgorandMsgpack, EstimateTransactionSize, TransactionId, Transa
 pub use transactions::{
     ApplicationCallTransactionBuilder, ApplicationCallTransactionFields,
     AssetConfigTransactionBuilder, AssetConfigTransactionFields, AssetTransferTransactionBuilder,
-    AssetTransferTransactionFields, BoxReference, FeeParams, OnApplicationComplete,
-    PaymentTransactionBuilder, PaymentTransactionFields, SignedTransaction, StateSchema,
-    Transaction, TransactionHeader, TransactionHeaderBuilder,
-    AssetTransferTransactionBuilder, AssetTransferTransactionFields, FeeParams,
-    KeyRegistrationTransactionBuilder, KeyRegistrationTransactionFields,
-    PaymentTransactionBuilder, PaymentTransactionFields, SignedTransaction, Transaction,
-    TransactionHeader, TransactionHeaderBuilder,
+    AssetTransferTransactionFields, BoxReference, FeeParams, KeyRegistrationTransactionBuilder,
+    KeyRegistrationTransactionFields, OnApplicationComplete, PaymentTransactionBuilder,
+    PaymentTransactionFields, SignedTransaction, StateSchema, Transaction, TransactionHeader,
+    TransactionHeaderBuilder,
 };
 
 #[cfg(test)]

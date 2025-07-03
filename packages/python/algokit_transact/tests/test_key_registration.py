@@ -1,23 +1,18 @@
 import pytest
 
-from . import TEST_DATA
-from algokit_transact import (
-    FeeParams,
-    assign_fee,
-    encode_transaction,
-    encode_signed_transaction,
-    KeyRegistrationTransactionFields,
-    TransactionType,
-    decode_transaction,
-    get_encoded_transaction_type,
-    Transaction,
-    SignedTransaction,
-    address_from_string,
-    address_from_pub_key,
-    get_transaction_id,
-    get_transaction_id_raw,
+from tests.transaction_asserts import (
+    assert_assign_fee,
+    assert_decode_with_prefix,
+    assert_decode_without_prefix,
+    assert_encode,
+    assert_encode_with_auth_address,
+    assert_encode_with_signature,
+    assert_encoded_transaction_type,
+    assert_example,
+    assert_transaction_id,
 )
-from nacl.signing import SigningKey
+from . import TEST_DATA
+
 
 online_key_registration = TEST_DATA.online_key_registration
 offline_key_registration = TEST_DATA.offline_key_registration
@@ -26,138 +21,107 @@ non_participating_key_registration = TEST_DATA.non_participating_key_registratio
 # Polytest Suite: Key Registration
 
 # Polytest Group: Transaction Tests
+txn_test_data = {
+    "online key registration": TEST_DATA.online_key_registration,
+    "offline key registration": TEST_DATA.offline_key_registration,
+    "non-participating key registration": TEST_DATA.non_participating_key_registration,
+}
+
 
 @pytest.mark.group_transaction_tests
-def test_example():
+@pytest.mark.parametrize(
+    "test_data",
+    txn_test_data.values(),
+    ids=txn_test_data.keys(),
+)
+def test_example(test_data):
     """A human-readable example of forming a transaction and signing it"""
-    alice_keypair = SigningKey.generate()  # Keypair generated from PyNaCl
-    alice = address_from_pub_key(alice_keypair.verify_key.__bytes__())
+    assert_example(test_data)
 
-    # Example 1: Online key registration
-    online_txn = Transaction(
-        transaction_type=TransactionType.KEY_REGISTRATION,
-        first_valid=1337,
-        last_valid=1347,
-        sender=alice,
-        genesis_hash=b"A" * 32,  # pretend this is a valid hash
-        genesis_id="localnet",
-        key_registration=KeyRegistrationTransactionFields(
-            vote_key=b"1" * 32,  # 32-byte participation key
-            selection_key=b"2" * 32,  # 32-byte VRF key
-            state_proof_key=b"3" * 64,  # 64-byte state proof key
-            vote_first=100,
-            vote_last=1000,
-            vote_key_dilution=1000,
-        ),
-    )
-
-    online_txn_with_fee = assign_fee(online_txn, FeeParams(fee_per_byte=0, min_fee=1000))
-    assert online_txn_with_fee.fee == 1000
-
-    # Example 2: Offline key registration (going offline)
-    offline_txn = Transaction(
-        transaction_type=TransactionType.KEY_REGISTRATION,
-        first_valid=1337,
-        last_valid=1347,
-        sender=alice,
-        genesis_hash=b"A" * 32,
-        genesis_id="localnet",
-        key_registration=KeyRegistrationTransactionFields(),  # All fields None for offline
-    )
-
-    offline_txn_with_fee = assign_fee(offline_txn, FeeParams(fee_per_byte=0, min_fee=1000))
-    assert offline_txn_with_fee.fee == 1000
-
-    # Example 3: Non-participating account
-    non_part_txn = Transaction(
-        transaction_type=TransactionType.KEY_REGISTRATION,
-        first_valid=1337,
-        last_valid=1347,
-        sender=alice,
-        genesis_hash=b"A" * 32,
-        genesis_id="localnet",
-        key_registration=KeyRegistrationTransactionFields(
-            non_participation=True  # Mark as non-participating for no rewards
-        ),
-    )
-
-    non_part_txn_with_fee = assign_fee(non_part_txn, FeeParams(fee_per_byte=0, min_fee=1000))
-    assert non_part_txn_with_fee.fee == 1000
 
 @pytest.mark.group_transaction_tests
-def test_get_transaction_id():
+@pytest.mark.parametrize(
+    "test_data",
+    txn_test_data.values(),
+    ids=txn_test_data.keys(),
+)
+def test_get_transaction_id(test_data):
     """A transaction id can be obtained from a transaction"""
-    # Test with online key registration
-    assert get_transaction_id(online_key_registration.transaction) == online_key_registration.id
-    assert get_transaction_id_raw(online_key_registration.transaction) == online_key_registration.id_raw
-    
-    # Test with offline key registration
-    assert get_transaction_id(offline_key_registration.transaction) == offline_key_registration.id
-    assert get_transaction_id_raw(offline_key_registration.transaction) == offline_key_registration.id_raw
+    assert_transaction_id(test_data)
+
 
 @pytest.mark.group_transaction_tests
-def test_get_encoded_transaction_type():
+@pytest.mark.parametrize(
+    "test_data",
+    txn_test_data.values(),
+    ids=txn_test_data.keys(),
+)
+def test_assign_fee(test_data):
+    """A fee can be calculated and assigned to a transaction"""
+    assert_assign_fee(test_data)
+
+
+@pytest.mark.group_transaction_tests
+@pytest.mark.parametrize(
+    "test_data",
+    txn_test_data.values(),
+    ids=txn_test_data.keys(),
+)
+def test_get_encoded_transaction_type(test_data):
     """The transaction type of an encoded transaction can be retrieved"""
-    online_encoded = encode_transaction(online_key_registration.transaction)
-    assert get_encoded_transaction_type(online_encoded) == TransactionType.KEY_REGISTRATION
-    
-    offline_encoded = encode_transaction(offline_key_registration.transaction)
-    assert get_encoded_transaction_type(offline_encoded) == TransactionType.KEY_REGISTRATION
+    assert_encoded_transaction_type(test_data)
+
 
 @pytest.mark.group_transaction_tests
-def test_decode_without_prefix():
+@pytest.mark.parametrize(
+    "test_data",
+    txn_test_data.values(),
+    ids=txn_test_data.keys(),
+)
+def test_decode_without_prefix(test_data):
     """A transaction without TX prefix and valid fields is decoded properly"""
-    # Remove TX prefix (first 2 bytes) and decode
-    online_decoded = decode_transaction(online_key_registration.unsigned_bytes[2:])
-    assert online_decoded == online_key_registration.transaction
-    
-    offline_decoded = decode_transaction(offline_key_registration.unsigned_bytes[2:])
-    assert offline_decoded == offline_key_registration.transaction
+    assert_decode_without_prefix(test_data)
+
 
 @pytest.mark.group_transaction_tests
-def test_decode_with_prefix():
+@pytest.mark.parametrize(
+    "test_data",
+    txn_test_data.values(),
+    ids=txn_test_data.keys(),
+)
+def test_decode_with_prefix(test_data):
     """A transaction with TX prefix and valid fields is decoded properly"""
-    # Decode with TX prefix
-    online_decoded = decode_transaction(online_key_registration.unsigned_bytes)
-    assert online_decoded == online_key_registration.transaction
-    
-    offline_decoded = decode_transaction(offline_key_registration.unsigned_bytes)
-    assert offline_decoded == offline_key_registration.transaction
+    assert_decode_with_prefix(test_data)
+
 
 @pytest.mark.group_transaction_tests
-def test_encode_with_auth_address():
+@pytest.mark.parametrize(
+    "test_data",
+    txn_test_data.values(),
+    ids=txn_test_data.keys(),
+)
+def test_encode_with_auth_address(test_data):
     """An auth address can be attached to a encoded transaction with a signature"""
-    signed_txn = SignedTransaction(
-        transaction=online_key_registration.transaction,
-        signature=online_key_registration.signing_private_key.sign(online_key_registration.unsigned_bytes).signature,
-        auth_address=online_key_registration.rekeyed_sender_auth_address,
-    )
-    
-    encoded = encode_signed_transaction(signed_txn)
-    assert encoded == online_key_registration.rekeyed_sender_signed_bytes
+    assert_encode_with_auth_address(test_data)
+
 
 @pytest.mark.group_transaction_tests
-def test_encode_with_signature():
+@pytest.mark.parametrize(
+    "test_data",
+    txn_test_data.values(),
+    ids=txn_test_data.keys(),
+)
+def test_encode_with_signature(test_data):
     """A signature can be attached to a encoded transaction"""
-    signed_txn = SignedTransaction(
-        transaction=online_key_registration.transaction,
-        signature=online_key_registration.signing_private_key.sign(online_key_registration.unsigned_bytes).signature,
-    )
-    
-    encoded = encode_signed_transaction(signed_txn)
-    assert encoded == online_key_registration.signed_bytes
+    assert_encode_with_signature(test_data)
+
 
 @pytest.mark.group_transaction_tests
-def test_encode():
+@pytest.mark.parametrize(
+    "test_data",
+    txn_test_data.values(),
+    ids=txn_test_data.keys(),
+)
+def test_encode(test_data):
     """A transaction with valid fields is encoded properly"""
-    # Test online key registration encoding
-    online_encoded = encode_transaction(online_key_registration.transaction)
-    assert online_encoded == online_key_registration.unsigned_bytes
-    
-    # Test offline key registration encoding
-    offline_encoded = encode_transaction(offline_key_registration.transaction)
-    assert offline_encoded == offline_key_registration.unsigned_bytes
-    
-    # Test non-participating key registration encoding
-    non_part_encoded = encode_transaction(non_participating_key_registration.transaction)
-    assert non_part_encoded == non_participating_key_registration.unsigned_bytes
+    assert_encode(test_data)

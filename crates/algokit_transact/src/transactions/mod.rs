@@ -22,9 +22,7 @@ pub use asset_config::{
 };
 pub use asset_transfer::{AssetTransferTransactionBuilder, AssetTransferTransactionFields};
 pub use common::{TransactionHeader, TransactionHeaderBuilder};
-use key_registration::KeyRegistrationTransactionBuilderError;
 pub use key_registration::{KeyRegistrationTransactionBuilder, KeyRegistrationTransactionFields};
-use payment::PaymentTransactionBuilderError;
 pub use payment::{PaymentTransactionBuilder, PaymentTransactionFields};
 
 use crate::constants::{
@@ -49,14 +47,19 @@ pub enum Transaction {
     #[serde(rename = "axfer")]
     AssetTransfer(AssetTransferTransactionFields),
 
+    #[serde(serialize_with = "asset_config_serializer")]
+    #[serde(deserialize_with = "asset_config_deserializer")]
+    #[serde(rename = "acfg")]
+    AssetConfig(AssetConfigTransactionFields),
+
+    #[serde(serialize_with = "application_call_serializer")]
+    #[serde(deserialize_with = "application_call_deserializer")]
+    #[serde(rename = "appl")]
+    ApplicationCall(ApplicationCallTransactionFields),
+
     #[serde(rename = "keyreg")]
     KeyRegistration(KeyRegistrationTransactionFields),
-    // All the below transaction variants will be implemented in the future
-    // #[serde(rename = "afrz")]
-    // AssetFreeze(...),
-
-    // #[serde(rename = "keyreg")]
-    // KeyRegistration(...),
+    // Remaining transaction variants will be implemented in the future
 }
 
 pub struct FeeParams {

@@ -2,7 +2,10 @@ mod application_call;
 mod asset_config;
 
 use crate::{
-    transactions::{AssetTransferTransactionBuilder, KeyRegistrationTransactionBuilder, PaymentTransactionBuilder},
+    transactions::{
+        AssetTransferTransactionBuilder, KeyRegistrationTransactionBuilder,
+        PaymentTransactionBuilder,
+    },
     Address, AlgorandMsgpack, Byte32, SignedTransaction, Transaction, TransactionHeaderBuilder,
     TransactionId, ALGORAND_PUBLIC_KEY_BYTE_LENGTH, HASH_BYTES_LENGTH,
 };
@@ -417,7 +420,9 @@ impl TestDataMother {
             2, 205, 103, 33, 67, 14, 82, 196, 115, 196, 206, 254, 50, 110, 63, 182, 149, 229, 184,
             216, 93, 11, 13, 99, 69, 213, 218, 165, 134, 118, 47, 44,
         ];
-        let transaction = TransactionMother::online_key_registration().build().unwrap();
+        let transaction = TransactionMother::online_key_registration()
+            .build()
+            .unwrap();
         TransactionTestData::new(transaction, signing_private_key)
     }
 
@@ -426,7 +431,9 @@ impl TestDataMother {
             2, 205, 103, 33, 67, 14, 82, 196, 115, 196, 206, 254, 50, 110, 63, 182, 149, 229, 184,
             216, 93, 11, 13, 99, 69, 213, 218, 165, 134, 118, 47, 44,
         ];
-        let transaction = TransactionMother::offline_key_registration().build().unwrap();
+        let transaction = TransactionMother::offline_key_registration()
+            .build()
+            .unwrap();
         TransactionTestData::new(transaction, signing_private_key)
     }
 
@@ -435,7 +442,9 @@ impl TestDataMother {
             2, 205, 103, 33, 67, 14, 82, 196, 115, 196, 206, 254, 50, 110, 63, 182, 149, 229, 184,
             216, 93, 11, 13, 99, 69, 213, 218, 165, 134, 118, 47, 44,
         ];
-        let transaction = TransactionMother::non_participating_key_registration().build().unwrap();
+        let transaction = TransactionMother::non_participating_key_registration()
+            .build()
+            .unwrap();
         TransactionTestData::new(transaction, signing_private_key)
     }
 
