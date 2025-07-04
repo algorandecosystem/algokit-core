@@ -7,7 +7,9 @@
 use crate::constants::Byte32;
 use crate::error::AlgoKitTransactError;
 use crate::utils::pub_key_to_checksum;
-use crate::{ALGORAND_CHECKSUM_BYTE_LENGTH, ALGORAND_PUBLIC_KEY_BYTE_LENGTH};
+use crate::{
+    ALGORAND_ADDRESS_LENGTH, ALGORAND_CHECKSUM_BYTE_LENGTH, ALGORAND_PUBLIC_KEY_BYTE_LENGTH,
+};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, Bytes};
 use std::fmt::{Display, Formatter, Result as FmtResult};
@@ -54,7 +56,7 @@ impl FromStr for Address {
     /// Returns an error if the string is not exactly 58 characters, is not valid base32,
     /// or if the checksum does not match.
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.len() != 58 {
+        if s.len() != ALGORAND_ADDRESS_LENGTH {
             return Err(AlgoKitTransactError::InvalidAddress(
                 "Algorand address must be exactly 58 characters".into(),
             ));

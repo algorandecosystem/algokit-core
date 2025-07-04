@@ -314,7 +314,7 @@ impl TransactionTestData {
             "NY6DHEEFW73R2NUWY562U2NNKSKBKVYY5OOQFLD3M2II5RUNKRZDEGUGEA"
                 .parse()
                 .unwrap(),
-            );
+        );
         let multisig_signature = MultisigSignature {
             version: 1,
             threshold: 2,

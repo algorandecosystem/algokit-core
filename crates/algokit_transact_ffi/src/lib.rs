@@ -352,7 +352,7 @@ impl TryFrom<Transaction> for algokit_transact::TransactionHeader {
 
     fn try_from(tx: Transaction) -> Result<Self, AlgoKitTransactError> {
         Ok(Self {
-            sender: tx.sender.address.parse()?,
+            sender: tx.sender.try_into()?,
             fee: tx.fee,
             first_valid: tx.first_valid,
             last_valid: tx.last_valid,
@@ -362,7 +362,7 @@ impl TryFrom<Transaction> for algokit_transact::TransactionHeader {
                 .map(|buf| bytebuf_to_bytes::<32>(&buf))
                 .transpose()?,
             note: tx.note.map(ByteBuf::into_vec),
-            rekey_to: tx.rekey_to.map(|acc| acc.address.parse()).transpose()?,
+            rekey_to: tx.rekey_to.map(TryInto::try_into).transpose()?,
             lease: tx
                 .lease
                 .map(|buf| bytebuf_to_bytes::<32>(&buf))

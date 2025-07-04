@@ -36,7 +36,10 @@ fn generate_test_data() {
             signed_bytes: d.signed_bytes.clone(),
             rekeyed_sender_auth_address: d.rekeyed_sender_auth_address.clone().into(),
             rekeyed_sender_signed_bytes: d.rekeyed_sender_signed_bytes.clone(),
-            multisig_addresses: (d.multisig_addresses.clone().0.into(), d.multisig_addresses.clone().1.into()),
+            multisig_addresses: (
+                d.multisig_addresses.clone().0.into(),
+                d.multisig_addresses.clone().1.into(),
+            ),
             multisig_signed_bytes: d.multisig_signed_bytes.clone(),
         }),
     );
