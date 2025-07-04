@@ -277,7 +277,7 @@ pub struct TransactionTestData {
     pub signed_bytes: Vec<u8>,
     pub rekeyed_sender_auth_address: Address,
     pub rekeyed_sender_signed_bytes: Vec<u8>,
-    pub multisig_address: Address,
+    pub multisig_addresses: (Address, Address),
     pub multisig_signed_bytes: Vec<u8>,
 }
 
@@ -307,29 +307,33 @@ impl TransactionTestData {
         };
         let rekeyed_sender_signed_bytes = signer_signed_txn.encode().unwrap();
 
-        let multisig_address = rekeyed_sender_auth_address.clone();
+        let multisig_addresses = (
+            "424ZV7KBBUJ52DUKP2KLQ6I5GBOHKBXOW7Q7UQIOOYNDWYRM4EKOSMVVRI"
+                .parse()
+                .unwrap(),
+            "NY6DHEEFW73R2NUWY562U2NNKSKBKVYY5OOQFLD3M2II5RUNKRZDEGUGEA"
+                .parse()
+                .unwrap(),
+            );
+        let multisig_signature = MultisigSignature {
+            version: 1,
+            threshold: 2,
+            subsigs: vec![
+                MultisigSubsig {
+                    addr: multisig_addresses.clone().0,
+                    sig: Some(signature.to_bytes()),
+                },
+                MultisigSubsig {
+                    addr: multisig_addresses.clone().1,
+                    sig: Some(signature.to_bytes()),
+                },
+            ],
+        };
         let multisig_signed_txn = SignedTransaction {
             transaction: transaction.clone(),
             signature: None,
             auth_address: None,
-            multisig: Some(MultisigSignature {
-                version: 1,
-                threshold: 2,
-                subsigs: vec![
-                    MultisigSubsig {
-                        addr: "424ZV7KBBUJ52DUKP2KLQ6I5GBOHKBXOW7Q7UQIOOYNDWYRM4EKOSMVVRI"
-                            .parse()
-                            .unwrap(),
-                        sig: Some(signature.to_bytes()),
-                    },
-                    MultisigSubsig {
-                        addr: "NY6DHEEFW73R2NUWY562U2NNKSKBKVYY5OOQFLD3M2II5RUNKRZDEGUGEA"
-                            .parse()
-                            .unwrap(),
-                        sig: Some(signature.to_bytes()),
-                    },
-                ],
-            }),
+            multisig: Some(multisig_signature),
         };
         let multisig_signed_bytes = multisig_signed_txn.encode().unwrap();
 
@@ -342,7 +346,7 @@ impl TransactionTestData {
             signed_bytes,
             rekeyed_sender_auth_address,
             rekeyed_sender_signed_bytes,
-            multisig_address,
+            multisig_addresses,
             multisig_signed_bytes,
         }
     }

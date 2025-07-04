@@ -1,5 +1,6 @@
 from . import TransactionTestData
 from algokit_transact import (
+address_from_string,
     FeeParams,
     assign_fee,
     encode_transaction,
@@ -9,7 +10,7 @@ from algokit_transact import (
     SignedTransaction,
     get_transaction_id,
     get_transaction_id_raw,
-    estimate_transaction_size,
+    estimate_transaction_size, MultisigSignature, MultisigSubsig,
 )
 
 
@@ -24,6 +25,38 @@ def assert_example(test_data: TransactionTestData):
     )
     encoded_signed_txn = encode_signed_transaction(signed_txn)
     assert encoded_signed_txn == test_data.signed_bytes
+
+
+def assert_multisig_example(test_data: TransactionTestData):
+    """A multisig example of forming a transaction and signing it"""
+    single_sig = test_data.signing_private_key.sign(
+        encode_transaction(test_data.transaction)
+    ).signature
+
+    # FIXME: Since we don't yet expose a way to create a MultisigSignature, we create it manually
+    #  with an empty address which shouldn't impact the encoding.
+    multisig_signature = MultisigSignature(
+        address="",
+        version=1,
+        threshold=2,
+        subsigs=[
+            MultisigSubsig(
+                addr=address_from_string(test_data.multisig_addresses[0].address),
+                sig=single_sig,
+            ),
+            MultisigSubsig(
+                addr=address_from_string(test_data.multisig_addresses[1].address),
+                sig=single_sig,
+            ),
+        ]
+    )
+
+    signed_txn = SignedTransaction(
+        transaction=test_data.transaction,
+        multisig_signature=multisig_signature
+    )
+    encoded_signed_txn = encode_signed_transaction(signed_txn)
+    assert encoded_signed_txn == test_data.multisig_signed_bytes
 
 
 def assert_assign_fee(test_data: TransactionTestData):

@@ -13,27 +13,31 @@ fn generate_test_data() {
 
     #[derive(Serialize)]
     struct TransactionTestData {
-        signing_private_key: [u8; ALGORAND_SECRET_KEY_BYTE_LENGTH],
         transaction: Transaction,
+        id: String,
+        id_raw: [u8; HASH_BYTES_LENGTH],
         unsigned_bytes: Vec<u8>,
+        signing_private_key: [u8; ALGORAND_SECRET_KEY_BYTE_LENGTH],
         signed_bytes: Vec<u8>,
         rekeyed_sender_auth_address: Account,
         rekeyed_sender_signed_bytes: Vec<u8>,
-        id: String,
-        id_raw: [u8; HASH_BYTES_LENGTH],
+        multisig_addresses: (Account, Account),
+        multisig_signed_bytes: Vec<u8>,
     }
 
     test_utils::TestDataMother::export(
         Path::new("./test_data.json"),
         Some(|d: &test_utils::TransactionTestData| TransactionTestData {
-            signing_private_key: d.signing_private_key,
             transaction: d.transaction.clone().try_into().unwrap(),
+            id: d.id.clone(),
+            id_raw: d.id_raw,
             unsigned_bytes: d.unsigned_bytes.clone(),
+            signing_private_key: d.signing_private_key,
             signed_bytes: d.signed_bytes.clone(),
             rekeyed_sender_auth_address: d.rekeyed_sender_auth_address.clone().into(),
             rekeyed_sender_signed_bytes: d.rekeyed_sender_signed_bytes.clone(),
-            id: d.id.clone(),
-            id_raw: d.id_raw,
+            multisig_addresses: (d.multisig_addresses.clone().0.into(), d.multisig_addresses.clone().1.into()),
+            multisig_signed_bytes: d.multisig_signed_bytes.clone(),
         }),
     );
 }
