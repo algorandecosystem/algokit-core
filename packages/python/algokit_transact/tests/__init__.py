@@ -42,6 +42,7 @@ class TestData:
     application_create: TransactionTestData
     application_update: TransactionTestData
     application_delete: TransactionTestData
+    asset_freeze_real_data: TransactionTestData
 
 
 def convert_values(obj: Any) -> Any:
