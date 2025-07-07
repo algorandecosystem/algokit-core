@@ -4,7 +4,7 @@
 //! which are used to register accounts online or offline for participation in Algorand consensus.
 
 use crate::traits::Validate;
-use crate::utils::is_zero_opt;
+use crate::utils::{is_false_opt, is_zero_opt};
 use crate::{transactions::common::TransactionHeader, Transaction};
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
@@ -72,7 +72,7 @@ pub struct KeyRegistrationTransactionFields {
 
     /// Mark account as non-reward earning.
     #[serde(rename = "nonpart")]
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "is_false_opt")]
     #[serde(default)]
     #[builder(default)]
     pub non_participation: Option<bool>,
@@ -430,6 +430,54 @@ mod tests {
         if let Ok(Transaction::KeyRegistration(fields)) = result {
             assert!(fields.is_online());
         }
+    }
+
+    #[test]
+    fn test_non_participation_serialization_skipping() {
+        use crate::AlgorandMsgpack;
+
+        // Test that non_participation: Some(false) is skipped during serialization (same as None)
+        let key_reg_none = KeyRegistrationTransactionFields {
+            header: create_test_header(),
+            vote_key: None,
+            selection_key: None,
+            state_proof_key: None,
+            vote_first: None,
+            vote_last: None,
+            vote_key_dilution: None,
+            non_participation: None,
+        };
+
+        let mut key_reg_false = key_reg_none.clone();
+        key_reg_false.non_participation = Some(false);
+
+        let mut key_reg_true = key_reg_none.clone();
+        key_reg_true.non_participation = Some(true);
+
+        // Encode all three transactions
+        let encoded_none = Transaction::KeyRegistration(key_reg_none).encode().unwrap();
+        let encoded_false = Transaction::KeyRegistration(key_reg_false)
+            .encode()
+            .unwrap();
+        let encoded_true = Transaction::KeyRegistration(key_reg_true).encode().unwrap();
+
+        // None and Some(false) should produce identical serialization
+        assert_eq!(
+            encoded_none, encoded_false,
+            "Serialization of non_participation: None should be identical to Some(false)"
+        );
+
+        // Some(true) should be different (larger, since it includes the field)
+        assert_ne!(
+            encoded_none, encoded_true,
+            "Serialization of non_participation: Some(true) should be different from None/false"
+        );
+
+        // The true version should be larger since it includes the field
+        assert!(
+            encoded_true.len() > encoded_none.len(),
+            "Serialization with non_participation: Some(true) should be larger"
+        );
     }
 
     // Integration tests for encoding and transaction functionality
