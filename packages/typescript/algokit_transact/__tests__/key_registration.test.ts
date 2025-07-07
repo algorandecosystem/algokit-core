@@ -26,7 +26,7 @@ import {
 const txnTestData = Object.entries({
   ["online key registration"]: testData.onlineKeyRegistration,
   ["offline key registration"]: testData.offlineKeyRegistration,
-  ["non-participation key registration"]: testData.nonParticipatingKeyRegistration,
+  ["non-participation key registration"]: testData.nonParticipationKeyRegistration,
 });
 
 describe("Key Registration", () => {

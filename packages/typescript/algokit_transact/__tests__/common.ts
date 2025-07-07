@@ -52,7 +52,7 @@ export const testData = parseJson<
     | "applicationDelete"
     | "onlineKeyRegistration"
     | "offlineKeyRegistration"
-    | "nonParticipatingKeyRegistration",
+    | "nonParticipationKeyRegistration",
     TransactionTestData
   >
 >(jsonString);
