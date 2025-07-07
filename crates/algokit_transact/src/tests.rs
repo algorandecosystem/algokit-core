@@ -3,7 +3,8 @@ use crate::{
         ALGORAND_SIGNATURE_BYTE_LENGTH, ALGORAND_SIGNATURE_ENCODING_INCR, MAX_TX_GROUP_SIZE,
     },
     test_utils::{
-        AddressMother, TransactionGroupMother, TransactionHeaderMother, TransactionMother,
+        AddressMother, KeyRegistrationTransactionMother, TransactionGroupMother,
+        TransactionHeaderMother, TransactionMother,
     },
     transactions::FeeParams,
     Address, AlgorandMsgpack, EstimateTransactionSize, SignedTransaction, Transaction,
@@ -413,7 +414,7 @@ fn test_signed_transaction_group_encoding() {
 
 #[test]
 fn test_online_key_registration_transaction_encoding() {
-    let tx_builder = TransactionMother::online_key_registration();
+    let tx_builder = KeyRegistrationTransactionMother::online_key_registration();
     let key_reg_tx_fields = tx_builder.build_fields().unwrap();
     let key_reg_tx = tx_builder.build().unwrap();
 
@@ -441,7 +442,7 @@ fn test_online_key_registration_transaction_encoding() {
 
 #[test]
 fn test_offline_key_registration_transaction_encoding() {
-    let tx_builder = TransactionMother::offline_key_registration();
+    let tx_builder = KeyRegistrationTransactionMother::offline_key_registration();
     let key_reg_tx_fields = tx_builder.build_fields().unwrap();
     let key_reg_tx = tx_builder.build().unwrap();
 
@@ -467,7 +468,7 @@ fn test_offline_key_registration_transaction_encoding() {
 
 #[test]
 fn test_non_participating_key_registration_transaction_encoding() {
-    let tx_builder = TransactionMother::non_participating_key_registration();
+    let tx_builder = KeyRegistrationTransactionMother::non_participating_key_registration();
     let key_reg_tx_fields = tx_builder.build_fields().unwrap();
     let key_reg_tx = tx_builder.build().unwrap();
 
@@ -485,21 +486,21 @@ fn test_non_participating_key_registration_transaction_encoding() {
 #[test]
 fn test_key_registration_online_offline_detection() {
     // Test online key registration
-    let online_tx = TransactionMother::online_key_registration()
+    let online_tx = KeyRegistrationTransactionMother::online_key_registration()
         .build_fields()
         .unwrap();
     assert!(online_tx.is_online());
     assert!(!online_tx.is_offline());
 
     // Test offline key registration
-    let offline_tx = TransactionMother::offline_key_registration()
+    let offline_tx = KeyRegistrationTransactionMother::offline_key_registration()
         .build_fields()
         .unwrap();
     assert!(offline_tx.is_offline());
     assert!(!offline_tx.is_online());
 
     // Test non-participating key registration
-    let non_part_tx = TransactionMother::non_participating_key_registration()
+    let non_part_tx = KeyRegistrationTransactionMother::non_participating_key_registration()
         .build_fields()
         .unwrap();
     assert!(non_part_tx.is_offline());
@@ -508,7 +509,7 @@ fn test_key_registration_online_offline_detection() {
 
 #[test]
 fn test_key_registration_transaction_id() {
-    let tx_builder = TransactionMother::online_key_registration();
+    let tx_builder = KeyRegistrationTransactionMother::online_key_registration();
     let key_reg_tx = tx_builder.build().unwrap();
 
     let signed_tx = SignedTransaction {
@@ -531,7 +532,7 @@ fn test_key_registration_transaction_id() {
 
 #[test]
 fn test_key_registration_fee_calculation() {
-    let key_reg_tx = TransactionMother::online_key_registration()
+    let key_reg_tx = KeyRegistrationTransactionMother::online_key_registration()
         .build()
         .unwrap();
 
@@ -556,7 +557,7 @@ fn test_key_registration_in_transaction_group() {
         .last_valid(51533021)
         .to_owned();
 
-    let key_reg_tx = TransactionMother::online_key_registration()
+    let key_reg_tx = KeyRegistrationTransactionMother::online_key_registration()
         .header(header_builder.build().unwrap())
         .build()
         .unwrap();

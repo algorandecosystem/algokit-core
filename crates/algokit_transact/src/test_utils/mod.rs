@@ -1,11 +1,9 @@
 mod application_call;
 mod asset_config;
+mod key_registration;
 
 use crate::{
-    transactions::{
-        AssetTransferTransactionBuilder, KeyRegistrationTransactionBuilder,
-        PaymentTransactionBuilder,
-    },
+    transactions::{AssetTransferTransactionBuilder, PaymentTransactionBuilder},
     Address, AlgorandMsgpack, Byte32, SignedTransaction, Transaction, TransactionHeaderBuilder,
     TransactionId, ALGORAND_PUBLIC_KEY_BYTE_LENGTH, HASH_BYTES_LENGTH,
 };
@@ -19,6 +17,7 @@ use std::{fs::File, str::FromStr};
 
 pub use application_call::ApplicationCallTransactionMother;
 pub use asset_config::AssetConfigTransactionMother;
+pub use key_registration::KeyRegistrationTransactionMother;
 
 pub struct TransactionHeaderMother {}
 impl TransactionHeaderMother {
@@ -157,31 +156,6 @@ impl TransactionMother {
         Self::simple_asset_transfer()
             .amount(0)
             .receiver(AddressMother::neil())
-            .to_owned()
-    }
-
-    pub fn online_key_registration() -> KeyRegistrationTransactionBuilder {
-        KeyRegistrationTransactionBuilder::default()
-            .header(TransactionHeaderMother::simple_testnet().build().unwrap())
-            .vote_key([1u8; 32])
-            .selection_key([2u8; 32])
-            .state_proof_key([3u8; 64])
-            .vote_first(100)
-            .vote_last(1000)
-            .vote_key_dilution(1000)
-            .to_owned()
-    }
-
-    pub fn offline_key_registration() -> KeyRegistrationTransactionBuilder {
-        KeyRegistrationTransactionBuilder::default()
-            .header(TransactionHeaderMother::simple_testnet().build().unwrap())
-            .to_owned()
-    }
-
-    pub fn non_participating_key_registration() -> KeyRegistrationTransactionBuilder {
-        KeyRegistrationTransactionBuilder::default()
-            .header(TransactionHeaderMother::simple_testnet().build().unwrap())
-            .non_participation(true)
             .to_owned()
     }
 }
@@ -420,7 +394,7 @@ impl TestDataMother {
             2, 205, 103, 33, 67, 14, 82, 196, 115, 196, 206, 254, 50, 110, 63, 182, 149, 229, 184,
             216, 93, 11, 13, 99, 69, 213, 218, 165, 134, 118, 47, 44,
         ];
-        let transaction = TransactionMother::online_key_registration()
+        let transaction = KeyRegistrationTransactionMother::online_key_registration()
             .build()
             .unwrap();
         TransactionTestData::new(transaction, signing_private_key)
@@ -431,7 +405,7 @@ impl TestDataMother {
             2, 205, 103, 33, 67, 14, 82, 196, 115, 196, 206, 254, 50, 110, 63, 182, 149, 229, 184,
             216, 93, 11, 13, 99, 69, 213, 218, 165, 134, 118, 47, 44,
         ];
-        let transaction = TransactionMother::offline_key_registration()
+        let transaction = KeyRegistrationTransactionMother::offline_key_registration()
             .build()
             .unwrap();
         TransactionTestData::new(transaction, signing_private_key)
@@ -442,7 +416,7 @@ impl TestDataMother {
             2, 205, 103, 33, 67, 14, 82, 196, 115, 196, 206, 254, 50, 110, 63, 182, 149, 229, 184,
             216, 93, 11, 13, 99, 69, 213, 218, 165, 134, 118, 47, 44,
         ];
-        let transaction = TransactionMother::non_participating_key_registration()
+        let transaction = KeyRegistrationTransactionMother::non_participating_key_registration()
             .build()
             .unwrap();
         TransactionTestData::new(transaction, signing_private_key)
