@@ -83,8 +83,8 @@ impl TestAccount {
     pub fn account(&self) -> Result<Account, Box<dyn std::error::Error + Send + Sync>> {
         let verifying_key = self.signing_key.verifying_key();
         let public_key_bytes = verifying_key.to_bytes();
-        let address = Account::from_pubkey(&public_key_bytes);
-        Ok(address)
+        let account = Account::from_pubkey(&public_key_bytes);
+        Ok(account)
     }
 
     /// Get the account's mnemonic (proper Algorand 25-word mnemonic)
