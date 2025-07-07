@@ -245,10 +245,10 @@ where
             unit_name: fields.unit_name,
             url: fields.url,
             metadata_hash: fields.metadata_hash,
-            manager: fields.manager.map(Into::into),
-            reserve: fields.reserve.map(Into::into),
-            freeze: fields.freeze.map(Into::into),
-            clawback: fields.clawback.map(Into::into),
+            manager: fields.manager,
+            reserve: fields.reserve,
+            freeze: fields.freeze,
+            clawback: fields.clawback,
         }),
         false => None,
     };
@@ -311,10 +311,10 @@ where
         unit_name,
         url,
         metadata_hash,
-        manager: manager.map(Into::into),
-        reserve: reserve.map(Into::into),
-        freeze: freeze.map(Into::into),
-        clawback: clawback.map(Into::into),
+        manager,
+        reserve,
+        freeze,
+        clawback,
     })
 }
 
