@@ -35,6 +35,11 @@ impl Account {
     pub fn from_pubkey(pub_key: &Byte32) -> Self {
         Account { pub_key: *pub_key }
     }
+
+    /// Returns the [`Address`] corresponding to this account's public key.
+    ///
+    /// # Returns
+    /// The [`Address`] derived from the account's public key.
     pub fn address(&self) -> Address {
         Address::from(self.clone())
     }
@@ -42,12 +47,6 @@ impl Account {
 
 impl From<Address> for Account {
     /// Converts an [`Address`] into an [`Account`] by extracting the underlying public key bytes.
-    ///
-    /// # Arguments
-    /// * `addr` - An [`Address`] instance.
-    ///
-    /// # Returns
-    /// An [`Account`] with the public key from the address.
     fn from(addr: Address) -> Self {
         Account::from_pubkey(addr.as_bytes())
     }
