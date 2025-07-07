@@ -411,12 +411,12 @@ impl TestDataMother {
         TransactionTestData::new(transaction, signing_private_key)
     }
 
-    pub fn non_participating_key_registration() -> TransactionTestData {
+    pub fn non_participation_key_registration() -> TransactionTestData {
         let signing_private_key: Byte32 = [
             2, 205, 103, 33, 67, 14, 82, 196, 115, 196, 206, 254, 50, 110, 63, 182, 149, 229, 184,
             216, 93, 11, 13, 99, 69, 213, 218, 165, 134, 118, 47, 44,
         ];
-        let transaction = KeyRegistrationTransactionMother::non_participating_key_registration()
+        let transaction = KeyRegistrationTransactionMother::non_participation_key_registration()
             .build()
             .unwrap();
         TransactionTestData::new(transaction, signing_private_key)
@@ -443,7 +443,7 @@ impl TestDataMother {
             "asset_reconfigure": Self::asset_reconfigure().as_json(&transform),
             "online_key_registration": Self::online_key_registration().as_json(&transform),
             "offline_key_registration": Self::offline_key_registration().as_json(&transform),
-            "non_participating_key_registration": Self::non_participating_key_registration().as_json(&transform),
+            "non_participation_key_registration": Self::non_participation_key_registration().as_json(&transform),
         }));
 
         let file = File::create(path).expect("Failed to create export file");

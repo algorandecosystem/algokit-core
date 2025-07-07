@@ -4,8 +4,9 @@
 //! which are used to register accounts online or offline for participation in Algorand consensus.
 
 use crate::traits::Validate;
+use crate::transactions::common::{TransactionHeader, TransactionValidationError};
 use crate::utils::{is_false_opt, is_zero_opt};
-use crate::{transactions::common::TransactionHeader, Transaction};
+use crate::Transaction;
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, skip_serializing_none, Bytes};
@@ -79,30 +80,50 @@ pub struct KeyRegistrationTransactionFields {
 }
 
 impl KeyRegistrationTransactionFields {
-    /// Returns true if this is an online key registration transaction.
-    pub fn is_online(&self) -> bool {
-        self.vote_key.is_some()
-            && self.selection_key.is_some()
-            && self.state_proof_key.is_some()
-            && self.vote_first.is_some()
-            && self.vote_last.is_some()
-            && self.vote_key_dilution.is_some()
-    }
+    pub fn validate_for_online(&self) -> Result<(), Vec<TransactionValidationError>> {
+        let mut errors = Vec::new();
 
-    /// Returns true if this is an offline key registration transaction.
-    pub fn is_offline(&self) -> bool {
-        self.vote_key.is_none()
-            && self.selection_key.is_none()
-            && self.state_proof_key.is_none()
-            && self.vote_first.is_none()
-            && self.vote_last.is_none()
-            && self.vote_key_dilution.is_none()
-    }
+        if self.vote_key.is_none() {
+            errors.push(TransactionValidationError::RequiredField(
+                "vote_key".to_string(),
+            ));
+        }
+        if self.selection_key.is_none() {
+            errors.push(TransactionValidationError::RequiredField(
+                "selection_key".to_string(),
+            ));
+        }
+        if self.state_proof_key.is_none() {
+            errors.push(TransactionValidationError::RequiredField(
+                "state_proof_key".to_string(),
+            ));
+        }
+        if self.vote_first.is_none() {
+            errors.push(TransactionValidationError::RequiredField(
+                "vote_first".to_string(),
+            ));
+        }
+        if self.vote_last.is_none() {
+            errors.push(TransactionValidationError::RequiredField(
+                "vote_last".to_string(),
+            ));
+        }
+        if self.vote_key_dilution.is_none() {
+            errors.push(TransactionValidationError::RequiredField(
+                "vote_key_dilution".to_string(),
+            ));
+        }
 
-    /// Returns true if this transaction registers the account as non-participating.
-    /// WARNING: This means the account will NEVER be able to participate in consensus
-    pub fn is_non_participating(&self) -> bool {
-        self.non_participation.is_some_and(|v| v)
+        if self.non_participation.is_some_and(|v| v) {
+            errors.push(TransactionValidationError::ImmutableField(
+                "Online key registration cannot have non_participation flag set".to_string(),
+            ));
+        }
+
+        match errors.is_empty() {
+            true => Ok(()),
+            false => Err(errors),
+        }
     }
 }
 
@@ -121,8 +142,6 @@ impl KeyRegistrationTransactionBuilder {
 
 impl Validate for KeyRegistrationTransactionFields {
     fn validate(&self) -> Result<(), Vec<String>> {
-        let mut errors = Vec::new();
-
         let has_any_participation_fields = self.vote_key.is_some()
             || self.selection_key.is_some()
             || self.state_proof_key.is_some()
@@ -130,43 +149,23 @@ impl Validate for KeyRegistrationTransactionFields {
             || self.vote_last.is_some()
             || self.vote_key_dilution.is_some();
 
-        if has_any_participation_fields {
-            if self.vote_key.is_none() {
-                errors.push("vote_key is required for online key registration".to_string());
-            }
-            if self.selection_key.is_none() {
-                errors.push("selection_key is required for online key registration".to_string());
-            }
-            if self.state_proof_key.is_none() {
-                errors.push("state_proof_key is required for online key registration".to_string());
-            }
-            if self.vote_first.is_none() {
-                errors.push("vote_first is required for online key registration".to_string());
-            }
-            if self.vote_last.is_none() {
-                errors.push("vote_last is required for online key registration".to_string());
-            }
-            if self.vote_key_dilution.is_none() {
-                errors
-                    .push("vote_key_dilution is required for online key registration".to_string());
-            }
-
-            if let (Some(first), Some(last)) = (self.vote_first, self.vote_last) {
-                if first >= last {
-                    errors.push("vote_first must be less than vote_last".to_string());
-                }
-            }
-
-            if self.is_non_participating() {
-                errors.push(
-                    "Online key registration cannot have non_participation flag set".to_string(),
-                );
+        if let (Some(first), Some(last)) = (self.vote_first, self.vote_last) {
+            if first >= last {
+                return Err(vec!["vote_first must be less than vote_last".to_string()]);
             }
         }
 
-        match errors.is_empty() {
-            true => Ok(()),
-            false => Err(errors),
+        match has_any_participation_fields {
+            true => {
+                // Online key registration
+                self.validate_for_online()
+                    .map_err(|errors| errors.iter().map(|e| e.to_string()).collect())
+            }
+            false => {
+                // Offline key registration (including non-participating)
+                // No participation fields present - inherently valid offline state
+                Ok(())
+            }
         }
     }
 }
@@ -195,9 +194,6 @@ mod tests {
 
         let result = key_reg.validate();
         assert!(result.is_ok());
-        assert!(key_reg.is_online());
-        assert!(!key_reg.is_offline());
-        assert!(!key_reg.is_non_participating());
     }
 
     #[test]
@@ -215,13 +211,10 @@ mod tests {
 
         let result = key_reg.validate();
         assert!(result.is_ok());
-        assert!(!key_reg.is_online());
-        assert!(key_reg.is_offline());
-        assert!(!key_reg.is_non_participating());
     }
 
     #[test]
-    fn test_validate_valid_non_participating_key_registration() {
+    fn test_validate_valid_non_participation_key_registration() {
         let key_reg = KeyRegistrationTransactionFields {
             header: create_test_header(),
             vote_key: None,
@@ -235,9 +228,6 @@ mod tests {
 
         let result = key_reg.validate();
         assert!(result.is_ok());
-        assert!(!key_reg.is_online());
-        assert!(key_reg.is_offline()); // Non-participating is considered offline
-        assert!(key_reg.is_non_participating());
     }
 
     #[test]
@@ -427,9 +417,6 @@ mod tests {
             .build();
 
         assert!(result.is_ok());
-        if let Ok(Transaction::KeyRegistration(fields)) = result {
-            assert!(fields.is_online());
-        }
     }
 
     #[test]
@@ -527,9 +514,7 @@ mod tests {
             let key_reg_tx_fields = tx_builder.build_fields().unwrap();
             let key_reg_tx = tx_builder.build().unwrap();
 
-            // Verify it's offline
-            assert!(key_reg_tx_fields.is_offline());
-            assert!(!key_reg_tx_fields.is_online());
+            // Test focuses on encoding/decoding behavior, not transaction type categorization
 
             let encoded = key_reg_tx.encode().unwrap();
             let decoded = Transaction::decode(&encoded).unwrap();
@@ -548,45 +533,18 @@ mod tests {
         }
 
         #[test]
-        fn test_non_participating_key_registration_transaction_encoding() {
-            let tx_builder = KeyRegistrationTransactionMother::non_participating_key_registration();
+        fn test_non_participation_key_registration_transaction_encoding() {
+            let tx_builder = KeyRegistrationTransactionMother::non_participation_key_registration();
             let key_reg_tx_fields = tx_builder.build_fields().unwrap();
             let key_reg_tx = tx_builder.build().unwrap();
 
-            // Verify it's offline with non-participation flag
-            assert!(key_reg_tx_fields.is_offline());
-            assert!(!key_reg_tx_fields.is_online());
+            // Verify non-participation flag is set correctly
             assert_eq!(key_reg_tx_fields.non_participation, Some(true));
 
             let encoded = key_reg_tx.encode().unwrap();
             let decoded = Transaction::decode(&encoded).unwrap();
             assert_eq!(decoded, key_reg_tx);
             assert_eq!(decoded, Transaction::KeyRegistration(key_reg_tx_fields));
-        }
-
-        #[test]
-        fn test_key_registration_online_offline_detection() {
-            // Test online key registration
-            let online_tx = KeyRegistrationTransactionMother::online_key_registration()
-                .build_fields()
-                .unwrap();
-            assert!(online_tx.is_online());
-            assert!(!online_tx.is_offline());
-
-            // Test offline key registration
-            let offline_tx = KeyRegistrationTransactionMother::offline_key_registration()
-                .build_fields()
-                .unwrap();
-            assert!(offline_tx.is_offline());
-            assert!(!offline_tx.is_online());
-
-            // Test non-participating key registration
-            let non_part_tx =
-                KeyRegistrationTransactionMother::non_participating_key_registration()
-                    .build_fields()
-                    .unwrap();
-            assert!(non_part_tx.is_offline());
-            assert!(!non_part_tx.is_online());
         }
 
         #[test]

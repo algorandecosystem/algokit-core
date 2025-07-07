@@ -42,7 +42,7 @@ class TestData:
     application_delete: TransactionTestData
     online_key_registration: TransactionTestData
     offline_key_registration: TransactionTestData
-    non_participating_key_registration: TransactionTestData
+    non_participation_key_registration: TransactionTestData
 
 
 def convert_values(obj: Any) -> Any:

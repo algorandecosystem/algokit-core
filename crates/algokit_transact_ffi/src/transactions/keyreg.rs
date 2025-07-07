@@ -1,12 +1,8 @@
-//! FFI-safe key registration transaction types for AlgoKit Core.
+//! Represents a key registration transaction.
 //!
 //! This module provides FFI-compatible structures and conversions for key registration
 //! transactions that can be used across language bindings.
-
-use crate::{bytebuf_to_bytes, AlgoKitTransactError};
-use ffi_macros::ffi_record;
-use serde::{Deserialize, Serialize};
-use serde_bytes::ByteBuf;
+use crate::*;
 
 #[cfg(feature = "ffi_wasm")]
 use tsify_next::Tsify;
@@ -66,7 +62,7 @@ impl TryFrom<crate::Transaction> for algokit_transact::KeyRegistrationTransactio
         let data = tx.clone().key_registration.unwrap();
         let header: algokit_transact::TransactionHeader = tx.try_into()?;
 
-        Ok(Self {
+        let transaction_fields = algokit_transact::KeyRegistrationTransactionFields {
             header,
             vote_key: data
                 .vote_key
@@ -84,6 +80,15 @@ impl TryFrom<crate::Transaction> for algokit_transact::KeyRegistrationTransactio
             vote_last: data.vote_last,
             vote_key_dilution: data.vote_key_dilution,
             non_participation: data.non_participation,
-        })
+        };
+
+        transaction_fields.validate().map_err(|errors| {
+            AlgoKitTransactError::DecodingError(format!(
+                "Key registration validation failed: {}",
+                errors.join("\n")
+            ))
+        })?;
+
+        Ok(transaction_fields)
     }
 }

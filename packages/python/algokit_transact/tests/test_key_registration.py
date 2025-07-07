@@ -16,7 +16,7 @@ from . import TEST_DATA
 
 online_key_registration = TEST_DATA.online_key_registration
 offline_key_registration = TEST_DATA.offline_key_registration
-non_participating_key_registration = TEST_DATA.non_participating_key_registration
+non_participation_key_registration = TEST_DATA.non_participation_key_registration
 
 # Polytest Suite: Key Registration
 
@@ -24,7 +24,7 @@ non_participating_key_registration = TEST_DATA.non_participating_key_registratio
 txn_test_data = {
     "online key registration": TEST_DATA.online_key_registration,
     "offline key registration": TEST_DATA.offline_key_registration,
-    "non-participating key registration": TEST_DATA.non_participating_key_registration,
+    "non-participation key registration": TEST_DATA.non_participation_key_registration,
 }
 
 

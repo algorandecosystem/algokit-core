@@ -62,7 +62,7 @@ impl KeyRegistrationTransactionMother {
             .to_owned()
     }
 
-    pub fn non_participating_key_registration() -> KeyRegistrationTransactionBuilder {
+    pub fn non_participation_key_registration() -> KeyRegistrationTransactionBuilder {
         // https://lora.algokit.io/testnet/transaction/ACAP6ZGMkGNTLUO3IQ26P22SRKYWTQQO3MF64GX7QO6NICDUFPM5A
         KeyRegistrationTransactionBuilder::default()
             .header(
