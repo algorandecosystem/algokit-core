@@ -91,7 +91,7 @@ async fn test_asset_transfer_transaction() {
             assert_eq!(
                 asset_transfer_fields.asset_id,
                 asa_create_result.asset_index.unwrap(),
-                "Asset ID should be 0 for creation"
+                "Asset ID should match the created ASA"
             );
             assert_eq!(
                 asset_transfer_fields.amount, 0,
@@ -106,6 +106,6 @@ async fn test_asset_transfer_transaction() {
                 "Sender and receiver should be the same for opt-in"
             );
         }
-        _ => panic!("Transaction should be an asset config transaction"),
+        _ => panic!("Transaction should be an asset transfer transaction"),
     }
 }
