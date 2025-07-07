@@ -1,8 +1,7 @@
 use crate::common::init_test_logging;
-use algokit_transact::{AssetConfigTransactionBuilder, TransactionHeader};
-use algokit_utils::CommonParams;
 use algokit_utils::testing::*;
 use algokit_utils::transactions::composer::{AssetOptInParams, AssetTransferParams};
+use algokit_utils::{AssetCreateParams, CommonParams};
 
 #[tokio::test]
 async fn test_asset_transfer_transaction() {
@@ -15,46 +14,37 @@ async fn test_asset_transfer_transaction() {
         .await
         .expect("Failed to create new scope");
 
-    let asa_creator = fixture
-        .generate_account(None)
+    let mut fixture_asa_creator = algorand_fixture().await.expect("Failed to create asa");
+    fixture_asa_creator.new_scope().await.expect("Failed to create asa scope");
+    let context_asa_creator = fixture_asa_creator.context().expect("Failed to get context");
+    let asa_creator = context_asa_creator.test_account.address().unwrap();
+    let mut composer_asa_creator = context_asa_creator.composer.clone();
+
+    composer_asa_creator
+        .add_asset_create(AssetCreateParams {
+            common_params: CommonParams {
+                sender: asa_creator.clone(),
+                ..Default::default()
+            },
+            total: 10,
+            decimals: Some(0),
+            default_frozen: Some(false),
+            asset_name: None,
+            unit_name: None,
+            url: None,
+            metadata_hash: None,
+            manager: None,
+            reserve: None,
+            freeze: None,
+            clawback: None,
+        })
+        .expect("Failed to add asset create");
+    let asa_create_result = composer_asa_creator
+        .send()
         .await
-        .expect("Failed to create ASA creator");
+        .expect("Failed to send asset create transaction");
 
     let context = fixture.context().expect("Failed to get context");
-
-    // FIXME: When composer gets asset creation support, we can use it directly.
-    let algod_client = context.algod.clone();
-    let sp = algod_client.transaction_params().await.unwrap();
-    let asa_create_txn = AssetConfigTransactionBuilder::default()
-        .header(TransactionHeader {
-            sender: asa_creator.address().unwrap(),
-            fee: Some(1_000),
-            first_valid: sp.last_round,
-            last_valid: sp.last_round + 20,
-            genesis_id: Some(sp.genesis_id),
-            genesis_hash: Some(sp.genesis_hash.try_into().unwrap()),
-            note: None,
-            rekey_to: None,
-            lease: None,
-            group: None,
-        })
-        .asset_id(0)
-        .total(10)
-        .decimals(0)
-        .default_frozen(false)
-        .build()
-        .unwrap();
-    let signed_asa_create_txn = asa_creator.sign_transaction(&asa_create_txn).unwrap();
-    let asa_create_id = algod_client
-        .raw_transaction(signed_asa_create_txn)
-        .await
-        .expect("Failed to send asset creation transaction");
-
-    let composer_asa_create = context.composer.clone();
-    let asa_create_result = composer_asa_create
-        .wait_for_confirmation(asa_create_id.tx_id.as_str(), 1000)
-        .await
-        .expect("Failed to wait for ASA creation confirmation");
 
     let asa_user_address = context.test_account.address().unwrap();
     let mut composer_asa_transfer = context.composer.clone();
@@ -75,7 +65,7 @@ async fn test_asset_transfer_transaction() {
                 ..Default::default()
             },
             asset_id: asa_create_result.asset_index.unwrap(),
-            receiver: asa_creator.address().unwrap(),
+            receiver: asa_creator,
             amount: 0,
         })
         .expect("Failed to add asset transfer");
