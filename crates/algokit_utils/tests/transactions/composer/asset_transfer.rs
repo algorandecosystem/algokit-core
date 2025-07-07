@@ -1,12 +1,11 @@
 use crate::common::init_test_logging;
-use algod_client::apis::Format::Msgpack;
 use algokit_transact::{AssetConfigTransactionBuilder, TransactionHeader};
 use algokit_utils::CommonParams;
 use algokit_utils::testing::*;
 use algokit_utils::transactions::composer::{AssetOptInParams, AssetTransferParams};
 
 #[tokio::test]
-async fn test_basic_payment_transaction() {
+async fn test_asset_transfer_transaction() {
     init_test_logging();
 
     let mut fixture = algorand_fixture().await.expect("Failed to create fixture");
@@ -45,21 +44,21 @@ async fn test_basic_payment_transaction() {
         .default_frozen(false)
         .build()
         .unwrap();
-
     let signed_asa_create_txn = asa_creator.sign_transaction(&asa_create_txn).unwrap();
-
     let asa_create_id = algod_client
         .raw_transaction(signed_asa_create_txn)
         .await
         .expect("Failed to send asset creation transaction");
-    let asa_create_result = algod_client
-        .pending_transaction_information(asa_create_id.tx_id.as_str(), Some(Msgpack))
+
+    let composer_asa_create = context.composer.clone();
+    let asa_create_result = composer_asa_create
+        .wait_for_confirmation(asa_create_id.tx_id.as_str(), 1000)
         .await
-        .expect("Failed to get pending transaction info");
+        .expect("Failed to wait for ASA creation confirmation");
 
     let asa_user_address = context.test_account.address().unwrap();
-    let mut composer = context.composer.clone();
-    composer
+    let mut composer_asa_transfer = context.composer.clone();
+    composer_asa_transfer
         .add_asset_opt_in(AssetOptInParams {
             common_params: CommonParams {
                 sender: asa_user_address.clone(),
@@ -69,7 +68,7 @@ async fn test_basic_payment_transaction() {
         })
         .expect("Failed to add asset opt-in");
 
-    composer
+    composer_asa_transfer
         .add_asset_transfer(AssetTransferParams {
             common_params: CommonParams {
                 sender: asa_user_address.clone(),
@@ -81,7 +80,10 @@ async fn test_basic_payment_transaction() {
         })
         .expect("Failed to add asset transfer");
 
-    let result = composer.send().await.expect("Failed to send transaction");
+    let result = composer_asa_transfer
+        .send()
+        .await
+        .expect("Failed to send transaction");
 
     // FIXME: How to access the second transaction?
     match result.txn.transaction {
