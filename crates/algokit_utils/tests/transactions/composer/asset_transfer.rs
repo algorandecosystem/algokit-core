@@ -15,8 +15,13 @@ async fn test_asset_transfer_transaction() {
         .expect("Failed to create new scope");
 
     let mut fixture_asa_creator = algorand_fixture().await.expect("Failed to create asa");
-    fixture_asa_creator.new_scope().await.expect("Failed to create asa scope");
-    let context_asa_creator = fixture_asa_creator.context().expect("Failed to get context");
+    fixture_asa_creator
+        .new_scope()
+        .await
+        .expect("Failed to create asa scope");
+    let context_asa_creator = fixture_asa_creator
+        .context()
+        .expect("Failed to get context");
     let asa_creator = context_asa_creator.test_account.address().unwrap();
     let mut composer_asa_creator = context_asa_creator.composer.clone();
 
