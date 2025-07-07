@@ -3,11 +3,10 @@
 //! This module provides functionality for creating and managing application transactions,
 //! which are used to create, update, delete and call Algorand Smart Contracts (Applications).
 
-use crate::account::Account;
 use crate::traits::Validate;
 use crate::transactions::common::{TransactionHeader, TransactionValidationError};
 use crate::utils::{is_empty_vec_opt, is_zero, is_zero_opt};
-use crate::Transaction;
+use crate::{Address, Transaction};
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
@@ -218,7 +217,7 @@ pub struct ApplicationCallTransactionFields {
     #[serde(skip_serializing_if = "is_empty_vec_opt")]
     #[serde(default)]
     #[builder(default)]
-    pub account_references: Option<Vec<Account>>,
+    pub account_references: Option<Vec<Address>>,
 
     /// List of applications in addition to the current application that may be called
     /// from the application's approval program and clear state program.

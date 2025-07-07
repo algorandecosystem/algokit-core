@@ -39,10 +39,10 @@ impl AssetConfigTransactionMother {
             .asset_name("Fracctal Token".to_string())
             .unit_name("FRACC".to_string())
             .url("template-ipfs://{ipfscid:0:dag-pb:reserve:sha2-256}".to_string())
-            .manager(sender.clone())
-            .reserve(reserve.clone())
-            .freeze(sender.clone())
-            .clawback(sender.clone())
+            .manager(sender.address().clone())
+            .reserve(reserve.address().clone())
+            .freeze(sender.address().clone())
+            .clawback(sender.address().clone())
             .to_owned()
     }
 
@@ -107,8 +107,8 @@ impl AssetConfigTransactionMother {
                     .unwrap(),
             )
             .asset_id(1715458296) // Asset ID to reconfigure
-            .manager(manager)
-            .reserve(reserve)
+            .manager(manager.address())
+            .reserve(reserve.address())
             .to_owned()
     }
 }

@@ -3,7 +3,6 @@
 //! This module provides functionality for creating and managing asset configuration transactions,
 //! which are used to create, reconfige, or destroy Algorand Standard Assets (ASAs).
 
-use crate::account::Account;
 use crate::traits::Validate;
 use crate::transactions::common::{TransactionHeader, TransactionValidationError};
 use crate::utils::{is_false_opt, is_zero, is_zero_addr_opt, is_zero_opt};
@@ -164,7 +163,7 @@ pub struct AssetConfigTransactionFields {
     ///
     /// If not set or set to the Zero address the asset becomes permanently immutable.
     #[builder(default)]
-    pub manager: Option<Account>,
+    pub manager: Option<Address>,
 
     /// The address of the optional account that holds the reserve (uncirculated supply) units of the asset.
     ///
@@ -178,7 +177,7 @@ pub struct AssetConfigTransactionFields {
     ///
     /// If not set or set to the Zero address the field is permanently empty.
     #[builder(default)]
-    pub reserve: Option<Account>,
+    pub reserve: Option<Address>,
 
     /// The address of the optional account that can be used to freeze or unfreeze holdings of this asset for any account.
     ///
@@ -186,7 +185,7 @@ pub struct AssetConfigTransactionFields {
     ///
     /// If not set or set to the Zero address the field is permanently empty.
     #[builder(default)]
-    pub freeze: Option<Account>,
+    pub freeze: Option<Address>,
 
     /// The address of the optional account that can clawback holdings of this asset from any account.
     ///
@@ -196,7 +195,7 @@ pub struct AssetConfigTransactionFields {
     ///
     /// If not set or set to the Zero address the field is permanently empty.
     #[builder(default)]
-    pub clawback: Option<Account>,
+    pub clawback: Option<Address>,
 }
 
 #[serde_as]
@@ -481,9 +480,8 @@ impl Validate for AssetConfigTransactionFields {
 mod tests {
     use super::*;
     use crate::test_utils::TransactionHeaderMother;
-    use crate::Account;
 
-    fn create_test_address() -> Account {
+    fn create_test_address() -> Address {
         // Use a valid Algorand address for testing
         "JB3K6HTAXODO4THESLNYTSG6GQUFNEVIQG7A6ZYVDACR6WA3ZF52TKU5NA"
             .parse()
