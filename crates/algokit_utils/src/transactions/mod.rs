@@ -10,4 +10,7 @@ pub use application_call::{
 };
 pub use asset_config::{AssetCreateParams, AssetDestroyParams, AssetReconfigureParams};
 pub use common::{CommonParams, DefaultSignerGetter, EmptySigner, TxnSigner, TxnSignerGetter};
-pub use composer::{Composer, ComposerError, ComposerTxn, PaymentParams};
+pub use composer::{
+    Composer, ComposerError, ComposerTxn, NonParticipationKeyRegistrationParams,
+    OfflineKeyRegistrationParams, OnlineKeyRegistrationParams, PaymentParams,
+};
