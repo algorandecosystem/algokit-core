@@ -748,7 +748,7 @@ pub fn estimate_transaction_size(transaction: Transaction) -> Result<u64, AlgoKi
 }
 
 #[ffi_func]
-pub fn address_from_pub_key(pub_key: &[u8]) -> Result<Account, AlgoKitTransactError> {
+pub fn account_from_pub_key(pub_key: &[u8]) -> Result<Account, AlgoKitTransactError> {
     Ok(
         algokit_transact::Account::from_pubkey(pub_key.try_into().map_err(|_| {
             AlgoKitTransactError::EncodingError(
@@ -764,7 +764,7 @@ pub fn address_from_pub_key(pub_key: &[u8]) -> Result<Account, AlgoKitTransactEr
 }
 
 #[ffi_func]
-pub fn address_from_string(address: &str) -> Result<Account, AlgoKitTransactError> {
+pub fn account_from_address(address: &str) -> Result<Account, AlgoKitTransactError> {
     address
         .parse::<algokit_transact::Account>()
         .map(Into::into)
