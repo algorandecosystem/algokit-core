@@ -25,9 +25,9 @@ class TransactionTestData:
     unsigned_bytes: bytes
     signed_bytes: bytes
     signing_private_key: SigningKey
-    rekeyed_sender_auth_address: Account
+    rekeyed_sender_auth_address: str
     rekeyed_sender_signed_bytes: bytes
-    multisig_addresses: (Account, Account)
+    multisig_addresses: (str, str)
     multisig_signed_bytes: bytes
 
 

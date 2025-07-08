@@ -41,11 +41,11 @@ def assert_multisig_example(test_data: TransactionTestData):
         threshold=2,
         subsigs=[
             MultisigSubsig(
-                addr=address_from_string(test_data.multisig_addresses[0].address),
+                address=test_data.multisig_addresses[0],
                 sig=single_sig,
             ),
             MultisigSubsig(
-                addr=address_from_string(test_data.multisig_addresses[1].address),
+                address=test_data.multisig_addresses[1],
                 sig=single_sig,
             ),
         ]

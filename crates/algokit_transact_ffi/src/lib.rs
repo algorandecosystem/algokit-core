@@ -128,7 +128,7 @@ pub struct MultisigSignature {
 
 #[ffi_record]
 pub struct MultisigSubsig {
-    addr: Account,
+    address: String,
     sig: Option<ByteBuf>,
 }
 
@@ -207,7 +207,7 @@ impl TryFrom<MultisigSignature> for algokit_transact::MultisigSignature {
 impl From<algokit_transact::MultisigSubsig> for MultisigSubsig {
     fn from(value: algokit_transact::MultisigSubsig) -> Self {
         Self {
-            addr: value.addr.into(),
+            address: value.addr.as_str(),
             sig: value.sig.map(|sig| sig.to_vec().into()),
         }
     }
@@ -217,7 +217,7 @@ impl TryFrom<MultisigSubsig> for algokit_transact::MultisigSubsig {
     type Error = AlgoKitTransactError;
 
     fn try_from(value: MultisigSubsig) -> Result<Self, Self::Error> {
-        let addr = value.addr.try_into()?;
+        let addr = value.address.parse()?;
         let sig = value
             .sig
             .map(|sig| {
@@ -244,11 +244,11 @@ pub struct FeeParams {
 
 #[ffi_record]
 pub struct PaymentTransactionFields {
-    receiver: Account,
+    receiver: String,
 
     amount: u64,
 
-    close_remainder_to: Option<Account>,
+    close_remainder_to: Option<String>,
 }
 
 #[ffi_record]
@@ -257,11 +257,11 @@ pub struct AssetTransferTransactionFields {
 
     amount: u64,
 
-    receiver: Account,
+    receiver: String,
 
-    asset_sender: Option<Account>,
+    asset_sender: Option<String>,
 
-    close_remainder_to: Option<Account>,
+    close_remainder_to: Option<String>,
 }
 
 #[ffi_record]
@@ -270,7 +270,7 @@ pub struct Transaction {
     transaction_type: TransactionType,
 
     /// The sender of the transaction
-    sender: Account,
+    sender: String,
 
     /// Optional transaction fee in microALGO.
     ///
@@ -352,7 +352,7 @@ impl TryFrom<Transaction> for algokit_transact::TransactionHeader {
 
     fn try_from(tx: Transaction) -> Result<Self, AlgoKitTransactError> {
         Ok(Self {
-            sender: tx.sender.try_into()?,
+            sender: tx.sender.parse()?,
             fee: tx.fee,
             first_valid: tx.first_valid,
             last_valid: tx.last_valid,
@@ -378,9 +378,9 @@ impl TryFrom<Transaction> for algokit_transact::TransactionHeader {
 impl From<algokit_transact::PaymentTransactionFields> for PaymentTransactionFields {
     fn from(tx: algokit_transact::PaymentTransactionFields) -> Self {
         Self {
-            receiver: tx.receiver.into(),
+            receiver: tx.receiver.as_str(),
             amount: tx.amount,
-            close_remainder_to: tx.close_remainder_to.map(Into::into),
+            close_remainder_to: tx.close_remainder_to.map(|addr| addr.as_str()),
         }
     }
 }
@@ -401,8 +401,11 @@ impl TryFrom<Transaction> for algokit_transact::PaymentTransactionFields {
         Ok(Self {
             header,
             amount: data.amount,
-            receiver: data.receiver.try_into()?,
-            close_remainder_to: data.close_remainder_to.map(TryInto::try_into).transpose()?,
+            receiver: data.receiver.parse()?,
+            close_remainder_to: data
+                .close_remainder_to
+                .map(|addr| addr.parse())
+                .transpose()?,
         })
     }
 }
@@ -412,9 +415,9 @@ impl From<algokit_transact::AssetTransferTransactionFields> for AssetTransferTra
         Self {
             asset_id: tx.asset_id,
             amount: tx.amount,
-            receiver: tx.receiver.into(),
-            asset_sender: tx.asset_sender.map(Into::into),
-            close_remainder_to: tx.close_remainder_to.map(Into::into),
+            receiver: tx.receiver.as_str(),
+            asset_sender: tx.asset_sender.map(|addr| addr.as_str()),
+            close_remainder_to: tx.close_remainder_to.map(|addr| addr.as_str()),
         }
     }
 }
@@ -436,9 +439,12 @@ impl TryFrom<Transaction> for algokit_transact::AssetTransferTransactionFields {
             header,
             asset_id: data.asset_id,
             amount: data.amount,
-            receiver: data.receiver.try_into()?,
-            asset_sender: data.asset_sender.map(TryInto::try_into).transpose()?,
-            close_remainder_to: data.close_remainder_to.map(TryInto::try_into).transpose()?,
+            receiver: data.receiver.parse()?,
+            asset_sender: data.asset_sender.map(|addr| addr.parse()).transpose()?,
+            close_remainder_to: data
+                .close_remainder_to
+                .map(|addr| addr.parse())
+                .transpose()?,
         })
     }
 }
@@ -521,7 +527,7 @@ pub struct SignedTransaction {
     pub signature: Option<ByteBuf>,
 
     /// Optional auth address applicable if the transaction sender is a rekeyed account.
-    pub auth_address: Option<Account>,
+    pub auth_address: Option<String>,
 
     /// Optional multisig signature if the transaction is a multisig transaction.
     pub multisig_signature: Option<MultisigSignature>,
@@ -532,7 +538,7 @@ impl From<algokit_transact::SignedTransaction> for SignedTransaction {
         Self {
             transaction: signed_tx.transaction.try_into().unwrap(),
             signature: signed_tx.signature.map(|sig| sig.to_vec().into()),
-            auth_address: signed_tx.auth_address.map(Into::into),
+            auth_address: signed_tx.auth_address.map(|addr| addr.as_str()),
             multisig_signature: signed_tx.multisig.map(Into::into),
         }
     }
@@ -557,7 +563,10 @@ impl TryFrom<SignedTransaction> for algokit_transact::SignedTransaction {
         Ok(Self {
             transaction: signed_tx.transaction.try_into()?,
             signature,
-            auth_address: signed_tx.auth_address.map(TryInto::try_into).transpose()?,
+            auth_address: signed_tx
+                .auth_address
+                .map(|addr| addr.parse())
+                .transpose()?,
             multisig: signed_tx
                 .multisig_signature
                 .map(TryInto::try_into)
@@ -590,7 +599,7 @@ fn build_transaction(
 ) -> Result<Transaction, AlgoKitTransactError> {
     Ok(Transaction {
         transaction_type,
-        sender: header.sender.into(),
+        sender: header.sender.as_str(),
         fee: header.fee,
         first_valid: header.first_valid,
         last_valid: header.last_valid,

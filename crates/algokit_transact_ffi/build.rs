@@ -19,9 +19,9 @@ fn generate_test_data() {
         unsigned_bytes: Vec<u8>,
         signing_private_key: [u8; ALGORAND_SECRET_KEY_BYTE_LENGTH],
         signed_bytes: Vec<u8>,
-        rekeyed_sender_auth_address: Account,
+        rekeyed_sender_auth_address: String,
         rekeyed_sender_signed_bytes: Vec<u8>,
-        multisig_addresses: (Account, Account),
+        multisig_addresses: (String, String),
         multisig_signed_bytes: Vec<u8>,
     }
 
@@ -34,11 +34,11 @@ fn generate_test_data() {
             unsigned_bytes: d.unsigned_bytes.clone(),
             signing_private_key: d.signing_private_key,
             signed_bytes: d.signed_bytes.clone(),
-            rekeyed_sender_auth_address: d.rekeyed_sender_auth_address.clone().into(),
+            rekeyed_sender_auth_address: d.rekeyed_sender_auth_address.as_str(),
             rekeyed_sender_signed_bytes: d.rekeyed_sender_signed_bytes.clone(),
             multisig_addresses: (
-                d.multisig_addresses.clone().0.into(),
-                d.multisig_addresses.clone().1.into(),
+                d.multisig_addresses.clone().0.as_str(),
+                d.multisig_addresses.clone().1.as_str(),
             ),
             multisig_signed_bytes: d.multisig_signed_bytes.clone(),
         }),
