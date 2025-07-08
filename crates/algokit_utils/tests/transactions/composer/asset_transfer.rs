@@ -80,7 +80,6 @@ async fn test_asset_transfer_transaction() {
         .await
         .expect("Failed to send transaction");
 
-    // FIXME: How to access the second transaction?
     match result.txn.transaction {
         algokit_transact::Transaction::AssetTransfer(asset_transfer_fields) => {
             assert_eq!(
