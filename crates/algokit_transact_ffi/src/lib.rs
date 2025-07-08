@@ -287,7 +287,7 @@ pub struct Transaction {
 
     note: Option<ByteBuf>,
 
-    rekey_to: Option<Account>,
+    rekey_to: Option<String>,
 
     lease: Option<ByteBuf>,
 
@@ -362,7 +362,7 @@ impl TryFrom<Transaction> for algokit_transact::TransactionHeader {
                 .map(|buf| bytebuf_to_bytes::<32>(&buf))
                 .transpose()?,
             note: tx.note.map(ByteBuf::into_vec),
-            rekey_to: tx.rekey_to.map(TryInto::try_into).transpose()?,
+            rekey_to: tx.rekey_to.map(|addr| addr.parse()).transpose()?,
             lease: tx
                 .lease
                 .map(|buf| bytebuf_to_bytes::<32>(&buf))
@@ -606,7 +606,7 @@ fn build_transaction(
         genesis_id: header.genesis_id,
         genesis_hash: header.genesis_hash.map(byte32_to_bytebuf),
         note: header.note.map(Into::into),
-        rekey_to: header.rekey_to.map(Into::into),
+        rekey_to: header.rekey_to.map(|addr| addr.as_str()),
         lease: header.lease.map(byte32_to_bytebuf),
         group: header.group.map(byte32_to_bytebuf),
         payment,
