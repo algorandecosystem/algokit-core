@@ -59,7 +59,6 @@ pub enum Transaction {
 
     #[serde(rename = "keyreg")]
     KeyRegistration(KeyRegistrationTransactionFields),
-    // Remaining transaction variants will be implemented in the future
 }
 
 pub struct FeeParams {

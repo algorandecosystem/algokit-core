@@ -6,15 +6,21 @@ pub struct KeyRegistrationTransactionMother {}
 impl KeyRegistrationTransactionMother {
     pub fn online_key_registration() -> KeyRegistrationTransactionBuilder {
         // https://lora.algokit.io/testnet/transaction/UCWQQKWB3CMPVK6EU2ML7CN5IDYZJVVSVS3RXYEOLJUURX44SUKQ
+        let mut header = TransactionHeaderMother::testnet()
+            .sender(
+                "PKASUHJJ7HALD6BXBIOLQTRFHAP6HF2TAYQ734E325FGDRB66EE6MYQGTM"
+                    .parse()
+                    .unwrap(),
+            )
+            .first_valid(53287880)
+            .last_valid(53288880)
+            .fee(2000000)
+            .build()
+            .unwrap();
+        header.genesis_id = None;
         KeyRegistrationTransactionBuilder::default()
             .header(
-                TransactionHeaderMother::testnet()
-                    .sender("PKASUHJJ7HALD6BXBIOLQTRFHAP6HF2TAYQ734E325FGDRB66EE6MYQGTM".parse().unwrap())
-                    .first_valid(53287880)
-                    .last_valid(53288880)
-                    .fee(2000)
-                    .build()
-                    .unwrap()
+                header
             )
             .vote_key(
                 BASE64_STANDARD
@@ -45,39 +51,39 @@ impl KeyRegistrationTransactionMother {
 
     pub fn offline_key_registration() -> KeyRegistrationTransactionBuilder {
         // https://lora.algokit.io/testnet/transaction/WAXJLC44RILOSYX73PJULCAWC43DNBU4AXMWHIRARXK4GO2LHEDQ
-        KeyRegistrationTransactionBuilder::default()
-            .header(
-                TransactionHeaderMother::testnet()
-                    .sender(
-                        "W5LKXE4BG7OND7KPGSXPDOOYQDITPNS7NSDU7672TO6I4RDNSEFWXRPISQ"
-                            .parse()
-                            .unwrap(),
-                    )
-                    .first_valid(52556882)
-                    .last_valid(52557882)
-                    .fee(1000)
-                    .build()
+        let mut header = TransactionHeaderMother::testnet()
+            .sender(
+                "W5LKXE4BG7OND7KPGSXPDOOYQDITPNS7NSDU7672TO6I4RDNSEFWXRPISQ"
+                    .parse()
                     .unwrap(),
             )
+            .first_valid(52556882)
+            .last_valid(52557882)
+            .fee(1000)
+            .build()
+            .unwrap();
+        header.genesis_id = None;
+        KeyRegistrationTransactionBuilder::default()
+            .header(header)
             .to_owned()
     }
 
     pub fn non_participation_key_registration() -> KeyRegistrationTransactionBuilder {
-        // https://lora.algokit.io/testnet/transaction/ACAP6ZGMkGNTLUO3IQ26P22SRKYWTQQO3MF64GX7QO6NICDUFPM5A
-        KeyRegistrationTransactionBuilder::default()
-            .header(
-                TransactionHeaderMother::testnet()
-                    .sender(
-                        "4UMX2FKZ636VEL74WR66Z5PSRVDC2QAH6GRPP2DTVSBPPADBDY2JB3PN2U"
-                            .parse()
-                            .unwrap(),
-                    )
-                    .first_valid(3321800)
-                    .last_valid(3322800)
-                    .fee(1000)
-                    .build()
+        // https://lora.algokit.io/testnet/transaction/ACAP6ZGMGNTLUO3IQ26P22SRKYWTQQO3MF64GX7QO6NICDUFPM5A
+        let mut header = TransactionHeaderMother::testnet()
+            .sender(
+                "4UMX2FKZ636VEL74WR66Z5PSRVDC2QAH6GRPP2DTVSBPPADBDY2JB3PN2U"
+                    .parse()
                     .unwrap(),
             )
+            .first_valid(3321800)
+            .last_valid(3322800)
+            .fee(1000)
+            .build()
+            .unwrap();
+        header.genesis_id = None;
+        KeyRegistrationTransactionBuilder::default()
+            .header(header)
             .non_participation(true)
             .to_owned()
     }

@@ -169,7 +169,7 @@ impl TryFrom<Transaction> for algokit_transact::AssetConfigTransactionFields {
 
         transaction_fields.validate().map_err(|errors| {
             AlgoKitTransactError::DecodingError(format!(
-                "Asset configuration validation failed: {}",
+                "Asset config validation failed: {}",
                 errors.join("\n")
             ))
         })?;
