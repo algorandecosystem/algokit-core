@@ -11,13 +11,18 @@ use algokit_transact::{
 use derive_more::Debug;
 use std::sync::Arc;
 
+use crate::genesis_id_is_localnet;
+
 use super::application_call::{
     ApplicationCallParams, ApplicationCreateParams, ApplicationDeleteParams,
     ApplicationUpdateParams,
 };
 use super::asset_config::{AssetCreateParams, AssetDestroyParams, AssetReconfigureParams};
 use super::common::{CommonParams, DefaultSignerGetter, TxnSigner, TxnSignerGetter};
-use crate::clients::network_client::genesis_id_is_localnet;
+use super::key_registration::{
+    NonParticipationKeyRegistrationParams, OfflineKeyRegistrationParams,
+    OnlineKeyRegistrationParams,
+};
 
 #[derive(Debug, thiserror::Error)]
 pub enum ComposerError {
@@ -86,28 +91,6 @@ pub struct AssetClawbackParams {
     pub receiver: Address,
     // The address from which ASAs are taken.
     pub clawback_target: Address,
-}
-
-#[derive(Debug, Clone)]
-pub struct OnlineKeyRegistrationParams {
-    pub common_params: CommonParams,
-    pub vote_key: [u8; 32],
-    pub selection_key: [u8; 32],
-    pub vote_first: u64,
-    pub vote_last: u64,
-    pub vote_key_dilution: u64,
-    pub state_proof_key: Option<[u8; 64]>,
-}
-
-#[derive(Debug, Clone)]
-pub struct OfflineKeyRegistrationParams {
-    pub common_params: CommonParams,
-    pub non_participation: Option<bool>,
-}
-
-#[derive(Debug, Clone)]
-pub struct NonParticipationKeyRegistrationParams {
-    pub common_params: CommonParams,
 }
 
 #[derive(Debug, Clone)]
