@@ -39,8 +39,8 @@ def test_example(test_data):
     txn_test_data.values(),
     ids=txn_test_data.keys(),
 )
-def test_example(test_data):
-    """A human-readable example of forming a transaction and signing it"""
+def test_multisig_example(test_data):
+    """A human-readable example of forming a multisig transaction and signing it"""
     assert_multisig_example(test_data)
 
 

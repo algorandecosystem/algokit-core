@@ -27,7 +27,7 @@ class TransactionTestData:
     signing_private_key: SigningKey
     rekeyed_sender_auth_address: str
     rekeyed_sender_signed_bytes: bytes
-    multisig_addresses: (str, str)
+    multisig_addresses: tuple[str, str]
     multisig_signed_bytes: bytes
 
 
