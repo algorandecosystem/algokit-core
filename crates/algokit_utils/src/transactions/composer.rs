@@ -635,18 +635,37 @@ impl Composer {
 
         let mut signed_group = Vec::<SignedTransaction>::new();
 
-        for txn in transactions.iter() {
-            let signer = self.get_signer(txn.header().sender.clone()).await.ok_or(
-                ComposerError::SigningError(format!(
-                    "No signer found for address: {}",
-                    txn.header().sender
-                )),
-            )?;
+        // Process each transaction individually to handle mixed signer types
+        for (i, txn) in transactions.iter().enumerate() {
+            // First check if the corresponding ComposerTxn has a specific signer
+            let specific_signer = if let Some(composer_txn) = self.transactions.get(i) {
+                let common_params = composer_txn.common_params();
+                common_params.signer.clone()
+            } else {
+                None
+            };
 
-            let signed_txn = signer
-                .sign_txn(txn)
-                .await
-                .map_err(ComposerError::SigningError)?;
+            let signed_txn = if let Some(signer) = specific_signer {
+                // Use the specific signer provided in CommonParams
+                signer
+                    .sign_txn(txn)
+                    .await
+                    .map_err(ComposerError::SigningError)?
+            } else {
+                // Fall back to the composer's global signer getter
+                let global_signer = self.get_signer(txn.header().sender.clone()).await.ok_or(
+                    ComposerError::SigningError(format!(
+                        "No signer found for address: {}",
+                        txn.header().sender
+                    )),
+                )?;
+
+                global_signer
+                    .sign_txn(txn)
+                    .await
+                    .map_err(ComposerError::SigningError)?
+            };
+
             signed_group.push(signed_txn);
         }
 
