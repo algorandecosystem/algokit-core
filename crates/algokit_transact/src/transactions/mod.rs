@@ -156,7 +156,7 @@ pub struct SignedTransaction {
 
     #[serde(rename = "msig")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub multisig: Option<MultisigSignature>,
+    pub multisignature: Option<MultisigSignature>,
 }
 
 impl AlgorandMsgpack for SignedTransaction {

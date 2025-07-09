@@ -403,7 +403,7 @@ mod tests {
                 transaction: key_reg_tx.clone(),
                 signature: Some([0; ALGORAND_SIGNATURE_BYTE_LENGTH]),
                 auth_address: None,
-                multisig: None,
+                multisignature: None,
             };
             let encoded_stx = signed_tx.encode().unwrap();
             let decoded_stx = SignedTransaction::decode(&encoded_stx).unwrap();
@@ -434,7 +434,7 @@ mod tests {
                 transaction: key_reg_tx.clone(),
                 signature: Some([0; ALGORAND_SIGNATURE_BYTE_LENGTH]),
                 auth_address: None,
-                multisig: None,
+                multisignature: None,
             };
             let encoded_stx = signed_tx.encode().unwrap();
             let decoded_stx = SignedTransaction::decode(&encoded_stx).unwrap();
@@ -466,7 +466,7 @@ mod tests {
                 transaction: key_reg_tx.clone(),
                 signature: Some([0; ALGORAND_SIGNATURE_BYTE_LENGTH]),
                 auth_address: None,
-                multisig: None,
+                multisignature: None,
             };
 
             // Test that transaction ID can be generated

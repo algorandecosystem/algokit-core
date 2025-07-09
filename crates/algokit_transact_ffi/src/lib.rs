@@ -530,7 +530,7 @@ pub struct SignedTransaction {
     pub auth_address: Option<String>,
 
     /// Optional multisig signature if the transaction is a multisig transaction.
-    pub multisig_signature: Option<MultisigSignature>,
+    pub multisignature: Option<MultisigSignature>,
 }
 
 impl From<algokit_transact::SignedTransaction> for SignedTransaction {
@@ -539,7 +539,7 @@ impl From<algokit_transact::SignedTransaction> for SignedTransaction {
             transaction: signed_tx.transaction.try_into().unwrap(),
             signature: signed_tx.signature.map(|sig| sig.to_vec().into()),
             auth_address: signed_tx.auth_address.map(|addr| addr.as_str()),
-            multisig_signature: signed_tx.multisig.map(Into::into),
+            multisignature: signed_tx.multisignature.map(Into::into),
         }
     }
 }
@@ -567,8 +567,8 @@ impl TryFrom<SignedTransaction> for algokit_transact::SignedTransaction {
                 .auth_address
                 .map(|addr| addr.parse())
                 .transpose()?,
-            multisig: signed_tx
-                .multisig_signature
+            multisignature: signed_tx
+                .multisignature
                 .map(TryInto::try_into)
                 .transpose()?,
         })

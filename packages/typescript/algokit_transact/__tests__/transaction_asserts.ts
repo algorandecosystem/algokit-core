@@ -108,7 +108,7 @@ export const assertMultisigExample = async (label: string, testData: Transaction
 
   const signedTxn: SignedTransaction = {
     transaction: testData.transaction,
-    multisigSignature,
+    multisignature: multisigSignature,
   };
   const encodedSignedTxn = encodeSignedTransaction(signedTxn);
 

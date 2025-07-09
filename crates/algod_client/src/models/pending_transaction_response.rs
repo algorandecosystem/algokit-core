@@ -102,7 +102,7 @@ impl Default for PendingTransactionResponse {
                 ),
                 signature: None,
                 auth_address: None,
-                multisig: None,
+                multisignature: None,
             },
         }
     }

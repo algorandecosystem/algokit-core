@@ -112,7 +112,7 @@ impl TestAccount {
             transaction: transaction.clone(),
             signature: Some(signature.to_bytes()),
             auth_address: None,
-            multisig: None,
+            multisignature: None,
         };
 
         // Encode the signed transaction to msgpack bytes

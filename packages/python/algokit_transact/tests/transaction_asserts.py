@@ -52,7 +52,7 @@ def assert_multisig_example(test_data: TransactionTestData):
 
     signed_txn = SignedTransaction(
         transaction=test_data.transaction,
-        multisig_signature=multisig_signature
+        multisignature=multisig_signature
     )
     encoded_signed_txn = encode_signed_transaction(signed_txn)
     assert encoded_signed_txn == test_data.multisig_signed_bytes
