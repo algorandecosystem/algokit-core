@@ -4,7 +4,7 @@ mod key_registration;
 
 use crate::{
     transactions::{AssetTransferTransactionBuilder, PaymentTransactionBuilder},
-    Account, Address, AlgorandMsgpack, Byte32, MultisigSignature, MultisigSubsig,
+    Account, Address, AlgorandMsgpack, Byte32, MultisigSignature, MultisigSubsignature,
     SignedTransaction, Transaction, TransactionHeaderBuilder, TransactionId,
     ALGORAND_PUBLIC_KEY_BYTE_LENGTH, HASH_BYTES_LENGTH,
 };
@@ -318,14 +318,14 @@ impl TransactionTestData {
         let multisig_signature = MultisigSignature {
             version: 1,
             threshold: 2,
-            subsigs: vec![
-                MultisigSubsig {
-                    addr: multisig_addresses.clone().0,
-                    sig: Some(signature.to_bytes()),
+            subsignatures: vec![
+                MultisigSubsignature {
+                    address: multisig_addresses.clone().0,
+                    signature: Some(signature.to_bytes()),
                 },
-                MultisigSubsig {
-                    addr: multisig_addresses.clone().1,
-                    sig: Some(signature.to_bytes()),
+                MultisigSubsignature {
+                    address: multisig_addresses.clone().1,
+                    signature: Some(signature.to_bytes()),
                 },
             ],
         };

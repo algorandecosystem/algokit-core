@@ -183,7 +183,7 @@ impl From<algokit_transact::MultisigSignature> for MultisigSignature {
             address: value.to_string(),
             version: value.version,
             threshold: value.threshold,
-            subsigs: value.subsigs.into_iter().map(Into::into).collect(),
+            subsigs: value.subsignatures.into_iter().map(Into::into).collect(),
         }
     }
 }
@@ -195,7 +195,7 @@ impl TryFrom<MultisigSignature> for algokit_transact::MultisigSignature {
         Ok(Self {
             version: value.version,
             threshold: value.threshold,
-            subsigs: value
+            subsignatures: value
                 .subsigs
                 .into_iter()
                 .map(TryInto::try_into)
@@ -204,21 +204,21 @@ impl TryFrom<MultisigSignature> for algokit_transact::MultisigSignature {
     }
 }
 
-impl From<algokit_transact::MultisigSubsig> for MultisigSubsig {
-    fn from(value: algokit_transact::MultisigSubsig) -> Self {
+impl From<algokit_transact::MultisigSubsignature> for MultisigSubsig {
+    fn from(value: algokit_transact::MultisigSubsignature) -> Self {
         Self {
-            address: value.addr.as_str(),
-            sig: value.sig.map(|sig| sig.to_vec().into()),
+            address: value.address.as_str(),
+            sig: value.signature.map(|sig| sig.to_vec().into()),
         }
     }
 }
 
-impl TryFrom<MultisigSubsig> for algokit_transact::MultisigSubsig {
+impl TryFrom<MultisigSubsig> for algokit_transact::MultisigSubsignature {
     type Error = AlgoKitTransactError;
 
     fn try_from(value: MultisigSubsig) -> Result<Self, Self::Error> {
-        let addr = value.address.parse()?;
-        let sig = value
+        let address = value.address.parse()?;
+        let signature = value
             .sig
             .map(|sig| {
                 sig.to_vec().try_into().map_err(|_| {
@@ -230,7 +230,7 @@ impl TryFrom<MultisigSubsig> for algokit_transact::MultisigSubsig {
             })
             .transpose()?;
 
-        Ok(Self { addr, sig })
+        Ok(Self { address, signature })
     }
 }
 

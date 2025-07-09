@@ -44,7 +44,7 @@ pub struct MultisigSignature {
     pub threshold: u8,
     /// Sub-signatures
     #[serde(rename = "subsig")]
-    pub subsigs: Vec<MultisigSubsig>,
+    pub subsignatures: Vec<MultisigSubsignature>,
 }
 
 impl MultisigSignature {
@@ -52,19 +52,22 @@ impl MultisigSignature {
     pub fn new(version: u8, threshold: u8, participants: Vec<Address>) -> Self {
         let subsigs = participants
             .into_iter()
-            .map(|addr| MultisigSubsig { addr, sig: None })
+            .map(|address| MultisigSubsignature {
+                address,
+                signature: None,
+            })
             .collect();
         Self {
             version,
             threshold,
-            subsigs,
+            subsignatures: subsigs,
         }
     }
 
     pub fn participants(&self) -> Vec<Address> {
-        self.subsigs
+        self.subsignatures
             .iter()
-            .map(|subsig| subsig.addr.clone())
+            .map(|subsig| subsig.address.clone())
             .collect()
     }
 }
@@ -72,15 +75,15 @@ impl MultisigSignature {
 /// Represents a single subsignature in a multisignature transaction.
 #[serde_as]
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-pub struct MultisigSubsig {
+pub struct MultisigSubsignature {
     /// Address of a single signature account that is sub-signing a multisignature transaction.
     #[serde(rename = "pk")]
-    pub addr: Address,
+    pub address: Address,
     /// The signature bytes.
     #[serde(rename = "s")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde_as(as = "Option<Bytes>")]
-    pub sig: Option<[u8; ALGORAND_SIGNATURE_BYTE_LENGTH]>,
+    pub signature: Option<[u8; ALGORAND_SIGNATURE_BYTE_LENGTH]>,
 }
 
 impl From<MultisigSignature> for Address {
@@ -90,7 +93,7 @@ impl From<MultisigSignature> for Address {
         let mut buffer = Vec::with_capacity(
             MULTISIG_DOMAIN_SEPARATOR.len()
                 + 2
-                + msig.subsigs.len() * ALGORAND_PUBLIC_KEY_BYTE_LENGTH,
+                + msig.subsignatures.len() * ALGORAND_PUBLIC_KEY_BYTE_LENGTH,
         );
         buffer.extend_from_slice(MULTISIG_DOMAIN_SEPARATOR.as_bytes());
         buffer.push(msig.version);
