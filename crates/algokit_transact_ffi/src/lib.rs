@@ -123,13 +123,13 @@ pub struct MultisigSignature {
     address: String,
     version: u8,
     threshold: u8,
-    subsigs: Vec<MultisigSubsig>,
+    subsignatures: Vec<MultisigSubsignature>,
 }
 
 #[ffi_record]
-pub struct MultisigSubsig {
+pub struct MultisigSubsignature {
     address: String,
-    sig: Option<ByteBuf>,
+    signature: Option<ByteBuf>,
 }
 
 impl From<algokit_transact::Account> for Account {
@@ -183,7 +183,7 @@ impl From<algokit_transact::MultisigSignature> for MultisigSignature {
             address: value.to_string(),
             version: value.version,
             threshold: value.threshold,
-            subsigs: value.subsignatures.into_iter().map(Into::into).collect(),
+            subsignatures: value.subsignatures.into_iter().map(Into::into).collect(),
         }
     }
 }
@@ -196,7 +196,7 @@ impl TryFrom<MultisigSignature> for algokit_transact::MultisigSignature {
             version: value.version,
             threshold: value.threshold,
             subsignatures: value
-                .subsigs
+                .subsignatures
                 .into_iter()
                 .map(TryInto::try_into)
                 .collect::<Result<Vec<_>, _>>()?,
@@ -204,22 +204,22 @@ impl TryFrom<MultisigSignature> for algokit_transact::MultisigSignature {
     }
 }
 
-impl From<algokit_transact::MultisigSubsignature> for MultisigSubsig {
+impl From<algokit_transact::MultisigSubsignature> for MultisigSubsignature {
     fn from(value: algokit_transact::MultisigSubsignature) -> Self {
         Self {
             address: value.address.as_str(),
-            sig: value.signature.map(|sig| sig.to_vec().into()),
+            signature: value.signature.map(|sig| sig.to_vec().into()),
         }
     }
 }
 
-impl TryFrom<MultisigSubsig> for algokit_transact::MultisigSubsignature {
+impl TryFrom<MultisigSubsignature> for algokit_transact::MultisigSubsignature {
     type Error = AlgoKitTransactError;
 
-    fn try_from(value: MultisigSubsig) -> Result<Self, Self::Error> {
+    fn try_from(value: MultisigSubsignature) -> Result<Self, Self::Error> {
         let address = value.address.parse()?;
         let signature = value
-            .sig
+            .signature
             .map(|sig| {
                 sig.to_vec().try_into().map_err(|_| {
                     AlgoKitTransactError::EncodingError(format!(
