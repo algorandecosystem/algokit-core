@@ -124,7 +124,8 @@ impl TryFrom<Transaction> for algokit_transact::ApplicationCallTransactionFields
             account_references: data
                 .account_references
                 .map(|addrs| {
-                    addrs.into_iter()
+                    addrs
+                        .into_iter()
                         .map(|addr| addr.parse())
                         .collect::<Result<Vec<_>, _>>()
                 })

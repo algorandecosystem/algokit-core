@@ -39,12 +39,12 @@ pub fn check_transaction_encoding(tx: &Transaction, expected_encoded_len: usize)
 pub fn check_signed_transaction_encoding(
     tx: &Transaction,
     expected_encoded_len: usize,
-    auth_address: Option<Account>,
+    auth_account: Option<Account>,
 ) {
     let signed_tx = SignedTransaction {
         transaction: tx.clone(),
         signature: Some([0; ALGORAND_SIGNATURE_BYTE_LENGTH]),
-        auth_address: auth_address.map(|acc| acc.address()),
+        auth_address: auth_account.map(|acc| acc.address()),
         multisig: None,
     };
     let encoded_stx = signed_tx.encode().unwrap();
