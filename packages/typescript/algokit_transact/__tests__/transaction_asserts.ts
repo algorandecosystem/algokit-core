@@ -87,12 +87,11 @@ export const assertAssignFee = (label: string, testData: TransactionTestData) =>
 };
 
 export const assertMultisigExample = async (label: string, testData: TransactionTestData) => {
-  // This mirrors the Python test: create a multisig signature manually
   const singleSig = await ed.signAsync(encodeTransaction(testData.transaction), testData.signingPrivateKey);
 
-  // NOTE: This assumes testData.multisigAddresses exists and is an array of addresses
+  // FIXME: Just as in the Python test, when we get a function that creates multisigs, that's what we should use here.
   const multisigSignature: MultisigSignature = {
-    address: "", // placeholder, as in the Python test
+    address: "",
     version: 1,
     threshold: 2,
     subsigs: [
