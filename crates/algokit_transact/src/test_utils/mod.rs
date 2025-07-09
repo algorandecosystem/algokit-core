@@ -163,7 +163,7 @@ impl TransactionMother {
 
 pub struct AccountMother {}
 impl AccountMother {
-    pub fn zero_address() -> Account {
+    pub fn zero_address_account() -> Account {
         Account::from_pubkey(&[0; ALGORAND_PUBLIC_KEY_BYTE_LENGTH])
     }
 

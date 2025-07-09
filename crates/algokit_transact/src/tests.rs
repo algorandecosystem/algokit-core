@@ -157,8 +157,8 @@ fn test_asset_opt_in_signed_transaction_encoding() {
 }
 
 #[test]
-fn test_zero_address() {
-    let acct = AccountMother::zero_address();
+fn test_zero_address_account() {
+    let acct = AccountMother::zero_address_account();
     assert_eq!(
         acct.to_string(),
         "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ"
