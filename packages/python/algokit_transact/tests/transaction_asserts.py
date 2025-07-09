@@ -9,7 +9,7 @@ from algokit_transact import (
     SignedTransaction,
     get_transaction_id,
     get_transaction_id_raw,
-    estimate_transaction_size, MultisigSignature, MultisigSubsig,
+    estimate_transaction_size, MultisigSignature, MultisigSubsignature,
 )
 
 
@@ -38,14 +38,14 @@ def assert_multisig_example(test_data: TransactionTestData):
         address="",
         version=1,
         threshold=2,
-        subsigs=[
-            MultisigSubsig(
+        subsignatures=[
+            MultisigSubsignature(
                 address=test_data.multisig_addresses[0],
-                sig=single_sig,
+                signature=single_sig,
             ),
-            MultisigSubsig(
+            MultisigSubsignature(
                 address=test_data.multisig_addresses[1],
-                sig=single_sig,
+                signature=single_sig,
             ),
         ]
     )

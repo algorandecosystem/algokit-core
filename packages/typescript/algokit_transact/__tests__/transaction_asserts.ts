@@ -9,7 +9,7 @@ import {
   getTransactionIdRaw,
   SignedTransaction,
   MultisigSignature,
-  MultisigSubsig,
+  MultisigSubsignature,
 } from "..";
 import { expect } from "bun:test";
 import * as ed from "@noble/ed25519";
@@ -94,16 +94,16 @@ export const assertMultisigExample = async (label: string, testData: Transaction
     address: "",
     version: 1,
     threshold: 2,
-    subsigs: [
+    subsignatures: [
       {
         address: testData.multisigAddresses[0],
-        sig: singleSig,
+        signature: singleSig,
       },
       {
         address: testData.multisigAddresses[1],
-        sig: singleSig,
+        signature: singleSig,
       },
-    ] as MultisigSubsig[],
+    ] as MultisigSubsignature[],
   };
 
   const signedTxn: SignedTransaction = {
