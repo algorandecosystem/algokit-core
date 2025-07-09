@@ -14,21 +14,14 @@ async fn test_asset_transfer_transaction() {
         .await
         .expect("Failed to create new scope");
 
-    let mut fixture_asa_creator = algorand_fixture().await.expect("Failed to create asa");
-    fixture_asa_creator
-        .new_scope()
-        .await
-        .expect("Failed to create asa scope");
-    let context_asa_creator = fixture_asa_creator
-        .context()
-        .expect("Failed to get context");
-    let asa_creator = context_asa_creator.test_account.address().unwrap();
+    let context_asa_creator = fixture.context().expect("Failed to get context");
+    let asa_creator_address = context_asa_creator.test_account.address().unwrap();
     let mut composer_asa_creator = context_asa_creator.composer.clone();
 
     composer_asa_creator
         .add_asset_create(AssetCreateParams {
             common_params: CommonParams {
-                sender: asa_creator.clone(),
+                sender: asa_creator_address.clone(),
                 ..Default::default()
             },
             total: 10,
@@ -49,10 +42,15 @@ async fn test_asset_transfer_transaction() {
         .await
         .expect("Failed to send asset create transaction");
 
-    let context = fixture.context().expect("Failed to get context");
+    fixture
+        .new_scope()
+        .await
+        .expect("Failed to create new scope");
 
-    let asa_user_address = context.test_account.address().unwrap();
-    let mut composer_asa_transfer = context.composer.clone();
+    let context_asa_transfer = fixture.context().expect("Failed to get context");
+
+    let asa_user_address = context_asa_transfer.test_account.address().unwrap();
+    let mut composer_asa_transfer = context_asa_transfer.composer.clone();
     composer_asa_transfer
         .add_asset_opt_in(AssetOptInParams {
             common_params: CommonParams {
@@ -70,7 +68,7 @@ async fn test_asset_transfer_transaction() {
                 ..Default::default()
             },
             asset_id: asa_create_result.asset_index.unwrap(),
-            receiver: asa_creator,
+            receiver: asa_creator_address,
             amount: 0,
         })
         .expect("Failed to add asset transfer");
