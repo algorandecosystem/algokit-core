@@ -14,14 +14,14 @@ async fn test_asset_transfer_transaction() {
         .await
         .expect("Failed to create new scope");
 
-    let context_asa_creator = fixture.context().expect("Failed to get context");
-    let asa_creator_address = context_asa_creator.test_account.address().unwrap();
-    let mut composer_asa_creator = context_asa_creator.composer.clone();
+    let context_asset_creator = fixture.context().expect("Failed to get context");
+    let asset_creator_address = context_asset_creator.test_account.address().unwrap();
+    let mut composer_asset_creator = context_asset_creator.composer.clone();
 
-    composer_asa_creator
+    composer_asset_creator
         .add_asset_create(AssetCreateParams {
             common_params: CommonParams {
-                sender: asa_creator_address.clone(),
+                sender: asset_creator_address.clone(),
                 ..Default::default()
             },
             total: 10,
@@ -37,7 +37,7 @@ async fn test_asset_transfer_transaction() {
             clawback: None,
         })
         .expect("Failed to add asset create");
-    let asa_create_result = composer_asa_creator
+    let asset_create_result = composer_asset_creator
         .send()
         .await
         .expect("Failed to send asset create transaction");
@@ -47,33 +47,33 @@ async fn test_asset_transfer_transaction() {
         .await
         .expect("Failed to create new scope");
 
-    let context_asa_transfer = fixture.context().expect("Failed to get context");
+    let context_asset_transfer = fixture.context().expect("Failed to get context");
 
-    let asa_user_address = context_asa_transfer.test_account.address().unwrap();
-    let mut composer_asa_transfer = context_asa_transfer.composer.clone();
-    composer_asa_transfer
+    let asset_user_address = context_asset_transfer.test_account.address().unwrap();
+    let mut composer_asset_transfer = context_asset_transfer.composer.clone();
+    composer_asset_transfer
         .add_asset_opt_in(AssetOptInParams {
             common_params: CommonParams {
-                sender: asa_user_address.clone(),
+                sender: asset_user_address.clone(),
                 ..Default::default()
             },
-            asset_id: asa_create_result.asset_index.unwrap(),
+            asset_id: asset_create_result.asset_index.unwrap(),
         })
         .expect("Failed to add asset opt-in");
 
-    composer_asa_transfer
+    composer_asset_transfer
         .add_asset_transfer(AssetTransferParams {
             common_params: CommonParams {
-                sender: asa_user_address.clone(),
+                sender: asset_user_address.clone(),
                 ..Default::default()
             },
-            asset_id: asa_create_result.asset_index.unwrap(),
-            receiver: asa_creator_address,
+            asset_id: asset_create_result.asset_index.unwrap(),
+            receiver: asset_creator_address,
             amount: 0,
         })
         .expect("Failed to add asset transfer");
 
-    let result = composer_asa_transfer
+    let result = composer_asset_transfer
         .send()
         .await
         .expect("Failed to send transaction");
@@ -82,15 +82,15 @@ async fn test_asset_transfer_transaction() {
         algokit_transact::Transaction::AssetTransfer(asset_transfer_fields) => {
             assert_eq!(
                 asset_transfer_fields.asset_id,
-                asa_create_result.asset_index.unwrap(),
-                "Asset ID should match the created ASA"
+                asset_create_result.asset_index.unwrap(),
+                "Asset ID should match the created asset"
             );
             assert_eq!(
                 asset_transfer_fields.amount, 0,
                 "Asset transfer amount should be 0 for opt-in"
             );
             assert_eq!(
-                asset_transfer_fields.header.sender, asa_user_address,
+                asset_transfer_fields.header.sender, asset_user_address,
                 "Sender and receiver should be the same for opt-in"
             );
             assert_eq!(
