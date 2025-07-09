@@ -161,7 +161,7 @@ impl TransactionMother {
             .to_owned()
     }
 
-    pub fn asset_freeze_real_data() -> AssetFreezeTransactionBuilder {
+    pub fn asset_freeze() -> AssetFreezeTransactionBuilder {
         // mainnet-2XFGVOHMFYLAWBHOSIOI67PBT5LDRHBTD3VLX5EYBDTFNVKMCJIA
         let sender = "E4A6FVIHXSZ3F7QXRCOTYDDILVQYEBFH56HYDIIYX4SVXS2QX5GUTBVZHY"
             .parse::<Address>()
@@ -203,112 +203,45 @@ impl TransactionMother {
             .to_owned()
     }
 
-    pub fn asset_freeze() -> AssetFreezeTransactionBuilder {
-        AssetFreezeTransactionBuilder::default()
-            .header(TransactionHeaderMother::simple_testnet().build().unwrap())
-            .asset_id(12345)
-            .freeze_target(AddressMother::neil())
-            .frozen(true)
-            .to_owned()
-    }
-
     pub fn asset_unfreeze() -> AssetFreezeTransactionBuilder {
+        // Same as asset_freeze but with frozen=false
+        let sender = "E4A6FVIHXSZ3F7QXRCOTYDDILVQYEBFH56HYDIIYX4SVXS2QX5GUTBVZHY"
+            .parse::<Address>()
+            .unwrap();
+        let freeze_address = "ZJU3X2B2QN3BUBIJ64JZ565V363ANGBUDOLXAJHDXGIIMYK6WV3NSNCBQQ"
+            .parse::<Address>()
+            .unwrap();
+        let genesis_hash: Byte32 = BASE64_STANDARD
+            .decode("wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=")
+            .unwrap()
+            .try_into()
+            .unwrap();
+        let note = BASE64_STANDARD
+            .decode("TkZUIGZyZWV6ZWQgYnkgbG9mdHkuYWk=")
+            .unwrap();
+        let group = BASE64_STANDARD
+            .decode("xERjxVTlNb8jeHa16qmpxDMh4+dcDCokO69QnNESbFk=")
+            .unwrap()
+            .try_into()
+            .unwrap();
+
         AssetFreezeTransactionBuilder::default()
-            .header(TransactionHeaderMother::simple_testnet().build().unwrap())
-            .asset_id(12345)
-            .freeze_target(AddressMother::neil())
+            .header(
+                TransactionHeaderBuilder::default()
+                    .sender(sender)
+                    .fee(1000)
+                    .first_valid(37463562)
+                    .last_valid(37464562)
+                    .genesis_hash(genesis_hash)
+                    .genesis_id("mainnet-v1.0".to_string())
+                    .note(note)
+                    .group(group)
+                    .build()
+                    .unwrap(),
+            )
+            .asset_id(1707148495)
+            .freeze_target(freeze_address)
             .frozen(false)
-            .to_owned()
-    }
-
-    pub fn asset_freeze_mainnet() -> AssetFreezeTransactionBuilder {
-        // Based on a real mainnet asset freeze transaction
-        // https://algoexplorer.io/tx/EXAMPLE_FREEZE_TXN_ID
-        AssetFreezeTransactionBuilder::default()
-            .header(
-                TransactionHeaderMother::mainnet()
-                    .sender(AddressMother::address())
-                    .first_valid(39000000)
-                    .last_valid(39001000)
-                    .fee(1000)
-                    .build()
-                    .unwrap(),
-            )
-            .asset_id(31566704) // USDC on mainnet
-            .freeze_target(AddressMother::neil())
-            .frozen(true)
-            .to_owned()
-    }
-
-    pub fn asset_freeze_testnet() -> AssetFreezeTransactionBuilder {
-        // Based on a real testnet asset freeze transaction
-        AssetFreezeTransactionBuilder::default()
-            .header(
-                TransactionHeaderMother::testnet()
-                    .sender(AddressMother::address())
-                    .first_valid(42000000)
-                    .last_valid(42001000)
-                    .fee(1000)
-                    .note(BASE64_STANDARD.decode("VGVzdCBhc3NldCBmcmVlemU=").unwrap())
-                    .build()
-                    .unwrap(),
-            )
-            .asset_id(150000000) // Test asset on testnet
-            .freeze_target(AddressMother::neil())
-            .frozen(true)
-            .to_owned()
-    }
-
-    pub fn asset_unfreeze_mainnet() -> AssetFreezeTransactionBuilder {
-        // Based on a real mainnet asset unfreeze transaction
-        AssetFreezeTransactionBuilder::default()
-            .header(
-                TransactionHeaderMother::mainnet()
-                    .sender(AddressMother::address())
-                    .first_valid(39002000)
-                    .last_valid(39003000)
-                    .fee(1000)
-                    .build()
-                    .unwrap(),
-            )
-            .asset_id(31566704) // USDC on mainnet
-            .freeze_target(AddressMother::neil())
-            .frozen(false)
-            .to_owned()
-    }
-
-    pub fn asset_freeze_with_group() -> AssetFreezeTransactionBuilder {
-        // Asset freeze transaction as part of a group
-        AssetFreezeTransactionBuilder::default()
-            .header(
-                TransactionHeaderMother::testnet()
-                    .sender(AddressMother::address())
-                    .first_valid(21000000)
-                    .last_valid(21001000)
-                    .fee(1000)
-                    .group(
-                        BASE64_STANDARD
-                            .decode("VZOPGVBJhOB3AiX8mqxKb7FQD1faupdSuZixhd8xpqI=")
-                            .unwrap()
-                            .try_into()
-                            .unwrap(),
-                    )
-                    .build()
-                    .unwrap(),
-            )
-            .asset_id(84366776)
-            .freeze_target(AddressMother::neil())
-            .frozen(true)
-            .to_owned()
-    }
-
-    pub fn asset_freeze_minimal() -> AssetFreezeTransactionBuilder {
-        // Minimal asset freeze with only required fields
-        AssetFreezeTransactionBuilder::default()
-            .header(TransactionHeaderMother::simple_testnet().build().unwrap())
-            .asset_id(1)
-            .freeze_target(AddressMother::zero_address())
-            .frozen(true)
             .to_owned()
     }
 }
@@ -581,15 +514,6 @@ impl TestDataMother {
         TransactionTestData::new(transaction, signing_private_key)
     }
 
-    pub fn asset_freeze_real_data() -> TransactionTestData {
-        let signing_private_key: Byte32 = [
-            2, 205, 103, 33, 67, 14, 82, 196, 115, 196, 206, 254, 50, 110, 63, 182, 149, 229, 184,
-            216, 93, 11, 13, 99, 69, 213, 218, 165, 134, 118, 47, 44,
-        ];
-        let transaction = TransactionMother::asset_freeze_real_data().build().unwrap();
-        TransactionTestData::new(transaction, signing_private_key)
-    }
-
     pub fn export<F, T>(path: &std::path::Path, transform: Option<F>)
     where
         F: Fn(&TransactionTestData) -> T,
@@ -614,7 +538,6 @@ impl TestDataMother {
             "non_participation_key_registration": Self::non_participation_key_registration().as_json(&transform),
             "asset_freeze": Self::asset_freeze().as_json(&transform),
             "asset_unfreeze": Self::asset_unfreeze().as_json(&transform),
-            "asset_freeze_real_data": Self::asset_freeze_real_data().as_json(&transform),
         }));
 
         let file = File::create(path).expect("Failed to create export file");
@@ -779,7 +702,7 @@ mod tests {
 
     #[test]
     fn test_asset_freeze_snapshot() {
-        let data = TestDataMother::asset_freeze_real_data();
+        let data = TestDataMother::asset_freeze();
         assert_eq!(
             data.id,
             String::from("2XFGVOHMFYLAWBHOSIOI67PBT5LDRHBTD3VLX5EYBDTFNVKMCJIA")
