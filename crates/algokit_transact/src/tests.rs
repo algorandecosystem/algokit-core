@@ -6,8 +6,8 @@ use crate::{
         AccountMother, TransactionGroupMother, TransactionHeaderMother, TransactionMother,
     },
     transactions::FeeParams,
-    Account, AlgorandMsgpack, EstimateTransactionSize, SignedTransaction, Transaction,
-    TransactionId, Transactions,
+    Account, AlgorandMsgpack, EstimateTransactionSize, MultisigSignature, MultisigSubsignature,
+    SignedTransaction, Transaction, TransactionId, Transactions,
 };
 use base64::{prelude::BASE64_STANDARD, Engine};
 use pretty_assertions::assert_eq;
@@ -53,6 +53,32 @@ pub fn check_signed_transaction_encoding(
     assert_eq!(decoded_stx, signed_tx);
 }
 
+pub fn check_multisigned_transaction_encoding(tx: &Transaction, expected_encoded_len: usize) {
+    let signed_tx = SignedTransaction {
+        transaction: tx.clone(),
+        signature: None,
+        auth_address: None,
+        multisig: Some(MultisigSignature {
+            version: 1,
+            threshold: 2,
+            subsignatures: vec![
+                MultisigSubsignature {
+                    address: AccountMother::account().address(),
+                    signature: Some([0; ALGORAND_SIGNATURE_BYTE_LENGTH]),
+                },
+                MultisigSubsignature {
+                    address: AccountMother::neil().address(),
+                    signature: Some([0; ALGORAND_SIGNATURE_BYTE_LENGTH]),
+                },
+            ],
+        }),
+    };
+    let encoded_stx = signed_tx.encode().unwrap();
+    assert_eq!(encoded_stx.len(), expected_encoded_len);
+    let decoded_stx = SignedTransaction::decode(&encoded_stx).unwrap();
+    assert_eq!(decoded_stx, signed_tx);
+}
+
 pub fn check_transaction_id(tx: &Transaction, expected_tx_id: &str) {
     let signed_tx = SignedTransaction {
         transaction: tx.clone(),
@@ -74,6 +100,7 @@ fn test_payment_transaction_encoding() {
         "VTADY3NGJGE4DVZ4CKLX43NTEE3C2J4JJANZ5TPBR4OYJ2D4F2CA",
     );
     check_transaction_encoding(&payment_tx, 212);
+    check_multisigned_transaction_encoding(&payment_tx, 449);
 }
 
 #[test]
@@ -85,6 +112,7 @@ fn test_asset_transfer_transaction_encoding() {
         "VAHP4FRJH4GRV6ID2BZRK5VYID376EV3VE6T2TKKDFJBBDOXWCCA",
     );
     check_transaction_encoding(&asset_transfer_tx, 186);
+    check_multisigned_transaction_encoding(&asset_transfer_tx, 423);
 }
 
 #[test]
@@ -96,6 +124,7 @@ fn test_asset_opt_in_transaction_encoding() {
         "JIDBHDPLBASULQZFI4EY5FJWR6VQRMPPFSGYBKE2XKW65N3UQJXA",
     );
     check_transaction_encoding(&asset_opt_in_tx, 178);
+    check_multisigned_transaction_encoding(&asset_opt_in_tx, 415);
 }
 
 #[test]
