@@ -22,12 +22,12 @@ async fn test_asset_transfer_transaction() {
     let mut composer = context.composer.clone();
     let algod = context.algod.clone();
     let asset_creator = context.test_account.clone();
-    let asset_creator_address = asset_creator.address().unwrap();
+    let asset_creator_address = asset_creator.account().unwrap().address();
     let asset_user = fixture
         .generate_account(None)
         .await
         .expect("Failed to generate account");
-    let asset_user_address = asset_user.address().unwrap();
+    let asset_user_address = asset_user.account().unwrap().address();
 
     let asset_create_sp = algod
         .transaction_params()
