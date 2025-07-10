@@ -12,7 +12,8 @@
 use crate::address::Address;
 use crate::utils::hash;
 use crate::{
-    ALGORAND_PUBLIC_KEY_BYTE_LENGTH, ALGORAND_SIGNATURE_BYTE_LENGTH, MULTISIG_DOMAIN_SEPARATOR,
+    AlgoKitTransactError, ALGORAND_PUBLIC_KEY_BYTE_LENGTH, ALGORAND_SIGNATURE_BYTE_LENGTH,
+    MULTISIG_DOMAIN_SEPARATOR,
 };
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, Bytes};
@@ -40,19 +41,47 @@ pub struct MultisigSignature {
 
 impl MultisigSignature {
     /// Creates a new multisignature signature with the specified version, threshold, and participants.
-    pub fn new(version: u8, threshold: u8, participants: Vec<Address>) -> Self {
-        let subsigs = participants
+    ///
+    /// # Errors
+    ///
+    /// Returns [`InvalidMultisigSignature`] if:
+    /// - `version` is zero,
+    /// - `participants` is empty,
+    /// - `threshold` is zero or greater than the number of participants.
+    pub fn new(
+        version: u8,
+        threshold: u8,
+        participants: Vec<Address>,
+    ) -> Result<Self, AlgoKitTransactError> {
+        if version == 0 {
+            return Err(AlgoKitTransactError::InvalidMultisigSignature(
+                "Version cannot be zero".to_string(),
+            ));
+        }
+        if participants.is_empty() {
+            return Err(AlgoKitTransactError::InvalidMultisigSignature(
+                "Participants cannot be empty".to_string(),
+            ));
+        }
+        if threshold == 0 || threshold as usize > participants.len() {
+            return Err(AlgoKitTransactError::InvalidMultisigSignature(
+                "Threshold must be greater than zero and less than or equal \
+                to the number of sub-signers"
+                    .to_string(),
+            ));
+        }
+        let subsignatures = participants
             .into_iter()
             .map(|address| MultisigSubsignature {
                 address,
                 signature: None,
             })
             .collect();
-        Self {
+        Ok(Self {
             version,
             threshold,
-            subsignatures: subsigs,
-        }
+            subsignatures,
+        })
     }
 
     pub fn participants(&self) -> Vec<Address> {

@@ -63,6 +63,9 @@ impl From<algokit_transact::AlgoKitTransactError> for AlgoKitTransactError {
             algokit_transact::AlgoKitTransactError::InvalidAddress(_) => {
                 AlgoKitTransactError::DecodingError(e.to_string())
             }
+            algokit_transact::AlgoKitTransactError::InvalidMultisigSignature(_) => {
+                AlgoKitTransactError::DecodingError(e.to_string())
+            }
         }
     }
 }
@@ -799,6 +802,25 @@ pub fn keypair_account_from_address(address: &str) -> Result<KeyPairAccount, Alg
         .parse::<algokit_transact::KeyPairAccount>()
         .map(Into::into)
         .map_err(|e| AlgoKitTransactError::EncodingError(e.to_string()))
+}
+
+#[ffi_func]
+pub fn empty_multisignature(
+    version: u8,
+    threshold: u8,
+    participants: Vec<String>,
+) -> Result<MultisigSignature, AlgoKitTransactError> {
+    algokit_transact::MultisigSignature::new(
+        version,
+        threshold,
+        participants
+            .into_iter()
+            .map(|addr| addr.parse())
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(AlgoKitTransactError::from)?,
+    )
+        .map(Into::into)
+        .map_err(AlgoKitTransactError::from)
 }
 
 /// Get the raw 32-byte transaction ID for a transaction.

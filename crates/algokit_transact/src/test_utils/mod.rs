@@ -194,7 +194,7 @@ impl AccountMother {
     }
 
     pub fn msig() -> MultisigSignature {
-        MultisigSignature::new(1, 2, vec![Self::account().into(), Self::example().into()])
+        MultisigSignature::new(1, 2, vec![Self::account().into(), Self::example().into()]).unwrap()
     }
 }
 
