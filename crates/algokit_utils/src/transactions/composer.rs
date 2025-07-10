@@ -40,6 +40,19 @@ pub enum ComposerError {
     PoolError(String),
 }
 
+#[derive(Clone)]
+pub struct TransactionWithSigner {
+    pub transaction: Transaction,
+    pub signer: Option<Arc<dyn TxnSigner>>,
+    pub signer_getter: Arc<dyn TxnSignerGetter>,
+}
+
+impl TransactionWithSigner {
+    pub fn header(&self) -> &TransactionHeader {
+        self.transaction.header()
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct PaymentParams {
     pub common_params: CommonParams,
@@ -167,7 +180,7 @@ pub struct Composer {
     transactions: Vec<ComposerTxn>,
     algod_client: AlgodClient,
     signer_getter: Arc<dyn TxnSignerGetter>,
-    built_group: Option<Vec<Transaction>>,
+    built_group: Option<Vec<TransactionWithSigner>>,
     signed_group: Option<Vec<SignedTransaction>>,
 }
 
@@ -182,7 +195,7 @@ impl Composer {
         }
     }
 
-    pub fn built_group(&self) -> Option<&Vec<Transaction>> {
+    pub fn built_group(&self) -> Option<&Vec<TransactionWithSigner>> {
         self.built_group.as_ref()
     }
 
@@ -346,285 +359,287 @@ impl Composer {
             10 // Standard default validity window
         };
 
-        let txs = self
-            .transactions
-            .iter()
-            .map(|tx| {
-                let common_params = tx.common_params();
+        let mut transactions_with_signers = Vec::new();
 
-                let first_valid = common_params
-                    .first_valid_round
-                    .unwrap_or(suggested_params.last_round);
+        for tx in &self.transactions {
+            let common_params = tx.common_params();
 
-                let header: TransactionHeader = TransactionHeader {
-                    sender: common_params.sender.clone(),
-                    rekey_to: common_params.rekey_to.clone(),
-                    note: common_params.note.clone(),
-                    lease: common_params.lease,
-                    fee: common_params.static_fee,
-                    genesis_id: Some(suggested_params.genesis_id.clone()),
-                    genesis_hash: Some(suggested_params.genesis_hash.clone().try_into().map_err(
-                        |_e| ComposerError::DecodeError("Invalid genesis hash".to_string()),
-                    )?),
-                    first_valid,
-                    last_valid: common_params.last_valid_round.unwrap_or_else(|| {
-                        common_params
-                            .validity_window
-                            .map(|window| first_valid + window)
-                            .unwrap_or(first_valid + default_validity_window)
-                    }),
-                    group: None,
-                };
-                let mut calculate_fee = header.fee.is_none();
+            let first_valid = common_params
+                .first_valid_round
+                .unwrap_or(suggested_params.last_round);
 
-                let mut transaction = match tx {
-                    ComposerTxn::Transaction(tx) => {
-                        calculate_fee = false;
-                        tx.clone()
-                    }
-                    ComposerTxn::Payment(pay_params) => {
-                        let pay_params = PaymentTransactionFields {
-                            header,
-                            receiver: pay_params.receiver.clone(),
-                            amount: pay_params.amount,
-                            close_remainder_to: pay_params.close_remainder_to.clone(),
-                        };
-                        Transaction::Payment(pay_params)
-                    }
-                    ComposerTxn::AssetTransfer(asset_transfer_params) => {
-                        Transaction::AssetTransfer(
-                            algokit_transact::AssetTransferTransactionFields {
-                                header,
-                                asset_id: asset_transfer_params.asset_id,
-                                amount: asset_transfer_params.amount,
-                                receiver: asset_transfer_params.receiver.clone(),
-                                asset_sender: None,
-                                close_remainder_to: None,
-                            },
-                        )
-                    }
-                    ComposerTxn::AssetOptIn(asset_opt_in_params) => Transaction::AssetTransfer(
-                        algokit_transact::AssetTransferTransactionFields {
-                            header,
-                            asset_id: asset_opt_in_params.asset_id,
-                            amount: 0,
-                            receiver: asset_opt_in_params.common_params.sender.clone(),
-                            asset_sender: None,
-                            close_remainder_to: None,
-                        },
-                    ),
-                    ComposerTxn::AssetOptOut(asset_opt_out_params) => Transaction::AssetTransfer(
-                        algokit_transact::AssetTransferTransactionFields {
-                            header,
-                            asset_id: asset_opt_out_params.asset_id,
-                            amount: 0,
-                            receiver: asset_opt_out_params.common_params.sender.clone(),
-                            asset_sender: None,
-                            close_remainder_to: asset_opt_out_params.close_remainder_to.clone(),
-                        },
-                    ),
-                    ComposerTxn::AssetClawback(asset_clawback_params) => {
-                        Transaction::AssetTransfer(
-                            algokit_transact::AssetTransferTransactionFields {
-                                header,
-                                asset_id: asset_clawback_params.asset_id,
-                                amount: asset_clawback_params.amount,
-                                receiver: asset_clawback_params.receiver.clone(),
-                                asset_sender: Some(asset_clawback_params.clawback_target.clone()),
-                                close_remainder_to: None,
-                            },
-                        )
-                    }
-                    ComposerTxn::AssetCreate(asset_create_params) => {
-                        Transaction::AssetConfig(AssetConfigTransactionFields {
-                            header,
-                            asset_id: 0,
-                            total: Some(asset_create_params.total),
-                            decimals: asset_create_params.decimals,
-                            default_frozen: asset_create_params.default_frozen,
-                            asset_name: asset_create_params.asset_name.clone(),
-                            unit_name: asset_create_params.unit_name.clone(),
-                            url: asset_create_params.url.clone(),
-                            metadata_hash: asset_create_params.metadata_hash,
-                            manager: asset_create_params.manager.clone(),
-                            reserve: asset_create_params.reserve.clone(),
-                            freeze: asset_create_params.freeze.clone(),
-                            clawback: asset_create_params.clawback.clone(),
-                        })
-                    }
-                    ComposerTxn::AssetReconfigure(asset_reconfigure_params) => {
-                        Transaction::AssetConfig(AssetConfigTransactionFields {
-                            header,
-                            asset_id: asset_reconfigure_params.asset_id,
-                            total: None,
-                            decimals: None,
-                            default_frozen: None,
-                            asset_name: None,
-                            unit_name: None,
-                            url: None,
-                            metadata_hash: None,
-                            manager: asset_reconfigure_params.manager.clone(),
-                            reserve: asset_reconfigure_params.reserve.clone(),
-                            freeze: asset_reconfigure_params.freeze.clone(),
-                            clawback: asset_reconfigure_params.clawback.clone(),
-                        })
-                    }
-                    ComposerTxn::AssetDestroy(asset_destroy_params) => {
-                        Transaction::AssetConfig(AssetConfigTransactionFields {
-                            header,
-                            asset_id: asset_destroy_params.asset_id,
-                            total: None,
-                            decimals: None,
-                            default_frozen: None,
-                            asset_name: None,
-                            unit_name: None,
-                            url: None,
-                            metadata_hash: None,
-                            manager: None,
-                            reserve: None,
-                            freeze: None,
-                            clawback: None,
-                        })
-                    }
-                    ComposerTxn::ApplicationCall(app_call_params) => Transaction::ApplicationCall(
-                        algokit_transact::ApplicationCallTransactionFields {
-                            header,
-                            app_id: app_call_params.app_id,
-                            on_complete: app_call_params.on_complete,
-                            approval_program: None,
-                            clear_state_program: None,
-                            global_state_schema: None,
-                            local_state_schema: None,
-                            extra_program_pages: None,
-                            args: app_call_params.args.clone(),
-                            account_references: app_call_params.account_references.clone(),
-                            app_references: app_call_params.app_references.clone(),
-                            asset_references: app_call_params.asset_references.clone(),
-                            box_references: app_call_params.box_references.clone(),
-                        },
-                    ),
-                    ComposerTxn::ApplicationCreate(app_create_params) => {
-                        Transaction::ApplicationCall(
-                            algokit_transact::ApplicationCallTransactionFields {
-                                header,
-                                app_id: 0, // 0 indicates application creation
-                                on_complete: app_create_params.on_complete,
-                                approval_program: Some(app_create_params.approval_program.clone()),
-                                clear_state_program: Some(
-                                    app_create_params.clear_state_program.clone(),
-                                ),
-                                global_state_schema: app_create_params.global_state_schema.clone(),
-                                local_state_schema: app_create_params.local_state_schema.clone(),
-                                extra_program_pages: app_create_params.extra_program_pages,
-                                args: app_create_params.args.clone(),
-                                account_references: app_create_params.account_references.clone(),
-                                app_references: app_create_params.app_references.clone(),
-                                asset_references: app_create_params.asset_references.clone(),
-                                box_references: app_create_params.box_references.clone(),
-                            },
-                        )
-                    }
-                    ComposerTxn::ApplicationUpdate(app_update_params) => {
-                        Transaction::ApplicationCall(
-                            algokit_transact::ApplicationCallTransactionFields {
-                                header,
-                                app_id: app_update_params.app_id,
-                                on_complete: OnApplicationComplete::UpdateApplication,
-                                approval_program: Some(app_update_params.approval_program.clone()),
-                                clear_state_program: Some(
-                                    app_update_params.clear_state_program.clone(),
-                                ),
-                                global_state_schema: None,
-                                local_state_schema: None,
-                                extra_program_pages: None,
-                                args: app_update_params.args.clone(),
-                                account_references: app_update_params.account_references.clone(),
-                                app_references: app_update_params.app_references.clone(),
-                                asset_references: app_update_params.asset_references.clone(),
-                                box_references: app_update_params.box_references.clone(),
-                            },
-                        )
-                    }
-                    ComposerTxn::ApplicationDelete(app_delete_params) => {
-                        Transaction::ApplicationCall(
-                            algokit_transact::ApplicationCallTransactionFields {
-                                header,
-                                app_id: app_delete_params.app_id,
-                                on_complete: OnApplicationComplete::DeleteApplication,
-                                approval_program: None,
-                                clear_state_program: None,
-                                global_state_schema: None,
-                                local_state_schema: None,
-                                extra_program_pages: None,
-                                args: app_delete_params.args.clone(),
-                                account_references: app_delete_params.account_references.clone(),
-                                app_references: app_delete_params.app_references.clone(),
-                                asset_references: app_delete_params.asset_references.clone(),
-                                box_references: app_delete_params.box_references.clone(),
-                            },
-                        )
-                    }
-                    ComposerTxn::OnlineKeyRegistration(online_key_reg_params) => {
-                        Transaction::KeyRegistration(KeyRegistrationTransactionFields {
-                            header,
-                            vote_key: Some(online_key_reg_params.vote_key),
-                            selection_key: Some(online_key_reg_params.selection_key),
-                            vote_first: Some(online_key_reg_params.vote_first),
-                            vote_last: Some(online_key_reg_params.vote_last),
-                            vote_key_dilution: Some(online_key_reg_params.vote_key_dilution),
-                            state_proof_key: online_key_reg_params.state_proof_key,
-                            non_participation: None,
-                        })
-                    }
-                    ComposerTxn::OfflineKeyRegistration(offline_key_reg_params) => {
-                        Transaction::KeyRegistration(KeyRegistrationTransactionFields {
-                            header,
-                            vote_key: None,
-                            selection_key: None,
-                            vote_first: None,
-                            vote_last: None,
-                            vote_key_dilution: None,
-                            state_proof_key: None,
-                            non_participation: offline_key_reg_params.non_participation,
-                        })
-                    }
-                    ComposerTxn::NonParticipationKeyRegistration(_) => {
-                        Transaction::KeyRegistration(KeyRegistrationTransactionFields {
-                            header,
-                            vote_key: None,
-                            selection_key: None,
-                            vote_first: None,
-                            vote_last: None,
-                            vote_key_dilution: None,
-                            state_proof_key: None,
-                            non_participation: Some(true),
-                        })
-                    }
-                };
+            let header: TransactionHeader = TransactionHeader {
+                sender: common_params.sender.clone(),
+                rekey_to: common_params.rekey_to.clone(),
+                note: common_params.note.clone(),
+                lease: common_params.lease,
+                fee: common_params.static_fee,
+                genesis_id: Some(suggested_params.genesis_id.clone()),
+                genesis_hash: Some(suggested_params.genesis_hash.clone().try_into().map_err(
+                    |_e| ComposerError::DecodeError("Invalid genesis hash".to_string()),
+                )?),
+                first_valid,
+                last_valid: common_params.last_valid_round.unwrap_or_else(|| {
+                    common_params
+                        .validity_window
+                        .map(|window| first_valid + window)
+                        .unwrap_or(first_valid + default_validity_window)
+                }),
+                group: None,
+            };
+            let mut calculate_fee = header.fee.is_none();
 
-                if calculate_fee {
-                    transaction = transaction
-                        .assign_fee(FeeParams {
-                            fee_per_byte: suggested_params.fee,
-                            min_fee: suggested_params.min_fee,
-                            extra_fee: common_params.extra_fee,
-                            max_fee: common_params.max_fee,
-                        })
-                        .map_err(|e| ComposerError::TransactionError(e.to_string()))?;
+            let mut transaction = match tx {
+                ComposerTxn::Transaction(tx) => {
+                    calculate_fee = false;
+                    tx.clone()
                 }
+                ComposerTxn::Payment(pay_params) => {
+                    let pay_params = PaymentTransactionFields {
+                        header,
+                        receiver: pay_params.receiver.clone(),
+                        amount: pay_params.amount,
+                        close_remainder_to: pay_params.close_remainder_to.clone(),
+                    };
+                    Transaction::Payment(pay_params)
+                }
+                ComposerTxn::AssetTransfer(asset_transfer_params) => {
+                    Transaction::AssetTransfer(algokit_transact::AssetTransferTransactionFields {
+                        header,
+                        asset_id: asset_transfer_params.asset_id,
+                        amount: asset_transfer_params.amount,
+                        receiver: asset_transfer_params.receiver.clone(),
+                        asset_sender: None,
+                        close_remainder_to: None,
+                    })
+                }
+                ComposerTxn::AssetOptIn(asset_opt_in_params) => {
+                    Transaction::AssetTransfer(algokit_transact::AssetTransferTransactionFields {
+                        header,
+                        asset_id: asset_opt_in_params.asset_id,
+                        amount: 0,
+                        receiver: asset_opt_in_params.common_params.sender.clone(),
+                        asset_sender: None,
+                        close_remainder_to: None,
+                    })
+                }
+                ComposerTxn::AssetOptOut(asset_opt_out_params) => {
+                    Transaction::AssetTransfer(algokit_transact::AssetTransferTransactionFields {
+                        header,
+                        asset_id: asset_opt_out_params.asset_id,
+                        amount: 0,
+                        receiver: asset_opt_out_params.common_params.sender.clone(),
+                        asset_sender: None,
+                        close_remainder_to: asset_opt_out_params.close_remainder_to.clone(),
+                    })
+                }
+                ComposerTxn::AssetClawback(asset_clawback_params) => {
+                    Transaction::AssetTransfer(algokit_transact::AssetTransferTransactionFields {
+                        header,
+                        asset_id: asset_clawback_params.asset_id,
+                        amount: asset_clawback_params.amount,
+                        receiver: asset_clawback_params.receiver.clone(),
+                        asset_sender: Some(asset_clawback_params.clawback_target.clone()),
+                        close_remainder_to: None,
+                    })
+                }
+                ComposerTxn::AssetCreate(asset_create_params) => {
+                    Transaction::AssetConfig(AssetConfigTransactionFields {
+                        header,
+                        asset_id: 0,
+                        total: Some(asset_create_params.total),
+                        decimals: asset_create_params.decimals,
+                        default_frozen: asset_create_params.default_frozen,
+                        asset_name: asset_create_params.asset_name.clone(),
+                        unit_name: asset_create_params.unit_name.clone(),
+                        url: asset_create_params.url.clone(),
+                        metadata_hash: asset_create_params.metadata_hash,
+                        manager: asset_create_params.manager.clone(),
+                        reserve: asset_create_params.reserve.clone(),
+                        freeze: asset_create_params.freeze.clone(),
+                        clawback: asset_create_params.clawback.clone(),
+                    })
+                }
+                ComposerTxn::AssetReconfigure(asset_reconfigure_params) => {
+                    Transaction::AssetConfig(AssetConfigTransactionFields {
+                        header,
+                        asset_id: asset_reconfigure_params.asset_id,
+                        total: None,
+                        decimals: None,
+                        default_frozen: None,
+                        asset_name: None,
+                        unit_name: None,
+                        url: None,
+                        metadata_hash: None,
+                        manager: asset_reconfigure_params.manager.clone(),
+                        reserve: asset_reconfigure_params.reserve.clone(),
+                        freeze: asset_reconfigure_params.freeze.clone(),
+                        clawback: asset_reconfigure_params.clawback.clone(),
+                    })
+                }
+                ComposerTxn::AssetDestroy(asset_destroy_params) => {
+                    Transaction::AssetConfig(AssetConfigTransactionFields {
+                        header,
+                        asset_id: asset_destroy_params.asset_id,
+                        total: None,
+                        decimals: None,
+                        default_frozen: None,
+                        asset_name: None,
+                        unit_name: None,
+                        url: None,
+                        metadata_hash: None,
+                        manager: None,
+                        reserve: None,
+                        freeze: None,
+                        clawback: None,
+                    })
+                }
+                ComposerTxn::ApplicationCall(app_call_params) => Transaction::ApplicationCall(
+                    algokit_transact::ApplicationCallTransactionFields {
+                        header,
+                        app_id: app_call_params.app_id,
+                        on_complete: app_call_params.on_complete,
+                        approval_program: None,
+                        clear_state_program: None,
+                        global_state_schema: None,
+                        local_state_schema: None,
+                        extra_program_pages: None,
+                        args: app_call_params.args.clone(),
+                        account_references: app_call_params.account_references.clone(),
+                        app_references: app_call_params.app_references.clone(),
+                        asset_references: app_call_params.asset_references.clone(),
+                        box_references: app_call_params.box_references.clone(),
+                    },
+                ),
+                ComposerTxn::ApplicationCreate(app_create_params) => Transaction::ApplicationCall(
+                    algokit_transact::ApplicationCallTransactionFields {
+                        header,
+                        app_id: 0, // 0 indicates application creation
+                        on_complete: app_create_params.on_complete,
+                        approval_program: Some(app_create_params.approval_program.clone()),
+                        clear_state_program: Some(app_create_params.clear_state_program.clone()),
+                        global_state_schema: app_create_params.global_state_schema.clone(),
+                        local_state_schema: app_create_params.local_state_schema.clone(),
+                        extra_program_pages: app_create_params.extra_program_pages,
+                        args: app_create_params.args.clone(),
+                        account_references: app_create_params.account_references.clone(),
+                        app_references: app_create_params.app_references.clone(),
+                        asset_references: app_create_params.asset_references.clone(),
+                        box_references: app_create_params.box_references.clone(),
+                    },
+                ),
+                ComposerTxn::ApplicationUpdate(app_update_params) => Transaction::ApplicationCall(
+                    algokit_transact::ApplicationCallTransactionFields {
+                        header,
+                        app_id: app_update_params.app_id,
+                        on_complete: OnApplicationComplete::UpdateApplication,
+                        approval_program: Some(app_update_params.approval_program.clone()),
+                        clear_state_program: Some(app_update_params.clear_state_program.clone()),
+                        global_state_schema: None,
+                        local_state_schema: None,
+                        extra_program_pages: None,
+                        args: app_update_params.args.clone(),
+                        account_references: app_update_params.account_references.clone(),
+                        app_references: app_update_params.app_references.clone(),
+                        asset_references: app_update_params.asset_references.clone(),
+                        box_references: app_update_params.box_references.clone(),
+                    },
+                ),
+                ComposerTxn::ApplicationDelete(app_delete_params) => Transaction::ApplicationCall(
+                    algokit_transact::ApplicationCallTransactionFields {
+                        header,
+                        app_id: app_delete_params.app_id,
+                        on_complete: OnApplicationComplete::DeleteApplication,
+                        approval_program: None,
+                        clear_state_program: None,
+                        global_state_schema: None,
+                        local_state_schema: None,
+                        extra_program_pages: None,
+                        args: app_delete_params.args.clone(),
+                        account_references: app_delete_params.account_references.clone(),
+                        app_references: app_delete_params.app_references.clone(),
+                        asset_references: app_delete_params.asset_references.clone(),
+                        box_references: app_delete_params.box_references.clone(),
+                    },
+                ),
+                ComposerTxn::OnlineKeyRegistration(online_key_reg_params) => {
+                    Transaction::KeyRegistration(KeyRegistrationTransactionFields {
+                        header,
+                        vote_key: Some(online_key_reg_params.vote_key),
+                        selection_key: Some(online_key_reg_params.selection_key),
+                        vote_first: Some(online_key_reg_params.vote_first),
+                        vote_last: Some(online_key_reg_params.vote_last),
+                        vote_key_dilution: Some(online_key_reg_params.vote_key_dilution),
+                        state_proof_key: online_key_reg_params.state_proof_key,
+                        non_participation: None,
+                    })
+                }
+                ComposerTxn::OfflineKeyRegistration(offline_key_reg_params) => {
+                    Transaction::KeyRegistration(KeyRegistrationTransactionFields {
+                        header,
+                        vote_key: None,
+                        selection_key: None,
+                        vote_first: None,
+                        vote_last: None,
+                        vote_key_dilution: None,
+                        state_proof_key: None,
+                        non_participation: offline_key_reg_params.non_participation,
+                    })
+                }
+                ComposerTxn::NonParticipationKeyRegistration(_) => {
+                    Transaction::KeyRegistration(KeyRegistrationTransactionFields {
+                        header,
+                        vote_key: None,
+                        selection_key: None,
+                        vote_first: None,
+                        vote_last: None,
+                        vote_key_dilution: None,
+                        state_proof_key: None,
+                        non_participation: Some(true),
+                    })
+                }
+            };
 
-                Ok(transaction)
-            })
-            .collect::<Result<Vec<Transaction>, ComposerError>>()?;
+            if calculate_fee {
+                transaction = transaction
+                    .assign_fee(FeeParams {
+                        fee_per_byte: suggested_params.fee,
+                        min_fee: suggested_params.min_fee,
+                        extra_fee: common_params.extra_fee,
+                        max_fee: common_params.max_fee,
+                    })
+                    .map_err(|e| ComposerError::TransactionError(e.to_string()))?;
+            }
 
-        // Only assign group if there are 2 or more transactions (matching algosdk ATC behavior)
-        self.built_group = if txs.len() > 1 {
-            Some(txs.assign_group().map_err(|e| {
+            let signer = if let Some(ref custom_signer) = common_params.signer {
+                Some(custom_signer.clone())
+            } else {
+                None
+            };
+
+            transactions_with_signers.push(TransactionWithSigner {
+                transaction,
+                signer,
+                signer_getter: self.signer_getter.clone(),
+            });
+        }
+
+        if transactions_with_signers.len() > 1 {
+            let transactions: Vec<Transaction> = transactions_with_signers
+                .iter()
+                .map(|tws| tws.transaction.clone())
+                .collect();
+
+            let grouped_transactions = transactions.assign_group().map_err(|e| {
                 ComposerError::TransactionError(format!("Failed to assign group: {}", e))
-            })?)
-        } else {
-            Some(txs) // Single transaction, no group assignment
-        };
+            })?;
+
+            for (i, grouped_txn) in grouped_transactions.into_iter().enumerate() {
+                transactions_with_signers[i].transaction = grouped_txn;
+            }
+        }
+
+        self.built_group = Some(transactions_with_signers);
         Ok(self)
     }
 
@@ -635,16 +650,22 @@ impl Composer {
 
         let mut signed_group = Vec::<SignedTransaction>::new();
 
-        for txn in transactions.iter() {
-            let signer = self.get_signer(txn.header().sender.clone()).await.ok_or(
-                ComposerError::SigningError(format!(
-                    "No signer found for address: {}",
-                    txn.header().sender
-                )),
-            )?;
+        for txn_with_signer in transactions.iter() {
+            let signer = if let Some(ref custom_signer) = txn_with_signer.signer {
+                custom_signer.as_ref()
+            } else {
+                txn_with_signer
+                    .signer_getter
+                    .get_signer(txn_with_signer.transaction.header().sender.clone())
+                    .await
+                    .ok_or(ComposerError::SigningError(format!(
+                        "No signer found for address: {}",
+                        txn_with_signer.transaction.header().sender
+                    )))?
+            };
 
             let signed_txn = signer
-                .sign_txn(txn)
+                .sign_txn(&txn_with_signer.transaction)
                 .await
                 .map_err(ComposerError::SigningError)?;
             signed_group.push(signed_txn);
