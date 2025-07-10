@@ -37,10 +37,10 @@ impl TxnSigner for TestAccount {
 // Implement TxnSignerGetter for TestAccount as well
 #[async_trait]
 impl TxnSignerGetter for TestAccount {
-    async fn get_signer(&self, address: Address) -> Option<Box<dyn TxnSigner>> {
+    async fn get_signer(&self, address: Address) -> Option<Arc<dyn TxnSigner>> {
         let test_account_address = self.address().expect("Failed to get test account address");
         if address == test_account_address {
-            Some(Box::new(self.clone()))
+            Some(Arc::new(self.clone()))
         } else {
             None
         }

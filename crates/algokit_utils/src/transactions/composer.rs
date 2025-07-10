@@ -335,7 +335,7 @@ impl Composer {
         &self.transactions
     }
 
-    pub async fn get_signer(&self, address: Address) -> Option<Box<dyn TxnSigner>> {
+    pub async fn get_signer(&self, address: Address) -> Option<Arc<dyn TxnSigner>> {
         self.signer_getter.get_signer(address).await
     }
 
