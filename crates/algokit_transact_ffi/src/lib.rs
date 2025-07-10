@@ -766,12 +766,7 @@ pub fn estimate_transaction_size(transaction: Transaction) -> Result<u64, AlgoKi
     let core_tx: algokit_transact::Transaction = transaction.try_into()?;
     core_tx
         .estimate_size()
-        .map_err(|e| {
-            AlgoKitTransactError::EncodingError(format!(
-                "Failed to estimate transaction size: {}",
-                e
-            ))
-        })?
+        .map_err(AlgoKitTransactError::from)?
         .try_into()
         .map_err(|_| {
             AlgoKitTransactError::EncodingError("Failed to convert size to u64".to_string())
@@ -801,7 +796,7 @@ pub fn keypair_account_from_address(address: &str) -> Result<KeyPairAccount, Alg
     address
         .parse::<algokit_transact::KeyPairAccount>()
         .map(Into::into)
-        .map_err(|e| AlgoKitTransactError::EncodingError(e.to_string()))
+        .map_err(AlgoKitTransactError::from)
 }
 
 #[ffi_func]
@@ -819,8 +814,8 @@ pub fn empty_multisignature(
             .collect::<Result<Vec<_>, _>>()
             .map_err(AlgoKitTransactError::from)?,
     )
-        .map(Into::into)
-        .map_err(AlgoKitTransactError::from)
+    .map(Into::into)
+    .map_err(AlgoKitTransactError::from)
 }
 
 /// Get the raw 32-byte transaction ID for a transaction.
