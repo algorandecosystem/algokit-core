@@ -1,11 +1,10 @@
 mod application_call;
 mod asset_config;
+mod asset_freeze;
 mod key_registration;
 
 use crate::{
-    transactions::{
-        AssetFreezeTransactionBuilder, AssetTransferTransactionBuilder, PaymentTransactionBuilder,
-    },
+    transactions::{AssetTransferTransactionBuilder, PaymentTransactionBuilder},
     Address, AlgorandMsgpack, Byte32, SignedTransaction, Transaction, TransactionHeaderBuilder,
     TransactionId, ALGORAND_PUBLIC_KEY_BYTE_LENGTH, HASH_BYTES_LENGTH,
 };
@@ -19,6 +18,7 @@ use std::{fs::File, str::FromStr};
 
 pub use application_call::ApplicationCallTransactionMother;
 pub use asset_config::AssetConfigTransactionMother;
+pub use asset_freeze::AssetFreezeTransactionMother;
 pub use key_registration::KeyRegistrationTransactionMother;
 
 pub struct TransactionHeaderMother {}
@@ -158,90 +158,6 @@ impl TransactionMother {
         Self::simple_asset_transfer()
             .amount(0)
             .receiver(AddressMother::neil())
-            .to_owned()
-    }
-
-    pub fn asset_freeze() -> AssetFreezeTransactionBuilder {
-        // mainnet-2XFGVOHMFYLAWBHOSIOI67PBT5LDRHBTD3VLX5EYBDTFNVKMCJIA
-        let sender = "E4A6FVIHXSZ3F7QXRCOTYDDILVQYEBFH56HYDIIYX4SVXS2QX5GUTBVZHY"
-            .parse::<Address>()
-            .unwrap();
-        let freeze_address = "ZJU3X2B2QN3BUBIJ64JZ565V363ANGBUDOLXAJHDXGIIMYK6WV3NSNCBQQ"
-            .parse::<Address>()
-            .unwrap();
-        let genesis_hash: Byte32 = BASE64_STANDARD
-            .decode("wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=")
-            .unwrap()
-            .try_into()
-            .unwrap();
-        let note = BASE64_STANDARD
-            .decode("TkZUIGZyZWV6ZWQgYnkgbG9mdHkuYWk=")
-            .unwrap();
-        let group = BASE64_STANDARD
-            .decode("xERjxVTlNb8jeHa16qmpxDMh4+dcDCokO69QnNESbFk=")
-            .unwrap()
-            .try_into()
-            .unwrap();
-
-        AssetFreezeTransactionBuilder::default()
-            .header(
-                TransactionHeaderBuilder::default()
-                    .sender(sender)
-                    .fee(1000)
-                    .first_valid(37463562)
-                    .last_valid(37464562)
-                    .genesis_hash(genesis_hash)
-                    .genesis_id("mainnet-v1.0".to_string())
-                    .note(note)
-                    .group(group)
-                    .build()
-                    .unwrap(),
-            )
-            .asset_id(1707148495)
-            .freeze_target(freeze_address)
-            .frozen(true)
-            .to_owned()
-    }
-
-    pub fn asset_unfreeze() -> AssetFreezeTransactionBuilder {
-        // Same as asset_freeze but with frozen=false
-        let sender = "E4A6FVIHXSZ3F7QXRCOTYDDILVQYEBFH56HYDIIYX4SVXS2QX5GUTBVZHY"
-            .parse::<Address>()
-            .unwrap();
-        let freeze_address = "ZJU3X2B2QN3BUBIJ64JZ565V363ANGBUDOLXAJHDXGIIMYK6WV3NSNCBQQ"
-            .parse::<Address>()
-            .unwrap();
-        let genesis_hash: Byte32 = BASE64_STANDARD
-            .decode("wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=")
-            .unwrap()
-            .try_into()
-            .unwrap();
-        let note = BASE64_STANDARD
-            .decode("TkZUIGZyZWV6ZWQgYnkgbG9mdHkuYWk=")
-            .unwrap();
-        let group = BASE64_STANDARD
-            .decode("xERjxVTlNb8jeHa16qmpxDMh4+dcDCokO69QnNESbFk=")
-            .unwrap()
-            .try_into()
-            .unwrap();
-
-        AssetFreezeTransactionBuilder::default()
-            .header(
-                TransactionHeaderBuilder::default()
-                    .sender(sender)
-                    .fee(1000)
-                    .first_valid(37463562)
-                    .last_valid(37464562)
-                    .genesis_hash(genesis_hash)
-                    .genesis_id("mainnet-v1.0".to_string())
-                    .note(note)
-                    .group(group)
-                    .build()
-                    .unwrap(),
-            )
-            .asset_id(1707148495)
-            .freeze_target(freeze_address)
-            .frozen(false)
             .to_owned()
     }
 }
@@ -501,7 +417,9 @@ impl TestDataMother {
             2, 205, 103, 33, 67, 14, 82, 196, 115, 196, 206, 254, 50, 110, 63, 182, 149, 229, 184,
             216, 93, 11, 13, 99, 69, 213, 218, 165, 134, 118, 47, 44,
         ];
-        let transaction = TransactionMother::asset_freeze().build().unwrap();
+        let transaction = AssetFreezeTransactionMother::asset_freeze()
+            .build()
+            .unwrap();
         TransactionTestData::new(transaction, signing_private_key)
     }
 
@@ -510,7 +428,9 @@ impl TestDataMother {
             2, 205, 103, 33, 67, 14, 82, 196, 115, 196, 206, 254, 50, 110, 63, 182, 149, 229, 184,
             216, 93, 11, 13, 99, 69, 213, 218, 165, 134, 118, 47, 44,
         ];
-        let transaction = TransactionMother::asset_unfreeze().build().unwrap();
+        let transaction = AssetFreezeTransactionMother::asset_unfreeze()
+            .build()
+            .unwrap();
         TransactionTestData::new(transaction, signing_private_key)
     }
 
@@ -554,17 +474,12 @@ fn normalise_json(value: serde_json::Value) -> serde_json::Value {
         "num_uints",
     ];
 
-    // Boolean fields that should always be included, even when false
-    const BOOLEAN_FIELDS_TO_KEEP: &[&str] = &["frozen"];
-
     match value {
         serde_json::Value::Object(map) => serde_json::Value::Object(
             map.into_iter()
                 .filter(|(k, v)| {
                     !(v.is_null()
-                        || v.is_boolean()
-                            && v.as_bool() == Some(false)
-                            && !BOOLEAN_FIELDS_TO_KEEP.contains(&k.to_case(Case::Snake).as_str())
+                        || v.is_boolean() && v.as_bool() == Some(false)
                         || v.is_number()
                             && v.as_u64() == Some(0)
                             && !ZERO_VALUE_EXCLUDED_FIELDS
@@ -703,6 +618,15 @@ mod tests {
     #[test]
     fn test_asset_freeze_snapshot() {
         let data = TestDataMother::asset_freeze();
+        assert_eq!(
+            data.id,
+            String::from("2XFGVOHMFYLAWBHOSIOI67PBT5LDRHBTD3VLX5EYBDTFNVKMCJIA")
+        );
+    }
+
+    #[test]
+    fn test_asset_unfreeze_snapshot() {
+        let data = TestDataMother::asset_unfreeze();
         assert_eq!(
             data.id,
             String::from("2XFGVOHMFYLAWBHOSIOI67PBT5LDRHBTD3VLX5EYBDTFNVKMCJIA")
