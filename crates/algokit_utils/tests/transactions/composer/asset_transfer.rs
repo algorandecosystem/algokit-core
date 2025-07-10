@@ -22,10 +22,12 @@ async fn test_asset_transfer_transaction() {
     let mut composer = context.composer.clone();
     let algod = context.algod.clone();
     let asset_creator = context.test_account.clone();
+    let asset_creator_address = asset_creator.address().unwrap();
     let asset_user = fixture
         .generate_account(None)
         .await
         .expect("Failed to generate account");
+    let asset_user_address = asset_user.address().unwrap();
 
     let asset_create_sp = algod
         .transaction_params()
@@ -34,7 +36,7 @@ async fn test_asset_transfer_transaction() {
     let mut asset_create_transaction = AssetConfigTransactionBuilder::default()
         .header(
             TransactionHeaderBuilder::default()
-                .sender(asset_creator.address().unwrap())
+                .sender(asset_creator_address.clone())
                 .first_valid(asset_create_sp.last_round)
                 .last_valid(asset_create_sp.last_round + 10)
                 .genesis_hash(
@@ -60,7 +62,7 @@ async fn test_asset_transfer_transaction() {
             extra_fee: None,
             max_fee: None,
         })
-        .unwrap();
+        .expect("Failed to assign fee for asset create transaction");
     let signed_asset_create_transaction = asset_creator
         .sign_transaction(&asset_create_transaction)
         .expect("Failed to sign asset create transaction");
@@ -81,7 +83,7 @@ async fn test_asset_transfer_transaction() {
     let mut asset_opt_in_transaction = AssetTransferTransactionBuilder::default()
         .header(
             TransactionHeaderBuilder::default()
-                .sender(asset_user.address().unwrap())
+                .sender(asset_user_address.clone())
                 .fee(asset_opt_in_sp.fee)
                 .first_valid(asset_opt_in_sp.last_round)
                 .last_valid(asset_opt_in_sp.last_round + 10)
@@ -96,7 +98,7 @@ async fn test_asset_transfer_transaction() {
                 .expect("Failed to build header for asset opt-in transaction"),
         )
         .asset_id(asset_create_result.asset_index.unwrap())
-        .receiver(asset_user.address().unwrap())
+        .receiver(asset_user_address.clone())
         .amount(0)
         .build()
         .expect("Failed to build asset opt-in transaction");
@@ -124,11 +126,11 @@ async fn test_asset_transfer_transaction() {
     composer
         .add_asset_transfer(AssetTransferParams {
             common_params: CommonParams {
-                sender: asset_creator.address().unwrap(),
+                sender: asset_creator_address.clone(),
                 ..Default::default()
             },
             asset_id: asset_create_result.asset_index.unwrap(),
-            receiver: asset_user.address().unwrap(),
+            receiver: asset_user_address.clone(),
             amount: 1,
         })
         .expect("Failed to add asset create");
@@ -150,12 +152,12 @@ async fn test_asset_transfer_transaction() {
             );
             assert_eq!(
                 asset_transfer_fields.header.sender,
-                asset_creator.address().unwrap(),
+                asset_creator_address.clone(),
                 "Sender should be the asset creator"
             );
             assert_eq!(
                 asset_transfer_fields.receiver,
-                asset_user.address().unwrap(),
+                asset_user_address.clone(),
                 "Receiver should be the asset user"
             );
         }
