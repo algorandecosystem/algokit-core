@@ -48,28 +48,11 @@ impl MultisigSignature {
     /// - `version` is zero,
     /// - `participants` is empty,
     /// - `threshold` is zero or greater than the number of participants.
-    pub fn new(
+    pub fn from_participants(
         version: u8,
         threshold: u8,
         participants: Vec<Address>,
     ) -> Result<Self, AlgoKitTransactError> {
-        if version == 0 {
-            return Err(AlgoKitTransactError::InvalidMultisigSignature(
-                "Version cannot be zero".to_string(),
-            ));
-        }
-        if participants.is_empty() {
-            return Err(AlgoKitTransactError::InvalidMultisigSignature(
-                "Participants cannot be empty".to_string(),
-            ));
-        }
-        if threshold == 0 || threshold as usize > participants.len() {
-            return Err(AlgoKitTransactError::InvalidMultisigSignature(
-                "Threshold must be greater than zero and less than or equal \
-                to the number of sub-signers"
-                    .to_string(),
-            ));
-        }
         let subsignatures = participants
             .into_iter()
             .map(|address| MultisigSubsignature {
@@ -77,6 +60,39 @@ impl MultisigSignature {
                 signature: None,
             })
             .collect();
+        Self::new(version, threshold, subsignatures)
+    }
+
+    /// Creates a new multisignature signature from a vector of subsignatures.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AlgoKitTransactError::InvalidMultisigSignature`] if:
+    /// - `version` is zero,
+    /// - `subsignatures` is empty,
+    /// - `threshold` is zero or greater than the number of subsignatures.
+    pub fn new(
+        version: u8,
+        threshold: u8,
+        subsignatures: Vec<MultisigSubsignature>,
+    ) -> Result<Self, AlgoKitTransactError> {
+        if version == 0 {
+            return Err(AlgoKitTransactError::InvalidMultisigSignature(
+                "Version cannot be zero".to_string(),
+            ));
+        }
+        if subsignatures.is_empty() {
+            return Err(AlgoKitTransactError::InvalidMultisigSignature(
+                "Subsignatures cannot be empty".to_string(),
+            ));
+        }
+        if threshold == 0 || threshold as usize > subsignatures.len() {
+            return Err(AlgoKitTransactError::InvalidMultisigSignature(
+                "Threshold must be greater than zero and less than or equal \
+                to the number of sub-signers"
+                    .to_string(),
+            ));
+        }
         Ok(Self {
             version,
             threshold,

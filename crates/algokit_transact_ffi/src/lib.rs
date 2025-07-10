@@ -196,15 +196,16 @@ impl TryFrom<MultisigSignature> for algokit_transact::MultisigSignature {
     type Error = AlgoKitTransactError;
 
     fn try_from(value: MultisigSignature) -> Result<Self, Self::Error> {
-        Ok(Self {
-            version: value.version,
-            threshold: value.threshold,
-            subsignatures: value
+        Self::new(
+            value.version,
+            value.threshold,
+            value
                 .subsignatures
                 .into_iter()
                 .map(TryInto::try_into)
                 .collect::<Result<Vec<_>, _>>()?,
-        })
+        )
+        .map_err(AlgoKitTransactError::from)
     }
 }
 
@@ -800,12 +801,12 @@ pub fn keypair_account_from_address(address: &str) -> Result<KeyPairAccount, Alg
 }
 
 #[ffi_func]
-pub fn empty_multisignature(
+pub fn empty_multisig_signature(
     version: u8,
     threshold: u8,
     participants: Vec<String>,
 ) -> Result<MultisigSignature, AlgoKitTransactError> {
-    algokit_transact::MultisigSignature::new(
+    algokit_transact::MultisigSignature::from_participants(
         version,
         threshold,
         participants
@@ -816,6 +817,18 @@ pub fn empty_multisignature(
     )
     .map(Into::into)
     .map_err(AlgoKitTransactError::from)
+}
+
+#[ffi_func]
+pub fn participants_from_multisig_signature(
+    multisig_signature: MultisigSignature,
+) -> Result<Vec<String>, AlgoKitTransactError> {
+    let multisig: algokit_transact::MultisigSignature = multisig_signature.try_into()?;
+    Ok(multisig
+        .participants()
+        .into_iter()
+        .map(|addr| addr.to_string())
+        .collect())
 }
 
 /// Get the raw 32-byte transaction ID for a transaction.
