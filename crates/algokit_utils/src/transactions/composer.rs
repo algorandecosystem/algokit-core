@@ -655,18 +655,59 @@ impl Composer {
             "Cannot gather signatures before building the transaction group".to_string(),
         ))?;
 
-        let mut signed_group = Vec::<SignedTransaction>::new();
+        // Group transactions by signer
+        let mut signer_groups: std::collections::HashMap<*const dyn TxnSigner, Vec<usize>> =
+            std::collections::HashMap::new();
 
-        for txn_with_signer in transactions.iter() {
-            let signed_txn = txn_with_signer
-                .signer
-                .sign_txn(&txn_with_signer.transaction)
-                .await
-                .map_err(ComposerError::SigningError)?;
-            signed_group.push(signed_txn);
+        for (index, txn_with_signer) in transactions.iter().enumerate() {
+            let signer_ptr = Arc::as_ptr(&txn_with_signer.signer);
+            signer_groups
+                .entry(signer_ptr)
+                .or_insert_with(Vec::new)
+                .push(index);
         }
 
-        self.signed_group = Some(signed_group);
+        // Collect all transactions for batch signing
+        let all_transactions: Vec<Transaction> = transactions
+            .iter()
+            .map(|tws| tws.transaction.clone())
+            .collect();
+
+        // Initialize signed_group with placeholder values
+        let mut signed_group = vec![None; transactions.len()];
+
+        // Process each signer group
+        for (_signer_ptr, indices) in signer_groups {
+            // Get the signer from the first transaction with this signer
+            let signer = &transactions[indices[0]].signer;
+
+            // Sign all transactions for this signer
+            let signed_txns = signer
+                .sign_txns(&all_transactions, &indices)
+                .await
+                .map_err(ComposerError::SigningError)?;
+
+            // Place signed transactions in their correct positions
+            for (i, &index) in indices.iter().enumerate() {
+                signed_group[index] = Some(signed_txns[i].clone());
+            }
+        }
+
+        // Convert to Vec<SignedTransaction> (all should be Some at this point)
+        let final_signed_group: Result<Vec<SignedTransaction>, _> = signed_group
+            .into_iter()
+            .enumerate()
+            .map(|(i, signed_txn)| {
+                signed_txn.ok_or_else(|| {
+                    ComposerError::SigningError(format!(
+                        "Transaction at index {} was not signed",
+                        i
+                    ))
+                })
+            })
+            .collect();
+
+        self.signed_group = Some(final_signed_group?);
 
         Ok(self)
     }
@@ -993,5 +1034,143 @@ mod tests {
             10,
             "MainNet should use 10 round validity window"
         );
+    }
+
+    #[tokio::test]
+    async fn test_batch_signing_with_same_signer() {
+        use crate::EmptySigner;
+
+        let mut composer = Composer::new(AlgodClient::testnet(), Arc::new(EmptySigner {}));
+
+        // Add multiple transactions with the same sender (will use same signer)
+        for _ in 0..3 {
+            let payment_params = PaymentParams {
+                common_params: CommonParams {
+                    sender: AddressMother::address(),
+                    signer: None, // Will use default signer
+                    rekey_to: None,
+                    note: None,
+                    lease: None,
+                    static_fee: None,
+                    extra_fee: None,
+                    max_fee: None,
+                    validity_window: None,
+                    first_valid_round: None,
+                    last_valid_round: None,
+                },
+                receiver: AddressMother::address(),
+                amount: 1000,
+                close_remainder_to: None,
+            };
+            composer.add_payment(payment_params).unwrap();
+        }
+
+        composer.build().await.unwrap();
+        let result = composer.gather_signatures().await;
+        assert!(result.is_ok());
+
+        // Verify all transactions were signed
+        let signed_group = composer.signed_group().unwrap();
+        assert_eq!(signed_group.len(), 3);
+
+        // All transactions should have signatures
+        for signed_txn in signed_group {
+            assert!(signed_txn.signature.is_some());
+        }
+    }
+
+    #[tokio::test]
+    async fn test_batch_signing_with_custom_signer() {
+        use std::sync::Arc;
+        use std::sync::atomic::{AtomicUsize, Ordering};
+
+        // Mock signer that tracks how many times sign_txns is called
+        struct MockSigner {
+            call_count: Arc<AtomicUsize>,
+        }
+
+        #[async_trait::async_trait]
+        impl TxnSigner for MockSigner {
+            async fn sign_txns(
+                &self,
+                txns: &[Transaction],
+                indices: &[usize],
+            ) -> Result<Vec<SignedTransaction>, String> {
+                // Increment call count
+                self.call_count.fetch_add(1, Ordering::SeqCst);
+
+                // Verify we got the expected number of transactions and indices
+                assert_eq!(indices.len(), 2, "Should be signing 2 transactions");
+                assert_eq!(txns.len(), 2, "Should have 2 transactions in total");
+
+                // Return mock signed transactions
+                indices
+                    .iter()
+                    .map(|&idx| {
+                        if idx < txns.len() {
+                            Ok(SignedTransaction {
+                                transaction: txns[idx].clone(),
+                                signature: Some([42; 64]), // Mock signature
+                                auth_address: None,
+                            })
+                        } else {
+                            Err(format!("Index {} out of bounds for transactions", idx))
+                        }
+                    })
+                    .collect()
+            }
+        }
+
+        let call_count = Arc::new(AtomicUsize::new(0));
+        let mock_signer = Arc::new(MockSigner {
+            call_count: call_count.clone(),
+        });
+
+        let sender_addr = AddressMother::address();
+        let mut composer = Composer::new(AlgodClient::testnet(), Arc::new(crate::EmptySigner {}));
+
+        // Add two payment transactions with the same custom signer
+        for _ in 0..2 {
+            let payment_params = PaymentParams {
+                common_params: CommonParams {
+                    sender: sender_addr.clone(),
+                    signer: Some(mock_signer.clone()), // Use custom signer
+                    rekey_to: None,
+                    note: None,
+                    lease: None,
+                    static_fee: None,
+                    extra_fee: None,
+                    max_fee: None,
+                    validity_window: None,
+                    first_valid_round: None,
+                    last_valid_round: None,
+                },
+                receiver: AddressMother::address(),
+                amount: 1000,
+                close_remainder_to: None,
+            };
+            composer.add_payment(payment_params).unwrap();
+        }
+
+        composer.build().await.unwrap();
+        let result = composer.gather_signatures().await;
+        assert!(result.is_ok());
+
+        // Verify that sign_txns was called exactly once
+        assert_eq!(
+            call_count.load(Ordering::SeqCst),
+            1,
+            "sign_txns should be called exactly once for both transactions with the same signer"
+        );
+
+        // Verify all transactions were signed
+        let signed_group = composer.signed_group().unwrap();
+        assert_eq!(signed_group.len(), 2);
+
+        // All transactions should have the mock signature
+        for signed_txn in signed_group {
+            assert!(signed_txn.signature.is_some());
+            assert_eq!(signed_txn.signature.unwrap(), [42; 64]);
+        }
     }
 }
