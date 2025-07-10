@@ -189,13 +189,14 @@ async fn test_batch_signing_with_custom_signer() {
     });
 
     let mut composer = context.composer.clone();
+    let foo = Arc::new(sender_account.clone());
 
     // Add two payment transactions with the same custom signer
     for i in 0..2 {
         let payment_params = PaymentParams {
             common_params: CommonParams {
                 sender: sender_addr.clone(),
-                signer: Some(tracking_signer.clone()), // Use tracking signer
+                signer: Some(foo.clone()), // Use tracking signer
                 ..Default::default()
             },
             receiver: receiver_addr.clone(),
