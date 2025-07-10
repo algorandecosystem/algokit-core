@@ -22,15 +22,6 @@ pub trait TxnSignerGetter: Send + Sync {
     async fn get_signer(&self, address: Address) -> Option<Box<dyn TxnSigner>>;
 }
 
-pub struct DefaultSignerGetter;
-
-#[async_trait]
-impl TxnSignerGetter for DefaultSignerGetter {
-    async fn get_signer(&self, _address: Address) -> Option<Box<dyn TxnSigner>> {
-        None
-    }
-}
-
 pub struct EmptySigner {}
 
 #[async_trait]

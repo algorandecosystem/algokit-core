@@ -102,7 +102,7 @@ impl AlgorandFixture {
             .map_err(|e| format!("Failed to create test account: {}", e))?;
 
         // Now TestAccount implements TxnSignerGetter directly, so we can use it without a wrapper
-        let composer = Composer::new(algod.clone(), Some(Arc::new(test_account.clone())));
+        let composer = Composer::new(algod.clone(), Arc::new(test_account.clone()));
 
         self.context = Some(AlgorandTestContext {
             algod,

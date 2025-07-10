@@ -18,7 +18,7 @@ use super::application_call::{
     ApplicationUpdateParams,
 };
 use super::asset_config::{AssetCreateParams, AssetDestroyParams, AssetReconfigureParams};
-use super::common::{CommonParams, DefaultSignerGetter, TxnSigner, TxnSignerGetter};
+use super::common::{CommonParams, TxnSigner, TxnSignerGetter};
 use super::key_registration::{
     NonParticipationKeyRegistrationParams, OfflineKeyRegistrationParams,
     OnlineKeyRegistrationParams,
@@ -184,11 +184,11 @@ pub struct Composer {
 }
 
 impl Composer {
-    pub fn new(algod_client: AlgodClient, get_signer: Option<Arc<dyn TxnSignerGetter>>) -> Self {
+    pub fn new(algod_client: AlgodClient, get_signer: Arc<dyn TxnSignerGetter>) -> Self {
         Composer {
             transactions: Vec::new(),
             algod_client,
-            signer_getter: get_signer.unwrap_or(Arc::new(DefaultSignerGetter)),
+            signer_getter: get_signer,
             built_group: None,
             signed_group: None,
         }
@@ -782,7 +782,6 @@ impl Composer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::transactions::common::EmptySigner;
     use algokit_transact::test_utils::{AddressMother, TransactionMother};
     use base64::{Engine, prelude::BASE64_STANDARD};
 
@@ -843,7 +842,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_gather_signatures() {
-        let mut composer = Composer::new(AlgodClient::testnet(), Some(Arc::new(EmptySigner {})));
+        let mut composer = Composer::testnet();
 
         let payment_params = PaymentParams {
             common_params: CommonParams {
