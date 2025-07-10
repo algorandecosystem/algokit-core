@@ -43,8 +43,7 @@ pub enum ComposerError {
 #[derive(Clone)]
 pub struct TransactionWithSigner {
     pub transaction: Transaction,
-    pub signer: Option<Arc<dyn TxnSigner>>,
-    pub signer_getter: Arc<dyn TxnSignerGetter>,
+    pub signer: Arc<dyn TxnSigner>,
 }
 
 impl TransactionWithSigner {
@@ -205,10 +204,12 @@ impl Composer {
 
     #[cfg(feature = "default_http_client")]
     pub fn testnet() -> Self {
+        use crate::EmptySigner;
+
         Composer {
             transactions: Vec::new(),
             algod_client: AlgodClient::testnet(),
-            signer_getter: Arc::new(DefaultSignerGetter),
+            signer_getter: Arc::new(EmptySigner {}),
             built_group: None,
             signed_group: None,
         }
@@ -334,7 +335,7 @@ impl Composer {
         &self.transactions
     }
 
-    pub async fn get_signer(&self, address: Address) -> Option<&dyn TxnSigner> {
+    pub async fn get_signer(&self, address: Address) -> Option<Box<dyn TxnSigner>> {
         self.signer_getter.get_signer(address).await
     }
 
@@ -611,16 +612,22 @@ impl Composer {
                     .map_err(|e| ComposerError::TransactionError(e.to_string()))?;
             }
 
-            let signer = if let Some(ref custom_signer) = common_params.signer {
-                Some(custom_signer.clone())
+            let signer = if let Some(custom_signer) = common_params.signer {
+                custom_signer
             } else {
-                None
+                let sender_address = transaction.header().sender.clone();
+                let boxed_signer = self.get_signer(sender_address.clone()).await.ok_or(
+                    ComposerError::SigningError(format!(
+                        "No signer found for address: {}",
+                        sender_address
+                    )),
+                )?;
+                Arc::from(boxed_signer)
             };
 
             transactions_with_signers.push(TransactionWithSigner {
                 transaction,
                 signer,
-                signer_getter: self.signer_getter.clone(),
             });
         }
 
@@ -651,20 +658,8 @@ impl Composer {
         let mut signed_group = Vec::<SignedTransaction>::new();
 
         for txn_with_signer in transactions.iter() {
-            let signer = if let Some(ref custom_signer) = txn_with_signer.signer {
-                custom_signer.as_ref()
-            } else {
-                txn_with_signer
-                    .signer_getter
-                    .get_signer(txn_with_signer.transaction.header().sender.clone())
-                    .await
-                    .ok_or(ComposerError::SigningError(format!(
-                        "No signer found for address: {}",
-                        txn_with_signer.transaction.header().sender
-                    )))?
-            };
-
-            let signed_txn = signer
+            let signed_txn = txn_with_signer
+                .signer
                 .sign_txn(&txn_with_signer.transaction)
                 .await
                 .map_err(ComposerError::SigningError)?;
