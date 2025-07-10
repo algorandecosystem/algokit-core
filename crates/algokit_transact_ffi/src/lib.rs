@@ -149,15 +149,12 @@ impl TryFrom<KeyPairAccount> for algokit_transact::KeyPairAccount {
     type Error = AlgoKitTransactError;
 
     fn try_from(value: KeyPairAccount) -> Result<Self, Self::Error> {
-        let pub_key: [u8; ALGORAND_PUBLIC_KEY_BYTE_LENGTH] =
-            value.pub_key.to_vec().try_into().map_err(|_| {
-                AlgoKitTransactError::EncodingError(
-                    format!(
-                        "public key should be {} bytes",
-                        ALGORAND_PUBLIC_KEY_BYTE_LENGTH
-                    )
-                    .to_string(),
-                )
+        let pub_key: [u8; ALGORAND_PUBLIC_KEY_BYTE_LENGTH] = bytebuf_to_bytes(&value.pub_key)
+            .map_err(|e| {
+                AlgoKitTransactError::DecodingError(format!(
+                    "Error while decoding a public key: {}",
+                    e.to_string()
+                ))
             })?;
 
         Ok(algokit_transact::KeyPairAccount::from_pubkey(&pub_key))
@@ -205,7 +202,7 @@ impl TryFrom<MultisigSignature> for algokit_transact::MultisigSignature {
                 .map(TryInto::try_into)
                 .collect::<Result<Vec<_>, _>>()?,
         )
-        .map_err(AlgoKitTransactError::from)
+        .map_err(Self::Error::from)
     }
 }
 
@@ -223,19 +220,20 @@ impl TryFrom<MultisigSubsignature> for algokit_transact::MultisigSubsignature {
 
     fn try_from(value: MultisigSubsignature) -> Result<Self, Self::Error> {
         let address = value.address.parse()?;
-        let signature = value
-            .signature
-            .map(|sig| {
-                sig.to_vec().try_into().map_err(|_| {
-                    AlgoKitTransactError::EncodingError(format!(
-                        "signature should be {} bytes",
-                        ALGORAND_SIGNATURE_BYTE_LENGTH
-                    ))
-                })
-            })
-            .transpose()?;
 
-        Ok(Self { address, signature })
+        Ok(Self {
+            address,
+            signature: value
+                .signature
+                .map(|sig| bytebuf_to_bytes(&sig))
+                .transpose()
+                .map_err(|e| {
+                    AlgoKitTransactError::DecodingError(format!(
+                        "Error while decoding a subsignature: {}",
+                        e.to_string()
+                    ))
+                })?,
+        })
     }
 }
 
@@ -576,21 +574,18 @@ impl TryFrom<SignedTransaction> for algokit_transact::SignedTransaction {
     type Error = AlgoKitTransactError;
 
     fn try_from(signed_tx: SignedTransaction) -> Result<Self, Self::Error> {
-        let signature = signed_tx
-            .signature
-            .map(|sig| {
-                sig.to_vec().try_into().map_err(|_| {
-                    AlgoKitTransactError::EncodingError(format!(
-                        "signature should be {} bytes",
-                        ALGORAND_SIGNATURE_BYTE_LENGTH
-                    ))
-                })
-            })
-            .transpose()?;
-
         Ok(Self {
             transaction: signed_tx.transaction.try_into()?,
-            signature,
+            signature: signed_tx
+                .signature
+                .map(|sig| bytebuf_to_bytes(&sig))
+                .transpose()
+                .map_err(|e| {
+                    AlgoKitTransactError::DecodingError(format!(
+                        "Error while decoding the signature in a signed transaction: {}",
+                        e.to_string()
+                    ))
+                })?,
             auth_address: signed_tx
                 .auth_address
                 .map(|addr| addr.parse())
