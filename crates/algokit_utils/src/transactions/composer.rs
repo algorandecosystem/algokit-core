@@ -18,6 +18,7 @@ use super::application_call::{
     ApplicationUpdateParams,
 };
 use super::asset_config::{AssetCreateParams, AssetDestroyParams, AssetReconfigureParams};
+use super::asset_freeze::{AssetFreezeParams, AssetUnfreezeParams};
 use super::common::{CommonParams, DefaultSignerGetter, TxnSigner, TxnSignerGetter};
 use super::key_registration::{
     NonParticipationKeyRegistrationParams, OfflineKeyRegistrationParams,
@@ -104,6 +105,8 @@ pub enum ComposerTxn {
     AssetCreate(AssetCreateParams),
     AssetReconfigure(AssetReconfigureParams),
     AssetDestroy(AssetDestroyParams),
+    AssetFreeze(AssetFreezeParams),
+    AssetUnfreeze(AssetUnfreezeParams),
     ApplicationCall(ApplicationCallParams),
     ApplicationCreate(ApplicationCreateParams),
     ApplicationUpdate(ApplicationUpdateParams),
@@ -137,6 +140,12 @@ impl ComposerTxn {
             }
             ComposerTxn::AssetDestroy(asset_destroy_params) => {
                 asset_destroy_params.common_params.clone()
+            }
+            ComposerTxn::AssetFreeze(asset_freeze_params) => {
+                asset_freeze_params.common_params.clone()
+            }
+            ComposerTxn::AssetUnfreeze(asset_unfreeze_params) => {
+                asset_unfreeze_params.common_params.clone()
             }
             ComposerTxn::ApplicationCall(app_call_params) => app_call_params.common_params.clone(),
             ComposerTxn::ApplicationCreate(app_create_params) => {
@@ -260,6 +269,20 @@ impl Composer {
         asset_destroy_params: AssetDestroyParams,
     ) -> Result<(), String> {
         self.push(ComposerTxn::AssetDestroy(asset_destroy_params))
+    }
+
+    pub fn add_asset_freeze(
+        &mut self,
+        asset_freeze_params: AssetFreezeParams,
+    ) -> Result<(), String> {
+        self.push(ComposerTxn::AssetFreeze(asset_freeze_params))
+    }
+
+    pub fn add_asset_unfreeze(
+        &mut self,
+        asset_unfreeze_params: AssetUnfreezeParams,
+    ) -> Result<(), String> {
+        self.push(ComposerTxn::AssetUnfreeze(asset_unfreeze_params))
     }
 
     pub fn add_online_key_registration(
@@ -484,6 +507,22 @@ impl Composer {
                             reserve: None,
                             freeze: None,
                             clawback: None,
+                        })
+                    }
+                    ComposerTxn::AssetFreeze(asset_freeze_params) => {
+                        Transaction::AssetFreeze(algokit_transact::AssetFreezeTransactionFields {
+                            header,
+                            asset_id: asset_freeze_params.asset_id,
+                            freeze_target: asset_freeze_params.target_account.clone(),
+                            frozen: Some(true),
+                        })
+                    }
+                    ComposerTxn::AssetUnfreeze(asset_unfreeze_params) => {
+                        Transaction::AssetFreeze(algokit_transact::AssetFreezeTransactionFields {
+                            header,
+                            asset_id: asset_unfreeze_params.asset_id,
+                            freeze_target: asset_unfreeze_params.target_account.clone(),
+                            frozen: Some(false),
                         })
                     }
                     ComposerTxn::ApplicationCall(app_call_params) => Transaction::ApplicationCall(
