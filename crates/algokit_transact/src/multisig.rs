@@ -106,6 +106,26 @@ impl MultisigSignature {
             .map(|subsig| subsig.address.clone())
             .collect()
     }
+
+    pub fn apply_subsignature(
+        &self,
+        address: Address,
+        signature: [u8; ALGORAND_SIGNATURE_BYTE_LENGTH],
+    ) -> Result<Self, AlgoKitTransactError> {
+        let mut subsignatures = self.subsignatures.clone();
+        if let Some(subsig) = subsignatures.iter_mut().find(|s| s.address == address) {
+            subsig.signature = Some(signature);
+        } else {
+            return Err(AlgoKitTransactError::InvalidMultisigSignature(
+                "Address not found in multisig signature".to_string(),
+            ));
+        }
+        Ok(Self {
+            version: self.version,
+            threshold: self.threshold,
+            subsignatures,
+        })
+    }
 }
 
 /// Represents a single subsignature in a multisignature transaction.

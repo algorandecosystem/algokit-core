@@ -106,3 +106,22 @@ pub fn participants_from_multisig_signature(
         .map(|addr| addr.to_string())
         .collect())
 }
+
+#[ffi_func]
+pub fn apply_multisig_subsignature(
+    multisig_signature: MultisigSignature,
+    participant: String,
+    signature: ByteBuf,
+) -> Result<MultisigSignature, AlgoKitTransactError> {
+    let multisignature: algokit_transact::MultisigSignature = multisig_signature.try_into()?;
+    let partially_signed_multisignature = multisignature.apply_subsignature(
+        participant.parse()?,
+        bytebuf_to_bytes(&signature).map_err(|e| {
+            AlgoKitTransactError::DecodingError(format!(
+                "Error while decoding a subsignature: {}",
+                e.to_string()
+            ))
+        })?,
+    )?;
+    Ok(partially_signed_multisignature.into())
+}
