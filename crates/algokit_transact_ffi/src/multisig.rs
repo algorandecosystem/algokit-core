@@ -102,8 +102,7 @@ pub fn empty_multisig_signature(
         participants
             .into_iter()
             .map(|addr| addr.parse())
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(AlgoKitTransactError::from)?,
+            .collect::<Result<Vec<_>, _>>()?,
     )
     .map(Into::into)?)
 }
