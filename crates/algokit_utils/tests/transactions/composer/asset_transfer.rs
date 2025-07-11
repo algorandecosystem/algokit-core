@@ -5,7 +5,7 @@ use algokit_transact::{
 };
 use algokit_utils::CommonParams;
 use algokit_utils::testing::*;
-use algokit_utils::transactions::composer::AssetTransferParams;
+use algokit_utils::transactions::composer::{AssetTransferParams, SendParams};
 
 #[tokio::test]
 async fn test_asset_transfer_transaction() {
@@ -135,11 +135,19 @@ async fn test_asset_transfer_transaction() {
         })
         .expect("Failed to add asset create");
     let asset_transfer_result = composer
-        .send()
+        .send(Some(SendParams {
+            max_rounds_to_wait_for_confirmation: Some(10),
+        }))
         .await
         .expect("Failed to send asset create transaction");
 
-    match asset_transfer_result.txn.transaction {
+    match &asset_transfer_result
+        .confirmations
+        .first()
+        .unwrap()
+        .txn
+        .transaction
+    {
         algokit_transact::Transaction::AssetTransfer(asset_transfer_fields) => {
             assert_eq!(
                 asset_transfer_fields.asset_id,
