@@ -23,6 +23,7 @@ use super::key_registration::{
     NonParticipationKeyRegistrationParams, OfflineKeyRegistrationParams,
     OnlineKeyRegistrationParams,
 };
+use super::payment::{AccountCloseParams, PaymentParams};
 
 #[derive(Debug, thiserror::Error)]
 pub enum ComposerError {
@@ -57,7 +58,6 @@ pub struct PaymentParams {
     pub common_params: CommonParams,
     pub receiver: Address,
     pub amount: u64,
-    pub close_remainder_to: Option<Address>,
 }
 
 #[derive(Debug, Clone)]
@@ -109,6 +109,7 @@ pub struct AssetClawbackParams {
 pub enum ComposerTxn {
     Transaction(Transaction),
     Payment(PaymentParams),
+    AccountClose(AccountCloseParams),
     AssetTransfer(AssetTransferParams),
     AssetOptIn(AssetOptInParams),
     AssetOptOut(AssetOptOutParams),
@@ -129,6 +130,9 @@ impl ComposerTxn {
     pub fn common_params(&self) -> CommonParams {
         match self {
             ComposerTxn::Payment(payment_params) => payment_params.common_params.clone(),
+            ComposerTxn::AccountClose(account_close_params) => {
+                account_close_params.common_params.clone()
+            }
             ComposerTxn::AssetTransfer(asset_transfer_params) => {
                 asset_transfer_params.common_params.clone()
             }
@@ -225,6 +229,13 @@ impl Composer {
 
     pub fn add_payment(&mut self, payment_params: PaymentParams) -> Result<(), String> {
         self.push(ComposerTxn::Payment(payment_params))
+    }
+
+    pub fn add_account_close(
+        &mut self,
+        account_close_params: AccountCloseParams,
+    ) -> Result<(), String> {
+        self.push(ComposerTxn::AccountClose(account_close_params))
     }
 
     pub fn add_asset_transfer(
@@ -512,23 +523,27 @@ impl Composer {
                         box_references: app_call_params.box_references.clone(),
                     },
                 ),
-                ComposerTxn::ApplicationCreate(app_create_params) => Transaction::ApplicationCall(
-                    algokit_transact::ApplicationCallTransactionFields {
-                        header,
-                        app_id: 0, // 0 indicates application creation
-                        on_complete: app_create_params.on_complete,
-                        approval_program: Some(app_create_params.approval_program.clone()),
-                        clear_state_program: Some(app_create_params.clear_state_program.clone()),
-                        global_state_schema: app_create_params.global_state_schema.clone(),
-                        local_state_schema: app_create_params.local_state_schema.clone(),
-                        extra_program_pages: app_create_params.extra_program_pages,
-                        args: app_create_params.args.clone(),
-                        account_references: app_create_params.account_references.clone(),
-                        app_references: app_create_params.app_references.clone(),
-                        asset_references: app_create_params.asset_references.clone(),
-                        box_references: app_create_params.box_references.clone(),
-                    },
-                ),
+                ComposerTxn::ApplicationCreate(app_create_params) => {
+                    Transaction::ApplicationCall(
+                        algokit_transact::ApplicationCallTransactionFields {
+                            header,
+                            app_id: 0, // 0 indicates application creation
+                            on_complete: app_create_params.on_complete,
+                            approval_program: Some(app_create_params.approval_program.clone()),
+                            clear_state_program: Some(
+                                app_create_params.clear_state_program.clone(),
+                            ),
+                            global_state_schema: app_create_params.global_state_schema.clone(),
+                            local_state_schema: app_create_params.local_state_schema.clone(),
+                            extra_program_pages: app_create_params.extra_program_pages,
+                            args: app_create_params.args.clone(),
+                            account_references: app_create_params.account_references.clone(),
+                            app_references: app_create_params.app_references.clone(),
+                            asset_references: app_create_params.asset_references.clone(),
+                            box_references: app_create_params.box_references.clone(),
+                        },
+                    )
+                }
                 ComposerTxn::ApplicationUpdate(app_update_params) => Transaction::ApplicationCall(
                     algokit_transact::ApplicationCallTransactionFields {
                         header,
@@ -823,7 +838,7 @@ impl Composer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use algokit_transact::test_utils::{AddressMother, TransactionMother};
+    use algokit_transact::test_utils::{AccountMother, TransactionMother};
     use base64::{Engine, prelude::BASE64_STANDARD};
 
     #[test]
@@ -862,7 +877,7 @@ mod tests {
         let mut composer = Composer::testnet();
         let payment_params = PaymentParams {
             common_params: CommonParams {
-                sender: AddressMother::address(),
+                sender: AccountMother::account().address(),
                 signer: None,
                 rekey_to: None,
                 note: None,
@@ -874,9 +889,8 @@ mod tests {
                 first_valid_round: None,
                 last_valid_round: None,
             },
-            receiver: AddressMother::address(),
+            receiver: AccountMother::account().address(),
             amount: 1000,
-            close_remainder_to: None,
         };
         assert!(composer.add_payment(payment_params).is_ok());
     }
@@ -887,7 +901,7 @@ mod tests {
 
         let payment_params = PaymentParams {
             common_params: CommonParams {
-                sender: AddressMother::address(),
+                sender: AccountMother::account().address(),
                 signer: None,
                 rekey_to: None,
                 note: None,
@@ -899,9 +913,8 @@ mod tests {
                 first_valid_round: None,
                 last_valid_round: None,
             },
-            receiver: AddressMother::address(),
+            receiver: AccountMother::account().address(),
             amount: 1000,
-            close_remainder_to: None,
         };
         composer.add_payment(payment_params).unwrap();
         composer.build().await.unwrap();
@@ -915,7 +928,7 @@ mod tests {
         let mut composer = Composer::testnet();
         let payment_params = PaymentParams {
             common_params: CommonParams {
-                sender: AddressMother::address(),
+                sender: AccountMother::account().address(),
                 signer: None,
                 rekey_to: None,
                 note: None,
@@ -927,9 +940,8 @@ mod tests {
                 first_valid_round: None,
                 last_valid_round: None,
             },
-            receiver: AddressMother::address(),
+            receiver: AccountMother::account().address(),
             amount: 1000,
-            close_remainder_to: None,
         };
         composer.add_payment(payment_params).unwrap();
 
@@ -949,7 +961,7 @@ mod tests {
         for _ in 0..2 {
             let payment_params = PaymentParams {
                 common_params: CommonParams {
-                    sender: AddressMother::address(),
+                    sender: AccountMother::account().address(),
                     signer: None,
                     rekey_to: None,
                     note: None,
@@ -961,9 +973,8 @@ mod tests {
                     first_valid_round: None,
                     last_valid_round: None,
                 },
-                receiver: AddressMother::address(),
+                receiver: AccountMother::account().address(),
                 amount: 1000,
-                close_remainder_to: None,
             };
             composer.add_payment(payment_params).unwrap();
         }
