@@ -50,13 +50,6 @@ pub struct TransactionWithSigner {
     pub signer: Arc<dyn TransactionSigner>,
 }
 
-// TODO: delete this
-impl TransactionWithSigner {
-    pub fn header(&self) -> &TransactionHeader {
-        self.transaction.header()
-    }
-}
-
 #[derive(Debug, Clone)]
 pub struct AssetTransferParams {
     /// Part of the "specialized" asset transaction types.
@@ -199,11 +192,11 @@ pub struct Composer {
 }
 
 impl Composer {
-    pub fn new(algod_client: AlgodClient, get_signer: Arc<dyn TransactionSignerGetter>) -> Self {
+    pub fn new(algod_client: AlgodClient, signer_getter: Arc<dyn TransactionSignerGetter>) -> Self {
         Composer {
             transactions: Vec::new(),
             algod_client,
-            signer_getter: get_signer,
+            signer_getter,
             built_group: None,
             signed_group: None,
         }
@@ -401,7 +394,8 @@ impl Composer {
             10 // Standard default validity window
         };
 
-        let mut transactions_with_signers = Vec::new();
+        let mut transactions = Vec::new();
+        let mut signers = Vec::new();
 
         for tx in &self.transactions {
             let common_params = tx.common_params();
@@ -674,39 +668,38 @@ impl Composer {
                     .map_err(|e| ComposerError::TransactionError(e.to_string()))?;
             }
 
-            let signer = if let Some(custom_signer) = common_params.signer {
-                custom_signer
+            let signer = if let Some(signer) = common_params.signer {
+                signer
             } else {
                 let sender_address = transaction.header().sender.clone();
-                let boxed_signer = self.get_signer(sender_address.clone()).await.ok_or(
+                let signer = self.get_signer(sender_address.clone()).await.ok_or(
                     ComposerError::SigningError(format!(
                         "No signer found for address: {}",
                         sender_address
                     )),
                 )?;
-                Arc::from(boxed_signer)
+                Arc::from(signer)
             };
 
-            transactions_with_signers.push(TransactionWithSigner {
-                transaction,
-                signer,
-            });
+            transactions.push(transaction);
+            signers.push(signer);
         }
 
-        if transactions_with_signers.len() > 1 {
-            let transactions: Vec<Transaction> = transactions_with_signers
-                .iter()
-                .map(|tws| tws.transaction.clone())
-                .collect();
-
+        if transactions.len() > 1 {
             let grouped_transactions = transactions.assign_group().map_err(|e| {
                 ComposerError::TransactionError(format!("Failed to assign group: {}", e))
             })?;
-
-            for (i, grouped_txn) in grouped_transactions.into_iter().enumerate() {
-                transactions_with_signers[i].transaction = grouped_txn;
-            }
+            transactions = grouped_transactions;
         }
+
+        let transactions_with_signers: Vec<TransactionWithSigner> = transactions
+            .into_iter()
+            .zip(signers.into_iter())
+            .map(|(transaction, signer)| TransactionWithSigner {
+                transaction,
+                signer,
+            })
+            .collect();
 
         self.built_group = Some(transactions_with_signers);
         Ok(self)
@@ -848,11 +841,11 @@ impl Composer {
             .map_err(|e| format!("Failed to build transaction: {}", e))?;
 
         let group_id = {
-            let transactions = self.built_group().ok_or("No transactions built")?;
-            if transactions.is_empty() {
+            let transactions_with_signers = self.built_group().ok_or("No transactions built")?;
+            if transactions_with_signers.is_empty() {
                 return Err("No transactions to send".into());
             }
-            transactions[0].header().group
+            transactions_with_signers[0].transaction.header().group
         };
 
         self.gather_signatures()
@@ -1035,7 +1028,7 @@ mod tests {
         assert_eq!(built_group.len(), 1);
 
         // Single transaction should not have a group ID set
-        assert!(built_group[0].header().group.is_none());
+        assert!(built_group[0].transaction.header().group.is_none());
     }
 
     #[tokio::test]
@@ -1069,14 +1062,22 @@ mod tests {
         assert_eq!(built_group.len(), 2);
 
         // Multiple transactions should have group IDs set
-        for txn in built_group {
-            assert!(txn.header().group.is_some());
+        for transaction_with_signer in built_group {
+            assert!(transaction_with_signer.transaction.header().group.is_some());
         }
 
         // All transactions should have the same group ID
-        let group_id = built_group[0].header().group.as_ref().unwrap();
-        for txn in &built_group[1..] {
-            assert_eq!(txn.header().group.as_ref().unwrap(), group_id);
+        let group_id = built_group[0].transaction.header().group.as_ref().unwrap();
+        for transaction_with_signer in &built_group[1..] {
+            assert_eq!(
+                transaction_with_signer
+                    .transaction
+                    .header()
+                    .group
+                    .as_ref()
+                    .unwrap(),
+                group_id
+            );
         }
     }
 
