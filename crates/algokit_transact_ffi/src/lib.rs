@@ -689,13 +689,9 @@ pub fn decode_transactions(
 #[ffi_func]
 pub fn estimate_transaction_size(transaction: Transaction) -> Result<u64, AlgoKitTransactError> {
     let core_tx: algokit_transact::Transaction = transaction.try_into()?;
-    core_tx
-        .estimate_size()
-        .map_err(AlgoKitTransactError::from)?
-        .try_into()
-        .map_err(|_| {
-            AlgoKitTransactError::EncodingError("Failed to convert size to u64".to_string())
-        })
+    core_tx.estimate_size()?.try_into().map_err(|_| {
+        AlgoKitTransactError::EncodingError("Failed to convert size to u64".to_string())
+    })
 }
 
 #[ffi_func]
@@ -718,10 +714,9 @@ pub fn keypair_account_from_pub_key(
 
 #[ffi_func]
 pub fn keypair_account_from_address(address: &str) -> Result<KeyPairAccount, AlgoKitTransactError> {
-    address
+    Ok(address
         .parse::<algokit_transact::KeyPairAccount>()
-        .map(Into::into)
-        .map_err(AlgoKitTransactError::from)
+        .map(Into::into)?)
 }
 
 /// Get the raw 32-byte transaction ID for a transaction.

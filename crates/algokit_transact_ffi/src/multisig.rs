@@ -32,7 +32,7 @@ impl TryFrom<MultisigSignature> for algokit_transact::MultisigSignature {
     type Error = AlgoKitTransactError;
 
     fn try_from(value: MultisigSignature) -> Result<Self, Self::Error> {
-        Self::new(
+        Ok(Self::new(
             value.version,
             value.threshold,
             value
@@ -40,8 +40,7 @@ impl TryFrom<MultisigSignature> for algokit_transact::MultisigSignature {
                 .into_iter()
                 .map(TryInto::try_into)
                 .collect::<Result<Vec<_>, _>>()?,
-        )
-        .map_err(Self::Error::from)
+        )?)
     }
 }
 
@@ -82,7 +81,7 @@ pub fn empty_multisig_signature(
     threshold: u8,
     participants: Vec<String>,
 ) -> Result<MultisigSignature, AlgoKitTransactError> {
-    algokit_transact::MultisigSignature::from_participants(
+    Ok(algokit_transact::MultisigSignature::from_participants(
         version,
         threshold,
         participants
@@ -91,8 +90,7 @@ pub fn empty_multisig_signature(
             .collect::<Result<Vec<_>, _>>()
             .map_err(AlgoKitTransactError::from)?,
     )
-    .map(Into::into)
-    .map_err(AlgoKitTransactError::from)
+    .map(Into::into)?)
 }
 
 #[ffi_func]
