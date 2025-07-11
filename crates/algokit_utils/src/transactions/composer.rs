@@ -739,7 +739,6 @@ impl Composer {
                 .await
                 .map_err(ComposerError::SigningError)?;
 
-            // Place signed transactions in their correct positions
             for (i, &index) in indices.iter().enumerate() {
                 signed_transactions[index] = Some(signed_txns[i].clone());
             }
