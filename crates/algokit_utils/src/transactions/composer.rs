@@ -668,17 +668,17 @@ impl Composer {
                     .map_err(|e| ComposerError::TransactionError(e.to_string()))?;
             }
 
-            let signer = if let Some(signer) = common_params.signer {
-                signer
+            let signer = if let Some(transaction_signer) = common_params.signer {
+                transaction_signer
             } else {
                 let sender_address = transaction.header().sender.clone();
-                let signer = self.get_signer(sender_address.clone()).await.ok_or(
-                    ComposerError::SigningError(format!(
+
+                self.get_signer(sender_address.clone())
+                    .await
+                    .ok_or(ComposerError::SigningError(format!(
                         "No signer found for address: {}",
                         sender_address
-                    )),
-                )?;
-                Arc::from(signer)
+                    )))?
             };
 
             transactions.push(transaction);
@@ -716,10 +716,7 @@ impl Composer {
             std::collections::HashMap::new();
         for (index, txn_with_signer) in transactions_with_signers.iter().enumerate() {
             let signer_ptr = Arc::as_ptr(&txn_with_signer.signer);
-            signer_groups
-                .entry(signer_ptr)
-                .or_insert_with(Vec::new)
-                .push(index);
+            signer_groups.entry(signer_ptr).or_default().push(index);
         }
 
         let transactions: Vec<Transaction> = transactions_with_signers
