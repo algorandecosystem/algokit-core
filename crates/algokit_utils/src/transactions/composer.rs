@@ -706,15 +706,15 @@ impl Composer {
     }
 
     pub async fn gather_signatures(&mut self) -> Result<&mut Self, ComposerError> {
-        let transactions = self.built_group.as_ref().ok_or(ComposerError::StateError(
-            "Cannot gather signatures before building the transaction group".to_string(),
-        ))?;
+        let transactions_with_signers =
+            self.built_group.as_ref().ok_or(ComposerError::StateError(
+                "Cannot gather signatures before building the transaction group".to_string(),
+            ))?;
 
         // Group transactions by signer
         let mut signer_groups: std::collections::HashMap<*const dyn TransactionSigner, Vec<usize>> =
             std::collections::HashMap::new();
-
-        for (index, txn_with_signer) in transactions.iter().enumerate() {
+        for (index, txn_with_signer) in transactions_with_signers.iter().enumerate() {
             let signer_ptr = Arc::as_ptr(&txn_with_signer.signer);
             signer_groups
                 .entry(signer_ptr)
@@ -722,38 +722,34 @@ impl Composer {
                 .push(index);
         }
 
-        // Collect all transactions for batch signing
-        let all_transactions: Vec<Transaction> = transactions
+        let transactions: Vec<Transaction> = transactions_with_signers
             .iter()
-            .map(|tws| tws.transaction.clone())
+            .map(|transaction_with_signer| transaction_with_signer.transaction.clone())
             .collect();
 
-        // Initialize signed_group with placeholder values
-        let mut signed_group = vec![None; transactions.len()];
+        let mut signed_transactions = vec![None; transactions_with_signers.len()];
 
-        // Process each signer group
         for (_signer_ptr, indices) in signer_groups {
             // Get the signer from the first transaction with this signer
-            let signer = &transactions[indices[0]].signer;
+            let signer = &transactions_with_signers[indices[0]].signer;
 
             // Sign all transactions for this signer
             let signed_txns = signer
-                .sign_transactions(&all_transactions, &indices)
+                .sign_transactions(&transactions, &indices)
                 .await
                 .map_err(ComposerError::SigningError)?;
 
             // Place signed transactions in their correct positions
             for (i, &index) in indices.iter().enumerate() {
-                signed_group[index] = Some(signed_txns[i].clone());
+                signed_transactions[index] = Some(signed_txns[i].clone());
             }
         }
 
-        // Convert to Vec<SignedTransaction> (all should be Some at this point)
-        let final_signed_group: Result<Vec<SignedTransaction>, _> = signed_group
+        let final_signed_transactions: Result<Vec<SignedTransaction>, _> = signed_transactions
             .into_iter()
             .enumerate()
-            .map(|(i, signed_txn)| {
-                signed_txn.ok_or_else(|| {
+            .map(|(i, signed_transaction)| {
+                signed_transaction.ok_or_else(|| {
                     ComposerError::SigningError(format!(
                         "Transaction at index {} was not signed",
                         i
@@ -762,7 +758,7 @@ impl Composer {
             })
             .collect();
 
-        self.signed_group = Some(final_signed_group?);
+        self.signed_group = Some(final_signed_transactions?);
 
         Ok(self)
     }
