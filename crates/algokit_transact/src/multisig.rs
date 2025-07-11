@@ -126,6 +126,40 @@ impl MultisigSignature {
             subsignatures,
         })
     }
+
+    pub fn merge(&self, other: &Self) -> Result<Self, AlgoKitTransactError> {
+        if self.version != other.version {
+            return Err(AlgoKitTransactError::InvalidMultisigSignature(
+                "Cannot merge multisig signatures with different versions".to_string(),
+            ));
+        }
+        if self.threshold != other.threshold {
+            return Err(AlgoKitTransactError::InvalidMultisigSignature(
+                "Cannot merge multisig signatures with different thresholds".to_string(),
+            ));
+        }
+        if self.participants() != other.participants() {
+            return Err(AlgoKitTransactError::InvalidMultisigSignature(
+                "Cannot merge multisig signatures with different participants".to_string(),
+            ));
+        }
+
+        let subsignatures = self
+            .subsignatures
+            .iter()
+            .zip(&other.subsignatures)
+            .map(|(s1, s2)| MultisigSubsignature {
+                address: s1.address.clone(),
+                signature: s2.signature.clone().or(s1.signature.clone()),
+            })
+            .collect();
+
+        Ok(Self {
+            version: self.version,
+            threshold: self.threshold,
+            subsignatures,
+        })
+    }
 }
 
 /// Represents a single subsignature in a multisignature transaction.

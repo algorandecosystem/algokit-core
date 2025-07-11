@@ -123,3 +123,14 @@ pub fn apply_multisig_subsignature(
     )?;
     Ok(partially_signed_multisignature.into())
 }
+
+#[ffi_func]
+pub fn merge_multignatures(
+    multisig_signature_a: MultisigSignature,
+    multisig_signature_b: MultisigSignature,
+) -> Result<MultisigSignature, AlgoKitTransactError> {
+    let multisig_a: algokit_transact::MultisigSignature = multisig_signature_a.try_into()?;
+    let multisig_b: algokit_transact::MultisigSignature = multisig_signature_b.try_into()?;
+    let merged_multisig = multisig_a.merge(&multisig_b)?;
+    Ok(merged_multisig.into())
+}
