@@ -110,11 +110,11 @@ impl MultisigSignature {
     pub fn apply_subsignature(
         &self,
         address: Address,
-        signature: [u8; ALGORAND_SIGNATURE_BYTE_LENGTH],
+        subsignature: [u8; ALGORAND_SIGNATURE_BYTE_LENGTH],
     ) -> Result<Self, AlgoKitTransactError> {
         let mut subsignatures = self.subsignatures.clone();
         if let Some(subsig) = subsignatures.iter_mut().find(|s| s.address == address) {
-            subsig.signature = Some(signature);
+            subsig.signature = Some(subsignature);
         } else {
             return Err(AlgoKitTransactError::InvalidMultisigSignature(
                 "Address not found in multisig signature".to_string(),
