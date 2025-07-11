@@ -1,11 +1,8 @@
 use crate::common::init_test_logging;
-use algokit_transact::{
-    AssetConfigTransactionBuilder, AssetTransferTransactionBuilder, FeeParams,
-    TransactionHeaderBuilder,
-};
-use algokit_utils::CommonParams;
 use algokit_utils::testing::*;
-use algokit_utils::transactions::composer::{AssetTransferParams, SendParams};
+use algokit_utils::transactions::composer::{AssetOptInParams, AssetTransferParams, SendParams};
+use algokit_utils::{AssetCreateParams, CommonParams};
+use std::sync::Arc;
 
 #[tokio::test]
 async fn test_asset_transfer_transaction() {
@@ -17,157 +14,128 @@ async fn test_asset_transfer_transaction() {
         .new_scope()
         .await
         .expect("Failed to create new scope");
-
     let context = fixture.context().expect("Failed to get context");
-    let mut composer = context.composer.clone();
-    let algod = context.algod.clone();
+
+    let mut asset_create_composer = context.composer.clone();
     let asset_creator = context.test_account.clone();
     let asset_creator_address = asset_creator.account().unwrap().address();
+    asset_create_composer
+        .add_asset_create(AssetCreateParams {
+            common_params: CommonParams {
+                sender: asset_creator_address.clone(),
+                signer: Some(Arc::new(asset_creator)),
+                ..Default::default()
+            },
+            total: 10,
+            decimals: Some(0),
+            default_frozen: Some(false),
+            asset_name: None,
+            unit_name: None,
+            url: None,
+            metadata_hash: None,
+            manager: None,
+            reserve: None,
+            freeze: None,
+            clawback: None,
+        })
+        .expect("Failed to add asset create");
+    let asset_create_id = asset_create_composer
+        .send(Some(SendParams {
+            max_rounds_to_wait_for_confirmation: Some(10),
+        }))
+        .await
+        .expect("Failed to send asset create")
+        .confirmations
+        .first()
+        .expect("Asset create group should have at least one transaction")
+        .asset_index
+        .unwrap();
+
+    let mut asset_transfer_composer = context.composer.clone();
     let asset_user = fixture
         .generate_account(None)
         .await
         .expect("Failed to generate account");
     let asset_user_address = asset_user.account().unwrap().address();
-
-    let asset_create_sp = algod
-        .transaction_params()
-        .await
-        .expect("Failed to get suggested params for asset create transaction");
-    let mut asset_create_transaction = AssetConfigTransactionBuilder::default()
-        .header(
-            TransactionHeaderBuilder::default()
-                .sender(asset_creator_address.clone())
-                .first_valid(asset_create_sp.last_round)
-                .last_valid(asset_create_sp.last_round + 10)
-                .genesis_hash(
-                    asset_create_sp
-                        .genesis_hash
-                        .try_into()
-                        .expect("Failed to convert genesis hash for asset create transaction"),
-                )
-                .genesis_id(asset_create_sp.genesis_id)
-                .build()
-                .expect("Failed to build header for asset create transaction"),
-        )
-        .asset_id(0)
-        .total(10)
-        .decimals(0)
-        .default_frozen(false)
-        .build()
-        .expect("Failed to build asset create transaction");
-    asset_create_transaction = asset_create_transaction
-        .assign_fee(FeeParams {
-            fee_per_byte: asset_create_sp.fee,
-            min_fee: asset_create_sp.min_fee,
-            extra_fee: None,
-            max_fee: None,
+    asset_transfer_composer
+        .add_asset_opt_in(AssetOptInParams {
+            common_params: CommonParams {
+                sender: asset_user_address.clone(),
+                signer: Some(Arc::new(asset_user)),
+                ..Default::default()
+            },
+            asset_id: asset_create_id,
         })
-        .expect("Failed to assign fee for asset create transaction");
-    let signed_asset_create_transaction = asset_creator
-        .sign_transaction(&asset_create_transaction)
-        .expect("Failed to sign asset create transaction");
-    let asset_create_transaction_id = algod
-        .raw_transaction(signed_asset_create_transaction)
-        .await
-        .expect("Failed to send asset create transaction")
-        .tx_id;
-    let asset_create_result = composer
-        .wait_for_confirmation(asset_create_transaction_id.as_str(), 10)
-        .await
-        .expect("Failed to wait for asset create transaction confirmation");
-
-    let asset_opt_in_sp = algod
-        .transaction_params()
-        .await
-        .expect("Failed to get suggested params for asset opt-in transaction");
-    let mut asset_opt_in_transaction = AssetTransferTransactionBuilder::default()
-        .header(
-            TransactionHeaderBuilder::default()
-                .sender(asset_user_address.clone())
-                .fee(asset_opt_in_sp.fee)
-                .first_valid(asset_opt_in_sp.last_round)
-                .last_valid(asset_opt_in_sp.last_round + 10)
-                .genesis_hash(
-                    asset_opt_in_sp
-                        .genesis_hash
-                        .try_into()
-                        .expect("Failed to convert genesis hash for asset opt-in transaction"),
-                )
-                .genesis_id(asset_opt_in_sp.genesis_id)
-                .build()
-                .expect("Failed to build header for asset opt-in transaction"),
-        )
-        .asset_id(asset_create_result.asset_index.unwrap())
-        .receiver(asset_user_address.clone())
-        .amount(0)
-        .build()
-        .expect("Failed to build asset opt-in transaction");
-    asset_opt_in_transaction = asset_opt_in_transaction
-        .assign_fee(FeeParams {
-            fee_per_byte: asset_opt_in_sp.fee,
-            min_fee: asset_opt_in_sp.min_fee,
-            extra_fee: None,
-            max_fee: None,
-        })
-        .expect("Failed to assign fee for asset opt-in transaction");
-    let signed_asset_opt_in_transaction = asset_user
-        .sign_transaction(&asset_opt_in_transaction)
-        .expect("Failed to sign asset opt-in transaction");
-    let asset_opt_in_transaction_id = algod
-        .raw_transaction(signed_asset_opt_in_transaction)
-        .await
-        .expect("Failed to send asset opt-in transaction")
-        .tx_id;
-    composer
-        .wait_for_confirmation(asset_opt_in_transaction_id.as_str(), 10)
-        .await
-        .expect("Failed to wait for asset opt-in transaction confirmation");
-
-    composer
+        .expect("Failed to add asset opt in");
+    asset_transfer_composer
         .add_asset_transfer(AssetTransferParams {
             common_params: CommonParams {
                 sender: asset_creator_address.clone(),
                 ..Default::default()
             },
-            asset_id: asset_create_result.asset_index.unwrap(),
+            asset_id: asset_create_id,
             receiver: asset_user_address.clone(),
             amount: 1,
         })
-        .expect("Failed to add asset create");
-    let asset_transfer_result = composer
+        .expect("Failed to add asset transfer");
+    let asset_transfer_result = asset_transfer_composer
         .send(Some(SendParams {
             max_rounds_to_wait_for_confirmation: Some(10),
         }))
         .await
-        .expect("Failed to send asset create transaction");
+        .expect("Failed to send asset transfer");
 
     match &asset_transfer_result
         .confirmations
-        .first()
+        .get(0)
+        .unwrap()
+        .txn
+        .transaction
+    {
+        algokit_transact::Transaction::AssetTransfer(asset_opt_in_fields) => {
+            assert_eq!(
+                asset_opt_in_fields.header.sender,
+                asset_user_address.clone(),
+                "Account opting in should be the asset user"
+            );
+            assert_eq!(
+                asset_opt_in_fields.receiver,
+                asset_user_address.clone(),
+                "Sender and receiver should be the same for opt-in"
+            );
+            assert_eq!(
+                asset_opt_in_fields.asset_id,
+                asset_create_id.clone(),
+                "Asset ID should match the created asset"
+            );
+            assert_eq!(
+                asset_opt_in_fields.amount, 0,
+                "Amount should be 0 for opt-in"
+            );
+        }
+        _ => panic!("Transaction should be an asset transfer transaction"),
+    }
+    match &asset_transfer_result
+        .confirmations
+        .get(1)
         .unwrap()
         .txn
         .transaction
     {
         algokit_transact::Transaction::AssetTransfer(asset_transfer_fields) => {
             assert_eq!(
-                asset_transfer_fields.asset_id,
-                asset_create_result.asset_index.unwrap(),
-                "Asset ID should match the created asset"
-            );
-            assert_eq!(
-                asset_transfer_fields.amount, 1,
-                "Asset transfer amount should be 1"
-            );
-            assert_eq!(
-                asset_transfer_fields.header.sender,
-                asset_creator_address.clone(),
+                asset_transfer_fields.header.sender, asset_creator_address,
                 "Sender should be the asset creator"
             );
             assert_eq!(
-                asset_transfer_fields.receiver,
-                asset_user_address.clone(),
+                asset_transfer_fields.receiver, asset_user_address,
                 "Receiver should be the asset user"
             );
+            assert_eq!(
+                asset_transfer_fields.asset_id, asset_create_id,
+                "Asset ID should match the created asset"
+            );
+            assert_eq!(asset_transfer_fields.amount, 1, "Amount should be 1");
         }
         _ => panic!("Transaction should be an asset transfer transaction"),
     }
