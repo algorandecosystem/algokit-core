@@ -34,6 +34,7 @@ impl TransactionSignerGetter for DefaultSignerGetter {
     }
 }
 
+#[derive(Clone)]
 pub struct EmptySigner {}
 
 #[async_trait]
@@ -64,7 +65,7 @@ impl TransactionSigner for EmptySigner {
 #[async_trait]
 impl TransactionSignerGetter for EmptySigner {
     async fn get_signer(&self, _address: Address) -> Option<Arc<dyn TransactionSigner>> {
-        Some(self)
+        Some(Arc::new(self.clone()))
     }
 }
 

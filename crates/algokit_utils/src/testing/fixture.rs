@@ -40,7 +40,7 @@ impl TransactionSignerGetter for TestAccount {
     async fn get_signer(&self, address: Address) -> Option<Arc<dyn TransactionSigner>> {
         let test_account_address = self.account().expect("Failed to get test account address");
         if address == test_account_address.address() {
-            Some(self)
+            Some(Arc::new(self.clone()))
         } else {
             None
         }

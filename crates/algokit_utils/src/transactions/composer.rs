@@ -19,9 +19,7 @@ use super::application_call::{
     ApplicationUpdateParams,
 };
 use super::asset_config::{AssetCreateParams, AssetDestroyParams, AssetReconfigureParams};
-use super::common::{
-    CommonParams, DefaultSignerGetter, TransactionSigner, TransactionSignerGetter,
-};
+use super::common::{CommonParams, TransactionSigner, TransactionSignerGetter};
 use super::key_registration::{
     NonParticipationKeyRegistrationParams, OfflineKeyRegistrationParams,
     OnlineKeyRegistrationParams,
@@ -42,12 +40,14 @@ pub enum ComposerError {
     StateError(String),
     #[error("Transaction pool error: {0}")]
     PoolError(String),
+    #[error("Transaction group size exceeds the max limit of: {max}", max = MAX_TX_GROUP_SIZE)]
+    GroupSizeError(),
 }
 
 #[derive(Clone)]
 pub struct TransactionWithSigner {
     pub transaction: Transaction,
-    pub signer: Arc<dyn TxnSigner>,
+    pub signer: Arc<dyn TransactionSigner>,
 }
 
 // TODO: delete this
@@ -718,7 +718,7 @@ impl Composer {
         ))?;
 
         // Group transactions by signer
-        let mut signer_groups: std::collections::HashMap<*const dyn TxnSigner, Vec<usize>> =
+        let mut signer_groups: std::collections::HashMap<*const dyn TransactionSigner, Vec<usize>> =
             std::collections::HashMap::new();
 
         for (index, txn_with_signer) in transactions.iter().enumerate() {
@@ -745,7 +745,7 @@ impl Composer {
 
             // Sign all transactions for this signer
             let signed_txns = signer
-                .sign_txns(&all_transactions, &indices)
+                .sign_transactions(&all_transactions, &indices)
                 .await
                 .map_err(ComposerError::SigningError)?;
 

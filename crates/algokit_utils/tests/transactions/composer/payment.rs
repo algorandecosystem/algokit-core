@@ -143,14 +143,16 @@ async fn test_payment_with_custom_signer() {
         .expect("Failed to create sender account");
 
     let sender_addr = sender_account
-        .address()
-        .expect("Failed to get sender address");
+        .account()
+        .expect("Failed to get sender account")
+        .address();
 
     let context = fixture.context().expect("Failed to get context");
     let receiver_addr = context
         .test_account
-        .address()
-        .expect("Failed to get receiver address");
+        .account()
+        .expect("Failed to get receiver account")
+        .address();
 
     let payment_params = PaymentParams {
         common_params: CommonParams {
@@ -160,7 +162,6 @@ async fn test_payment_with_custom_signer() {
         },
         receiver: receiver_addr.clone(),
         amount: 100_000,
-        close_remainder_to: None,
     };
 
     let mut composer = context.composer.clone();
@@ -169,11 +170,11 @@ async fn test_payment_with_custom_signer() {
         .expect("Failed to add payment");
 
     let result = composer
-        .send()
+        .send(None)
         .await
         .expect("Failed to send payment with custom signer");
 
-    let transaction = result.txn.transaction;
+    let transaction = &result.confirmations[0].txn.transaction;
 
     match transaction {
         algokit_transact::Transaction::Payment(payment_fields) => {
@@ -215,24 +216,26 @@ async fn test_batch_signing_with_custom_signer() {
         .expect("Failed to create sender account");
 
     let sender_addr = sender_account
-        .address()
-        .expect("Failed to get sender address");
+        .account()
+        .expect("Failed to get sender account")
+        .address();
 
     let context = fixture.context().expect("Failed to get context");
     let receiver_addr = context
         .test_account
-        .address()
-        .expect("Failed to get receiver address");
+        .account()
+        .expect("Failed to get receiver account")
+        .address();
 
     // Create a wrapper signer that tracks how many times sign_txns is called
     struct SignerCallTracker {
-        inner_signer: Arc<dyn algokit_utils::TxnSigner>,
+        inner_signer: Arc<dyn algokit_utils::TransactionSigner>,
         call_count: Arc<AtomicUsize>,
     }
 
     #[async_trait::async_trait]
-    impl algokit_utils::TxnSigner for SignerCallTracker {
-        async fn sign_txns(
+    impl algokit_utils::TransactionSigner for SignerCallTracker {
+        async fn sign_transactions(
             &self,
             txns: &[algokit_transact::Transaction],
             indices: &[usize],
@@ -245,7 +248,7 @@ async fn test_batch_signing_with_custom_signer() {
             assert_eq!(txns.len(), 2, "Should have 2 transactions in total");
 
             // Delegate to the real signer
-            self.inner_signer.sign_txns(txns, indices).await
+            self.inner_signer.sign_transactions(txns, indices).await
         }
     }
 
@@ -268,7 +271,6 @@ async fn test_batch_signing_with_custom_signer() {
             },
             receiver: receiver_addr.clone(),
             amount: 50_000 + (i * 10_000), // Different amounts to distinguish transactions
-            close_remainder_to: None,
         };
         composer
             .add_payment(payment_params)
@@ -276,7 +278,7 @@ async fn test_batch_signing_with_custom_signer() {
     }
 
     let result = composer
-        .send()
+        .send(None)
         .await
         .expect("Failed to send payments with custom signer");
 
@@ -288,7 +290,7 @@ async fn test_batch_signing_with_custom_signer() {
     );
 
     // Verify the transaction was processed successfully
-    let transaction = result.txn.transaction;
+    let transaction = &result.confirmations[0].txn.transaction;
     match transaction {
         algokit_transact::Transaction::Payment(payment_fields) => {
             // This will be the first transaction in the group
