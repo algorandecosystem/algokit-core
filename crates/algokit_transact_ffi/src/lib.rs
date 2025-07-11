@@ -1,3 +1,4 @@
+mod multisig;
 mod transactions;
 
 use algokit_transact::constants::*;
@@ -8,6 +9,7 @@ use ffi_macros::{ffi_enum, ffi_func, ffi_record};
 use serde::{Deserialize, Serialize};
 use serde_bytes::ByteBuf;
 
+pub use multisig::{MultisigSignature, MultisigSubsignature};
 pub use transactions::ApplicationCallTransactionFields;
 pub use transactions::AssetConfigTransactionFields;
 pub use transactions::AssetFreezeTransactionFields;
@@ -122,20 +124,6 @@ pub struct KeyPairAccount {
     pub_key: ByteBuf,
 }
 
-#[ffi_record]
-pub struct MultisigSignature {
-    address: String,
-    version: u8,
-    threshold: u8,
-    subsignatures: Vec<MultisigSubsignature>,
-}
-
-#[ffi_record]
-pub struct MultisigSubsignature {
-    address: String,
-    signature: Option<ByteBuf>,
-}
-
 impl From<algokit_transact::KeyPairAccount> for KeyPairAccount {
     fn from(value: algokit_transact::KeyPairAccount) -> Self {
         Self {
@@ -175,65 +163,6 @@ impl TryFrom<KeyPairAccount> for algokit_transact::Address {
 
     fn try_from(value: KeyPairAccount) -> Result<Self, Self::Error> {
         value.address.parse().map_err(Self::Error::from)
-    }
-}
-
-impl From<algokit_transact::MultisigSignature> for MultisigSignature {
-    fn from(value: algokit_transact::MultisigSignature) -> Self {
-        Self {
-            address: value.to_string(),
-            version: value.version,
-            threshold: value.threshold,
-            subsignatures: value.subsignatures.into_iter().map(Into::into).collect(),
-        }
-    }
-}
-
-impl TryFrom<MultisigSignature> for algokit_transact::MultisigSignature {
-    type Error = AlgoKitTransactError;
-
-    fn try_from(value: MultisigSignature) -> Result<Self, Self::Error> {
-        Self::new(
-            value.version,
-            value.threshold,
-            value
-                .subsignatures
-                .into_iter()
-                .map(TryInto::try_into)
-                .collect::<Result<Vec<_>, _>>()?,
-        )
-        .map_err(Self::Error::from)
-    }
-}
-
-impl From<algokit_transact::MultisigSubsignature> for MultisigSubsignature {
-    fn from(value: algokit_transact::MultisigSubsignature) -> Self {
-        Self {
-            address: value.address.as_str(),
-            signature: value.signature.map(|sig| sig.to_vec().into()),
-        }
-    }
-}
-
-impl TryFrom<MultisigSubsignature> for algokit_transact::MultisigSubsignature {
-    type Error = AlgoKitTransactError;
-
-    fn try_from(value: MultisigSubsignature) -> Result<Self, Self::Error> {
-        let address = value.address.parse()?;
-
-        Ok(Self {
-            address,
-            signature: value
-                .signature
-                .map(|sig| bytebuf_to_bytes(&sig))
-                .transpose()
-                .map_err(|e| {
-                    AlgoKitTransactError::DecodingError(format!(
-                        "Error while decoding a subsignature: {}",
-                        e.to_string()
-                    ))
-                })?,
-        })
     }
 }
 
@@ -793,37 +722,6 @@ pub fn keypair_account_from_address(address: &str) -> Result<KeyPairAccount, Alg
         .parse::<algokit_transact::KeyPairAccount>()
         .map(Into::into)
         .map_err(AlgoKitTransactError::from)
-}
-
-#[ffi_func]
-pub fn empty_multisig_signature(
-    version: u8,
-    threshold: u8,
-    participants: Vec<String>,
-) -> Result<MultisigSignature, AlgoKitTransactError> {
-    algokit_transact::MultisigSignature::from_participants(
-        version,
-        threshold,
-        participants
-            .into_iter()
-            .map(|addr| addr.parse())
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(AlgoKitTransactError::from)?,
-    )
-    .map(Into::into)
-    .map_err(AlgoKitTransactError::from)
-}
-
-#[ffi_func]
-pub fn participants_from_multisig_signature(
-    multisig_signature: MultisigSignature,
-) -> Result<Vec<String>, AlgoKitTransactError> {
-    let multisig: algokit_transact::MultisigSignature = multisig_signature.try_into()?;
-    Ok(multisig
-        .participants()
-        .into_iter()
-        .map(|addr| addr.to_string())
-        .collect())
 }
 
 /// Get the raw 32-byte transaction ID for a transaction.
