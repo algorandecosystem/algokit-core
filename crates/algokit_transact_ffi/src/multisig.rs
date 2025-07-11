@@ -1,7 +1,4 @@
-use crate::{bytebuf_to_bytes, AlgoKitTransactError};
-use ffi_macros::{ffi_func, ffi_record};
-use serde::{Deserialize, Serialize};
-use serde_bytes::ByteBuf;
+use crate::*;
 
 /// Representation of an Algorand multisignature signature.
 ///
@@ -81,7 +78,7 @@ impl TryFrom<MultisigSubsignature> for algokit_transact::MultisigSubsignature {
                 .map_err(|e| {
                     AlgoKitTransactError::DecodingError(format!(
                         "Error while decoding a subsignature: {}",
-                        e.to_string()
+                        e
                     ))
                 })?,
         })
@@ -137,15 +134,15 @@ pub fn participants_from_multisig_signature(
 pub fn apply_multisig_subsignature(
     multisig_signature: MultisigSignature,
     participant: String,
-    signature: ByteBuf,
+    subsignature: &[u8],
 ) -> Result<MultisigSignature, AlgoKitTransactError> {
     let multisignature: algokit_transact::MultisigSignature = multisig_signature.try_into()?;
     let partially_signed_multisignature = multisignature.apply_subsignature(
         participant.parse()?,
-        bytebuf_to_bytes(&signature).map_err(|e| {
-            AlgoKitTransactError::DecodingError(format!(
-                "Error while decoding a subsignature: {}",
-                e.to_string()
+        subsignature.try_into().map_err(|_| {
+            AlgoKitTransactError::EncodingError(format!(
+                "signature should be {} bytes",
+                ALGORAND_SIGNATURE_BYTE_LENGTH
             ))
         })?,
     )?;

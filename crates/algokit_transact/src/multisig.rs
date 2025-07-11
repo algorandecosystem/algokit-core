@@ -168,7 +168,7 @@ impl MultisigSignature {
             .zip(&other.subsignatures)
             .map(|(s1, s2)| MultisigSubsignature {
                 address: s1.address.clone(),
-                signature: s2.signature.clone().or(s1.signature.clone()),
+                signature: s2.signature.or(s1.signature),
             })
             .collect();
 

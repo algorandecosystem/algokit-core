@@ -141,7 +141,7 @@ impl TryFrom<KeyPairAccount> for algokit_transact::KeyPairAccount {
             .map_err(|e| {
                 AlgoKitTransactError::DecodingError(format!(
                     "Error while decoding a public key: {}",
-                    e.to_string()
+                    e
                 ))
             })?;
 
@@ -512,7 +512,7 @@ impl TryFrom<SignedTransaction> for algokit_transact::SignedTransaction {
                 .map_err(|e| {
                     AlgoKitTransactError::DecodingError(format!(
                         "Error while decoding the signature in a signed transaction: {}",
-                        e.to_string()
+                        e
                     ))
                 })?,
             auth_address: signed_tx
