@@ -1,19 +1,32 @@
 use crate::{bytebuf_to_bytes, AlgoKitTransactError};
-
 use ffi_macros::{ffi_func, ffi_record};
 use serde::{Deserialize, Serialize};
 use serde_bytes::ByteBuf;
+
+/// Representation of an Algorand multisignature signature.
+///
+/// This struct mirrors the Rust [`algokit_transact::MultisigSignature`] type, but uses FFI-safe types
+/// for cross-language interoperability.
 #[ffi_record]
 pub struct MultisigSignature {
+    /// The derived address for the multisignature group.
     address: String,
+    /// Multisig version.
     version: u8,
+    /// Minimum number of signatures required.
     threshold: u8,
+    /// List of subsignatures for each participant.
     subsignatures: Vec<MultisigSubsignature>,
 }
 
+/// Representation of a single subsignature in a multisignature transaction.
+///
+/// Each subsignature contains the participant's address and an optional signature.
 #[ffi_record]
 pub struct MultisigSubsignature {
+    /// Address of the participant.
     address: String,
+    /// Optional signature bytes for the participant.
     signature: Option<ByteBuf>,
 }
 
@@ -75,6 +88,11 @@ impl TryFrom<MultisigSubsignature> for algokit_transact::MultisigSubsignature {
     }
 }
 
+/// Creates an empty multisignature signature from a list of participant addresses.
+///
+/// # Errors
+///
+/// Returns [`AlgoKitTransactError`] if any address is invalid or the multisignature parameters are invalid.
 #[ffi_func]
 pub fn empty_multisig_signature(
     version: u8,
@@ -93,6 +111,11 @@ pub fn empty_multisig_signature(
     .map(Into::into)?)
 }
 
+/// Returns the list of participant addresses from a multisignature signature.
+///
+/// # Errors
+///
+/// Returns [`AlgoKitTransactError`] if the multisignature is invalid.
 #[ffi_func]
 pub fn participants_from_multisig_signature(
     multisig_signature: MultisigSignature,
@@ -105,6 +128,11 @@ pub fn participants_from_multisig_signature(
         .collect())
 }
 
+/// Applies a subsignature for a participant to a multisignature signature, replacing any existing signature.
+///
+/// # Errors
+///
+/// Returns [`AlgoKitTransactError`] if the participant address is invalid or not found, or if the signature bytes are invalid.
 #[ffi_func]
 pub fn apply_multisig_subsignature(
     multisig_signature: MultisigSignature,
@@ -124,8 +152,13 @@ pub fn apply_multisig_subsignature(
     Ok(partially_signed_multisignature.into())
 }
 
+/// Merges two multisignature signatures, replacing signatures in the first with those from the second where present.
+///
+/// # Errors
+///
+/// Returns [`AlgoKitTransactError`] if the multisignature parameters or participants do not match.
 #[ffi_func]
-pub fn merge_multignatures(
+pub fn merge_multisignatures(
     multisig_signature_a: MultisigSignature,
     multisig_signature_b: MultisigSignature,
 ) -> Result<MultisigSignature, AlgoKitTransactError> {

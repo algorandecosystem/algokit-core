@@ -1,4 +1,4 @@
-//! Algorand multisignature signature representation and manipulation.
+//! Algorand multisignature representation and manipulation.
 //!
 //! This module provides the [`MultisigSignature`] type, which encapsulates an Algorand multisignature
 //! signature's version, threshold, and participating addresses. The corresponding [`Address`] is derived
@@ -100,6 +100,7 @@ impl MultisigSignature {
         })
     }
 
+    /// Returns the list of participant addresses in this multisignature.
     pub fn participants(&self) -> Vec<Address> {
         self.subsignatures
             .iter()
@@ -107,6 +108,14 @@ impl MultisigSignature {
             .collect()
     }
 
+    /// Applies a subsignature for the given address, replacing any existing signature for that address.
+    ///
+    /// # Disclaimer
+    /// This method will overwrite any existing signature for the given address in `self`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AlgoKitTransactError::InvalidMultisigSignature`] if the address is not found among the participants.
     pub fn apply_subsignature(
         &self,
         address: Address,
@@ -127,6 +136,15 @@ impl MultisigSignature {
         })
     }
 
+    /// Merges another multisignature into this one, replacing signatures in `self` with those from `other` where present.
+    ///
+    /// # Disclaimer
+    /// For each participant, the resulting signature will be taken from `other` if present, otherwise from `self`.
+    /// This operation does not combine signatures; it replaces them.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AlgoKitTransactError::InvalidMultisigSignature`] if the version, threshold, or participants differ.
     pub fn merge(&self, other: &Self) -> Result<Self, AlgoKitTransactError> {
         if self.version != other.version {
             return Err(AlgoKitTransactError::InvalidMultisigSignature(
@@ -163,6 +181,8 @@ impl MultisigSignature {
 }
 
 /// Represents a single subsignature in a multisignature transaction.
+///
+/// Each subsignature contains the address of a participant and an optional signature.
 #[serde_as]
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct MultisigSubsignature {
@@ -199,6 +219,8 @@ impl From<MultisigSignature> for Address {
 
 impl Display for MultisigSignature {
     /// Formats the [`MultisigSignature`] as a base32-encoded Algorand address string.
+    ///
+    /// This uses the derived address from the multisig parameters and participants.
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         write!(f, "{}", Address::from(self.clone()).as_str())
     }
