@@ -199,16 +199,17 @@ pub struct MultisigSubsignature {
 impl From<MultisigSignature> for Address {
     /// Converts a [`MultisigSignature`] into an [`Address`] by hashing the domain separator,
     /// version, threshold, and all participating addresses.
-    fn from(msig: MultisigSignature) -> Address {
+    fn from(multisig: MultisigSignature) -> Address {
         let mut buffer = Vec::with_capacity(
             MULTISIG_DOMAIN_SEPARATOR.len()
                 + 2
-                + msig.subsignatures.len() * ALGORAND_PUBLIC_KEY_BYTE_LENGTH,
+                + multisig.subsignatures.len() * ALGORAND_PUBLIC_KEY_BYTE_LENGTH,
         );
         buffer.extend_from_slice(MULTISIG_DOMAIN_SEPARATOR.as_bytes());
-        buffer.push(msig.version);
-        buffer.push(msig.threshold);
-        msig.participants()
+        buffer.push(multisig.version);
+        buffer.push(multisig.threshold);
+        multisig
+            .participants()
             .iter()
             .for_each(|addr| buffer.extend_from_slice(addr.as_bytes()));
         let digest = hash(&buffer);
