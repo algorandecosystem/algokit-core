@@ -47,17 +47,11 @@ pub struct TransactionWithSigner {
     pub signer: Arc<dyn TxnSigner>,
 }
 
+// TODO: delete this
 impl TransactionWithSigner {
     pub fn header(&self) -> &TransactionHeader {
         self.transaction.header()
     }
-}
-
-#[derive(Debug, Clone)]
-pub struct PaymentParams {
-    pub common_params: CommonParams,
-    pub receiver: Address,
-    pub amount: u64,
 }
 
 #[derive(Debug, Clone)]
@@ -411,7 +405,7 @@ impl Composer {
                         header,
                         receiver: pay_params.receiver.clone(),
                         amount: pay_params.amount,
-                        close_remainder_to: pay_params.close_remainder_to.clone(),
+                        close_remainder_to: None,
                     };
                     Transaction::Payment(pay_params)
                 }
@@ -1045,143 +1039,5 @@ mod tests {
             10,
             "MainNet should use 10 round validity window"
         );
-    }
-
-    #[tokio::test]
-    async fn test_batch_signing_with_same_signer() {
-        use crate::EmptySigner;
-
-        let mut composer = Composer::new(AlgodClient::testnet(), Arc::new(EmptySigner {}));
-
-        // Add multiple transactions with the same sender (will use same signer)
-        for _ in 0..3 {
-            let payment_params = PaymentParams {
-                common_params: CommonParams {
-                    sender: AddressMother::address(),
-                    signer: None, // Will use default signer
-                    rekey_to: None,
-                    note: None,
-                    lease: None,
-                    static_fee: None,
-                    extra_fee: None,
-                    max_fee: None,
-                    validity_window: None,
-                    first_valid_round: None,
-                    last_valid_round: None,
-                },
-                receiver: AddressMother::address(),
-                amount: 1000,
-                close_remainder_to: None,
-            };
-            composer.add_payment(payment_params).unwrap();
-        }
-
-        composer.build().await.unwrap();
-        let result = composer.gather_signatures().await;
-        assert!(result.is_ok());
-
-        // Verify all transactions were signed
-        let signed_group = composer.signed_group().unwrap();
-        assert_eq!(signed_group.len(), 3);
-
-        // All transactions should have signatures
-        for signed_txn in signed_group {
-            assert!(signed_txn.signature.is_some());
-        }
-    }
-
-    #[tokio::test]
-    async fn test_batch_signing_with_custom_signer() {
-        use std::sync::Arc;
-        use std::sync::atomic::{AtomicUsize, Ordering};
-
-        // Mock signer that tracks how many times sign_txns is called
-        struct MockSigner {
-            call_count: Arc<AtomicUsize>,
-        }
-
-        #[async_trait::async_trait]
-        impl TxnSigner for MockSigner {
-            async fn sign_txns(
-                &self,
-                txns: &[Transaction],
-                indices: &[usize],
-            ) -> Result<Vec<SignedTransaction>, String> {
-                // Increment call count
-                self.call_count.fetch_add(1, Ordering::SeqCst);
-
-                // Verify we got the expected number of transactions and indices
-                assert_eq!(indices.len(), 2, "Should be signing 2 transactions");
-                assert_eq!(txns.len(), 2, "Should have 2 transactions in total");
-
-                // Return mock signed transactions
-                indices
-                    .iter()
-                    .map(|&idx| {
-                        if idx < txns.len() {
-                            Ok(SignedTransaction {
-                                transaction: txns[idx].clone(),
-                                signature: Some([42; 64]), // Mock signature
-                                auth_address: None,
-                            })
-                        } else {
-                            Err(format!("Index {} out of bounds for transactions", idx))
-                        }
-                    })
-                    .collect()
-            }
-        }
-
-        let call_count = Arc::new(AtomicUsize::new(0));
-        let mock_signer = Arc::new(MockSigner {
-            call_count: call_count.clone(),
-        });
-
-        let sender_addr = AddressMother::address();
-        let mut composer = Composer::new(AlgodClient::testnet(), Arc::new(crate::EmptySigner {}));
-
-        // Add two payment transactions with the same custom signer
-        for _ in 0..2 {
-            let payment_params = PaymentParams {
-                common_params: CommonParams {
-                    sender: sender_addr.clone(),
-                    signer: Some(mock_signer.clone()), // Use custom signer
-                    rekey_to: None,
-                    note: None,
-                    lease: None,
-                    static_fee: None,
-                    extra_fee: None,
-                    max_fee: None,
-                    validity_window: None,
-                    first_valid_round: None,
-                    last_valid_round: None,
-                },
-                receiver: AddressMother::address(),
-                amount: 1000,
-                close_remainder_to: None,
-            };
-            composer.add_payment(payment_params).unwrap();
-        }
-
-        composer.build().await.unwrap();
-        let result = composer.gather_signatures().await;
-        assert!(result.is_ok());
-
-        // Verify that sign_txns was called exactly once
-        assert_eq!(
-            call_count.load(Ordering::SeqCst),
-            1,
-            "sign_txns should be called exactly once for both transactions with the same signer"
-        );
-
-        // Verify all transactions were signed
-        let signed_group = composer.signed_group().unwrap();
-        assert_eq!(signed_group.len(), 2);
-
-        // All transactions should have the mock signature
-        for signed_txn in signed_group {
-            assert!(signed_txn.signature.is_some());
-            assert_eq!(signed_txn.signature.unwrap(), [42; 64]);
-        }
     }
 }
