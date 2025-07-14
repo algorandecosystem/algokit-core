@@ -1,5 +1,7 @@
 use std::fmt::Display;
 
+use num_bigint::BigUint;
+
 use super::{Type, Value};
 use crate::AlgoKitTransactError;
 
@@ -16,13 +18,7 @@ impl ABIUintType {
                 size
             )));
         }
-        // Current limitation: Value::Number is u64, so we can only handle up to 64 bits
-        if size > 64 {
-            return Err(AlgoKitTransactError::ABITypeError(format!(
-                "uint{} not yet supported (current implementation limited to 64 bits)",
-                size
-            )));
-        }
+
         Ok(ABIUintType { bit_size: size })
     }
 }
@@ -44,7 +40,7 @@ impl Type for ABIUintType {
 
     fn encode(&self, value: Value) -> Result<Vec<u8>, AlgoKitTransactError> {
         let value = match value {
-            Value::Number(n) => n,
+            Value::Uint(n) => n,
             _ => {
                 return Err(AlgoKitTransactError::ABITypeError(format!(
                     "Cannot encode value as uint{}: expected number",
@@ -53,7 +49,7 @@ impl Type for ABIUintType {
             }
         };
 
-        if value >= 2_u64.pow(self.bit_size.into()) {
+        if value >= BigUint.pow(self.bit_size.into()).into() {
             return Err(AlgoKitTransactError::ABITypeError(format!(
                 "{} is too big to fit in uint{}",
                 value, self.bit_size
@@ -61,11 +57,14 @@ impl Type for ABIUintType {
         }
 
         // Convert to bytes
+        value.to_bytes_be();
         let byte_len = (self.bit_size / 8) as usize;
         let mut bytes = vec![0u8; byte_len];
 
         for i in 0..byte_len {
-            bytes[byte_len - 1 - i] = ((value >> (i * 8)) & 0xFF) as u8;
+            bytes[byte_len - 1 - i] = ((value >> (i * 8)) & BigUint::from(0xFFu8))
+                .to_u8()
+                .unwrap();
         }
 
         Ok(bytes)
