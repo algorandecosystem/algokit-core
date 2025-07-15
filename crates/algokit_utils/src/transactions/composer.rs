@@ -10,7 +10,7 @@ use algokit_transact::{
     Transactions,
 };
 use derive_more::Debug;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use crate::genesis_id_is_localnet;
 
@@ -707,17 +707,13 @@ impl Composer {
             ))?;
 
         // Group transactions by signer
-        let mut signer_groups: std::collections::HashMap<*const dyn TransactionSigner, Vec<usize>> =
-            std::collections::HashMap::new();
+        let mut transactions = Vec::new();
+        let mut signer_groups: HashMap<*const dyn TransactionSigner, Vec<usize>> = HashMap::new();
         for (index, txn_with_signer) in transactions_with_signers.iter().enumerate() {
             let signer_ptr = Arc::as_ptr(&txn_with_signer.signer);
             signer_groups.entry(signer_ptr).or_default().push(index);
+            transactions.push(txn_with_signer.transaction.to_owned());
         }
-
-        let transactions: Vec<Transaction> = transactions_with_signers
-            .iter()
-            .map(|transaction_with_signer| transaction_with_signer.transaction.clone())
-            .collect();
 
         let mut signed_transactions = vec![None; transactions_with_signers.len()];
 
@@ -732,7 +728,7 @@ impl Composer {
                 .map_err(ComposerError::SigningError)?;
 
             for (i, &index) in indices.iter().enumerate() {
-                signed_transactions[index] = Some(signed_txns[i].clone());
+                signed_transactions[index] = Some(signed_txns[i].to_owned());
             }
         }
 
