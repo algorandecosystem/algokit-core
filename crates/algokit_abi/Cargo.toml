@@ -1,0 +1,8 @@
+[package]
+name = "algokit_abi"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+thiserror = { workspace = true }
+num-bigint = "0.4"

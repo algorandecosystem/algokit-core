@@ -1,0 +1,33 @@
+use crate::{
+    abi_address_type::encode_address, abi_ufixed_type::encode_ufixed, abi_uint_type::encode_uint,
+    error::ABIError,
+};
+
+use super::abi_value::ABIValue;
+
+// "Uint16" -> ABIType
+// 123 -> ABIValue
+
+// let uint16 = ABIUintType::new(16);
+// uint16::encode(123);
+
+// let tuple = ABITuple::new(ABIUintType::new(16), ABIUintType::new(16));
+
+// let str = ABIString::new();
+// str::encode("abc") | ABIString::encode("abc");
+
+pub enum ABIType {
+    // TODO: validation on creation
+    ABIUintType(u16),
+    ABIUFixedType(u16, u8),
+    ABIAddressType,
+    ABIStaticArrayType(ABIType, u32),
+}
+
+pub fn encode(abi_type: ABIType, value: ABIValue) -> Result<Vec<u8>, ABIError> {
+    match abi_type {
+        ABIType::ABIUintType(_) => Ok(encode_uint(abi_type, value)?),
+        ABIType::ABIUFixedType(_, __) => Ok(encode_ufixed(abi_type, value)?),
+        ABIType::ABIAddressType => Ok(encode_address(abi_type, value)?),
+    }
+}

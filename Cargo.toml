@@ -5,6 +5,7 @@ members = [
   "crates/algokit_transact",
   "crates/algokit_transact_ffi",
   "crates/algokit_utils",
+  "crates/algokit_abi",
   "crates/ffi_macros",
   "crates/ffi_mutex",
   "crates/algod_client",

@@ -32,7 +32,4 @@ pub enum AlgoKitTransactError {
 
     #[error("{0}")]
     InvalidAddress(String),
-
-    #[error("{0}")]
-    ABITypeError(String),
 }

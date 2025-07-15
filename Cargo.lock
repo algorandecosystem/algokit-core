@@ -58,6 +58,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "algokit_abi"
+version = "0.1.0"
+dependencies = [
+ "num-bigint",
+ "thiserror 2.0.7",
+]
+
+[[package]]
 name = "algokit_http_client"
 version = "0.1.0"
 dependencies = [
