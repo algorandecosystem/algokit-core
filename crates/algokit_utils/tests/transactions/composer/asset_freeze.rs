@@ -10,7 +10,7 @@ use algokit_utils::{
 use crate::common::init_test_logging;
 
 #[tokio::test]
-async fn test_asset_freeze_unfreeze_integration() {
+async fn test_asset_freeze_unfreeze() {
     // This integration test validates the complete asset freeze/unfreeze cycle by:
     //
     // SETUP PHASE:
@@ -49,11 +49,11 @@ async fn test_asset_freeze_unfreeze_integration() {
         .address();
 
     let context = fixture.context().expect("Failed to get context");
-    let freeze_account = context
+    let asset_creator_account = context
         .test_account
         .account()
         .expect("Failed to get freeze account");
-    let freeze_addr = freeze_account.address();
+    let asset_creator_addr = asset_creator_account.address();
 
     // Create a composer for the target account that can send transactions
     let target_composer = Composer::new(
@@ -66,7 +66,7 @@ async fn test_asset_freeze_unfreeze_integration() {
     // Step 1: Create an asset with the freeze account set
     let asset_create_params = AssetCreateParams {
         common_params: CommonParams {
-            sender: freeze_addr.clone(),
+            sender: asset_creator_addr.clone(),
             ..Default::default()
         },
         total: 1_000_000,
@@ -76,9 +76,9 @@ async fn test_asset_freeze_unfreeze_integration() {
         unit_name: Some("FTA".to_string()),
         url: None,
         metadata_hash: None,
-        manager: Some(freeze_addr.clone()),
+        manager: Some(asset_creator_addr.clone()),
         reserve: None,
-        freeze: Some(freeze_addr.clone()), // Set freeze account
+        freeze: Some(asset_creator_addr.clone()), // Set freeze account
         clawback: None,
     };
 
@@ -128,7 +128,7 @@ async fn test_asset_freeze_unfreeze_integration() {
     // Step 3: Send some asset units to the target account
     let asset_transfer_params = AssetTransferParams {
         common_params: CommonParams {
-            sender: freeze_addr.clone(),
+            sender: asset_creator_addr.clone(),
             ..Default::default()
         },
         asset_id,
@@ -158,7 +158,7 @@ async fn test_asset_freeze_unfreeze_integration() {
     // Step 4: Freeze the asset for the target account
     let asset_freeze_params = AssetFreezeParams {
         common_params: CommonParams {
-            sender: freeze_addr.clone(),
+            sender: asset_creator_addr.clone(),
             ..Default::default()
         },
         asset_id,
@@ -226,7 +226,7 @@ async fn test_asset_freeze_unfreeze_integration() {
         },
         asset_id,
         amount: 100,
-        receiver: freeze_addr.clone(),
+        receiver: asset_creator_addr.clone(),
     };
 
     let mut composer = target_composer.clone();
@@ -240,6 +240,13 @@ async fn test_asset_freeze_unfreeze_integration() {
         transfer_attempt_result.is_err(),
         "Transfer of frozen asset should fail"
     );
+    // Verify the error is related to the account being marked as non-participating
+    let error_message = transfer_attempt_result.unwrap_err().to_string();
+    assert!(
+        error_message.contains(&format!("asset {} is frozen", asset_id)),
+        "Error should indicate the asset is frozen: {}",
+        error_message
+    );
 
     println!("Confirmed that frozen asset cannot be transferred");
 
@@ -248,7 +255,7 @@ async fn test_asset_freeze_unfreeze_integration() {
     // Step 8: Unfreeze the asset for the target account
     let asset_unfreeze_params = AssetUnfreezeParams {
         common_params: CommonParams {
-            sender: freeze_addr.clone(),
+            sender: asset_creator_addr.clone(),
             ..Default::default()
         },
         asset_id,
@@ -318,7 +325,7 @@ async fn test_asset_freeze_unfreeze_integration() {
         },
         asset_id,
         amount: 100,
-        receiver: freeze_addr.clone(), // Transfer back to freeze account
+        receiver: asset_creator_addr.clone(), // Transfer back to freeze account
     };
 
     let mut composer = target_composer.clone();
