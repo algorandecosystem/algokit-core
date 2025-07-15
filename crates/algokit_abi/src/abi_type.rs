@@ -21,7 +21,12 @@ pub enum ABIType {
     ABIUintType(u16),
     ABIUFixedType(u16, u8),
     ABIAddressType,
-    ABITupleType(Vec<ABIType>),
+    ABITupleType(Vec<ABIType>), // blocked
+    ABIString,
+    ABIByte,
+    ABIBool,
+    ABIStaticArray(ABIType, u16), // blocked
+    ABIDynamicArray(ABIType),     // blocked
 }
 
 pub fn encode(abi_type: ABIType, value: ABIValue) -> Result<Vec<u8>, ABIError> {
