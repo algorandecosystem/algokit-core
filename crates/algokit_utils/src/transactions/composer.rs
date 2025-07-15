@@ -202,14 +202,6 @@ impl Composer {
         }
     }
 
-    pub fn built_group(&self) -> Option<&Vec<TransactionWithSigner>> {
-        self.built_group.as_ref()
-    }
-
-    pub fn signed_group(&self) -> Option<&Vec<SignedTransaction>> {
-        self.signed_group.as_ref()
-    }
-
     #[cfg(feature = "default_http_client")]
     pub fn testnet() -> Self {
         use crate::EmptySigner;
@@ -369,20 +361,20 @@ impl Composer {
         &self.transactions
     }
 
-    pub async fn get_signer(&self, address: Address) -> Option<Arc<dyn TransactionSigner>> {
-        self.signer_getter.get_signer(address).await
+    fn get_signer(&self, address: Address) -> Option<Arc<dyn TransactionSigner>> {
+        self.signer_getter.get_signer(address)
     }
 
-    pub async fn get_suggested_params(&self) -> Result<TransactionParams, ComposerError> {
+    async fn get_suggested_params(&self) -> Result<TransactionParams, ComposerError> {
         self.algod_client
             .transaction_params()
             .await
             .map_err(Into::into)
     }
 
-    pub async fn build(&mut self) -> Result<&mut Self, ComposerError> {
-        if self.built_group.is_some() {
-            return Ok(self);
+    pub async fn build(&mut self) -> Result<&Vec<TransactionWithSigner>, ComposerError> {
+        if let Some(ref group) = self.built_group {
+            return Ok(group);
         }
 
         let suggested_params = self.get_suggested_params().await?;
@@ -674,7 +666,6 @@ impl Composer {
                 let sender_address = transaction.header().sender.clone();
 
                 self.get_signer(sender_address.clone())
-                    .await
                     .ok_or(ComposerError::SigningError(format!(
                         "No signer found for address: {}",
                         sender_address
@@ -702,10 +693,14 @@ impl Composer {
             .collect();
 
         self.built_group = Some(transactions_with_signers);
-        Ok(self)
+        Ok(self.built_group.as_ref().unwrap())
     }
 
-    pub async fn gather_signatures(&mut self) -> Result<&mut Self, ComposerError> {
+    pub async fn gather_signatures(&mut self) -> Result<&Vec<SignedTransaction>, ComposerError> {
+        if let Some(ref group) = self.signed_group {
+            return Ok(group);
+        }
+
         let transactions_with_signers =
             self.built_group.as_ref().ok_or(ComposerError::StateError(
                 "Cannot gather signatures before building the transaction group".to_string(),
@@ -755,11 +750,10 @@ impl Composer {
             .collect();
 
         self.signed_group = Some(final_signed_transactions?);
-
-        Ok(self)
+        Ok(self.signed_group.as_ref().unwrap())
     }
 
-    pub async fn wait_for_confirmation(
+    async fn wait_for_confirmation(
         &self,
         tx_id: &str,
         max_rounds: u64,
@@ -833,7 +827,8 @@ impl Composer {
             .map_err(|e| format!("Failed to build transaction: {}", e))?;
 
         let group_id = {
-            let transactions_with_signers = self.built_group().ok_or("No transactions built")?;
+            let transactions_with_signers =
+                self.built_group.as_ref().ok_or("No transactions built")?;
             if transactions_with_signers.is_empty() {
                 return Err("No transactions to send".into());
             }
@@ -1016,7 +1011,7 @@ mod tests {
 
         composer.build().await.unwrap();
 
-        let built_group = composer.built_group().unwrap();
+        let built_group = composer.built_group.as_ref().unwrap();
         assert_eq!(built_group.len(), 1);
 
         // Single transaction should not have a group ID set
@@ -1050,7 +1045,7 @@ mod tests {
 
         composer.build().await.unwrap();
 
-        let built_group = composer.built_group().unwrap();
+        let built_group = composer.built_group.as_ref().unwrap();
         assert_eq!(built_group.len(), 2);
 
         // Multiple transactions should have group IDs set

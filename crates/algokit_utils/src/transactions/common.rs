@@ -20,18 +20,8 @@ pub trait TransactionSigner: Send + Sync {
     }
 }
 
-#[async_trait]
-pub trait TransactionSignerGetter: Send + Sync {
-    async fn get_signer(&self, address: Address) -> Option<Arc<dyn TransactionSigner>>;
-}
-
-pub struct DefaultSignerGetter;
-
-#[async_trait]
-impl TransactionSignerGetter for DefaultSignerGetter {
-    async fn get_signer(&self, _address: Address) -> Option<Arc<dyn TransactionSigner>> {
-        None
-    }
+pub trait TransactionSignerGetter {
+    fn get_signer(&self, address: Address) -> Option<Arc<dyn TransactionSigner>>;
 }
 
 #[derive(Clone)]
@@ -62,9 +52,8 @@ impl TransactionSigner for EmptySigner {
     }
 }
 
-#[async_trait]
 impl TransactionSignerGetter for EmptySigner {
-    async fn get_signer(&self, _address: Address) -> Option<Arc<dyn TransactionSigner>> {
+    fn get_signer(&self, _address: Address) -> Option<Arc<dyn TransactionSigner>> {
         Some(Arc::new(self.clone()))
     }
 }
