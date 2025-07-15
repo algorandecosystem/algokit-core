@@ -30,12 +30,12 @@ impl Display for ABIUintType {
 }
 
 impl Type for ABIUintType {
-    fn is_dynamic(&self) -> Result<bool, AlgoKitTransactError> {
-        Ok(false)
+    fn is_dynamic(&self) -> bool {
+        false
     }
 
-    fn byte_len(&self) -> Result<u16, AlgoKitTransactError> {
-        Ok(self.bit_size / 8)
+    fn byte_len(&self) -> usize {
+        (self.bit_size / 8) as usize
     }
 
     fn encode(&self, value: Value) -> Result<Vec<u8>, AlgoKitTransactError> {
@@ -49,43 +49,26 @@ impl Type for ABIUintType {
             }
         };
 
-        if value >= BigUint.pow(self.bit_size.into()).into() {
+        if value >= BigUint::from(2u64).pow(self.bit_size.into()).into() {
             return Err(AlgoKitTransactError::ABITypeError(format!(
                 "{} is too big to fit in uint{}",
                 value, self.bit_size
             )));
         }
 
-        // Convert to bytes
-        value.to_bytes_be();
-        let byte_len = (self.bit_size / 8) as usize;
-        let mut bytes = vec![0u8; byte_len];
-
-        for i in 0..byte_len {
-            bytes[byte_len - 1 - i] = ((value >> (i * 8)) & BigUint::from(0xFFu8))
-                .to_u8()
-                .unwrap();
-        }
-
-        Ok(bytes)
+        Ok(super::utils::big_uint_to_bytes(value, self.byte_len()))
     }
 
     fn decode(&self, bytes: Vec<u8>) -> Result<Value, AlgoKitTransactError> {
-        let expected_len = (self.bit_size / 8) as usize;
+        let expected_len = self.byte_len();
         if bytes.len() != expected_len {
             return Err(AlgoKitTransactError::ABITypeError(format!(
-                "byte string must correspond to a uint{}, expected {} bytes, got {}",
-                self.bit_size,
+                "Invalid byte array length, expected {} bytes, got {}",
                 expected_len,
                 bytes.len()
             )));
         }
 
-        let mut result = 0u64;
-        for (i, &byte) in bytes.iter().enumerate() {
-            result |= (byte as u64) << ((bytes.len() - 1 - i) * 8);
-        }
-
-        Ok(Value::Number(result))
+        Ok(Value::Uint(BigUint::from_bytes_be(&bytes)))
     }
 }
