@@ -3,6 +3,22 @@ import { Transaction } from "..";
 
 const jsonString = await Bun.file(path.join(__dirname, "../../../../crates/algokit_transact_ffi/test_data.json")).text();
 
+const NUMERIC_FIELDS = [
+  "fee",
+  "amount",
+  "firstValid",
+  "lastValid",
+  "assetId",
+  "total",
+  "appId",
+  "extraProgramPages",
+  "numUints",
+  "numByteSlices",
+  "voteFirst",
+  "voteLast",
+  "voteKeyDilution",
+];
+
 const defaultReviver = (key: string, value: unknown) => {
   if (Array.isArray(value) && value.every((n) => typeof n === "number")) {
     // assetReferences and appReferences should be arrays of BigInts
@@ -12,24 +28,7 @@ const defaultReviver = (key: string, value: unknown) => {
     return new Uint8Array(value);
   }
 
-  if (
-    typeof value === "number" &&
-    [
-      "fee",
-      "amount",
-      "firstValid",
-      "lastValid",
-      "assetId",
-      "total",
-      "appId",
-      "extraProgramPages",
-      "numUints",
-      "numByteSlices",
-      "voteFirst",
-      "voteLast",
-      "voteKeyDilution",
-    ].includes(key)
-  ) {
+  if (typeof value === "number" && NUMERIC_FIELDS.includes(key)) {
     return BigInt(value);
   }
 
@@ -38,12 +37,12 @@ const defaultReviver = (key: string, value: unknown) => {
   // 1. When serializing, false values may be omitted from JSON
   // 2. When deserializing, missing values default to false
   // The TypeScript WASM bindings expect the field to always be present as a boolean
-  if (key === "assetFreeze" && typeof value === "object" && value !== null) {
-    const assetFreeze = value as any;
-    if (assetFreeze.frozen === undefined) {
-      assetFreeze.frozen = false; // Match WASM bindings' expectations
+  if ((key === "assetFreeze" || key === "assetUnfreeze") && typeof value === "object" && value !== null) {
+    const assetObject = value as any;
+    if (assetObject.frozen === undefined) {
+      assetObject.frozen = false; // Match WASM bindings' expectations
     }
-    return assetFreeze;
+    return assetObject;
   }
 
   return value;
