@@ -25,6 +25,7 @@ jobs:
           ref: ${{ github.ref }}
       - uses: dtolnay/rust-toolchain@master
         with:
+          targets: wasm32-unknown-unknown
           toolchain: 1.85.0
           components: clippy, rustfmt
 
@@ -34,18 +35,11 @@ jobs:
       - name: Install algokit CLI
         run: uv tool install algokit
 
-      - name: Check formatting
-        run: cargo fmt --check
-      - name: Clippy
-        # Run clippy and treat warnings as errors
-        run: cargo clippy -- -D warnings
-      - name: Check
-        run: cargo check
-      - name: Check WASM
-        run: cargo check --no-default-features --features ffi_wasm
-
       - name: Start localnet
         run: algokit localnet start
+
+      - name: Run sanity script
+        run: bash scripts/sanity.sh
 
       - name: Build all crates
         run: cargo build --workspace

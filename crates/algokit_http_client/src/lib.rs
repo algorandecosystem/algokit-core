@@ -1,21 +1,21 @@
 use async_trait::async_trait;
 use std::collections::HashMap;
 
-#[cfg(feature = "ffi_uniffi")]
+#[cfg(not(target_arch = "wasm32"))]
 uniffi::setup_scaffolding!();
 
 #[derive(Debug, thiserror::Error)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
+#[cfg_attr(not(target_arch = "wasm32"), derive(uniffi::Error))]
 pub enum HttpError {
     #[error("HttpError: {0}")]
     RequestError(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Enum))]
-#[cfg_attr(feature = "ffi_wasm", derive(tsify_next::Tsify))]
-#[cfg_attr(feature = "ffi_wasm", tsify(into_wasm_abi, from_wasm_abi))]
-#[cfg_attr(feature = "ffi_wasm", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(not(target_arch = "wasm32"), derive(uniffi::Enum))]
+#[cfg_attr(target_arch = "wasm32", derive(tsify_next::Tsify))]
+#[cfg_attr(target_arch = "wasm32", tsify(into_wasm_abi, from_wasm_abi))]
+#[cfg_attr(target_arch = "wasm32", derive(serde::Serialize, serde::Deserialize))]
 pub enum HttpMethod {
     Get,
     Post,
@@ -41,23 +41,20 @@ impl HttpMethod {
 }
 
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
-#[cfg_attr(feature = "ffi_wasm", derive(tsify_next::Tsify))]
-#[cfg_attr(feature = "ffi_wasm", tsify(into_wasm_abi, from_wasm_abi))]
-#[cfg_attr(feature = "ffi_wasm", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(not(target_arch = "wasm32"), derive(uniffi::Record))]
+#[cfg_attr(target_arch = "wasm32", derive(tsify_next::Tsify))]
+#[cfg_attr(target_arch = "wasm32", tsify(into_wasm_abi, from_wasm_abi))]
+#[cfg_attr(target_arch = "wasm32", derive(serde::Serialize, serde::Deserialize))]
 pub struct HttpResponse {
     pub body: Vec<u8>,
     pub headers: HashMap<String, String>,
 }
 
-#[cfg(not(feature = "ffi_wasm"))]
-#[cfg_attr(feature = "ffi_uniffi", uniffi::export(with_foreign))]
+#[cfg(not(target_arch = "wasm32"))]
+#[cfg_attr(not(target_arch = "wasm32"), uniffi::export(with_foreign))]
 #[async_trait]
 /// This trait must be implemented by any HTTP client that is used by our Rust crates.
 /// It is assumed the implementing type will provide the hostname, port, headers, etc. as needed for each request.
-///
-/// By default, this trait requires the implementing type to be `Send + Sync`.
-/// For WASM targets, enable the `ffi_wasm` feature to use a different implementation that is compatible with WASM.
 pub trait HttpClient: Send + Sync {
     async fn request(
         &self,
@@ -110,8 +107,8 @@ impl DefaultHttpClient {
 }
 
 #[cfg(feature = "default_client")]
-#[cfg_attr(feature = "ffi_wasm", async_trait(?Send))]
-#[cfg_attr(not(feature = "ffi_wasm"), async_trait)]
+#[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
+#[cfg_attr(not(target_arch = "wasm32"), async_trait)]
 impl HttpClient for DefaultHttpClient {
     async fn request(
         &self,
@@ -178,16 +175,16 @@ impl HttpClient for DefaultHttpClient {
 }
 
 // WASM-specific implementations
-#[cfg(feature = "ffi_wasm")]
+#[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
-#[cfg(feature = "ffi_wasm")]
+#[cfg(target_arch = "wasm32")]
 use js_sys::Uint8Array;
 
-#[cfg(feature = "ffi_wasm")]
+#[cfg(target_arch = "wasm32")]
 use tsify_next::Tsify;
 
-#[cfg(feature = "ffi_wasm")]
+#[cfg(target_arch = "wasm32")]
 #[async_trait(?Send)]
 pub trait HttpClient {
     async fn request(
@@ -201,7 +198,7 @@ pub trait HttpClient {
 }
 
 #[wasm_bindgen]
-#[cfg(feature = "ffi_wasm")]
+#[cfg(target_arch = "wasm32")]
 extern "C" {
     /// The interface for the JavaScript-based HTTP client that will be used in WASM environments.
     ///
@@ -219,7 +216,7 @@ extern "C" {
     ) -> Result<JsValue, JsValue>;
 }
 
-#[cfg(feature = "ffi_wasm")]
+#[cfg(target_arch = "wasm32")]
 #[async_trait(?Send)]
 impl HttpClient for WasmHttpClient {
     async fn request(

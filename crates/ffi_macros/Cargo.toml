@@ -9,4 +9,4 @@ proc-macro = true
 [dependencies]
 convert_case = "0.8.0"
 quote = "1.0.39"
-syn = "2.0.99"
+syn = { version = "2.0.99", features = ["full"] }

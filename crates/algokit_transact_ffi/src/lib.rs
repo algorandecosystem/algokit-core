@@ -18,7 +18,7 @@ pub use transactions::KeyRegistrationTransactionFields;
 // thiserror is used to easily create errors than can be propagated to the language bindings
 // UniFFI will create classes for errors (i.e. `MsgPackError.EncodingError` in Python)
 #[derive(Debug, thiserror::Error)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
+#[cfg_attr(not(target_arch = "wasm32"), derive(uniffi::Error))]
 pub enum AlgoKitTransactError {
     #[error("EncodingError: {0}")]
     EncodingError(String),
@@ -33,7 +33,7 @@ pub enum AlgoKitTransactError {
 // For now, in WASM we just throw the string, hence the error
 // type being included in the error string above
 // Perhaps in the future we could use a class like in UniFFI
-#[cfg(feature = "ffi_wasm")]
+#[cfg(target_arch = "wasm32")]
 impl From<AlgoKitTransactError> for JsValue {
     fn from(e: AlgoKitTransactError) -> Self {
         JsValue::from(e.to_string())
@@ -72,22 +72,22 @@ impl From<algokit_transact::AlgoKitTransactError> for AlgoKitTransactError {
     }
 }
 
-#[cfg(feature = "ffi_uniffi")]
+#[cfg(not(target_arch = "wasm32"))]
 use uniffi::{self};
 
-#[cfg(feature = "ffi_uniffi")]
+#[cfg(not(target_arch = "wasm32"))]
 uniffi::setup_scaffolding!();
 
-#[cfg(feature = "ffi_wasm")]
+#[cfg(target_arch = "wasm32")]
 use js_sys::Uint8Array;
-#[cfg(feature = "ffi_wasm")]
+#[cfg(target_arch = "wasm32")]
 use tsify_next::Tsify;
-#[cfg(feature = "ffi_wasm")]
+#[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
 // We need to use ByteBuf directly in the structs to get Uint8Array in TSify
 // custom_type! and this impl is used to convert the ByteBuf to a Vec<u8> for the UniFFI bindings
-#[cfg(feature = "ffi_uniffi")]
+#[cfg(not(target_arch = "wasm32"))]
 impl UniffiCustomTypeConverter for ByteBuf {
     type Builtin = Vec<u8>;
 
@@ -100,15 +100,15 @@ impl UniffiCustomTypeConverter for ByteBuf {
     }
 }
 
-#[cfg(feature = "ffi_uniffi")]
+#[cfg(not(target_arch = "wasm32"))]
 uniffi::custom_type!(ByteBuf, Vec<u8>);
 
 // This becomes an enum in UniFFI language bindings and a
 // string literal union in TS
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-#[cfg_attr(feature = "ffi_wasm", derive(Tsify))]
-#[cfg_attr(feature = "ffi_wasm", tsify(into_wasm_abi, from_wasm_abi))]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Enum))]
+#[cfg_attr(target_arch = "wasm32", derive(Tsify))]
+#[cfg_attr(target_arch = "wasm32", tsify(into_wasm_abi, from_wasm_abi))]
+#[cfg_attr(not(target_arch = "wasm32"), derive(uniffi::Enum))]
 pub enum TransactionType {
     Payment,
     AssetTransfer,
@@ -603,7 +603,7 @@ pub fn encode_transaction(tx: Transaction) -> Result<Vec<u8>, AlgoKitTransactErr
 ///
 /// # Returns
 /// A collection of MsgPack encoded bytes or an error if encoding fails.
-#[cfg(feature = "ffi_wasm")]
+#[cfg(target_arch = "wasm32")]
 #[ffi_func]
 /// Encode transactions with the domain separation (e.g. "TX") prefix
 pub fn encode_transactions(txs: Vec<Transaction>) -> Result<Vec<Uint8Array>, AlgoKitTransactError> {
@@ -619,7 +619,7 @@ pub fn encode_transactions(txs: Vec<Transaction>) -> Result<Vec<Uint8Array>, Alg
 ///
 /// # Returns
 /// A collection of MsgPack encoded bytes or an error if encoding fails.
-#[cfg(not(feature = "ffi_wasm"))]
+#[cfg(not(target_arch = "wasm32"))]
 #[ffi_func]
 pub fn encode_transactions(txs: Vec<Transaction>) -> Result<Vec<Vec<u8>>, AlgoKitTransactError> {
     txs.into_iter().map(encode_transaction).collect()
@@ -653,7 +653,7 @@ pub fn decode_transaction(encoded_tx: &[u8]) -> Result<Transaction, AlgoKitTrans
 ///
 /// # Returns
 /// A collection of decoded transactions or an error if decoding fails.
-#[cfg(feature = "ffi_wasm")]
+#[cfg(target_arch = "wasm32")]
 #[ffi_func]
 pub fn decode_transactions(
     encoded_txs: Vec<Uint8Array>,
@@ -671,7 +671,7 @@ pub fn decode_transactions(
 ///
 /// # Returns
 /// A collection of decoded transactions or an error if decoding fails.
-#[cfg(not(feature = "ffi_wasm"))]
+#[cfg(not(target_arch = "wasm32"))]
 #[ffi_func]
 pub fn decode_transactions(
     encoded_txs: Vec<Vec<u8>>,
@@ -854,7 +854,7 @@ pub fn decode_signed_transaction(bytes: &[u8]) -> Result<SignedTransaction, Algo
 ///
 /// # Returns
 /// A collection of decoded signed transactions or an error if decoding fails.
-#[cfg(feature = "ffi_wasm")]
+#[cfg(target_arch = "wasm32")]
 #[ffi_func]
 pub fn decode_signed_transactions(
     encoded_signed_txs: Vec<Uint8Array>,
@@ -872,7 +872,7 @@ pub fn decode_signed_transactions(
 ///
 /// # Returns
 /// A collection of decoded signed transactions or an error if decoding fails.
-#[cfg(not(feature = "ffi_wasm"))]
+#[cfg(not(target_arch = "wasm32"))]
 #[ffi_func]
 pub fn decode_signed_transactions(
     encoded_signed_txs: Vec<Vec<u8>>,
@@ -909,7 +909,7 @@ pub fn encode_signed_transaction(
 ///
 /// # Returns
 /// A collection of MsgPack encoded bytes or an error if encoding fails.
-#[cfg(feature = "ffi_wasm")]
+#[cfg(target_arch = "wasm32")]
 #[ffi_func]
 pub fn encode_signed_transactions(
     signed_txs: Vec<SignedTransaction>,
@@ -929,7 +929,7 @@ pub fn encode_signed_transactions(
 ///
 /// # Returns
 /// A collection of MsgPack encoded bytes or an error if encoding fails.
-#[cfg(not(feature = "ffi_wasm"))]
+#[cfg(not(target_arch = "wasm32"))]
 #[ffi_func]
 pub fn encode_signed_transactions(
     signed_txs: Vec<SignedTransaction>,

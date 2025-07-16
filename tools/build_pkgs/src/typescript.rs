@@ -37,7 +37,7 @@ impl Display for WasmPackMode {
 fn wasm_pack(package: &Package, target: &WasmPackTarget, dir: &Path) -> Result<Output> {
     let crate_name = package.crate_name();
     let command = format!(
-        "bunx wasm-pack build --out-dir ../../packages/typescript/{package}/pkg --mode normal --release --target {target} ../../../crates/{crate_name} --no-default-features --features ffi_wasm"
+        "bunx wasm-pack build --out-dir ../../packages/typescript/{package}/pkg --mode normal --release --target {target} ../../../crates/{crate_name}"
     );
 
     let mut env_vars = HashMap::new();

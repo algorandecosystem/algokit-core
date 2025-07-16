@@ -16,8 +16,8 @@ pub fn ffi_func(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let output = quote! {
         #(#attrs)*
-        #[cfg_attr(feature = "ffi_wasm", wasm_bindgen(js_name = #js_name))]
-        #[cfg_attr(feature = "ffi_uniffi", uniffi::export)]
+        #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = #js_name))]
+        #[cfg_attr(not(target_arch = "wasm32"), uniffi::export)]
         #vis #sig #body
     };
 
@@ -38,13 +38,13 @@ pub fn ffi_record(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let struct_attrs = quote! {
         #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-        #[cfg_attr(feature = "ffi_wasm", derive(Tsify))]
+        #[cfg_attr(target_arch = "wasm32", derive(Tsify))]
         #[cfg_attr(
-            feature = "ffi_wasm",
+            target_arch = "wasm32",
             tsify(into_wasm_abi, from_wasm_abi, large_number_types_as_bigints)
         )]
-        #[cfg_attr(feature = "ffi_wasm", serde(rename_all = "camelCase"))]
-        #[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
+        #[cfg_attr(target_arch = "wasm32", serde(rename_all = "camelCase"))]
+        #[cfg_attr(not(target_arch = "wasm32"), derive(uniffi::Record))]
     };
 
     // Combine original attributes with new ones
@@ -62,13 +62,13 @@ pub fn ffi_enum(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let enum_attrs = quote! {
         #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-        #[cfg_attr(feature = "ffi_wasm", derive(Tsify))]
+        #[cfg_attr(target_arch = "wasm32", derive(Tsify))]
         #[cfg_attr(
-            feature = "ffi_wasm",
+            target_arch = "wasm32",
             tsify(into_wasm_abi, from_wasm_abi, large_number_types_as_bigints)
         )]
-        #[cfg_attr(feature = "ffi_wasm", serde(rename_all = "camelCase"))]
-        #[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Enum))]
+        #[cfg_attr(target_arch = "wasm32", serde(rename_all = "camelCase"))]
+        #[cfg_attr(not(target_arch = "wasm32"), derive(uniffi::Enum))]
     };
 
     // Combine original attributes with new ones
@@ -91,14 +91,14 @@ fn is_option_type(field: &Field) -> bool {
 
 fn add_option_field_attributes(field: &mut Field) {
     let wasm_attr: syn::Attribute =
-        syn::parse_quote!(#[cfg_attr(feature = "ffi_wasm", tsify(optional))]);
+        syn::parse_quote!(#[cfg_attr(target_arch = "wasm32", tsify(optional))]);
     field.attrs.push(wasm_attr);
 
     let field_name = field.ident.to_token_stream().to_string();
 
     if field_name != "genesis_id" && field_name != "genesis_hash" {
         let uniffi_attr: syn::Attribute =
-            syn::parse_quote!(#[cfg_attr(feature = "ffi_uniffi", uniffi(default = None))]);
+            syn::parse_quote!(#[cfg_attr(not(target_arch = "wasm32"), uniffi(default = None))]);
         field.attrs.push(uniffi_attr);
     }
 }

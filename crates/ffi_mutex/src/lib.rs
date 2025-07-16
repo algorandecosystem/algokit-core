@@ -1,7 +1,7 @@
-#[cfg(feature = "ffi_uniffi")]
+#[cfg(not(target_arch = "wasm32"))]
 pub type InnerMutex<T> = tokio::sync::Mutex<T>;
 
-#[cfg(feature = "ffi_wasm")]
+#[cfg(target_arch = "wasm32")]
 pub type InnerMutex<T> = std::cell::RefCell<T>;
 
 /// A wrapper around `tokio::sync::Mutex` (for uniffi) or `std::cell::RefCell` (for WASM)
@@ -16,29 +16,29 @@ pub struct FfiMutex<T>(InnerMutex<T>);
 
 impl<T> FfiMutex<T> {
     pub fn new(value: T) -> Self {
-        #[cfg(feature = "ffi_uniffi")]
+        #[cfg(not(target_arch = "wasm32"))]
         return Self(tokio::sync::Mutex::new(value));
 
-        #[cfg(feature = "ffi_wasm")]
+        #[cfg(target_arch = "wasm32")]
         return Self(std::cell::RefCell::new(value));
     }
 
-    #[cfg(feature = "ffi_uniffi")]
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn blocking_lock(&self) -> tokio::sync::MutexGuard<'_, T> {
         self.0.blocking_lock()
     }
 
-    #[cfg(feature = "ffi_wasm")]
+    #[cfg(target_arch = "wasm32")]
     pub fn blocking_lock(&self) -> std::cell::RefMut<'_, T> {
         self.0.borrow_mut()
     }
 
-    #[cfg(feature = "ffi_uniffi")]
+    #[cfg(not(target_arch = "wasm32"))]
     pub async fn lock(&self) -> tokio::sync::MutexGuard<'_, T> {
         self.0.lock().await
     }
 
-    #[cfg(feature = "ffi_wasm")]
+    #[cfg(target_arch = "wasm32")]
     pub async fn lock(&self) -> std::cell::RefMut<'_, T> {
         self.0.borrow_mut()
     }

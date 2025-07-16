@@ -23,7 +23,7 @@ serde_repr = "^0.1"
 serde_bytes = "^0.11"
 
 # HTTP client
-algokit_http_client = { path = "../algokit_http_client", features = ["ffi_uniffi"] }
+algokit_http_client = { path = "../algokit_http_client" }
 url = "^2.5"
 
 # AlgoKit dependencies for msgpack and signed transactions
@@ -41,3 +41,7 @@ uuid = { version = "^1.0", features = ["v4"] }
 [dev-dependencies]
 tokio = { version = "1.0", features = ["full"] }
 tokio-test = "^0.4"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.2.15", features = ["js"] }
+

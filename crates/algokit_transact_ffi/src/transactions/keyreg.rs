@@ -4,7 +4,7 @@
 //! transactions that can be used across language bindings.
 use crate::*;
 
-#[cfg(feature = "ffi_wasm")]
+#[cfg(target_arch = "wasm32")]
 use tsify_next::Tsify;
 
 #[ffi_record]

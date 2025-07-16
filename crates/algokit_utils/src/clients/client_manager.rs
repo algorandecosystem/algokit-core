@@ -5,19 +5,19 @@ use crate::clients::network_client::{
 use algod_client::AlgodClient;
 use algokit_http_client::DefaultHttpClient;
 use base64::{Engine, engine::general_purpose};
+use ffi_mutex::FfiMutex;
 use std::{env, sync::Arc};
-use tokio::sync::RwLock;
 
 pub struct ClientManager {
     algod: AlgodClient,
-    cached_network_details: RwLock<Option<Arc<NetworkDetails>>>,
+    cached_network_details: FfiMutex<Option<Arc<NetworkDetails>>>,
 }
 
 impl ClientManager {
     pub fn new(config: AlgoConfig) -> Self {
         Self {
             algod: Self::get_algod_client(&config.algod_config),
-            cached_network_details: RwLock::new(None),
+            cached_network_details: FfiMutex::new(None),
         }
     }
 
@@ -30,14 +30,14 @@ impl ClientManager {
     ) -> Result<Arc<NetworkDetails>, Box<dyn std::error::Error + Send + Sync>> {
         // Fast path: multiple readers can access concurrently
         {
-            let cached = self.cached_network_details.read().await;
+            let cached = self.cached_network_details.lock().await;
             if let Some(ref details) = *cached {
                 return Ok(Arc::clone(details));
             }
         }
 
         // Slow path: exclusive write access for initialization
-        let mut cached = self.cached_network_details.write().await;
+        let mut cached = self.cached_network_details.lock().await;
 
         // Double-check: someone else might have initialized while we waited for write lock
         if let Some(ref details) = *cached {
@@ -179,7 +179,7 @@ mod tests {
         let manager = ClientManager::new(config);
 
         // Cache should be initially empty
-        let cache = manager.cached_network_details.try_read().unwrap();
+        let cache = manager.cached_network_details.blocking_lock();
         assert!(cache.is_none());
     }
 
@@ -199,7 +199,7 @@ mod tests {
         assert!(manager.network().await.is_err());
 
         // Cache should remain empty after errors
-        let cache = manager.cached_network_details.read().await;
+        let cache = manager.cached_network_details.lock().await;
         assert!(cache.is_none());
     }
 

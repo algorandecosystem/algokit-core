@@ -10,11 +10,6 @@ Foreign Function Interface bindings for `algokit_transact`, enabling usage from 
 - **WebAssembly Bindings** - For JavaScript/TypeScript usage
 - **C-compatible ABI** - For integration with C/C++ and other systems languages
 
-## Features
-
-- `ffi_uniffi` (default) - UniFFI-based bindings
-- `ffi_wasm` - WebAssembly/JavaScript bindings
-
 ## Crate Types
 
 Built as both:
@@ -49,13 +44,13 @@ The complete API documentation with all FFI types, functions, and binding exampl
 ### UniFFI Bindings
 
 ```bash
-cargo build --package algokit_transact_ffi --features ffi_uniffi
+cargo build --package algokit_transact_ffi
 ```
 
 ### WebAssembly Bindings
 
 ```bash
-cargo build --package algokit_transact_ffi --features ffi_wasm
+cargo build --package algokit_transact_ffi --target wasm32-unknown-unknown
 ```
 
 ## Language Support
