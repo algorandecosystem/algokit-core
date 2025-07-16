@@ -1,6 +1,6 @@
 use algod_client::AlgodClient;
 use algokit_transact::{
-    ALGORAND_SECRET_KEY_BYTE_LENGTH, ALGORAND_SIGNATURE_BYTE_LENGTH, Account, Address,
+    ALGORAND_SECRET_KEY_BYTE_LENGTH, ALGORAND_SIGNATURE_BYTE_LENGTH, KeyPairAccount, Address,
     AlgorandMsgpack, PaymentTransactionBuilder, SignedTransaction, Transaction,
     TransactionHeaderBuilder,
 };
@@ -75,7 +75,7 @@ impl TransactionSigner for TestAccount {
     ) -> Result<Vec<SignedTransaction>, String> {
         let signing_key = SigningKey::from_bytes(&self.secret_key);
         let verifying_key: VerifyingKey = (&signing_key).into();
-        let signer_account = Account::from_pubkey(&verifying_key.to_bytes());
+        let signer_account = KeyPairAccount::from_pubkey(&verifying_key.to_bytes());
         let signer_address = signer_account.address();
 
         indices
@@ -132,10 +132,10 @@ impl TestAccount {
     }
 
     /// Get the account's address using algokit_transact
-    pub fn account(&self) -> Result<Account, Box<dyn std::error::Error + Send + Sync>> {
+    pub fn account(&self) -> Result<KeyPairAccount, Box<dyn std::error::Error + Send + Sync>> {
         let signing_key = SigningKey::from_bytes(&self.secret_key);
         let public_key: VerifyingKey = (&signing_key).into();
-        let account = Account::from_pubkey(&public_key.to_bytes());
+        let account = KeyPairAccount::from_pubkey(&public_key.to_bytes());
         Ok(account)
     }
 

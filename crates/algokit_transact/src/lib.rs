@@ -1,4 +1,4 @@
-mod account;
+mod keypair_account;
 mod address;
 pub mod constants;
 mod error;
@@ -8,7 +8,7 @@ mod transactions;
 mod utils;
 
 // Re-export all the public items
-pub use account::Account;
+pub use keypair_account::KeyPairAccount;
 pub use address::Address;
 pub use constants::*;
 pub use error::AlgoKitTransactError;
