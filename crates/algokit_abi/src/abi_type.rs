@@ -1,39 +1,30 @@
 use crate::{
-    abi_address_type::encode_address, abi_ufixed_type::encode_ufixed, abi_uint_type::encode_uint,
-    error::ABIError,
+    abi_address_type::encode_address, abi_tuple_type::encode_tuple, abi_ufixed_type::encode_ufixed,
+    abi_uint_type::encode_uint, error::ABIError,
 };
 
 use super::abi_value::ABIValue;
-
-// "Uint16" -> ABIType
-// 123 -> ABIValue
-
-// let uint16 = ABIUintType::new(16);
-// uint16::encode(123);
-
-// let tuple = ABITuple::new(ABIUintType::new(16), ABIUintType::new(16));
-
-// let str = ABIString::new();
-// str::encode("abc") | ABIString::encode("abc");
 
 pub enum ABIType {
     // TODO: validation on creation
     ABIUintType(u16),
     ABIUFixedType(u16, u8),
     ABIAddressType,
-    ABITupleType(Vec<ABIType>), // blocked
+    ABITupleType(Vec<ABIType>),
     ABIString,
     ABIByte,
     ABIBool,
-    ABIStaticArray(ABIType, u16), // blocked
-    ABIDynamicArray(ABIType),     // blocked
+    ABIStaticArray(Box<ABIType>, u16), // blocked
+    ABIDynamicArray(Box<ABIType>),     // blocked
 }
 
-pub fn encode(abi_type: ABIType, value: ABIValue) -> Result<Vec<u8>, ABIError> {
+pub fn encode(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
     match abi_type {
         ABIType::ABIUintType(_) => Ok(encode_uint(abi_type, value)?),
         ABIType::ABIUFixedType(_, __) => Ok(encode_ufixed(abi_type, value)?),
         ABIType::ABIAddressType => Ok(encode_address(abi_type, value)?),
+        ABIType::ABITupleType(_) => Ok(encode_tuple(abi_type, value)?),
+        _ => return Err(ABIError::EncodingError("Not implemented".to_string())),
     }
 }
 
@@ -46,6 +37,6 @@ pub fn is_dynamic(abi_type: &ABIType) -> bool {
     }
 }
 
-pub fn get_name(abi_type: ABIType) -> String {
+pub fn get_name(abi_type: &ABIType) -> String {
     "Not implemented".to_string()
 }

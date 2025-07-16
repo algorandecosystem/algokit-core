@@ -1,6 +1,6 @@
 use crate::{error::ABIError, ABIType, ABIValue};
 
-pub fn encode_address(abi_type: ABIType, value: ABIValue) -> Result<Vec<u8>, ABIError> {
+pub fn encode_address(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
     match abi_type {
         ABIType::ABIAddressType => {
             let value = match value {

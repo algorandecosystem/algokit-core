@@ -3,7 +3,7 @@ use num_bigint::BigUint;
 use super::ABIValue;
 use crate::{abi_type::ABIType, error::ABIError};
 
-pub fn encode_uint(abi_type: ABIType, value: ABIValue) -> Result<Vec<u8>, ABIError> {
+pub fn encode_uint(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
     match abi_type {
         ABIType::ABIUintType(bit_size) => {
             let value = match value {
@@ -16,7 +16,7 @@ pub fn encode_uint(abi_type: ABIType, value: ABIValue) -> Result<Vec<u8>, ABIErr
                 }
             };
 
-            if value >= BigUint::from(2u64).pow(bit_size.into()).into() {
+            if value >= &BigUint::from(2u64).pow(*bit_size as u32) {
                 return Err(ABIError::EncodingError(format!(
                     "{} is too big to fit in uint{}",
                     value, bit_size
@@ -24,7 +24,7 @@ pub fn encode_uint(abi_type: ABIType, value: ABIValue) -> Result<Vec<u8>, ABIErr
             }
 
             Ok(super::utils::extend_bytes_to_length(
-                value.to_bytes_be(),
+                &value.to_bytes_be(),
                 (bit_size / 8) as usize,
             ))
         }
