@@ -20,9 +20,7 @@ pub fn encode_bool(abi_type: ABIType, value: ABIValue) -> Result<Vec<u8>, ABIErr
                 Ok(vec![0x00]) // false -> 0
             }
         }
-        _ => Err(ABIError::EncodingError(
-            "Expected ABIBoolType".to_string(),
-        )),
+        _ => Err(ABIError::EncodingError("Expected ABIBoolType".to_string())),
     }
 }
 
@@ -45,9 +43,7 @@ pub fn decode_bool(abi_type: ABIType, bytes: Vec<u8>) -> Result<ABIValue, ABIErr
                 )),
             }
         }
-        _ => Err(ABIError::DecodingError(
-            "Expected ABIBoolType".to_string(),
-        )),
+        _ => Err(ABIError::DecodingError("Expected ABIBoolType".to_string())),
     }
 }
 
@@ -108,7 +104,10 @@ mod tests {
 
         let result = encode_bool(abi_type, value);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Cannot encode value as bool"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Cannot encode value as bool"));
     }
 
     #[test]
@@ -118,7 +117,10 @@ mod tests {
 
         let result = decode_bool(abi_type, bytes);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Bool string must be 1 byte long"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Bool string must be 1 byte long"));
     }
 
     #[test]
@@ -128,7 +130,10 @@ mod tests {
 
         let result = decode_bool(abi_type, bytes);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Boolean could not be decoded"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Boolean could not be decoded"));
     }
 
     #[test]
@@ -138,6 +143,9 @@ mod tests {
 
         let result = decode_bool(abi_type, bytes);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Expected ABIBoolType"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Expected ABIBoolType"));
     }
 }

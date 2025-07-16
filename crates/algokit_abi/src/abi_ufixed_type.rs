@@ -16,7 +16,7 @@ pub fn encode_ufixed(abi_type: ABIType, value: ABIValue) -> Result<Vec<u8>, ABIE
                 }
             };
 
-            if value >= BigUint::from(2u64).pow(bit_size.into()).into() {
+            if value >= BigUint::from(2u64).pow(bit_size.into()) {
                 return Err(ABIError::EncodingError(format!(
                     "{} is too big to fit in ufixed{}x{}",
                     value, bit_size, precision
@@ -24,7 +24,7 @@ pub fn encode_ufixed(abi_type: ABIType, value: ABIValue) -> Result<Vec<u8>, ABIE
             }
 
             Ok(super::utils::extend_bytes_to_length(
-                value.to_bytes_be(),
+                &value.to_bytes_be(),
                 (bit_size / 8) as usize,
             ))
         }

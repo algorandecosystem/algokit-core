@@ -30,9 +30,7 @@ pub fn encode_byte(abi_type: ABIType, value: ABIValue) -> Result<Vec<u8>, ABIErr
 
             Ok(vec![byte_value])
         }
-        _ => Err(ABIError::EncodingError(
-            "Expected ABIByteType".to_string(),
-        )),
+        _ => Err(ABIError::EncodingError("Expected ABIByteType".to_string())),
     }
 }
 
@@ -49,9 +47,7 @@ pub fn decode_byte(abi_type: ABIType, bytes: Vec<u8>) -> Result<ABIValue, ABIErr
 
             Ok(ABIValue::Uint(num_bigint::BigUint::from(bytes[0])))
         }
-        _ => Err(ABIError::DecodingError(
-            "Expected ABIByteType".to_string(),
-        )),
+        _ => Err(ABIError::DecodingError("Expected ABIByteType".to_string())),
     }
 }
 
@@ -129,7 +125,10 @@ mod tests {
 
         let result = encode_byte(abi_type, value);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("cannot be encoded into a byte"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("cannot be encoded into a byte"));
     }
 
     #[test]
@@ -139,7 +138,10 @@ mod tests {
 
         let result = encode_byte(abi_type, value);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Cannot encode value as byte"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Cannot encode value as byte"));
     }
 
     #[test]
@@ -149,7 +151,10 @@ mod tests {
 
         let result = decode_byte(abi_type, bytes);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Byte string must be 1 byte long"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Byte string must be 1 byte long"));
     }
 
     #[test]
@@ -159,6 +164,9 @@ mod tests {
 
         let result = decode_byte(abi_type, bytes);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Expected ABIByteType"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Expected ABIByteType"));
     }
 }
