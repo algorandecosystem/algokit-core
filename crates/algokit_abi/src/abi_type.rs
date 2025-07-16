@@ -47,5 +47,5 @@ pub fn is_dynamic(abi_type: &ABIType) -> bool {
 }
 
 pub fn get_name(abi_type: ABIType) -> String {
-    "Not implemented"
+    "Not implemented".to_string()
 }

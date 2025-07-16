@@ -1,26 +1,31 @@
 use std::collections::HashMap;
 
 use crate::{
-    abi_type::{encode, is_dynamic},
+    abi_type::{encode, get_name, is_dynamic},
     error::ABIError,
     utils::extend_bytes_to_length,
     ABIType, ABIValue,
 };
+
+const LENGTH_ENCODE_BYTE_SIZE: usize = 2;
+const MAX_LENGTH: u16 = 65_535 - 1; // 2^16 - 1
 
 pub fn encode_tuple(abi_type: ABIType, value: ABIValue) -> Result<Vec<u8>, ABIError> {
     let child_types = match abi_type {
         ABIType::ABITupleType(child_types) => child_types,
         _ => return Err(ABIError::EncodingError("Expected ABITupleType".to_string())),
     };
-    let value = match value {
+    let values = match value {
         ABIValue::Array(n) => n,
         _ => {
             return Err(ABIError::EncodingError(format!(
-                "Cannot encode value",
-                // TODO: error including tuple type name (to_string)
+                "Cannot encode value as {}",
+                get_name(abi_type)
             )));
         }
     };
+
+    // TODO: do we need to check for values.len() < u16::MAX?
 
     let mut heads: Vec<Vec<u8>> = Vec::new();
     let mut tails: Vec<Vec<u8>> = Vec::new();
@@ -32,12 +37,14 @@ pub fn encode_tuple(abi_type: ABIType, value: ABIValue) -> Result<Vec<u8>, ABIEr
         if is_dynamic(&child_type) {
             is_dynamic_index.insert(i, true);
             heads.push(vec![0, 0]);
-            tails.push(encode(child_type, value[i])?);
+            tails.push(encode(child_type, values[i])?);
         } else {
             match child_type {
-                ABIType::ABIBool => {}
+                ABIType::ABIBool => {
+                    // TODO: handle bool
+                }
                 _ => {
-                    heads.push(encode(child_type, value[i])?);
+                    heads.push(encode(child_type, values[i])?);
                 }
             }
             is_dynamic_index.insert(i, false);
@@ -46,14 +53,15 @@ pub fn encode_tuple(abi_type: ABIType, value: ABIValue) -> Result<Vec<u8>, ABIEr
     }
 
     let head_length: usize = heads.iter().map(|e| e.len()).sum();
-    let tail_length = 0;
+    let mut tail_length = 0;
 
     for i in 0..child_types.len() {
         match is_dynamic_index[&i] {
             true => {
                 let head_value = head_length + tail_length;
-                // TODO: throw error if head_value > u16 MAX
-                heads[i] = extend_bytes_to_length(head_value.to_be_bytes().to_vec(), 2);
+                // TODO: discuss that the check for u16::MAX is skipped
+                heads[i] =
+                    extend_bytes_to_length(&head_value.to_be_bytes(), LENGTH_ENCODE_BYTE_SIZE);
             }
             _ => {
                 tail_length += tails[i].len();
