@@ -558,7 +558,7 @@ impl Composer {
                     Transaction::AssetFreeze(algokit_transact::AssetFreezeTransactionFields {
                         header,
                         asset_id: asset_freeze_params.asset_id,
-                        freeze_target: asset_freeze_params.freeze_target.clone(),
+                        freeze_target: asset_freeze_params.target_address.clone(),
                         frozen: true,
                     })
                 }
@@ -566,7 +566,7 @@ impl Composer {
                     Transaction::AssetFreeze(algokit_transact::AssetFreezeTransactionFields {
                         header,
                         asset_id: asset_unfreeze_params.asset_id,
-                        freeze_target: asset_unfreeze_params.freeze_target.clone(),
+                        freeze_target: asset_unfreeze_params.target_address.clone(),
                         frozen: false,
                     })
                 }

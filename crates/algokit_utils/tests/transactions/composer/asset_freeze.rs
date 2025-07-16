@@ -162,7 +162,7 @@ async fn test_asset_freeze_unfreeze() {
             ..Default::default()
         },
         asset_id,
-        freeze_target: target_addr.clone(),
+        target_address: target_addr.clone(),
     };
 
     let mut composer = context.composer.clone();
@@ -190,7 +190,7 @@ async fn test_asset_freeze_unfreeze() {
         Transaction::AssetFreeze(txn) => {
             assert_eq!(txn.asset_id, asset_id, "Asset ID should match");
             assert_eq!(txn.freeze_target, target_addr, "Freeze target should match");
-            assert_eq!(txn.frozen, true, "Asset should be frozen");
+            assert!(txn.frozen, "Asset should be frozen");
         }
         _ => panic!("Transaction should be an AssetFreeze transaction"),
     }
@@ -240,10 +240,10 @@ async fn test_asset_freeze_unfreeze() {
         transfer_attempt_result.is_err(),
         "Transfer of frozen asset should fail"
     );
-    // Verify the error is related to the account being marked as non-participating
+    // Verify the error is related to the asset being frozen
     let error_message = transfer_attempt_result.unwrap_err().to_string();
     assert!(
-        error_message.contains(&format!("asset {} is frozen", asset_id)),
+        error_message.contains(&format!("asset {} frozen", asset_id)),
         "Error should indicate the asset is frozen: {}",
         error_message
     );
@@ -259,7 +259,7 @@ async fn test_asset_freeze_unfreeze() {
             ..Default::default()
         },
         asset_id,
-        freeze_target: target_addr.clone(),
+        target_address: target_addr.clone(),
     };
 
     let mut composer = context.composer.clone();
@@ -287,7 +287,7 @@ async fn test_asset_freeze_unfreeze() {
         Transaction::AssetFreeze(txn) => {
             assert_eq!(txn.asset_id, asset_id, "Asset ID should match");
             assert_eq!(txn.freeze_target, target_addr, "Freeze target should match");
-            assert_eq!(txn.frozen, false, "Asset should be unfrozen");
+            assert!(!txn.frozen, "Asset should be unfrozen");
         }
         _ => panic!("Transaction should be an AssetFreeze transaction"),
     }

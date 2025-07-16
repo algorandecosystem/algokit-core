@@ -12,7 +12,7 @@ pub struct AssetFreezeParams {
     pub asset_id: u64,
 
     /// The target account whose asset holdings will be frozen.
-    pub freeze_target: Address,
+    pub target_address: Address,
 }
 
 /// Parameters to unfreeze an asset for a target account.
@@ -25,5 +25,5 @@ pub struct AssetUnfreezeParams {
     pub asset_id: u64,
 
     /// The target account whose asset holdings will be unfrozen.
-    pub freeze_target: Address,
+    pub target_address: Address,
 }
