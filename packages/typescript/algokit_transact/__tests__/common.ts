@@ -37,7 +37,7 @@ const defaultReviver = (key: string, value: unknown) => {
   // 1. When serializing, false values may be omitted from JSON
   // 2. When deserializing, missing values default to false
   // The TypeScript WASM bindings expect the field to always be present as a boolean
-  if ((key === "assetFreeze" || key === "assetUnfreeze") && typeof value === "object" && value !== null) {
+  if (key === "assetFreeze" && typeof value === "object" && value !== null) {
     const assetObject = value as any;
     if (assetObject.frozen === undefined) {
       assetObject.frozen = false; // Match WASM bindings' expectations
