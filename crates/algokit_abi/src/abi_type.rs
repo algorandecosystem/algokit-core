@@ -1,6 +1,6 @@
 use crate::{
-    abi_address_type::encode_address, abi_ufixed_type::encode_ufixed, abi_uint_type::encode_uint,
-    error::ABIError,
+    abi_address_type::encode_address, abi_string_type::encode_string,
+    abi_ufixed_type::encode_ufixed, abi_uint_type::encode_uint, error::ABIError,
 };
 
 use super::abi_value::ABIValue;
@@ -21,12 +21,9 @@ pub enum ABIType {
     ABIUintType(u16),
     ABIUFixedType(u16, u8),
     ABIAddressType,
-    ABITupleType(Vec<ABIType>), // blocked
-    ABIString,
-    ABIByte,
-    ABIBool,
-    ABIStaticArray(ABIType, u16), // blocked
-    ABIDynamicArray(ABIType),     // blocked
+    // ABITupleType(Vec<ABIType>), // blocked
+    ABIStringType,
+    // ABIByteType,
 }
 
 pub fn encode(abi_type: ABIType, value: ABIValue) -> Result<Vec<u8>, ABIError> {
@@ -34,6 +31,7 @@ pub fn encode(abi_type: ABIType, value: ABIValue) -> Result<Vec<u8>, ABIError> {
         ABIType::ABIUintType(_) => Ok(encode_uint(abi_type, value)?),
         ABIType::ABIUFixedType(_, __) => Ok(encode_ufixed(abi_type, value)?),
         ABIType::ABIAddressType => Ok(encode_address(abi_type, value)?),
+        ABIType::ABIStringType => encode_string(abi_type, value),
     }
 }
 
