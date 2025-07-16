@@ -36,3 +36,16 @@ pub fn encode(abi_type: ABIType, value: ABIValue) -> Result<Vec<u8>, ABIError> {
         ABIType::ABIAddressType => Ok(encode_address(abi_type, value)?),
     }
 }
+
+pub fn is_dynamic(abi_type: &ABIType) -> bool {
+    match abi_type {
+        ABIType::ABIStaticArray(child_type, _) => is_dynamic(child_type),
+        ABIType::ABIDynamicArray(child_type) => is_dynamic(child_type),
+        ABIType::ABITupleType(child_types) => child_types.iter().all(|t| is_dynamic(t)),
+        _ => false,
+    }
+}
+
+pub fn get_name(abi_type: ABIType) -> String {
+    "Not implemented"
+}

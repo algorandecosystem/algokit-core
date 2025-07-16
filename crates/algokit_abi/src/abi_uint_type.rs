@@ -23,8 +23,8 @@ pub fn encode_uint(abi_type: ABIType, value: ABIValue) -> Result<Vec<u8>, ABIErr
                 )));
             }
 
-            Ok(super::utils::big_uint_to_bytes(
-                value,
+            Ok(super::utils::extend_bytes_to_length(
+                value.to_bytes_be(),
                 (bit_size / 8) as usize,
             ))
         }
