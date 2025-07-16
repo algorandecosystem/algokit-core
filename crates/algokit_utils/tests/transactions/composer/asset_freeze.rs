@@ -1,4 +1,5 @@
 use algokit_transact::Transaction;
+use algokit_utils::transactions::AssetOptInParams;
 use algokit_utils::{CommonParams, Composer};
 use algokit_utils::{
     testing::*,
@@ -95,22 +96,18 @@ async fn test_asset_freeze_unfreeze() {
         .asset_index
         .expect("Failed to get asset ID");
 
-    println!("Created asset with ID: {}", asset_id);
-
     // Step 2: Target account opts into the asset
-    let asset_opt_in_params = AssetTransferParams {
+    let asset_opt_in_params = AssetOptInParams {
         common_params: CommonParams {
             sender: target_addr.clone(),
             ..Default::default()
         },
         asset_id,
-        amount: 0,
-        receiver: target_addr.clone(), // Receiver same as sender = opt-in
     };
 
     let mut composer = target_composer.clone();
     composer
-        .add_asset_transfer(asset_opt_in_params)
+        .add_asset_opt_in(asset_opt_in_params)
         .expect("Failed to add asset opt-in");
 
     let opt_in_result = composer
