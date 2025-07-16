@@ -776,7 +776,9 @@ pub fn estimate_transaction_size(transaction: Transaction) -> Result<u64, AlgoKi
 }
 
 #[ffi_func]
-pub fn keypair_account_from_pub_key(pub_key: &[u8]) -> Result<KeyPairAccount, AlgoKitTransactError> {
+pub fn keypair_account_from_pub_key(
+    pub_key: &[u8],
+) -> Result<KeyPairAccount, AlgoKitTransactError> {
     Ok(
         algokit_transact::KeyPairAccount::from_pubkey(pub_key.try_into().map_err(|_| {
             AlgoKitTransactError::EncodingError(

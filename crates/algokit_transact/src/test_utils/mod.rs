@@ -5,7 +5,7 @@ mod key_registration;
 
 use crate::{
     transactions::{AssetTransferTransactionBuilder, PaymentTransactionBuilder},
-    KeyPairAccount, Address, AlgorandMsgpack, Byte32, MultisigSignature, MultisigSubsignature,
+    Address, AlgorandMsgpack, Byte32, KeyPairAccount, MultisigSignature, MultisigSubsignature,
     SignedTransaction, Transaction, TransactionHeaderBuilder, TransactionId,
     ALGORAND_PUBLIC_KEY_BYTE_LENGTH, HASH_BYTES_LENGTH,
 };
