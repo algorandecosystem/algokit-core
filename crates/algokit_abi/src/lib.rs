@@ -1,4 +1,6 @@
 pub mod abi_address_type;
+pub mod abi_bool_type;
+pub mod abi_byte_type;
 pub mod abi_string_type;
 pub mod abi_tuple_type;
 pub mod abi_type;
