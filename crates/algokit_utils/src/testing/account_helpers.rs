@@ -73,39 +73,49 @@ impl TransactionSigner for TestAccount {
         txns: &[Transaction],
         indices: &[usize],
     ) -> Result<Vec<SignedTransaction>, String> {
-        let signing_key = SigningKey::from_bytes(&self.secret_key);
-        let verifying_key: VerifyingKey = (&signing_key).into();
-        let signer_account = Account::from_pubkey(&verifying_key.to_bytes());
-        let signer_address = signer_account.address();
+        // Clone data needed for the blocking task
+        let secret_key = self.secret_key;
+        let txns = txns.to_vec();
+        let indices = indices.to_vec();
 
-        indices
-            .iter()
-            .map(|&idx| {
-                if idx < txns.len() {
-                    let tx = txns[idx].clone();
-                    let encoded_tx = tx
-                        .encode()
-                        .map_err(|e| format!("Failed to encode transaction: {:?}", e))?;
-                    let sig: [u8; ALGORAND_SIGNATURE_BYTE_LENGTH] =
-                        signing_key.sign(&encoded_tx).to_bytes();
+        // Perform CPU-intensive signing operations in a blocking thread
+        tokio::task::spawn_blocking(move || {
+            let signing_key = SigningKey::from_bytes(&secret_key);
+            let verifying_key: VerifyingKey = (&signing_key).into();
+            let signer_account = Account::from_pubkey(&verifying_key.to_bytes());
+            let signer_address = signer_account.address();
 
-                    let auth_address = if tx.header().sender != signer_address {
-                        Some(signer_address.clone())
+            indices
+                .iter()
+                .map(|&idx| {
+                    if idx < txns.len() {
+                        let tx = txns[idx].clone();
+                        let encoded_tx = tx
+                            .encode()
+                            .map_err(|e| format!("Failed to encode transaction: {:?}", e))?;
+                        let sig: [u8; ALGORAND_SIGNATURE_BYTE_LENGTH] =
+                            signing_key.sign(&encoded_tx).to_bytes();
+
+                        let auth_address = if tx.header().sender != signer_address {
+                            Some(signer_address.clone())
+                        } else {
+                            None
+                        };
+
+                        Ok(SignedTransaction {
+                            transaction: tx,
+                            signature: Some(sig),
+                            auth_address,
+                            multisignature: None,
+                        })
                     } else {
-                        None
-                    };
-
-                    Ok(SignedTransaction {
-                        transaction: tx,
-                        signature: Some(sig),
-                        auth_address,
-                        multisignature: None,
-                    })
-                } else {
-                    Err(format!("Index {} out of bounds for transactions", idx))
-                }
-            })
-            .collect()
+                        Err(format!("Index {} out of bounds for transactions", idx))
+                    }
+                })
+                .collect()
+        })
+        .await
+        .map_err(|e| format!("Failed to join blocking thread: {:?}", e))?
     }
 }
 
