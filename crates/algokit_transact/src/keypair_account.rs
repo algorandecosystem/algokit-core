@@ -1,6 +1,6 @@
-//! Algorand single signature account representation and manipulation.
+//! Algorand ed25519 keypair account representation and manipulation.
 //!
-//! This module provides the [`KeyPairAccount`] type, which encapsulates an Algorand single signature
+//! This module provides the [`KeyPairAccount`] type, which encapsulates an Algorand ed25519 keypair
 //! account's public key and offers methods for creation, conversion, and display. An account's
 //! [`Address`] is derived from its public key and encoded as a 58-character base32 string.
 
@@ -12,9 +12,9 @@ use serde_with::{serde_as, Bytes};
 use std::fmt::{Display, Formatter, Result as FmtResult};
 use std::str::FromStr;
 
-/// Represents a single signature Algorand account.
+/// Represents an ed25519 keypair Algorand account.
 ///
-/// An Algorand account is defined by a 32-byte Ed25519 public key.
+/// An Algorand keypair account is defined by a 32-byte Ed25519 public key.
 #[serde_as]
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Default)]
 #[serde(transparent)]
