@@ -8,7 +8,7 @@ import {
   getTransactionId,
   getTransactionIdRaw,
   SignedTransaction,
-  emptyMultisigSignature,
+  newMultisigSignature,
   applyMultisigSubsignature,
   mergeMultisignatures
 } from "..";
@@ -90,7 +90,7 @@ export const assertAssignFee = (label: string, testData: TransactionTestData) =>
 export const assertMultisigExample = async (label: string, testData: TransactionTestData) => {
   const singleSig = await ed.signAsync(encodeTransaction(testData.transaction), testData.signingPrivateKey);
 
-  const unsignedMultisigSignature = emptyMultisigSignature(
+  const unsignedMultisigSignature = newMultisigSignature(
     1, 2, testData.multisigAddresses
   );
   const multisigSignature0 = applyMultisigSubsignature(unsignedMultisigSignature, testData.multisigAddresses[0], singleSig);

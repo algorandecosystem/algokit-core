@@ -91,7 +91,7 @@ impl TryFrom<MultisigSubsignature> for algokit_transact::MultisigSubsignature {
 ///
 /// Returns [`AlgoKitTransactError`] if any address is invalid or the multisignature parameters are invalid.
 #[ffi_func]
-pub fn empty_multisig_signature(
+pub fn new_multisig_signature(
     version: u8,
     threshold: u8,
     participants: Vec<String>,
