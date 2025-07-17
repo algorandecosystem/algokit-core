@@ -7,6 +7,7 @@ use crate::{
     abi_ufixed_type::{decode_ufixed, encode_ufixed},
     abi_uint_type::{decode_uint, encode_uint},
     error::ABIError,
+    static_array::encode_static_array,
 };
 
 use super::abi_value::ABIValue;
@@ -66,36 +67,35 @@ pub fn encode(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, ABIError>
         ABIType::ABIUintType(_) => Ok(encode_uint(abi_type, value)?),
         ABIType::ABIUFixedType(_, _) => Ok(encode_ufixed(abi_type, value)?),
         ABIType::ABIAddressType => Ok(encode_address(abi_type, value)?),
-    ABIType::ABITupleType(_) => Ok(encode_tuple(abi_type, value)?),
+        ABIType::ABITupleType(_) => Ok(encode_tuple(abi_type, value)?),
         ABIType::ABIStaticArray(_, __) => Ok(encode_static_array(abi_type, value)?),
-        ABIType::ABIDynamicArray(_) => Ok(encode_dynamic_array(abi_type, value)?),
-        ABIType::ABIStringType => encode_string(abi_type, value),
-        ABIType::ABIBoolType => encode_bool(abi_type, value),
-        ABIType::ABIByteType => encode_byte(abi_type, value),
+        ABIType::ABIDynamicArray(_) => Ok(encode_static_array(abi_type, value)?),
+        ABIType::ABIString => Ok(encode_string(abi_type, value)?),
+        ABIType::ABIByte => Ok(encode_bool(abi_type, value)?),
+        ABIType::ABIBool => Ok(encode_byte(abi_type, value)?),
     }
 }
 
-pub fn decode(abi_type: ABIType, bytes: Vec<u8>) -> Result<ABIValue, ABIError> {
+// TODO: do we need Vec<u8> or &[u8] is enough
+pub fn decode(abi_type: &ABIType, bytes: Vec<u8>) -> Result<ABIValue, ABIError> {
     match abi_type {
         ABIType::ABIUintType(_) => decode_uint(abi_type, bytes),
         ABIType::ABIUFixedType(_, _) => decode_ufixed(abi_type, bytes),
         ABIType::ABIAddressType => decode_address(abi_type, bytes),
         ABIType::ABITupleType(_) => decode_tuple(abi_type, bytes),
-        ABIType::ABIStringType => decode_string(abi_type, bytes),
-        ABIType::ABIBoolType => decode_bool(abi_type, bytes),
-        ABIType::ABIByteType => decode_byte(abi_type, bytes),
+        ABIType::ABIString => decode_string(abi_type, bytes),
+        ABIType::ABIBool => decode_bool(abi_type, bytes),
+        ABIType::ABIByte => decode_byte(abi_type, bytes),
     }
 }
 
 pub fn is_dynamic(abi_type: &ABIType) -> bool {
     match abi_type {
-        ABIType::ABIStringType => true,
-        ABIType::ABITupleType(child_types) => child_types.iter().any(is_dynamic),
-        ABIType::ABIUintType(_) => false,
-        ABIType::ABIUFixedType(_, _) => false,
-        ABIType::ABIAddressType => false,
-        ABIType::ABIBoolType => false,
-        ABIType::ABIByteType => false,
+        ABIType::ABIStaticArray(child_type, _) => is_dynamic(child_type),
+        ABIType::ABIDynamicArray(child_type) => is_dynamic(child_type),
+        ABIType::ABITupleType(child_types) => child_types.iter().all(|t| is_dynamic(t)),
+        ABIType::ABIString => true,
+        _ => false,
     }
 }
 

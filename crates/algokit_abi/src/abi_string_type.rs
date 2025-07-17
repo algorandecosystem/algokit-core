@@ -2,9 +2,9 @@ use crate::{error::ABIError, ABIType, ABIValue};
 
 const ABI_LENGTH_SIZE: usize = 2;
 
-pub fn encode_string(abi_type: ABIType, value: ABIValue) -> Result<Vec<u8>, ABIError> {
+pub fn encode_string(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
     match abi_type {
-        ABIType::ABIStringType => {
+        ABIType::ABIString => {
             let value = match value {
                 ABIValue::String(s) => s,
                 _ => {
@@ -14,7 +14,7 @@ pub fn encode_string(abi_type: ABIType, value: ABIValue) -> Result<Vec<u8>, ABIE
                 }
             };
 
-            let utf8_bytes = value.into_bytes();
+            let utf8_bytes = value.as_bytes().to_vec();
             let length = utf8_bytes.len() as u16;
             let mut result = Vec::with_capacity(2 + utf8_bytes.len());
             result.extend_from_slice(&length.to_be_bytes());
@@ -22,15 +22,13 @@ pub fn encode_string(abi_type: ABIType, value: ABIValue) -> Result<Vec<u8>, ABIE
 
             Ok(result)
         }
-        _ => Err(ABIError::EncodingError(
-            "Expected ABIStringType".to_string(),
-        )),
+        _ => Err(ABIError::EncodingError("Expected ABIString".to_string())),
     }
 }
 
 pub fn decode_string(abi_type: ABIType, value: Vec<u8>) -> Result<ABIValue, ABIError> {
     match abi_type {
-        ABIType::ABIStringType => {
+        ABIType::ABIString => {
             if value.len() < ABI_LENGTH_SIZE {
                 return Err(ABIError::DecodingError(
                     "Byte array too short for string".to_string(),
@@ -51,9 +49,7 @@ pub fn decode_string(abi_type: ABIType, value: Vec<u8>) -> Result<ABIValue, ABIE
                 .map_err(|_| ABIError::DecodingError("Invalid UTF-8 encoding".to_string()))?;
             Ok(ABIValue::String(string_value))
         }
-        _ => Err(ABIError::DecodingError(
-            "Expected ABIStringType".to_string(),
-        )),
+        _ => Err(ABIError::DecodingError("Expected ABIString".to_string())),
     }
 }
 
@@ -63,17 +59,17 @@ mod tests {
 
     #[test]
     fn test_encode_asdf() {
-        let abi_type = ABIType::ABIStringType;
+        let abi_type = ABIType::ABIString;
         let value = ABIValue::String("asdf".to_string());
-        let encoded = encode_string(abi_type, value).unwrap();
+        let encoded = encode_string(&abi_type, &value).unwrap();
         assert_eq!(encoded, vec![0, 4, 97, 115, 100, 102]);
     }
 
     #[test]
     fn test_encode_whats_new() {
-        let abi_type = ABIType::ABIStringType;
+        let abi_type = ABIType::ABIString;
         let value = ABIValue::String("What's new?".to_string());
-        let encoded = encode_string(abi_type, value).unwrap();
+        let encoded = encode_string(&abi_type, &value).unwrap();
         assert_eq!(
             encoded,
             vec![0, 11, 87, 104, 97, 116, 39, 115, 32, 110, 101, 119, 63]
@@ -82,15 +78,15 @@ mod tests {
 
     #[test]
     fn test_encode_emoji() {
-        let abi_type = ABIType::ABIStringType;
+        let abi_type = ABIType::ABIString;
         let value = ABIValue::String("😅🔨".to_string());
-        let encoded = encode_string(abi_type, value).unwrap();
+        let encoded = encode_string(&abi_type, &value).unwrap();
         assert_eq!(encoded, vec![0, 8, 240, 159, 152, 133, 240, 159, 148, 168]);
     }
 
     #[test]
     fn test_decode_asdf() {
-        let abi_type = ABIType::ABIStringType;
+        let abi_type = ABIType::ABIString;
         let bytes = vec![0, 4, 97, 115, 100, 102];
         let decoded = decode_string(abi_type, bytes).unwrap();
         assert_eq!(decoded, ABIValue::String("asdf".to_string()));
@@ -98,7 +94,7 @@ mod tests {
 
     #[test]
     fn test_decode_whats_new() {
-        let abi_type = ABIType::ABIStringType;
+        let abi_type = ABIType::ABIString;
         let bytes = vec![0, 11, 87, 104, 97, 116, 39, 115, 32, 110, 101, 119, 63];
         let decoded = decode_string(abi_type, bytes).unwrap();
         assert_eq!(decoded, ABIValue::String("What's new?".to_string()));
@@ -106,7 +102,7 @@ mod tests {
 
     #[test]
     fn test_decode_emoji() {
-        let abi_type = ABIType::ABIStringType;
+        let abi_type = ABIType::ABIString;
         let bytes = vec![0, 8, 240, 159, 152, 133, 240, 159, 148, 168];
         let decoded = decode_string(abi_type, bytes).unwrap();
         assert_eq!(decoded, ABIValue::String("😅🔨".to_string()));
@@ -119,8 +115,8 @@ mod tests {
         for test_string in test_cases {
             let value = ABIValue::String(test_string.to_string());
 
-            let encoded = encode_string(ABIType::ABIStringType, value.clone()).unwrap();
-            let decoded = decode_string(ABIType::ABIStringType, encoded).unwrap();
+            let encoded = encode_string(&ABIType::ABIString, &value).unwrap();
+            let decoded = decode_string(ABIType::ABIString, encoded).unwrap();
 
             assert_eq!(decoded, value);
         }
@@ -128,7 +124,7 @@ mod tests {
 
     #[test]
     fn test_insufficient_bytes() {
-        let abi_type = ABIType::ABIStringType;
+        let abi_type = ABIType::ABIString;
         let bytes = vec![0]; // Only 1 byte, need 2 for length
 
         let result = decode_string(abi_type, bytes);
@@ -137,7 +133,7 @@ mod tests {
 
     #[test]
     fn test_length_mismatch() {
-        let abi_type = ABIType::ABIStringType;
+        let abi_type = ABIType::ABIString;
         let bytes = vec![0, 5, 65, 66]; // Claims 5 bytes but only has 2
 
         let result = decode_string(abi_type, bytes);
@@ -146,10 +142,10 @@ mod tests {
 
     #[test]
     fn test_wrong_input_type() {
-        let abi_type = ABIType::ABIStringType;
+        let abi_type = ABIType::ABIString;
         let value = ABIValue::Uint(num_bigint::BigUint::from(42u32));
 
-        let result = encode_string(abi_type, value);
+        let result = encode_string(&abi_type, &value);
         assert!(result.is_err());
     }
 }
