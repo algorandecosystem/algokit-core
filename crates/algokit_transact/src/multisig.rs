@@ -108,13 +108,23 @@ impl MultisigSignature {
             .collect()
     }
 
-    /// Applies a subsignature for the given address, replacing any existing signature for that address.
+    /// Applies a subsignature for the given address, replacing all existing signatures for that address.
+    ///
+    /// Typically, an address appears in a multisignature only once which means that only one
+    /// signature for a given address should be in the list of subsignatures.
+    /// However, there's a construction of "weighted" multisignatures where the same address
+    /// can appear multiple times.
+    /// The node checks these subsignatures agnostic to the fact that the same address might be repeated.
+    /// This allows a user to effectively give a weight to a particular address.
+    /// For this reason, the code is structured to apply the signature to all the instances of address.
+    ///
+    /// Since ed25519 signatures are deterministic, there's only one valid signature for a given message and public key,
+    /// which also means it's OK to apply the same signature multiple times.
     ///
     /// # Disclaimer
-    /// This method will overwrite any existing signature for the given address in `self`.
+    /// This method will overwrite any existing signature for the given address.
     ///
     /// # Errors
-    ///
     /// Returns [`AlgoKitTransactError::InvalidMultisigSignature`] if the address is not found among the participants.
     pub fn apply_subsignature(
         &self,
@@ -122,13 +132,17 @@ impl MultisigSignature {
         subsignature: [u8; ALGORAND_SIGNATURE_BYTE_LENGTH],
     ) -> Result<Self, AlgoKitTransactError> {
         let mut subsignatures = self.subsignatures.clone();
-        if let Some(subsig) = subsignatures.iter_mut().find(|s| s.address == address) {
+        let mut found = false;
+        for subsig in subsignatures.iter_mut().filter(|subsig| subsig.address == address) {
+            found = true;
             subsig.signature = Some(subsignature);
-        } else {
+        }
+        if !found {
             return Err(AlgoKitTransactError::InvalidMultisigSignature(
                 "Address not found in multisig signature".to_string(),
             ));
         }
+
         Ok(Self {
             version: self.version,
             threshold: self.threshold,
@@ -136,7 +150,7 @@ impl MultisigSignature {
         })
     }
 
-    /// Merges another multisignature into this one, replacing signatures in `self` with those from `other` where present.
+    /// Merges another multisignature into this one, replacing existing signatures with those from `other` where present.
     ///
     /// # Disclaimer
     /// For each participant, the resulting signature will be taken from `other` if present, otherwise from `self`.
