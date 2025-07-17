@@ -1,11 +1,10 @@
 use num_bigint::BigUint;
 
-use super::ABIValue;
-use crate::{abi_type::ABIType, error::ABIError};
+use crate::{abi_type::ABIType, abi_value::ABIValue, error::ABIError, utils};
 
 pub fn encode_ufixed(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
     match abi_type {
-        ABIType::ABIUFixedType(bit_size, precision) => {
+        ABIType::UFixed(bit_size, precision) => {
             let bit_size = bit_size.value();
             let precision = precision.value();
 
@@ -26,20 +25,18 @@ pub fn encode_ufixed(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, AB
                 )));
             }
 
-            Ok(super::utils::extend_bytes_to_length(
+            Ok(utils::extend_bytes_to_length(
                 &value.to_bytes_be(),
                 (bit_size / 8) as usize,
             ))
         }
-        _ => Err(ABIError::EncodingError(
-            "Expected ABIUFixedType".to_string(),
-        )),
+        _ => Err(ABIError::EncodingError("Expected UFixedType".to_string())),
     }
 }
 
 pub fn decode_ufixed(abi_type: &ABIType, bytes: &[u8]) -> Result<ABIValue, ABIError> {
     match abi_type {
-        ABIType::ABIUFixedType(bit_size, _precision) => {
+        ABIType::UFixed(bit_size, _precision) => {
             let bit_size = bit_size.value();
             let expected_len = (bit_size / 8) as usize;
             if bytes.len() != expected_len {
@@ -50,10 +47,8 @@ pub fn decode_ufixed(abi_type: &ABIType, bytes: &[u8]) -> Result<ABIValue, ABIEr
                 )));
             }
 
-            Ok(ABIValue::Uint(BigUint::from_bytes_be(&bytes)))
+            Ok(ABIValue::Uint(BigUint::from_bytes_be(bytes)))
         }
-        _ => Err(ABIError::DecodingError(
-            "Expected ABIUFixedType".to_string(),
-        )),
+        _ => Err(ABIError::DecodingError("Expected UFixedType".to_string())),
     }
 }

@@ -4,7 +4,7 @@ use crate::{common::ADDR_BYTE_SIZE, error::ABIError, ABIType, ABIValue};
 /// Addresses are encoded as 32-byte public keys.
 pub fn encode_address(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
     match abi_type {
-        ABIType::ABIAddressType => {
+        ABIType::Address => {
             let address_bytes = match value {
                 ABIValue::Address(a) => a,
                 _ => {
@@ -17,9 +17,7 @@ pub fn encode_address(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, A
 
             Ok(address_bytes.to_vec())
         }
-        _ => Err(ABIError::EncodingError(
-            "Expected ABIAddressType".to_string(),
-        )),
+        _ => Err(ABIError::EncodingError("Expected Address".to_string())),
     }
 }
 
@@ -27,7 +25,7 @@ pub fn encode_address(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, A
 /// Expects exactly 32 bytes and returns an Address ABIValue.
 pub fn decode_address(abi_type: &ABIType, bytes: &[u8]) -> Result<ABIValue, ABIError> {
     match abi_type {
-        ABIType::ABIAddressType => {
+        ABIType::Address => {
             if bytes.len() != ADDR_BYTE_SIZE {
                 return Err(ABIError::DecodingError(format!(
                     "Address byte string must be {} bytes long",
@@ -36,12 +34,10 @@ pub fn decode_address(abi_type: &ABIType, bytes: &[u8]) -> Result<ABIValue, ABIE
             }
 
             let mut address_bytes = [0u8; ADDR_BYTE_SIZE];
-            address_bytes.copy_from_slice(&bytes);
+            address_bytes.copy_from_slice(bytes);
             Ok(ABIValue::Address(address_bytes))
         }
-        _ => Err(ABIError::DecodingError(
-            "Expected ABIAddressType".to_string(),
-        )),
+        _ => Err(ABIError::DecodingError("Expected Address".to_string())),
     }
 }
 
@@ -58,22 +54,22 @@ mod tests {
     #[test]
     fn test_address_round_trip() {
         let value = ABIValue::Address(TEST_ADDRESS_BYTES);
-        let encoded = encode_address(&ABIType::ABIAddressType, &value).unwrap();
-        let decoded = decode_address(&ABIType::ABIAddressType, &encoded).unwrap();
+        let encoded = encode_address(&ABIType::Address, &value).unwrap();
+        let decoded = decode_address(&ABIType::Address, &encoded).unwrap();
         assert_eq!(decoded, value);
     }
 
     #[test]
     fn test_address_encoding() {
         let value = ABIValue::Address(TEST_ADDRESS_BYTES);
-        let encoded = encode_address(&ABIType::ABIAddressType, &value).unwrap();
+        let encoded = encode_address(&ABIType::Address, &value).unwrap();
         assert_eq!(encoded, TEST_ADDRESS_BYTES.to_vec());
     }
 
     #[test]
     fn test_address_decoding() {
         let bytes = TEST_ADDRESS_BYTES.to_vec();
-        let decoded = decode_address(&ABIType::ABIAddressType, &bytes).unwrap();
+        let decoded = decode_address(&ABIType::Address, &bytes).unwrap();
         assert_eq!(decoded, ABIValue::Address(TEST_ADDRESS_BYTES));
     }
 
@@ -92,8 +88,8 @@ mod tests {
 
         for test_address in test_addresses {
             let value = ABIValue::Address(test_address);
-            let encoded = encode_address(&ABIType::ABIAddressType, &value).unwrap();
-            let decoded = decode_address(&ABIType::ABIAddressType, &encoded).unwrap();
+            let encoded = encode_address(&ABIType::Address, &value).unwrap();
+            let decoded = decode_address(&ABIType::Address, &encoded).unwrap();
             assert_eq!(decoded, value);
         }
     }
@@ -101,7 +97,7 @@ mod tests {
     #[test]
     fn test_encode_wrong_type() {
         let value = ABIValue::String("not an address".to_string());
-        let result = encode_address(&ABIType::ABIAddressType, &value);
+        let result = encode_address(&ABIType::Address, &value);
         assert!(result.is_err());
         assert!(result
             .unwrap_err()
@@ -112,18 +108,15 @@ mod tests {
     #[test]
     fn test_encode_wrong_abi_type() {
         let value = ABIValue::Address(TEST_ADDRESS_BYTES);
-        let result = encode_address(&ABIType::ABIString, &value);
+        let result = encode_address(&ABIType::String, &value);
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("Expected ABIAddressType"));
+        assert!(result.unwrap_err().to_string().contains("Expected Address"));
     }
 
     #[test]
     fn test_decode_wrong_length_too_short() {
         let bytes = vec![0u8; 31];
-        let result = decode_address(&ABIType::ABIAddressType, &bytes);
+        let result = decode_address(&ABIType::Address, &bytes);
         assert!(result.is_err());
         assert!(result
             .unwrap_err()
@@ -134,7 +127,7 @@ mod tests {
     #[test]
     fn test_decode_wrong_length_too_long() {
         let bytes = vec![0u8; 33];
-        let result = decode_address(&ABIType::ABIAddressType, &bytes);
+        let result = decode_address(&ABIType::Address, &bytes);
         assert!(result.is_err());
         assert!(result
             .unwrap_err()
@@ -145,7 +138,7 @@ mod tests {
     #[test]
     fn test_decode_empty_bytes() {
         let bytes = vec![];
-        let result = decode_address(&ABIType::ABIAddressType, &bytes);
+        let result = decode_address(&ABIType::Address, &bytes);
         assert!(result.is_err());
         assert!(result
             .unwrap_err()
@@ -156,11 +149,8 @@ mod tests {
     #[test]
     fn test_decode_wrong_abi_type() {
         let bytes = TEST_ADDRESS_BYTES.to_vec();
-        let result = decode_address(&ABIType::ABIString, &bytes);
+        let result = decode_address(&ABIType::String, &bytes);
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("Expected ABIAddressType"));
+        assert!(result.unwrap_err().to_string().contains("Expected Address"));
     }
 }

@@ -1,10 +1,11 @@
 use crate::{
-    abi_tuple_type::{decode_tuple, encode_tuple},
-    abi_type::get_name,
+    abi_type::{get_name, ABIType},
+    abi_value::ABIValue,
     common::LENGTH_ENCODE_BYTE_SIZE,
     error::ABIError,
-    ABIType, ABIValue,
 };
+
+use super::tuple::{decode_tuple, encode_tuple};
 
 pub fn encode_dynamic_array(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
     let values = match value {
@@ -18,14 +19,14 @@ pub fn encode_dynamic_array(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<
     };
 
     let tuple_type = match abi_type {
-        ABIType::ABIDynamicArray(child_type) => {
+        ABIType::DynamicArray(child_type) => {
             let elements = vec![*child_type; values.len()];
-            ABIType::ABITupleType(elements)
+            ABIType::Tuple(elements)
         }
         _ => return Err(ABIError::EncodingError("Expected StaticArray".to_string())),
     };
 
-    return encode_tuple(&tuple_type, value);
+    encode_tuple(&tuple_type, value)
 }
 
 pub fn decode_dynamic_array(abi_type: &ABIType, value: &[u8]) -> Result<ABIValue, ABIError> {
@@ -39,16 +40,12 @@ pub fn decode_dynamic_array(abi_type: &ABIType, value: &[u8]) -> Result<ABIValue
     let values_count = u16::from_be_bytes([value[0], value[1]]);
 
     let tuple_type = match abi_type {
-        ABIType::ABIDynamicArray(child_type) => {
+        ABIType::DynamicArray(child_type) => {
             let elements = vec![*child_type; values_count as usize];
-            ABIType::ABITupleType(elements)
+            ABIType::Tuple(elements)
         }
-        _ => {
-            return Err(ABIError::EncodingError(
-                "Expected ABIDynamicArray".to_string(),
-            ))
-        }
+        _ => return Err(ABIError::EncodingError("Expected DynamicArray".to_string())),
     };
 
-    return decode_tuple(&tuple_type, value);
+    decode_tuple(&tuple_type, value)
 }

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{
     abi_type::{encode, get_name, get_size, is_dynamic},
-    common::LENGTH_ENCODE_BYTE_SIZE,
+    common::{BOOL_FALSE_BYTE, BOOL_TRUE_BYTE, LENGTH_ENCODE_BYTE_SIZE},
     decode,
     error::ABIError,
     utils::extend_bytes_to_length,
@@ -16,8 +16,8 @@ struct Segment {
 
 pub fn encode_tuple(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
     let child_types = match abi_type {
-        ABIType::ABITupleType(child_types) => child_types,
-        _ => return Err(ABIError::EncodingError("Expected ABITupleType".to_string())),
+        ABIType::Tuple(child_types) => child_types,
+        _ => return Err(ABIError::EncodingError("Expected TupleType".to_string())),
     };
     let values = match value {
         ABIValue::Array(n) => n,
@@ -43,24 +43,27 @@ pub fn encode_tuple(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, ABI
     let mut tails: Vec<Vec<u8>> = Vec::new();
     let mut is_dynamic_index: HashMap<usize, bool> = HashMap::new();
 
-    for mut i in 0..child_types.len() {
+    let mut i = 0;
+    while i < child_types.len() {
         let child_type = &child_types[i];
 
-        if is_dynamic(&child_type) {
-        } else {
+        if is_dynamic(child_type) {
             is_dynamic_index.insert(i, true);
             heads.push(vec![0, 0]);
-            tails.push(encode(&child_type, &values[i])?);
+            tails.push(encode(child_type, &values[i])?);
+            i += 1;
+        } else {
             match child_type {
-                ABIType::ABIBool => {
+                ABIType::Bool => {
                     let sequence_end_index = find_bool_sequence_end(child_types, i);
                     let bool_values = &values[i..sequence_end_index];
                     heads.push(compress_bools(bool_values)?.to_be_bytes().to_vec());
 
-                    i = sequence_end_index;
+                    i = sequence_end_index + 1;
                 }
                 _ => {
-                    heads.push(encode(&child_type, &values[i])?);
+                    heads.push(encode(child_type, &values[i])?);
+                    i += 1;
                 }
             }
             is_dynamic_index.insert(i, false);
@@ -85,19 +88,15 @@ pub fn encode_tuple(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, ABI
         }
     }
 
-    let results = heads
-        .into_iter()
-        .chain(tails.into_iter())
-        .flatten()
-        .collect();
+    let results = heads.into_iter().chain(tails).flatten().collect();
 
     Ok(results)
 }
 
 pub fn decode_tuple(abi_type: &ABIType, bytes: &[u8]) -> Result<ABIValue, ABIError> {
     let child_types = match abi_type {
-        ABIType::ABITupleType(child_types) => child_types,
-        _ => return Err(ABIError::DecodingError("Expected ABITupleType".to_string())),
+        ABIType::Tuple(child_types) => child_types,
+        _ => return Err(ABIError::DecodingError("Expected TupleType".to_string())),
     };
 
     let value_partitions = extract_values(abi_type, bytes)?;
@@ -141,15 +140,16 @@ fn compress_bools(values: &[ABIValue]) -> Result<u8, ABIError> {
 
 fn extract_values(abi_type: &ABIType, bytes: &[u8]) -> Result<Vec<Vec<u8>>, ABIError> {
     let child_types = match abi_type {
-        ABIType::ABITupleType(child_types) => child_types,
-        _ => return Err(ABIError::DecodingError("Expected ABITupleType".to_string())),
+        ABIType::Tuple(child_types) => child_types,
+        _ => return Err(ABIError::DecodingError("Expected TupleType".to_string())),
     };
 
     let mut dynamic_segments: Vec<Segment> = Vec::new();
     let mut value_partitions: Vec<Option<Vec<u8>>> = Vec::new();
     let mut bytes_cursor: usize = 0;
 
-    for mut i in 0..child_types.len() {
+    let mut i = 0;
+    while i < child_types.len() {
         let child_type = &child_types[i];
 
         if is_dynamic(child_type) {
@@ -176,29 +176,31 @@ fn extract_values(abi_type: &ABIType, bytes: &[u8]) -> Result<Vec<Vec<u8>>, ABIE
             });
             value_partitions.push(None);
             bytes_cursor += LENGTH_ENCODE_BYTE_SIZE;
+            i += 1;
         } else {
             match child_type {
-                ABIType::ABIBool => {
+                ABIType::Bool => {
                     let sequence_end_index = find_bool_sequence_end(child_types, i);
 
                     for j in 0..sequence_end_index - i {
-                        let bool_mask: u8 = 0x80 >> j;
+                        let bool_mask: u8 = BOOL_TRUE_BYTE >> j;
                         if bytes[bytes_cursor] & bool_mask > 0 {
-                            value_partitions.push(Some(vec![128]));
+                            value_partitions.push(Some(vec![BOOL_TRUE_BYTE]));
                         } else {
-                            value_partitions.push(Some(vec![0]));
+                            value_partitions.push(Some(vec![BOOL_FALSE_BYTE]));
                         }
                     }
 
-                    i = sequence_end_index;
+                    i = sequence_end_index + 1;
                     bytes_cursor += 1;
                 }
                 _ => {
-                    let child_type_len = get_size(&child_type)?;
+                    let child_type_len = get_size(child_type)?;
                     value_partitions.push(Some(
                         bytes[bytes_cursor..bytes_cursor + child_type_len].to_vec(),
                     ));
                     bytes_cursor += child_type_len;
+                    i += 1;
                 }
             }
         }
@@ -254,11 +256,11 @@ fn extract_values(abi_type: &ABIType, bytes: &[u8]) -> Result<Vec<Vec<u8>>, ABIE
     Ok(value_partitions)
 }
 
-pub fn find_bool_sequence_end(child_types: &Vec<&ABIType<'_>>, current_index: usize) -> usize {
+pub fn find_bool_sequence_end(child_types: &[&ABIType<'_>], current_index: usize) -> usize {
     let mut cursor: usize = current_index;
     loop {
         match child_types[cursor] {
-            ABIType::ABIBool => {
+            ABIType::Bool => {
                 cursor += 1;
                 if cursor - current_index == 8 {
                     return cursor;
@@ -279,7 +281,7 @@ mod tests {
 
     #[test]
     fn test_encode_empty_tuple() {
-        let tuple_type = ABIType::ABITupleType(vec![]);
+        let tuple_type = ABIType::Tuple(vec![]);
         let value = ABIValue::Array(vec![]);
         let encoded = encode_tuple(&tuple_type, &value);
         // TODO: Should succeed when implemented
@@ -288,9 +290,9 @@ mod tests {
 
     #[test]
     fn test_encode_simple_tuple() {
-        let uint32_type1 = ABIType::ABIUintType(BitSize::new(32).unwrap());
-        let uint32_type2 = ABIType::ABIUintType(BitSize::new(32).unwrap());
-        let tuple_type = ABIType::ABITupleType(vec![&uint32_type1, &uint32_type2]);
+        let uint32_type1 = ABIType::Uint(BitSize::new(32).unwrap());
+        let uint32_type2 = ABIType::Uint(BitSize::new(32).unwrap());
+        let tuple_type = ABIType::Tuple(vec![&uint32_type1, &uint32_type2]);
         let value = ABIValue::Array(vec![
             ABIValue::Uint(BigUint::from(1u32)),
             ABIValue::Uint(BigUint::from(2u32)),
@@ -302,9 +304,9 @@ mod tests {
 
     #[test]
     fn test_encode_mixed_tuple() {
-        let uint32_type = ABIType::ABIUintType(BitSize::new(32).unwrap());
-        let string_type = ABIType::ABIString;
-        let tuple_type = ABIType::ABITupleType(vec![&uint32_type, &string_type]);
+        let uint32_type = ABIType::Uint(BitSize::new(32).unwrap());
+        let string_type = ABIType::String;
+        let tuple_type = ABIType::Tuple(vec![&uint32_type, &string_type]);
         let value = ABIValue::Array(vec![
             ABIValue::Uint(BigUint::from(42u32)),
             ABIValue::String("hello".to_string()),
@@ -316,9 +318,9 @@ mod tests {
 
     #[test]
     fn test_round_trip_simple_tuple() {
-        let uint16_type = ABIType::ABIUintType(BitSize::new(16).unwrap());
-        let bool_type = ABIType::ABIBool;
-        let tuple_type = ABIType::ABITupleType(vec![&uint16_type, &bool_type]);
+        let uint16_type = ABIType::Uint(BitSize::new(16).unwrap());
+        let bool_type = ABIType::Bool;
+        let tuple_type = ABIType::Tuple(vec![&uint16_type, &bool_type]);
         let value = ABIValue::Array(vec![
             ABIValue::Uint(BigUint::from(1234u32)),
             ABIValue::Bool(true),
@@ -331,10 +333,10 @@ mod tests {
 
     #[test]
     fn test_round_trip_mixed_tuple() {
-        let uint32_type = ABIType::ABIUintType(BitSize::new(32).unwrap());
-        let string_type = ABIType::ABIString;
-        let bool_type = ABIType::ABIBool;
-        let tuple_type = ABIType::ABITupleType(vec![&uint32_type, &string_type, &bool_type]);
+        let uint32_type = ABIType::Uint(BitSize::new(32).unwrap());
+        let string_type = ABIType::String;
+        let bool_type = ABIType::Bool;
+        let tuple_type = ABIType::Tuple(vec![&uint32_type, &string_type, &bool_type]);
         let value = ABIValue::Array(vec![
             ABIValue::Uint(BigUint::from(42u32)),
             ABIValue::String("test".to_string()),
@@ -348,9 +350,9 @@ mod tests {
 
     #[test]
     fn test_wrong_value_length() {
-        let uint32_type1 = ABIType::ABIUintType(BitSize::new(32).unwrap());
-        let uint32_type2 = ABIType::ABIUintType(BitSize::new(32).unwrap());
-        let tuple_type = ABIType::ABITupleType(vec![&uint32_type1, &uint32_type2]);
+        let uint32_type1 = ABIType::Uint(BitSize::new(32).unwrap());
+        let uint32_type2 = ABIType::Uint(BitSize::new(32).unwrap());
+        let tuple_type = ABIType::Tuple(vec![&uint32_type1, &uint32_type2]);
         let value = ABIValue::Array(vec![ABIValue::Uint(BigUint::from(1u32))]);
         let result = encode_tuple(&tuple_type, &value);
         // TODO: Should fail with length mismatch when implemented
@@ -359,21 +361,21 @@ mod tests {
 
     #[test]
     fn test_wrong_abi_type() {
-        let tuple_type = ABIType::ABIString;
+        let tuple_type = ABIType::String;
         let value = ABIValue::Array(vec![]);
         let result = encode_tuple(&tuple_type, &value);
         assert!(result.is_err());
         assert!(result
             .unwrap_err()
             .to_string()
-            .contains("Expected ABITupleType"));
+            .contains("Expected TupleType"));
     }
 
     // TODO: Add these decode tests once tuple implementation is complete
 
     #[test]
     fn test_decode_empty_tuple() {
-        let tuple_type = ABIType::ABITupleType(vec![]);
+        let tuple_type = ABIType::Tuple(vec![]);
         let bytes = vec![];
         let result = decode_tuple(&tuple_type, &bytes);
         // TODO: Should succeed when implemented
@@ -383,9 +385,9 @@ mod tests {
 
     #[test]
     fn test_decode_simple_tuple() {
-        let uint8_type = ABIType::ABIUintType(BitSize::new(8).unwrap());
-        let uint16_type = ABIType::ABIUintType(BitSize::new(16).unwrap());
-        let tuple_type = ABIType::ABITupleType(vec![&uint8_type, &uint16_type]);
+        let uint8_type = ABIType::Uint(BitSize::new(8).unwrap());
+        let uint16_type = ABIType::Uint(BitSize::new(16).unwrap());
+        let tuple_type = ABIType::Tuple(vec![&uint8_type, &uint16_type]);
         let bytes = vec![1, 0, 2]; // Based on JS SDK test: [1, 2] -> [1, 0, 2]
         let result = decode_tuple(&tuple_type, &bytes);
         // TODO: Should succeed when implemented
@@ -398,13 +400,13 @@ mod tests {
 
     #[test]
     fn test_decode_mixed_tuple() {
-        let string_type = ABIType::ABIString;
-        let bool_type1 = ABIType::ABIBool;
-        let bool_type2 = ABIType::ABIBool;
-        let bool_type3 = ABIType::ABIBool;
-        let bool_type4 = ABIType::ABIBool;
-        let string_type2 = ABIType::ABIString;
-        let tuple_type = ABIType::ABITupleType(vec![
+        let string_type = ABIType::String;
+        let bool_type1 = ABIType::Bool;
+        let bool_type2 = ABIType::Bool;
+        let bool_type3 = ABIType::Bool;
+        let bool_type4 = ABIType::Bool;
+        let string_type2 = ABIType::String;
+        let tuple_type = ABIType::Tuple(vec![
             &string_type,
             &bool_type1,
             &bool_type2,
@@ -431,11 +433,11 @@ mod tests {
 
     #[test]
     fn test_decode_dynamic_tuple() {
-        let bool_type1 = ABIType::ABIBool;
-        let bool_type2 = ABIType::ABIBool;
-        let inner_tuple1 = ABIType::ABITupleType(vec![&bool_type1]);
-        let inner_tuple2 = ABIType::ABITupleType(vec![&bool_type2]);
-        let tuple_type = ABIType::ABITupleType(vec![
+        let bool_type1 = ABIType::Bool;
+        let bool_type2 = ABIType::Bool;
+        let inner_tuple1 = ABIType::Tuple(vec![&bool_type1]);
+        let inner_tuple2 = ABIType::Tuple(vec![&bool_type2]);
+        let tuple_type = ABIType::Tuple(vec![
             &inner_tuple1, // bool[]
             &inner_tuple2, // bool[]
         ]);
@@ -452,11 +454,11 @@ mod tests {
 
     #[test]
     fn test_decode_nested_tuple() {
-        let uint16_type = ABIType::ABIUintType(BitSize::new(16).unwrap());
-        let byte_type = ABIType::ABIByte;
-        let address_type = ABIType::ABIAddressType;
-        let inner_tuple = ABIType::ABITupleType(vec![&byte_type, &address_type]);
-        let tuple_type = ABIType::ABITupleType(vec![&uint16_type, &inner_tuple]);
+        let uint16_type = ABIType::Uint(BitSize::new(16).unwrap());
+        let byte_type = ABIType::Byte;
+        let address_type = ABIType::Address;
+        let inner_tuple = ABIType::Tuple(vec![&byte_type, &address_type]);
+        let tuple_type = ABIType::Tuple(vec![&uint16_type, &inner_tuple]);
         // TODO: Create test bytes based on nested tuple structure
         let bytes = vec![]; // Placeholder - needs actual encoded bytes
         let result = decode_tuple(&tuple_type, &bytes);
@@ -473,9 +475,9 @@ mod tests {
 
     #[test]
     fn test_decode_malformed_tuple_insufficient_bytes() {
-        let uint32_type1 = ABIType::ABIUintType(BitSize::new(32).unwrap());
-        let uint32_type2 = ABIType::ABIUintType(BitSize::new(32).unwrap());
-        let tuple_type = ABIType::ABITupleType(vec![&uint32_type1, &uint32_type2]);
+        let uint32_type1 = ABIType::Uint(BitSize::new(32).unwrap());
+        let uint32_type2 = ABIType::Uint(BitSize::new(32).unwrap());
+        let tuple_type = ABIType::Tuple(vec![&uint32_type1, &uint32_type2]);
         let bytes = vec![0x00, 0x00, 0x00]; // Too few bytes for two uint32s
         let result = decode_tuple(&tuple_type, &bytes);
         // TODO: Should fail with appropriate error when implemented
@@ -485,20 +487,20 @@ mod tests {
 
     #[test]
     fn test_decode_malformed_tuple_wrong_abi_type() {
-        let tuple_type = ABIType::ABIString; // Not a tuple type
+        let tuple_type = ABIType::String; // Not a tuple type
         let bytes = vec![0x00, 0x00, 0x00, 0x00];
         let result = decode_tuple(&tuple_type, &bytes);
         assert!(result.is_err());
         assert!(result
             .unwrap_err()
             .to_string()
-            .contains("Expected ABITupleType"));
+            .contains("Expected TupleType"));
     }
 
     #[test]
     fn test_decode_malformed_tuple_extra_bytes() {
-        let uint8_type = ABIType::ABIUintType(BitSize::new(8).unwrap());
-        let tuple_type = ABIType::ABITupleType(vec![&uint8_type]);
+        let uint8_type = ABIType::Uint(BitSize::new(8).unwrap());
+        let tuple_type = ABIType::Tuple(vec![&uint8_type]);
         let bytes = vec![0x01, 0x02, 0x03]; // Extra bytes after the uint8
         let result = decode_tuple(&tuple_type, &bytes);
         // TODO: Should fail with appropriate error when implemented
