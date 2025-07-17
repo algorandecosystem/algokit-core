@@ -6,7 +6,7 @@ use crate::{
         AccountMother, TransactionGroupMother, TransactionHeaderMother, TransactionMother,
     },
     transactions::FeeParams,
-    AlgorandMsgpack, EstimateTransactionSize, KeyPairAccount,MultisigSignature, SignedTransaction,
+    AlgorandMsgpack, EstimateTransactionSize, KeyPairAccount, MultisigSignature, SignedTransaction,
     Transaction, TransactionId, Transactions,
 };
 use base64::{prelude::BASE64_STANDARD, Engine};
