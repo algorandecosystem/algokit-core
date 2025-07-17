@@ -37,7 +37,7 @@ pub fn encode_ufixed(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, AB
     }
 }
 
-pub fn decode_ufixed(abi_type: ABIType, bytes: Vec<u8>) -> Result<ABIValue, ABIError> {
+pub fn decode_ufixed(abi_type: &ABIType, bytes: &[u8]) -> Result<ABIValue, ABIError> {
     match abi_type {
         ABIType::ABIUFixedType(bit_size, _precision) => {
             let bit_size = bit_size.value();

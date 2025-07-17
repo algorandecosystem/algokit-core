@@ -76,16 +76,17 @@ pub fn encode(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, ABIError>
     }
 }
 
-// TODO: do we need Vec<u8> or &[u8] is enough
-pub fn decode(abi_type: &ABIType, bytes: Vec<u8>) -> Result<ABIValue, ABIError> {
+pub fn decode(abi_type: &ABIType, bytes: &[u8]) -> Result<ABIValue, ABIError> {
     match abi_type {
         ABIType::ABIUintType(_) => decode_uint(abi_type, bytes),
         ABIType::ABIUFixedType(_, _) => decode_ufixed(abi_type, bytes),
         ABIType::ABIAddressType => decode_address(abi_type, bytes),
-        ABIType::ABITupleType(_) => decode_tuple(abi_type, bytes),
         ABIType::ABIString => decode_string(abi_type, bytes),
         ABIType::ABIBool => decode_bool(abi_type, bytes),
         ABIType::ABIByte => decode_byte(abi_type, bytes),
+        ABIType::ABITupleType(_) => decode_tuple(abi_type, bytes),
+        ABIType::ABIStaticArray(_, __) => decode_static_array(abi_type, bytes),
+        ABIType::ABIDynamicArray(_) => decode_dynamic_array(abi_type, bytes),
     }
 }
 

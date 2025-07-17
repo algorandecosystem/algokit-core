@@ -36,7 +36,7 @@ pub fn encode_byte(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, ABIE
 
 /// Decode a byte value from ABI format.
 /// Expects exactly 1 byte and returns the value as a BigUint.
-pub fn decode_byte(abi_type: ABIType, bytes: Vec<u8>) -> Result<ABIValue, ABIError> {
+pub fn decode_byte(abi_type: &ABIType, bytes: &[u8]) -> Result<ABIValue, ABIError> {
     match abi_type {
         ABIType::ABIByte => {
             if bytes.len() != 1 {
@@ -84,7 +84,7 @@ mod tests {
     fn test_decode_byte_10() {
         let abi_type = ABIType::ABIByte;
         let bytes = vec![10];
-        let decoded = decode_byte(abi_type, bytes).unwrap();
+        let decoded = decode_byte(&abi_type, &bytes).unwrap();
         assert_eq!(decoded, ABIValue::Uint(BigUint::from(10u8)));
     }
 
@@ -92,7 +92,7 @@ mod tests {
     fn test_decode_byte_255() {
         let abi_type = ABIType::ABIByte;
         let bytes = vec![255];
-        let decoded = decode_byte(abi_type, bytes).unwrap();
+        let decoded = decode_byte(&abi_type, &bytes).unwrap();
         assert_eq!(decoded, ABIValue::Uint(BigUint::from(255u8)));
     }
 
@@ -100,7 +100,7 @@ mod tests {
     fn test_decode_byte_0() {
         let abi_type = ABIType::ABIByte;
         let bytes = vec![0];
-        let decoded = decode_byte(abi_type, bytes).unwrap();
+        let decoded = decode_byte(&abi_type, &bytes).unwrap();
         assert_eq!(decoded, ABIValue::Uint(BigUint::from(0u8)));
     }
 
@@ -112,7 +112,7 @@ mod tests {
             let value = ABIValue::Uint(BigUint::from(test_byte));
 
             let encoded = encode_byte(&ABIType::ABIByte, &value).unwrap();
-            let decoded = decode_byte(ABIType::ABIByte, encoded).unwrap();
+            let decoded = decode_byte(&ABIType::ABIByte, &encoded).unwrap();
 
             assert_eq!(decoded, value);
         }
@@ -149,7 +149,7 @@ mod tests {
         let abi_type = ABIType::ABIByte;
         let bytes = vec![10, 20]; // 2 bytes instead of 1
 
-        let result = decode_byte(abi_type, bytes);
+        let result = decode_byte(&abi_type, &bytes);
         assert!(result.is_err());
         assert!(result
             .unwrap_err()
@@ -162,7 +162,7 @@ mod tests {
         let abi_type = ABIType::ABIString;
         let bytes = vec![10];
 
-        let result = decode_byte(abi_type, bytes);
+        let result = decode_byte(&abi_type, &bytes);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("Expected ABIByte"));
     }

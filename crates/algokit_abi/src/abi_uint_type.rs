@@ -33,7 +33,7 @@ pub fn encode_uint(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, ABIE
     }
 }
 
-pub fn decode_uint(abi_type: ABIType, bytes: Vec<u8>) -> Result<ABIValue, ABIError> {
+pub fn decode_uint(abi_type: &ABIType, bytes: &[u8]) -> Result<ABIValue, ABIError> {
     match abi_type {
         ABIType::ABIUintType(bit_size) => {
             let bit_size = bit_size.value();
@@ -81,7 +81,7 @@ mod tests {
         let value = ABIValue::Uint(BigUint::from(0u8));
         let encoded = encode_uint(&abi_type, &value).unwrap();
         assert_eq!(encoded, vec![0]);
-        let decoded = decode_uint(abi_type, encoded).unwrap();
+        let decoded = decode_uint(&abi_type, &encoded).unwrap();
         assert_eq!(decoded, value);
 
         let abi_type = ABIType::ABIUintType(BitSize::new(8).unwrap());
@@ -89,7 +89,7 @@ mod tests {
         let value = ABIValue::Uint(BigUint::from(255u8));
         let encoded = encode_uint(&abi_type, &value).unwrap();
         assert_eq!(encoded, vec![255]);
-        let decoded = decode_uint(abi_type, encoded).unwrap();
+        let decoded = decode_uint(&abi_type, &encoded).unwrap();
         assert_eq!(decoded, value);
 
         let abi_type = ABIType::ABIUintType(BitSize::new(8).unwrap());
@@ -107,7 +107,7 @@ mod tests {
         let value = ABIValue::Uint(BigUint::from(0u16));
         let encoded = encode_uint(&abi_type, &value).unwrap();
         assert_eq!(encoded, vec![0, 0]);
-        let decoded = decode_uint(abi_type, encoded).unwrap();
+        let decoded = decode_uint(&abi_type, &encoded).unwrap();
         assert_eq!(decoded, value);
 
         let abi_type = ABIType::ABIUintType(BitSize::new(16).unwrap());
@@ -115,7 +115,7 @@ mod tests {
         let value = ABIValue::Uint(BigUint::from(65535u16));
         let encoded = encode_uint(&abi_type, &value).unwrap();
         assert_eq!(encoded, vec![255, 255]);
-        let decoded = decode_uint(abi_type, encoded).unwrap();
+        let decoded = decode_uint(&abi_type, &encoded).unwrap();
         assert_eq!(decoded, value);
 
         let abi_type = ABIType::ABIUintType(BitSize::new(16).unwrap());
@@ -133,7 +133,7 @@ mod tests {
         let value = ABIValue::Uint(BigUint::from(0u32));
         let encoded = encode_uint(&abi_type, &value).unwrap();
         assert_eq!(encoded, vec![0, 0, 0, 0]);
-        let decoded = decode_uint(abi_type, encoded).unwrap();
+        let decoded = decode_uint(&abi_type, &encoded).unwrap();
         assert_eq!(decoded, value);
 
         let abi_type = ABIType::ABIUintType(BitSize::new(32).unwrap());
@@ -141,7 +141,7 @@ mod tests {
         let value = ABIValue::Uint(BigUint::from(4294967295u32));
         let encoded = encode_uint(&abi_type, &value).unwrap();
         assert_eq!(encoded, vec![255, 255, 255, 255]);
-        let decoded = decode_uint(abi_type, encoded).unwrap();
+        let decoded = decode_uint(&abi_type, &encoded).unwrap();
         assert_eq!(decoded, value);
 
         let abi_type = ABIType::ABIUintType(BitSize::new(32).unwrap());
@@ -159,7 +159,7 @@ mod tests {
         let value = ABIValue::Uint(BigUint::from(0u64));
         let encoded = encode_uint(&abi_type, &value).unwrap();
         assert_eq!(encoded, vec![0, 0, 0, 0, 0, 0, 0, 0]);
-        let decoded = decode_uint(abi_type, encoded).unwrap();
+        let decoded = decode_uint(&abi_type, &encoded).unwrap();
         assert_eq!(decoded, value);
 
         let abi_type = ABIType::ABIUintType(BitSize::new(64).unwrap());
@@ -167,7 +167,7 @@ mod tests {
         let value = ABIValue::Uint(BigUint::from(2u64).pow(64) - 1u64);
         let encoded = encode_uint(&abi_type, &value).unwrap();
         assert_eq!(encoded, vec![255, 255, 255, 255, 255, 255, 255, 255]);
-        let decoded = decode_uint(abi_type, encoded).unwrap();
+        let decoded = decode_uint(&abi_type, &encoded).unwrap();
         assert_eq!(decoded, value);
 
         let abi_type = ABIType::ABIUintType(BitSize::new(64).unwrap());
@@ -186,7 +186,7 @@ mod tests {
         let value = ABIValue::Uint(large_value);
         let encoded = encode_uint(&abi_type, &value).unwrap();
         assert_eq!(encoded.len(), 32); // 256 bits = 32 bytes
-        let decoded = decode_uint(abi_type, encoded).unwrap();
+        let decoded = decode_uint(&abi_type, &encoded).unwrap();
         assert_eq!(decoded, value);
     }
 
@@ -224,7 +224,7 @@ mod tests {
         ];
 
         for (abi_type, wrong_bytes) in test_cases {
-            let result = decode_uint(abi_type, wrong_bytes);
+            let result = decode_uint(&abi_type, &wrong_bytes);
             assert!(result.is_err());
         }
     }
@@ -240,7 +240,7 @@ mod tests {
         ];
 
         for abi_type in wrong_types {
-            let result = decode_uint(abi_type, bytes.clone());
+            let result = decode_uint(&abi_type, &bytes.clone());
             assert!(result.is_err());
         }
     }
@@ -286,7 +286,7 @@ mod tests {
             let value = ABIValue::Uint(BigUint::from(12345u32));
             let encoded = encode_uint(&abi_type, &value).unwrap();
             assert_eq!(encoded.len(), (size / 8) as usize);
-            let decoded = decode_uint(abi_type, encoded).unwrap();
+            let decoded = decode_uint(&abi_type, &encoded).unwrap();
             assert_eq!(decoded, value);
         }
     }
@@ -297,7 +297,7 @@ mod tests {
         let value = ABIValue::Uint(BigUint::from(1u64) << 511); // 2^511
         let encoded = encode_uint(&abi_type, &value).unwrap();
         assert_eq!(encoded.len(), 64); // 512 bits = 64 bytes
-        let decoded = decode_uint(abi_type, encoded).unwrap();
+        let decoded = decode_uint(&abi_type, &encoded).unwrap();
         assert_eq!(decoded, value);
     }
 
@@ -308,7 +308,7 @@ mod tests {
         let value = ABIValue::Uint(BigUint::from(1u32));
         let encoded = encode_uint(&abi_type, &value).unwrap();
         assert_eq!(encoded, vec![0, 0, 0, 1]); // Should have leading zeros
-        let decoded = decode_uint(abi_type, encoded).unwrap();
+        let decoded = decode_uint(&abi_type, &encoded).unwrap();
         assert_eq!(decoded, value);
     }
 
@@ -341,7 +341,7 @@ mod tests {
         for (abi_type, _power, expected_value) in test_cases {
             let value = ABIValue::Uint(expected_value);
             let encoded = encode_uint(&abi_type, &value).unwrap();
-            let decoded = decode_uint(abi_type, encoded).unwrap();
+            let decoded = decode_uint(&abi_type, &encoded).unwrap();
             assert_eq!(decoded, value);
         }
     }

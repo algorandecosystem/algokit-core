@@ -24,7 +24,7 @@ pub fn encode_address(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, A
 
 /// Decode an address value from ABI format.
 /// Expects exactly 32 bytes and returns an Address ABIValue.
-pub fn decode_address(abi_type: &ABIType, bytes: Vec<u8>) -> Result<ABIValue, ABIError> {
+pub fn decode_address(abi_type: &ABIType, bytes: &[u8]) -> Result<ABIValue, ABIError> {
     match abi_type {
         ABIType::ABIAddressType => {
             if bytes.len() != 32 {
@@ -57,7 +57,7 @@ mod tests {
     fn test_address_round_trip() {
         let value = ABIValue::Address(TEST_ADDRESS_BYTES);
         let encoded = encode_address(&ABIType::ABIAddressType, &value).unwrap();
-        let decoded = decode_address(&ABIType::ABIAddressType, encoded).unwrap();
+        let decoded = decode_address(&ABIType::ABIAddressType, &encoded).unwrap();
         assert_eq!(decoded, value);
     }
 
@@ -71,7 +71,7 @@ mod tests {
     #[test]
     fn test_address_decoding() {
         let bytes = TEST_ADDRESS_BYTES.to_vec();
-        let decoded = decode_address(&ABIType::ABIAddressType, bytes).unwrap();
+        let decoded = decode_address(&ABIType::ABIAddressType, &bytes).unwrap();
         assert_eq!(decoded, ABIValue::Address(TEST_ADDRESS_BYTES));
     }
 
@@ -91,7 +91,7 @@ mod tests {
         for test_address in test_addresses {
             let value = ABIValue::Address(test_address);
             let encoded = encode_address(&ABIType::ABIAddressType, &value).unwrap();
-            let decoded = decode_address(&ABIType::ABIAddressType, encoded).unwrap();
+            let decoded = decode_address(&ABIType::ABIAddressType, &encoded).unwrap();
             assert_eq!(decoded, value);
         }
     }
@@ -121,7 +121,7 @@ mod tests {
     #[test]
     fn test_decode_wrong_length_too_short() {
         let bytes = vec![0u8; 31];
-        let result = decode_address(&ABIType::ABIAddressType, bytes);
+        let result = decode_address(&ABIType::ABIAddressType, &bytes);
         assert!(result.is_err());
         assert!(result
             .unwrap_err()
@@ -132,7 +132,7 @@ mod tests {
     #[test]
     fn test_decode_wrong_length_too_long() {
         let bytes = vec![0u8; 33];
-        let result = decode_address(&ABIType::ABIAddressType, bytes);
+        let result = decode_address(&ABIType::ABIAddressType, &bytes);
         assert!(result.is_err());
         assert!(result
             .unwrap_err()
@@ -143,7 +143,7 @@ mod tests {
     #[test]
     fn test_decode_empty_bytes() {
         let bytes = vec![];
-        let result = decode_address(&ABIType::ABIAddressType, bytes);
+        let result = decode_address(&ABIType::ABIAddressType, &bytes);
         assert!(result.is_err());
         assert!(result
             .unwrap_err()
@@ -154,7 +154,7 @@ mod tests {
     #[test]
     fn test_decode_wrong_abi_type() {
         let bytes = TEST_ADDRESS_BYTES.to_vec();
-        let result = decode_address(&ABIType::ABIString, bytes);
+        let result = decode_address(&ABIType::ABIString, &bytes);
         assert!(result.is_err());
         assert!(result
             .unwrap_err()

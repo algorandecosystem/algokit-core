@@ -26,7 +26,7 @@ pub fn encode_bool(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, ABIE
 
 /// Decode a boolean value from ABI format.
 /// Expects exactly 1 byte: 0x80 for true, 0x00 for false.
-pub fn decode_bool(abi_type: &ABIType, bytes: Vec<u8>) -> Result<ABIValue, ABIError> {
+pub fn decode_bool(abi_type: &ABIType, bytes: &[u8]) -> Result<ABIValue, ABIError> {
     match abi_type {
         ABIType::ABIBool => {
             if bytes.len() != 1 {
@@ -71,7 +71,7 @@ mod tests {
     fn test_decode_true() {
         let abi_type = ABIType::ABIBool;
         let bytes = vec![128]; // 0x80
-        let decoded = decode_bool(&abi_type, bytes).unwrap();
+        let decoded = decode_bool(&abi_type, &bytes).unwrap();
         assert_eq!(decoded, ABIValue::Bool(true));
     }
 
@@ -79,7 +79,7 @@ mod tests {
     fn test_decode_false() {
         let abi_type = ABIType::ABIBool;
         let bytes = vec![0]; // 0x00
-        let decoded = decode_bool(&abi_type, bytes).unwrap();
+        let decoded = decode_bool(&abi_type, &bytes).unwrap();
         assert_eq!(decoded, ABIValue::Bool(false));
     }
 
@@ -91,7 +91,7 @@ mod tests {
             let value = ABIValue::Bool(test_bool);
 
             let encoded = encode_bool(&ABIType::ABIBool, &value).unwrap();
-            let decoded = decode_bool(&ABIType::ABIBool, encoded).unwrap();
+            let decoded = decode_bool(&ABIType::ABIBool, &encoded).unwrap();
 
             assert_eq!(decoded, value);
         }
@@ -115,7 +115,7 @@ mod tests {
         let abi_type = ABIType::ABIBool;
         let bytes = vec![0x80, 0x00]; // 2 bytes instead of 1
 
-        let result = decode_bool(&abi_type, bytes);
+        let result = decode_bool(&abi_type, &bytes);
         assert!(result.is_err());
         assert!(result
             .unwrap_err()
@@ -128,7 +128,7 @@ mod tests {
         let abi_type = ABIType::ABIBool;
         let bytes = vec![0x30]; // Invalid value (not 0x80 or 0x00)
 
-        let result = decode_bool(&abi_type, bytes);
+        let result = decode_bool(&abi_type, &bytes);
         assert!(result.is_err());
         assert!(result
             .unwrap_err()
@@ -141,7 +141,7 @@ mod tests {
         let abi_type = ABIType::ABIString;
         let bytes = vec![0x80];
 
-        let result = decode_bool(&abi_type, bytes);
+        let result = decode_bool(&abi_type, &bytes);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("Expected ABIBool"));
     }

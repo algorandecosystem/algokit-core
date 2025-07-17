@@ -26,7 +26,7 @@ pub fn encode_string(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, AB
     }
 }
 
-pub fn decode_string(abi_type: ABIType, value: Vec<u8>) -> Result<ABIValue, ABIError> {
+pub fn decode_string(abi_type: &ABIType, value: &[u8]) -> Result<ABIValue, ABIError> {
     match abi_type {
         ABIType::ABIString => {
             if value.len() < ABI_LENGTH_SIZE {
@@ -88,7 +88,7 @@ mod tests {
     fn test_decode_asdf() {
         let abi_type = ABIType::ABIString;
         let bytes = vec![0, 4, 97, 115, 100, 102];
-        let decoded = decode_string(abi_type, bytes).unwrap();
+        let decoded = decode_string(&abi_type, &bytes).unwrap();
         assert_eq!(decoded, ABIValue::String("asdf".to_string()));
     }
 
@@ -96,7 +96,7 @@ mod tests {
     fn test_decode_whats_new() {
         let abi_type = ABIType::ABIString;
         let bytes = vec![0, 11, 87, 104, 97, 116, 39, 115, 32, 110, 101, 119, 63];
-        let decoded = decode_string(abi_type, bytes).unwrap();
+        let decoded = decode_string(&abi_type, &bytes).unwrap();
         assert_eq!(decoded, ABIValue::String("What's new?".to_string()));
     }
 
@@ -104,7 +104,7 @@ mod tests {
     fn test_decode_emoji() {
         let abi_type = ABIType::ABIString;
         let bytes = vec![0, 8, 240, 159, 152, 133, 240, 159, 148, 168];
-        let decoded = decode_string(abi_type, bytes).unwrap();
+        let decoded = decode_string(&abi_type, &bytes).unwrap();
         assert_eq!(decoded, ABIValue::String("😅🔨".to_string()));
     }
 
@@ -116,7 +116,7 @@ mod tests {
             let value = ABIValue::String(test_string.to_string());
 
             let encoded = encode_string(&ABIType::ABIString, &value).unwrap();
-            let decoded = decode_string(ABIType::ABIString, encoded).unwrap();
+            let decoded = decode_string(&ABIType::ABIString, &encoded).unwrap();
 
             assert_eq!(decoded, value);
         }
@@ -127,7 +127,7 @@ mod tests {
         let abi_type = ABIType::ABIString;
         let bytes = vec![0]; // Only 1 byte, need 2 for length
 
-        let result = decode_string(abi_type, bytes);
+        let result = decode_string(&abi_type, &bytes);
         assert!(result.is_err());
     }
 
@@ -136,7 +136,7 @@ mod tests {
         let abi_type = ABIType::ABIString;
         let bytes = vec![0, 5, 65, 66]; // Claims 5 bytes but only has 2
 
-        let result = decode_string(abi_type, bytes);
+        let result = decode_string(&abi_type, &bytes);
         assert!(result.is_err());
     }
 
