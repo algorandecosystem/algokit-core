@@ -15,7 +15,7 @@ async fn test_asset_freeze_unfreeze() {
     // This integration test validates the complete asset freeze/unfreeze cycle by:
     //
     // SETUP PHASE:
-    // 1. Create an asset with freeze account set (unfrozen by default)
+    // 1. Create an asset with the asset creator account set as the freeze account (unfrozen by default)
     // 2. Target account opts into the asset
     // 3. Transfer asset units to target account
     //
@@ -53,7 +53,7 @@ async fn test_asset_freeze_unfreeze() {
     let asset_creator_account = context
         .test_account
         .account()
-        .expect("Failed to get freeze account");
+        .expect("Failed to get asset creator account");
     let asset_creator_addr = asset_creator_account.address();
 
     // Create a composer for the target account that can send transactions
@@ -64,7 +64,7 @@ async fn test_asset_freeze_unfreeze() {
 
     // SETUP PHASE
 
-    // Step 1: Create an asset with the freeze account set
+    // Step 1: Create an asset with the asset creator account set as the freeze account
     let asset_create_params = AssetCreateParams {
         common_params: CommonParams {
             sender: asset_creator_addr.clone(),
@@ -79,7 +79,7 @@ async fn test_asset_freeze_unfreeze() {
         metadata_hash: None,
         manager: Some(asset_creator_addr.clone()),
         reserve: None,
-        freeze: Some(asset_creator_addr.clone()), // Set freeze account
+        freeze: Some(asset_creator_addr.clone()),
         clawback: None,
     };
 
@@ -322,7 +322,7 @@ async fn test_asset_freeze_unfreeze() {
         },
         asset_id,
         amount: 100,
-        receiver: asset_creator_addr.clone(), // Transfer back to freeze account
+        receiver: asset_creator_addr.clone(),
     };
 
     let mut composer = target_composer.clone();
