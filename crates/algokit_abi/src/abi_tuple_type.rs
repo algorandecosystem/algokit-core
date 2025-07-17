@@ -1,13 +1,18 @@
 use std::collections::HashMap;
 
 use crate::{
-    abi_type::{encode, get_name, is_dynamic},
+    abi_type::{encode, get_byte_len, get_name, is_dynamic},
     error::ABIError,
     utils::extend_bytes_to_length,
     ABIType, ABIValue,
 };
 
 const LENGTH_ENCODE_BYTE_SIZE: usize = 2;
+
+struct Segment {
+    left: u16,
+    right: u16,
+}
 
 pub fn encode_tuple(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
     let child_types = match abi_type {
@@ -96,17 +101,141 @@ pub fn encode_tuple(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, ABI
     Ok(results)
 }
 
-pub fn decode_tuple(abi_type: ABIType, bytes: Vec<u8>) -> Result<ABIValue, ABIError> {
+pub fn decode_tuple(abi_type: &ABIType, bytes: &[u8]) -> Result<ABIValue, ABIError> {
     let _child_types = match abi_type {
         ABIType::ABITupleType(child_types) => child_types,
         _ => return Err(ABIError::DecodingError("Expected ABITupleType".to_string())),
     };
 
-    let _bytes = bytes;
     // TODO: Implement tuple decoding logic
     Err(ABIError::DecodingError(
         "Tuple decoding not yet implemented".to_string(),
     ))
+}
+
+fn compress_bools(values: &[&ABIValue]) -> Result<u8, ABIError> {
+    if values.len() > 8 {
+        return Err(ABIError::EncodingError(format!(
+            "Expected no more than 8 bool values, received {}",
+            values.len()
+        )));
+    }
+
+    let mut result: u8 = 0;
+    for (i, value) in values.iter().enumerate() {
+        match value {
+            ABIValue::Bool(b) => {
+                if *b {
+                    result |= 1 << (7 - i);
+                }
+            }
+            _ => {
+                return Err(ABIError::EncodingError(
+                    "Expected all values to be ABIValue::Bool".to_string(),
+                ));
+            }
+        }
+    }
+    Ok(result)
+}
+
+fn cut_into_segments(abi_type: &ABIType, bytes: &[u8]) -> Result<Vec<Vec<u8>>, ABIError> {
+    let child_types = match abi_type {
+        ABIType::ABITupleType(child_types) => child_types,
+        _ => return Err(ABIError::DecodingError("Expected ABITupleType".to_string())),
+    };
+
+    let mut dynamic_segments: Vec<Segment> = Vec::new();
+    let mut value_partitions: Vec<Option<Vec<u8>>> = Vec::new();
+    let mut cursor: usize = 0;
+
+    for child_type in child_types {
+        if is_dynamic(child_type) {
+            if bytes[cursor..].len() < LENGTH_ENCODE_BYTE_SIZE {
+                return Err(ABIError::DecodingError(
+                    "Dynamic type in tuple is too short to be decoded".to_string(),
+                ));
+            }
+
+            let dynamic_index = u16::from_be_bytes([bytes[cursor], bytes[cursor + 1]]);
+            if let Some(last_segment) = dynamic_segments.last_mut() {
+                if dynamic_index < last_segment.left {
+                    return Err(ABIError::DecodingError(
+                        "dynamic index segment miscalculation: left is greater than right index"
+                            .to_string(),
+                    ));
+                }
+                last_segment.right = dynamic_index;
+            }
+
+            dynamic_segments.push(Segment {
+                left: dynamic_index,
+                right: 0, // TODO: check this logic, it is -1 in algosdk
+            });
+            value_partitions.push(None);
+            cursor += LENGTH_ENCODE_BYTE_SIZE;
+        } else {
+            match child_type {
+                ABIType::ABIBool => {
+                    // TODO: bool
+                }
+                _ => {
+                    let child_type_len = get_byte_len(&child_type);
+                    value_partitions.push(Some(bytes[cursor..cursor + child_type_len].to_vec()));
+                    cursor += child_type_len;
+                }
+            }
+        }
+    }
+
+    if cursor < bytes.len() {
+        return Err(ABIError::DecodingError(
+            "Input bytes not fully consumed".to_string(),
+        ));
+    }
+    if let Some(last_segment) = dynamic_segments.last_mut() {
+        last_segment.right = bytes.len() as u16;
+    }
+
+    for i in 0..dynamic_segments.len() {
+        let segment = &dynamic_segments[i];
+        if segment.left > segment.right {
+            return Err(ABIError::DecodingError(
+                "Dynamic segment should display a [l, r] space with l <= r".to_string(),
+            ));
+        }
+        if i != dynamic_segments.len() - 1 && segment.right != dynamic_segments[i + 1].left {
+            return Err(ABIError::DecodingError(
+                "Dynamic segments should be consecutive".to_string(),
+            ));
+        }
+    }
+
+    let mut segment_index: usize = 0;
+    for i in 0..child_types.len() {
+        let child_type = &child_types[i];
+        if is_dynamic(child_type) {
+            value_partitions[i] = Some(
+                bytes[dynamic_segments[segment_index].left as usize
+                    ..dynamic_segments[segment_index].right as usize]
+                    .to_vec(),
+            );
+            segment_index += 1;
+        }
+    }
+
+    // Check that all items in value_partitions are Some and convert to Vec<Vec<u8>>
+    let value_partitions: Vec<Vec<u8>> = value_partitions
+        .into_iter()
+        .enumerate()
+        .map(|(i, partition)| {
+            partition.ok_or_else(|| {
+                ABIError::DecodingError(format!("Value partition at index {} is None", i))
+            })
+        })
+        .collect::<Result<Vec<Vec<u8>>, ABIError>>()?;
+
+    Ok(value_partitions)
 }
 
 #[cfg(test)]
@@ -343,30 +472,4 @@ mod tests {
         // Expected: Err(ABIError::DecodingError("extra bytes..."))
         assert!(result.is_err()); // Currently fails with not implemented
     }
-}
-
-fn compress_bools(values: &[&ABIValue]) -> Result<u8, ABIError> {
-    if values.len() > 8 {
-        return Err(ABIError::EncodingError(format!(
-            "Expected no more than 8 bool values, received {}",
-            values.len()
-        )));
-    }
-
-    let mut result: u8 = 0;
-    for (i, value) in values.iter().enumerate() {
-        match value {
-            ABIValue::Bool(b) => {
-                if *b {
-                    result |= 1 << (7 - i);
-                }
-            }
-            _ => {
-                return Err(ABIError::EncodingError(
-                    "Expected all values to be ABIValue::Bool".to_string(),
-                ));
-            }
-        }
-    }
-    Ok(result)
 }

@@ -122,3 +122,7 @@ pub fn get_name(abi_type: &ABIType) -> String {
         }
     }
 }
+
+pub fn get_byte_len(abi_type: &ABIType) -> usize {
+    return 0;
+}
