@@ -133,7 +133,10 @@ impl MultisigSignature {
     ) -> Result<Self, AlgoKitTransactError> {
         let mut subsignatures = self.subsignatures.clone();
         let mut found = false;
-        for subsig in subsignatures.iter_mut().filter(|subsig| subsig.address == address) {
+        for subsig in subsignatures
+            .iter_mut()
+            .filter(|subsig| subsig.address == address)
+        {
             found = true;
             subsig.signature = Some(subsignature);
         }
