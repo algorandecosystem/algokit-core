@@ -7,6 +7,7 @@ pub mod abi_type;
 pub mod abi_ufixed_type;
 pub mod abi_uint_type;
 pub mod abi_value;
+pub mod common;
 pub mod dynamic_array;
 pub mod error;
 pub mod static_array;

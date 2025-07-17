@@ -1,4 +1,4 @@
-use crate::{error::ABIError, ABIType, ABIValue};
+use crate::{common::ADDR_BYTE_SIZE, error::ABIError, ABIType, ABIValue};
 
 /// Encode an address value to ABI format.
 /// Addresses are encoded as 32-byte public keys.
@@ -8,9 +8,10 @@ pub fn encode_address(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, A
             let address_bytes = match value {
                 ABIValue::Address(a) => a,
                 _ => {
-                    return Err(ABIError::EncodingError(
-                        "Cannot encode value as address: expected a 32-byte array".to_string(),
-                    ));
+                    return Err(ABIError::EncodingError(format!(
+                        "Cannot encode value as address: expected a {}-byte array",
+                        ADDR_BYTE_SIZE
+                    )));
                 }
             };
 
@@ -27,13 +28,14 @@ pub fn encode_address(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, A
 pub fn decode_address(abi_type: &ABIType, bytes: &[u8]) -> Result<ABIValue, ABIError> {
     match abi_type {
         ABIType::ABIAddressType => {
-            if bytes.len() != 32 {
-                return Err(ABIError::DecodingError(
-                    "Address byte string must be 32 bytes long".to_string(),
-                ));
+            if bytes.len() != ADDR_BYTE_SIZE {
+                return Err(ABIError::DecodingError(format!(
+                    "Address byte string must be {} bytes long",
+                    ADDR_BYTE_SIZE
+                )));
             }
 
-            let mut address_bytes = [0u8; 32];
+            let mut address_bytes = [0u8; ADDR_BYTE_SIZE];
             address_bytes.copy_from_slice(&bytes);
             Ok(ABIValue::Address(address_bytes))
         }

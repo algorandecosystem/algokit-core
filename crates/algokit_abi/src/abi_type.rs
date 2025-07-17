@@ -3,11 +3,13 @@ use crate::{
     abi_bool_type::{decode_bool, encode_bool},
     abi_byte_type::{decode_byte, encode_byte},
     abi_string_type::{decode_string, encode_string},
-    abi_tuple_type::{decode_tuple, encode_tuple},
+    abi_tuple_type::{decode_tuple, encode_tuple, find_bool_sequence_end},
     abi_ufixed_type::{decode_ufixed, encode_ufixed},
     abi_uint_type::{decode_uint, encode_uint},
+    common::ADDR_BYTE_SIZE,
+    dynamic_array::decode_dynamic_array,
     error::ABIError,
-    static_array::encode_static_array,
+    static_array::{decode_static_array, encode_static_array},
 };
 
 use super::abi_value::ABIValue;
@@ -93,8 +95,8 @@ pub fn decode(abi_type: &ABIType, bytes: &[u8]) -> Result<ABIValue, ABIError> {
 pub fn is_dynamic(abi_type: &ABIType) -> bool {
     match abi_type {
         ABIType::ABIStaticArray(child_type, _) => is_dynamic(child_type),
-        ABIType::ABIDynamicArray(child_type) => is_dynamic(child_type),
         ABIType::ABITupleType(child_types) => child_types.iter().all(|t| is_dynamic(t)),
+        ABIType::ABIDynamicArray(_) => true,
         ABIType::ABIString => true,
         _ => false,
     }
@@ -123,6 +125,44 @@ pub fn get_name(abi_type: &ABIType) -> String {
     }
 }
 
-pub fn get_byte_len(abi_type: &ABIType) -> usize {
-    return 0;
+// TODO: check the return type
+pub fn get_size(abi_type: &ABIType) -> Result<usize, ABIError> {
+    match abi_type {
+        ABIType::ABIUintType(bit_size) => Ok((bit_size.value() / 8) as usize),
+        ABIType::ABIUFixedType(bit_size, _) => Ok((bit_size.value() / 8) as usize),
+        ABIType::ABIAddressType => Ok(ADDR_BYTE_SIZE),
+        ABIType::ABIBool => Ok(1),
+        ABIType::ABIByte => Ok(1),
+        ABIType::ABIStaticArray(child_type, size) => match child_type {
+            ABIType::ABIBool => Ok((*size).div_ceil(8)),
+            _ => Ok(get_size(&child_type)? * *size),
+        },
+        ABIType::ABITupleType(child_types) => {
+            let mut size = 0;
+            for mut i in 0..child_types.len() {
+                let child_type = child_types[i];
+                match child_type {
+                    ABIType::ABIBool => {
+                        let sequence_end_index = find_bool_sequence_end(child_types, i);
+                        let bool_count = sequence_end_index - i + 1;
+
+                        size += bool_count.div_ceil(8);
+                        i = sequence_end_index;
+                    }
+                    _ => {
+                        size += get_size(child_type)?;
+                    }
+                }
+            }
+            Ok(size)
+        }
+        ABIType::ABIString => Err(ABIError::DecodingError(format!(
+            "{} is a dynamic type",
+            get_name(abi_type)
+        ))),
+        ABIType::ABIDynamicArray(_) => Err(ABIError::DecodingError(format!(
+            "{} is a dynamic type",
+            get_name(abi_type)
+        ))),
+    }
 }
