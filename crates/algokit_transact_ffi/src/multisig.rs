@@ -6,8 +6,6 @@ use crate::*;
 /// for cross-language interoperability.
 #[ffi_record]
 pub struct MultisigSignature {
-    /// The derived address for the multisignature group.
-    address: String,
     /// Multisig version.
     version: u8,
     /// Minimum number of signatures required.
@@ -30,7 +28,6 @@ pub struct MultisigSubsignature {
 impl From<algokit_transact::MultisigSignature> for MultisigSignature {
     fn from(value: algokit_transact::MultisigSignature) -> Self {
         Self {
-            address: value.to_string(),
             version: value.version,
             threshold: value.threshold,
             subsignatures: value.subsignatures.into_iter().map(Into::into).collect(),
@@ -110,7 +107,6 @@ pub fn new_multisig_signature(
 /// Returns the list of participant addresses from a multisignature signature.
 ///
 /// # Errors
-///
 /// Returns [`AlgoKitTransactError`] if the multisignature is invalid.
 #[ffi_func]
 pub fn participants_from_multisig_signature(
@@ -122,6 +118,18 @@ pub fn participants_from_multisig_signature(
         .into_iter()
         .map(|addr| addr.to_string())
         .collect())
+}
+
+/// Returns the address of the multisignature account.
+///
+/// # Errors
+/// /// Returns [`AlgoKitTransactError`] if the multisignature signature is invalid or the address cannot be derived.
+#[ffi_func]
+pub fn address_from_multisig_signature(
+    multisig_signature: MultisigSignature,
+) -> Result<String, AlgoKitTransactError> {
+    let multisig: algokit_transact::MultisigSignature = multisig_signature.try_into()?;
+    Ok(multisig.to_string())
 }
 
 /// Applies a subsignature for a participant to a multisignature signature, replacing any existing signature.

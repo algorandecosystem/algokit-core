@@ -120,14 +120,12 @@ pub enum TransactionType {
 
 #[ffi_record]
 pub struct KeyPairAccount {
-    address: String,
     pub_key: ByteBuf,
 }
 
 impl From<algokit_transact::KeyPairAccount> for KeyPairAccount {
     fn from(value: algokit_transact::KeyPairAccount) -> Self {
         Self {
-            address: value.to_string(),
             pub_key: value.pub_key.to_vec().into(),
         }
     }
@@ -152,7 +150,6 @@ impl TryFrom<KeyPairAccount> for algokit_transact::KeyPairAccount {
 impl From<algokit_transact::Address> for KeyPairAccount {
     fn from(value: algokit_transact::Address) -> Self {
         Self {
-            address: value.to_string(),
             pub_key: value.as_bytes().to_vec().into(),
         }
     }
@@ -162,7 +159,8 @@ impl TryFrom<KeyPairAccount> for algokit_transact::Address {
     type Error = AlgoKitTransactError;
 
     fn try_from(value: KeyPairAccount) -> Result<Self, Self::Error> {
-        value.address.parse().map_err(Self::Error::from)
+        let impl_keypair_account: algokit_transact::KeyPairAccount = value.try_into()?;
+        Ok(impl_keypair_account.address())
     }
 }
 
@@ -717,6 +715,14 @@ pub fn keypair_account_from_address(address: &str) -> Result<KeyPairAccount, Alg
     Ok(address
         .parse::<algokit_transact::KeyPairAccount>()
         .map(Into::into)?)
+}
+
+#[ffi_func]
+pub fn address_from_keypair_account(
+    account: KeyPairAccount,
+) -> Result<String, AlgoKitTransactError> {
+    let impl_keypair_account: algokit_transact::KeyPairAccount = account.try_into()?;
+    Ok(impl_keypair_account.address().as_str())
 }
 
 /// Get the raw 32-byte transaction ID for a transaction.
