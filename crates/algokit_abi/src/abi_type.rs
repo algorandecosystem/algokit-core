@@ -78,5 +78,24 @@ pub fn is_dynamic(abi_type: &ABIType) -> bool {
 }
 
 pub fn get_name(abi_type: &ABIType) -> String {
-    "Not implemented".to_string()
+    match abi_type {
+        ABIType::ABIUintType(bit_size) => format!("uint{}", bit_size.value()),
+        ABIType::ABIUFixedType(bit_size, precision) => {
+            format!("ufixed{}x{}", bit_size.value(), precision.value())
+        }
+        ABIType::ABIAddressType => "address".to_string(),
+        ABIType::ABITupleType(child_types) => {
+            let type_names: Vec<String> = child_types.iter().map(|t| get_name(t)).collect();
+            format!("({})", type_names.join(","))
+        }
+        ABIType::ABIString => "string".to_string(),
+        ABIType::ABIByte => "byte".to_string(),
+        ABIType::ABIBool => "bool".to_string(),
+        ABIType::ABIStaticArray(child_type, length) => {
+            format!("{}[{}]", get_name(child_type), length)
+        }
+        ABIType::ABIDynamicArray(child_type) => {
+            format!("{}[]", get_name(child_type))
+        }
+    }
 }
