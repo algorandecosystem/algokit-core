@@ -6,17 +6,54 @@ use crate::{
 
 use super::abi_value::ABIValue;
 
+#[derive(Debug, Clone, Copy)]
+pub struct BitSize(u16);
+
+impl BitSize {
+    pub fn new(bits: u16) -> Result<Self, ABIError> {
+        if bits < 8 || bits > 512 || bits % 8 != 0 {
+            return Err(ABIError::ValidationError(format!(
+                "Bit size must be between 8 and 512 and divisible by 8, got {}",
+                bits
+            )));
+        }
+        Ok(BitSize(bits))
+    }
+
+    pub fn value(&self) -> u16 {
+        self.0
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct Precision(u8);
+
+impl Precision {
+    pub fn new(precision: u8) -> Result<Self, ABIError> {
+        if precision > 160 {
+            return Err(ABIError::ValidationError(format!(
+                "Precision must be between 0 and 160, got {}",
+                precision
+            )));
+        }
+        Ok(Precision(precision))
+    }
+
+    pub fn value(&self) -> u8 {
+        self.0
+    }
+}
+
 pub enum ABIType<'a> {
-    // TODO: validation on creation
-    ABIUintType(u16),
-    ABIUFixedType(u16, u8),
+    ABIUintType(BitSize),
+    ABIUFixedType(BitSize, Precision),
     ABIAddressType,
     ABITupleType(Vec<&'a ABIType<'a>>),
     ABIString,
     ABIByte,
     ABIBool,
     ABIStaticArray(&'a ABIType<'a>, usize),
-    ABIDynamicArray(&'a ABIType<'a>), // blocked
+    ABIDynamicArray(&'a ABIType<'a>),
 }
 
 pub fn encode(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, ABIError> {

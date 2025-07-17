@@ -6,6 +6,9 @@ use crate::{abi_type::ABIType, error::ABIError};
 pub fn encode_ufixed(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
     match abi_type {
         ABIType::ABIUFixedType(bit_size, precision) => {
+            let bit_size = bit_size.value();
+            let precision = precision.value();
+
             let value = match value {
                 ABIValue::Uint(n) => n,
                 _ => {
@@ -16,7 +19,7 @@ pub fn encode_ufixed(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, AB
                 }
             };
 
-            if value >= &BigUint::from(2u64).pow(*bit_size as u32) {
+            if value >= &BigUint::from(2u64).pow(bit_size as u32) {
                 return Err(ABIError::EncodingError(format!(
                     "{} is too big to fit in ufixed{}x{}",
                     value, bit_size, precision
@@ -37,6 +40,7 @@ pub fn encode_ufixed(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, AB
 pub fn decode_ufixed(abi_type: ABIType, bytes: Vec<u8>) -> Result<ABIValue, ABIError> {
     match abi_type {
         ABIType::ABIUFixedType(bit_size, _precision) => {
+            let bit_size = bit_size.value();
             let expected_len = (bit_size / 8) as usize;
             if bytes.len() != expected_len {
                 return Err(ABIError::DecodingError(format!(

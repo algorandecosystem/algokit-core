@@ -1,11 +1,11 @@
 use thiserror::Error;
 
-/// Represents errors that can occur during Algorand transaction operations.
-///
-/// This enum encompasses various failure scenarios that may arise when creating,
-/// manipulating, serializing, or deserializing Algorand transactions.
 #[derive(Debug, Error)]
 pub enum ABIError {
+    // TODO: error message
+    #[error("Validation: {0}")]
+    ValidationError(String),
+
     #[error("Error ocurred during encoding: {0}")]
     EncodingError(String),
 
