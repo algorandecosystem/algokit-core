@@ -148,11 +148,11 @@ pub fn get_size(abi_type: &ABIType) -> Result<usize, ABIError> {
         }
         ABIType::String => Err(ABIError::DecodingError(format!(
             "{} is a dynamic type",
-            get_name(abi_type)
+            abi_type
         ))),
         ABIType::DynamicArray(_) => Err(ABIError::DecodingError(format!(
             "{} is a dynamic type",
-            get_name(abi_type)
+            abi_type
         ))),
     }
 }
@@ -190,7 +190,7 @@ impl<'a> FromStr for ABIType<'a> {
         if s.ends_with("[]") {
             let element_type_str = &s[..s.len() - 2];
             let element_type = ABIType::from_str(element_type_str)?;
-            return Ok(ABIType::DynamicArray(Box::new(element_type)));
+            return Ok(ABIType::DynamicArray(&element_type));
         }
 
         // Static array
@@ -261,9 +261,10 @@ impl<'a> FromStr for ABIType<'a> {
 
         // Tuple type
         if s.len() >= 2 && s.starts_with('(') && s.ends_with(')') {
-            let tuple_content = &s[1..s.len() - 1];
-            let child_types = parse_tuple_content(tuple_content)?;
-            return Ok(ABIType::Tuple(child_types));
+            return Err(ABIError::FormatError("Not supported".to_string()));
+            // let tuple_content = &s[1..s.len() - 1];
+            // let child_types = parse_tuple_content(tuple_content)?;
+            // return Ok(ABIType::Tuple(child_types));
         }
 
         // Simple types
@@ -280,57 +281,57 @@ impl<'a> FromStr for ABIType<'a> {
     }
 }
 
-fn parse_tuple_content(content: &str) -> Result<Vec<&ABIType>, ABIError> {
-    if content.is_empty() {
-        return Ok(Vec::new());
-    }
+// fn parse_tuple_content(content: String) -> Result<Vec<&ABIType>, ABIError> {
+//     if content.is_empty() {
+//         return Ok(Vec::new());
+//     }
 
-    // TODO: can we regex this?
-    if content.starts_with(",") {
-        return Err(ABIError::FormatError(
-            "Tuple name should not start with comma".to_string(),
-        ));
-    }
-    if content.ends_with(",") {
-        return Err(ABIError::FormatError(
-            "Tuple name should not start with comma".to_string(),
-        ));
-    }
-    if content.contains(",,") {
-        return Err(ABIError::FormatError(
-            "tuple string should not have consecutive commas".to_string(),
-        ));
-    }
+//     // TODO: can we regex this?
+//     if content.starts_with(",") {
+//         return Err(ABIError::FormatError(
+//             "Tuple name should not start with comma".to_string(),
+//         ));
+//     }
+//     if content.ends_with(",") {
+//         return Err(ABIError::FormatError(
+//             "Tuple name should not start with comma".to_string(),
+//         ));
+//     }
+//     if content.contains(",,") {
+//         return Err(ABIError::FormatError(
+//             "tuple string should not have consecutive commas".to_string(),
+//         ));
+//     }
 
-    let mut result = Vec::new();
-    let mut current_start = 0;
-    let mut paren_depth = 0;
-    let mut bracket_depth = 0;
+//     let mut result = Vec::new();
+//     let mut current_start = 0;
+//     let mut paren_depth = 0;
+//     let mut bracket_depth = 0;
 
-    for (i, ch) in content.char_indices() {
-        match ch {
-            '(' => paren_depth += 1,
-            ')' => paren_depth -= 1,
-            '[' => bracket_depth += 1,
-            ']' => bracket_depth -= 1,
-            ',' if paren_depth == 0 && bracket_depth == 0 => {
-                let type_str = content[current_start..i].trim();
-                if !type_str.is_empty() {
-                    let abi_type = Box::new(from_string(type_str)?);
-                    result.push(Box::leak(abi_type));
-                }
-                current_start = i + 1;
-            }
-            _ => {}
-        }
-    }
+//     for (i, ch) in content.char_indices() {
+//         match ch {
+//             '(' => paren_depth += 1,
+//             ')' => paren_depth -= 1,
+//             '[' => bracket_depth += 1,
+//             ']' => bracket_depth -= 1,
+//             ',' if paren_depth == 0 && bracket_depth == 0 => {
+//                 let type_str = content[current_start..i].trim();
+//                 if !type_str.is_empty() {
+//                     let abi_type = Box::new(from_string(type_str)?);
+//                     result.push(Box::leak(abi_type));
+//                 }
+//                 current_start = i + 1;
+//             }
+//             _ => {}
+//         }
+//     }
 
-    // Handle the last element
-    let type_str = content[current_start..].trim();
-    if !type_str.is_empty() {
-        let abi_type = Box::new(from_string(type_str)?);
-        result.push(Box::leak(abi_type));
-    }
+//     // Handle the last element
+//     let type_str = content[current_start..].trim();
+//     if !type_str.is_empty() {
+//         let abi_type = Box::new(from_string(type_str)?);
+//         result.push(Box::leak(abi_type));
+//     }
 
-    Ok(result)
-}
+//     Ok(result)
+// }
