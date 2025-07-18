@@ -17,6 +17,11 @@ use crate::{
         },
     },
 };
+use regex::Regex;
+use std::{
+    fmt::{Display, Formatter, Result as FmtResult},
+    str::FromStr,
+};
 
 use super::abi_value::ABIValue;
 
@@ -108,29 +113,6 @@ pub fn is_dynamic(abi_type: &ABIType) -> bool {
     }
 }
 
-pub fn get_name(abi_type: &ABIType) -> String {
-    match abi_type {
-        ABIType::Uint(bit_size) => format!("uint{}", bit_size.value()),
-        ABIType::UFixed(bit_size, precision) => {
-            format!("ufixed{}x{}", bit_size.value(), precision.value())
-        }
-        ABIType::Address => "address".to_string(),
-        ABIType::Tuple(child_types) => {
-            let type_names: Vec<String> = child_types.iter().map(|t| get_name(t)).collect();
-            format!("({})", type_names.join(","))
-        }
-        ABIType::String => "string".to_string(),
-        ABIType::Byte => "byte".to_string(),
-        ABIType::Bool => "bool".to_string(),
-        ABIType::StaticArray(child_type, length) => {
-            format!("{}[{}]", get_name(child_type), length)
-        }
-        ABIType::DynamicArray(child_type) => {
-            format!("{}[]", get_name(child_type))
-        }
-    }
-}
-
 // TODO: check the return type
 pub fn get_size(abi_type: &ABIType) -> Result<usize, ABIError> {
     match abi_type {
@@ -173,4 +155,182 @@ pub fn get_size(abi_type: &ABIType) -> Result<usize, ABIError> {
             get_name(abi_type)
         ))),
     }
+}
+
+impl<'a> Display for ABIType<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        match self {
+            ABIType::Uint(bit_size) => write!(f, "uint{}", bit_size.value()),
+            ABIType::UFixed(bit_size, precision) => {
+                write!(f, "ufixed{}x{}", bit_size.value(), precision.value())
+            }
+            ABIType::Address => write!(f, "address"),
+            ABIType::Tuple(child_types) => {
+                let type_strings: Vec<String> = child_types.iter().map(|t| t.to_string()).collect();
+                write!(f, "({})", type_strings.join(","))
+            }
+            ABIType::String => write!(f, "string"),
+            ABIType::Byte => write!(f, "byte"),
+            ABIType::Bool => write!(f, "bool"),
+            ABIType::StaticArray(child_type, length) => {
+                write!(f, "{}[{}]", child_type, length)
+            }
+            ABIType::DynamicArray(child_type) => {
+                write!(f, "{}[]", child_type)
+            }
+        }
+    }
+}
+
+impl<'a> FromStr for ABIType<'a> {
+    type Err = ABIError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // Dynamic array
+        if s.ends_with("[]") {
+            let element_type_str = &s[..s.len() - 2];
+            let element_type = ABIType::from_str(element_type_str)?;
+            return Ok(ABIType::DynamicArray(Box::new(element_type)));
+        }
+
+        // Static array
+        if s.ends_with(']') {
+            let regex = Regex::new(r"^([a-z\d[\](),]+)\[(0|[1-9][\d]*)]$").expect("Invalid regex");
+            if let Some(captures) = regex.captures(s) {
+                let element_type_str = &captures[1];
+                let length_str = &captures[2];
+
+                let length = length_str.parse::<usize>().map_err(|_| {
+                    ABIError::ValidationError(format!("Invalid array length: {}", length_str))
+                })?;
+
+                let element_type = ABIType::from_str(element_type_str)?;
+                return Ok(ABIType::StaticArray(&element_type, length));
+            } else {
+                return Err(ABIError::ValidationError(format!(
+                    "Malformed static array string: {}",
+                    s
+                )));
+            }
+        }
+
+        // Uint type
+        if s.starts_with("uint") {
+            let size_str = &s[4..];
+            if size_str.chars().all(|c| c.is_ascii_digit()) {
+                let size = size_str.parse::<u16>().map_err(|_| {
+                    ABIError::ValidationError(format!("Invalid uint size: {}", size_str))
+                })?;
+                let bit_size = BitSize::new(size)?;
+                return Ok(ABIType::Uint(bit_size));
+            } else {
+                return Err(ABIError::ValidationError(format!(
+                    "Malformed uint string: {}",
+                    size_str
+                )));
+            }
+        }
+
+        // UFixed type
+        if s.starts_with("ufixed") {
+            let regex = Regex::new(r"^ufixed([1-9][\d]*)x([1-9][\d]*)$").expect("Invalid regex");
+            if let Some(captures) = regex.captures(s) {
+                let size_str = &captures[1];
+                let precision_str = &captures[2];
+
+                let size = size_str.parse::<u16>().map_err(|_| {
+                    ABIError::ValidationError(format!("Invalid ufixed size: {}", size_str))
+                })?;
+                let precision = precision_str.parse::<u8>().map_err(|_| {
+                    ABIError::ValidationError(format!(
+                        "Invalid ufixed precision: {}",
+                        precision_str
+                    ))
+                })?;
+
+                let bit_size = BitSize::new(size)?;
+                let precision = Precision::new(precision)?;
+                return Ok(ABIType::UFixed(bit_size, precision));
+            } else {
+                return Err(ABIError::ValidationError(format!(
+                    "Malformed ufixed type: {}",
+                    s
+                )));
+            }
+        }
+
+        // Tuple type
+        if s.len() >= 2 && s.starts_with('(') && s.ends_with(')') {
+            let tuple_content = &s[1..s.len() - 1];
+            let child_types = parse_tuple_content(tuple_content)?;
+            return Ok(ABIType::Tuple(child_types));
+        }
+
+        // Simple types
+        match s {
+            "byte" => Ok(ABIType::Byte),
+            "bool" => Ok(ABIType::Bool),
+            "address" => Ok(ABIType::Address),
+            "string" => Ok(ABIType::String),
+            _ => Err(ABIError::ValidationError(format!(
+                "Cannot convert string '{}' to an ABI type",
+                s
+            ))),
+        }
+    }
+}
+
+fn parse_tuple_content(content: &str) -> Result<Vec<&ABIType>, ABIError> {
+    if content.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    // TODO: can we regex this?
+    if content.starts_with(",") {
+        return Err(ABIError::FormatError(
+            "Tuple name should not start with comma".to_string(),
+        ));
+    }
+    if content.ends_with(",") {
+        return Err(ABIError::FormatError(
+            "Tuple name should not start with comma".to_string(),
+        ));
+    }
+    if content.contains(",,") {
+        return Err(ABIError::FormatError(
+            "tuple string should not have consecutive commas".to_string(),
+        ));
+    }
+
+    let mut result = Vec::new();
+    let mut current_start = 0;
+    let mut paren_depth = 0;
+    let mut bracket_depth = 0;
+
+    for (i, ch) in content.char_indices() {
+        match ch {
+            '(' => paren_depth += 1,
+            ')' => paren_depth -= 1,
+            '[' => bracket_depth += 1,
+            ']' => bracket_depth -= 1,
+            ',' if paren_depth == 0 && bracket_depth == 0 => {
+                let type_str = content[current_start..i].trim();
+                if !type_str.is_empty() {
+                    let abi_type = Box::new(from_string(type_str)?);
+                    result.push(Box::leak(abi_type));
+                }
+                current_start = i + 1;
+            }
+            _ => {}
+        }
+    }
+
+    // Handle the last element
+    let type_str = content[current_start..].trim();
+    if !type_str.is_empty() {
+        let abi_type = Box::new(from_string(type_str)?);
+        result.push(Box::leak(abi_type));
+    }
+
+    Ok(result)
 }

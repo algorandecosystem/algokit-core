@@ -1,8 +1,5 @@
 use crate::{
-    abi_type::{get_name, ABIType},
-    abi_value::ABIValue,
-    common::LENGTH_ENCODE_BYTE_SIZE,
-    error::ABIError,
+    abi_type::ABIType, abi_value::ABIValue, common::LENGTH_ENCODE_BYTE_SIZE, error::ABIError,
 };
 
 use super::tuple::{decode_tuple, encode_tuple};
@@ -13,7 +10,7 @@ pub fn encode_dynamic_array(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<
         _ => {
             return Err(ABIError::EncodingError(format!(
                 "Cannot encode tuple {}, expect an array of byte array",
-                get_name(abi_type)
+                abi_type
             )));
         }
     };

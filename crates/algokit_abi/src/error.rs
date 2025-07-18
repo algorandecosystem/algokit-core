@@ -11,4 +11,7 @@ pub enum ABIError {
 
     #[error("Error ocurred during decoding: {0}")]
     DecodingError(String),
+
+    #[error("Format error: {0}")]
+    FormatError(String),
 }

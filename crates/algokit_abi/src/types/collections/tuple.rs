@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    abi_type::{encode, get_name, get_size, is_dynamic},
+    abi_type::{encode, get_size, is_dynamic},
     common::{BOOL_FALSE_BYTE, BOOL_TRUE_BYTE, LENGTH_ENCODE_BYTE_SIZE},
     decode,
     error::ABIError,
@@ -23,7 +23,7 @@ pub fn encode_tuple(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, ABI
         _ => {
             return Err(ABIError::EncodingError(format!(
                 "Cannot encode tuple {}, expect an array of byte array",
-                get_name(abi_type)
+                abi_type
             )));
         }
     };
@@ -34,7 +34,7 @@ pub fn encode_tuple(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, ABI
     if child_types.len() != values.len() {
         return Err(ABIError::EncodingError(format!(
             "Cannot encode tuple {}, value and child type lengths mismatch",
-            get_name(abi_type)
+            abi_type
         )));
     }
 
@@ -260,10 +260,10 @@ pub fn find_bool_sequence_end(child_types: &[&ABIType<'_>], current_index: usize
     loop {
         match child_types[cursor] {
             ABIType::Bool => {
-                cursor += 1;
-                if cursor - current_index == 8 {
+                if cursor - current_index == 8 || cursor == child_types.len() - 1 {
                     return cursor;
                 }
+                cursor += 1;
             }
             _ => {
                 return cursor - 1;
@@ -325,9 +325,10 @@ mod tests {
             ABIValue::Bool(true),
         ]);
 
-        let encoded = encode_tuple(&tuple_type, &value);
-        // TODO: Should succeed when implemented
-        assert!(encoded.is_err()); // Currently fails with not implemented
+        let encoded = encode_tuple(&tuple_type, &value).expect("Failed to encode");
+        let decoded = decode_tuple(&tuple_type, &encoded).expect("Failed to decode");
+
+        assert_eq!(decoded, value);
     }
 
     #[test]
@@ -342,9 +343,10 @@ mod tests {
             ABIValue::Bool(false),
         ]);
 
-        let encoded = encode_tuple(&tuple_type, &value);
-        // TODO: Should succeed when implemented
-        assert!(encoded.is_err()); // Currently fails with not implemented
+        let encoded = encode_tuple(&tuple_type, &value).expect("Failed to encode");
+        let decoded = decode_tuple(&tuple_type, &encoded).expect("Failed to decode");
+
+        assert_eq!(decoded, value);
     }
 
     #[test]
