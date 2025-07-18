@@ -1,9 +1,6 @@
 use crate::*;
 
 /// Representation of an Algorand multisignature signature.
-///
-/// This struct mirrors the Rust [`algokit_transact::MultisigSignature`] type, but uses FFI-safe types
-/// for cross-language interoperability.
 #[ffi_record]
 pub struct MultisigSignature {
     /// Multisig version.
