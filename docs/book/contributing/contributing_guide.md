@@ -118,12 +118,18 @@ cargo run --bin uniffi-bindgen -- <args>
    # Python
    cd packages/python/algokit_transact && poetry run pytest
    ```
-
 4. **Run all tests** (as done in CI):
+```bash
+   ./scripts/test-all.sh                         # Comprehensive test script
+   ```
+   
+   Or manually:
    ```bash
    cargo test                                    # Rust tests
    cargo pkg algokit_transact typescript        # Build TS
    cd packages/typescript/algokit_transact && bun test  # Test TS
+   cargo pkg algokit_transact python            # Build Python
+   cd packages/python/algokit_transact && poetry run pytest  # Test Python
    ```
 
 ## Debugging Rust Code is VS Code
