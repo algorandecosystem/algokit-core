@@ -51,7 +51,6 @@ pub fn encode_tuple(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, ABI
             is_dynamic_index.insert(i, true);
             heads.push(vec![0, 0]);
             tails.push(encode(child_type, &values[i])?);
-            i += 1;
         } else {
             match child_type {
                 ABIType::Bool => {
@@ -59,26 +58,29 @@ pub fn encode_tuple(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, ABI
                     let bool_values = &values[i..sequence_end_index];
                     heads.push(compress_bools(bool_values)?.to_be_bytes().to_vec());
 
-                    i = sequence_end_index + 1;
+                    i = sequence_end_index;
                 }
                 _ => {
                     heads.push(encode(child_type, &values[i])?);
-                    i += 1;
                 }
             }
             is_dynamic_index.insert(i, false);
             tails.push(vec![]);
         }
+
+        i += 1;
     }
 
     let head_length: usize = heads.iter().map(|e| e.len()).sum();
     let mut tail_length = 0;
 
     for i in 0..child_types.len() {
-        match is_dynamic_index[&i] {
-            true => {
+        match is_dynamic_index.get(&i) {
+            Some(true) => {
                 let head_value = head_length + tail_length;
-                // TODO: discuss that the check for u16::MAX is skipped
+                let head_value: u16 = u16::try_from(head_length + tail_length).map_err(|_| {
+                    ABIError::EncodingError(format!("Value {} cannot fit in u16", head_value))
+                })?;
                 heads[i] =
                     extend_bytes_to_length(&head_value.to_be_bytes(), LENGTH_ENCODE_BYTE_SIZE);
             }
@@ -176,7 +178,6 @@ fn extract_values(abi_type: &ABIType, bytes: &[u8]) -> Result<Vec<Vec<u8>>, ABIE
             });
             value_partitions.push(None);
             bytes_cursor += LENGTH_ENCODE_BYTE_SIZE;
-            i += 1;
         } else {
             match child_type {
                 ABIType::Bool => {
@@ -191,7 +192,7 @@ fn extract_values(abi_type: &ABIType, bytes: &[u8]) -> Result<Vec<Vec<u8>>, ABIE
                         }
                     }
 
-                    i = sequence_end_index + 1;
+                    i = sequence_end_index;
                     bytes_cursor += 1;
                 }
                 _ => {
@@ -200,10 +201,10 @@ fn extract_values(abi_type: &ABIType, bytes: &[u8]) -> Result<Vec<Vec<u8>>, ABIE
                         bytes[bytes_cursor..bytes_cursor + child_type_len].to_vec(),
                     ));
                     bytes_cursor += child_type_len;
-                    i += 1;
                 }
             }
         }
+        i += 1;
     }
 
     if bytes_cursor < bytes.len() {
@@ -283,9 +284,8 @@ mod tests {
     fn test_encode_empty_tuple() {
         let tuple_type = ABIType::Tuple(vec![]);
         let value = ABIValue::Array(vec![]);
-        let encoded = encode_tuple(&tuple_type, &value);
-        // TODO: Should succeed when implemented
-        assert!(encoded.is_err()); // Currently fails with not implemented
+        let encoded = encode_tuple(&tuple_type, &value).expect("Failed to encode");
+        assert_eq!(encoded, vec![]);
     }
 
     #[test]
@@ -297,9 +297,8 @@ mod tests {
             ABIValue::Uint(BigUint::from(1u32)),
             ABIValue::Uint(BigUint::from(2u32)),
         ]);
-        let encoded = encode_tuple(&tuple_type, &value);
-        // TODO: Should encode to [0, 0, 0, 1, 0, 0, 0, 2] when implemented
-        assert!(encoded.is_err()); // Currently fails with not implemented
+        let encoded = encode_tuple(&tuple_type, &value).expect("Failed to encode");
+        assert_eq!(encoded, vec![0, 0, 0, 1, 0, 0, 0, 2]);
     }
 
     #[test]
@@ -311,9 +310,11 @@ mod tests {
             ABIValue::Uint(BigUint::from(42u32)),
             ABIValue::String("hello".to_string()),
         ]);
-        let encoded = encode_tuple(&tuple_type, &value);
-        // TODO: Should encode to [0, 0, 0, 42, 0, 6, 0, 5, 104, 101, 108, 108, 111] when implemented
-        assert!(encoded.is_err()); // Currently fails with not implemented
+        let encoded = encode_tuple(&tuple_type, &value).expect("Failed to encode");
+        assert_eq!(
+            encoded,
+            vec![0, 0, 0, 42, 0, 6, 0, 5, 104, 101, 108, 108, 111]
+        );
     }
 
     #[test]
