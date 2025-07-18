@@ -5,7 +5,7 @@ use super::tuple::{decode_tuple, encode_tuple};
 pub fn encode_static_array(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
     let tuple_type = match abi_type {
         ABIType::StaticArray(child_type, size) => {
-            let elements = vec![*child_type; *size];
+            let elements = vec![child_type.clone(); *size];
             ABIType::Tuple(elements)
         }
         _ => return Err(ABIError::EncodingError("Expected StaticArray".to_string())),
@@ -17,7 +17,7 @@ pub fn encode_static_array(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u
 pub fn decode_static_array(abi_type: &ABIType, value: &[u8]) -> Result<ABIValue, ABIError> {
     let tuple_type = match abi_type {
         ABIType::StaticArray(child_type, size) => {
-            let elements = vec![*child_type; *size];
+            let elements = vec![child_type.clone(); *size];
             ABIType::Tuple(elements)
         }
         _ => return Err(ABIError::EncodingError("Expected DynamicArray".to_string())),

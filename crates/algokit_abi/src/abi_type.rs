@@ -20,6 +20,7 @@ use crate::{
 use regex::Regex;
 use std::{
     fmt::{Display, Formatter, Result as FmtResult},
+    rc::Rc,
     str::FromStr,
 };
 
@@ -63,16 +64,16 @@ impl Precision {
     }
 }
 
-pub enum ABIType<'a> {
+pub enum ABIType {
     Uint(BitSize),
     UFixed(BitSize, Precision),
     Address,
-    Tuple(Vec<&'a ABIType<'a>>),
+    Tuple(Vec<Rc<ABIType>>),
     String,
     Byte,
     Bool,
-    StaticArray(&'a ABIType<'a>, usize),
-    DynamicArray(&'a ABIType<'a>),
+    StaticArray(Rc<ABIType>, usize),
+    DynamicArray(Rc<ABIType>),
 }
 
 pub fn encode(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
@@ -121,7 +122,7 @@ pub fn get_size(abi_type: &ABIType) -> Result<usize, ABIError> {
         ABIType::Address => Ok(ADDR_BYTE_SIZE),
         ABIType::Bool => Ok(1),
         ABIType::Byte => Ok(1),
-        ABIType::StaticArray(child_type, size) => match child_type {
+        ABIType::StaticArray(child_type, size) => match child_type.as_ref() {
             ABIType::Bool => Ok((*size).div_ceil(BITS_PER_BYTE as usize)),
             _ => Ok(get_size(child_type)? * *size),
         },
@@ -129,8 +130,8 @@ pub fn get_size(abi_type: &ABIType) -> Result<usize, ABIError> {
             let mut size = 0;
             let mut i = 0;
             while i < child_types.len() {
-                let child_type = child_types[i];
-                match child_type {
+                let child_type = &child_types[i];
+                match child_type.as_ref() {
                     ABIType::Bool => {
                         let sequence_end_index = find_bool_sequence_end(child_types, i);
                         let bool_count = sequence_end_index - i + 1;
@@ -157,7 +158,7 @@ pub fn get_size(abi_type: &ABIType) -> Result<usize, ABIError> {
     }
 }
 
-impl<'a> Display for ABIType<'a> {
+impl Display for ABIType {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         match self {
             ABIType::Uint(bit_size) => write!(f, "uint{}", bit_size.value()),
@@ -182,7 +183,7 @@ impl<'a> Display for ABIType<'a> {
     }
 }
 
-impl<'a> FromStr for ABIType<'a> {
+impl FromStr for ABIType {
     type Err = ABIError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -190,7 +191,7 @@ impl<'a> FromStr for ABIType<'a> {
         if s.ends_with("[]") {
             let element_type_str = &s[..s.len() - 2];
             let element_type = ABIType::from_str(element_type_str)?;
-            return Ok(ABIType::DynamicArray(&element_type));
+            return Ok(ABIType::DynamicArray(Rc::new(element_type)));
         }
 
         // Static array
@@ -205,7 +206,7 @@ impl<'a> FromStr for ABIType<'a> {
                 })?;
 
                 let element_type = ABIType::from_str(element_type_str)?;
-                return Ok(ABIType::StaticArray(&element_type, length));
+                return Ok(ABIType::StaticArray(Rc::new(element_type), length));
             } else {
                 return Err(ABIError::ValidationError(format!(
                     "Malformed static array string: {}",

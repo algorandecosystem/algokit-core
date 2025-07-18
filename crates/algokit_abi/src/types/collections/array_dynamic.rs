@@ -17,7 +17,7 @@ pub fn encode_dynamic_array(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<
 
     let tuple_type = match abi_type {
         ABIType::DynamicArray(child_type) => {
-            let elements = vec![*child_type; values.len()];
+            let elements = vec![child_type.clone(); values.len()];
             ABIType::Tuple(elements)
         }
         _ => return Err(ABIError::EncodingError("Expected StaticArray".to_string())),
@@ -38,7 +38,7 @@ pub fn decode_dynamic_array(abi_type: &ABIType, value: &[u8]) -> Result<ABIValue
 
     let tuple_type = match abi_type {
         ABIType::DynamicArray(child_type) => {
-            let elements = vec![*child_type; values_count as usize];
+            let elements = vec![child_type.clone(); values_count as usize];
             ABIType::Tuple(elements)
         }
         _ => return Err(ABIError::EncodingError("Expected DynamicArray".to_string())),
