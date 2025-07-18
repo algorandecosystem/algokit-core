@@ -5,7 +5,6 @@ use crate::{
     common::{BOOL_FALSE_BYTE, BOOL_TRUE_BYTE, LENGTH_ENCODE_BYTE_SIZE},
     decode,
     error::ABIError,
-    utils::extend_bytes_to_length,
     ABIType, ABIValue,
 };
 
@@ -81,8 +80,7 @@ pub fn encode_tuple(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, ABI
                 let head_value: u16 = u16::try_from(head_length + tail_length).map_err(|_| {
                     ABIError::EncodingError(format!("Value {} cannot fit in u16", head_value))
                 })?;
-                heads[i] =
-                    extend_bytes_to_length(&head_value.to_be_bytes(), LENGTH_ENCODE_BYTE_SIZE);
+                heads[i] = head_value.to_be_bytes().to_vec();
             }
             _ => {
                 tail_length += tails[i].len();
