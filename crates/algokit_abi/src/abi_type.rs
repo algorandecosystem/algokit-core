@@ -268,10 +268,15 @@ impl FromStr for ABIType {
 
         // Tuple type
         if s.len() >= 2 && s.starts_with('(') && s.ends_with(')') {
-            return Err(ABIError::FormatError("Not supported".to_string()));
-            // let tuple_content = &s[1..s.len() - 1];
-            // let child_types = parse_tuple_content(tuple_content)?;
-            // return Ok(ABIType::Tuple(child_types));
+            // TODO: do we need to use parseTupleContent?
+            // or regex can handle this?
+            let tuple_type_strings: Vec<_> = (&s[1..s.len() - 1]).split(',').collect();
+            let child_types: Result<Vec<_>, _> = tuple_type_strings
+                .iter()
+                .map(|str| ABIType::from_str(str))
+                .collect();
+
+            return Ok(ABIType::Tuple(child_types?));
         }
 
         // Simple types
@@ -288,7 +293,7 @@ impl FromStr for ABIType {
     }
 }
 
-// fn parse_tuple_content(content: String) -> Result<Vec<&ABIType>, ABIError> {
+// fn parse_tuple_content(content: String) -> Result<Vec<String>, ABIError> {
 //     if content.is_empty() {
 //         return Ok(Vec::new());
 //     }
@@ -310,35 +315,30 @@ impl FromStr for ABIType {
 //         ));
 //     }
 
-//     let mut result = Vec::new();
-//     let mut current_start = 0;
-//     let mut paren_depth = 0;
-//     let mut bracket_depth = 0;
+//     let mut tuple_strings: Vec<String> = Vec::new();
+//     let mut depth = 0;
+//     let mut word: String = String::new();
 
-//     for (i, ch) in content.char_indices() {
+//     for ch in content.chars() {
+//         word.push(ch);
 //         match ch {
-//             '(' => paren_depth += 1,
-//             ')' => paren_depth -= 1,
-//             '[' => bracket_depth += 1,
-//             ']' => bracket_depth -= 1,
-//             ',' if paren_depth == 0 && bracket_depth == 0 => {
-//                 let type_str = content[current_start..i].trim();
-//                 if !type_str.is_empty() {
-//                     let abi_type = Box::new(from_string(type_str)?);
-//                     result.push(Box::leak(abi_type));
-//                 }
-//                 current_start = i + 1;
+//             '(' => depth += 1,
+//             ')' => depth -= 1,
+//             ',' if depth == 0 => {
+//                 tuple_strings.push(word);
+//                 word = String::new();
 //             }
 //             _ => {}
 //         }
 //     }
-
-//     // Handle the last element
-//     let type_str = content[current_start..].trim();
-//     if !type_str.is_empty() {
-//         let abi_type = Box::new(from_string(type_str)?);
-//         result.push(Box::leak(abi_type));
+//     if word.len() != 0 {
+//         tuple_strings.push(word);
+//     }
+//     if depth != 0 {
+//         return Err(ABIError::FormatError(
+//             "Tuple string has mismatched parentheses".to_string(),
+//         ));
 //     }
 
-//     Ok(result)
+//     Ok(tuple_strings)
 // }
