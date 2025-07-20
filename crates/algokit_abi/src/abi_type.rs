@@ -20,7 +20,6 @@ use crate::{
 use regex::Regex;
 use std::{
     fmt::{Display, Formatter, Result as FmtResult},
-    rc::Rc,
     str::FromStr,
 };
 
@@ -64,16 +63,23 @@ impl Precision {
     }
 }
 
+#[derive(Clone)]
 pub enum ABIType {
     Uint(BitSize),
     UFixed(BitSize, Precision),
     Address,
-    Tuple(Vec<Rc<ABIType>>),
+    Tuple(Vec<ABIType>),
     String,
     Byte,
     Bool,
-    StaticArray(Rc<ABIType>, usize),
-    DynamicArray(Rc<ABIType>),
+    StaticArray(Box<ABIType>, usize),
+    DynamicArray(Box<ABIType>),
+}
+
+impl AsRef<ABIType> for ABIType {
+    fn as_ref(&self) -> &ABIType {
+        self
+    }
 }
 
 pub fn encode(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
@@ -133,7 +139,7 @@ pub fn get_size(abi_type: &ABIType) -> Result<usize, ABIError> {
                 let child_type = &child_types[i];
                 match child_type.as_ref() {
                     ABIType::Bool => {
-                        let sequence_end_index = find_bool_sequence_end(child_types, i);
+                        let sequence_end_index = find_bool_sequence_end(&child_types, i);
                         let bool_count = sequence_end_index - i + 1;
 
                         size += bool_count.div_ceil(BITS_PER_BYTE as usize);
@@ -191,7 +197,7 @@ impl FromStr for ABIType {
         if s.ends_with("[]") {
             let element_type_str = &s[..s.len() - 2];
             let element_type = ABIType::from_str(element_type_str)?;
-            return Ok(ABIType::DynamicArray(Rc::new(element_type)));
+            return Ok(ABIType::DynamicArray(Box::new(element_type)));
         }
 
         // Static array
@@ -206,7 +212,7 @@ impl FromStr for ABIType {
                 })?;
 
                 let element_type = ABIType::from_str(element_type_str)?;
-                return Ok(ABIType::StaticArray(Rc::new(element_type), length));
+                return Ok(ABIType::StaticArray(Box::new(element_type), length));
             } else {
                 return Err(ABIError::ValidationError(format!(
                     "Malformed static array string: {}",

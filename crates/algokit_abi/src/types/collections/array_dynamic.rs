@@ -1,8 +1,10 @@
 use crate::{
-    abi_type::ABIType, abi_value::ABIValue, common::LENGTH_ENCODE_BYTE_SIZE, error::ABIError,
+    abi_type::ABIType,
+    abi_value::ABIValue,
+    common::LENGTH_ENCODE_BYTE_SIZE,
+    error::ABIError,
+    types::collections::tuple::{decode_abi_types, encode_abi_types},
 };
-
-use super::tuple::{decode_tuple, encode_tuple};
 
 pub fn encode_dynamic_array(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
     let values = match value {
@@ -15,15 +17,13 @@ pub fn encode_dynamic_array(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<
         }
     };
 
-    let tuple_type = match abi_type {
-        ABIType::DynamicArray(child_type) => {
-            let elements = vec![child_type.clone(); values.len()];
-            ABIType::Tuple(elements)
-        }
-        _ => return Err(ABIError::EncodingError("Expected StaticArray".to_string())),
+    let child_type = match abi_type {
+        ABIType::DynamicArray(child_type) => child_type,
+        _ => return Err(ABIError::EncodingError("Expected DynamicArray".to_string())),
     };
 
-    encode_tuple(&tuple_type, value)
+    let child_types = vec![child_type.as_ref(); values.len()];
+    encode_abi_types(&child_types, &values)
 }
 
 pub fn decode_dynamic_array(abi_type: &ABIType, value: &[u8]) -> Result<ABIValue, ABIError> {
@@ -36,13 +36,12 @@ pub fn decode_dynamic_array(abi_type: &ABIType, value: &[u8]) -> Result<ABIValue
     // The first 2 bytes in the value determines how many values in the array
     let values_count = u16::from_be_bytes([value[0], value[1]]);
 
-    let tuple_type = match abi_type {
-        ABIType::DynamicArray(child_type) => {
-            let elements = vec![child_type.clone(); values_count as usize];
-            ABIType::Tuple(elements)
-        }
+    let child_type = match abi_type {
+        ABIType::DynamicArray(child_type) => child_type,
         _ => return Err(ABIError::EncodingError("Expected DynamicArray".to_string())),
     };
 
-    decode_tuple(&tuple_type, value)
+    let child_types = vec![child_type.as_ref(); values_count as usize];
+
+    decode_abi_types(&child_types, value)
 }

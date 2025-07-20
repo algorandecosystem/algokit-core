@@ -1,4 +1,4 @@
-use std::{collections::HashMap, rc::Rc};
+use std::collections::HashMap;
 
 use crate::{
     abi_type::{encode, get_size, is_dynamic},
@@ -15,9 +15,10 @@ struct Segment {
 
 pub fn encode_tuple(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
     let child_types = match abi_type {
-        ABIType::Tuple(child_types) => child_types,
+        ABIType::Tuple(child_types) => child_types.iter().map(|b| b.as_ref()).collect::<Vec<_>>(),
         _ => return Err(ABIError::EncodingError("Expected TupleType".to_string())),
     };
+
     let values = match value {
         ABIValue::Array(n) => n,
         _ => {
@@ -28,14 +29,18 @@ pub fn encode_tuple(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, ABI
         }
     };
 
+    encode_abi_types(&child_types, values)
+}
+
+// TODO: better name
+pub fn encode_abi_types(abi_types: &[&ABIType], values: &[ABIValue]) -> Result<Vec<u8>, ABIError> {
     // TODO: do we need to check for values.len() < u16::MAX?
 
     // TODO: confirm this check, algosdk doesn't do this
-    if child_types.len() != values.len() {
-        return Err(ABIError::EncodingError(format!(
-            "Cannot encode tuple {}, value and child type lengths mismatch",
-            abi_type
-        )));
+    if abi_types.len() != values.len() {
+        return Err(ABIError::EncodingError(
+            "Cannot encode, values and types lengths mismatch".to_string(),
+        ));
     }
 
     let mut heads: Vec<Vec<u8>> = Vec::new();
@@ -43,17 +48,17 @@ pub fn encode_tuple(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, ABI
     let mut is_dynamic_index: HashMap<usize, bool> = HashMap::new();
 
     let mut i = 0;
-    while i < child_types.len() {
-        let child_type = &child_types[i];
+    while i < abi_types.len() {
+        let child_type = &abi_types[i];
 
         if is_dynamic(child_type) {
             is_dynamic_index.insert(i, true);
             heads.push(vec![0, 0]);
             tails.push(encode(child_type, &values[i])?);
         } else {
-            match child_type.as_ref() {
+            match child_type {
                 ABIType::Bool => {
-                    let sequence_end_index = find_bool_sequence_end(child_types, i);
+                    let sequence_end_index = find_bool_sequence_end(abi_types, i);
                     let bool_values = &values[i..sequence_end_index];
                     heads.push(compress_bools(bool_values)?.to_be_bytes().to_vec());
 
@@ -73,7 +78,7 @@ pub fn encode_tuple(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, ABI
     let head_length: usize = heads.iter().map(|e| e.len()).sum();
     let mut tail_length = 0;
 
-    for i in 0..child_types.len() {
+    for i in 0..abi_types.len() {
         match is_dynamic_index.get(&i) {
             Some(true) => {
                 let head_value = head_length + tail_length;
@@ -95,16 +100,22 @@ pub fn encode_tuple(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, ABI
 
 pub fn decode_tuple(abi_type: &ABIType, bytes: &[u8]) -> Result<ABIValue, ABIError> {
     let child_types = match abi_type {
-        ABIType::Tuple(child_types) => child_types,
+        ABIType::Tuple(child_types) => child_types.iter().map(|b| b.as_ref()).collect::<Vec<_>>(),
         _ => return Err(ABIError::DecodingError("Expected TupleType".to_string())),
     };
 
-    let value_partitions = extract_values(abi_type, bytes)?;
+    decode_abi_types(&child_types, bytes)
+}
+
+// TODO: better name
+pub fn decode_abi_types(abi_types: &[&ABIType], bytes: &[u8]) -> Result<ABIValue, ABIError> {
+    let value_partitions = extract_values(abi_types, bytes)?;
+
     let mut values: Vec<ABIValue> = Vec::new();
-    for i in 0..child_types.len() {
-        let child_type = &child_types[i];
+    for i in 0..abi_types.len() {
+        let child_type = &abi_types[i];
         let value_partition = &value_partitions[i];
-        let child_type_value = decode(child_type.as_ref(), value_partition)?;
+        let child_type_value = decode(child_type, value_partition)?;
         values.push(child_type_value);
     }
 
@@ -138,19 +149,14 @@ fn compress_bools(values: &[ABIValue]) -> Result<u8, ABIError> {
     Ok(result)
 }
 
-fn extract_values(abi_type: &ABIType, bytes: &[u8]) -> Result<Vec<Vec<u8>>, ABIError> {
-    let child_types = match abi_type {
-        ABIType::Tuple(child_types) => child_types,
-        _ => return Err(ABIError::DecodingError("Expected TupleType".to_string())),
-    };
-
+fn extract_values(abi_types: &[&ABIType], bytes: &[u8]) -> Result<Vec<Vec<u8>>, ABIError> {
     let mut dynamic_segments: Vec<Segment> = Vec::new();
     let mut value_partitions: Vec<Option<Vec<u8>>> = Vec::new();
     let mut bytes_cursor: usize = 0;
 
     let mut i = 0;
-    while i < child_types.len() {
-        let child_type = &child_types[i];
+    while i < abi_types.len() {
+        let child_type = abi_types[i];
 
         if is_dynamic(child_type) {
             if bytes[bytes_cursor..].len() < LENGTH_ENCODE_BYTE_SIZE {
@@ -177,9 +183,9 @@ fn extract_values(abi_type: &ABIType, bytes: &[u8]) -> Result<Vec<Vec<u8>>, ABIE
             value_partitions.push(None);
             bytes_cursor += LENGTH_ENCODE_BYTE_SIZE;
         } else {
-            match child_type.as_ref() {
+            match child_type {
                 ABIType::Bool => {
-                    let sequence_end_index = find_bool_sequence_end(child_types, i);
+                    let sequence_end_index = find_bool_sequence_end(abi_types, i);
 
                     for j in 0..sequence_end_index - i {
                         let bool_mask: u8 = BOOL_TRUE_BYTE >> j;
@@ -229,8 +235,8 @@ fn extract_values(abi_type: &ABIType, bytes: &[u8]) -> Result<Vec<Vec<u8>>, ABIE
     }
 
     let mut segment_index: usize = 0;
-    for i in 0..child_types.len() {
-        let child_type = &child_types[i];
+    for i in 0..abi_types.len() {
+        let child_type = &abi_types[i];
         if is_dynamic(child_type) {
             value_partitions[i] = Some(
                 bytes[dynamic_segments[segment_index].left as usize
@@ -255,7 +261,10 @@ fn extract_values(abi_type: &ABIType, bytes: &[u8]) -> Result<Vec<Vec<u8>>, ABIE
     Ok(value_partitions)
 }
 
-pub fn find_bool_sequence_end(child_types: &[Rc<ABIType>], current_index: usize) -> usize {
+pub fn find_bool_sequence_end<T>(child_types: &[T], current_index: usize) -> usize
+where
+    T: AsRef<ABIType>,
+{
     let mut cursor: usize = current_index;
     loop {
         match child_types[cursor].as_ref() {
