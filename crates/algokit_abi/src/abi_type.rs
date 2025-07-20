@@ -342,3 +342,23 @@ impl FromStr for ABIType {
 
 //     Ok(tuple_strings)
 // }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use num_bigint::BigUint;
+    use rstest::rstest;
+
+    #[rstest]
+    #[case(ABIType::Uint(BitSize::new(8).unwrap()), ABIValue::Uint(BigUint::from(0u8)), &[0])]
+    fn should_round_trip(
+        #[case] abi_type: ABIType,
+        #[case] abi_value: ABIValue,
+        #[case] expected_encoded_value: &[u8],
+    ) {
+        let encoded = encode(&abi_type, &abi_value).expect("Failed to encode");
+        assert_eq!(encoded, expected_encoded_value);
+        let decoded = decode(&abi_type, &encoded).expect("Failed to decode");
+        assert_eq!(decoded, abi_value);
+    }
+}
