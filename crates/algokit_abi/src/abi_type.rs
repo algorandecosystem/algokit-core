@@ -179,8 +179,7 @@ impl FromStr for ABIType {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // Dynamic array
-        if s.ends_with("[]") {
-            let element_type_str = &s[..s.len() - 2];
+        if let Some(element_type_str) = s.strip_suffix("[]") {
             let element_type = ABIType::from_str(element_type_str)?;
             return Ok(ABIType::DynamicArray(Box::new(element_type)));
         }
@@ -207,8 +206,7 @@ impl FromStr for ABIType {
         }
 
         // Uint type
-        if s.starts_with("uint") {
-            let size_str = &s[4..];
+        if let Some(size_str) = s.strip_prefix("uint") {
             if size_str.chars().all(|c| c.is_ascii_digit()) {
                 let size = size_str.parse::<u16>().map_err(|_| {
                     ABIError::ValidationError(format!("Invalid uint size: {}", size_str))
