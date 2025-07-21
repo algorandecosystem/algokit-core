@@ -82,7 +82,7 @@ jobs:
             cat /tmp/post_generation_status.txt
             echo ""
             echo "🔍 Detailed diff:"
-            git diff --no-pager ${{ env.OUTPUT_DIR }}
+            GIT_PAGER="" git diff ${{ env.OUTPUT_DIR }}
             echo ""
             echo "💡 This indicates that the generated code is not in sync with the current specification."
             echo "   Please run 'cargo api generate-algod' and commit the changes."
