@@ -359,6 +359,10 @@ mod tests {
     #[case(ABIType::Address, ABIValue::Address("MO2H6ZU47Q36GJ6GVHUKGEBEQINN7ZWVACMWZQGIYUOE3RBSRVYHV4ACJI".to_string()), &[99, 180, 127, 102, 156, 252, 55, 227, 39, 198, 169, 232, 163, 16, 36, 130, 26, 223, 230, 213, 0, 153, 108, 192, 200, 197, 28, 77, 196, 50, 141, 112])]
     #[case(ABIType::String, ABIValue::String("What’s new".to_string()), &[0, 12, 87, 104, 97, 116, 226, 128, 153, 115, 32, 110, 101, 119])]
     #[case(ABIType::String, ABIValue::String("😅🔨".to_string()), &[0, 8, 240, 159, 152, 133, 240, 159, 148, 168])]
+    #[case(ABIType::Byte, ABIValue::Byte(10), &[10])]
+    #[case(ABIType::Byte, ABIValue::Byte(255), &[255])]
+    #[case(ABIType::Bool, ABIValue::Bool(true), &[128])]
+    #[case(ABIType::Bool, ABIValue::Bool(false), &[0])]
     fn should_round_trip(
         #[case] abi_type: ABIType,
         #[case] abi_value: ABIValue,
