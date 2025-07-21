@@ -123,9 +123,9 @@ impl ABIType {
                 let mut i = 0;
                 while i < child_types.len() {
                     let child_type = &child_types[i];
-                    match child_type.as_ref() {
+                    match child_type {
                         ABIType::Bool => {
-                            let sequence_end_index = find_bool_sequence_end(&child_types, i);
+                            let sequence_end_index = find_bool_sequence_end(child_types, i);
                             let bool_count = sequence_end_index - i + 1;
 
                             size += bool_count.div_ceil(BITS_PER_BYTE as usize);
@@ -316,7 +316,7 @@ fn parse_tuple_content(content: &str) -> Result<Vec<String>, ABIError> {
             _ => {}
         }
     }
-    if word.len() != 0 {
+    if !word.is_empty() {
         tuple_strings.push(word);
     }
     if depth != 0 {

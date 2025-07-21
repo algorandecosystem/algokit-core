@@ -5,18 +5,12 @@ impl ABIType {
     /// Values must be in the range 0-255 inclusive.
     pub(crate) fn encode_byte(&self, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
         match self {
-            ABIType::Byte => {
-                match value {
-                    ABIValue::Byte(n) => {
-                        return Ok(vec![*n]);
-                    }
-                    _ => {
-                        return Err(ABIError::EncodingError(
-                            "ABI value mismatch, expected byte".to_string(),
-                        ));
-                    }
-                };
-            }
+            ABIType::Byte => match value {
+                ABIValue::Byte(n) => Ok(vec![*n]),
+                _ => Err(ABIError::EncodingError(
+                    "ABI value mismatch, expected byte".to_string(),
+                )),
+            },
             _ => Err(ABIError::EncodingError(
                 "ABI type mismatch, expected byte".to_string(),
             )),
@@ -49,27 +43,25 @@ mod tests {
 
     #[test]
     fn test_encode_wrong_type() {
-        let abi_type = ABIType::Byte;
         let value = ABIValue::String("10".to_string());
 
-        let result = abi_type.encode(&value);
+        let result = ABIType::Byte.encode(&value);
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("Cannot encode value as byte"));
+        assert_eq!(
+            result.unwrap_err().to_string(),
+            "ABI encoding failed: ABI value mismatch, expected byte"
+        );
     }
 
     #[test]
     fn test_decode_wrong_length() {
-        let abi_type = ABIType::Byte;
         let bytes = vec![10, 20]; // 2 bytes instead of 1
 
-        let result = abi_type.decode(&bytes);
+        let result = ABIType::Byte.decode(&bytes);
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("Byte array must be 1 byte long"));
+        assert_eq!(
+            result.unwrap_err().to_string(),
+            "ABI decoding failed: Byte array must be 1 byte long"
+        );
     }
 }

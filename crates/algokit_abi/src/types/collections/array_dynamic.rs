@@ -27,7 +27,7 @@ impl ABIType {
         };
 
         let child_types = vec![child_type.as_ref(); values.len()];
-        let encoded_value = encode_abi_types(&child_types, &values)?;
+        let encoded_value = encode_abi_types(&child_types, values)?;
         let encoded_length = (child_types.len() as u16).to_be_bytes();
 
         let mut merged_bytes = encoded_length.to_vec();

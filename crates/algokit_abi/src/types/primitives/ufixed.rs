@@ -25,7 +25,7 @@ impl ABIType {
                     )));
                 }
 
-                Ok(utils::big_uint_to_bytes(&value, (bit_size / 8) as usize))
+                Ok(utils::big_uint_to_bytes(value, (bit_size / 8) as usize))
             }
             _ => Err(ABIError::EncodingError(
                 "ABI type mismatch, expected ufixed".to_string(),

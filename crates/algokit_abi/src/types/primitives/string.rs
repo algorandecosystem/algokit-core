@@ -70,8 +70,7 @@ mod tests {
         assert!(result.is_err());
         assert_eq!(
             result.unwrap_err().to_string(),
-            // TODO: standardise tests assert
-            "Error ocurred during decoding: Byte array too short for string"
+            "ABI decoding failed: Byte array too short for string"
         );
     }
 
@@ -82,7 +81,10 @@ mod tests {
 
         let result = abi_type.decode(&bytes);
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err().to_string(), "Error ocurred during decoding: Invalid byte array length for string, expected 5 value, got 2");
+        assert_eq!(
+            result.unwrap_err().to_string(),
+            "ABI decoding failed: Invalid byte array length for string, expected 5 value, got 2"
+        );
     }
 
     #[test]
@@ -94,7 +96,7 @@ mod tests {
         assert!(result.is_err());
         assert_eq!(
             result.unwrap_err().to_string(),
-            "Error ocurred during encoding: Cannot encode value as string: expected a String"
+            "ABI encoding failed: ABI value mismatch, expected string"
         );
     }
 }

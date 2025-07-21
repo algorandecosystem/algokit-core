@@ -68,10 +68,10 @@ mod tests {
 
         let result = abi_type.encode(&value);
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("Cannot encode value as bool"));
+        assert_eq!(
+            result.unwrap_err().to_string(),
+            "ABI encoding failed: ABI value mismatch, expected boolean"
+        );
     }
 
     #[test]
@@ -81,10 +81,10 @@ mod tests {
 
         let result = abi_type.decode(&bytes);
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("Bool string must be 1 byte long"));
+        assert_eq!(
+            result.unwrap_err().to_string(),
+            "ABI decoding failed: Bool string must be 1 byte long"
+        );
     }
 
     #[test]
@@ -94,9 +94,9 @@ mod tests {
 
         let result = abi_type.decode(&bytes);
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("Boolean could not be decoded"));
+        assert_eq!(
+            result.unwrap_err().to_string(),
+            "ABI decoding failed: Boolean could not be decoded from the byte string"
+        );
     }
 }

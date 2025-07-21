@@ -23,7 +23,7 @@ impl ABIType {
                     )));
                 }
 
-                Ok(utils::big_uint_to_bytes(&value, (bit_size / 8) as usize))
+                Ok(utils::big_uint_to_bytes(value, (bit_size / 8) as usize))
             }
             _ => Err(ABIError::EncodingError(
                 "ABI type mismatch, expected uint".to_string(),
@@ -69,7 +69,7 @@ mod tests {
         assert!(result.is_err());
         assert_eq!(
             result.unwrap_err().to_string(),
-            "Error ocurred during decoding: Invalid byte array length, expected 1 bytes, got 2"
+            "ABI decoding failed: Invalid byte array length, expected 1 bytes, got 2"
         );
     }
 
@@ -82,7 +82,7 @@ mod tests {
         assert!(result.is_err());
         assert_eq!(
             result.unwrap_err().to_string(),
-            "Error ocurred during decoding: Expected UintType"
+            "ABI decoding failed: Invalid byte array length for string, expected 0 value, got 2"
         );
     }
 

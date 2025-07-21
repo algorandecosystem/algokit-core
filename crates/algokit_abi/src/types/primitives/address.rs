@@ -106,10 +106,10 @@ mod tests {
         let value = ABIValue::String("not an address".to_string());
         let result = ABIType::Address.encode(&value);
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("Cannot encode value as address"));
+        assert_eq!(
+            result.unwrap_err().to_string(),
+            "ABI encoding failed: ABI value mismatch, expected address string"
+        );
     }
 
     #[test]
@@ -119,7 +119,10 @@ mod tests {
         );
         let result = ABIType::String.encode(&value);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Expected Address"));
+        assert_eq!(
+            result.unwrap_err().to_string(),
+            "ABI encoding failed: ABI value mismatch, expected string"
+        );
     }
 
     #[test]
@@ -127,10 +130,10 @@ mod tests {
         let bytes = vec![0u8; 31];
         let result = ABIType::Address.decode(&bytes);
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("Address byte string must be 32 bytes long"));
+        assert_eq!(
+            result.unwrap_err().to_string(),
+            "ABI decoding failed: Address byte string must be 32 bytes long"
+        );
     }
 
     #[test]
@@ -138,9 +141,9 @@ mod tests {
         let bytes = vec![0u8; 33];
         let result = ABIType::Address.decode(&bytes);
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("Address byte string must be 32 bytes long"));
+        assert_eq!(
+            result.unwrap_err().to_string(),
+            "ABI decoding failed: Address byte string must be 32 bytes long"
+        );
     }
 }

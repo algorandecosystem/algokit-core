@@ -25,7 +25,7 @@ impl ABIType {
             }
         };
 
-        encode_abi_types(&child_types, &values)
+        encode_abi_types(&child_types, values)
     }
 
     pub(crate) fn decode_static_array(&self, value: &[u8]) -> Result<ABIValue, ABIError> {
