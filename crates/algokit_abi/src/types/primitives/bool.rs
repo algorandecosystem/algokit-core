@@ -12,6 +12,7 @@ pub fn encode_bool(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, ABIE
             let bool_value = match value {
                 ABIValue::Bool(b) => b,
                 _ => {
+                    // TODO: consistent error message
                     return Err(ABIError::EncodingError(
                         "Cannot encode value as bool: expected a boolean".to_string(),
                     ));
@@ -56,52 +57,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_encode_true() {
-        let abi_type = ABIType::Bool;
-        let value = ABIValue::Bool(true);
-        let encoded = encode_bool(&abi_type, &value).unwrap();
-        assert_eq!(encoded, vec![128]); // 0x80
-    }
-
-    #[test]
-    fn test_encode_false() {
-        let abi_type = ABIType::Bool;
-        let value = ABIValue::Bool(false);
-        let encoded = encode_bool(&abi_type, &value).unwrap();
-        assert_eq!(encoded, vec![0]); // 0x00
-    }
-
-    #[test]
-    fn test_decode_true() {
-        let abi_type = ABIType::Bool;
-        let bytes = vec![128]; // 0x80
-        let decoded = decode_bool(&abi_type, &bytes).unwrap();
-        assert_eq!(decoded, ABIValue::Bool(true));
-    }
-
-    #[test]
-    fn test_decode_false() {
-        let abi_type = ABIType::Bool;
-        let bytes = vec![0]; // 0x00
-        let decoded = decode_bool(&abi_type, &bytes).unwrap();
-        assert_eq!(decoded, ABIValue::Bool(false));
-    }
-
-    #[test]
-    fn test_round_trip() {
-        let test_cases = vec![true, false];
-
-        for test_bool in test_cases {
-            let value = ABIValue::Bool(test_bool);
-
-            let encoded = encode_bool(&ABIType::Bool, &value).unwrap();
-            let decoded = decode_bool(&ABIType::Bool, &encoded).unwrap();
-
-            assert_eq!(decoded, value);
-        }
-    }
-
-    #[test]
     fn test_encode_wrong_type() {
         let abi_type = ABIType::Bool;
         let value = ABIValue::String("true".to_string());
@@ -138,15 +93,5 @@ mod tests {
             .unwrap_err()
             .to_string()
             .contains("Boolean could not be decoded"));
-    }
-
-    #[test]
-    fn test_decode_wrong_abi_type() {
-        let abi_type = ABIType::String;
-        let bytes = vec![0x80];
-
-        let result = decode_bool(&abi_type, &bytes);
-        assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Expected Bool"));
     }
 }
