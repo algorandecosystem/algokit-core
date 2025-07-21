@@ -363,6 +363,13 @@ mod tests {
     #[case(ABIType::Byte, ABIValue::Byte(255), &[255])]
     #[case(ABIType::Bool, ABIValue::Bool(true), &[128])]
     #[case(ABIType::Bool, ABIValue::Bool(false), &[0])]
+    #[case(ABIType::String, ABIValue::String("asdf".to_string()), &[0, 4, 97, 115, 100, 102])]
+    #[case(ABIType::StaticArray(Box::new(ABIType::Bool), 3), ABIValue::Array(vec![ABIValue::Bool(true), ABIValue::Bool(true), ABIValue::Bool(false)]), &[192])]
+    #[case(ABIType::StaticArray(Box::new(ABIType::Bool), 8), ABIValue::Array(vec![ABIValue::Bool(false), ABIValue::Bool(true), ABIValue::Bool(false), ABIValue::Bool(false), ABIValue::Bool(false), ABIValue::Bool(false), ABIValue::Bool(false), ABIValue::Bool(false)]), &[64])]
+    #[case(ABIType::StaticArray(Box::new(ABIType::Bool), 8), ABIValue::Array(vec![ABIValue::Bool(true), ABIValue::Bool(true), ABIValue::Bool(true), ABIValue::Bool(true), ABIValue::Bool(true), ABIValue::Bool(true), ABIValue::Bool(true), ABIValue::Bool(true)]), &[255])]
+    #[case(ABIType::StaticArray(Box::new(ABIType::Bool), 9), ABIValue::Array(vec![ABIValue::Bool(true), ABIValue::Bool(false), ABIValue::Bool(false), ABIValue::Bool(true), ABIValue::Bool(false), ABIValue::Bool(false), ABIValue::Bool(true), ABIValue::Bool(false), ABIValue::Bool(true)]), &[146, 128])]
+    #[case(ABIType::StaticArray(Box::new(ABIType::Uint(BitSize::new(64).unwrap())), 3), ABIValue::Array(vec![ABIValue::Uint(BigUint::from(1u64)), ABIValue::Uint(BigUint::from(2u64)), ABIValue::Uint(BigUint::from(3u64))]), &[0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 3])]
+
     fn should_round_trip(
         #[case] abi_type: ABIType,
         #[case] abi_value: ABIValue,

@@ -59,7 +59,7 @@ pub fn encode_abi_types(abi_types: &[&ABIType], values: &[ABIValue]) -> Result<V
             match child_type {
                 ABIType::Bool => {
                     let sequence_end_index = find_bool_sequence_end(abi_types, i);
-                    let bool_values = &values[i..sequence_end_index];
+                    let bool_values = &values[i..=sequence_end_index];
                     heads.push(compress_bools(bool_values)?.to_be_bytes().to_vec());
 
                     i = sequence_end_index;
@@ -78,7 +78,7 @@ pub fn encode_abi_types(abi_types: &[&ABIType], values: &[ABIValue]) -> Result<V
     let head_length: usize = heads.iter().map(|e| e.len()).sum();
     let mut tail_length = 0;
 
-    for i in 0..abi_types.len() {
+    for i in 0..heads.len() {
         match is_dynamic_index.get(&i) {
             Some(true) => {
                 let head_value = head_length + tail_length;
@@ -187,7 +187,7 @@ fn extract_values(abi_types: &[&ABIType], bytes: &[u8]) -> Result<Vec<Vec<u8>>, 
                 ABIType::Bool => {
                     let sequence_end_index = find_bool_sequence_end(abi_types, i);
 
-                    for j in 0..sequence_end_index - i {
+                    for j in 0..sequence_end_index - i + 1 {
                         let bool_mask: u8 = BOOL_TRUE_BYTE >> j;
                         if bytes[bytes_cursor] & bool_mask > 0 {
                             value_partitions.push(Some(vec![BOOL_TRUE_BYTE]));
@@ -269,7 +269,7 @@ where
     loop {
         match child_types[cursor].as_ref() {
             ABIType::Bool => {
-                if cursor - current_index == 8 || cursor == child_types.len() - 1 {
+                if cursor - current_index + 1 == 8 || cursor == child_types.len() - 1 {
                     return cursor;
                 }
                 cursor += 1;
