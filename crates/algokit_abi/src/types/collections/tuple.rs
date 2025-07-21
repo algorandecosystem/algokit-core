@@ -32,6 +32,17 @@ impl ABIType {
 
         encode_abi_types(&child_types, values)
     }
+
+    pub(crate) fn decode_tuple(&self, bytes: &[u8]) -> Result<ABIValue, ABIError> {
+        let child_types = match self {
+            ABIType::Tuple(child_types) => {
+                child_types.iter().map(|b| b.as_ref()).collect::<Vec<_>>()
+            }
+            _ => return Err(ABIError::DecodingError("Expected TupleType".to_string())),
+        };
+
+        decode_abi_types(&child_types, bytes)
+    }
 }
 
 pub fn encode_abi_types(abi_types: &[&ABIType], values: &[ABIValue]) -> Result<Vec<u8>, ABIError> {
@@ -93,19 +104,6 @@ pub fn encode_abi_types(abi_types: &[&ABIType], values: &[ABIValue]) -> Result<V
     let results = heads.into_iter().chain(tails).flatten().collect();
 
     Ok(results)
-}
-
-impl ABIType {
-    pub(crate) fn decode_tuple(&self, bytes: &[u8]) -> Result<ABIValue, ABIError> {
-        let child_types = match self {
-            ABIType::Tuple(child_types) => {
-                child_types.iter().map(|b| b.as_ref()).collect::<Vec<_>>()
-            }
-            _ => return Err(ABIError::DecodingError("Expected TupleType".to_string())),
-        };
-
-        decode_abi_types(&child_types, bytes)
-    }
 }
 
 pub fn decode_abi_types(abi_types: &[&ABIType], bytes: &[u8]) -> Result<ABIValue, ABIError> {
