@@ -7,7 +7,7 @@ use crate::{
 impl ABIType {
     /// Encode a boolean value to ABI format.
     /// True values are encoded as 0x80, false values as 0x00.
-    pub fn encode_bool(&self, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
+    pub(crate) fn encode_bool(&self, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
         match self {
             ABIType::Bool => {
                 let bool_value = match value {
@@ -32,7 +32,7 @@ impl ABIType {
 
     /// Decode a boolean value from ABI format.
     /// Expects exactly 1 byte: 0x80 for true, 0x00 for false.
-    pub fn decode_bool(&self, bytes: &[u8]) -> Result<ABIValue, ABIError> {
+    pub(crate) fn decode_bool(&self, bytes: &[u8]) -> Result<ABIValue, ABIError> {
         match self {
             ABIType::Bool => {
                 if bytes.len() != 1 {
@@ -63,7 +63,7 @@ mod tests {
         let abi_type = ABIType::Bool;
         let value = ABIValue::String("true".to_string());
 
-        let result = abi_type.encode_bool(&value);
+        let result = abi_type.encode(&value);
         assert!(result.is_err());
         assert!(result
             .unwrap_err()
@@ -76,7 +76,7 @@ mod tests {
         let abi_type = ABIType::Bool;
         let bytes = vec![0x80, 0x00]; // 2 bytes instead of 1
 
-        let result = abi_type.decode_bool(&bytes);
+        let result = abi_type.decode(&bytes);
         assert!(result.is_err());
         assert!(result
             .unwrap_err()
@@ -89,7 +89,7 @@ mod tests {
         let abi_type = ABIType::Bool;
         let bytes = vec![0x30]; // Invalid value (not 0x80 or 0x00)
 
-        let result = abi_type.decode_bool(&bytes);
+        let result = abi_type.decode(&bytes);
         assert!(result.is_err());
         assert!(result
             .unwrap_err()

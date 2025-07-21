@@ -12,7 +12,7 @@ struct Segment {
 }
 
 impl ABIType {
-    pub fn encode_tuple(&self, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
+    pub(crate) fn encode_tuple(&self, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
         let child_types = match self {
             ABIType::Tuple(child_types) => {
                 child_types.iter().map(|b| b.as_ref()).collect::<Vec<_>>()
@@ -96,7 +96,7 @@ pub fn encode_abi_types(abi_types: &[&ABIType], values: &[ABIValue]) -> Result<V
 }
 
 impl ABIType {
-    pub fn decode_tuple(&self, bytes: &[u8]) -> Result<ABIValue, ABIError> {
+    pub(crate) fn decode_tuple(&self, bytes: &[u8]) -> Result<ABIValue, ABIError> {
         let child_types = match self {
             ABIType::Tuple(child_types) => {
                 child_types.iter().map(|b| b.as_ref()).collect::<Vec<_>>()
@@ -309,7 +309,7 @@ mod tests {
         let tuple_type = ABIType::Tuple(vec![uint32_type1, uint32_type2]);
 
         let value = ABIValue::Array(vec![ABIValue::Uint(BigUint::from(1u32))]);
-        let result = tuple_type.encode_tuple(&value);
+        let result = tuple_type.encode(&value);
 
         assert!(result.is_err());
 
@@ -323,7 +323,7 @@ mod tests {
     fn test_wrong_abi_type() {
         let tuple_type = ABIType::String;
         let value = ABIValue::Array(vec![]);
-        let result = tuple_type.encode_tuple(&value);
+        let result = tuple_type.encode(&value);
         assert!(result.is_err());
         assert!(result
             .unwrap_err()
@@ -337,7 +337,7 @@ mod tests {
         let uint32_type2 = ABIType::Uint(BitSize::new(32).unwrap());
         let tuple_type = ABIType::Tuple(vec![uint32_type1, uint32_type2]);
         let bytes = vec![0x00, 0x00, 0x00]; // Too few bytes for two uint32s
-        let result = tuple_type.decode_tuple(&bytes);
+        let result = tuple_type.decode(&bytes);
 
         assert!(result.is_err());
         assert!(result
@@ -350,7 +350,7 @@ mod tests {
     fn test_decode_malformed_tuple_wrong_abi_type() {
         let tuple_type = ABIType::String; // Not a tuple type
         let bytes = vec![0x00, 0x00, 0x00, 0x00];
-        let result = tuple_type.decode_tuple(&bytes);
+        let result = tuple_type.decode(&bytes);
         assert!(result.is_err());
         assert!(result
             .unwrap_err()
@@ -363,7 +363,7 @@ mod tests {
         let uint8_type = ABIType::Uint(BitSize::new(8).unwrap());
         let tuple_type = ABIType::Tuple(vec![uint8_type]);
         let bytes = vec![0x01, 0x02, 0x03]; // Extra bytes after the uint8
-        let result = tuple_type.decode_tuple(&bytes);
+        let result = tuple_type.decode(&bytes);
 
         assert!(result.is_err());
         assert!(result

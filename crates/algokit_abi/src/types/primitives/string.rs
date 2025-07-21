@@ -1,7 +1,7 @@
 use crate::{common::LENGTH_ENCODE_BYTE_SIZE, error::ABIError, ABIType, ABIValue};
 
 impl ABIType {
-    pub fn encode_string(&self, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
+    pub(crate) fn encode_string(&self, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
         match self {
             ABIType::String => {
                 let value = match value {
@@ -25,7 +25,7 @@ impl ABIType {
         }
     }
 
-    pub fn decode_string(&self, value: &[u8]) -> Result<ABIValue, ABIError> {
+    pub(crate) fn decode_string(&self, value: &[u8]) -> Result<ABIValue, ABIError> {
         match self {
             ABIType::String => {
                 if value.len() < LENGTH_ENCODE_BYTE_SIZE {
@@ -62,7 +62,7 @@ mod tests {
         let abi_type = ABIType::String;
         let bytes = vec![0]; // Only 1 byte, need 2 for length
 
-        let result = abi_type.decode_string(&bytes);
+        let result = abi_type.decode(&bytes);
         assert!(result.is_err());
         assert_eq!(
             result.unwrap_err().to_string(),
@@ -76,7 +76,7 @@ mod tests {
         let abi_type = ABIType::String;
         let bytes = vec![0, 5, 65, 66]; // Claims 5 bytes but only has 2
 
-        let result = abi_type.decode_string(&bytes);
+        let result = abi_type.decode(&bytes);
         assert!(result.is_err());
         assert_eq!(result.unwrap_err().to_string(), "Error ocurred during decoding: Invalid byte array length for string, expected 5 value, got 2");
     }
@@ -86,7 +86,7 @@ mod tests {
         let abi_type = ABIType::String;
         let value = ABIValue::Uint(num_bigint::BigUint::from(42u32));
 
-        let result = abi_type.encode_string(&value);
+        let result = abi_type.encode(&value);
         assert!(result.is_err());
         assert_eq!(
             result.unwrap_err().to_string(),

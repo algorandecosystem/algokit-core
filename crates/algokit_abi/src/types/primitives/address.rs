@@ -11,7 +11,7 @@ use crate::{
 impl ABIType {
     /// Encode an address value to ABI format.
     /// Addresses are encoded as 32-byte public keys.
-    pub fn encode_address(&self, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
+    pub(crate) fn encode_address(&self, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
         match self {
             ABIType::Address => {
                 let address_str = match value {
@@ -45,7 +45,7 @@ impl ABIType {
 
     /// Decode an address value from ABI format.
     /// Expects exactly 32 bytes and returns an Address ABIValue.
-    pub fn decode_address(&self, bytes: &[u8]) -> Result<ABIValue, ABIError> {
+    pub(crate) fn decode_address(&self, bytes: &[u8]) -> Result<ABIValue, ABIError> {
         match self {
             ABIType::Address => {
                 if bytes.len() != ADDR_BYTE_SIZE {
@@ -89,7 +89,7 @@ mod tests {
     #[test]
     fn test_encode_wrong_type() {
         let value = ABIValue::String("not an address".to_string());
-        let result = ABIType::Address.encode_address(&value);
+        let result = ABIType::Address.encode(&value);
         assert!(result.is_err());
         assert!(result
             .unwrap_err()
@@ -102,7 +102,7 @@ mod tests {
         let value = ABIValue::Address(
             "MO2H6ZU47Q36GJ6GVHUKGEBEQINN7ZWVACMWZQGIYUOE3RBSRVYHV4ACJI".to_string(),
         );
-        let result = ABIType::String.encode_address(&value);
+        let result = ABIType::String.encode(&value);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("Expected Address"));
     }
@@ -110,7 +110,7 @@ mod tests {
     #[test]
     fn test_decode_wrong_length_too_short() {
         let bytes = vec![0u8; 31];
-        let result = ABIType::Address.decode_address(&bytes);
+        let result = ABIType::Address.decode(&bytes);
         assert!(result.is_err());
         assert!(result
             .unwrap_err()
@@ -121,7 +121,7 @@ mod tests {
     #[test]
     fn test_decode_wrong_length_too_long() {
         let bytes = vec![0u8; 33];
-        let result = ABIType::Address.decode_address(&bytes);
+        let result = ABIType::Address.decode(&bytes);
         assert!(result.is_err());
         assert!(result
             .unwrap_err()

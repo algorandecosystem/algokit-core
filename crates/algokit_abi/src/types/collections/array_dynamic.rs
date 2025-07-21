@@ -7,7 +7,7 @@ use crate::{
 };
 
 impl ABIType {
-    pub fn encode_dynamic_array(&self, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
+    pub(crate) fn encode_dynamic_array(&self, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
         let values = match value {
             ABIValue::Array(n) => n,
             _ => {
@@ -33,7 +33,7 @@ impl ABIType {
         Ok(merged_bytes)
     }
 
-    pub fn decode_dynamic_array(&self, value: &[u8]) -> Result<ABIValue, ABIError> {
+    pub(crate) fn decode_dynamic_array(&self, value: &[u8]) -> Result<ABIValue, ABIError> {
         if value.len() < LENGTH_ENCODE_BYTE_SIZE {
             return Err(ABIError::DecodingError(
                 "Value is too short to be decoded as tuple".to_string(),

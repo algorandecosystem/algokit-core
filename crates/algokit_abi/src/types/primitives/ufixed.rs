@@ -3,7 +3,7 @@ use num_bigint::BigUint;
 use crate::{abi_type::ABIType, abi_value::ABIValue, error::ABIError, utils};
 
 impl ABIType {
-    pub fn encode_ufixed(&self, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
+    pub(crate) fn encode_ufixed(&self, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
         match self {
             ABIType::UFixed(bit_size, precision) => {
                 let bit_size = bit_size.value();
@@ -35,7 +35,7 @@ impl ABIType {
         }
     }
 
-    pub fn decode_ufixed(&self, bytes: &[u8]) -> Result<ABIValue, ABIError> {
+    pub(crate) fn decode_ufixed(&self, bytes: &[u8]) -> Result<ABIValue, ABIError> {
         match self {
             ABIType::UFixed(bit_size, _precision) => {
                 let bit_size = bit_size.value();
