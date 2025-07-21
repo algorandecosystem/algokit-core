@@ -351,6 +351,14 @@ mod tests {
 
     #[rstest]
     #[case(ABIType::Uint(BitSize::new(8).unwrap()), ABIValue::Uint(BigUint::from(0u8)), &[0])]
+    #[case(ABIType::Uint(BitSize::new(16).unwrap()), ABIValue::Uint(BigUint::from(3u16)), &[0, 3])]
+    #[case(ABIType::Uint(BitSize::new(64).unwrap()), ABIValue::Uint(BigUint::from(256u64)), &[0, 0, 0, 0, 0, 0, 1, 0])]
+    #[case(ABIType::UFixed(BitSize::new(8).unwrap(), Precision::new(30).unwrap()), ABIValue::Uint(BigUint::from(255u8)), &[255])]
+    #[case(ABIType::UFixed(BitSize::new(32).unwrap(), Precision::new(10).unwrap()), ABIValue::Uint(BigUint::from(33u32)), &[0, 0, 0, 33])]
+    // TODO: check the address
+    #[case(ABIType::Address, ABIValue::Address("MO2H6ZU47Q36GJ6GVHUKGEBEQINN7ZWVACMWZQGIYUOE3RBSRVYHV4ACJI".to_string()), &[99, 180, 127, 102, 156, 252, 55, 227, 39, 198, 169, 232, 163, 16, 36, 130, 26, 223, 230, 213, 0, 153, 108, 192, 200, 197, 28, 77, 196, 50, 141, 112])]
+    #[case(ABIType::String, ABIValue::String("What’s new".to_string()), &[0, 12, 87, 104, 97, 116, 226, 128, 153, 115, 32, 110, 101, 119])]
+    #[case(ABIType::String, ABIValue::String("😅🔨".to_string()), &[0, 8, 240, 159, 152, 133, 240, 159, 148, 168])]
     fn should_round_trip(
         #[case] abi_type: ABIType,
         #[case] abi_value: ABIValue,

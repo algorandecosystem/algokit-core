@@ -61,9 +61,11 @@ dependencies = [
 name = "algokit_abi"
 version = "0.1.0"
 dependencies = [
+ "base32",
  "num-bigint",
  "regex",
  "rstest",
+ "sha2",
  "thiserror 2.0.7",
 ]
 
