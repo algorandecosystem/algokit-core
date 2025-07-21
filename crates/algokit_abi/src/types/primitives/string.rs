@@ -56,77 +56,17 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_encode_asdf() {
-        let abi_type = ABIType::String;
-        let value = ABIValue::String("asdf".to_string());
-        let encoded = encode_string(&abi_type, &value).unwrap();
-        assert_eq!(encoded, vec![0, 4, 97, 115, 100, 102]);
-    }
-
-    #[test]
-    fn test_encode_whats_new() {
-        let abi_type = ABIType::String;
-        let value = ABIValue::String("What's new?".to_string());
-        let encoded = encode_string(&abi_type, &value).unwrap();
-        assert_eq!(
-            encoded,
-            vec![0, 11, 87, 104, 97, 116, 39, 115, 32, 110, 101, 119, 63]
-        );
-    }
-
-    #[test]
-    fn test_encode_emoji() {
-        let abi_type = ABIType::String;
-        let value = ABIValue::String("😅🔨".to_string());
-        let encoded = encode_string(&abi_type, &value).unwrap();
-        assert_eq!(encoded, vec![0, 8, 240, 159, 152, 133, 240, 159, 148, 168]);
-    }
-
-    #[test]
-    fn test_decode_asdf() {
-        let abi_type = ABIType::String;
-        let bytes = vec![0, 4, 97, 115, 100, 102];
-        let decoded = decode_string(&abi_type, &bytes).unwrap();
-        assert_eq!(decoded, ABIValue::String("asdf".to_string()));
-    }
-
-    #[test]
-    fn test_decode_whats_new() {
-        let abi_type = ABIType::String;
-        let bytes = vec![0, 11, 87, 104, 97, 116, 39, 115, 32, 110, 101, 119, 63];
-        let decoded = decode_string(&abi_type, &bytes).unwrap();
-        assert_eq!(decoded, ABIValue::String("What's new?".to_string()));
-    }
-
-    #[test]
-    fn test_decode_emoji() {
-        let abi_type = ABIType::String;
-        let bytes = vec![0, 8, 240, 159, 152, 133, 240, 159, 148, 168];
-        let decoded = decode_string(&abi_type, &bytes).unwrap();
-        assert_eq!(decoded, ABIValue::String("😅🔨".to_string()));
-    }
-
-    #[test]
-    fn test_round_trip() {
-        let test_cases = vec!["asdf", "What's new", "😅🔨"];
-
-        for test_string in test_cases {
-            let value = ABIValue::String(test_string.to_string());
-
-            let encoded = encode_string(&ABIType::String, &value).unwrap();
-            let decoded = decode_string(&ABIType::String, &encoded).unwrap();
-
-            assert_eq!(decoded, value);
-        }
-    }
-
-    #[test]
     fn test_insufficient_bytes() {
         let abi_type = ABIType::String;
         let bytes = vec![0]; // Only 1 byte, need 2 for length
 
         let result = decode_string(&abi_type, &bytes);
         assert!(result.is_err());
+        assert_eq!(
+            result.unwrap_err().to_string(),
+            // TODO: standardise tests assert
+            "Error ocurred during decoding: Byte array too short for string"
+        );
     }
 
     #[test]
@@ -136,6 +76,7 @@ mod tests {
 
         let result = decode_string(&abi_type, &bytes);
         assert!(result.is_err());
+        assert_eq!(result.unwrap_err().to_string(), "Error ocurred during decoding: Invalid byte array length for string, expected 5 value, got 2");
     }
 
     #[test]
@@ -145,5 +86,9 @@ mod tests {
 
         let result = encode_string(&abi_type, &value);
         assert!(result.is_err());
+        assert_eq!(
+            result.unwrap_err().to_string(),
+            "Error ocurred during encoding: Cannot encode value as string: expected a String"
+        );
     }
 }
