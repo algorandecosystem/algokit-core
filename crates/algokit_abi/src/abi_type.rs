@@ -1,21 +1,7 @@
 use crate::{
     common::{ADDR_BYTE_SIZE, BITS_PER_BYTE},
     error::ABIError,
-    types::{
-        collections::{
-            array_dynamic::{decode_dynamic_array, encode_dynamic_array},
-            array_static::{decode_static_array, encode_static_array},
-            tuple::{decode_tuple, encode_tuple, find_bool_sequence_end},
-        },
-        primitives::{
-            address::{decode_address, encode_address},
-            bool::{decode_bool, encode_bool},
-            byte::{decode_byte, encode_byte},
-            string::{decode_string, encode_string},
-            ufixed::{decode_ufixed, encode_ufixed},
-            uint::{decode_uint, encode_uint},
-        },
-    },
+    types::collections::tuple::find_bool_sequence_end,
 };
 use regex::Regex;
 use std::{
@@ -114,7 +100,7 @@ impl ABIType {
     pub fn is_dynamic(&self) -> bool {
         match self {
             ABIType::StaticArray(child_type, _) => child_type.is_dynamic(),
-            ABIType::Tuple(child_types) => child_types.iter().all(|t| is_dynamic(t)),
+            ABIType::Tuple(child_types) => child_types.iter().any(|t| t.is_dynamic()),
             ABIType::DynamicArray(_) => true,
             ABIType::String => true,
             _ => false,
@@ -131,7 +117,7 @@ impl ABIType {
             ABIType::Byte => Ok(1),
             ABIType::StaticArray(child_type, size) => match child_type.as_ref() {
                 ABIType::Bool => Ok((*size).div_ceil(BITS_PER_BYTE as usize)),
-                _ => Ok(get_size(child_type)? * *size),
+                _ => Ok(Self::get_size(child_type)? * *size),
             },
             ABIType::Tuple(child_types) => {
                 let mut size = 0;
@@ -147,7 +133,7 @@ impl ABIType {
                             i = sequence_end_index + 1;
                         }
                         _ => {
-                            size += get_size(child_type)?;
+                            size += Self::get_size(child_type)?;
                             i += 1;
                         }
                     }
@@ -402,9 +388,9 @@ mod tests {
         #[case] abi_value: ABIValue,
         #[case] expected_encoded_value: &[u8],
     ) {
-        let encoded = encode(&abi_type, &abi_value).expect("Failed to encode");
+        let encoded = abi_type.encode(&abi_value).expect("Failed to encode");
         assert_eq!(encoded, expected_encoded_value);
-        let decoded = decode(&abi_type, &encoded).expect("Failed to decode");
+        let decoded = abi_type.decode(&encoded).expect("Failed to decode");
         assert_eq!(decoded, abi_value);
     }
 }

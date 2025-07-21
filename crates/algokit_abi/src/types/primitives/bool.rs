@@ -63,7 +63,7 @@ mod tests {
         let abi_type = ABIType::Bool;
         let value = ABIValue::String("true".to_string());
 
-        let result = encode_bool(&abi_type, &value);
+        let result = abi_type.encode_bool(&value);
         assert!(result.is_err());
         assert!(result
             .unwrap_err()
@@ -76,7 +76,7 @@ mod tests {
         let abi_type = ABIType::Bool;
         let bytes = vec![0x80, 0x00]; // 2 bytes instead of 1
 
-        let result = decode_bool(&abi_type, &bytes);
+        let result = abi_type.decode_bool(&bytes);
         assert!(result.is_err());
         assert!(result
             .unwrap_err()
@@ -89,7 +89,7 @@ mod tests {
         let abi_type = ABIType::Bool;
         let bytes = vec![0x30]; // Invalid value (not 0x80 or 0x00)
 
-        let result = decode_bool(&abi_type, &bytes);
+        let result = abi_type.decode_bool(&bytes);
         assert!(result.is_err());
         assert!(result
             .unwrap_err()
