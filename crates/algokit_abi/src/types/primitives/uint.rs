@@ -10,10 +10,9 @@ impl ABIType {
                 let value = match value {
                     ABIValue::Uint(n) => n,
                     _ => {
-                        return Err(ABIError::EncodingError(format!(
-                            "Cannot encode value as uint{}: expected number",
-                            bit_size
-                        )));
+                        return Err(ABIError::EncodingError(
+                            "ABI value mismatch, expected uint".to_string(),
+                        ));
                     }
                 };
 
@@ -26,7 +25,9 @@ impl ABIType {
 
                 Ok(utils::big_uint_to_bytes(&value, (bit_size / 8) as usize))
             }
-            _ => Err(ABIError::EncodingError("Expected UintType".to_string())),
+            _ => Err(ABIError::EncodingError(
+                "ABI type mismatch, expected uint".to_string(),
+            )),
         }
     }
 
@@ -45,7 +46,9 @@ impl ABIType {
 
                 Ok(ABIValue::Uint(BigUint::from_bytes_be(bytes)))
             }
-            _ => Err(ABIError::DecodingError("Expected UintType".to_string())),
+            _ => Err(ABIError::DecodingError(
+                "ABI type mismatch, expected uint".to_string(),
+            )),
         }
     }
 }

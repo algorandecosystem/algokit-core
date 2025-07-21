@@ -19,7 +19,7 @@ impl ABIType {
                     ABIValue::Address(a) => a,
                     _ => {
                         return Err(ABIError::EncodingError(
-                            "Cannot encode value as address: expected a String".to_string(),
+                            "ABI value mismatch, expected address string".to_string(),
                         ));
                     }
                 };
@@ -40,7 +40,9 @@ impl ABIType {
 
                 Ok(decoded_address)
             }
-            _ => Err(ABIError::EncodingError("Expected Address".to_string())),
+            _ => Err(ABIError::EncodingError(
+                "ABI type mismatch, expected address".to_string(),
+            )),
         }
     }
 
@@ -75,7 +77,9 @@ impl ABIType {
 
                 Ok(ABIValue::Address(address_str))
             }
-            _ => Err(ABIError::DecodingError("Expected Address".to_string())),
+            _ => Err(ABIError::DecodingError(
+                "ABI type mismatch, expected address".to_string(),
+            )),
         }
     }
 }

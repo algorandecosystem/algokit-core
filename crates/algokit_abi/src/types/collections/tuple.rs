@@ -17,16 +17,19 @@ impl ABIType {
             ABIType::Tuple(child_types) => {
                 child_types.iter().map(|b| b.as_ref()).collect::<Vec<_>>()
             }
-            _ => return Err(ABIError::EncodingError("Expected TupleType".to_string())),
+            _ => {
+                return Err(ABIError::EncodingError(
+                    "ABI type mismatch, expected tuple".to_string(),
+                ))
+            }
         };
 
         let values = match value {
             ABIValue::Array(n) => n,
             _ => {
-                return Err(ABIError::EncodingError(format!(
-                    "Cannot encode tuple {}, expect an array of byte array",
-                    self
-                )));
+                return Err(ABIError::EncodingError(
+                    "ABI value mismatch, expected an array of values".to_string(),
+                ));
             }
         };
 
@@ -38,7 +41,11 @@ impl ABIType {
             ABIType::Tuple(child_types) => {
                 child_types.iter().map(|b| b.as_ref()).collect::<Vec<_>>()
             }
-            _ => return Err(ABIError::DecodingError("Expected TupleType".to_string())),
+            _ => {
+                return Err(ABIError::DecodingError(
+                    "ABI type mismatch, expected tuple".to_string(),
+                ))
+            }
         };
 
         decode_abi_types(&child_types, bytes)

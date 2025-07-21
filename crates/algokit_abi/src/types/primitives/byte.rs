@@ -12,12 +12,14 @@ impl ABIType {
                     }
                     _ => {
                         return Err(ABIError::EncodingError(
-                            "Cannot encode value as byte: expected a number".to_string(),
+                            "ABI value mismatch, expected byte".to_string(),
                         ));
                     }
                 };
             }
-            _ => Err(ABIError::EncodingError("Expected Byte".to_string())),
+            _ => Err(ABIError::EncodingError(
+                "ABI type mismatch, expected byte".to_string(),
+            )),
         }
     }
 
@@ -34,7 +36,9 @@ impl ABIType {
 
                 Ok(ABIValue::Byte(bytes[0]))
             }
-            _ => Err(ABIError::DecodingError("Expected Byte".to_string())),
+            _ => Err(ABIError::DecodingError(
+                "ABI type mismatch, expected byte".to_string(),
+            )),
         }
     }
 }

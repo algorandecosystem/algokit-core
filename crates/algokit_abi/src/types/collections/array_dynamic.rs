@@ -11,16 +11,19 @@ impl ABIType {
         let values = match value {
             ABIValue::Array(n) => n,
             _ => {
-                return Err(ABIError::EncodingError(format!(
-                    "Cannot encode dynamic array {}, expect an array of values",
-                    self
-                )));
+                return Err(ABIError::EncodingError(
+                    "ABI value mismatch, expected an array of values".to_string(),
+                ));
             }
         };
 
         let child_type = match self {
             ABIType::DynamicArray(child_type) => child_type,
-            _ => return Err(ABIError::EncodingError("Expected DynamicArray".to_string())),
+            _ => {
+                return Err(ABIError::EncodingError(
+                    "ABI type mismatch, expected dynamic array".to_string(),
+                ))
+            }
         };
 
         let child_types = vec![child_type.as_ref(); values.len()];
@@ -45,7 +48,11 @@ impl ABIType {
 
         let child_type = match self {
             ABIType::DynamicArray(child_type) => child_type,
-            _ => return Err(ABIError::EncodingError("Expected DynamicArray".to_string())),
+            _ => {
+                return Err(ABIError::EncodingError(
+                    "ABI type mismatch, expected dynamic array".to_string(),
+                ))
+            }
         };
 
         let child_types = vec![child_type.as_ref(); values_count as usize];

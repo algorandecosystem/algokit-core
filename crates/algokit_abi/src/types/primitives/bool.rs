@@ -13,9 +13,8 @@ impl ABIType {
                 let bool_value = match value {
                     ABIValue::Bool(b) => b,
                     _ => {
-                        // TODO: consistent error message
                         return Err(ABIError::EncodingError(
-                            "Cannot encode value as bool: expected a boolean".to_string(),
+                            "ABI value mismatch, expected boolean".to_string(),
                         ));
                     }
                 };
@@ -26,7 +25,9 @@ impl ABIType {
                     Ok(vec![BOOL_FALSE_BYTE]) // false -> 0
                 }
             }
-            _ => Err(ABIError::EncodingError("Expected Bool".to_string())),
+            _ => Err(ABIError::EncodingError(
+                "ABI type mismatch, expected bool".to_string(),
+            )),
         }
     }
 
@@ -49,7 +50,9 @@ impl ABIType {
                     )),
                 }
             }
-            _ => Err(ABIError::DecodingError("Expected Bool".to_string())),
+            _ => Err(ABIError::DecodingError(
+                "ABI type mismatch, expected bool".to_string(),
+            )),
         }
     }
 }

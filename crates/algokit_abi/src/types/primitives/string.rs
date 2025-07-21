@@ -8,7 +8,7 @@ impl ABIType {
                     ABIValue::String(s) => s,
                     _ => {
                         return Err(ABIError::EncodingError(
-                            "Cannot encode value as string: expected a String".to_string(),
+                            "ABI value mismatch, expected string".to_string(),
                         ));
                     }
                 };
@@ -21,7 +21,9 @@ impl ABIType {
 
                 Ok(result)
             }
-            _ => Err(ABIError::EncodingError("Expected String".to_string())),
+            _ => Err(ABIError::EncodingError(
+                "ABI type mismatch, expected string".to_string(),
+            )),
         }
     }
 
@@ -48,7 +50,9 @@ impl ABIType {
                     .map_err(|_| ABIError::DecodingError("Invalid UTF-8 encoding".to_string()))?;
                 Ok(ABIValue::String(string_value))
             }
-            _ => Err(ABIError::DecodingError("Expected String".to_string())),
+            _ => Err(ABIError::DecodingError(
+                "ABI type mismatch, expected string".to_string(),
+            )),
         }
     }
 }
