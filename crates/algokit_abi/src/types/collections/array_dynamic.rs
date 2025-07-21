@@ -37,7 +37,7 @@ impl ABIType {
     pub(crate) fn decode_dynamic_array(&self, value: &[u8]) -> Result<ABIValue, ABIError> {
         if value.len() < LENGTH_ENCODE_BYTE_SIZE {
             return Err(ABIError::DecodingError(
-                "Value is too short to be decoded as tuple".to_string(),
+                "Byte array is too short to be decoded as dynamic array".to_string(),
             ));
         }
 

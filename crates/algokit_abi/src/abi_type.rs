@@ -138,11 +138,11 @@ impl ABIType {
                 Ok(size)
             }
             ABIType::String => Err(ABIError::DecodingError(format!(
-                "{} is a dynamic type",
+                "Failed to get size, {} is a dynamic type",
                 abi_type
             ))),
             ABIType::DynamicArray(_) => Err(ABIError::DecodingError(format!(
-                "{} is a dynamic type",
+                "Failed to get size, {} is a dynamic type",
                 abi_type
             ))),
         }

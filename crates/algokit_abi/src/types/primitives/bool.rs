@@ -18,10 +18,9 @@ impl ABIType {
                     }
                 };
 
-                if *bool_value {
-                    Ok(vec![BOOL_TRUE_BYTE]) // true -> 128 (MSB set)
-                } else {
-                    Ok(vec![BOOL_FALSE_BYTE]) // false -> 0
+                match *bool_value {
+                    true => Ok(vec![BOOL_TRUE_BYTE]),   // true -> 128 (MSB set)
+                    false => Ok(vec![BOOL_FALSE_BYTE]), // false -> 0
                 }
             }
             _ => Err(ABIError::EncodingError(

@@ -32,7 +32,7 @@ impl ABIType {
             ABIType::String => {
                 if value.len() < LENGTH_ENCODE_BYTE_SIZE {
                     return Err(ABIError::DecodingError(
-                        "Byte array too short for string".to_string(),
+                        "Byte array is too short for string".to_string(),
                     ));
                 }
 
@@ -70,7 +70,7 @@ mod tests {
         assert!(result.is_err());
         assert_eq!(
             result.unwrap_err().to_string(),
-            "ABI decoding failed: Byte array too short for string"
+            "ABI decoding failed: Byte array is too short for string"
         );
     }
 

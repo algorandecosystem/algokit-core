@@ -50,7 +50,7 @@ impl ABIType {
 pub fn encode_abi_types(abi_types: &[&ABIType], values: &[ABIValue]) -> Result<Vec<u8>, ABIError> {
     if abi_types.len() != values.len() {
         return Err(ABIError::EncodingError(
-            "Cannot encode, values and types lengths mismatch".to_string(),
+            "values and types lengths mismatch".to_string(),
         ));
     }
 
@@ -58,32 +58,34 @@ pub fn encode_abi_types(abi_types: &[&ABIType], values: &[ABIValue]) -> Result<V
     let mut tails: Vec<Vec<u8>> = Vec::new();
     let mut is_dynamic_index: HashMap<usize, bool> = HashMap::new();
 
-    let mut i = 0;
-    while i < abi_types.len() {
-        let child_type = &abi_types[i];
+    let mut abi_types_cursor = 0;
+    while abi_types_cursor < abi_types.len() {
+        let child_type = &abi_types[abi_types_cursor];
 
         if child_type.is_dynamic() {
+            // Head is not pre-determined for dynamic types; store a placeholder for now
             is_dynamic_index.insert(heads.len(), true);
             heads.push(vec![0, 0]);
-            tails.push(child_type.encode(&values[i])?);
+            tails.push(child_type.encode(&values[abi_types_cursor])?);
         } else {
             match child_type {
                 ABIType::Bool => {
-                    let sequence_end_index = find_bool_sequence_end(abi_types, i);
-                    let bool_values = &values[i..=sequence_end_index];
+                    let bool_sequence_end_index =
+                        find_bool_sequence_end(abi_types, abi_types_cursor);
+                    let bool_values = &values[abi_types_cursor..=bool_sequence_end_index];
                     heads.push(compress_bools(bool_values)?.to_be_bytes().to_vec());
 
-                    i = sequence_end_index;
+                    abi_types_cursor = bool_sequence_end_index;
                 }
                 _ => {
-                    heads.push(child_type.encode(&values[i])?);
+                    heads.push(child_type.encode(&values[abi_types_cursor])?);
                 }
             }
-            is_dynamic_index.insert(i, false);
+            is_dynamic_index.insert(abi_types_cursor, false);
             tails.push(vec![]);
         }
 
-        i += 1;
+        abi_types_cursor += 1;
     }
 
     let head_length: usize = heads.iter().map(|e| e.len()).sum();
@@ -110,7 +112,7 @@ pub fn decode_abi_types(abi_types: &[&ABIType], bytes: &[u8]) -> Result<ABIValue
 
     let mut values: Vec<ABIValue> = Vec::new();
     for i in 0..abi_types.len() {
-        let child_type = &abi_types[i];
+        let child_type = abi_types[i];
         let value_partition = &value_partitions[i];
         let child_type_value = child_type.decode(value_partition)?;
         values.push(child_type_value);
@@ -150,14 +152,14 @@ fn extract_values(abi_types: &[&ABIType], bytes: &[u8]) -> Result<Vec<Vec<u8>>, 
     let mut value_partitions: Vec<Option<Vec<u8>>> = Vec::new();
     let mut bytes_cursor: usize = 0;
 
-    let mut i = 0;
-    while i < abi_types.len() {
-        let child_type = abi_types[i];
+    let mut abi_types_cursor = 0;
+    while abi_types_cursor < abi_types.len() {
+        let child_type = abi_types[abi_types_cursor];
 
         if child_type.is_dynamic() {
             if bytes[bytes_cursor..].len() < LENGTH_ENCODE_BYTE_SIZE {
                 return Err(ABIError::DecodingError(
-                    "Dynamic type in tuple is too short to be decoded".to_string(),
+                    "Byte array is too short to be decoded".to_string(),
                 ));
             }
 
@@ -165,7 +167,7 @@ fn extract_values(abi_types: &[&ABIType], bytes: &[u8]) -> Result<Vec<Vec<u8>>, 
             if let Some(last_segment) = dynamic_segments.last_mut() {
                 if dynamic_index < last_segment.left {
                     return Err(ABIError::DecodingError(
-                        "dynamic index segment miscalculation: left is greater than right index"
+                        "Dynamic index segment miscalculation: left is greater than right index"
                             .to_string(),
                     ));
                 }
@@ -181,9 +183,10 @@ fn extract_values(abi_types: &[&ABIType], bytes: &[u8]) -> Result<Vec<Vec<u8>>, 
         } else {
             match child_type {
                 ABIType::Bool => {
-                    let sequence_end_index = find_bool_sequence_end(abi_types, i);
+                    let bool_sequence_end_index =
+                        find_bool_sequence_end(abi_types, abi_types_cursor);
 
-                    for j in 0..=(sequence_end_index - i) {
+                    for j in 0..=(bool_sequence_end_index - abi_types_cursor) {
                         let bool_mask: u8 = BOOL_TRUE_BYTE >> j;
                         if bytes[bytes_cursor] & bool_mask > 0 {
                             value_partitions.push(Some(vec![BOOL_TRUE_BYTE]));
@@ -192,7 +195,7 @@ fn extract_values(abi_types: &[&ABIType], bytes: &[u8]) -> Result<Vec<Vec<u8>>, 
                         }
                     }
 
-                    i = sequence_end_index;
+                    abi_types_cursor = bool_sequence_end_index;
                     bytes_cursor += 1;
                 }
                 _ => {
@@ -212,12 +215,12 @@ fn extract_values(abi_types: &[&ABIType], bytes: &[u8]) -> Result<Vec<Vec<u8>>, 
                 }
             }
         }
-        if i != abi_types.len() - 1 && bytes_cursor >= bytes.len() {
+        if abi_types_cursor != abi_types.len() - 1 && bytes_cursor >= bytes.len() {
             return Err(ABIError::DecodingError(
                 "Input bytes not enough to decode".to_string(),
             ));
         }
-        i += 1;
+        abi_types_cursor += 1;
     }
 
     if let Some(last_segment) = dynamic_segments.last_mut() {
@@ -272,6 +275,7 @@ fn extract_values(abi_types: &[&ABIType], bytes: &[u8]) -> Result<Vec<Vec<u8>>, 
     Ok(value_partitions)
 }
 
+// TODO: docs
 pub fn find_bool_sequence_end<T>(child_types: &[T], current_index: usize) -> usize
 where
     T: AsRef<ABIType>,
