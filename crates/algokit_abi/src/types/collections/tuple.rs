@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    common::{BOOL_FALSE_BYTE, BOOL_TRUE_BYTE, LENGTH_ENCODE_BYTE_SIZE},
+    constants::{BOOL_FALSE_BYTE, BOOL_TRUE_BYTE, LENGTH_ENCODE_BYTE_SIZE},
     error::ABIError,
     ABIType, ABIValue,
 };
@@ -131,7 +131,6 @@ fn compress_bools(values: &[ABIValue]) -> Result<u8, ABIError> {
     }
 
     let mut result: u8 = 0;
-    // TODO: check .iter().enumerate()
     for (i, value) in values.iter().enumerate() {
         match value {
             ABIValue::Bool(b) => {
@@ -178,7 +177,7 @@ fn extract_values(abi_types: &[&ABIType], bytes: &[u8]) -> Result<Vec<Vec<u8>>, 
 
             dynamic_segments.push(Segment {
                 left: dynamic_index,
-                right: 0, // TODO: check this logic, it is -1 in algosdk
+                right: 0,
             });
             value_partitions.push(None);
             bytes_cursor += LENGTH_ENCODE_BYTE_SIZE;

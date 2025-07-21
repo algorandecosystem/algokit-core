@@ -1,5 +1,5 @@
 use crate::{
-    common::{BOOL_FALSE_BYTE, BOOL_TRUE_BYTE},
+    constants::{BOOL_FALSE_BYTE, BOOL_TRUE_BYTE},
     error::ABIError,
     ABIType, ABIValue,
 };

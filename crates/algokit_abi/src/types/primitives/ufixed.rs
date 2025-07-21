@@ -26,10 +26,7 @@ impl ABIType {
                     )));
                 }
 
-                Ok(utils::extend_bytes_to_length(
-                    &value.to_bytes_be(),
-                    (bit_size / 8) as usize,
-                ))
+                Ok(utils::big_uint_to_bytes(&value, (bit_size / 8) as usize))
             }
             _ => Err(ABIError::EncodingError("Expected UFixedType".to_string())),
         }

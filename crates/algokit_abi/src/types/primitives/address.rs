@@ -1,8 +1,9 @@
 use sha2::{Digest, Sha512_256};
 
 use crate::{
-    common::{
-        ADDR_BYTE_SIZE, ALGORAND_ADDRESS_LENGTH, ALGORAND_CHECKSUM_BYTE_LENGTH, HASH_BYTES_LENGTH,
+    constants::{
+        ALGORAND_ADDRESS_LENGTH, ALGORAND_CHECKSUM_BYTE_LENGTH, ALGORAND_PUBLIC_KEY_BYTE_LENGTH,
+        HASH_BYTES_LENGTH,
     },
     error::ABIError,
     ABIType, ABIValue,
@@ -34,7 +35,7 @@ impl ABIType {
                             ABIError::FormatError(
                                 "Invalid base32 encoding for Algorand address".into(),
                             )
-                        })?[..ADDR_BYTE_SIZE]
+                        })?[..ALGORAND_PUBLIC_KEY_BYTE_LENGTH]
                         .to_vec();
 
                 Ok(decoded_address)
@@ -48,18 +49,26 @@ impl ABIType {
     pub(crate) fn decode_address(&self, bytes: &[u8]) -> Result<ABIValue, ABIError> {
         match self {
             ABIType::Address => {
-                if bytes.len() != ADDR_BYTE_SIZE {
+                if bytes.len() != ALGORAND_PUBLIC_KEY_BYTE_LENGTH {
                     return Err(ABIError::DecodingError(format!(
                         "Address byte string must be {} bytes long",
-                        ADDR_BYTE_SIZE
+                        ALGORAND_PUBLIC_KEY_BYTE_LENGTH
                     )));
                 }
+                let bytes: &[u8; ALGORAND_PUBLIC_KEY_BYTE_LENGTH] =
+                    bytes.try_into().map_err(|_| {
+                        ABIError::DecodingError(format!(
+                            "Failed to convert bytes to [u8; {}] for checksum",
+                            ALGORAND_PUBLIC_KEY_BYTE_LENGTH
+                        ))
+                    })?;
 
-                let mut buffer = [0u8; ADDR_BYTE_SIZE + ALGORAND_CHECKSUM_BYTE_LENGTH];
-                buffer[..ADDR_BYTE_SIZE].copy_from_slice(bytes);
+                let mut buffer =
+                    [0u8; ALGORAND_PUBLIC_KEY_BYTE_LENGTH + ALGORAND_CHECKSUM_BYTE_LENGTH];
+                buffer[..ALGORAND_PUBLIC_KEY_BYTE_LENGTH].copy_from_slice(bytes);
 
-                let checksum = bytes_to_checksum(&bytes);
-                buffer[ADDR_BYTE_SIZE..].copy_from_slice(&checksum);
+                let checksum = get_checksum(bytes);
+                buffer[ALGORAND_PUBLIC_KEY_BYTE_LENGTH..].copy_from_slice(&checksum);
 
                 let address_str =
                     base32::encode(base32::Alphabet::Rfc4648 { padding: false }, &buffer);
@@ -71,14 +80,16 @@ impl ABIType {
     }
 }
 
-// TODO: do we need [u8,32]
-fn bytes_to_checksum(pub_key: &[u8]) -> [u8; ALGORAND_CHECKSUM_BYTE_LENGTH] {
+fn get_checksum(
+    pub_key: &[u8; ALGORAND_PUBLIC_KEY_BYTE_LENGTH],
+) -> [u8; ALGORAND_CHECKSUM_BYTE_LENGTH] {
     let mut hasher = Sha512_256::new();
     hasher.update(pub_key);
 
     let mut checksum = [0u8; ALGORAND_CHECKSUM_BYTE_LENGTH];
     checksum
         .copy_from_slice(&hasher.finalize()[(HASH_BYTES_LENGTH - ALGORAND_CHECKSUM_BYTE_LENGTH)..]);
+
     checksum
 }
 

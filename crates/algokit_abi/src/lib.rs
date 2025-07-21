@@ -1,6 +1,6 @@
 pub mod abi_type;
 pub mod abi_value;
-pub mod common;
+pub mod constants;
 pub mod error;
 pub mod types;
 pub mod utils;

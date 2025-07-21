@@ -1,5 +1,5 @@
 use crate::{
-    common::{ADDR_BYTE_SIZE, BITS_PER_BYTE},
+    constants::{ALGORAND_PUBLIC_KEY_BYTE_LENGTH, BITS_PER_BYTE},
     error::ABIError,
     types::collections::tuple::find_bool_sequence_end,
 };
@@ -97,7 +97,7 @@ impl ABIType {
         }
     }
 
-    pub fn is_dynamic(&self) -> bool {
+    pub(crate) fn is_dynamic(&self) -> bool {
         match self {
             ABIType::StaticArray(child_type, _) => child_type.is_dynamic(),
             ABIType::Tuple(child_types) => child_types.iter().any(|t| t.is_dynamic()),
@@ -107,12 +107,11 @@ impl ABIType {
         }
     }
 
-    // TODO: check the return type
-    pub fn get_size(abi_type: &ABIType) -> Result<usize, ABIError> {
+    pub(crate) fn get_size(abi_type: &ABIType) -> Result<usize, ABIError> {
         match abi_type {
             ABIType::Uint(bit_size) => Ok((bit_size.value() / BITS_PER_BYTE as u16) as usize),
             ABIType::UFixed(bit_size, _) => Ok((bit_size.value() / BITS_PER_BYTE as u16) as usize),
-            ABIType::Address => Ok(ADDR_BYTE_SIZE),
+            ABIType::Address => Ok(ALGORAND_PUBLIC_KEY_BYTE_LENGTH),
             ABIType::Bool => Ok(1),
             ABIType::Byte => Ok(1),
             ABIType::StaticArray(child_type, size) => match child_type.as_ref() {

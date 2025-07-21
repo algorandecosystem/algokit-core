@@ -1,4 +1,4 @@
-use crate::{common::LENGTH_ENCODE_BYTE_SIZE, error::ABIError, ABIType, ABIValue};
+use crate::{constants::LENGTH_ENCODE_BYTE_SIZE, error::ABIError, ABIType, ABIValue};
 
 impl ABIType {
     pub(crate) fn encode_string(&self, value: &ABIValue) -> Result<Vec<u8>, ABIError> {

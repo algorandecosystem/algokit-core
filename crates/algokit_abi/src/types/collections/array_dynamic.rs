@@ -1,7 +1,7 @@
 use crate::{
     abi_type::ABIType,
     abi_value::ABIValue,
-    common::LENGTH_ENCODE_BYTE_SIZE,
+    constants::LENGTH_ENCODE_BYTE_SIZE,
     error::ABIError,
     types::collections::tuple::{decode_abi_types, encode_abi_types},
 };
