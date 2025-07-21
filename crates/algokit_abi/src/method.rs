@@ -317,8 +317,8 @@ fn find_matching_closing_paren(s: &str, open_pos: usize) -> Result<usize, ABIErr
     let chars: Vec<char> = s.chars().collect();
     let mut depth = 0;
 
-    for i in open_pos..chars.len() {
-        match chars[i] {
+    for (i, &ch) in chars.iter().enumerate().skip(open_pos) {
+        match ch {
             '(' => depth += 1,
             ')' => {
                 depth -= 1;
