@@ -50,7 +50,7 @@ impl ABIType {
 pub fn encode_abi_types(abi_types: &[&ABIType], values: &[ABIValue]) -> Result<Vec<u8>, ABIError> {
     if abi_types.len() != values.len() {
         return Err(ABIError::EncodingError(
-            "values and types lengths mismatch".to_string(),
+            "Mismatch lengths between the values and types".to_string(),
         ));
     }
 
@@ -315,7 +315,7 @@ mod tests {
 
         assert_eq!(
             result.unwrap_err().to_string(),
-            "ABI encoding failed: Cannot encode, values and types lengths mismatch"
+            "ABI encoding failed: Mismatch lengths between the values and types"
         );
     }
 

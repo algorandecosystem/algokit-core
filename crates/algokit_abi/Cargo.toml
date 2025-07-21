@@ -7,8 +7,8 @@ edition = "2021"
 thiserror = { workspace = true }
 num-bigint = "0.4"
 regex = "1.0"
-base32 = "0.5.1"
-sha2 = "0.10.8"
+base32 = { workspace = true }
+sha2 = { workspace = true }
 
 [dev-dependencies]
 rstest = "0.25.0"
