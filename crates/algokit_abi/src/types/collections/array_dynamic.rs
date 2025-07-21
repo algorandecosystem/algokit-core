@@ -23,7 +23,13 @@ pub fn encode_dynamic_array(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<
     };
 
     let child_types = vec![child_type.as_ref(); values.len()];
-    encode_abi_types(&child_types, &values)
+    let encoded_value = encode_abi_types(&child_types, &values)?;
+    let encoded_length = (child_types.len() as u16).to_be_bytes();
+
+    let mut merged_bytes = encoded_length.to_vec();
+    merged_bytes.extend(encoded_value);
+
+    Ok(merged_bytes)
 }
 
 pub fn decode_dynamic_array(abi_type: &ABIType, value: &[u8]) -> Result<ABIValue, ABIError> {
@@ -43,5 +49,5 @@ pub fn decode_dynamic_array(abi_type: &ABIType, value: &[u8]) -> Result<ABIValue
 
     let child_types = vec![child_type.as_ref(); values_count as usize];
 
-    decode_abi_types(&child_types, value)
+    decode_abi_types(&child_types, &value[LENGTH_ENCODE_BYTE_SIZE..])
 }
