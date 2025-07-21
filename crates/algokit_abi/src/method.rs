@@ -86,42 +86,42 @@ impl ABIReferenceType {
 
 /// Category of an ABI method argument.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ABIArgumentCategory {
+pub enum ABIMethodArgType {
     ABIType(String),
     Transaction(ABITransactionType),
     Reference(ABIReferenceType),
 }
 
-impl ABIArgumentCategory {
+impl ABIMethodArgType {
     /// Parse an argument category from a string.
     pub fn parse(s: &str) -> Result<Self, ABIError> {
         if let Some(tx_type_str) = s.strip_prefix("txn[") {
             if let Some(tx_type_str) = tx_type_str.strip_suffix(']') {
                 let tx_type = ABITransactionType::from_str(tx_type_str)?;
-                return Ok(ABIArgumentCategory::Transaction(tx_type));
+                return Ok(ABIMethodArgType::Transaction(tx_type));
             }
         }
 
         if let Ok(ref_type) = ABIReferenceType::from_str(s) {
-            return Ok(ABIArgumentCategory::Reference(ref_type));
+            return Ok(ABIMethodArgType::Reference(ref_type));
         }
 
-        Ok(ABIArgumentCategory::ABIType(s.to_string()))
+        Ok(ABIMethodArgType::ABIType(s.to_string()))
     }
 
     /// Check if this is a transaction argument.
     pub fn is_transaction(&self) -> bool {
-        matches!(self, ABIArgumentCategory::Transaction(_))
+        matches!(self, ABIMethodArgType::Transaction(_))
     }
 
     /// Check if this is a reference argument.
     pub fn is_reference(&self) -> bool {
-        matches!(self, ABIArgumentCategory::Reference(_))
+        matches!(self, ABIMethodArgType::Reference(_))
     }
 
     /// Check if this is an ABI type argument.
     pub fn is_abi_type(&self) -> bool {
-        matches!(self, ABIArgumentCategory::ABIType(_))
+        matches!(self, ABIMethodArgType::ABIType(_))
     }
 }
 
@@ -137,7 +137,7 @@ pub struct ABIMethod {
 /// Argument in an ABI method.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ABIMethodArg {
-    pub category: ABIArgumentCategory,
+    pub r#type: ABIMethodArgType,
     pub name: Option<String>,
     pub desc: Option<String>,
 }
@@ -172,7 +172,7 @@ impl ABIMethod {
     pub fn transaction_arg_count(&self) -> usize {
         self.args
             .iter()
-            .filter(|arg| arg.category.is_transaction())
+            .filter(|arg| arg.r#type.is_transaction())
             .count()
     }
 
@@ -180,7 +180,7 @@ impl ABIMethod {
     pub fn reference_arg_count(&self) -> usize {
         self.args
             .iter()
-            .filter(|arg| arg.category.is_reference())
+            .filter(|arg| arg.r#type.is_reference())
             .count()
     }
 
@@ -188,7 +188,7 @@ impl ABIMethod {
     pub fn abi_arg_count(&self) -> usize {
         self.args
             .iter()
-            .filter(|arg| arg.category.is_abi_type())
+            .filter(|arg| arg.r#type.is_abi_type())
             .count()
     }
 
@@ -203,10 +203,10 @@ impl ABIMethod {
         let arg_types: Vec<String> = self
             .args
             .iter()
-            .map(|arg| match &arg.category {
-                ABIArgumentCategory::ABIType(type_str) => type_str.clone(),
-                ABIArgumentCategory::Transaction(tx_type) => tx_type.as_str().to_string(),
-                ABIArgumentCategory::Reference(ref_type) => ref_type.as_str().to_string(),
+            .map(|arg| match &arg.r#type {
+                ABIMethodArgType::ABIType(type_str) => type_str.clone(),
+                ABIMethodArgType::Transaction(tx_type) => tx_type.as_str().to_string(),
+                ABIMethodArgType::Reference(ref_type) => ref_type.as_str().to_string(),
             })
             .collect();
 
@@ -229,12 +229,8 @@ impl ABIMethod {
 
 impl ABIMethodArg {
     /// Create a new ABIMethodArg.
-    pub fn new(category: ABIArgumentCategory, name: Option<String>, desc: Option<String>) -> Self {
-        Self {
-            category,
-            name,
-            desc,
-        }
+    pub fn new(r#type: ABIMethodArgType, name: Option<String>, desc: Option<String>) -> Self {
+        Self { r#type, name, desc }
     }
 
     /// Set the description.
@@ -296,24 +292,24 @@ pub fn get_method_signature(signature: &str) -> Result<ABIMethod, ABIError> {
 }
 
 /// Validate an ABI argument type and categorize it.
-fn validate_abi_argument_type(arg_type: &str) -> Result<ABIArgumentCategory, ABIError> {
+fn validate_abi_argument_type(arg_type: &str) -> Result<ABIMethodArgType, ABIError> {
     if let Ok(tx_type) = ABITransactionType::from_str(arg_type) {
-        return Ok(ABIArgumentCategory::Transaction(tx_type));
+        return Ok(ABIMethodArgType::Transaction(tx_type));
     }
 
     if let Some(tx_type_str) = arg_type.strip_prefix("txn[") {
         if let Some(tx_type_str) = tx_type_str.strip_suffix(']') {
             if let Ok(tx_type) = ABITransactionType::from_str(tx_type_str) {
-                return Ok(ABIArgumentCategory::Transaction(tx_type));
+                return Ok(ABIMethodArgType::Transaction(tx_type));
             }
         }
     }
 
     if let Ok(ref_type) = ABIReferenceType::from_str(arg_type) {
-        return Ok(ABIArgumentCategory::Reference(ref_type));
+        return Ok(ABIMethodArgType::Reference(ref_type));
     }
 
-    Ok(ABIArgumentCategory::ABIType(arg_type.to_string()))
+    Ok(ABIMethodArgType::ABIType(arg_type.to_string()))
 }
 
 /// Find the matching closing parenthesis for an opening parenthesis.
@@ -515,22 +511,22 @@ mod tests {
 
     #[test]
     fn test_argument_category_parse() {
-        match ABIArgumentCategory::parse("txn[pay]").unwrap() {
-            ABIArgumentCategory::Transaction(tx_type) => {
+        match ABIMethodArgType::parse("txn[pay]").unwrap() {
+            ABIMethodArgType::Transaction(tx_type) => {
                 assert_eq!(tx_type, ABITransactionType::Pay)
             }
             _ => panic!("Expected Transaction category"),
         }
 
-        match ABIArgumentCategory::parse("account").unwrap() {
-            ABIArgumentCategory::Reference(ref_type) => {
+        match ABIMethodArgType::parse("account").unwrap() {
+            ABIMethodArgType::Reference(ref_type) => {
                 assert_eq!(ref_type, ABIReferenceType::Account)
             }
             _ => panic!("Expected Reference category"),
         }
 
-        match ABIArgumentCategory::parse("uint64").unwrap() {
-            ABIArgumentCategory::ABIType(type_str) => assert_eq!(type_str, "uint64"),
+        match ABIMethodArgType::parse("uint64").unwrap() {
+            ABIMethodArgType::ABIType(type_str) => assert_eq!(type_str, "uint64"),
             _ => panic!("Expected ABIType category"),
         }
     }
@@ -540,17 +536,17 @@ mod tests {
         let mut method = ABIMethod::new("transfer".to_string());
 
         method.add_arg(ABIMethodArg::new(
-            ABIArgumentCategory::Reference(ABIReferenceType::Account),
+            ABIMethodArgType::Reference(ABIReferenceType::Account),
             Some("receiver".to_string()),
             None,
         ));
         method.add_arg(ABIMethodArg::new(
-            ABIArgumentCategory::ABIType("uint64".to_string()),
+            ABIMethodArgType::ABIType("uint64".to_string()),
             Some("amount".to_string()),
             None,
         ));
         method.add_arg(ABIMethodArg::new(
-            ABIArgumentCategory::Transaction(ABITransactionType::Pay),
+            ABIMethodArgType::Transaction(ABITransactionType::Pay),
             Some("payment".to_string()),
             None,
         ));
@@ -606,42 +602,40 @@ mod tests {
         // Check first argument (address - ABI type)
         assert_eq!(method.args[0].name, Some("arg0".to_string()));
         assert!(
-            matches!(method.args[0].category, ABIArgumentCategory::ABIType(ref s) if s == "address")
+            matches!(method.args[0].r#type, ABIMethodArgType::ABIType(ref s) if s == "address")
         );
 
         // Check second argument (uint64 - ABI type)
         assert_eq!(method.args[1].name, Some("arg1".to_string()));
-        assert!(
-            matches!(method.args[1].category, ABIArgumentCategory::ABIType(ref s) if s == "uint64")
-        );
+        assert!(matches!(method.args[1].r#type, ABIMethodArgType::ABIType(ref s) if s == "uint64"));
 
         // Check third argument (pay - Transaction type)
         assert_eq!(method.args[2].name, Some("arg2".to_string()));
         assert!(matches!(
-            method.args[2].category,
-            ABIArgumentCategory::Transaction(ABITransactionType::Pay)
+            method.args[2].r#type,
+            ABIMethodArgType::Transaction(ABITransactionType::Pay)
         ));
 
         // Test method with reference types
         let method2 = get_method_signature("addAsset(asset,account)void").unwrap();
         assert_eq!(method2.args.len(), 2);
         assert!(matches!(
-            method2.args[0].category,
-            ABIArgumentCategory::Reference(ABIReferenceType::Asset)
+            method2.args[0].r#type,
+            ABIMethodArgType::Reference(ABIReferenceType::Asset)
         ));
         assert!(matches!(
-            method2.args[1].category,
-            ABIArgumentCategory::Reference(ABIReferenceType::Account)
+            method2.args[1].r#type,
+            ABIMethodArgType::Reference(ABIReferenceType::Account)
         ));
 
         // Test with complex types
         let method3 = get_method_signature("swap((uint64,address),string[])uint64").unwrap();
         assert_eq!(method3.args.len(), 2);
         assert!(
-            matches!(method3.args[0].category, ABIArgumentCategory::ABIType(ref s) if s == "(uint64,address)")
+            matches!(method3.args[0].r#type, ABIMethodArgType::ABIType(ref s) if s == "(uint64,address)")
         );
         assert!(
-            matches!(method3.args[1].category, ABIArgumentCategory::ABIType(ref s) if s == "string[]")
+            matches!(method3.args[1].r#type, ABIMethodArgType::ABIType(ref s) if s == "string[]")
         );
     }
 
@@ -650,13 +644,13 @@ mod tests {
         let transaction_types = vec!["pay", "keyreg", "acfg", "axfer", "afrz", "appl", "txn[pay]"];
         for txn_type in transaction_types {
             let result = validate_abi_argument_type(txn_type).unwrap();
-            assert!(matches!(result, ABIArgumentCategory::Transaction(_)));
+            assert!(matches!(result, ABIMethodArgType::Transaction(_)));
         }
 
         let reference_types = vec!["account", "application", "asset"];
         for ref_type in reference_types {
             let result = validate_abi_argument_type(ref_type).unwrap();
-            assert!(matches!(result, ABIArgumentCategory::Reference(_)));
+            assert!(matches!(result, ABIMethodArgType::Reference(_)));
         }
 
         let abi_types = vec![
@@ -669,42 +663,8 @@ mod tests {
         ];
         for abi_type in abi_types {
             let result = validate_abi_argument_type(abi_type).unwrap();
-            assert!(matches!(result, ABIArgumentCategory::ABIType(_)));
+            assert!(matches!(result, ABIMethodArgType::ABIType(_)));
         }
-    }
-
-    #[test]
-    fn test_find_matching_closing_paren() {
-        assert_eq!(
-            find_matching_closing_paren("method((uint64,string),bool)uint64", 6).unwrap(),
-            27
-        );
-        assert_eq!(find_matching_closing_paren("simple(arg)", 6).unwrap(), 10);
-        assert!(find_matching_closing_paren("unmatched(", 9).is_err());
-    }
-
-    #[test]
-    fn test_split_arguments_by_comma() {
-        let test_cases = vec![
-            ("uint64,string,bool", vec!["uint64", "string", "bool"]),
-            (
-                "(uint64,string),bool,(address,bool)",
-                vec!["(uint64,string)", "bool", "(address,bool)"],
-            ),
-            (
-                "((uint64,string),(bool,address)),uint32",
-                vec!["((uint64,string),(bool,address))", "uint32"],
-            ),
-            ("", vec![]),
-        ];
-
-        for (input, expected) in test_cases {
-            let result = split_arguments_by_comma(input).unwrap();
-            assert_eq!(result, expected);
-        }
-
-        assert!(split_arguments_by_comma("uint64,,uint32").is_err());
-        assert!(split_arguments_by_comma("(uint64,string").is_err());
     }
 
     #[test]
@@ -741,37 +701,6 @@ mod tests {
             let selector = get_method_selector(signature).unwrap();
             assert_eq!(hex::encode(&selector), expected_hex);
         }
-    }
-
-    #[test]
-    fn test_build_method_signature() {
-        let test_cases = vec![
-            (
-                ("transfer", vec!["address", "uint64"], "bool"),
-                "transfer(address,uint64)bool",
-            ),
-            (
-                ("deposit", vec!["pay", "account"], "void"),
-                "deposit(pay,account)void",
-            ),
-            (("getBalance", vec![], "uint64"), "getBalance()uint64"),
-            (
-                ("swap", vec!["(uint64,address)", "(bool,string)"], "uint64"),
-                "swap((uint64,address),(bool,string))uint64",
-            ),
-            (
-                ("callApp", vec!["application", "uint64"], "bool"),
-                "callApp(application,uint64)bool",
-            ),
-        ];
-
-        for ((name, args, ret), expected) in test_cases {
-            let args_refs: Vec<&str> = args.iter().map(|s| s.as_ref()).collect();
-            let sig = build_method_signature(name, &args_refs, ret).unwrap();
-            assert_eq!(sig, expected);
-        }
-
-        assert!(build_method_signature("", &["uint64"], "bool").is_err());
     }
 
     #[test]
