@@ -15,7 +15,7 @@ use std::{
 ///
 /// Validates that bit sizes are valid (8-512 bits, divisible by 8).
 /// See [ARC-0004](https://arc.algorand.foundation/ARCs/arc-0004#types) for type specifications.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BitSize(u16);
 
 impl BitSize {
@@ -49,7 +49,7 @@ impl BitSize {
 ///
 /// Validates precision values for ufixed types (0-160).
 /// See [ARC-0004](https://arc.algorand.foundation/ARCs/arc-0004#types) for type specifications.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Precision(u8);
 
 impl Precision {
@@ -83,7 +83,7 @@ impl Precision {
 ///
 /// Supports all ABI types defined in [ARC-0004](https://arc.algorand.foundation/ARCs/arc-0004#types):
 /// integers, fixed-point numbers, addresses, strings, bytes, booleans, arrays, and tuples.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ABIType {
     Uint(BitSize),
     UFixed(BitSize, Precision),
