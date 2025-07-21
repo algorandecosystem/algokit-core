@@ -82,6 +82,7 @@ impl AsRef<ABIType> for ABIType {
     }
 }
 
+// TODO: maybe convert them to impl
 pub fn encode(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
     match abi_type {
         ABIType::Uint(_) => Ok(encode_uint(abi_type, value)?),
@@ -268,12 +269,7 @@ impl FromStr for ABIType {
 
         // Tuple type
         if s.len() >= 2 && s.starts_with('(') && s.ends_with(')') {
-            // TODO: do we need to use parseTupleContent?
-            // or regex can handle this?
-            let tuple_type_strings: Vec<_> = (&s[1..s.len() - 1])
-                .split(',')
-                .filter(|s| !s.is_empty())
-                .collect();
+            let tuple_type_strings: Vec<_> = parse_tuple_content(&s[1..s.len() - 1])?;
             let child_types: Result<Vec<_>, _> = tuple_type_strings
                 .iter()
                 .map(|str| ABIType::from_str(str))
@@ -296,55 +292,55 @@ impl FromStr for ABIType {
     }
 }
 
-// fn parse_tuple_content(content: String) -> Result<Vec<String>, ABIError> {
-//     if content.is_empty() {
-//         return Ok(Vec::new());
-//     }
+fn parse_tuple_content(content: &str) -> Result<Vec<String>, ABIError> {
+    if content.is_empty() {
+        return Ok(Vec::new());
+    }
 
-//     // TODO: can we regex this?
-//     if content.starts_with(",") {
-//         return Err(ABIError::FormatError(
-//             "Tuple name should not start with comma".to_string(),
-//         ));
-//     }
-//     if content.ends_with(",") {
-//         return Err(ABIError::FormatError(
-//             "Tuple name should not start with comma".to_string(),
-//         ));
-//     }
-//     if content.contains(",,") {
-//         return Err(ABIError::FormatError(
-//             "tuple string should not have consecutive commas".to_string(),
-//         ));
-//     }
+    if content.starts_with(",") {
+        return Err(ABIError::FormatError(
+            "Tuple name should not start with comma".to_string(),
+        ));
+    }
+    if content.ends_with(",") {
+        return Err(ABIError::FormatError(
+            "Tuple name should not start with comma".to_string(),
+        ));
+    }
+    if content.contains(",,") {
+        return Err(ABIError::FormatError(
+            "tuple string should not have consecutive commas".to_string(),
+        ));
+    }
 
-//     let mut tuple_strings: Vec<String> = Vec::new();
-//     let mut depth = 0;
-//     let mut word: String = String::new();
+    let mut tuple_strings: Vec<String> = Vec::new();
+    let mut depth = 0;
+    let mut word: String = String::new();
 
-//     for ch in content.chars() {
-//         word.push(ch);
-//         match ch {
-//             '(' => depth += 1,
-//             ')' => depth -= 1,
-//             ',' if depth == 0 => {
-//                 tuple_strings.push(word);
-//                 word = String::new();
-//             }
-//             _ => {}
-//         }
-//     }
-//     if word.len() != 0 {
-//         tuple_strings.push(word);
-//     }
-//     if depth != 0 {
-//         return Err(ABIError::FormatError(
-//             "Tuple string has mismatched parentheses".to_string(),
-//         ));
-//     }
+    for ch in content.chars() {
+        word.push(ch);
+        match ch {
+            '(' => depth += 1,
+            ')' => depth -= 1,
+            ',' if depth == 0 => {
+                word.pop();
+                tuple_strings.push(word);
+                word = String::new();
+            }
+            _ => {}
+        }
+    }
+    if word.len() != 0 {
+        tuple_strings.push(word);
+    }
+    if depth != 0 {
+        return Err(ABIError::FormatError(
+            "Tuple string has mismatched parentheses".to_string(),
+        ));
+    }
 
-//     Ok(tuple_strings)
-// }
+    Ok(tuple_strings)
+}
 
 #[cfg(test)]
 mod tests {
@@ -353,12 +349,23 @@ mod tests {
     use rstest::rstest;
 
     #[rstest]
-    #[case(ABIType::Uint(BitSize::new(8).unwrap()), ABIValue::Uint(BigUint::from(0u8)), &[0])]
-    #[case(ABIType::Uint(BitSize::new(16).unwrap()), ABIValue::Uint(BigUint::from(3u16)), &[0, 3])]
-    #[case(ABIType::Uint(BitSize::new(64).unwrap()), ABIValue::Uint(BigUint::from(256u64)), &[0, 0, 0, 0, 0, 0, 1, 0])]
+    #[case(
+        ABIType::Uint(BitSize::new(8).unwrap()),
+        ABIValue::Uint(BigUint::from(0u8)),
+        &[0]
+    )]
+    #[case(
+        ABIType::Uint(BitSize::new(16).unwrap()),
+        ABIValue::Uint(BigUint::from(3u16)),
+        &[0, 3]
+    )]
+    #[case(
+        ABIType::Uint(BitSize::new(64).unwrap()),
+        ABIValue::Uint(BigUint::from(256u64)),
+        &[0, 0, 0, 0, 0, 0, 1, 0]
+    )]
     #[case(ABIType::UFixed(BitSize::new(8).unwrap(), Precision::new(30).unwrap()), ABIValue::Uint(BigUint::from(255u8)), &[255])]
     #[case(ABIType::UFixed(BitSize::new(32).unwrap(), Precision::new(10).unwrap()), ABIValue::Uint(BigUint::from(33u32)), &[0, 0, 0, 33])]
-    // TODO: check the address
     #[case(ABIType::Address, ABIValue::Address("MO2H6ZU47Q36GJ6GVHUKGEBEQINN7ZWVACMWZQGIYUOE3RBSRVYHV4ACJI".to_string()), &[99, 180, 127, 102, 156, 252, 55, 227, 39, 198, 169, 232, 163, 16, 36, 130, 26, 223, 230, 213, 0, 153, 108, 192, 200, 197, 28, 77, 196, 50, 141, 112])]
     #[case(ABIType::String, ABIValue::String("What’s new".to_string()), &[0, 12, 87, 104, 97, 116, 226, 128, 153, 115, 32, 110, 101, 119])]
     #[case(ABIType::String, ABIValue::String("😅🔨".to_string()), &[0, 8, 240, 159, 152, 133, 240, 159, 148, 168])]
@@ -384,6 +391,11 @@ mod tests {
     #[case(ABIType::from_str("(bool[],bool[])").unwrap(), ABIValue::Array(vec![ABIValue::Array(vec![]), ABIValue::Array(vec![])]), &[0, 4, 0, 6, 0, 0, 0, 0])]
     #[case(ABIType::from_str("(string,bool,bool,bool,bool,string)").unwrap(), ABIValue::Array(vec![ABIValue::String("AB".to_string()), ABIValue::Bool(true), ABIValue::Bool(false), ABIValue::Bool(true), ABIValue::Bool(false), ABIValue::String("DE".to_string())]), &[0, 5, 160, 0, 9, 0, 2, 65, 66, 0, 2, 68, 69])]
     #[case(ABIType::Tuple(vec![ABIType::Uint(BitSize::new(8).unwrap()), ABIType::Uint(BitSize::new(16).unwrap())]), ABIValue::Array(vec![ABIValue::Uint(BigUint::from(1u8)), ABIValue::Uint(BigUint::from(2u16))]), &[1, 0, 2])]
+    #[case(ABIType::Tuple(vec![ABIType::Uint(BitSize::new(32).unwrap()), ABIType::Uint(BitSize::new(32).unwrap())]), ABIValue::Array(vec![ABIValue::Uint(BigUint::from(1u32)), ABIValue::Uint(BigUint::from(2u16))]), &[0, 0, 0, 1, 0, 0, 0, 2])]
+    #[case(ABIType::Tuple(vec![ABIType::Uint(BitSize::new(32).unwrap()), ABIType::String]), ABIValue::Array(vec![ABIValue::Uint(BigUint::from(42u32)), ABIValue::String("hello".to_string())]), &[0, 0, 0, 42, 0, 6, 0, 5, 104, 101, 108, 108, 111])]
+    #[case(ABIType::Tuple(vec![ABIType::Uint(BitSize::new(16).unwrap()), ABIType::Bool]), ABIValue::Array(vec![ABIValue::Uint(BigUint::from(1234u32)), ABIValue::Bool(false)]), &[4, 210, 0])]
+    #[case(ABIType::Tuple(vec![ABIType::Uint(BitSize::new(32).unwrap()), ABIType::String, ABIType::Bool]), ABIValue::Array(vec![ABIValue::Uint(BigUint::from(42u32)), ABIValue::String("test".to_string()), ABIValue::Bool(false)]), &[0, 0, 0, 42, 0, 7, 0, 0, 4, 116, 101, 115, 116])]
+    #[case(ABIType::from_str("(uint16,(byte,address))").unwrap(), ABIValue::Array(vec![ABIValue::Uint(BigUint::from(42u32)), ABIValue::Array(vec![ABIValue::Byte(234), ABIValue::Address("MO2H6ZU47Q36GJ6GVHUKGEBEQINN7ZWVACMWZQGIYUOE3RBSRVYHV4ACJI".to_string())])]), &[0, 42, 234, 99, 180, 127, 102, 156, 252, 55, 227, 39, 198, 169, 232, 163, 16, 36, 130, 26, 223, 230, 213, 0, 153, 108, 192, 200, 197, 28, 77, 196, 50, 141, 112])]
     fn should_round_trip(
         #[case] abi_type: ABIType,
         #[case] abi_value: ABIValue,

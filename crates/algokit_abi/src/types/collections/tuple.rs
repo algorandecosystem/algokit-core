@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
 use crate::{
-    abi_type::{encode, get_size, is_dynamic},
+    abi_type::{get_size, is_dynamic},
     common::{BOOL_FALSE_BYTE, BOOL_TRUE_BYTE, LENGTH_ENCODE_BYTE_SIZE},
-    decode,
+    decode, encode,
     error::ABIError,
     ABIType, ABIValue,
 };
@@ -32,11 +32,7 @@ pub fn encode_tuple(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, ABI
     encode_abi_types(&child_types, values)
 }
 
-// TODO: better name
 pub fn encode_abi_types(abi_types: &[&ABIType], values: &[ABIValue]) -> Result<Vec<u8>, ABIError> {
-    // TODO: do we need to check for values.len() < u16::MAX?
-
-    // TODO: confirm this check, algosdk doesn't do this
     if abi_types.len() != values.len() {
         return Err(ABIError::EncodingError(
             "Cannot encode, values and types lengths mismatch".to_string(),
@@ -106,7 +102,6 @@ pub fn decode_tuple(abi_type: &ABIType, bytes: &[u8]) -> Result<ABIValue, ABIErr
     decode_abi_types(&child_types, bytes)
 }
 
-// TODO: better name
 pub fn decode_abi_types(abi_types: &[&ABIType], bytes: &[u8]) -> Result<ABIValue, ABIError> {
     let value_partitions = extract_values(abi_types, bytes)?;
 
@@ -199,13 +194,18 @@ fn extract_values(abi_types: &[&ABIType], bytes: &[u8]) -> Result<Vec<Vec<u8>>, 
                     bytes_cursor += 1;
                 }
                 _ => {
-                    let child_type_len = get_size(child_type)?;
+                    let child_type_size = get_size(child_type)?;
                     value_partitions.push(Some(
-                        bytes[bytes_cursor..bytes_cursor + child_type_len].to_vec(),
+                        bytes[bytes_cursor..bytes_cursor + child_type_size].to_vec(),
                     ));
-                    bytes_cursor += child_type_len;
+                    bytes_cursor += child_type_size;
                 }
             }
+        }
+        if i != abi_types.len() - 1 && bytes_cursor >= bytes.len() {
+            return Err(ABIError::DecodingError(
+                "Input bytes not enough to decode".to_string(),
+            ));
         }
         i += 1;
     }
@@ -282,240 +282,80 @@ where
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use crate::{abi_type::BitSize, abi_value::ABIValue};
-//     use num_bigint::BigUint;
+#[cfg(test)]
+mod tests {
+    use num_bigint::BigUint;
 
-//     #[test]
-//     fn test_encode_empty_tuple() {
-//         let tuple_type = ABIType::Tuple(vec![]);
-//         let value = ABIValue::Array(vec![]);
-//         let encoded = encode_tuple(&tuple_type, &value).expect("Failed to encode");
-//         assert_eq!(encoded, vec![]);
-//     }
+    use crate::{
+        abi_type::BitSize,
+        types::collections::tuple::{decode_tuple, encode_tuple},
+        ABIType, ABIValue,
+    };
 
-//     #[test]
-//     fn test_encode_simple_tuple() {
-//         let uint32_type1 = ABIType::Uint(BitSize::new(32).unwrap());
-//         let uint32_type2 = ABIType::Uint(BitSize::new(32).unwrap());
-//         let tuple_type = ABIType::Tuple(vec![&uint32_type1, &uint32_type2]);
-//         let value = ABIValue::Array(vec![
-//             ABIValue::Uint(BigUint::from(1u32)),
-//             ABIValue::Uint(BigUint::from(2u32)),
-//         ]);
-//         let encoded = encode_tuple(&tuple_type, &value).expect("Failed to encode");
-//         assert_eq!(encoded, vec![0, 0, 0, 1, 0, 0, 0, 2]);
-//     }
+    #[test]
+    fn test_wrong_value_length() {
+        let uint32_type1 = ABIType::Uint(BitSize::new(32).unwrap());
+        let uint32_type2 = ABIType::Uint(BitSize::new(32).unwrap());
+        let tuple_type = ABIType::Tuple(vec![uint32_type1, uint32_type2]);
 
-//     #[test]
-//     fn test_encode_mixed_tuple() {
-//         let uint32_type = ABIType::Uint(BitSize::new(32).unwrap());
-//         let string_type = ABIType::String;
-//         let tuple_type = ABIType::Tuple(vec![&uint32_type, &string_type]);
-//         let value = ABIValue::Array(vec![
-//             ABIValue::Uint(BigUint::from(42u32)),
-//             ABIValue::String("hello".to_string()),
-//         ]);
-//         let encoded = encode_tuple(&tuple_type, &value).expect("Failed to encode");
-//         assert_eq!(
-//             encoded,
-//             vec![0, 0, 0, 42, 0, 6, 0, 5, 104, 101, 108, 108, 111]
-//         );
-//     }
+        let value = ABIValue::Array(vec![ABIValue::Uint(BigUint::from(1u32))]);
+        let result = encode_tuple(&tuple_type, &value);
 
-//     #[test]
-//     fn test_round_trip_simple_tuple() {
-//         let uint16_type = ABIType::Uint(BitSize::new(16).unwrap());
-//         let bool_type = ABIType::Bool;
-//         let tuple_type = ABIType::Tuple(vec![&uint16_type, &bool_type]);
-//         let value = ABIValue::Array(vec![
-//             ABIValue::Uint(BigUint::from(1234u32)),
-//             ABIValue::Bool(true),
-//         ]);
+        assert!(result.is_err());
 
-//         let encoded = encode_tuple(&tuple_type, &value).expect("Failed to encode");
-//         let decoded = decode_tuple(&tuple_type, &encoded).expect("Failed to decode");
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Cannot encode, values and types lengths mismatch"));
+    }
 
-//         assert_eq!(decoded, value);
-//     }
+    #[test]
+    fn test_wrong_abi_type() {
+        let tuple_type = ABIType::String;
+        let value = ABIValue::Array(vec![]);
+        let result = encode_tuple(&tuple_type, &value);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Expected TupleType"));
+    }
 
-//     #[test]
-//     fn test_round_trip_mixed_tuple() {
-//         let uint32_type = ABIType::Uint(BitSize::new(32).unwrap());
-//         let string_type = ABIType::String;
-//         let bool_type = ABIType::Bool;
-//         let tuple_type = ABIType::Tuple(vec![&uint32_type, &string_type, &bool_type]);
-//         let value = ABIValue::Array(vec![
-//             ABIValue::Uint(BigUint::from(42u32)),
-//             ABIValue::String("test".to_string()),
-//             ABIValue::Bool(false),
-//         ]);
+    #[test]
+    fn test_decode_malformed_tuple_insufficient_bytes() {
+        let uint32_type1 = ABIType::Uint(BitSize::new(32).unwrap());
+        let uint32_type2 = ABIType::Uint(BitSize::new(32).unwrap());
+        let tuple_type = ABIType::Tuple(vec![uint32_type1, uint32_type2]);
+        let bytes = vec![0x00, 0x00, 0x00]; // Too few bytes for two uint32s
+        let result = decode_tuple(&tuple_type, &bytes);
 
-//         let encoded = encode_tuple(&tuple_type, &value).expect("Failed to encode");
-//         let decoded = decode_tuple(&tuple_type, &encoded).expect("Failed to decode");
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Expected TupleType"));
+    }
 
-//         assert_eq!(decoded, value);
-//     }
+    #[test]
+    fn test_decode_malformed_tuple_wrong_abi_type() {
+        let tuple_type = ABIType::String; // Not a tuple type
+        let bytes = vec![0x00, 0x00, 0x00, 0x00];
+        let result = decode_tuple(&tuple_type, &bytes);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Expected TupleType"));
+    }
 
-//     #[test]
-//     fn test_wrong_value_length() {
-//         let uint32_type1 = ABIType::Uint(BitSize::new(32).unwrap());
-//         let uint32_type2 = ABIType::Uint(BitSize::new(32).unwrap());
-//         let tuple_type = ABIType::Tuple(vec![&uint32_type1, &uint32_type2]);
-//         let value = ABIValue::Array(vec![ABIValue::Uint(BigUint::from(1u32))]);
-//         let result = encode_tuple(&tuple_type, &value);
-//         // TODO: Should fail with length mismatch when implemented
-//         assert!(result.is_err()); // Currently fails with not implemented
-//     }
-
-//     #[test]
-//     fn test_wrong_abi_type() {
-//         let tuple_type = ABIType::String;
-//         let value = ABIValue::Array(vec![]);
-//         let result = encode_tuple(&tuple_type, &value);
-//         assert!(result.is_err());
-//         assert!(result
-//             .unwrap_err()
-//             .to_string()
-//             .contains("Expected TupleType"));
-//     }
-
-//     // TODO: Add these decode tests once tuple implementation is complete
-
-//     #[test]
-//     fn test_decode_empty_tuple() {
-//         let tuple_type = ABIType::Tuple(vec![]);
-//         let bytes = vec![];
-//         let result = decode_tuple(&tuple_type, &bytes);
-//         // TODO: Should succeed when implemented
-//         // Expected: Ok(ABIValue::Array(vec![]))
-//         assert!(result.is_err()); // Currently fails with not implemented
-//     }
-
-//     #[test]
-//     fn test_decode_simple_tuple() {
-//         let uint8_type = ABIType::Uint(BitSize::new(8).unwrap());
-//         let uint16_type = ABIType::Uint(BitSize::new(16).unwrap());
-//         let tuple_type = ABIType::Tuple(vec![&uint8_type, &uint16_type]);
-//         let bytes = vec![1, 0, 2]; // Based on JS SDK test: [1, 2] -> [1, 0, 2]
-//         let result = decode_tuple(&tuple_type, &bytes);
-//         // TODO: Should succeed when implemented
-//         // Expected: Ok(ABIValue::Array(vec![
-//         //     ABIValue::Uint(BigUint::from(1u8)),
-//         //     ABIValue::Uint(BigUint::from(2u16)),
-//         // ]))
-//         assert!(result.is_err()); // Currently fails with not implemented
-//     }
-
-//     #[test]
-//     fn test_decode_mixed_tuple() {
-//         let string_type = ABIType::String;
-//         let bool_type1 = ABIType::Bool;
-//         let bool_type2 = ABIType::Bool;
-//         let bool_type3 = ABIType::Bool;
-//         let bool_type4 = ABIType::Bool;
-//         let string_type2 = ABIType::String;
-//         let tuple_type = ABIType::Tuple(vec![
-//             &string_type,
-//             &bool_type1,
-//             &bool_type2,
-//             &bool_type3,
-//             &bool_type4,
-//             &string_type2,
-//         ]);
-//         // Based on Python SDK test: ["AB", True, False, True, False, "DE"] -> bytes.fromhex("00 05 A0 00 09 00 02 41 42 00 02 44 45")
-//         let bytes = vec![
-//             0x00, 0x05, 0xA0, 0x00, 0x09, 0x00, 0x02, 0x41, 0x42, 0x00, 0x02, 0x44, 0x45,
-//         ];
-//         let result = decode_tuple(&tuple_type, &bytes);
-//         // TODO: Should succeed when implemented
-//         // Expected: Ok(ABIValue::Array(vec![
-//         //     ABIValue::String("AB".to_string()),
-//         //     ABIValue::Bool(true),
-//         //     ABIValue::Bool(false),
-//         //     ABIValue::Bool(true),
-//         //     ABIValue::Bool(false),
-//         //     ABIValue::String("DE".to_string()),
-//         // ]))
-//         assert!(result.is_err()); // Currently fails with not implemented
-//     }
-
-//     #[test]
-//     fn test_decode_dynamic_tuple() {
-//         let bool_type1 = ABIType::Bool;
-//         let bool_type2 = ABIType::Bool;
-//         let inner_tuple1 = ABIType::Tuple(vec![&bool_type1]);
-//         let inner_tuple2 = ABIType::Tuple(vec![&bool_type2]);
-//         let tuple_type = ABIType::Tuple(vec![
-//             &inner_tuple1, // bool[]
-//             &inner_tuple2, // bool[]
-//         ]);
-//         // Based on JS SDK test: [[], []] -> [0, 4, 0, 6, 0, 0, 0, 0]
-//         let bytes = vec![0x00, 0x04, 0x00, 0x06, 0x00, 0x00, 0x00, 0x00];
-//         let result = decode_tuple(&tuple_type, &bytes);
-//         // TODO: Should succeed when implemented
-//         // Expected: Ok(ABIValue::Array(vec![
-//         //     ABIValue::Array(vec![]), // Empty bool array
-//         //     ABIValue::Array(vec![]), // Empty bool array
-//         // ]))
-//         assert!(result.is_err()); // Currently fails with not implemented
-//     }
-
-//     #[test]
-//     fn test_decode_nested_tuple() {
-//         let uint16_type = ABIType::Uint(BitSize::new(16).unwrap());
-//         let byte_type = ABIType::Byte;
-//         let address_type = ABIType::Address;
-//         let inner_tuple = ABIType::Tuple(vec![&byte_type, &address_type]);
-//         let tuple_type = ABIType::Tuple(vec![&uint16_type, &inner_tuple]);
-//         // TODO: Create test bytes based on nested tuple structure
-//         let bytes = vec![]; // Placeholder - needs actual encoded bytes
-//         let result = decode_tuple(&tuple_type, &bytes);
-//         // TODO: Should succeed when implemented
-//         // Expected: Ok(ABIValue::Array(vec![
-//         //     ABIValue::Uint(BigUint::from(test_value)),
-//         //     ABIValue::Array(vec![
-//         //         ABIValue::Byte(test_byte),
-//         //         ABIValue::Address(test_address),
-//         //     ]),
-//         // ]))
-//         assert!(result.is_err()); // Currently fails with not implemented
-//     }
-
-//     #[test]
-//     fn test_decode_malformed_tuple_insufficient_bytes() {
-//         let uint32_type1 = ABIType::Uint(BitSize::new(32).unwrap());
-//         let uint32_type2 = ABIType::Uint(BitSize::new(32).unwrap());
-//         let tuple_type = ABIType::Tuple(vec![&uint32_type1, &uint32_type2]);
-//         let bytes = vec![0x00, 0x00, 0x00]; // Too few bytes for two uint32s
-//         let result = decode_tuple(&tuple_type, &bytes);
-//         // TODO: Should fail with appropriate error when implemented
-//         // Expected: Err(ABIError::DecodingError("insufficient bytes..."))
-//         assert!(result.is_err()); // Currently fails with not implemented
-//     }
-
-//     #[test]
-//     fn test_decode_malformed_tuple_wrong_abi_type() {
-//         let tuple_type = ABIType::String; // Not a tuple type
-//         let bytes = vec![0x00, 0x00, 0x00, 0x00];
-//         let result = decode_tuple(&tuple_type, &bytes);
-//         assert!(result.is_err());
-//         assert!(result
-//             .unwrap_err()
-//             .to_string()
-//             .contains("Expected TupleType"));
-//     }
-
-//     #[test]
-//     fn test_decode_malformed_tuple_extra_bytes() {
-//         let uint8_type = ABIType::Uint(BitSize::new(8).unwrap());
-//         let tuple_type = ABIType::Tuple(vec![&uint8_type]);
-//         let bytes = vec![0x01, 0x02, 0x03]; // Extra bytes after the uint8
-//         let result = decode_tuple(&tuple_type, &bytes);
-//         // TODO: Should fail with appropriate error when implemented
-//         // Expected: Err(ABIError::DecodingError("extra bytes..."))
-//         assert!(result.is_err()); // Currently fails with not implemented
-//     }
-// }
+    #[test]
+    fn test_decode_malformed_tuple_extra_bytes() {
+        let uint8_type = ABIType::Uint(BitSize::new(8).unwrap());
+        let tuple_type = ABIType::Tuple(vec![uint8_type]);
+        let bytes = vec![0x01, 0x02, 0x03]; // Extra bytes after the uint8
+        let result = decode_tuple(&tuple_type, &bytes);
+        // TODO: Should fail with appropriate error when implemented
+        // Expected: Err(ABIError::DecodingError("extra bytes..."))
+        assert!(result.is_err()); // Currently fails with not implemented
+    }
+}
