@@ -12,3 +12,4 @@ sha2 = { workspace = true }
 
 [dev-dependencies]
 rstest = "0.25.0"
+hex = "0.4"
