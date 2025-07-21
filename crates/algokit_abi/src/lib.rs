@@ -7,3 +7,4 @@ pub mod utils;
 
 pub use abi_type::ABIType;
 pub use abi_value::ABIValue;
+pub use error::ABIError;

@@ -1,7 +1,6 @@
 use crate::{
     constants::{BOOL_FALSE_BYTE, BOOL_TRUE_BYTE},
-    error::ABIError,
-    ABIType, ABIValue,
+    ABIError, ABIType, ABIValue,
 };
 
 impl ABIType {

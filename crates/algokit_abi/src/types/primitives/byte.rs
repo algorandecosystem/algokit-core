@@ -1,4 +1,4 @@
-use crate::{error::ABIError, ABIType, ABIValue};
+use crate::{ABIError, ABIType, ABIValue};
 
 impl ABIType {
     /// Encode a byte value (0-255) to ABI format.

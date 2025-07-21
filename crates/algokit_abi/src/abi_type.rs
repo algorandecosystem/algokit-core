@@ -1,15 +1,13 @@
 use crate::{
     constants::{ALGORAND_PUBLIC_KEY_BYTE_LENGTH, BITS_PER_BYTE},
-    error::ABIError,
     types::collections::tuple::find_bool_sequence_end,
+    ABIError, ABIValue,
 };
 use regex::Regex;
 use std::{
     fmt::{Display, Formatter, Result as FmtResult},
     str::FromStr,
 };
-
-use super::abi_value::ABIValue;
 
 #[derive(Debug, Clone, Copy)]
 pub struct BitSize(u16);

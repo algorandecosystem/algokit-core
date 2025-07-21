@@ -2,8 +2,7 @@ use std::collections::HashMap;
 
 use crate::{
     constants::{BOOL_FALSE_BYTE, BOOL_TRUE_BYTE, LENGTH_ENCODE_BYTE_SIZE},
-    error::ABIError,
-    ABIType, ABIValue,
+    ABIError, ABIType, ABIValue,
 };
 
 struct Segment {

@@ -5,8 +5,7 @@ use crate::{
         ALGORAND_ADDRESS_LENGTH, ALGORAND_CHECKSUM_BYTE_LENGTH, ALGORAND_PUBLIC_KEY_BYTE_LENGTH,
         HASH_BYTES_LENGTH,
     },
-    error::ABIError,
-    ABIType, ABIValue,
+    ABIError, ABIType, ABIValue,
 };
 
 impl ABIType {

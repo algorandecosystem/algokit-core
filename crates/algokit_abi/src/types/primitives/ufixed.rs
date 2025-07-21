@@ -1,6 +1,6 @@
 use num_bigint::BigUint;
 
-use crate::{abi_type::ABIType, abi_value::ABIValue, error::ABIError, utils};
+use crate::{utils, ABIError, ABIType, ABIValue};
 
 impl ABIType {
     pub(crate) fn encode_ufixed(&self, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
