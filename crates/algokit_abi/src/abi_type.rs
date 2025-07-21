@@ -270,7 +270,10 @@ impl FromStr for ABIType {
         if s.len() >= 2 && s.starts_with('(') && s.ends_with(')') {
             // TODO: do we need to use parseTupleContent?
             // or regex can handle this?
-            let tuple_type_strings: Vec<_> = (&s[1..s.len() - 1]).split(',').collect();
+            let tuple_type_strings: Vec<_> = (&s[1..s.len() - 1])
+                .split(',')
+                .filter(|s| !s.is_empty())
+                .collect();
             let child_types: Result<Vec<_>, _> = tuple_type_strings
                 .iter()
                 .map(|str| ABIType::from_str(str))
@@ -374,6 +377,7 @@ mod tests {
     // #[case(ABIType::DynamicArray(Box::new(ABIType::Bool)), ABIValue::Array(vec![ABIValue::Bool(false), ABIValue::Bool(true), ABIValue::Bool(false), ABIValue::Bool(false), ABIValue::Bool(false), ABIValue::Bool(false), ABIValue::Bool(false), ABIValue::Bool(false)]), &[0, 8, 64])]
     // #[case(ABIType::DynamicArray(Box::new(ABIType::Bool)), ABIValue::Array(vec![ABIValue::Bool(true), ABIValue::Bool(false), ABIValue::Bool(false), ABIValue::Bool(true), ABIValue::Bool(false), ABIValue::Bool(false), ABIValue::Bool(true), ABIValue::Bool(false), ABIValue::Bool(true)]), &[0, 9, 146, 128])]
     #[case(ABIType::from_str("()").unwrap(), ABIValue::Array(vec![]), &[])]
+
     fn should_round_trip(
         #[case] abi_type: ABIType,
         #[case] abi_value: ABIValue,
