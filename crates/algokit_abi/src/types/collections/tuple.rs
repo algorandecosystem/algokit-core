@@ -195,9 +195,17 @@ fn extract_values(abi_types: &[&ABIType], bytes: &[u8]) -> Result<Vec<Vec<u8>>, 
                 }
                 _ => {
                     let child_type_size = get_size(child_type)?;
-                    value_partitions.push(Some(
-                        bytes[bytes_cursor..bytes_cursor + child_type_size].to_vec(),
-                    ));
+                    let slice = bytes
+                        .get(bytes_cursor..bytes_cursor + child_type_size)
+                        .ok_or_else(|| {
+                            ABIError::DecodingError(format!(
+                            "Index out of bounds: trying to access bytes[{}..{}] but slice has length {}",
+                            bytes_cursor,
+                            bytes_cursor + child_type_size,
+                            bytes.len()
+                        ))})?;
+
+                    value_partitions.push(Some(slice.to_vec()));
                     bytes_cursor += child_type_size;
                 }
             }
@@ -333,7 +341,7 @@ mod tests {
         assert!(result
             .unwrap_err()
             .to_string()
-            .contains("Expected TupleType"));
+            .contains("Index out of bounds: trying to access bytes"));
     }
 
     #[test]
@@ -354,8 +362,11 @@ mod tests {
         let tuple_type = ABIType::Tuple(vec![uint8_type]);
         let bytes = vec![0x01, 0x02, 0x03]; // Extra bytes after the uint8
         let result = decode_tuple(&tuple_type, &bytes);
-        // TODO: Should fail with appropriate error when implemented
-        // Expected: Err(ABIError::DecodingError("extra bytes..."))
-        assert!(result.is_err()); // Currently fails with not implemented
+
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Input bytes not fully consumed"));
     }
 }
