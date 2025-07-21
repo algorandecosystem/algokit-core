@@ -52,7 +52,7 @@ pub fn encode_abi_types(abi_types: &[&ABIType], values: &[ABIValue]) -> Result<V
         let child_type = &abi_types[i];
 
         if is_dynamic(child_type) {
-            is_dynamic_index.insert(i, true);
+            is_dynamic_index.insert(heads.len(), true);
             heads.push(vec![0, 0]);
             tails.push(encode(child_type, &values[i])?);
         } else {
@@ -82,15 +82,14 @@ pub fn encode_abi_types(abi_types: &[&ABIType], values: &[ABIValue]) -> Result<V
         match is_dynamic_index.get(&i) {
             Some(true) => {
                 let head_value = head_length + tail_length;
-                let head_value: u16 = u16::try_from(head_length + tail_length).map_err(|_| {
+                let head_value: u16 = u16::try_from(head_value).map_err(|_| {
                     ABIError::EncodingError(format!("Value {} cannot fit in u16", head_value))
                 })?;
                 heads[i] = head_value.to_be_bytes().to_vec();
             }
-            _ => {
-                tail_length += tails[i].len();
-            }
+            _ => {}
         }
+        tail_length += tails[i].len();
     }
 
     let results = heads.into_iter().chain(tails).flatten().collect();
@@ -187,7 +186,7 @@ fn extract_values(abi_types: &[&ABIType], bytes: &[u8]) -> Result<Vec<Vec<u8>>, 
                 ABIType::Bool => {
                     let sequence_end_index = find_bool_sequence_end(abi_types, i);
 
-                    for j in 0..sequence_end_index - i + 1 {
+                    for j in 0..=(sequence_end_index - i) {
                         let bool_mask: u8 = BOOL_TRUE_BYTE >> j;
                         if bytes[bytes_cursor] & bool_mask > 0 {
                             value_partitions.push(Some(vec![BOOL_TRUE_BYTE]));
@@ -211,13 +210,15 @@ fn extract_values(abi_types: &[&ABIType], bytes: &[u8]) -> Result<Vec<Vec<u8>>, 
         i += 1;
     }
 
-    if bytes_cursor < bytes.len() {
+    if let Some(last_segment) = dynamic_segments.last_mut() {
+        let bytes_length = bytes.len();
+        last_segment.right = u16::try_from(bytes_length).map_err(|_| {
+            ABIError::EncodingError(format!("Value {} cannot fit in u16", bytes_length))
+        })?;
+    } else if bytes_cursor < bytes.len() {
         return Err(ABIError::DecodingError(
             "Input bytes not fully consumed".to_string(),
         ));
-    }
-    if let Some(last_segment) = dynamic_segments.last_mut() {
-        last_segment.right = bytes.len() as u16;
     }
 
     for i in 0..dynamic_segments.len() {
