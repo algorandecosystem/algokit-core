@@ -8,61 +8,66 @@ use crate::{
     ABIType, ABIValue,
 };
 
-/// Encode an address value to ABI format.
-/// Addresses are encoded as 32-byte public keys.
-pub fn encode_address(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
-    match abi_type {
-        ABIType::Address => {
-            let address_str = match value {
-                ABIValue::Address(a) => a,
-                _ => {
-                    return Err(ABIError::EncodingError(
-                        "Cannot encode value as address: expected a String".to_string(),
+impl ABIType {
+    /// Encode an address value to ABI format.
+    /// Addresses are encoded as 32-byte public keys.
+    pub fn encode_address(&self, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
+        match self {
+            ABIType::Address => {
+                let address_str = match value {
+                    ABIValue::Address(a) => a,
+                    _ => {
+                        return Err(ABIError::EncodingError(
+                            "Cannot encode value as address: expected a String".to_string(),
+                        ));
+                    }
+                };
+
+                if address_str.len() != ALGORAND_ADDRESS_LENGTH {
+                    return Err(ABIError::FormatError(
+                        "Algorand address must be exactly 58 characters".into(),
                     ));
                 }
-            };
+                let decoded_address =
+                    base32::decode(base32::Alphabet::Rfc4648 { padding: false }, address_str)
+                        .ok_or_else(|| {
+                            ABIError::FormatError(
+                                "Invalid base32 encoding for Algorand address".into(),
+                            )
+                        })?[..ADDR_BYTE_SIZE]
+                        .to_vec();
 
-            if address_str.len() != ALGORAND_ADDRESS_LENGTH {
-                return Err(ABIError::FormatError(
-                    "Algorand address must be exactly 58 characters".into(),
-                ));
+                Ok(decoded_address)
             }
-            let decoded_address =
-                base32::decode(base32::Alphabet::Rfc4648 { padding: false }, address_str)
-                    .ok_or_else(|| {
-                        ABIError::FormatError("Invalid base32 encoding for Algorand address".into())
-                    })?[..ADDR_BYTE_SIZE]
-                    .to_vec();
-
-            Ok(decoded_address)
+            _ => Err(ABIError::EncodingError("Expected Address".to_string())),
         }
-        _ => Err(ABIError::EncodingError("Expected Address".to_string())),
     }
-}
 
-/// Decode an address value from ABI format.
-/// Expects exactly 32 bytes and returns an Address ABIValue.
-pub fn decode_address(abi_type: &ABIType, bytes: &[u8]) -> Result<ABIValue, ABIError> {
-    match abi_type {
-        ABIType::Address => {
-            if bytes.len() != ADDR_BYTE_SIZE {
-                return Err(ABIError::DecodingError(format!(
-                    "Address byte string must be {} bytes long",
-                    ADDR_BYTE_SIZE
-                )));
+    /// Decode an address value from ABI format.
+    /// Expects exactly 32 bytes and returns an Address ABIValue.
+    pub fn decode_address(&self, bytes: &[u8]) -> Result<ABIValue, ABIError> {
+        match self {
+            ABIType::Address => {
+                if bytes.len() != ADDR_BYTE_SIZE {
+                    return Err(ABIError::DecodingError(format!(
+                        "Address byte string must be {} bytes long",
+                        ADDR_BYTE_SIZE
+                    )));
+                }
+
+                let mut buffer = [0u8; ADDR_BYTE_SIZE + ALGORAND_CHECKSUM_BYTE_LENGTH];
+                buffer[..ADDR_BYTE_SIZE].copy_from_slice(bytes);
+
+                let checksum = bytes_to_checksum(&bytes);
+                buffer[ADDR_BYTE_SIZE..].copy_from_slice(&checksum);
+
+                let address_str =
+                    base32::encode(base32::Alphabet::Rfc4648 { padding: false }, &buffer);
+
+                Ok(ABIValue::Address(address_str))
             }
-
-            let mut buffer = [0u8; ADDR_BYTE_SIZE + ALGORAND_CHECKSUM_BYTE_LENGTH];
-            buffer[..ADDR_BYTE_SIZE].copy_from_slice(bytes);
-
-            let checksum = bytes_to_checksum(&bytes);
-            buffer[ADDR_BYTE_SIZE..].copy_from_slice(&checksum);
-
-            let address_str = base32::encode(base32::Alphabet::Rfc4648 { padding: false }, &buffer);
-
-            Ok(ABIValue::Address(address_str))
+            _ => Err(ABIError::DecodingError("Expected Address".to_string())),
         }
-        _ => Err(ABIError::DecodingError("Expected Address".to_string())),
     }
 }
 
@@ -84,7 +89,7 @@ mod tests {
     #[test]
     fn test_encode_wrong_type() {
         let value = ABIValue::String("not an address".to_string());
-        let result = encode_address(&ABIType::Address, &value);
+        let result = ABIType::Address.encode_address(&value);
         assert!(result.is_err());
         assert!(result
             .unwrap_err()
@@ -97,7 +102,7 @@ mod tests {
         let value = ABIValue::Address(
             "MO2H6ZU47Q36GJ6GVHUKGEBEQINN7ZWVACMWZQGIYUOE3RBSRVYHV4ACJI".to_string(),
         );
-        let result = encode_address(&ABIType::String, &value);
+        let result = ABIType::String.encode_address(&value);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("Expected Address"));
     }
@@ -105,7 +110,7 @@ mod tests {
     #[test]
     fn test_decode_wrong_length_too_short() {
         let bytes = vec![0u8; 31];
-        let result = decode_address(&ABIType::Address, &bytes);
+        let result = ABIType::Address.decode_address(&bytes);
         assert!(result.is_err());
         assert!(result
             .unwrap_err()
@@ -116,7 +121,7 @@ mod tests {
     #[test]
     fn test_decode_wrong_length_too_long() {
         let bytes = vec![0u8; 33];
-        let result = decode_address(&ABIType::Address, &bytes);
+        let result = ABIType::Address.decode_address(&bytes);
         assert!(result.is_err());
         assert!(result
             .unwrap_err()

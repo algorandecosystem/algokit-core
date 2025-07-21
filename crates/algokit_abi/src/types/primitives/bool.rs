@@ -4,51 +4,53 @@ use crate::{
     ABIType, ABIValue,
 };
 
-/// Encode a boolean value to ABI format.
-/// True values are encoded as 0x80, false values as 0x00.
-pub fn encode_bool(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
-    match abi_type {
-        ABIType::Bool => {
-            let bool_value = match value {
-                ABIValue::Bool(b) => b,
-                _ => {
-                    // TODO: consistent error message
-                    return Err(ABIError::EncodingError(
-                        "Cannot encode value as bool: expected a boolean".to_string(),
+impl ABIType {
+    /// Encode a boolean value to ABI format.
+    /// True values are encoded as 0x80, false values as 0x00.
+    pub fn encode_bool(&self, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
+        match self {
+            ABIType::Bool => {
+                let bool_value = match value {
+                    ABIValue::Bool(b) => b,
+                    _ => {
+                        // TODO: consistent error message
+                        return Err(ABIError::EncodingError(
+                            "Cannot encode value as bool: expected a boolean".to_string(),
+                        ));
+                    }
+                };
+
+                if *bool_value {
+                    Ok(vec![BOOL_TRUE_BYTE]) // true -> 128 (MSB set)
+                } else {
+                    Ok(vec![BOOL_FALSE_BYTE]) // false -> 0
+                }
+            }
+            _ => Err(ABIError::EncodingError("Expected Bool".to_string())),
+        }
+    }
+
+    /// Decode a boolean value from ABI format.
+    /// Expects exactly 1 byte: 0x80 for true, 0x00 for false.
+    pub fn decode_bool(&self, bytes: &[u8]) -> Result<ABIValue, ABIError> {
+        match self {
+            ABIType::Bool => {
+                if bytes.len() != 1 {
+                    return Err(ABIError::DecodingError(
+                        "Bool string must be 1 byte long".to_string(),
                     ));
                 }
-            };
 
-            if *bool_value {
-                Ok(vec![BOOL_TRUE_BYTE]) // true -> 128 (MSB set)
-            } else {
-                Ok(vec![BOOL_FALSE_BYTE]) // false -> 0
+                match bytes[0] {
+                    BOOL_TRUE_BYTE => Ok(ABIValue::Bool(true)),
+                    BOOL_FALSE_BYTE => Ok(ABIValue::Bool(false)),
+                    _ => Err(ABIError::DecodingError(
+                        "Boolean could not be decoded from the byte string".to_string(),
+                    )),
+                }
             }
+            _ => Err(ABIError::DecodingError("Expected Bool".to_string())),
         }
-        _ => Err(ABIError::EncodingError("Expected Bool".to_string())),
-    }
-}
-
-/// Decode a boolean value from ABI format.
-/// Expects exactly 1 byte: 0x80 for true, 0x00 for false.
-pub fn decode_bool(abi_type: &ABIType, bytes: &[u8]) -> Result<ABIValue, ABIError> {
-    match abi_type {
-        ABIType::Bool => {
-            if bytes.len() != 1 {
-                return Err(ABIError::DecodingError(
-                    "Bool string must be 1 byte long".to_string(),
-                ));
-            }
-
-            match bytes[0] {
-                BOOL_TRUE_BYTE => Ok(ABIValue::Bool(true)),
-                BOOL_FALSE_BYTE => Ok(ABIValue::Bool(false)),
-                _ => Err(ABIError::DecodingError(
-                    "Boolean could not be decoded from the byte string".to_string(),
-                )),
-            }
-        }
-        _ => Err(ABIError::DecodingError("Expected Bool".to_string())),
     }
 }
 

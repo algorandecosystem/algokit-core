@@ -82,86 +82,87 @@ impl AsRef<ABIType> for ABIType {
     }
 }
 
-// TODO: maybe convert them to impl
-pub fn encode(abi_type: &ABIType, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
-    match abi_type {
-        ABIType::Uint(_) => Ok(encode_uint(abi_type, value)?),
-        ABIType::UFixed(_, _) => Ok(encode_ufixed(abi_type, value)?),
-        ABIType::Address => Ok(encode_address(abi_type, value)?),
-        ABIType::Tuple(_) => Ok(encode_tuple(abi_type, value)?),
-        ABIType::StaticArray(_, _size) => Ok(encode_static_array(abi_type, value)?),
-        ABIType::DynamicArray(_) => Ok(encode_dynamic_array(abi_type, value)?),
-        ABIType::String => Ok(encode_string(abi_type, value)?),
-        ABIType::Byte => Ok(encode_byte(abi_type, value)?),
-        ABIType::Bool => Ok(encode_bool(abi_type, value)?),
+impl ABIType {
+    pub fn encode(&self, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
+        match self {
+            ABIType::Uint(_) => Ok(self.encode_uint(value)?),
+            ABIType::UFixed(_, _) => Ok(self.encode_ufixed(value)?),
+            ABIType::Address => Ok(self.encode_address(value)?),
+            ABIType::Tuple(_) => Ok(self.encode_tuple(value)?),
+            ABIType::StaticArray(_, _size) => Ok(self.encode_static_array(value)?),
+            ABIType::DynamicArray(_) => Ok(self.encode_dynamic_array(value)?),
+            ABIType::String => Ok(self.encode_string(value)?),
+            ABIType::Byte => Ok(self.encode_byte(value)?),
+            ABIType::Bool => Ok(self.encode_bool(value)?),
+        }
     }
-}
 
-pub fn decode(abi_type: &ABIType, bytes: &[u8]) -> Result<ABIValue, ABIError> {
-    match abi_type {
-        ABIType::Uint(_) => decode_uint(abi_type, bytes),
-        ABIType::UFixed(_, _) => decode_ufixed(abi_type, bytes),
-        ABIType::Address => decode_address(abi_type, bytes),
-        ABIType::String => decode_string(abi_type, bytes),
-        ABIType::Bool => decode_bool(abi_type, bytes),
-        ABIType::Byte => decode_byte(abi_type, bytes),
-        ABIType::Tuple(_) => decode_tuple(abi_type, bytes),
-        ABIType::StaticArray(_, _size) => decode_static_array(abi_type, bytes),
-        ABIType::DynamicArray(_) => decode_dynamic_array(abi_type, bytes),
+    pub fn decode(&self, bytes: &[u8]) -> Result<ABIValue, ABIError> {
+        match self {
+            ABIType::Uint(_) => self.decode_uint(bytes),
+            ABIType::UFixed(_, _) => self.decode_ufixed(bytes),
+            ABIType::Address => self.decode_address(bytes),
+            ABIType::String => self.decode_string(bytes),
+            ABIType::Bool => self.decode_bool(bytes),
+            ABIType::Byte => self.decode_byte(bytes),
+            ABIType::Tuple(_) => self.decode_tuple(bytes),
+            ABIType::StaticArray(_, _size) => self.decode_static_array(bytes),
+            ABIType::DynamicArray(_) => self.decode_dynamic_array(bytes),
+        }
     }
-}
 
-pub fn is_dynamic(abi_type: &ABIType) -> bool {
-    match abi_type {
-        ABIType::StaticArray(child_type, _) => is_dynamic(child_type),
-        ABIType::Tuple(child_types) => child_types.iter().all(|t| is_dynamic(t)),
-        ABIType::DynamicArray(_) => true,
-        ABIType::String => true,
-        _ => false,
+    pub fn is_dynamic(&self) -> bool {
+        match self {
+            ABIType::StaticArray(child_type, _) => child_type.is_dynamic(),
+            ABIType::Tuple(child_types) => child_types.iter().all(|t| is_dynamic(t)),
+            ABIType::DynamicArray(_) => true,
+            ABIType::String => true,
+            _ => false,
+        }
     }
-}
 
-// TODO: check the return type
-pub fn get_size(abi_type: &ABIType) -> Result<usize, ABIError> {
-    match abi_type {
-        ABIType::Uint(bit_size) => Ok((bit_size.value() / BITS_PER_BYTE as u16) as usize),
-        ABIType::UFixed(bit_size, _) => Ok((bit_size.value() / BITS_PER_BYTE as u16) as usize),
-        ABIType::Address => Ok(ADDR_BYTE_SIZE),
-        ABIType::Bool => Ok(1),
-        ABIType::Byte => Ok(1),
-        ABIType::StaticArray(child_type, size) => match child_type.as_ref() {
-            ABIType::Bool => Ok((*size).div_ceil(BITS_PER_BYTE as usize)),
-            _ => Ok(get_size(child_type)? * *size),
-        },
-        ABIType::Tuple(child_types) => {
-            let mut size = 0;
-            let mut i = 0;
-            while i < child_types.len() {
-                let child_type = &child_types[i];
-                match child_type.as_ref() {
-                    ABIType::Bool => {
-                        let sequence_end_index = find_bool_sequence_end(&child_types, i);
-                        let bool_count = sequence_end_index - i + 1;
+    // TODO: check the return type
+    pub fn get_size(abi_type: &ABIType) -> Result<usize, ABIError> {
+        match abi_type {
+            ABIType::Uint(bit_size) => Ok((bit_size.value() / BITS_PER_BYTE as u16) as usize),
+            ABIType::UFixed(bit_size, _) => Ok((bit_size.value() / BITS_PER_BYTE as u16) as usize),
+            ABIType::Address => Ok(ADDR_BYTE_SIZE),
+            ABIType::Bool => Ok(1),
+            ABIType::Byte => Ok(1),
+            ABIType::StaticArray(child_type, size) => match child_type.as_ref() {
+                ABIType::Bool => Ok((*size).div_ceil(BITS_PER_BYTE as usize)),
+                _ => Ok(get_size(child_type)? * *size),
+            },
+            ABIType::Tuple(child_types) => {
+                let mut size = 0;
+                let mut i = 0;
+                while i < child_types.len() {
+                    let child_type = &child_types[i];
+                    match child_type.as_ref() {
+                        ABIType::Bool => {
+                            let sequence_end_index = find_bool_sequence_end(&child_types, i);
+                            let bool_count = sequence_end_index - i + 1;
 
-                        size += bool_count.div_ceil(BITS_PER_BYTE as usize);
-                        i = sequence_end_index + 1;
-                    }
-                    _ => {
-                        size += get_size(child_type)?;
-                        i += 1;
+                            size += bool_count.div_ceil(BITS_PER_BYTE as usize);
+                            i = sequence_end_index + 1;
+                        }
+                        _ => {
+                            size += get_size(child_type)?;
+                            i += 1;
+                        }
                     }
                 }
+                Ok(size)
             }
-            Ok(size)
+            ABIType::String => Err(ABIError::DecodingError(format!(
+                "{} is a dynamic type",
+                abi_type
+            ))),
+            ABIType::DynamicArray(_) => Err(ABIError::DecodingError(format!(
+                "{} is a dynamic type",
+                abi_type
+            ))),
         }
-        ABIType::String => Err(ABIError::DecodingError(format!(
-            "{} is a dynamic type",
-            abi_type
-        ))),
-        ABIType::DynamicArray(_) => Err(ABIError::DecodingError(format!(
-            "{} is a dynamic type",
-            abi_type
-        ))),
     }
 }
 
