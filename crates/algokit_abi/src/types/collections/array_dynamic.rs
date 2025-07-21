@@ -12,7 +12,7 @@ impl ABIType {
             ABIValue::Array(n) => n,
             _ => {
                 return Err(ABIError::EncodingError(format!(
-                    "Cannot encode tuple {}, expect an array of byte array",
+                    "Cannot encode dynamic array {}, expect an array of values",
                     self
                 )));
             }

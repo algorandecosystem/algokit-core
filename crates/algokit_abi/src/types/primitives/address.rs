@@ -25,14 +25,14 @@ impl ABIType {
                 };
 
                 if address_str.len() != ALGORAND_ADDRESS_LENGTH {
-                    return Err(ABIError::FormatError(
+                    return Err(ABIError::ValidationError(
                         "Algorand address must be exactly 58 characters".into(),
                     ));
                 }
                 let decoded_address =
                     base32::decode(base32::Alphabet::Rfc4648 { padding: false }, address_str)
                         .ok_or_else(|| {
-                            ABIError::FormatError(
+                            ABIError::ValidationError(
                                 "Invalid base32 encoding for Algorand address".into(),
                             )
                         })?[..ALGORAND_PUBLIC_KEY_BYTE_LENGTH]

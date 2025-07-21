@@ -284,17 +284,17 @@ fn parse_tuple_content(content: &str) -> Result<Vec<String>, ABIError> {
     }
 
     if content.starts_with(",") {
-        return Err(ABIError::FormatError(
+        return Err(ABIError::ValidationError(
             "Tuple name should not start with comma".to_string(),
         ));
     }
     if content.ends_with(",") {
-        return Err(ABIError::FormatError(
+        return Err(ABIError::ValidationError(
             "Tuple name should not start with comma".to_string(),
         ));
     }
     if content.contains(",,") {
-        return Err(ABIError::FormatError(
+        return Err(ABIError::ValidationError(
             "tuple string should not have consecutive commas".to_string(),
         ));
     }
@@ -320,7 +320,7 @@ fn parse_tuple_content(content: &str) -> Result<Vec<String>, ABIError> {
         tuple_strings.push(word);
     }
     if depth != 0 {
-        return Err(ABIError::FormatError(
+        return Err(ABIError::ValidationError(
             "Tuple string has mismatched parentheses".to_string(),
         ));
     }
