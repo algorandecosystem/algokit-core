@@ -1,9 +1,11 @@
 use crate::{
-    constants::{ALGORAND_PUBLIC_KEY_BYTE_LENGTH, BITS_PER_BYTE},
+    constants::{
+        ALGORAND_PUBLIC_KEY_BYTE_LENGTH, BITS_PER_BYTE, MAX_BIT_SIZE, MAX_PRECISION,
+        STATIC_ARRAY_REGEX, UFIXED_REGEX,
+    },
     types::collections::tuple::find_bool_sequence_end,
     ABIError, ABIValue,
 };
-use regex::Regex;
 use std::{
     fmt::{Display, Formatter, Result as FmtResult},
     str::FromStr,
@@ -14,10 +16,10 @@ pub struct BitSize(u16);
 
 impl BitSize {
     pub fn new(bits: u16) -> Result<Self, ABIError> {
-        if bits < BITS_PER_BYTE as u16 || bits > 512 || bits % BITS_PER_BYTE as u16 != 0 {
+        if bits < BITS_PER_BYTE as u16 || bits > MAX_BIT_SIZE || bits % BITS_PER_BYTE as u16 != 0 {
             return Err(ABIError::ValidationError(format!(
-                "Bit size must be between {} and 512 and divisible by {}, got {}",
-                BITS_PER_BYTE, BITS_PER_BYTE, bits
+                "Bit size must be between {} and {} and divisible by {}, got {}",
+                BITS_PER_BYTE, MAX_BIT_SIZE, BITS_PER_BYTE, bits
             )));
         }
         Ok(BitSize(bits))
@@ -33,10 +35,10 @@ pub struct Precision(u8);
 
 impl Precision {
     pub fn new(precision: u8) -> Result<Self, ABIError> {
-        if precision > 160 {
+        if precision > MAX_PRECISION {
             return Err(ABIError::ValidationError(format!(
-                "Precision must be between 0 and 160, got {}",
-                precision
+                "Precision must be between 0 and {}, got {}",
+                MAX_PRECISION, precision
             )));
         }
         Ok(Precision(precision))
@@ -69,15 +71,15 @@ impl AsRef<ABIType> for ABIType {
 impl ABIType {
     pub fn encode(&self, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
         match self {
-            ABIType::Uint(_) => Ok(self.encode_uint(value)?),
-            ABIType::UFixed(_, _) => Ok(self.encode_ufixed(value)?),
-            ABIType::Address => Ok(self.encode_address(value)?),
-            ABIType::Tuple(_) => Ok(self.encode_tuple(value)?),
-            ABIType::StaticArray(_, _size) => Ok(self.encode_static_array(value)?),
-            ABIType::DynamicArray(_) => Ok(self.encode_dynamic_array(value)?),
-            ABIType::String => Ok(self.encode_string(value)?),
-            ABIType::Byte => Ok(self.encode_byte(value)?),
-            ABIType::Bool => Ok(self.encode_bool(value)?),
+            ABIType::Uint(_) => self.encode_uint(value),
+            ABIType::UFixed(_, _) => self.encode_ufixed(value),
+            ABIType::Address => self.encode_address(value),
+            ABIType::Tuple(_) => self.encode_tuple(value),
+            ABIType::StaticArray(_, _size) => self.encode_static_array(value),
+            ABIType::DynamicArray(_) => self.encode_dynamic_array(value),
+            ABIType::String => self.encode_string(value),
+            ABIType::Byte => self.encode_byte(value),
+            ABIType::Bool => self.encode_bool(value),
         }
     }
 
@@ -186,7 +188,7 @@ impl FromStr for ABIType {
 
         // Static array
         if s.ends_with(']') {
-            let regex = Regex::new(r"^([a-z\d\[\](),]+)\[(0|[1-9][\d]*)]$").expect("Invalid regex");
+            let regex = &*STATIC_ARRAY_REGEX;
             if let Some(captures) = regex.captures(s) {
                 let element_type_str = &captures[1];
                 let length_str = &captures[2];
@@ -223,7 +225,7 @@ impl FromStr for ABIType {
 
         // UFixed type
         if s.starts_with("ufixed") {
-            let regex = Regex::new(r"^ufixed([1-9][\d]*)x([1-9][\d]*)$").expect("Invalid regex");
+            let regex = &*UFIXED_REGEX;
             if let Some(captures) = regex.captures(s) {
                 let size_str = &captures[1];
                 let precision_str = &captures[2];
