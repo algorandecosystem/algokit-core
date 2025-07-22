@@ -275,16 +275,19 @@ fn extract_values(abi_types: &[&ABIType], bytes: &[u8]) -> Result<Vec<Vec<u8>>, 
     Ok(value_partitions)
 }
 
-// TODO: docs
-pub fn find_bool_sequence_end<T>(child_types: &[T], current_index: usize) -> usize
+/// Finds the end index of a consecutive bool sequence in an ABI type array.
+///
+/// Bool types in tuples are packed together for efficient encoding, with a maximum
+/// of 8 consecutive bools allowed per sequence.
+pub(crate) fn find_bool_sequence_end<T>(abi_types: &[T], current_index: usize) -> usize
 where
     T: AsRef<ABIType>,
 {
     let mut cursor: usize = current_index;
     loop {
-        match child_types[cursor].as_ref() {
+        match abi_types[cursor].as_ref() {
             ABIType::Bool => {
-                if cursor - current_index + 1 == 8 || cursor == child_types.len() - 1 {
+                if cursor - current_index + 1 == 8 || cursor == abi_types.len() - 1 {
                     return cursor;
                 }
                 cursor += 1;
