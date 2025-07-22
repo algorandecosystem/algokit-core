@@ -11,10 +11,21 @@ use std::{
     str::FromStr,
 };
 
-#[derive(Debug, Clone, Copy)]
+/// Represents the bit size for ABI uint and ufixed types.
+///
+/// Validates that bit sizes are valid (8-512 bits, divisible by 8).
+/// See [ARC-0004](https://arc.algorand.foundation/ARCs/arc-0004#types) for type specifications.
+#[derive(Debug, Clone)]
 pub struct BitSize(u16);
 
 impl BitSize {
+    /// Creates a new [`BitSize`] with validation.
+    ///
+    /// # Arguments
+    /// * `bits` - The bit size, must be 8-512 and divisible by 8.
+    ///
+    /// # Returns
+    /// A new [`BitSize`] if valid, or an [`ABIError`] if invalid.
     pub fn new(bits: u16) -> Result<Self, ABIError> {
         if bits < BITS_PER_BYTE as u16 || bits > MAX_BIT_SIZE || bits % BITS_PER_BYTE as u16 != 0 {
             return Err(ABIError::ValidationError(format!(
@@ -25,15 +36,30 @@ impl BitSize {
         Ok(BitSize(bits))
     }
 
+    /// Returns the bit size value.
+    ///
+    /// # Returns
+    /// The underlying bit size as a `u16`.
     pub fn value(&self) -> u16 {
         self.0
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+/// Represents the precision for ABI fixed-point types.
+///
+/// Validates precision values for ufixed types (0-160).
+/// See [ARC-0004](https://arc.algorand.foundation/ARCs/arc-0004#types) for type specifications.
+#[derive(Debug, Clone)]
 pub struct Precision(u8);
 
 impl Precision {
+    /// Creates a new [`Precision`] with validation.
+    ///
+    /// # Arguments
+    /// * `precision` - The precision value, must be 0-160.
+    ///
+    /// # Returns
+    /// A new [`Precision`] if valid, or an [`ABIError`] if invalid.
     pub fn new(precision: u8) -> Result<Self, ABIError> {
         if precision > MAX_PRECISION {
             return Err(ABIError::ValidationError(format!(
@@ -44,12 +70,20 @@ impl Precision {
         Ok(Precision(precision))
     }
 
+    /// Returns the precision value.
+    ///
+    /// # Returns
+    /// The underlying precision as a `u8`.
     pub fn value(&self) -> u8 {
         self.0
     }
 }
 
-#[derive(Clone)]
+/// Represents an Algorand ABI type for encoding and decoding values.
+///
+/// Supports all ABI types defined in [ARC-0004](https://arc.algorand.foundation/ARCs/arc-0004#types):
+/// integers, fixed-point numbers, addresses, strings, bytes, booleans, arrays, and tuples.
+#[derive(Debug, Clone)]
 pub enum ABIType {
     Uint(BitSize),
     UFixed(BitSize, Precision),
@@ -69,6 +103,13 @@ impl AsRef<ABIType> for ABIType {
 }
 
 impl ABIType {
+    /// Encodes an [`ABIValue`] according to this ABI type specification.
+    ///
+    /// # Arguments
+    /// * `value` - The value to encode, must match this type.
+    ///
+    /// # Returns
+    /// The encoded bytes if successful, or an [`ABIError`] if encoding fails.
     pub fn encode(&self, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
         match self {
             ABIType::Uint(_) => self.encode_uint(value),
@@ -83,6 +124,13 @@ impl ABIType {
         }
     }
 
+    /// Decodes bytes according to this ABI type specification.
+    ///
+    /// # Arguments
+    /// * `bytes` - The encoded bytes to decode.
+    ///
+    /// # Returns
+    /// The decoded [`ABIValue`] if successful, or an [`ABIError`] if decoding fails.
     pub fn decode(&self, bytes: &[u8]) -> Result<ABIValue, ABIError> {
         match self {
             ABIType::Uint(_) => self.decode_uint(bytes),
