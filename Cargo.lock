@@ -62,6 +62,7 @@ name = "algokit_abi"
 version = "0.1.0"
 dependencies = [
  "base32",
+ "hex",
  "num-bigint",
  "regex",
  "rstest",
