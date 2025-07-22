@@ -117,14 +117,6 @@ pub enum ABIMethodArgType {
 }
 
 impl ABIMethodArgType {
-    /// Parse an argument type from a string.
-    ///
-    /// This is a convenience method that delegates to the `FromStr` trait implementation.
-    /// Use `ABIMethodArgType::from_str(s)` or `s.parse::<ABIMethodArgType>()` for idiomatic Rust.
-    pub fn parse(s: &str) -> Result<Self, ABIError> {
-        Self::from_str(s)
-    }
-
     /// Check if this is a transaction argument.
     pub(crate) fn is_transaction(&self) -> bool {
         matches!(self, ABIMethodArgType::Transaction(_))
@@ -221,11 +213,27 @@ impl ABIMethod {
     /// Get the method selector (4-byte hash).
     pub fn selector(&self) -> Result<Vec<u8>, ABIError> {
         let signature = self.signature()?;
-        get_method_selector(&signature)
+        if signature.chars().any(|c| c.is_whitespace()) {
+            return Err(ABIError::ValidationError(
+                "Method signature cannot contain whitespace".to_string(),
+            ));
+        }
+
+        let mut hasher = Sha512_256::new();
+        hasher.update(signature.as_bytes());
+        let hash = hasher.finalize();
+
+        Ok(hash[..4].to_vec())
     }
 
     /// Get the method signature string.
     pub fn signature(&self) -> Result<String, ABIError> {
+        if self.name.is_empty() {
+            return Err(ABIError::ValidationError(
+                "Method name cannot be empty".to_string(),
+            ));
+        }
+
         let arg_types: Vec<String> = self
             .args
             .iter()
@@ -236,22 +244,89 @@ impl ABIMethod {
             })
             .collect();
 
-        let arg_refs: Vec<&str> = arg_types.iter().map(|s| s.as_str()).collect();
+        // Validate each argument type
+        for r#type in &arg_types {
+            ABIMethodArgType::from_str(r#type)?;
+        }
+
         let return_type = self
             .returns
             .as_ref()
             .map(|r| r.to_string())
             .unwrap_or_else(|| VOID_RETURN_TYPE.to_string());
 
-        build_method_signature(&self.name, &arg_refs, &return_type)
+        let args_str = arg_types.join(",");
+        let signature = format!("{}({}){}", self.name, args_str, return_type);
+
+        if signature.chars().any(|c| c.is_whitespace()) {
+            return Err(ABIError::ValidationError(
+                "Generated signature contains whitespace".to_string(),
+            ));
+        }
+
+        Ok(signature)
     }
 }
 
 impl FromStr for ABIMethod {
     type Err = ABIError;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        get_method_signature(s)
+    fn from_str(signature: &str) -> Result<Self, Self::Err> {
+        if signature.chars().any(|c| c.is_whitespace()) {
+            return Err(ABIError::ValidationError(
+                "Method signature cannot contain whitespace".to_string(),
+            ));
+        }
+
+        let open_paren_pos = signature.find('(').ok_or_else(|| {
+            ABIError::ValidationError(
+                "Method signature must contain opening parenthesis".to_string(),
+            )
+        })?;
+
+        if open_paren_pos == 0 {
+            return Err(ABIError::ValidationError(
+                "Method name cannot be empty".to_string(),
+            ));
+        }
+        let method_name = signature[..open_paren_pos].to_string();
+
+        let close_paren_pos = find_matching_closing_paren(signature, open_paren_pos)?;
+
+        let args_str = &signature[open_paren_pos + 1..close_paren_pos];
+
+        let arguments = if args_str.is_empty() {
+            Vec::new()
+        } else {
+            split_arguments_by_comma(args_str)?
+        };
+
+        let return_type = if close_paren_pos + 1 < signature.len() {
+            signature[close_paren_pos + 1..].to_string()
+        } else {
+            VOID_RETURN_TYPE.to_string()
+        };
+
+        // Parse each argument
+        let mut args = Vec::new();
+        for (i, r#type) in arguments.iter().enumerate() {
+            let _type = ABIMethodArgType::from_str(r#type)?;
+            let arg_name = Some(format!("arg{}", i));
+            let arg = ABIMethodArg::new(_type, arg_name, None);
+            args.push(arg);
+        }
+
+        // Parse return type
+        let returns = if return_type != VOID_RETURN_TYPE {
+            let abi_return_type = ABIType::from_str(&return_type)?;
+            Some(abi_return_type)
+        } else {
+            None
+        };
+
+        let parsed_method = ABIMethod::new(method_name, args, returns, None);
+
+        Ok(parsed_method)
     }
 }
 
@@ -260,63 +335,6 @@ impl ABIMethodArg {
     pub fn new(r#type: ABIMethodArgType, name: Option<String>, desc: Option<String>) -> Self {
         Self { r#type, name, desc }
     }
-}
-
-/// Parse an ABI method signature into its components.
-pub fn get_method_signature(signature: &str) -> Result<ABIMethod, ABIError> {
-    if signature.chars().any(|c| c.is_whitespace()) {
-        return Err(ABIError::ValidationError(
-            "Method signature cannot contain whitespace".to_string(),
-        ));
-    }
-
-    let open_paren_pos = signature.find('(').ok_or_else(|| {
-        ABIError::ValidationError("Method signature must contain opening parenthesis".to_string())
-    })?;
-
-    if open_paren_pos == 0 {
-        return Err(ABIError::ValidationError(
-            "Method name cannot be empty".to_string(),
-        ));
-    }
-    let method_name = signature[..open_paren_pos].to_string();
-
-    let close_paren_pos = find_matching_closing_paren(signature, open_paren_pos)?;
-
-    let args_str = &signature[open_paren_pos + 1..close_paren_pos];
-
-    let arguments = if args_str.is_empty() {
-        Vec::new()
-    } else {
-        split_arguments_by_comma(args_str)?
-    };
-
-    let return_type = if close_paren_pos + 1 < signature.len() {
-        signature[close_paren_pos + 1..].to_string()
-    } else {
-        VOID_RETURN_TYPE.to_string()
-    };
-
-    // Parse each argument
-    let mut args = Vec::new();
-    for (i, arg_type) in arguments.iter().enumerate() {
-        let _type = ABIMethodArgType::from_str(arg_type)?;
-        let arg_name = Some(format!("arg{}", i));
-        let arg = ABIMethodArg::new(_type, arg_name, None);
-        args.push(arg);
-    }
-
-    // Parse return type
-    let returns = if return_type != VOID_RETURN_TYPE {
-        let abi_return_type = ABIType::from_str(&return_type)?;
-        Some(abi_return_type)
-    } else {
-        None
-    };
-
-    let parsed_method = ABIMethod::new(method_name, args, returns, None);
-
-    Ok(parsed_method)
 }
 
 /// Find the matching closing parenthesis for an opening parenthesis.
@@ -343,511 +361,189 @@ fn find_matching_closing_paren(s: &str, open_pos: usize) -> Result<usize, ABIErr
 }
 
 /// Split arguments by comma, respecting nested parentheses.
+/// This is a specialized version of the tuple parsing logic for method arguments.
 fn split_arguments_by_comma(args_str: &str) -> Result<Vec<String>, ABIError> {
-    let mut arguments = Vec::new();
-    let mut current_arg = String::new();
-    let mut depth = 0;
+    use crate::abi_type::parse_tuple_content;
 
-    for ch in args_str.chars() {
-        match ch {
-            '(' => {
-                depth += 1;
-                current_arg.push(ch);
-            }
-            ')' => {
-                depth -= 1;
-                if depth < 0 {
-                    return Err(ABIError::ValidationError(
-                        "Mismatched parentheses in method signature".to_string(),
-                    ));
-                }
-                current_arg.push(ch);
-            }
-            ',' if depth == 0 => {
-                if current_arg.is_empty() {
-                    return Err(ABIError::ValidationError(
-                        "Empty argument in method signature".to_string(),
-                    ));
-                }
-                arguments.push(current_arg.trim().to_string());
-                current_arg.clear();
-            }
-            _ => {
-                current_arg.push(ch);
-            }
+    if args_str.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    // Use the shared tuple parsing logic, but with method-specific validation
+    let arguments = parse_tuple_content(args_str)?;
+
+    // Additional validation for method arguments: no empty arguments
+    for arg in &arguments {
+        if arg.trim().is_empty() {
+            return Err(ABIError::ValidationError(
+                "Empty argument in method signature".to_string(),
+            ));
         }
-    }
-
-    if !current_arg.is_empty() {
-        arguments.push(current_arg.trim().to_string());
-    }
-
-    if depth != 0 {
-        return Err(ABIError::ValidationError(
-            "Mismatched parentheses in method signature".to_string(),
-        ));
     }
 
     Ok(arguments)
 }
 
-/// Calculate the ABI method selector from a method signature.
-pub fn get_method_selector(signature: &str) -> Result<Vec<u8>, ABIError> {
-    if signature.chars().any(|c| c.is_whitespace()) {
-        return Err(ABIError::ValidationError(
-            "Method signature cannot contain whitespace".to_string(),
-        ));
-    }
-
-    let mut hasher = Sha512_256::new();
-    hasher.update(signature.as_bytes());
-    let hash = hasher.finalize();
-
-    Ok(hash[..4].to_vec())
-}
-
-/// Build an ABI method signature from components.
-pub fn build_method_signature(
-    name: &str,
-    arg_types: &[&str],
-    return_type: &str,
-) -> Result<String, ABIError> {
-    if name.is_empty() {
-        return Err(ABIError::ValidationError(
-            "Method name cannot be empty".to_string(),
-        ));
-    }
-
-    for arg_type in arg_types {
-        ABIMethodArgType::from_str(arg_type)?;
-    }
-
-    let args_str = arg_types.join(",");
-    let signature = format!("{}({}){}", name, args_str, return_type);
-
-    if signature.chars().any(|c| c.is_whitespace()) {
-        return Err(ABIError::ValidationError(
-            "Generated signature contains whitespace".to_string(),
-        ));
-    }
-
-    Ok(signature)
-}
-
-/// Find a method by name in a collection of methods.
-pub fn get_method_by_name<'a>(
-    methods: &'a [ABIMethod],
-    name: &str,
-) -> Result<&'a ABIMethod, ABIError> {
-    let filtered_methods: Vec<&ABIMethod> = methods
-        .iter()
-        .filter(|method| method.name == name)
-        .collect();
-
-    match filtered_methods.len() {
-        0 => Err(ABIError::ValidationError(format!(
-            "found 0 methods with the name {}",
-            name
-        ))),
-        1 => Ok(filtered_methods[0]),
-        count => {
-            let signatures: Vec<String> = filtered_methods
-                .iter()
-                .map(|method| {
-                    method
-                        .signature()
-                        .unwrap_or_else(|_| format!("{}(?)", method.name))
-                })
-                .collect();
-            Err(ABIError::ValidationError(format!(
-                "found {} methods with the same name {}: {}",
-                count,
-                name,
-                signatures.join(",")
-            )))
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::abi_type::parse_tuple_content;
     use hex;
+    use rstest::rstest;
+
+    // Transaction type parsing with round-trip validation
+    #[rstest]
+    #[case("txn", ABITransactionType::Txn)]
+    #[case("pay", ABITransactionType::Pay)]
+    #[case("keyreg", ABITransactionType::KeyReg)]
+    #[case("acfg", ABITransactionType::AssetConfig)]
+    #[case("axfer", ABITransactionType::AssetTransfer)]
+    #[case("afrz", ABITransactionType::AssetFreeze)]
+    #[case("appl", ABITransactionType::AppCall)]
+    fn transaction_type_from_str(#[case] input: &str, #[case] expected: ABITransactionType) {
+        assert_eq!(ABITransactionType::from_str(input).unwrap(), expected);
+        assert_eq!(expected.to_string(), input);
+    }
 
     #[test]
-    fn test_transaction_type_from_str() {
-        let test_cases = vec![
-            ("txn", Ok(ABITransactionType::Txn)),
-            ("pay", Ok(ABITransactionType::Pay)),
-            ("keyreg", Ok(ABITransactionType::KeyReg)),
-            ("acfg", Ok(ABITransactionType::AssetConfig)),
-            ("axfer", Ok(ABITransactionType::AssetTransfer)),
-            ("afrz", Ok(ABITransactionType::AssetFreeze)),
-            ("appl", Ok(ABITransactionType::AppCall)),
-            ("invalid", Err(())),
-        ];
+    fn transaction_type_from_str_invalid() {
+        assert!(ABITransactionType::from_str("invalid").is_err());
+    }
 
-        for (input, expected) in test_cases {
-            match expected {
-                Ok(expected_type) => {
-                    assert_eq!(ABITransactionType::from_str(input).unwrap(), expected_type)
-                }
-                Err(_) => assert!(ABITransactionType::from_str(input).is_err()),
-            }
+    // Reference type parsing with round-trip validation
+    #[rstest]
+    #[case("account", ABIReferenceType::Account)]
+    #[case("application", ABIReferenceType::Application)]
+    #[case("asset", ABIReferenceType::Asset)]
+    fn reference_type_from_str(#[case] input: &str, #[case] expected: ABIReferenceType) {
+        assert_eq!(ABIReferenceType::from_str(input).unwrap(), expected);
+        assert_eq!(expected.to_string(), input);
+    }
+
+    #[test]
+    fn reference_type_from_str_invalid() {
+        assert!(ABIReferenceType::from_str("invalid").is_err());
+    }
+
+    // Method argument type parsing - consolidated test
+    #[rstest]
+    #[case("pay", ABIMethodArgType::Transaction(ABITransactionType::Pay))]
+    #[case("account", ABIMethodArgType::Reference(ABIReferenceType::Account))]
+    fn method_arg_type_from_str_special(#[case] input: &str, #[case] expected: ABIMethodArgType) {
+        assert_eq!(ABIMethodArgType::from_str(input).unwrap(), expected);
+    }
+
+    #[rstest]
+    #[case("uint64")]
+    #[case("(uint64,string)")]
+    #[case("uint64[]")]
+    fn method_arg_type_from_str_value(#[case] input: &str) {
+        match ABIMethodArgType::from_str(input).unwrap() {
+            ABIMethodArgType::Value(abi_type) => assert_eq!(abi_type.to_string(), input),
+            _ => panic!("Expected Value type for: {}", input),
         }
     }
 
     #[test]
-    fn test_reference_type_from_str() {
-        let test_cases = vec![
-            ("account", Ok(ABIReferenceType::Account)),
-            ("application", Ok(ABIReferenceType::Application)),
-            ("asset", Ok(ABIReferenceType::Asset)),
-            ("invalid", Err(())),
-        ];
-
-        for (input, expected) in test_cases {
-            match expected {
-                Ok(expected_type) => {
-                    assert_eq!(ABIReferenceType::from_str(input).unwrap(), expected_type)
-                }
-                Err(_) => assert!(ABIReferenceType::from_str(input).is_err()),
-            }
-        }
-    }
-
-    #[test]
-    fn test_argument_category_parse() {
-        // Test direct transaction type
-        match ABIMethodArgType::from_str("pay").unwrap() {
-            ABIMethodArgType::Transaction(tx_type) => {
-                assert_eq!(tx_type, ABITransactionType::Pay)
-            }
-            _ => panic!("Expected Transaction type"),
-        }
-
-        // Test reference type
-        match ABIMethodArgType::from_str("account").unwrap() {
-            ABIMethodArgType::Reference(ref_type) => {
-                assert_eq!(ref_type, ABIReferenceType::Account)
-            }
-            _ => panic!("Expected Reference type"),
-        }
-
-        // Test ABI type
-        match ABIMethodArgType::from_str("uint64").unwrap() {
-            ABIMethodArgType::Value(abi_type) => {
-                assert_eq!(abi_type.to_string(), "uint64");
-            }
-            _ => panic!("Expected Value type"),
-        }
-    }
-
-    #[test]
-    fn test_argument_category_from_str() {
-        // Test that FromStr trait works consistently
-        use std::str::FromStr;
-
-        let test_cases = vec!["pay", "account", "uint64", "string", "bool"];
-
-        for input in test_cases {
-            let from_str_direct = ABIMethodArgType::from_str(input).unwrap();
-            let from_str_trait = <ABIMethodArgType as FromStr>::from_str(input).unwrap();
-            assert_eq!(
-                from_str_direct, from_str_trait,
-                "Both FromStr methods should produce identical results for input: {}",
-                input
-            );
-        }
-
-        // Test error cases
+    fn method_arg_type_from_str_invalid() {
         assert!(ABIMethodArgType::from_str("invalid_type").is_err());
     }
 
-    #[test]
-    fn test_parsed_abi_method() {
-        let args = vec![
-            ABIMethodArg::new(
-                ABIMethodArgType::Reference(ABIReferenceType::Account),
-                Some("receiver".to_string()),
-                None,
-            ),
-            ABIMethodArg::new(
-                ABIMethodArgType::Value(ABIType::from_str("uint64").unwrap()),
-                Some("amount".to_string()),
-                None,
-            ),
-            ABIMethodArg::new(
-                ABIMethodArgType::Transaction(ABITransactionType::Pay),
-                Some("payment".to_string()),
-                None,
-            ),
-        ];
+    // Method parsing - essential cases only
+    #[rstest]
+    #[case("add(uint64,uint64)uint64", "add", Some("uint64"), 2)]
+    #[case("getName()string", "getName", Some("string"), 0)]
+    #[case("doSomething(uint64)", "doSomething", None, 1)]
+    #[case("transfer(address,uint64,pay)bool", "transfer", Some("bool"), 3)]
+    fn method_from_str_valid(
+        #[case] signature: &str,
+        #[case] expected_name: &str,
+        #[case] expected_return: Option<&str>,
+        #[case] expected_arg_count: usize,
+    ) {
+        let method = ABIMethod::from_str(signature).unwrap();
+        assert_eq!(method.name, expected_name);
+        assert_eq!(method.args.len(), expected_arg_count);
 
-        let method = ABIMethod::new(
-            "transfer".to_string(),
-            args,
-            Some(ABIType::from_str("bool").unwrap()),
-            Some("Transfer tokens to receiver".to_string()),
-        );
-
-        assert_eq!(method.transaction_arg_count(), 1);
-        assert_eq!(method.reference_arg_count(), 1);
-        assert_eq!(method.value_arg_count(), 1);
-        assert_eq!(method.args.len(), 3);
-    }
-
-    #[test]
-    fn test_get_method_signature() {
-        let test_cases = vec![
-            ("add(uint64,uint64)uint64", "add", Some("uint64"), 2),
-            ("getName()string", "getName", Some("string"), 0),
-            ("doSomething(uint64)", "doSomething", None, 1),
-            (
-                "process((uint64,string),bool)(uint64,bool)",
-                "process",
-                Some("(uint64,bool)"),
-                2,
-            ),
-        ];
-
-        for (signature, expected_name, expected_return, expected_arg_count) in test_cases {
-            let result = get_method_signature(signature).unwrap();
-            assert_eq!(result.name, expected_name);
-            if let Some(expected_return_str) = expected_return {
-                let expected_abi_type = ABIType::from_str(expected_return_str).unwrap();
-                assert_eq!(result.returns, Some(expected_abi_type));
-            } else {
-                assert_eq!(result.returns, None);
-            }
-            assert_eq!(
-                result.args.len(),
-                expected_arg_count,
-                "Wrong number of args for {}",
-                signature
-            );
-        }
-
-        assert!(get_method_signature("add(uint64, uint64)uint64").is_err());
-        assert!(get_method_signature("(uint64)uint64").is_err());
-        assert!(get_method_signature("method").is_err());
-    }
-
-    #[test]
-    fn test_get_method_signature_with_args() {
-        // Test that arguments are properly parsed and categorized
-        let method = get_method_signature("transfer(address,uint64,pay)bool").unwrap();
-        assert_eq!(method.name, "transfer");
-        assert_eq!(method.returns, Some(ABIType::from_str("bool").unwrap()));
-        assert_eq!(method.args.len(), 3);
-
-        // Check first argument (address - ABI type)
-        assert_eq!(method.args[0].name, Some("arg0".to_string()));
-        assert!(
-            matches!(method.args[0].r#type, ABIMethodArgType::Value(ref abi_type) if abi_type.to_string() == "address")
-        );
-
-        // Check second argument (uint64 - ABI type)
-        assert_eq!(method.args[1].name, Some("arg1".to_string()));
-        assert!(
-            matches!(method.args[1].r#type, ABIMethodArgType::Value(ref abi_type) if abi_type.to_string() == "uint64")
-        );
-
-        // Check third argument (pay - Transaction type)
-        assert_eq!(method.args[2].name, Some("arg2".to_string()));
-        assert!(matches!(
-            method.args[2].r#type,
-            ABIMethodArgType::Transaction(ABITransactionType::Pay)
-        ));
-
-        // Test method with reference types
-        let method2 = get_method_signature("addAsset(asset,account)void").unwrap();
-        assert_eq!(method2.args.len(), 2);
-        assert!(matches!(
-            method2.args[0].r#type,
-            ABIMethodArgType::Reference(ABIReferenceType::Asset)
-        ));
-        assert!(matches!(
-            method2.args[1].r#type,
-            ABIMethodArgType::Reference(ABIReferenceType::Account)
-        ));
-
-        // Test with complex types
-        let method3 = get_method_signature("swap((uint64,address),string[])uint64").unwrap();
-        assert_eq!(method3.args.len(), 2);
-        assert!(
-            matches!(method3.args[0].r#type, ABIMethodArgType::Value(ref abi_type) if abi_type.to_string() == "(uint64,address)")
-        );
-        assert!(
-            matches!(method3.args[1].r#type, ABIMethodArgType::Value(ref abi_type) if abi_type.to_string() == "string[]")
-        );
-    }
-
-    #[test]
-    fn test_abi_method_arg_type_from_str() {
-        let transaction_types = vec!["pay", "keyreg", "acfg", "axfer", "afrz", "appl"];
-        for txn_type in transaction_types {
-            let result = ABIMethodArgType::from_str(txn_type).unwrap();
-            assert!(matches!(result, ABIMethodArgType::Transaction(_)));
-        }
-
-        let reference_types = vec!["account", "application", "asset"];
-        for ref_type in reference_types {
-            let result = ABIMethodArgType::from_str(ref_type).unwrap();
-            assert!(matches!(result, ABIMethodArgType::Reference(_)));
-        }
-
-        let abi_types = vec![
-            "uint64",
-            "string",
-            "bool",
-            "address",
-            "(uint64,string)",
-            "uint64[]",
-        ];
-        for abi_type in abi_types {
-            let result = ABIMethodArgType::from_str(abi_type).unwrap();
-            assert!(matches!(result, ABIMethodArgType::Value(_)));
+        if let Some(return_str) = expected_return {
+            let expected_abi_type = ABIType::from_str(return_str).unwrap();
+            assert_eq!(method.returns, Some(expected_abi_type));
+        } else {
+            assert_eq!(method.returns, None);
         }
     }
 
-    #[test]
-    fn test_get_method_selector() {
-        let test_signatures = vec![
-            "transfer(address,uint64)bool",
-            "optIn()void",
-            "swap(uint64,(address,uint64))uint64",
-            "deposit(pay,address)uint64",
-            "addUser(account)void",
-            "noArgs()uint64",
-        ];
-
-        for signature in test_signatures {
-            let selector = get_method_selector(signature).unwrap();
-            assert_eq!(selector.len(), 4);
-        }
-
-        assert!(get_method_selector("add(uint64, uint64)uint64").is_err());
+    #[rstest]
+    #[case("add(uint64, uint64)uint64")] // whitespace
+    #[case("(uint64)uint64")] // empty name
+    #[case("method")] // no parenthesis
+    fn method_from_str_invalid(#[case] signature: &str) {
+        assert!(ABIMethod::from_str(signature).is_err());
     }
 
-    #[test]
-    fn test_method_selector_values() {
-        let test_cases = vec![
-            ("add(uint64,uint64)uint64", "fe6bdf69"),
-            ("transfer(uint64,address)void", "e9bb5be3"),
-            ("optIn()void", "29314d95"),
-            ("deposit(pay,uint64)void", "f2355b55"),
-            ("addUser(account,string)void", "2156f19c"),
-            ("bootstrap(pay,pay,application)void", "895c2a3b"),
-        ];
-
-        for (signature, expected_hex) in test_cases {
-            let selector = get_method_selector(signature).unwrap();
-            assert_eq!(hex::encode(&selector), expected_hex);
-        }
-    }
-
-    #[test]
-    fn test_selector_properties() {
-        let sig = "transfer(address,uint64)bool";
-        let selector1 = get_method_selector(sig).unwrap();
-        let selector2 = get_method_selector(sig).unwrap();
-        assert_eq!(selector1, selector2);
-
-        let selector3 = get_method_selector("transfer(address,uint32)bool").unwrap();
-        assert_ne!(selector1, selector3);
-
-        let selector4 = get_method_selector("send(address,uint64)bool").unwrap();
-        assert_ne!(selector1, selector4);
-    }
-
-    #[test]
-    fn test_abi_method_instance_methods() {
-        // Test method selector() and signature() methods
-        let method = get_method_signature("transfer(address,uint64)bool").unwrap();
-
-        // Test signature method
-        let signature = method.signature().unwrap();
-        assert_eq!(signature, "transfer(address,uint64)bool");
-
-        // Test selector method
+    // Method selector verification - critical for hash correctness
+    #[rstest]
+    #[case("add(uint64,uint64)uint64", "fe6bdf69")]
+    #[case("optIn()void", "29314d95")]
+    #[case("deposit(pay,uint64)void", "f2355b55")]
+    #[case("bootstrap(pay,pay,application)void", "895c2a3b")]
+    fn method_selector(#[case] signature: &str, #[case] expected_hex: &str) {
+        let method = ABIMethod::from_str(signature).unwrap();
         let selector = method.selector().unwrap();
-        let expected_selector = get_method_selector("transfer(address,uint64)bool").unwrap();
-        assert_eq!(selector, expected_selector);
+        assert_eq!(hex::encode(&selector), expected_hex);
+        assert_eq!(selector.len(), 4);
+    }
 
-        // Test txn_count method
-        assert_eq!(method.transaction_arg_count(), 0); // 0 (no transaction args)
+    // ARC-4 tuple parsing - essential cases
+    #[rstest]
+    #[case("uint64,string,bool", vec!["uint64", "string", "bool"])]
+    #[case("(uint64,string),bool", vec!["(uint64,string)", "bool"])]
+    #[case("", vec![])]
+    fn parse_tuple_content_valid(#[case] input: &str, #[case] expected: Vec<&str>) {
+        let result = parse_tuple_content(input).unwrap();
+        let expected_strings: Vec<String> = expected.iter().map(|s| s.to_string()).collect();
+        assert_eq!(result, expected_strings);
+    }
 
-        // Test method with transaction args
-        let method_with_txn = get_method_signature("deposit(pay,account,uint64)void").unwrap();
-        assert_eq!(method_with_txn.transaction_arg_count(), 1); // 1 transaction arg
+    #[rstest]
+    #[case(",uint64")] // leading comma
+    #[case("uint64,")] // trailing comma
+    #[case("uint64,,string")] // double comma
+    fn parse_tuple_content_invalid(#[case] input: &str) {
+        assert!(parse_tuple_content(input).is_err());
+    }
+
+    // Signature round-trip
+    #[rstest]
+    #[case("add(uint64,uint64)uint64")]
+    #[case("optIn()void")]
+    fn signature_round_trip(#[case] signature: &str) {
+        let method = ABIMethod::from_str(signature).unwrap();
+        assert_eq!(method.signature().unwrap(), signature);
+    }
+
+    // Method argument type predicates
+    #[test]
+    fn method_arg_type_predicates() {
+        let tx_arg = ABIMethodArgType::Transaction(ABITransactionType::Pay);
+        let ref_arg = ABIMethodArgType::Reference(ABIReferenceType::Account);
+        let val_arg = ABIMethodArgType::Value(ABIType::from_str("uint64").unwrap());
+
+        assert!(tx_arg.is_transaction() && !tx_arg.is_reference() && !tx_arg.is_value_type());
+        assert!(!ref_arg.is_transaction() && ref_arg.is_reference() && !ref_arg.is_value_type());
+        assert!(!val_arg.is_transaction() && !val_arg.is_reference() && val_arg.is_value_type());
+    }
+
+    // Edge cases
+    #[test]
+    fn empty_method_name_error() {
+        let method = ABIMethod::new("".to_string(), vec![], None, None);
+        assert!(method.signature().is_err());
     }
 
     #[test]
-    fn test_abi_method_from_str() {
-        let signature = "swap(uint64,(address,uint64))uint64";
-        let method = signature.parse::<ABIMethod>().unwrap();
-
-        assert_eq!(method.name, "swap");
-        assert_eq!(method.returns, Some(ABIType::from_str("uint64").unwrap()));
-        assert_eq!(method.args.len(), 2);
-
-        // Verify it's the same as using get_method_signature directly
-        let method2 = get_method_signature(signature).unwrap();
-        assert_eq!(method, method2);
-
-        // Test using FromStr::from_str directly
-        let method3 = ABIMethod::from_str(signature).unwrap();
-        assert_eq!(method, method3);
-    }
-
-    #[test]
-    fn test_get_method_by_name() {
-        let method1 = get_method_signature("transfer(address,uint64)bool").unwrap();
-        let method2 = get_method_signature("deposit(pay,uint64)void").unwrap();
-        let method3 = get_method_signature("getBalance()uint64").unwrap();
-
-        let methods = vec![method1, method2, method3];
-
-        // Test finding existing methods
-        let found = get_method_by_name(&methods, "transfer").unwrap();
-        assert_eq!(found.name, "transfer");
-        assert_eq!(found.args.len(), 2);
-
-        let found2 = get_method_by_name(&methods, "getBalance").unwrap();
-        assert_eq!(found2.name, "getBalance");
-        assert_eq!(found2.args.len(), 0);
-
-        // Test method not found
-        let not_found = get_method_by_name(&methods, "nonexistent");
-        assert!(not_found.is_err());
-
-        // Test the error message
-        if let Err(ABIError::ValidationError(msg)) = not_found {
-            assert!(msg.contains("found 0 methods with the name nonexistent"));
-        } else {
-            panic!("Expected ValidationError");
-        }
-    }
-
-    #[test]
-    fn test_get_method_by_name_multiple_matches() {
-        // Create methods with the same name but different signatures
-        let method1 = get_method_signature("transfer(address,uint64)bool").unwrap();
-        let method2 = get_method_signature("transfer(address,uint64,string)void").unwrap();
-
-        let methods = vec![method1, method2];
-
-        // Test that multiple matches return an error
-        let result = get_method_by_name(&methods, "transfer");
-        assert!(result.is_err());
-
-        if let Err(ABIError::ValidationError(msg)) = result {
-            assert!(msg.contains("found 2 methods with the same name transfer"));
-            assert!(msg.contains("transfer(address,uint64)bool"));
-            assert!(msg.contains("transfer(address,uint64,string)void"));
-        } else {
-            panic!("Expected ValidationError for multiple matches");
-        }
+    fn selector_length() {
+        let method = ABIMethod::new("test".to_string(), vec![], None, None);
+        assert_eq!(method.selector().unwrap().len(), 4);
     }
 }

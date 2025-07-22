@@ -324,7 +324,7 @@ impl FromStr for ABIType {
     }
 }
 
-fn parse_tuple_content(content: &str) -> Result<Vec<String>, ABIError> {
+pub(crate) fn parse_tuple_content(content: &str) -> Result<Vec<String>, ABIError> {
     if content.is_empty() {
         return Ok(Vec::new());
     }

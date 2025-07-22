@@ -10,7 +10,4 @@ pub use abi_type::ABIType;
 pub use abi_value::ABIValue;
 pub use error::ABIError;
 
-pub use method::{
-    get_method_selector, get_method_signature, ABIMethod, ABIMethodArg, ABIMethodArgType,
-    ABIReferenceType, ABITransactionType,
-};
+pub use method::{ABIMethod, ABIMethodArg, ABIMethodArgType, ABIReferenceType, ABITransactionType};
