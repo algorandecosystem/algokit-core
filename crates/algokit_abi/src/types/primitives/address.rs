@@ -9,8 +9,6 @@ use crate::{
 };
 
 impl ABIType {
-    /// Encode an address value to ABI format.
-    /// Addresses are encoded as 32-byte public keys.
     pub(crate) fn encode_address(&self, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
         match self {
             ABIType::Address => {
@@ -46,8 +44,6 @@ impl ABIType {
         }
     }
 
-    /// Decode an address value from ABI format.
-    /// Expects exactly 32 bytes and returns an Address ABIValue.
     pub(crate) fn decode_address(&self, bytes: &[u8]) -> Result<ABIValue, ABIError> {
         match self {
             ABIType::Address => {

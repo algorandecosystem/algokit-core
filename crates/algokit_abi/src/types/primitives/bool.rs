@@ -4,8 +4,6 @@ use crate::{
 };
 
 impl ABIType {
-    /// Encode a boolean value to ABI format.
-    /// True values are encoded as 0x80, false values as 0x00.
     pub(crate) fn encode_bool(&self, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
         match self {
             ABIType::Bool => {
@@ -29,8 +27,6 @@ impl ABIType {
         }
     }
 
-    /// Decode a boolean value from ABI format.
-    /// Expects exactly 1 byte: 0x80 for true, 0x00 for false.
     pub(crate) fn decode_bool(&self, bytes: &[u8]) -> Result<ABIValue, ABIError> {
         match self {
             ABIType::Bool => {

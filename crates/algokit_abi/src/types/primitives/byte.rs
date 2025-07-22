@@ -1,8 +1,6 @@
 use crate::{ABIError, ABIType, ABIValue};
 
 impl ABIType {
-    /// Encode a byte value (0-255) to ABI format.
-    /// Values must be in the range 0-255 inclusive.
     pub(crate) fn encode_byte(&self, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
         match self {
             ABIType::Byte => match value {
@@ -17,8 +15,6 @@ impl ABIType {
         }
     }
 
-    /// Decode a byte value from ABI format.
-    /// Expects exactly 1 byte and returns the value as a BigUint.
     pub(crate) fn decode_byte(&self, bytes: &[u8]) -> Result<ABIValue, ABIError> {
         match self {
             ABIType::Byte => {
