@@ -348,38 +348,167 @@ mod tests {
         ABIValue::Uint(BigUint::from(256u64)),
         &[0, 0, 0, 0, 0, 0, 1, 0]
     )]
-    #[case(ABIType::UFixed(BitSize::new(8).unwrap(), Precision::new(30).unwrap()), ABIValue::Uint(BigUint::from(255u8)), &[255])]
-    #[case(ABIType::UFixed(BitSize::new(32).unwrap(), Precision::new(10).unwrap()), ABIValue::Uint(BigUint::from(33u32)), &[0, 0, 0, 33])]
-    #[case(ABIType::Address, ABIValue::Address("MO2H6ZU47Q36GJ6GVHUKGEBEQINN7ZWVACMWZQGIYUOE3RBSRVYHV4ACJI".to_string()), &[99, 180, 127, 102, 156, 252, 55, 227, 39, 198, 169, 232, 163, 16, 36, 130, 26, 223, 230, 213, 0, 153, 108, 192, 200, 197, 28, 77, 196, 50, 141, 112])]
-    #[case(ABIType::String, ABIValue::String("What’s new".to_string()), &[0, 12, 87, 104, 97, 116, 226, 128, 153, 115, 32, 110, 101, 119])]
-    #[case(ABIType::String, ABIValue::String("😅🔨".to_string()), &[0, 8, 240, 159, 152, 133, 240, 159, 148, 168])]
-    #[case(ABIType::Byte, ABIValue::Byte(10), &[10])]
-    #[case(ABIType::Byte, ABIValue::Byte(255), &[255])]
-    #[case(ABIType::Bool, ABIValue::Bool(true), &[128])]
-    #[case(ABIType::Bool, ABIValue::Bool(false), &[0])]
-    #[case(ABIType::String, ABIValue::String("asdf".to_string()), &[0, 4, 97, 115, 100, 102])]
-    #[case(ABIType::StaticArray(Box::new(ABIType::Bool), 3), ABIValue::Array(vec![ABIValue::Bool(true), ABIValue::Bool(true), ABIValue::Bool(false)]), &[192])]
-    #[case(ABIType::StaticArray(Box::new(ABIType::Bool), 8), ABIValue::Array(vec![ABIValue::Bool(false), ABIValue::Bool(true), ABIValue::Bool(false), ABIValue::Bool(false), ABIValue::Bool(false), ABIValue::Bool(false), ABIValue::Bool(false), ABIValue::Bool(false)]), &[64])]
-    #[case(ABIType::StaticArray(Box::new(ABIType::Bool), 8), ABIValue::Array(vec![ABIValue::Bool(true), ABIValue::Bool(true), ABIValue::Bool(true), ABIValue::Bool(true), ABIValue::Bool(true), ABIValue::Bool(true), ABIValue::Bool(true), ABIValue::Bool(true)]), &[255])]
-    #[case(ABIType::StaticArray(Box::new(ABIType::Bool), 9), ABIValue::Array(vec![ABIValue::Bool(true), ABIValue::Bool(false), ABIValue::Bool(false), ABIValue::Bool(true), ABIValue::Bool(false), ABIValue::Bool(false), ABIValue::Bool(true), ABIValue::Bool(false), ABIValue::Bool(true)]), &[146, 128])]
-    #[case(ABIType::StaticArray(Box::new(ABIType::Uint(BitSize::new(64).unwrap())), 3), ABIValue::Array(vec![ABIValue::Uint(BigUint::from(1u64)), ABIValue::Uint(BigUint::from(2u64)), ABIValue::Uint(BigUint::from(3u64))]), &[0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 3])]
-    #[case(ABIType::DynamicArray(Box::new(ABIType::Bool)), ABIValue::Array(vec![]), &[0, 0])]
-    #[case(ABIType::DynamicArray(Box::new(ABIType::Bool)), ABIValue::Array(vec![ABIValue::Bool(true), ABIValue::Bool(true), ABIValue::Bool(false)]), &[0, 3, 192])]
-    #[case(ABIType::DynamicArray(Box::new(ABIType::Bool)), ABIValue::Array(vec![ABIValue::Bool(false), ABIValue::Bool(true), ABIValue::Bool(false), ABIValue::Bool(false), ABIValue::Bool(false), ABIValue::Bool(false), ABIValue::Bool(false), ABIValue::Bool(false)]), &[0, 8, 64])]
-    #[case(ABIType::DynamicArray(Box::new(ABIType::Bool)), ABIValue::Array(vec![ABIValue::Bool(true), ABIValue::Bool(false), ABIValue::Bool(false), ABIValue::Bool(true), ABIValue::Bool(false), ABIValue::Bool(false), ABIValue::Bool(true), ABIValue::Bool(false), ABIValue::Bool(true)]), &[0, 9, 146, 128])]
-    #[case(ABIType::from_str("()").unwrap(), ABIValue::Array(vec![]), &[])]
-    #[case(ABIType::from_str("(bool,bool,bool)").unwrap(), ABIValue::Array(vec![ABIValue::Bool(false), ABIValue::Bool(true), ABIValue::Bool(true)]), &[96])]
-    #[case(ABIType::from_str("(bool[3])").unwrap(), ABIValue::Array(vec![ABIValue::Array(vec![ABIValue::Bool(false), ABIValue::Bool(true), ABIValue::Bool(true)])]), &[96])]
-    #[case(ABIType::from_str("(bool[])").unwrap(), ABIValue::Array(vec![ABIValue::Array(vec![ABIValue::Bool(false), ABIValue::Bool(true), ABIValue::Bool(true)])]), &[0, 2, 0, 3, 96])]
-    #[case(ABIType::from_str("(bool[2],bool[])").unwrap(), ABIValue::Array(vec![ABIValue::Array(vec![ABIValue::Bool(true), ABIValue::Bool(true)]), ABIValue::Array(vec![ABIValue::Bool(true), ABIValue::Bool(true)])]), &[192, 0, 3, 0, 2, 192])]
-    #[case(ABIType::from_str("(bool[],bool[])").unwrap(), ABIValue::Array(vec![ABIValue::Array(vec![]), ABIValue::Array(vec![])]), &[0, 4, 0, 6, 0, 0, 0, 0])]
-    #[case(ABIType::from_str("(string,bool,bool,bool,bool,string)").unwrap(), ABIValue::Array(vec![ABIValue::String("AB".to_string()), ABIValue::Bool(true), ABIValue::Bool(false), ABIValue::Bool(true), ABIValue::Bool(false), ABIValue::String("DE".to_string())]), &[0, 5, 160, 0, 9, 0, 2, 65, 66, 0, 2, 68, 69])]
-    #[case(ABIType::Tuple(vec![ABIType::Uint(BitSize::new(8).unwrap()), ABIType::Uint(BitSize::new(16).unwrap())]), ABIValue::Array(vec![ABIValue::Uint(BigUint::from(1u8)), ABIValue::Uint(BigUint::from(2u16))]), &[1, 0, 2])]
-    #[case(ABIType::Tuple(vec![ABIType::Uint(BitSize::new(32).unwrap()), ABIType::Uint(BitSize::new(32).unwrap())]), ABIValue::Array(vec![ABIValue::Uint(BigUint::from(1u32)), ABIValue::Uint(BigUint::from(2u16))]), &[0, 0, 0, 1, 0, 0, 0, 2])]
-    #[case(ABIType::Tuple(vec![ABIType::Uint(BitSize::new(32).unwrap()), ABIType::String]), ABIValue::Array(vec![ABIValue::Uint(BigUint::from(42u32)), ABIValue::String("hello".to_string())]), &[0, 0, 0, 42, 0, 6, 0, 5, 104, 101, 108, 108, 111])]
-    #[case(ABIType::Tuple(vec![ABIType::Uint(BitSize::new(16).unwrap()), ABIType::Bool]), ABIValue::Array(vec![ABIValue::Uint(BigUint::from(1234u32)), ABIValue::Bool(false)]), &[4, 210, 0])]
-    #[case(ABIType::Tuple(vec![ABIType::Uint(BitSize::new(32).unwrap()), ABIType::String, ABIType::Bool]), ABIValue::Array(vec![ABIValue::Uint(BigUint::from(42u32)), ABIValue::String("test".to_string()), ABIValue::Bool(false)]), &[0, 0, 0, 42, 0, 7, 0, 0, 4, 116, 101, 115, 116])]
-    #[case(ABIType::from_str("(uint16,(byte,address))").unwrap(), ABIValue::Array(vec![ABIValue::Uint(BigUint::from(42u32)), ABIValue::Array(vec![ABIValue::Byte(234), ABIValue::Address("MO2H6ZU47Q36GJ6GVHUKGEBEQINN7ZWVACMWZQGIYUOE3RBSRVYHV4ACJI".to_string())])]), &[0, 42, 234, 99, 180, 127, 102, 156, 252, 55, 227, 39, 198, 169, 232, 163, 16, 36, 130, 26, 223, 230, 213, 0, 153, 108, 192, 200, 197, 28, 77, 196, 50, 141, 112])]
+    #[case(
+        ABIType::UFixed(BitSize::new(8).unwrap(), Precision::new(30).unwrap()),
+        ABIValue::Uint(BigUint::from(255u8)),
+        &[255]
+    )]
+    #[case(
+        ABIType::UFixed(BitSize::new(32).unwrap(), Precision::new(10).unwrap()),
+        ABIValue::Uint(BigUint::from(33u32)),
+        &[0, 0, 0, 33]
+    )]
+    #[case(
+        ABIType::Address,
+        ABIValue::Address("MO2H6ZU47Q36GJ6GVHUKGEBEQINN7ZWVACMWZQGIYUOE3RBSRVYHV4ACJI".to_string()),
+        &[
+            99, 180, 127, 102, 156, 252, 55, 227, 39, 198, 169, 232, 163, 16, 36, 130, 26, 223, 230, 213, 0, 153, 108, 192, 200, 197, 28, 77, 196, 50, 141, 112
+        ]
+    )]
+    #[case(
+        ABIType::String,
+        ABIValue::String("What’s new".to_string()),
+        &[0, 12, 87, 104, 97, 116, 226, 128, 153, 115, 32, 110, 101, 119]
+    )]
+    #[case(
+        ABIType::String,
+        ABIValue::String("😅🔨".to_string()),
+        &[0, 8, 240, 159, 152, 133, 240, 159, 148, 168]
+    )]
+    #[case(
+        ABIType::Byte,
+        ABIValue::Byte(10),
+        &[10]
+    )]
+    #[case(
+        ABIType::Byte,
+        ABIValue::Byte(255),
+        &[255]
+    )]
+    #[case(
+        ABIType::Bool,
+        ABIValue::Bool(true),
+        &[128]
+    )]
+    #[case(
+        ABIType::Bool,
+        ABIValue::Bool(false),
+        &[0]
+    )]
+    #[case(
+        ABIType::String,
+        ABIValue::String("asdf".to_string()),
+        &[0, 4, 97, 115, 100, 102]
+    )]
+    #[case(
+        ABIType::StaticArray(Box::new(ABIType::Bool), 3),
+        ABIValue::Array(vec![ABIValue::Bool(true), ABIValue::Bool(true), ABIValue::Bool(false)]),
+        &[192]
+    )]
+    #[case(
+        ABIType::StaticArray(Box::new(ABIType::Bool), 8),
+        ABIValue::Array(vec![ABIValue::Bool(false), ABIValue::Bool(true), ABIValue::Bool(false), ABIValue::Bool(false), ABIValue::Bool(false), ABIValue::Bool(false), ABIValue::Bool(false), ABIValue::Bool(false)]),
+        &[64]
+    )]
+    #[case(
+        ABIType::StaticArray(Box::new(ABIType::Bool), 8),
+        ABIValue::Array(vec![ABIValue::Bool(true), ABIValue::Bool(true), ABIValue::Bool(true), ABIValue::Bool(true), ABIValue::Bool(true), ABIValue::Bool(true), ABIValue::Bool(true), ABIValue::Bool(true)]),
+        &[255]
+    )]
+    #[case(
+        ABIType::StaticArray(Box::new(ABIType::Bool), 9),
+        ABIValue::Array(vec![ABIValue::Bool(true), ABIValue::Bool(false), ABIValue::Bool(false), ABIValue::Bool(true), ABIValue::Bool(false), ABIValue::Bool(false), ABIValue::Bool(true), ABIValue::Bool(false), ABIValue::Bool(true)]),
+        &[146, 128]
+    )]
+    #[case(
+        ABIType::StaticArray(Box::new(ABIType::Uint(BitSize::new(64).unwrap())), 3),
+        ABIValue::Array(vec![ABIValue::Uint(BigUint::from(1u64)), ABIValue::Uint(BigUint::from(2u64)), ABIValue::Uint(BigUint::from(3u64))]),
+        &[0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 3]
+    )]
+    #[case(
+        ABIType::DynamicArray(Box::new(ABIType::Bool)),
+        ABIValue::Array(vec![]),
+        &[0, 0]
+    )]
+    #[case(
+        ABIType::DynamicArray(Box::new(ABIType::Bool)),
+        ABIValue::Array(vec![ABIValue::Bool(true), ABIValue::Bool(true), ABIValue::Bool(false)]),
+        &[0, 3, 192]
+    )]
+    #[case(
+        ABIType::DynamicArray(Box::new(ABIType::Bool)),
+        ABIValue::Array(vec![ABIValue::Bool(false), ABIValue::Bool(true), ABIValue::Bool(false), ABIValue::Bool(false), ABIValue::Bool(false), ABIValue::Bool(false), ABIValue::Bool(false), ABIValue::Bool(false)]),
+        &[0, 8, 64]
+    )]
+    #[case(
+        ABIType::DynamicArray(Box::new(ABIType::Bool)),
+        ABIValue::Array(vec![ABIValue::Bool(true), ABIValue::Bool(false), ABIValue::Bool(false), ABIValue::Bool(true), ABIValue::Bool(false), ABIValue::Bool(false), ABIValue::Bool(true), ABIValue::Bool(false), ABIValue::Bool(true)]),
+        &[0, 9, 146, 128]
+    )]
+    #[case(
+        ABIType::from_str("()").unwrap(),
+        ABIValue::Array(vec![]),
+        &[]
+    )]
+    #[case(
+        ABIType::from_str("(bool,bool,bool)").unwrap(),
+        ABIValue::Array(vec![ABIValue::Bool(false), ABIValue::Bool(true), ABIValue::Bool(true)]),
+        &[96]
+    )]
+    #[case(
+        ABIType::from_str("(bool[3])").unwrap(),
+        ABIValue::Array(vec![ABIValue::Array(vec![ABIValue::Bool(false), ABIValue::Bool(true), ABIValue::Bool(true)])]),
+        &[96]
+    )]
+    #[case(
+        ABIType::from_str("(bool[])").unwrap(),
+        ABIValue::Array(vec![ABIValue::Array(vec![ABIValue::Bool(false), ABIValue::Bool(true), ABIValue::Bool(true)])]),
+        &[0, 2, 0, 3, 96]
+    )]
+    #[case(
+        ABIType::from_str("(bool[2],bool[])").unwrap(),
+        ABIValue::Array(vec![ABIValue::Array(vec![ABIValue::Bool(true), ABIValue::Bool(true)]), ABIValue::Array(vec![ABIValue::Bool(true), ABIValue::Bool(true)])]),
+        &[192, 0, 3, 0, 2, 192]
+    )]
+    #[case(
+        ABIType::from_str("(bool[],bool[])").unwrap(),
+        ABIValue::Array(vec![ABIValue::Array(vec![]), ABIValue::Array(vec![])]),
+        &[0, 4, 0, 6, 0, 0, 0, 0]
+    )]
+    #[case(
+        ABIType::from_str("(string,bool,bool,bool,bool,string)").unwrap(),
+        ABIValue::Array(vec![ABIValue::String("AB".to_string()), ABIValue::Bool(true), ABIValue::Bool(false), ABIValue::Bool(true), ABIValue::Bool(false), ABIValue::String("DE".to_string())]),
+        &[0, 5, 160, 0, 9, 0, 2, 65, 66, 0, 2, 68, 69]
+    )]
+    #[case(
+        ABIType::Tuple(vec![ABIType::Uint(BitSize::new(8).unwrap()),
+        ABIType::Uint(BitSize::new(16).unwrap())]), ABIValue::Array(vec![ABIValue::Uint(BigUint::from(1u8)), ABIValue::Uint(BigUint::from(2u16))]),
+        &[1, 0, 2]
+    )]
+    #[case(
+        ABIType::Tuple(vec![ABIType::Uint(BitSize::new(32).unwrap()),
+        ABIType::Uint(BitSize::new(32).unwrap())]), ABIValue::Array(vec![ABIValue::Uint(BigUint::from(1u32)), ABIValue::Uint(BigUint::from(2u16))]),
+        &[0, 0, 0, 1, 0, 0, 0, 2]
+    )]
+    #[case(
+        ABIType::Tuple(vec![ABIType::Uint(BitSize::new(32).unwrap()),
+        ABIType::String]), ABIValue::Array(vec![ABIValue::Uint(BigUint::from(42u32)), ABIValue::String("hello".to_string())]),
+        &[0, 0, 0, 42, 0, 6, 0, 5, 104, 101, 108, 108, 111]
+    )]
+    #[case(
+        ABIType::Tuple(vec![ABIType::Uint(BitSize::new(16).unwrap()),
+        ABIType::Bool]), ABIValue::Array(vec![ABIValue::Uint(BigUint::from(1234u32)), ABIValue::Bool(false)]),
+        &[4, 210, 0]
+    )]
+    #[case(
+        ABIType::Tuple(vec![ABIType::Uint(BitSize::new(32).unwrap()),
+        ABIType::String, ABIType::Bool]), ABIValue::Array(vec![ABIValue::Uint(BigUint::from(42u32)), ABIValue::String("test".to_string()), ABIValue::Bool(false)]),
+        &[0, 0, 0, 42, 0, 7, 0, 0, 4, 116, 101, 115, 116]
+    )]
+    #[case(
+        ABIType::from_str("(uint16,(byte,address))").unwrap(),
+        ABIValue::Array(vec![ABIValue::Uint(BigUint::from(42u32)), ABIValue::Array(vec![ABIValue::Byte(234), ABIValue::Address("MO2H6ZU47Q36GJ6GVHUKGEBEQINN7ZWVACMWZQGIYUOE3RBSRVYHV4ACJI".to_string())])]),
+        &[0, 42, 234, 99, 180, 127, 102, 156, 252, 55, 227, 39, 198, 169, 232, 163, 16, 36, 130, 26, 223, 230, 213, 0, 153, 108, 192, 200, 197, 28, 77, 196, 50, 141, 112])]
     fn should_round_trip(
         #[case] abi_type: ABIType,
         #[case] abi_value: ABIValue,
