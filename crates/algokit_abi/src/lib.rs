@@ -1,3 +1,4 @@
+//! A library for encoding and decoding Algorand ABI types as defined in [ARC-4](https://arc.algorand.foundation/ARCs/arc-0004).
 pub mod abi_type;
 pub mod abi_value;
 pub mod constants;

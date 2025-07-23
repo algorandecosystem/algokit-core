@@ -42,7 +42,8 @@ impl ABIType {
         }
 
         // The first 2 bytes in the value determines how many values in the array
-        let values_count = u16::from_be_bytes([value[0], value[1]]);
+        let (len_bytes, _) = value.split_at(LENGTH_ENCODE_BYTE_SIZE);
+        let values_count = u16::from_be_bytes(len_bytes.try_into().unwrap());
 
         let child_type = match self {
             ABIType::DynamicArray(child_type) => child_type,

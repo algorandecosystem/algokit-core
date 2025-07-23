@@ -7,25 +7,23 @@ use std::str::FromStr;
 /// Constant for void return type in method signatures.
 const VOID_RETURN_TYPE: &str = "void";
 
-/// Transaction type in an ABI method argument.
-/// These represent transactions that must be placed immediately before
-/// the application call in the transaction group.
+/// Represents a transaction type that can be used as an ABI method argument.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ABITransactionType {
     /// Any transaction type
     Txn,
-    /// Payment transaction (algo transfer)
-    Pay,
-    /// Key registration transaction (configure consensus participation)
-    KeyReg,
-    /// Asset configuration transaction (create, configure, or destroy ASAs)
+    /// Payment (algo transfer)
+    Payment,
+    /// Key registration (configure consensus participation)
+    KeyRegistration,
+    /// Asset configuration (create, configure, or destroy ASAs)
     AssetConfig,
-    /// Asset transfer transaction (ASA transfer)
+    /// Asset transfer (ASA transfer)
     AssetTransfer,
-    /// Asset freeze transaction (freeze or unfreeze ASAs)
+    /// Asset freeze (freeze or unfreeze ASAs)
     AssetFreeze,
-    /// Application call transaction (create/invoke an application)
-    AppCall,
+    /// Application call (create, update, delete and call an application)
+    ApplicationCall,
 }
 
 impl FromStr for ABITransactionType {
@@ -34,12 +32,12 @@ impl FromStr for ABITransactionType {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "txn" => Ok(ABITransactionType::Txn),
-            "pay" => Ok(ABITransactionType::Pay),
-            "keyreg" => Ok(ABITransactionType::KeyReg),
+            "pay" => Ok(ABITransactionType::Payment),
+            "keyreg" => Ok(ABITransactionType::KeyRegistration),
             "acfg" => Ok(ABITransactionType::AssetConfig),
             "axfer" => Ok(ABITransactionType::AssetTransfer),
             "afrz" => Ok(ABITransactionType::AssetFreeze),
-            "appl" => Ok(ABITransactionType::AppCall),
+            "appl" => Ok(ABITransactionType::ApplicationCall),
             _ => Err(ABIError::ValidationError(format!(
                 "Invalid transaction type: {}",
                 s
@@ -52,26 +50,25 @@ impl Display for ABITransactionType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
             ABITransactionType::Txn => "txn",
-            ABITransactionType::Pay => "pay",
-            ABITransactionType::KeyReg => "keyreg",
+            ABITransactionType::Payment => "pay",
+            ABITransactionType::KeyRegistration => "keyreg",
             ABITransactionType::AssetConfig => "acfg",
             ABITransactionType::AssetTransfer => "axfer",
             ABITransactionType::AssetFreeze => "afrz",
-            ABITransactionType::AppCall => "appl",
+            ABITransactionType::ApplicationCall => "appl",
         };
         write!(f, "{}", s)
     }
 }
 
-/// Reference type in an ABI method argument.
-/// These are encoded as uint8 indices into the transaction's foreign arrays.
+/// Represents a reference type that can be used as an ABI method argument.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ABIReferenceType {
-    /// Reference to an account in the Accounts (apat) array
+    /// Reference to an account in the Accounts reference array
     Account,
-    /// Reference to an application in the Foreign Apps (apfa) array
+    /// Reference to an application in the Applications reference array
     Application,
-    /// Reference to an asset in the Foreign Assets (apas) array
+    /// Reference to an asset in the Assets reference array
     Asset,
 }
 
@@ -102,17 +99,14 @@ impl Display for ABIReferenceType {
     }
 }
 
-/// Category of an ABI method argument.
+/// Represents the category of an ABI method argument, which can be a value, a transaction, or a reference.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ABIMethodArgType {
-    /// Value types (uint64, string, tuples, arrays, etc.) that are directly encoded in ApplicationArgs
-    /// These represent actual data values passed to the method
+    /// A value that is directly encoded in the application arguments.
     Value(ABIType),
-    /// Transaction types that are placed as preceding transactions in the group
-    /// These don't occupy space in ApplicationArgs
+    /// A transaction that is placed immediately before the application call in the transaction group.
     Transaction(ABITransactionType),
-    /// Reference types encoded as uint8 indices into foreign arrays
-    /// These are encoded in ApplicationArgs as indices
+    /// A reference to an account, asset, or application that is encoded as an index into a reference array.
     Reference(ABIReferenceType),
 }
 
@@ -153,64 +147,71 @@ impl FromStr for ABIMethodArgType {
     }
 }
 
-/// Parsed ABI method.
+/// Represents a parsed ABI method, including its name, arguments, and return type.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ABIMethod {
+    /// The name of the method.
     pub name: String,
+    /// A list of the method's arguments.
     pub args: Vec<ABIMethodArg>,
+    /// The return type of the method, or `None` if the method does not return a value.
     pub returns: Option<ABIType>,
-    pub desc: Option<String>,
+    /// An optional description of the method.
+    pub description: Option<String>,
 }
 
-/// Argument in an ABI method.
+/// Represents an argument in an ABI method.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ABIMethodArg {
-    pub r#type: ABIMethodArgType,
+    /// The type of the argument.
+    pub arg_type: ABIMethodArgType,
+    /// An optional name for the argument.
     pub name: Option<String>,
-    pub desc: Option<String>,
+    /// An optional description of the argument.
+    pub description: Option<String>,
 }
 
 impl ABIMethod {
-    /// Create a new ABIMethod.
+    /// Creates a new ABI method.
     pub fn new(
         name: String,
         args: Vec<ABIMethodArg>,
         returns: Option<ABIType>,
-        desc: Option<String>,
+        description: Option<String>,
     ) -> Self {
         Self {
             name,
             args,
             returns,
-            desc,
+            description,
         }
     }
 
-    /// Get the number of transaction arguments.
+    /// Returns the number of transaction arguments in the method.
     pub fn transaction_arg_count(&self) -> usize {
         self.args
             .iter()
-            .filter(|arg| arg.r#type.is_transaction())
+            .filter(|arg| arg.arg_type.is_transaction())
             .count()
     }
 
-    /// Get the number of reference arguments.
+    /// Returns the number of reference arguments in the method.
     pub fn reference_arg_count(&self) -> usize {
         self.args
             .iter()
-            .filter(|arg| arg.r#type.is_reference())
+            .filter(|arg| arg.arg_type.is_reference())
             .count()
     }
 
-    /// Get the number of value type arguments (directly encoded in ApplicationArgs).
+    /// Returns the number of value-type arguments in the method.
     pub fn value_arg_count(&self) -> usize {
         self.args
             .iter()
-            .filter(|arg| arg.r#type.is_value_type())
+            .filter(|arg| arg.arg_type.is_value_type())
             .count()
     }
 
-    /// Get the method selector (4-byte hash).
+    /// Returns the method selector, which is the first 4 bytes of the SHA-512/256 hash of the method signature.
     pub fn selector(&self) -> Result<Vec<u8>, ABIError> {
         let signature = self.signature()?;
         if signature.chars().any(|c| c.is_whitespace()) {
@@ -226,7 +227,7 @@ impl ABIMethod {
         Ok(hash[..4].to_vec())
     }
 
-    /// Get the method signature string.
+    /// Returns the method signature as a string.
     pub fn signature(&self) -> Result<String, ABIError> {
         if self.name.is_empty() {
             return Err(ABIError::ValidationError(
@@ -237,7 +238,7 @@ impl ABIMethod {
         let arg_types: Vec<String> = self
             .args
             .iter()
-            .map(|arg| match &arg.r#type {
+            .map(|arg| match &arg.arg_type {
                 ABIMethodArgType::Value(abi_type) => abi_type.to_string(),
                 ABIMethodArgType::Transaction(tx_type) => tx_type.to_string(),
                 ABIMethodArgType::Reference(ref_type) => ref_type.to_string(),
@@ -245,8 +246,8 @@ impl ABIMethod {
             .collect();
 
         // Validate each argument type
-        for r#type in &arg_types {
-            ABIMethodArgType::from_str(r#type)?;
+        for arg_type in &arg_types {
+            ABIMethodArgType::from_str(arg_type)?;
         }
 
         let return_type = self
@@ -309,8 +310,8 @@ impl FromStr for ABIMethod {
 
         // Parse each argument
         let mut args = Vec::new();
-        for (i, r#type) in arguments.iter().enumerate() {
-            let _type = ABIMethodArgType::from_str(r#type)?;
+        for (i, arg_type) in arguments.iter().enumerate() {
+            let _type = ABIMethodArgType::from_str(arg_type)?;
             let arg_name = Some(format!("arg{}", i));
             let arg = ABIMethodArg::new(_type, arg_name, None);
             args.push(arg);
@@ -331,9 +332,17 @@ impl FromStr for ABIMethod {
 }
 
 impl ABIMethodArg {
-    /// Create a new ABIMethodArg.
-    pub fn new(r#type: ABIMethodArgType, name: Option<String>, desc: Option<String>) -> Self {
-        Self { r#type, name, desc }
+    /// Creates a new ABI method argument.
+    pub fn new(
+        arg_type: ABIMethodArgType,
+        name: Option<String>,
+        description: Option<String>,
+    ) -> Self {
+        Self {
+            arg_type,
+            name,
+            description,
+        }
     }
 }
 
@@ -394,12 +403,12 @@ mod tests {
     // Transaction type parsing with round-trip validation
     #[rstest]
     #[case("txn", ABITransactionType::Txn)]
-    #[case("pay", ABITransactionType::Pay)]
-    #[case("keyreg", ABITransactionType::KeyReg)]
+    #[case("pay", ABITransactionType::Payment)]
+    #[case("keyreg", ABITransactionType::KeyRegistration)]
     #[case("acfg", ABITransactionType::AssetConfig)]
     #[case("axfer", ABITransactionType::AssetTransfer)]
     #[case("afrz", ABITransactionType::AssetFreeze)]
-    #[case("appl", ABITransactionType::AppCall)]
+    #[case("appl", ABITransactionType::ApplicationCall)]
     fn transaction_type_from_str(#[case] input: &str, #[case] expected: ABITransactionType) {
         assert_eq!(ABITransactionType::from_str(input).unwrap(), expected);
         assert_eq!(expected.to_string(), input);
@@ -427,7 +436,7 @@ mod tests {
 
     // Method argument type parsing - consolidated test
     #[rstest]
-    #[case("pay", ABIMethodArgType::Transaction(ABITransactionType::Pay))]
+    #[case("pay", ABIMethodArgType::Transaction(ABITransactionType::Payment))]
     #[case("account", ABIMethodArgType::Reference(ABIReferenceType::Account))]
     fn method_arg_type_from_str_special(#[case] input: &str, #[case] expected: ABIMethodArgType) {
         assert_eq!(ABIMethodArgType::from_str(input).unwrap(), expected);
@@ -525,7 +534,7 @@ mod tests {
     // Method argument type predicates
     #[test]
     fn method_arg_type_predicates() {
-        let tx_arg = ABIMethodArgType::Transaction(ABITransactionType::Pay);
+        let tx_arg = ABIMethodArgType::Transaction(ABITransactionType::Payment);
         let ref_arg = ABIMethodArgType::Reference(ABIReferenceType::Account);
         let val_arg = ABIMethodArgType::Value(ABIType::from_str("uint64").unwrap());
 

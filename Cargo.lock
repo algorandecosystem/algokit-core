@@ -96,7 +96,6 @@ dependencies = [
  "convert_case 0.8.0",
  "derive_builder",
  "ed25519-dalek",
- "num-bigint",
  "pretty_assertions",
  "rmp",
  "rmp-serde",

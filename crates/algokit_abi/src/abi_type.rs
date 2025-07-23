@@ -11,10 +11,7 @@ use std::{
     str::FromStr,
 };
 
-/// Represents the bit size for ABI uint and ufixed types.
-///
-/// Validates that bit sizes are valid (8-512 bits, divisible by 8).
-/// See [ARC-0004](https://arc.algorand.foundation/ARCs/arc-0004#types) for type specifications.
+/// Represents a validated bit size for ABI uint and ufixed types (8-512, multiple of 8).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BitSize(u16);
 
@@ -45,10 +42,7 @@ impl BitSize {
     }
 }
 
-/// Represents the precision for ABI fixed-point types.
-///
-/// Validates precision values for ufixed types (0-160).
-/// See [ARC-0004](https://arc.algorand.foundation/ARCs/arc-0004#types) for type specifications.
+/// Represents a validated precision for ufixed ABI types (0-160).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Precision(u8);
 
@@ -79,20 +73,26 @@ impl Precision {
     }
 }
 
-/// Represents an Algorand ABI type for encoding and decoding values.
-///
-/// Supports all ABI types defined in [ARC-0004](https://arc.algorand.foundation/ARCs/arc-0004#types):
-/// integers, fixed-point numbers, addresses, strings, bytes, booleans, arrays, and tuples.
+/// Represents an Algorand ABI type for encoding and decoding values as defined in [ARC-0004](https://arc.algorand.foundation/ARCs/arc-0004#types).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ABIType {
+    /// An unsigned integer of a specific bit size.
     Uint(BitSize),
+    /// A fixed-point number of a specific bit size and precision.
     UFixed(BitSize, Precision),
+    /// An Algorand address.
     Address,
+    /// A tuple of other ABI types.
     Tuple(Vec<ABIType>),
+    /// A dynamic-length string.
     String,
+    /// A single byte.
     Byte,
+    /// A boolean value.
     Bool,
+    /// A static-length array of another ABI type.
     StaticArray(Box<ABIType>, usize),
+    /// A dynamic-length array of another ABI type.
     DynamicArray(Box<ABIType>),
 }
 
@@ -149,8 +149,7 @@ impl ABIType {
         match self {
             ABIType::StaticArray(child_type, _) => child_type.is_dynamic(),
             ABIType::Tuple(child_types) => child_types.iter().any(|t| t.is_dynamic()),
-            ABIType::DynamicArray(_) => true,
-            ABIType::String => true,
+            ABIType::DynamicArray(_) | ABIType::String => true,
             _ => false,
         }
     }
