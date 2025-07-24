@@ -64,7 +64,7 @@ pre-commit run --all-files
 pre-commit install # to auto run on each commit
 ```
 
-The hooks will automatically run `cargo fmt --check`, `cargo clippy`, `cargo check`, and `cargo test` on every commit.
+The hooks will automatically run `cargo fmt --check`, `cargo clippy`, `cargo check`, `cargo test`, and `cargo check --no-default-features --features ffi_wasm` on every commit.
 
 ## Development Workflow
 
