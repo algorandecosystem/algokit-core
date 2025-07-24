@@ -59,7 +59,7 @@ This repository includes [pre-commit](https://pre-commit.com/) hooks that run th
 
 **Run hooks manually on all files:**
 ```bash
-pre-commit run --all-files 
+pre-commit run --all-files
 # or 
 pre-commit install # to auto run on each commit
 ```
