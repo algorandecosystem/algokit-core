@@ -450,7 +450,7 @@ impl ApplicationCallTransactionFields {
         }
 
         // Validate combined program size
-        if let (Some(ref approval_program), Some(ref clear_state_program)) =
+        if let (Some(approval_program), Some(clear_state_program)) =
             (&self.approval_program, &self.clear_state_program)
         {
             let total_size = approval_program.len() + clear_state_program.len();
