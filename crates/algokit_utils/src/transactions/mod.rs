@@ -8,8 +8,8 @@ pub mod payment;
 
 // Re-export commonly used transaction types
 pub use application_call::{
-    ApplicationCallParams, ApplicationCreateParams, ApplicationDeleteParams,
-    ApplicationUpdateParams,
+    AppCallMethodCallParams, ApplicationCallParams, ApplicationCreateParams,
+    ApplicationDeleteParams, ApplicationUpdateParams,
 };
 pub use asset_config::{AssetCreateParams, AssetDestroyParams, AssetReconfigureParams};
 pub use asset_freeze::{AssetFreezeParams, AssetUnfreezeParams};

@@ -11,9 +11,9 @@ pub use testing::{
     AlgorandFixture, AlgorandTestContext, algorand_fixture, algorand_fixture_with_config,
 };
 pub use transactions::{
-    AccountCloseParams, ApplicationCallParams, ApplicationCreateParams, ApplicationDeleteParams,
-    ApplicationUpdateParams, AssetCreateParams, AssetDestroyParams, AssetReconfigureParams,
-    CommonParams, Composer, ComposerError, ComposerTransaction, EmptySigner,
-    NonParticipationKeyRegistrationParams, OfflineKeyRegistrationParams,
+    AccountCloseParams, AppCallMethodCallParams, ApplicationCallParams, ApplicationCreateParams,
+    ApplicationDeleteParams, ApplicationUpdateParams, AssetCreateParams, AssetDestroyParams,
+    AssetReconfigureParams, CommonParams, Composer, ComposerError, ComposerTransaction,
+    EmptySigner, NonParticipationKeyRegistrationParams, OfflineKeyRegistrationParams,
     OnlineKeyRegistrationParams, PaymentParams, TransactionSigner, TransactionSignerGetter,
 };

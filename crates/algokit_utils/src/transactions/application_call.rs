@@ -1,6 +1,22 @@
 use super::common::CommonParams;
 use algokit_transact::{Address, BoxReference, OnApplicationComplete, StateSchema};
 
+/// Parameters for ABI method call transactions.
+#[derive(Debug, Clone)]
+pub struct AppCallMethodCallParams {
+    pub common_params: CommonParams,
+    /// ID of the application being called.
+    pub app_id: u64,
+    /// The ABI method to call.
+    pub method: algokit_abi::ABIMethod,
+    /// Arguments to pass to the method.
+    pub arguments: Vec<algokit_abi::ABIValue>,
+    /// Defines what additional actions occur with the transaction.
+    pub on_complete: OnApplicationComplete,
+    /// Optional note field for the transaction.
+    pub note: Option<Vec<u8>>,
+}
+
 /// Parameters for application call transactions.
 #[derive(Debug, Clone)]
 pub struct ApplicationCallParams {

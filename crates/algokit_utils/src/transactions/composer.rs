@@ -15,8 +15,8 @@ use std::{collections::HashMap, sync::Arc};
 use crate::genesis_id_is_localnet;
 
 use super::application_call::{
-    ApplicationCallParams, ApplicationCreateParams, ApplicationDeleteParams,
-    ApplicationUpdateParams,
+    AppCallMethodCallParams, ApplicationCallParams, ApplicationCreateParams,
+    ApplicationDeleteParams, ApplicationUpdateParams,
 };
 use super::asset_config::{AssetCreateParams, AssetDestroyParams, AssetReconfigureParams};
 use super::asset_freeze::{AssetFreezeParams, AssetUnfreezeParams};
@@ -126,6 +126,7 @@ pub enum ComposerTransaction {
     ApplicationCreate(ApplicationCreateParams),
     ApplicationUpdate(ApplicationUpdateParams),
     ApplicationDelete(ApplicationDeleteParams),
+    MethodCall(AppCallMethodCallParams),
     OnlineKeyRegistration(OnlineKeyRegistrationParams),
     OfflineKeyRegistration(OfflineKeyRegistrationParams),
     NonParticipationKeyRegistration(NonParticipationKeyRegistrationParams),
@@ -176,6 +177,9 @@ impl ComposerTransaction {
             }
             ComposerTransaction::ApplicationDelete(app_delete_params) => {
                 app_delete_params.common_params.clone()
+            }
+            ComposerTransaction::MethodCall(method_call_params) => {
+                method_call_params.common_params.clone()
             }
             ComposerTransaction::OnlineKeyRegistration(online_key_reg_params) => {
                 online_key_reg_params.common_params.clone()
@@ -361,6 +365,13 @@ impl Composer {
         app_delete_params: ApplicationDeleteParams,
     ) -> Result<(), ComposerError> {
         self.push(ComposerTransaction::ApplicationDelete(app_delete_params))
+    }
+
+    pub fn add_method_call(
+        &mut self,
+        method_call_params: AppCallMethodCallParams,
+    ) -> Result<(), ComposerError> {
+        self.push(ComposerTransaction::MethodCall(method_call_params))
     }
 
     pub fn add_transaction(&mut self, transaction: Transaction) -> Result<(), ComposerError> {
@@ -649,6 +660,12 @@ impl Composer {
                             box_references: app_delete_params.box_references.clone(),
                         },
                     )
+                }
+                ComposerTransaction::MethodCall(_method_call_params) => {
+                    // TODO: Implement ABI encoding logic
+                    return Err(ComposerError::TransactionError(
+                        "ABI method call encoding not yet implemented".to_string(),
+                    ));
                 }
                 ComposerTransaction::OnlineKeyRegistration(online_key_reg_params) => {
                     Transaction::KeyRegistration(KeyRegistrationTransactionFields {
