@@ -205,7 +205,8 @@ pub struct ApplicationCallTransactionFields {
     /// Transaction specific arguments available in the application's
     /// approval program and clear state program.
     #[serde(rename = "apaa")]
-    #[serde_as(as = "Option<Vec<Bytes>>")]
+    #[serde(serialize_with = "serialize_args")]
+    #[serde(deserialize_with = "deserialize_args")]
     #[serde(skip_serializing_if = "is_empty_vec_opt")]
     #[serde(default)]
     #[builder(default)]
@@ -682,6 +683,39 @@ impl Validate for ApplicationCallTransactionFields {
 
         result.map_err(|errors| errors.iter().map(|e| e.to_string()).collect())
     }
+}
+
+/// Custom serializer for args field that ensures byte arrays are treated as raw binary data
+fn serialize_args<S>(args: &Option<Vec<Vec<u8>>>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    use serde::ser::SerializeSeq;
+
+    match args {
+        None => serializer.serialize_none(),
+        Some(args_vec) => {
+            let mut seq = serializer.serialize_seq(Some(args_vec.len()))?;
+            for arg in args_vec {
+                // Use serde_bytes::Bytes to ensure binary encoding
+                seq.serialize_element(&serde_bytes::Bytes::new(arg))?;
+            }
+            seq.end()
+        }
+    }
+}
+
+/// Custom deserializer for args field that ensures byte arrays are treated as raw binary data
+fn deserialize_args<'de, D>(deserializer: D) -> Result<Option<Vec<Vec<u8>>>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    use serde::Deserialize;
+
+    // Use serde_bytes to ensure proper binary format deserialization
+    Option::<Vec<serde_bytes::ByteBuf>>::deserialize(deserializer)?
+        .map(|vec| vec.into_iter().map(|buf| buf.into_vec()).collect())
+        .map_or(Ok(None), |v| Ok(Some(v)))
 }
 
 #[cfg(test)]

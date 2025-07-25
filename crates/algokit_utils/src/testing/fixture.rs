@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use super::account_helpers::{NetworkType, TestAccount, TestAccountConfig, TestAccountManager};
-use crate::{AlgoConfig, ClientManager, Composer};
+use crate::{AlgoConfig, ClientManager, TransactionComposer};
 use algod_client::AlgodClient;
 use algokit_transact::Transaction;
 
@@ -13,7 +13,7 @@ pub struct AlgorandFixture {
 pub struct AlgorandTestContext {
     pub algod: AlgodClient,
 
-    pub composer: Composer,
+    pub composer: TransactionComposer,
 
     pub test_account: TestAccount,
 
@@ -60,7 +60,7 @@ impl AlgorandFixture {
             .map_err(|e| format!("Failed to create test account: {}", e))?;
 
         // Now TestAccount implements TransactionSignerGetter directly, so we can use it without a wrapper
-        let composer = Composer::new(algod.clone(), Arc::new(test_account.clone()));
+        let composer = TransactionComposer::new(algod.clone(), Arc::new(test_account.clone()));
 
         self.context = Some(AlgorandTestContext {
             algod,

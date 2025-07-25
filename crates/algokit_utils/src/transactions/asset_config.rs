@@ -97,7 +97,7 @@ pub struct AssetCreateParams {
 /// are immutably empty if they are not set. If manager is not set then
 /// all fields are immutable from that point forward.
 #[derive(Debug, Clone)]
-pub struct AssetReconfigureParams {
+pub struct AssetReconfigParams {
     /// Common transaction parameters.
     pub common_params: CommonParams,
 

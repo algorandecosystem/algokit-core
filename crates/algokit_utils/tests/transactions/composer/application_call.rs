@@ -1,10 +1,7 @@
 use crate::common::init_test_logging;
 use algokit_transact::{Address, OnApplicationComplete, StateSchema};
 use algokit_utils::CommonParams;
-use algokit_utils::{
-    ApplicationCallParams, ApplicationCreateParams, ApplicationDeleteParams,
-    ApplicationUpdateParams, testing::*,
-};
+use algokit_utils::{AppCallParams, AppCreateParams, AppDeleteParams, AppUpdateParams, testing::*};
 
 #[tokio::test]
 async fn test_application_call_transaction() {
@@ -30,7 +27,7 @@ async fn test_application_call_transaction() {
 
     println!("Created test app with ID: {}", app_id);
 
-    let app_call_params = ApplicationCallParams {
+    let app_call_params = AppCallParams {
         common_params: CommonParams {
             sender: sender_addr.clone(),
             ..Default::default()
@@ -100,7 +97,7 @@ async fn test_application_create_transaction() {
         .expect("Failed to get sender account")
         .address();
 
-    let app_create_params = ApplicationCreateParams {
+    let app_create_params = AppCreateParams {
         common_params: CommonParams {
             sender: sender_addr.clone(),
             ..Default::default()
@@ -188,7 +185,7 @@ async fn test_application_delete_transaction() {
         .await
         .expect("Failed to create test app");
 
-    let app_delete_params = ApplicationDeleteParams {
+    let app_delete_params = AppDeleteParams {
         common_params: CommonParams {
             sender: sender_addr.clone(),
             ..Default::default()
@@ -261,7 +258,7 @@ async fn test_application_update_transaction() {
         .await
         .expect("Failed to create test app");
 
-    let app_update_params = ApplicationUpdateParams {
+    let app_update_params = AppUpdateParams {
         common_params: CommonParams {
             sender: sender_addr.clone(),
             ..Default::default()
@@ -332,7 +329,7 @@ const HELLO_WORLD_APPROVAL_PROGRAM: [u8; 18] = [
 const HELLO_WORLD_CLEAR_STATE_PROGRAM: [u8; 4] = [10, 129, 1, 67];
 
 async fn create_test_app(context: &AlgorandTestContext, sender: Address) -> Option<u64> {
-    let app_create_params = ApplicationCreateParams {
+    let app_create_params = AppCreateParams {
         common_params: CommonParams {
             sender: sender.clone(),
             ..Default::default()

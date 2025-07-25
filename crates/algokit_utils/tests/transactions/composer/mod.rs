@@ -1,3 +1,4 @@
+pub mod abi_application_call;
 pub mod application_call;
 pub mod asset_config;
 pub mod asset_freeze;

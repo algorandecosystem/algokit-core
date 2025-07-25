@@ -1,6 +1,6 @@
 use algokit_transact::Address;
 use algokit_utils::testing::*;
-use algokit_utils::{AssetCreateParams, AssetDestroyParams, AssetReconfigureParams, CommonParams};
+use algokit_utils::{AssetCreateParams, AssetDestroyParams, AssetReconfigParams, CommonParams};
 
 use crate::common::init_test_logging;
 
@@ -155,7 +155,7 @@ async fn test_asset_reconfigure_transaction() {
         .expect("Failed to get asset ID");
 
     // Now reconfigure the asset
-    let asset_reconfigure_params = AssetReconfigureParams {
+    let asset_reconfigure_params = AssetReconfigParams {
         common_params: CommonParams {
             sender: sender_addr,
             ..Default::default()

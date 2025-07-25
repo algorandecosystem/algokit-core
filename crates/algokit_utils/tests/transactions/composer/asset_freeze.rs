@@ -1,6 +1,6 @@
 use algokit_transact::Transaction;
 use algokit_utils::transactions::AssetOptInParams;
-use algokit_utils::{CommonParams, Composer};
+use algokit_utils::{CommonParams, TransactionComposer};
 use algokit_utils::{
     testing::*,
     transactions::{
@@ -57,7 +57,7 @@ async fn test_asset_freeze_unfreeze() {
     let asset_creator_addr = asset_creator_account.address();
 
     // Create a composer for the target account that can send transactions
-    let target_composer = Composer::new(
+    let target_composer = TransactionComposer::new(
         context.algod.clone(),
         std::sync::Arc::new(target_account.clone()),
     );

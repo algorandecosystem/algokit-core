@@ -8,15 +8,16 @@ pub mod payment;
 
 // Re-export commonly used transaction types
 pub use application_call::{
-    AppCallMethodCallParams, ApplicationCallParams, ApplicationCreateParams,
-    ApplicationDeleteParams, ApplicationUpdateParams,
+    AppCallMethodCallParams, AppCallParams, AppCreateMethodCallParams, AppCreateParams,
+    AppDeleteMethodCallParams, AppDeleteParams, AppUpdateMethodCallParams, AppUpdateParams,
+    MethodCallParams,
 };
-pub use asset_config::{AssetCreateParams, AssetDestroyParams, AssetReconfigureParams};
+pub use asset_config::{AssetCreateParams, AssetDestroyParams, AssetReconfigParams};
 pub use asset_freeze::{AssetFreezeParams, AssetUnfreezeParams};
 pub use common::{CommonParams, EmptySigner, TransactionSigner, TransactionSignerGetter};
 pub use composer::{
-    AssetClawbackParams, AssetOptInParams, AssetOptOutParams, AssetTransferParams, Composer,
-    ComposerError, ComposerTransaction,
+    AssetClawbackParams, AssetOptInParams, AssetOptOutParams, AssetTransferParams, ComposerError,
+    ComposerTransaction, SendParams, SendTransactionComposerResults, TransactionComposer,
 };
 pub use key_registration::{
     NonParticipationKeyRegistrationParams, OfflineKeyRegistrationParams,
