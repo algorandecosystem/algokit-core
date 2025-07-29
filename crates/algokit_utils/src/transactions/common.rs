@@ -15,8 +15,8 @@ pub trait TransactionSigner: Send + Sync {
         &self,
         transaction: &Transaction,
     ) -> Result<SignedTransaction, String> {
-        let result = self.sign_transactions(&[transaction.clone()], &[0]).await?;
-        Ok(result[0].clone())
+        let mut result = self.sign_transactions(&[transaction.clone()], &[0]).await?;
+        Ok(result.remove(0))
     }
 }
 
