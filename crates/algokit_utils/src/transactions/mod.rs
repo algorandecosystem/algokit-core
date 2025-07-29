@@ -13,7 +13,7 @@ pub use application_call::{
 };
 pub use asset_config::{AssetCreateParams, AssetDestroyParams, AssetReconfigureParams};
 pub use asset_freeze::{AssetFreezeParams, AssetUnfreezeParams};
-pub use common::{CommonParams, EmptySigner, TransactionSigner, TransactionSignerGetter};
+pub use common::{CommonParams, EmptyKeyPairSigner, TransactionSigner, TransactionSignerGetter};
 pub use composer::{
     AssetClawbackParams, AssetOptInParams, AssetOptOutParams, AssetTransferParams, Composer,
     ComposerError, ComposerTransaction,

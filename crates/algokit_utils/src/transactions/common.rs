@@ -25,10 +25,10 @@ pub trait TransactionSignerGetter {
 }
 
 #[derive(Clone)]
-pub struct EmptySigner {}
+pub struct EmptyKeyPairSigner {}
 
 #[async_trait]
-impl TransactionSigner for EmptySigner {
+impl TransactionSigner for EmptyKeyPairSigner {
     async fn sign_transactions(
         &self,
         txns: &[Transaction],
@@ -52,7 +52,7 @@ impl TransactionSigner for EmptySigner {
     }
 }
 
-impl TransactionSignerGetter for EmptySigner {
+impl TransactionSignerGetter for EmptyKeyPairSigner {
     fn get_signer(&self, _address: Address) -> Option<Arc<dyn TransactionSigner>> {
         Some(Arc::new(self.clone()))
     }

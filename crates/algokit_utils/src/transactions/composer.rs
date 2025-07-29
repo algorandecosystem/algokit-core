@@ -213,12 +213,12 @@ impl Composer {
 
     #[cfg(feature = "default_http_client")]
     pub fn testnet() -> Self {
-        use crate::EmptySigner;
+        use crate::EmptyKeyPairSigner;
 
         Composer {
             transactions: Vec::new(),
             algod_client: AlgodClient::testnet(),
-            signer_getter: Arc::new(EmptySigner {}),
+            signer_getter: Arc::new(EmptyKeyPairSigner {}),
             built_group: None,
             signed_group: None,
         }
