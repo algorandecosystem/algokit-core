@@ -1,4 +1,5 @@
 pub mod clients;
+mod multisig;
 pub mod testing;
 pub mod transactions;
 

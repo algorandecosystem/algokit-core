@@ -1,4 +1,5 @@
-use algokit_transact::{Address, SignedTransaction, Transaction, ALGORAND_SIGNATURE_BYTE_LENGTH};
+use crate::multisig::MultisigAccount;
+use algokit_transact::{ALGORAND_SIGNATURE_BYTE_LENGTH, Address, SignedTransaction, Transaction};
 use async_trait::async_trait;
 use derive_more::Debug;
 use std::sync::Arc;
@@ -43,6 +44,46 @@ impl TransactionSigner for EmptyKeyPairSigner {
                         signature: Some([0; ALGORAND_SIGNATURE_BYTE_LENGTH]),
                         auth_address: None,
                         multisignature: None,
+                    })
+                } else {
+                    Err(format!("Index {} out of bounds for transactions", idx))
+                }
+            })
+            .collect()
+    }
+}
+
+#[derive(Clone)]
+pub struct EmptyMultisigSigner {
+    multisig: MultisigAccount,
+}
+
+#[async_trait]
+impl TransactionSigner for EmptyMultisigSigner {
+    async fn sign_transactions(
+        &self,
+        txns: &[Transaction],
+        indices: &[usize],
+    ) -> Result<Vec<SignedTransaction>, String> {
+        let mut multisig: algokit_transact::MultisigSignature = self
+            .multisig
+            .clone()
+            .try_into()
+            .map_err(|e| format!("Failed to convert multisig: {}", e))?;
+        multisig
+            .subsignatures
+            .iter_mut()
+            .for_each(|subsig| subsig.signature = Some([0; ALGORAND_SIGNATURE_BYTE_LENGTH]));
+
+        indices
+            .iter()
+            .map(|&idx| {
+                if idx < txns.len() {
+                    Ok(SignedTransaction {
+                        transaction: txns[idx].clone(),
+                        signature: None,
+                        auth_address: None,
+                        multisignature: Some(multisig.clone()),
                     })
                 } else {
                     Err(format!("Index {} out of bounds for transactions", idx))

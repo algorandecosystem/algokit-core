@@ -8,5 +8,5 @@ pub use fixture::{
 
 // Re-export commonly used items from account_helpers for convenience
 pub use account_helpers::{
-    LocalNetDispenser, NetworkType, TestKeyPairAccount, TestAccountConfig, TestAccountManager,
+    LocalNetDispenser, NetworkType, TestAccountConfig, TestAccountManager, TestKeyPairAccount,
 };

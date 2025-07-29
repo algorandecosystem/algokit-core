@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
-use super::account_helpers::{NetworkType, TestKeyPairAccount, TestAccountConfig, TestAccountManager};
+use super::account_helpers::{
+    NetworkType, TestAccountConfig, TestAccountManager, TestKeyPairAccount,
+};
 use crate::{AlgoConfig, ClientManager, Composer};
 use algod_client::AlgodClient;
 use algokit_transact::Transaction;

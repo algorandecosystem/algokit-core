@@ -358,7 +358,8 @@ impl TestAccountManager {
     /// Create a funded account pair (sender, receiver) for testing
     pub async fn create_account_pair(
         &mut self,
-    ) -> Result<(TestKeyPairAccount, TestKeyPairAccount), Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<(TestKeyPairAccount, TestKeyPairAccount), Box<dyn std::error::Error + Send + Sync>>
+    {
         let sender_config = TestAccountConfig {
             initial_funds: 10_000_000, // 10 ALGO
             network_type: NetworkType::LocalNet,
