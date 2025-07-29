@@ -1,18 +1,12 @@
+use crate::genesis_id_is_localnet;
 use algod_client::{
     AlgodClient,
     apis::{Error as AlgodError, Format},
     models::{PendingTransactionResponse, TransactionParams},
 };
-use algokit_transact::{
-    Address, AlgorandMsgpack, AssetConfigTransactionFields, Byte32, FeeParams,
-    KeyRegistrationTransactionFields, MAX_TX_GROUP_SIZE, OnApplicationComplete,
-    PaymentTransactionFields, SignedTransaction, Transaction, TransactionHeader, TransactionId,
-    Transactions,
-};
+use algokit_transact::{Address, AlgorandMsgpack, AssetConfigTransactionFields, Byte32, FeeParams, KeyRegistrationTransactionFields, MAX_TX_GROUP_SIZE, OnApplicationComplete, PaymentTransactionFields, SignedTransaction, Transaction, TransactionHeader, TransactionId, Transactions, AlgoKitTransactError};
 use derive_more::Debug;
 use std::{collections::HashMap, sync::Arc};
-
-use crate::genesis_id_is_localnet;
 
 use super::application_call::{
     ApplicationCallParams, ApplicationCreateParams, ApplicationDeleteParams,
@@ -31,6 +25,8 @@ use super::payment::{AccountCloseParams, PaymentParams};
 pub enum ComposerError {
     #[error("Algod client error: {0}")]
     AlgodClientError(#[from] AlgodError),
+    #[error("AlgoKit Transact error: {0}")]
+    TransactError(#[from] AlgoKitTransactError),
     #[error("Decode Error: {0}")]
     DecodeError(String),
     #[error("Transaction Error: {0}")]
@@ -43,6 +39,8 @@ pub enum ComposerError {
     PoolError(String),
     #[error("Transaction group size exceeds the max limit of: {max}", max = MAX_TX_GROUP_SIZE)]
     GroupSizeError(),
+    #[error("Max wait round expired: {0}")]
+    MaxWaitRoundExpired(String),
 }
 
 #[derive(Clone)]
@@ -389,10 +387,7 @@ impl Composer {
     }
 
     async fn get_suggested_params(&self) -> Result<TransactionParams, ComposerError> {
-        self.algod_client
-            .transaction_params()
-            .await
-            .map_err(Into::into)
+        Ok(self.algod_client.transaction_params().await?)
     }
 
     pub async fn build(&mut self) -> Result<&Vec<TransactionWithSigner>, ComposerError> {
@@ -792,12 +787,8 @@ impl Composer {
         &self,
         tx_id: &str,
         max_rounds: u64,
-    ) -> Result<PendingTransactionResponse, Box<dyn std::error::Error + Send + Sync>> {
-        let status = self
-            .algod_client
-            .get_status()
-            .await
-            .map_err(|e| format!("Failed to get status: {:?}", e))?;
+    ) -> Result<PendingTransactionResponse, ComposerError> {
+        let status = self.algod_client.get_status().await?;
 
         let start_round = status.last_round + 1;
         let mut current_round = start_round;
@@ -811,9 +802,7 @@ impl Composer {
                 Ok(response) => {
                     // Check for pool errors first - transaction was kicked out of pool
                     if !response.pool_error.is_empty() {
-                        return Err(Box::new(ComposerError::PoolError(
-                            response.pool_error.clone(),
-                        )));
+                        return Err(ComposerError::PoolError(response.pool_error.clone()));
                     }
 
                     // Check if transaction is confirmed
@@ -837,7 +826,7 @@ impl Composer {
                         current_round += 1;
                         continue;
                     } else {
-                        return Err(Box::new(ComposerError::AlgodClientError(error)));
+                        return Err(error.into());
                     }
                 }
             };
@@ -846,35 +835,35 @@ impl Composer {
             current_round += 1;
         }
 
-        Err(format!(
-            "Transaction {} not confirmed after {} rounds",
+        Err(ComposerError::MaxWaitRoundExpired(format!(
+            "Transaction {} unconfirmed after {} rounds",
             tx_id, max_rounds
-        )
-        .into())
+        )))
     }
 
     pub async fn send(
         &mut self,
         send_params: Option<SendParams>,
-    ) -> Result<SendTransactionResults, Box<dyn std::error::Error + Send + Sync>> {
-        self.build()
-            .await
-            .map_err(|e| format!("Failed to build transaction: {}", e))?;
+    ) -> Result<SendTransactionResults, ComposerError> {
+        self.build().await?;
 
         let group_id = {
-            let transactions_with_signers =
-                self.built_group.as_ref().ok_or("No transactions built")?;
+            let transactions_with_signers = self.built_group.as_ref().ok_or(
+                ComposerError::StateError("No transactions built".to_string()),
+            )?;
             if transactions_with_signers.is_empty() {
-                return Err("No transactions to send".into());
+                return Err(ComposerError::StateError(
+                    "No transactions to send".to_string(),
+                ));
             }
             transactions_with_signers[0].transaction.header().group
         };
 
-        self.gather_signatures()
-            .await
-            .map_err(|e| format!("Failed to sign transaction: {}", e))?;
+        self.gather_signatures().await?;
 
-        let signed_transactions = self.signed_group.as_ref().ok_or("No signed transactions")?;
+        let signed_transactions = self.signed_group.as_ref().ok_or(ComposerError::StateError(
+            "No signed transactions".to_string(),
+        ))?;
 
         let wait_rounds = if let Some(max_rounds_to_wait_for_confirmation) =
             send_params.and_then(|p| p.max_rounds_to_wait_for_confirmation)
@@ -885,13 +874,17 @@ impl Composer {
                 .iter()
                 .map(|signed_transaction| signed_transaction.transaction.header().first_valid)
                 .min()
-                .ok_or("Failed to calculate first valid round")?;
+                .ok_or(ComposerError::StateError(
+                    "Failed to calculate first valid round".to_string(),
+                ))?;
 
             let last_round: u64 = signed_transactions
                 .iter()
                 .map(|signed_transaction| signed_transaction.transaction.header().last_valid)
                 .max()
-                .ok_or("Failed to calculate last valid round")?;
+                .ok_or(ComposerError::StateError(
+                    "Failed to calculate last valid round".to_string(),
+                ))?;
 
             last_round - first_round
         };
@@ -901,16 +894,14 @@ impl Composer {
 
         for signed_txn in signed_transactions {
             let encoded_txn = signed_txn
-                .encode()
-                .map_err(|e| format!("Failed to encode signed transaction: {}", e))?;
+                .encode()?;
             encoded_bytes.extend_from_slice(&encoded_txn);
         }
 
         let _ = self
             .algod_client
             .raw_transaction(encoded_bytes)
-            .await
-            .map_err(|e| format!("Failed to submit transaction(s): {:?}", e))?;
+            .await?;
 
         let transaction_ids: Vec<String> = signed_transactions
             .iter()
@@ -921,8 +912,7 @@ impl Composer {
         for id in &transaction_ids {
             let confirmation = self
                 .wait_for_confirmation(id, wait_rounds)
-                .await
-                .map_err(|e| format!("Failed to confirm transaction: {}", e))?;
+                .await?;
             confirmations.push(confirmation);
         }
 
