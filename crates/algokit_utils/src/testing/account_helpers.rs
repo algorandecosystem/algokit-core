@@ -49,13 +49,13 @@ pub enum NetworkType {
 
 /// A test account using algokit_transact and ed25519_dalek with proper Algorand mnemonics
 #[derive(Debug, Clone)]
-pub struct TestAccount {
+pub struct TestKeyPairAccount {
     /// The ed25519 secret key used for signing transactions
     secret_key: [u8; ALGORAND_SECRET_KEY_BYTE_LENGTH],
 }
 
 // Implement TransactionSignerGetter for TestAccount as well
-impl TransactionSignerGetter for TestAccount {
+impl TransactionSignerGetter for TestKeyPairAccount {
     fn get_signer(&self, address: Address) -> Option<Arc<dyn TransactionSigner>> {
         let test_account_address = self.account().expect("Failed to get test account address");
         if address == test_account_address.address() {
@@ -67,7 +67,7 @@ impl TransactionSignerGetter for TestAccount {
 }
 
 #[async_trait]
-impl TransactionSigner for TestAccount {
+impl TransactionSigner for TestKeyPairAccount {
     async fn sign_transactions(
         &self,
         txns: &[Transaction],
@@ -109,7 +109,7 @@ impl TransactionSigner for TestAccount {
     }
 }
 
-impl TestAccount {
+impl TestKeyPairAccount {
     /// Generate a new random test account using ed25519_dalek
     pub fn generate() -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
         // Generate a random signing key
@@ -151,7 +151,7 @@ impl TestAccount {
 /// LocalNet dispenser for funding test accounts using AlgoKit CLI
 pub struct LocalNetDispenser {
     client: AlgodClient,
-    dispenser_account: Option<TestAccount>,
+    dispenser_account: Option<TestKeyPairAccount>,
 }
 
 impl LocalNetDispenser {
@@ -166,7 +166,7 @@ impl LocalNetDispenser {
     /// Get the LocalNet dispenser account from AlgoKit CLI
     pub async fn get_dispenser_account(
         &mut self,
-    ) -> Result<&TestAccount, Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<&TestKeyPairAccount, Box<dyn std::error::Error + Send + Sync>> {
         if self.dispenser_account.is_none() {
             self.dispenser_account = Some(self.fetch_dispenser_from_algokit().await?);
         }
@@ -177,7 +177,7 @@ impl LocalNetDispenser {
     /// Fetch the dispenser account using AlgoKit CLI
     async fn fetch_dispenser_from_algokit(
         &self,
-    ) -> Result<TestAccount, Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<TestKeyPairAccount, Box<dyn std::error::Error + Send + Sync>> {
         // Get list of accounts to find the one with highest balance
         let output = Command::new("algokit")
             .args(["goal", "account", "list"])
@@ -242,7 +242,7 @@ impl LocalNetDispenser {
             .ok_or("Could not extract mnemonic from algokit output")?;
 
         // Create account from mnemonic using proper Algorand mnemonic parsing
-        TestAccount::from_mnemonic(mnemonic)
+        TestKeyPairAccount::from_mnemonic(mnemonic)
     }
 
     /// Fund an account with ALGOs using the dispenser
@@ -324,11 +324,11 @@ impl TestAccountManager {
     pub async fn get_test_account(
         &mut self,
         config: Option<TestAccountConfig>,
-    ) -> Result<TestAccount, Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<TestKeyPairAccount, Box<dyn std::error::Error + Send + Sync>> {
         let config = config.unwrap_or_default();
 
         // Generate new account using ed25519_dalek
-        let test_account = TestAccount::generate()?;
+        let test_account = TestKeyPairAccount::generate()?;
         let address_str = test_account.account()?.to_string();
 
         // Fund the account based on network type
@@ -358,7 +358,7 @@ impl TestAccountManager {
     /// Create a funded account pair (sender, receiver) for testing
     pub async fn create_account_pair(
         &mut self,
-    ) -> Result<(TestAccount, TestAccount), Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<(TestKeyPairAccount, TestKeyPairAccount), Box<dyn std::error::Error + Send + Sync>> {
         let sender_config = TestAccountConfig {
             initial_funds: 10_000_000, // 10 ALGO
             network_type: NetworkType::LocalNet,
@@ -382,7 +382,7 @@ impl TestAccountManager {
         &mut self,
         count: usize,
         config: Option<TestAccountConfig>,
-    ) -> Result<Vec<TestAccount>, Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<Vec<TestKeyPairAccount>, Box<dyn std::error::Error + Send + Sync>> {
         let mut accounts = Vec::with_capacity(count);
 
         for _i in 0..count {
@@ -404,7 +404,7 @@ mod tests {
     #[tokio::test]
     async fn test_account_generation_with_algokit_transact() {
         // Test basic account generation using algokit_transact and ed25519_dalek with proper mnemonics
-        let account = TestAccount::generate().expect("Failed to generate test account");
+        let account = TestKeyPairAccount::generate().expect("Failed to generate test account");
         let address = account.account().expect("Failed to get address");
 
         assert!(!address.to_string().is_empty());
@@ -420,13 +420,13 @@ mod tests {
 
     #[tokio::test]
     async fn test_account_from_mnemonic_with_algokit_transact() {
-        let original = TestAccount::generate().expect("Failed to generate test account");
+        let original = TestKeyPairAccount::generate().expect("Failed to generate test account");
         let mnemonic = original.mnemonic();
 
         // Only test round-trip if we have a proper mnemonic (not hex fallback)
         if mnemonic.split_whitespace().count() == 25 {
             // Recover account from mnemonic using proper Algorand mnemonic parsing
-            let recovered = TestAccount::from_mnemonic(&mnemonic)
+            let recovered = TestKeyPairAccount::from_mnemonic(&mnemonic)
                 .expect("Failed to recover account from mnemonic");
 
             // Both should have the same address

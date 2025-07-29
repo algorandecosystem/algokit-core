@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use super::account_helpers::{NetworkType, TestAccount, TestAccountConfig, TestAccountManager};
+use super::account_helpers::{NetworkType, TestKeyPairAccount, TestAccountConfig, TestAccountManager};
 use crate::{AlgoConfig, ClientManager, Composer};
 use algod_client::AlgodClient;
 use algokit_transact::Transaction;
@@ -15,7 +15,7 @@ pub struct AlgorandTestContext {
 
     pub composer: Composer,
 
-    pub test_account: TestAccount,
+    pub test_account: TestKeyPairAccount,
 
     pub account_manager: TestAccountManager,
 }
@@ -75,7 +75,7 @@ impl AlgorandFixture {
     pub async fn generate_account(
         &mut self,
         config: Option<TestAccountConfig>,
-    ) -> Result<TestAccount, Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<TestKeyPairAccount, Box<dyn std::error::Error + Send + Sync>> {
         let context = self
             .context
             .as_mut()
