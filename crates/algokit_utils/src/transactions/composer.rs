@@ -4,7 +4,12 @@ use algod_client::{
     apis::{Error as AlgodError, Format},
     models::{PendingTransactionResponse, TransactionParams},
 };
-use algokit_transact::{Address, AlgorandMsgpack, AssetConfigTransactionFields, Byte32, FeeParams, KeyRegistrationTransactionFields, MAX_TX_GROUP_SIZE, OnApplicationComplete, PaymentTransactionFields, SignedTransaction, Transaction, TransactionHeader, TransactionId, Transactions, AlgoKitTransactError};
+use algokit_transact::{
+    Address, AlgoKitTransactError, AlgorandMsgpack, AssetConfigTransactionFields, Byte32,
+    FeeParams, KeyRegistrationTransactionFields, MAX_TX_GROUP_SIZE, OnApplicationComplete,
+    PaymentTransactionFields, SignedTransaction, Transaction, TransactionHeader, TransactionId,
+    Transactions,
+};
 use derive_more::Debug;
 use std::{collections::HashMap, sync::Arc};
 
@@ -893,15 +898,11 @@ impl Composer {
         let mut encoded_bytes = Vec::new();
 
         for signed_txn in signed_transactions {
-            let encoded_txn = signed_txn
-                .encode()?;
+            let encoded_txn = signed_txn.encode()?;
             encoded_bytes.extend_from_slice(&encoded_txn);
         }
 
-        let _ = self
-            .algod_client
-            .raw_transaction(encoded_bytes)
-            .await?;
+        let _ = self.algod_client.raw_transaction(encoded_bytes).await?;
 
         let transaction_ids: Vec<String> = signed_transactions
             .iter()
@@ -910,9 +911,7 @@ impl Composer {
 
         let mut confirmations = Vec::new();
         for id in &transaction_ids {
-            let confirmation = self
-                .wait_for_confirmation(id, wait_rounds)
-                .await?;
+            let confirmation = self.wait_for_confirmation(id, wait_rounds).await?;
             confirmations.push(confirmation);
         }
 
