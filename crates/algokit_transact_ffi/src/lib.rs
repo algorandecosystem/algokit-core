@@ -7,7 +7,6 @@ use algokit_transact::{
 };
 use ffi_macros::{ffi_enum, ffi_func, ffi_record};
 use serde::{Deserialize, Serialize};
-use serde_bytes::ByteBuf;
 
 pub use multisig::{MultisigSignature, MultisigSubsignature};
 pub use transactions::ApplicationCallTransactionFields;
@@ -85,23 +84,35 @@ use tsify_next::Tsify;
 #[cfg(feature = "ffi_wasm")]
 use wasm_bindgen::prelude::*;
 
-// We need to use ByteBuf directly in the structs to get Uint8Array in TSify
-// custom_type! and this impl is used to convert the ByteBuf to a Vec<u8> for the UniFFI bindings
-#[cfg(feature = "ffi_uniffi")]
-impl UniffiCustomTypeConverter for ByteBuf {
-    type Builtin = Vec<u8>;
+// We need to use ByteBuf in the structs to get Uint8Array in TSify
+// See https://github.com/madonoharu/tsify/blob/910187f3023667a0d130f2c6fd7d7af7ed3ca57a/tsify-macros/src/typescript/ts_type_from_name.rs#L89
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct ByteBuf(Vec<u8>);
 
-    fn into_custom(val: Self::Builtin) -> uniffi::Result<Self> {
-        Ok(ByteBuf::from(val))
+impl ByteBuf {
+    pub fn into_vec(self) -> Vec<u8> {
+        self.0
     }
 
-    fn from_custom(obj: Self) -> Self::Builtin {
-        obj.to_vec()
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.0.clone()
+    }
+}
+
+impl From<ByteBuf> for Vec<u8> {
+    fn from(buf: ByteBuf) -> Self {
+        buf.0
+    }
+}
+
+impl From<Vec<u8>> for ByteBuf {
+    fn from(vec: Vec<u8>) -> Self {
+        ByteBuf(vec)
     }
 }
 
 #[cfg(feature = "ffi_uniffi")]
-uniffi::custom_type!(ByteBuf, Vec<u8>);
+uniffi::custom_newtype!(ByteBuf, Vec<u8>);
 
 // This becomes an enum in UniFFI language bindings and a
 // string literal union in TS
@@ -296,7 +307,7 @@ impl TryFrom<Transaction> for algokit_transact::TransactionHeader {
                 .genesis_hash
                 .map(|buf| bytebuf_to_bytes::<32>(&buf))
                 .transpose()?,
-            note: tx.note.map(ByteBuf::into_vec),
+            note: tx.note.map(ByteBuf::into),
             rekey_to: tx.rekey_to.map(|addr| addr.parse()).transpose()?,
             lease: tx
                 .lease
