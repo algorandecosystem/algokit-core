@@ -13,7 +13,7 @@ pub enum HttpError {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Enum))]
-#[cfg_attr(feature = "ffi_wasm", derive(tsify_next::Tsify))]
+#[cfg_attr(feature = "ffi_wasm", derive(tsify::Tsify))]
 #[cfg_attr(feature = "ffi_wasm", tsify(into_wasm_abi, from_wasm_abi))]
 #[cfg_attr(feature = "ffi_wasm", derive(serde::Serialize, serde::Deserialize))]
 pub enum HttpMethod {
@@ -42,7 +42,7 @@ impl HttpMethod {
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
-#[cfg_attr(feature = "ffi_wasm", derive(tsify_next::Tsify))]
+#[cfg_attr(feature = "ffi_wasm", derive(tsify::Tsify))]
 #[cfg_attr(feature = "ffi_wasm", tsify(into_wasm_abi, from_wasm_abi))]
 #[cfg_attr(feature = "ffi_wasm", derive(serde::Serialize, serde::Deserialize))]
 pub struct HttpResponse {
@@ -185,7 +185,7 @@ use wasm_bindgen::prelude::*;
 use js_sys::Uint8Array;
 
 #[cfg(feature = "ffi_wasm")]
-use tsify_next::Tsify;
+use tsify::Tsify;
 
 #[cfg(feature = "ffi_wasm")]
 #[async_trait(?Send)]

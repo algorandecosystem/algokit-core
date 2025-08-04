@@ -5,7 +5,7 @@
 use crate::*;
 
 #[cfg(feature = "ffi_wasm")]
-use tsify_next::Tsify;
+use tsify::Tsify;
 
 #[ffi_record]
 pub struct KeyRegistrationTransactionFields {

@@ -20,7 +20,7 @@ members = [
 uniffi = { version = "0.29.4" }
 thiserror = { version = "2.0.7" }
 wasm-bindgen = { version = "0.2.99" }
-tsify-next = { version = "0.5.4", features = ["js"] }
+tsify = { version = "0.5.5", features = ["js"] }
 js-sys = { version = "0.3.77" }
 base32 = { version = "0.5.1" }
 sha2 = { version = "0.10.8" }

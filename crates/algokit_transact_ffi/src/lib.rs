@@ -80,7 +80,7 @@ uniffi::setup_scaffolding!();
 #[cfg(feature = "ffi_wasm")]
 use js_sys::Uint8Array;
 #[cfg(feature = "ffi_wasm")]
-use tsify_next::Tsify;
+use tsify::Tsify;
 #[cfg(feature = "ffi_wasm")]
 use wasm_bindgen::prelude::*;
 
