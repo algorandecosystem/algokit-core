@@ -1,17 +1,27 @@
-use crate::genesis_id_is_localnet;
+use crate::{
+    genesis_id_is_localnet,
+    transactions::{
+        key_registration::{
+            build_non_participation_key_registration, build_offline_key_registration,
+            build_online_key_registration,
+        },
+        payment::{build_account_close, build_payment},
+    },
+};
 use algod_client::{
     AlgodClient,
     apis::{Error as AlgodError, Format},
     models::{
-        PendingTransactionResponse, SimulateRequest, SimulateRequestTransactionGroup,
+        ApplicationLocalReference, AssetHoldingReference, BoxReference, PendingTransactionResponse,
+        SimulateRequest, SimulateRequestTransactionGroup, SimulateUnnamedResourcesAccessed,
         TransactionParams,
     },
 };
 use algokit_abi::{ABIMethod, ABIReturn};
 use algokit_transact::{
     Address, AlgoKitTransactError, AlgorandMsgpack, Byte32, EMPTY_SIGNATURE, FeeParams,
-    MAX_TX_GROUP_SIZE, SignedTransaction, Transaction, TransactionHeader, TransactionId,
-    Transactions,
+    MAX_ACCOUNT_REFERENCES, MAX_OVERALL_REFERENCES, MAX_TX_GROUP_SIZE, SignedTransaction,
+    Transaction, TransactionHeader, TransactionId, Transactions,
 };
 use derive_more::Debug;
 use std::{collections::HashMap, sync::Arc};
@@ -47,13 +57,27 @@ use super::asset_transfer::{
 use super::common::{CommonParams, TransactionSigner, TransactionSignerGetter};
 use super::key_registration::{
     NonParticipationKeyRegistrationParams, OfflineKeyRegistrationParams,
-    OnlineKeyRegistrationParams, build_non_participation_key_registration,
-    build_offline_key_registration, build_online_key_registration,
+    OnlineKeyRegistrationParams,
 };
-use super::payment::{AccountCloseParams, PaymentParams, build_account_close, build_payment};
+use super::payment::{AccountCloseParams, PaymentParams};
+
+const COVER_APP_CALL_INNER_TRANSACTION_FEES_DEFAULT: bool = false;
+const POPULATE_APP_CALL_RESOURCES_DEFAULT: bool = true;
 
 // ABI return values are stored in logs with the prefix 0x151f7c75
 const ABI_RETURN_PREFIX: &[u8] = &[0x15, 0x1f, 0x7c, 0x75];
+
+/// Types of resources that can be populated at the group level
+#[derive(Debug, Clone)]
+enum GroupResourceType {
+    Account(String),
+    App(u64),
+    Asset(u64),
+    Box(BoxReference),
+    ExtraBoxRef,
+    AssetHolding(AssetHoldingReference),
+    AppLocal(ApplicationLocalReference),
+}
 
 #[derive(Debug, thiserror::Error)]
 pub enum ComposerError {
@@ -93,11 +117,13 @@ pub struct SendTransactionComposerResults {
 pub struct SendParams {
     pub max_rounds_to_wait_for_confirmation: Option<u64>,
     pub cover_app_call_inner_transaction_fees: Option<bool>,
+    pub populate_app_call_resources: Option<bool>,
 }
 
 #[derive(Debug, Default, Clone)]
 pub struct BuildParams {
     pub cover_app_call_inner_transaction_fees: Option<bool>,
+    pub populate_app_call_resources: Option<bool>,
 }
 
 impl From<&SendParams> for BuildParams {
@@ -105,6 +131,7 @@ impl From<&SendParams> for BuildParams {
         BuildParams {
             cover_app_call_inner_transaction_fees: send_params
                 .cover_app_call_inner_transaction_fees,
+            populate_app_call_resources: send_params.populate_app_call_resources,
         }
     }
 }
@@ -113,11 +140,16 @@ impl From<&SendParams> for BuildParams {
 struct TransactionAnalysis {
     /// The fee difference required for this transaction
     required_fee_delta: FeeDelta,
+    /// Resources that this specific transaction accessed but didn't declare
+    unnamed_resources_accessed: Option<SimulateUnnamedResourcesAccessed>,
 }
 
 #[derive(Debug)]
 struct GroupAnalysis {
+    /// Analysis of each transaction in the group
     transactions: Vec<TransactionAnalysis>,
+    /// Resources accessed by the group that qualify for group resource sharing
+    unnamed_resources_accessed: Option<SimulateUnnamedResourcesAccessed>,
 }
 
 /// Represents the fee difference for a transaction
@@ -767,7 +799,10 @@ impl Composer {
     ) -> Result<GroupAnalysis, ComposerError> {
         let cover_inner_fees = build_params
             .cover_app_call_inner_transaction_fees
-            .unwrap_or(false);
+            .unwrap_or(COVER_APP_CALL_INNER_TRANSACTION_FEES_DEFAULT);
+        let populate_resources = build_params
+            .populate_app_call_resources
+            .unwrap_or(POPULATE_APP_CALL_RESOURCES_DEFAULT);
         let mut app_call_indexes_without_max_fees = Vec::new();
 
         let built_transactions = &self
@@ -907,14 +942,24 @@ impl Composer {
                     FeeDelta::None
                 };
 
-                Ok(TransactionAnalysis { required_fee_delta })
+                Ok(TransactionAnalysis {
+                    required_fee_delta,
+                    unnamed_resources_accessed: if populate_resources {
+                        simulate_txn_result.unnamed_resources_accessed.clone()
+                    } else {
+                        None
+                    },
+                })
             })
             .collect();
 
-        let txn_analysis_results = txn_analysis_results?;
-
         Ok(GroupAnalysis {
-            transactions: txn_analysis_results,
+            transactions: txn_analysis_results?,
+            unnamed_resources_accessed: if populate_resources {
+                group_response.unnamed_resources_accessed.clone()
+            } else {
+                None
+            },
         })
     }
 
@@ -1094,6 +1139,7 @@ impl Composer {
             .collect::<Result<Vec<Transaction>, ComposerError>>()?;
 
         if let Some(group_analysis) = group_analysis {
+            // Process fee adjustments
             let (mut surplus_group_fees, mut transaction_analysis): (u64, Vec<_>) =
                 group_analysis.transactions.iter().enumerate().fold(
                     (0, Vec::new()),
@@ -1133,6 +1179,7 @@ impl Composer {
                             group_index,
                             &transaction_analysis.required_fee_delta,
                             priority,
+                            &transaction_analysis.unnamed_resources_accessed,
                         ));
 
                         (surplus_group_fees_acc, txn_analysis_acc)
@@ -1140,10 +1187,10 @@ impl Composer {
                 );
 
             // Sort transactions by priority (highest first)
-            transaction_analysis.sort_by_key(|&(_, _, priority)| std::cmp::Reverse(priority));
+            transaction_analysis.sort_by_key(|&(_, _, priority, _)| std::cmp::Reverse(priority));
 
             // Cover any additional fees required for the transactions
-            for (group_index, required_fee_delta, _) in transaction_analysis {
+            for (group_index, required_fee_delta, _, resources_accessed) in transaction_analysis {
                 if let FeeDelta::Deficit(deficit_amount) = *required_fee_delta {
                     // First allocate surplus group fees to cover deficits
                     let mut additional_fee_delta: FeeDelta = FeeDelta::None;
@@ -1192,6 +1239,116 @@ impl Composer {
                         }
                     }
                 }
+
+                if let Some(resources_accessed) = resources_accessed {
+                    // Apply the transaction level resource population logic
+                    if let Transaction::ApplicationCall(ref mut app_call) =
+                        transactions[group_index]
+                    {
+                        // Check for unexpected resources at transaction level
+                        if resources_accessed.boxes.is_some()
+                            || resources_accessed.extra_box_refs.is_some()
+                        {
+                            return Err(ComposerError::TransactionError(
+                                "Unexpected boxes at the transaction level".to_string(),
+                            ));
+                        }
+                        if resources_accessed.app_locals.is_some() {
+                            return Err(ComposerError::TransactionError(
+                                "Unexpected app locals at the transaction level".to_string(),
+                            ));
+                        }
+                        if resources_accessed.asset_holdings.is_some() {
+                            return Err(ComposerError::TransactionError(
+                                "Unexpected asset holdings at the transaction level".to_string(),
+                            ));
+                        }
+
+                        let mut accounts_count = 0;
+                        let mut apps_count = 0;
+                        let mut assets_count = 0;
+                        let mut boxes_count = 0;
+
+                        // Populate accounts at the transaction level, apps, assets, and boxes from unnamed resources
+                        if let Some(ref accessed_accounts) = resources_accessed.accounts {
+                            let accounts = app_call.account_references.get_or_insert_with(Vec::new);
+
+                            for account_str in accessed_accounts {
+                                let address = account_str.parse::<Address>().map_err(|e| {
+                                    ComposerError::TransactionError(format!(
+                                        "Invalid account address: {}",
+                                        e
+                                    ))
+                                })?;
+                                if !accounts.contains(&address) {
+                                    accounts.push(address);
+                                }
+                            }
+                            accounts_count = accounts.len();
+                        }
+
+                        // Populate apps at the transaction level
+                        if let Some(ref accessed_apps) = resources_accessed.apps {
+                            let apps = app_call.app_references.get_or_insert_with(Vec::new);
+                            for app_id in accessed_apps {
+                                if !apps.contains(app_id) {
+                                    apps.push(*app_id);
+                                }
+                            }
+                            apps_count = apps.len();
+                        }
+
+                        // Populate asset at the transaction level
+                        if let Some(ref accessed_assets) = resources_accessed.assets {
+                            let assets = app_call.asset_references.get_or_insert_with(Vec::new);
+                            for asset_id in accessed_assets {
+                                if !assets.contains(asset_id) {
+                                    assets.push(*asset_id);
+                                }
+                            }
+                            assets_count = assets.len();
+                        }
+
+                        // Populate boxes at the transaction level
+                        if let Some(ref accessed_boxes) = resources_accessed.boxes {
+                            let boxes = app_call.box_references.get_or_insert_with(Vec::new);
+                            for box_ref in accessed_boxes {
+                                if !boxes
+                                    .iter()
+                                    .any(|b| b.app_id == box_ref.app && b.name == box_ref.name)
+                                {
+                                    boxes.push(algokit_transact::BoxReference {
+                                        app_id: box_ref.app,
+                                        name: box_ref.name.clone(),
+                                    });
+                                }
+                            }
+                            boxes_count = boxes.len();
+                        }
+
+                        //Validate reference limits
+                        if accounts_count > MAX_ACCOUNT_REFERENCES {
+                            return Err(ComposerError::TransactionError(format!(
+                                "Account reference limit of {} exceeded in transaction {}",
+                                MAX_ACCOUNT_REFERENCES, group_index
+                            )));
+                        }
+
+                        if (accounts_count + assets_count + apps_count + boxes_count)
+                            > MAX_OVERALL_REFERENCES
+                        {
+                            return Err(ComposerError::TransactionError(format!(
+                                "Resource reference limit of {} exceeded in transaction {}",
+                                MAX_OVERALL_REFERENCES, group_index
+                            )));
+                        }
+                    }
+                }
+            }
+
+            // Apply the group level resource population logic
+            if let Some(ref group_resources) = group_analysis.unnamed_resources_accessed {
+                self.populate_group_resources(&mut transactions, group_resources)?;
             }
         }
 
@@ -1202,6 +1359,418 @@ impl Composer {
         }
 
         Ok(transactions)
+    }
+
+    /// Populate group-level resources for app call transactions
+    fn populate_group_resources(
+        &self,
+        transactions: &mut [Transaction],
+        group_resources: &SimulateUnnamedResourcesAccessed,
+    ) -> Result<(), ComposerError> {
+        // Clone the group resources so we can modify them as we allocate resources
+        let mut remaining_accounts = group_resources.accounts.clone().unwrap_or_default();
+        let mut remaining_apps = group_resources.apps.clone().unwrap_or_default();
+        let mut remaining_assets = group_resources.assets.clone().unwrap_or_default();
+        let remaining_boxes = group_resources.boxes.clone().unwrap_or_default();
+
+        // Process cross-reference resources first (app locals and asset holdings) as they are most restrictive
+        if let Some(ref app_locals) = group_resources.app_locals {
+            for app_local in app_locals {
+                self.populate_group_resource(
+                    transactions,
+                    &GroupResourceType::AppLocal(app_local.clone()),
+                )?;
+
+                // Remove resources from remaining if we're adding them here
+                remaining_accounts.retain(|acc| acc != &app_local.account);
+                remaining_apps.retain(|app| *app != app_local.app);
+            }
+        }
+
+        if let Some(ref asset_holdings) = group_resources.asset_holdings {
+            for asset_holding in asset_holdings {
+                self.populate_group_resource(
+                    transactions,
+                    &GroupResourceType::AssetHolding(asset_holding.clone()),
+                )?;
+
+                // Remove resources from remaining if we're adding them here
+                remaining_accounts.retain(|acc| acc != &asset_holding.account);
+                remaining_assets.retain(|asset| *asset != asset_holding.asset);
+            }
+        }
+
+        // Process accounts next because account limit is 4
+        for account in remaining_accounts {
+            self.populate_group_resource(transactions, &GroupResourceType::Account(account))?;
+        }
+
+        // Process boxes
+        for box_ref in remaining_boxes {
+            self.populate_group_resource(transactions, &GroupResourceType::Box(box_ref.clone()))?;
+
+            // Remove apps as resource if we're adding it here
+            remaining_apps.retain(|app| *app != box_ref.app);
+        }
+
+        // Process assets
+        for asset in remaining_assets {
+            self.populate_group_resource(transactions, &GroupResourceType::Asset(asset))?;
+        }
+
+        // Process remaining apps
+        for app in remaining_apps {
+            self.populate_group_resource(transactions, &GroupResourceType::App(app))?;
+        }
+
+        // Handle extra box refs
+        if let Some(extra_box_refs) = group_resources.extra_box_refs {
+            for _ in 0..extra_box_refs {
+                self.populate_group_resource(transactions, &GroupResourceType::ExtraBoxRef)?;
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Helper function to populate a specific resource into a transaction group
+    fn populate_group_resource(
+        &self,
+        transactions: &mut [Transaction],
+        resource: &GroupResourceType,
+    ) -> Result<(), ComposerError> {
+        // Helper function to check if an application call transaction is below reference limit
+        let is_app_call_below_limit = |txn: &Transaction| -> bool {
+            if let Transaction::ApplicationCall(app_call) = txn {
+                let accounts_count = app_call
+                    .account_references
+                    .as_ref()
+                    .map(|a| a.len())
+                    .unwrap_or(0);
+                let assets_count = app_call
+                    .asset_references
+                    .as_ref()
+                    .map(|a| a.len())
+                    .unwrap_or(0);
+                let apps_count = app_call
+                    .app_references
+                    .as_ref()
+                    .map(|a| a.len())
+                    .unwrap_or(0);
+                let boxes_count = app_call
+                    .box_references
+                    .as_ref()
+                    .map(|b| b.len())
+                    .unwrap_or(0);
+
+                (accounts_count + assets_count + apps_count + boxes_count) < MAX_OVERALL_REFERENCES
+            } else {
+                false
+            }
+        };
+
+        // For asset holdings and app locals, first try to find a transaction that already has the account available
+        match resource {
+            GroupResourceType::AssetHolding(_) | GroupResourceType::AppLocal(_) => {
+                let account = match resource {
+                    GroupResourceType::AssetHolding(asset_holding) => &asset_holding.account,
+                    GroupResourceType::AppLocal(app_local) => &app_local.account,
+                    _ => unreachable!(),
+                };
+
+                // Try to find a transaction that already has the account available
+                let group_index = transactions.iter().position(|txn| {
+                    if !is_app_call_below_limit(txn) {
+                        return false;
+                    }
+
+                    if let Transaction::ApplicationCall(app_call) = txn {
+                        // Check if account is in foreign accounts array
+                        if let Some(ref accounts) = app_call.account_references {
+                            let address = account.parse::<Address>().unwrap_or_default();
+                            if accounts.contains(&address) {
+                                return true;
+                            }
+                        }
+
+                        // Check if account is available as an app account
+                        if let Some(ref apps) = app_call.app_references {
+                            for app_id in apps {
+                                if account == &Address::from_app_id(app_id).to_string() {
+                                    return true;
+                                }
+                            }
+                        }
+
+                        // Check if account appears in any app call transaction fields
+                        if app_call.header.sender.to_string() == *account {
+                            return true;
+                        }
+                    }
+
+                    false
+                });
+
+                if let Some(group_index) = group_index {
+                    if let Transaction::ApplicationCall(ref mut app_call) =
+                        transactions[group_index]
+                    {
+                        match resource {
+                            GroupResourceType::AssetHolding(asset_holding) => {
+                                let assets = app_call.asset_references.get_or_insert_with(Vec::new);
+                                if !assets.contains(&asset_holding.asset) {
+                                    assets.push(asset_holding.asset);
+                                }
+                            }
+                            GroupResourceType::AppLocal(app_local) => {
+                                let apps = app_call.app_references.get_or_insert_with(Vec::new);
+                                if !apps.contains(&app_local.app) {
+                                    apps.push(app_local.app);
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                    return Ok(());
+                }
+
+                // Try to find a transaction that already has the asset/app available and space for account
+                let group_index = transactions.iter().position(|txn| {
+                    if !is_app_call_below_limit(txn) {
+                        return false;
+                    }
+
+                    if let Transaction::ApplicationCall(app_call) = txn {
+                        // Check if there's space in the accounts array
+                        if app_call
+                            .account_references
+                            .as_ref()
+                            .map(|a| a.len())
+                            .unwrap_or(0)
+                            >= MAX_ACCOUNT_REFERENCES
+                        {
+                            return false;
+                        }
+
+                        match resource {
+                            GroupResourceType::AssetHolding(asset_holding) => {
+                                if let Some(ref assets) = app_call.asset_references {
+                                    return assets.contains(&asset_holding.asset);
+                                }
+                            }
+                            GroupResourceType::AppLocal(app_local) => {
+                                if let Some(ref apps) = app_call.app_references {
+                                    return apps.contains(&app_local.app);
+                                }
+                                return app_call.app_id == app_local.app;
+                            }
+                            _ => {}
+                        }
+                    }
+
+                    false
+                });
+
+                if let Some(group_index) = group_index {
+                    if let Transaction::ApplicationCall(ref mut app_call) =
+                        transactions[group_index]
+                    {
+                        let accounts = app_call.account_references.get_or_insert_with(Vec::new);
+                        let address = account.parse::<Address>().map_err(|e| {
+                            ComposerError::TransactionError(format!(
+                                "Invalid account address: {}",
+                                e
+                            ))
+                        })?;
+                        if !accounts.contains(&address) {
+                            accounts.push(address);
+                        }
+                    }
+                    return Ok(());
+                }
+            }
+            GroupResourceType::Box(box_ref) => {
+                // For boxes, first try to find a transaction that already has the app available
+                let group_index = transactions.iter().position(|txn| {
+                    if !is_app_call_below_limit(txn) {
+                        return false;
+                    }
+
+                    if let Transaction::ApplicationCall(app_call) = txn {
+                        // Check if the app is in the foreign array OR the app being called
+                        if let Some(ref apps) = app_call.app_references {
+                            if apps.contains(&box_ref.app) {
+                                return true;
+                            }
+                        }
+                        return app_call.app_id == box_ref.app;
+                    }
+
+                    false
+                });
+
+                if let Some(group_index) = group_index {
+                    if let Transaction::ApplicationCall(ref mut app_call) =
+                        transactions[group_index]
+                    {
+                        let boxes = app_call.box_references.get_or_insert_with(Vec::new);
+                        if !boxes
+                            .iter()
+                            .any(|b| b.app_id == box_ref.app && b.name == box_ref.name)
+                        {
+                            boxes.push(algokit_transact::BoxReference {
+                                app_id: box_ref.app,
+                                name: box_ref.name.clone(),
+                            });
+                        }
+                    }
+                    return Ok(());
+                }
+            }
+            _ => {}
+        }
+
+        // Find the transaction index to put the reference(s)
+        let group_index = transactions.iter().position(|txn| {
+            if let Transaction::ApplicationCall(app_call) = txn {
+                let accounts_count = app_call
+                    .account_references
+                    .as_ref()
+                    .map(|a| a.len())
+                    .unwrap_or(0);
+                let assets_count = app_call
+                    .asset_references
+                    .as_ref()
+                    .map(|a| a.len())
+                    .unwrap_or(0);
+                let apps_count = app_call
+                    .app_references
+                    .as_ref()
+                    .map(|a| a.len())
+                    .unwrap_or(0);
+                let boxes_count = app_call
+                    .box_references
+                    .as_ref()
+                    .map(|b| b.len())
+                    .unwrap_or(0);
+
+                match resource {
+                    GroupResourceType::Account(_) => accounts_count < MAX_ACCOUNT_REFERENCES,
+
+                    GroupResourceType::AssetHolding(..) | GroupResourceType::AppLocal(..) => {
+                        // If we're adding local state or asset holding, we need space for the account and the other reference (asset or app)
+                        (accounts_count + assets_count + apps_count + boxes_count)
+                            < (MAX_OVERALL_REFERENCES - 1)
+                            && accounts_count < MAX_ACCOUNT_REFERENCES
+                    }
+
+                    GroupResourceType::Box(box_ref) => {
+                        // If we're adding a box, we need space for both the box reference and the app reference
+                        if box_ref.app != 0 {
+                            (accounts_count + assets_count + apps_count + boxes_count)
+                                < MAX_OVERALL_REFERENCES - 1
+                        } else {
+                            (accounts_count + assets_count + apps_count + boxes_count)
+                                < MAX_OVERALL_REFERENCES
+                        }
+                    }
+                    _ => {
+                        (accounts_count + assets_count + apps_count + boxes_count)
+                            < MAX_OVERALL_REFERENCES
+                    }
+                }
+            } else {
+                false
+            }
+        });
+
+        let group_index = group_index.ok_or_else(|| {
+            ComposerError::TransactionError(
+                "No more transactions below reference limit. Add another app call to the group."
+                    .to_string(),
+            )
+        })?;
+
+        if let Transaction::ApplicationCall(ref mut app_call) = transactions[group_index] {
+            match resource {
+                GroupResourceType::Account(account) => {
+                    let accounts = app_call.account_references.get_or_insert_with(Vec::new);
+                    let address = account.parse::<Address>().map_err(|e| {
+                        ComposerError::TransactionError(format!("Invalid account address: {}", e))
+                    })?;
+                    if !accounts.contains(&address) {
+                        accounts.push(address);
+                    }
+                }
+                GroupResourceType::App(app_id) => {
+                    let apps = app_call.app_references.get_or_insert_with(Vec::new);
+                    if !apps.contains(app_id) {
+                        apps.push(*app_id);
+                    }
+                }
+                GroupResourceType::Box(box_ref) => {
+                    let boxes = app_call.box_references.get_or_insert_with(Vec::new);
+                    if !boxes
+                        .iter()
+                        .any(|b| b.app_id == box_ref.app && b.name == box_ref.name)
+                    {
+                        boxes.push(algokit_transact::BoxReference {
+                            app_id: box_ref.app,
+                            name: box_ref.name.clone(),
+                        });
+                    }
+                    if box_ref.app != 0 {
+                        let apps = app_call.app_references.get_or_insert_with(Vec::new);
+                        if !apps.contains(&box_ref.app) {
+                            apps.push(box_ref.app);
+                        }
+                    }
+                }
+                GroupResourceType::ExtraBoxRef => {
+                    let boxes = app_call.box_references.get_or_insert_with(Vec::new);
+                    boxes.push(algokit_transact::BoxReference {
+                        app_id: 0,
+                        name: Vec::new(),
+                    });
+                }
+                GroupResourceType::AssetHolding(asset_holding) => {
+                    let assets = app_call.asset_references.get_or_insert_with(Vec::new);
+                    if !assets.contains(&asset_holding.asset) {
+                        assets.push(asset_holding.asset);
+                    }
+
+                    let accounts = app_call.account_references.get_or_insert_with(Vec::new);
+                    let address = asset_holding.account.parse::<Address>().map_err(|e| {
+                        ComposerError::TransactionError(format!("Invalid account address: {}", e))
+                    })?;
+                    if !accounts.contains(&address) {
+                        accounts.push(address);
+                    }
+                }
+                GroupResourceType::AppLocal(app_local) => {
+                    let apps = app_call.app_references.get_or_insert_with(Vec::new);
+                    if !apps.contains(&app_local.app) {
+                        apps.push(app_local.app);
+                    }
+
+                    let accounts = app_call.account_references.get_or_insert_with(Vec::new);
+                    let address = app_local.account.parse::<Address>().map_err(|e| {
+                        ComposerError::TransactionError(format!("Invalid account address: {}", e))
+                    })?;
+                    if !accounts.contains(&address) {
+                        accounts.push(address);
+                    }
+                }
+                GroupResourceType::Asset(asset_id) => {
+                    let assets = app_call.asset_references.get_or_insert_with(Vec::new);
+                    if !assets.contains(asset_id) {
+                        assets.push(*asset_id);
+                    }
+                }
+            }
+        }
+
+        Ok(())
     }
 
     pub async fn build(
@@ -1220,22 +1789,26 @@ impl Composer {
             10 // Standard default validity window
         };
 
-        let mut group_analysis: Option<GroupAnalysis> = None;
-        if let Some(params) = params {
-            if params
-                .cover_app_call_inner_transaction_fees
-                .unwrap_or(false)
+        let group_analysis = match params.as_ref() {
+            Some(params)
+                if params
+                    .cover_app_call_inner_transaction_fees
+                    .unwrap_or(COVER_APP_CALL_INNER_TRANSACTION_FEES_DEFAULT)
+                    || params
+                        .populate_app_call_resources
+                        .unwrap_or(POPULATE_APP_CALL_RESOURCES_DEFAULT) =>
             {
-                group_analysis = Some(
+                Some(
                     self.analyze_group_requirements(
                         &suggested_params,
                         &default_validity_window,
-                        &params,
+                        params,
                     )
                     .await?,
-                );
+                )
             }
-        }
+            _ => None,
+        };
 
         let transactions = self
             .build_transactions(&suggested_params, &default_validity_window, group_analysis)
@@ -1288,9 +1861,12 @@ impl Composer {
         // Group transactions by signer
         let mut transactions = Vec::new();
         let mut signer_groups: HashMap<*const dyn TransactionSigner, Vec<usize>> = HashMap::new();
-        for (index, txn_with_signer) in transactions_with_signers.iter().enumerate() {
+        for (group_index, txn_with_signer) in transactions_with_signers.iter().enumerate() {
             let signer_ptr = Arc::as_ptr(&txn_with_signer.signer);
-            signer_groups.entry(signer_ptr).or_default().push(index);
+            signer_groups
+                .entry(signer_ptr)
+                .or_default()
+                .push(group_index);
             transactions.push(txn_with_signer.transaction.to_owned());
         }
 
@@ -1750,5 +2326,28 @@ mod tests {
         assert_eq!(priorities[2], FeePriority::ModifiableDeficit(1000));
         assert_eq!(priorities[3], FeePriority::ModifiableDeficit(100));
         assert_eq!(priorities[4], FeePriority::None);
+    }
+
+    #[test]
+    fn test_build_params_default() {
+        let params = BuildParams::default();
+        assert_eq!(params.cover_app_call_inner_transaction_fees, None);
+        assert_eq!(params.populate_app_call_resources, None);
+    }
+
+    #[test]
+    fn test_build_params_from_send_params() {
+        let send_params = SendParams {
+            max_rounds_to_wait_for_confirmation: Some(10),
+            cover_app_call_inner_transaction_fees: Some(true),
+            populate_app_call_resources: Some(true),
+        };
+
+        let build_params = BuildParams::from(&send_params);
+        assert_eq!(
+            build_params.cover_app_call_inner_transaction_fees,
+            Some(true)
+        );
+        assert_eq!(build_params.populate_app_call_resources, Some(true));
     }
 }

@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::{Bytes, serde_as};
 
 use crate::models::ApplicationStateSchema;
-use crate::models::TealKeyValueStore;
+use crate::models::TealKeyValue;
 
 /// Stores the global information associated with an application.
 #[serde_as]
@@ -24,11 +24,11 @@ pub struct ApplicationParams {
     #[serde(rename = "creator")]
     pub creator: String,
     /// \[approv\] approval program.
-    #[serde_as(as = "serde_with::base64::Base64")]
+    #[serde_as(as = "Bytes")]
     #[serde(rename = "approval-program")]
     pub approval_program: Vec<u8>,
     /// \[clearp\] approval program.
-    #[serde_as(as = "serde_with::base64::Base64")]
+    #[serde_as(as = "Bytes")]
     #[serde(rename = "clear-state-program")]
     pub clear_state_program: Vec<u8>,
     /// \[epp\] the amount of extra program pages available to this app.
@@ -45,7 +45,7 @@ pub struct ApplicationParams {
     )]
     pub global_state_schema: Option<ApplicationStateSchema>,
     #[serde(rename = "global-state", skip_serializing_if = "Option::is_none")]
-    pub global_state: Option<TealKeyValueStore>,
+    pub global_state: Option<Vec<TealKeyValue>>,
     /// \[v\] the number of updates to the application programs
     #[serde(rename = "version", skip_serializing_if = "Option::is_none")]
     pub version: Option<u64>,

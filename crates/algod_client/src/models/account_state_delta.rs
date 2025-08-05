@@ -12,7 +12,7 @@ use crate::models;
 use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
 
-use crate::models::StateDelta;
+use crate::models::EvalDeltaKeyValue;
 
 /// Application state delta.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
@@ -20,7 +20,7 @@ pub struct AccountStateDelta {
     #[serde(rename = "address")]
     pub address: String,
     #[serde(rename = "delta")]
-    pub delta: StateDelta,
+    pub delta: Vec<EvalDeltaKeyValue>,
 }
 
 impl AlgorandMsgpack for AccountStateDelta {
@@ -29,7 +29,7 @@ impl AlgorandMsgpack for AccountStateDelta {
 
 impl AccountStateDelta {
     /// Constructor for AccountStateDelta
-    pub fn new(address: String, delta: StateDelta) -> AccountStateDelta {
+    pub fn new(address: String, delta: Vec<EvalDeltaKeyValue>) -> AccountStateDelta {
         AccountStateDelta { address, delta }
     }
 

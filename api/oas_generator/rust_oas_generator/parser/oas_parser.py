@@ -147,15 +147,7 @@ def rust_type_from_openapi(
 
     # Handle references
     if "$ref" in schema:
-        ref_name = _extract_ref_name(schema["$ref"])
-
-        if ref_name in visited:
-            return rust_pascal_case(ref_name)
-
-        visited.add(ref_name)
-
-        # Return the original name without ModelBox renaming
-        return rust_pascal_case(ref_name)
+        return _handle_reference(schema, schemas, visited)
 
     schema_type = schema.get("type", "string")
 
@@ -172,6 +164,44 @@ def rust_type_from_openapi(
     # Handle primitive types
     schema_format = schema.get("format")
     return _get_openapi_type_mapping(schema_type, schema_format)
+
+
+def _handle_reference(
+    schema: dict[str, Any],
+    schemas: dict[str, Any],
+    visited: set[str],
+) -> str:
+    """Handle reference resolution for OpenAPI schemas."""
+    ref_name = _extract_ref_name(schema["$ref"])
+
+    if ref_name in visited:
+        return rust_pascal_case(ref_name)
+
+    # Resolve the reference to get the actual schema definition
+    if ref_name not in schemas:
+        return rust_pascal_case(ref_name)
+
+    resolved_schema = schemas[ref_name]
+
+    # If the resolved schema is an array type, handle it as such
+    if resolved_schema.get("type") == "array":
+        visited.add(ref_name)
+        items_schema = resolved_schema.get("items", {})
+        # Prevent cycles when resolving items
+        if "$ref" in items_schema:
+            items_ref_name = _extract_ref_name(items_schema["$ref"])
+            if items_ref_name in visited:
+                # Break the cycle by using the type name directly
+                items_type = rust_pascal_case(items_ref_name)
+            else:
+                items_type = rust_type_from_openapi(items_schema, schemas, visited)
+        else:
+            items_type = rust_type_from_openapi(items_schema, schemas, visited)
+        visited.remove(ref_name)  # Remove from visited to allow reuse
+        return f"Vec<{items_type}>"
+
+    # If it's not an array, return the type name directly
+    return rust_pascal_case(ref_name)
 
 
 def detect_binary_field(prop_data: dict[str, Any]) -> bool:

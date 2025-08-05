@@ -21,7 +21,7 @@ use std::str::FromStr;
 /// and provides methods for encoding to and decoding from the standard Algorand base32 string format.
 /// The checksum is automatically calculated and validated as part of parsing and formatting.
 #[serde_as]
-#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, Eq)]
 #[serde(transparent)]
 pub struct Address(#[serde_as(as = "Bytes")] pub Byte32);
 
@@ -52,6 +52,13 @@ impl Address {
     /// Computes the 4-byte checksum for the address.
     pub fn checksum(&self) -> [u8; ALGORAND_CHECKSUM_BYTE_LENGTH] {
         pub_key_to_checksum(&self.0)
+    }
+
+    /// Computes the address from an application ID.
+    pub fn from_app_id(app_id: &u64) -> Self {
+        let mut to_hash = b"appID".to_vec();
+        to_hash.extend_from_slice(&app_id.to_be_bytes());
+        Address(hash(&to_hash))
     }
 }
 

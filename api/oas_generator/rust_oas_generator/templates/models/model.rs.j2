@@ -94,6 +94,21 @@ pub struct {{ schema.rust_struct_name }} {
     {% if property.description %}
     {{ property.description | rust_doc_comment(4) }}
     {% endif %}
+    {% if schema.implements_algokit_msgpack %}
+    {% if property.is_base64_encoded %}
+    {% if property.required %}
+    #[serde_as(as = "Bytes")]
+    {% else %}
+    #[serde_as(as = "Option<Bytes>")]
+    {% endif %}
+    {% elif property.items and property.items.is_base64_encoded %}
+    {% if property.required %}
+    #[serde_as(as = "Vec<Bytes>")]
+    {% else %}
+    #[serde_as(as = "Option<Vec<Bytes>>")]
+    {% endif %}
+    {% endif %}
+    {% else %}
     {% if property.is_base64_encoded %}
     {% if property.required %}
     #[serde_as(as = "serde_with::base64::Base64")]
@@ -102,9 +117,10 @@ pub struct {{ schema.rust_struct_name }} {
     {% endif %}
     {% elif property.items and property.items.is_base64_encoded %}
     {% if property.required %}
-    #[serde_as(as = "Vec<Bytes>")]
+    #[serde_as(as = "Vec<serde_with::base64::Base64>")]
     {% else %}
-    #[serde_as(as = "Option<Vec<Bytes>>")]
+    #[serde_as(as = "Option<Vec<serde_with::base64::Base64>>")]
+    {% endif %}
     {% endif %}
     {% endif %}
     #[serde(rename = "{{ property.name }}"{% if not property.required %}, skip_serializing_if = "Option::is_none"{% endif %})]
