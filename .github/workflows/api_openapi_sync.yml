@@ -1,7 +1,7 @@
 name: API OpenAPI Sync
-# This workflow runs weekly to check if the OpenAPI specification needs to be converted
+# This workflow runs weekly to check if the OpenAPI specifications need to be converted
 # and ensures the generated code is up to date. It fails if any changes are detected,
-# indicating that manual intervention is needed to update the specification.
+# indicating that manual intervention is needed to update the specifications.
 
 on:
   schedule:
@@ -43,7 +43,7 @@ jobs:
         run: |
           git status --porcelain > /tmp/initial_status.txt
 
-      - name: Convert OpenAPI specification
+      - name: Convert OpenAPI specifications (algod and indexer)
         run: cargo api convert-openapi
 
       - name: Check for changes
@@ -57,7 +57,7 @@ jobs:
             echo "🔍 Detailed diff:"
             git diff
             echo ""
-            echo "💡 This indicates that the OpenAPI specification has been updated and needs to be committed."
+            echo "💡 This indicates that one or more OpenAPI specifications have been updated and need to be committed."
             echo "   Please run 'cargo api convert-openapi' locally and commit the changes."
             exit 1
           else

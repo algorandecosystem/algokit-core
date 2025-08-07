@@ -310,6 +310,11 @@ class Parameter:
         return bool(self.enum_values)
 
     @property
+    def is_array(self) -> bool:
+        """Check if this parameter is an array type."""
+        return self.rust_type.startswith("Vec<")
+
+    @property
     def effective_rust_type(self) -> str:
         """Get the effective Rust type, using enum if available, otherwise the original rust_type."""
         if self.is_enum_parameter and self.rust_enum_type:
