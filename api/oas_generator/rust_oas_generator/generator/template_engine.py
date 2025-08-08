@@ -14,7 +14,7 @@ from typing import Any
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from rust_oas_generator.generator.filters import FILTERS
+from rust_oas_generator.generator.filters import FILTERS, detect_client_type
 from rust_oas_generator.parser.oas_parser import (
     Operation,
     Parameter,
@@ -398,17 +398,16 @@ class RustTemplateEngine:
         """Wrap Rust type in Vec."""
         return f"Vec<{rust_type}>"
 
-    def _detect_client_type_from_spec(self, spec) -> str:
+    def _detect_client_type_from_spec(self, spec: ParsedSpec | dict[str, Any]) -> str:
         """Detect client type from the OpenAPI specification.
-        
+
         Args:
             spec: The parsed OpenAPI specification.
-            
+
         Returns:
             The appropriate client type string (e.g., "Algod", "Indexer").
         """
-        from rust_oas_generator.generator.filters import detect_client_type
-        title = spec.info.get('title', '') if hasattr(spec, 'info') else ''
+        title = spec.info.get("title", "") if hasattr(spec, "info") else ""
         return detect_client_type(title)
 
 

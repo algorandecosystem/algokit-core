@@ -258,13 +258,13 @@ def http_method_enum(method: str) -> str:
 
 def detect_client_type(spec_title: str) -> str:
     """Detect the client type from OpenAPI spec title.
-    
+
     Args:
         spec_title: The title field from the OpenAPI spec info section.
-        
+
     Returns:
         The appropriate client type string (e.g., "Algod", "Indexer").
-        
+
     Examples:
         >>> detect_client_type("Algod REST API.")
         'Algod'
@@ -275,20 +275,20 @@ def detect_client_type(spec_title: str) -> str:
     """
     if not spec_title:
         return "Api"
-    
+
     title_lower = spec_title.lower().strip()
-    
+
     # Check for known API types
     if "algod" in title_lower:
         return "Algod"
-    elif "indexer" in title_lower:
+    if "indexer" in title_lower:
         return "Indexer"
-    else:
-        # Fallback: extract first word and capitalize
-        first_word = spec_title.split()[0] if spec_title.split() else "Api"
-        # Clean up common suffixes/prefixes
-        clean_word = first_word.strip(".,!?")
-        return clean_word.title() if clean_word else "Api"
+
+    # Fallback: extract first word and capitalize
+    first_word = spec_title.split()[0] if spec_title.split() else "Api"
+    # Clean up common suffixes/prefixes
+    clean_word = first_word.strip(".,!?")
+    return clean_word.title() if clean_word else "Api"
 
 
 # Register filters that will be available in Jinja templates
