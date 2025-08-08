@@ -1,3 +1,4 @@
+{% set client_type = get_client_type(spec) %}
 /*
  * {{ spec.info.title }}
  *
@@ -12,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use algokit_http_client::{HttpClient, HttpMethod};
 use std::collections::HashMap;
 
-use super::{Error, AlgodApiError, ContentType};
+use super::{Error, {{ client_type }}ApiError, ContentType};
 {% if operation.supports_msgpack %}
 use algokit_transact::AlgorandMsgpack;
 {% endif %}

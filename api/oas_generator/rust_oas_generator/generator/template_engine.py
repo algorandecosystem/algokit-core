@@ -361,6 +361,8 @@ class RustTemplateEngine:
             "get_request_body_name": lambda op: "request" if op.request_body else None,
             "is_request_body_required": lambda op: bool(op.request_body and op.request_body.get("required", False)),
             "should_import_request_body_type": type_analyzer.should_import_request_body_type,
+            # Client type detection
+            "get_client_type": lambda spec: self._detect_client_type_from_spec(spec),
         }
 
         self.env.globals.update(globals_map)
@@ -395,6 +397,19 @@ class RustTemplateEngine:
     def _rust_vec(rust_type: str) -> str:
         """Wrap Rust type in Vec."""
         return f"Vec<{rust_type}>"
+
+    def _detect_client_type_from_spec(self, spec) -> str:
+        """Detect client type from the OpenAPI specification.
+        
+        Args:
+            spec: The parsed OpenAPI specification.
+            
+        Returns:
+            The appropriate client type string (e.g., "Algod", "Indexer").
+        """
+        from rust_oas_generator.generator.filters import detect_client_type
+        title = spec.info.get('title', '') if hasattr(spec, 'info') else ''
+        return detect_client_type(title)
 
 
 class RustCodeGenerator:
