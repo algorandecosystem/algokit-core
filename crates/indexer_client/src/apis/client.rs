@@ -19,50 +19,50 @@ use crate::models::{
 use algokit_http_client::{DefaultHttpClient, HttpClient};
 use std::sync::Arc;
 
-/// The main Algod API client.
+/// The main Indexer API client.
 ///
-/// This client provides convenient access to all Algod API endpoints.
+/// This client provides convenient access to all Indexer API endpoints.
 /// It wraps the lower-level endpoint functions with a more ergonomic interface.
 /// All methods return a unified `Error` type that can represent any endpoint error.
 #[derive(Clone)]
-pub struct AlgodClient {
+pub struct IndexerClient {
     http_client: Arc<dyn HttpClient>,
 }
 
-impl AlgodClient {
-    /// Create a new AlgodClient with a custom http client.
+impl IndexerClient {
+    /// Create a new IndexerClient with a custom http client.
     pub fn new(http_client: Arc<dyn HttpClient>) -> Self {
         Self { http_client }
     }
 
-    /// Create a new AlgodClient for Algorand TestNet.
+    /// Create a new IndexerClient for Algorand TestNet.
     #[cfg(feature = "default_client")]
     pub fn testnet() -> Self {
         let http_client = Arc::new(DefaultHttpClient::new(
-            "https://testnet-api.4160.nodely.dev",
+            "https://testnet-idx.4160.nodely.dev",
         ));
         Self::new(http_client)
     }
 
-    /// Create a new AlgodClient for Algorand MainNet.
+    /// Create a new IndexerClient for Algorand MainNet.
     #[cfg(feature = "default_client")]
     pub fn mainnet() -> Self {
         let http_client = Arc::new(DefaultHttpClient::new(
-            "https://mainnet-api.4160.nodely.dev",
+            "https://mainnet-idx.4160.nodely.dev",
         ));
         Self::new(http_client)
     }
 
-    /// Create a new AlgodClient for a local localnet environment.
+    /// Create a new IndexerClient for a local localnet environment.
     #[cfg(feature = "default_client")]
     pub fn localnet() -> Self {
         let http_client = Arc::new(
             DefaultHttpClient::with_header(
-                "http://localhost:4001",
-                "X-Algo-API-Token",
+                "http://localhost:8980",
+                "X-Indexer-API-Token",
                 "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             )
-            .expect("Failed to create HTTP client with X-Algo-API-Token header"),
+            .expect("Failed to create HTTP client with X-Indexer-API-Token header"),
         );
         Self::new(http_client)
     }

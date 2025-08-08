@@ -5,4 +5,4 @@ pub mod apis;
 pub mod models;
 
 // Re-export the main client for convenience
-pub use apis::AlgodClient;
+pub use apis::IndexerClient;

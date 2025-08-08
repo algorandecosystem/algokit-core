@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use super::parameter_enums::*;
-use super::{AlgodApiError, ContentType, Error};
+use super::{ContentType, Error, IndexerApiError};
 
 // Import all custom types used by this endpoint
 use crate::models::LookupAccountTransactions;

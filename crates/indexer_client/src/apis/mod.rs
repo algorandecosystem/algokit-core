@@ -38,7 +38,7 @@ pub mod search_for_transactions;
 
 /// Unified error type that can represent any API error from any endpoint
 #[derive(Debug, thiserror::Error)]
-pub enum AlgodApiError {
+pub enum IndexerApiError {
     #[error("Make_health_check error: {0:?}")]
     MakeHealthCheck(make_health_check::MakeHealthCheckError),
     #[error("Search_for_accounts error: {0:?}")]
@@ -89,141 +89,141 @@ pub enum AlgodApiError {
     Unknown(String),
 }
 
-impl From<make_health_check::MakeHealthCheckError> for AlgodApiError {
+impl From<make_health_check::MakeHealthCheckError> for IndexerApiError {
     fn from(err: make_health_check::MakeHealthCheckError) -> Self {
-        AlgodApiError::MakeHealthCheck(err)
+        IndexerApiError::MakeHealthCheck(err)
     }
 }
 
-impl From<search_for_accounts::SearchForAccountsError> for AlgodApiError {
+impl From<search_for_accounts::SearchForAccountsError> for IndexerApiError {
     fn from(err: search_for_accounts::SearchForAccountsError) -> Self {
-        AlgodApiError::SearchForAccounts(err)
+        IndexerApiError::SearchForAccounts(err)
     }
 }
 
-impl From<lookup_account_by_id::LookupAccountByIdError> for AlgodApiError {
+impl From<lookup_account_by_id::LookupAccountByIdError> for IndexerApiError {
     fn from(err: lookup_account_by_id::LookupAccountByIdError) -> Self {
-        AlgodApiError::LookupAccountById(err)
+        IndexerApiError::LookupAccountById(err)
     }
 }
 
-impl From<lookup_account_assets::LookupAccountAssetsError> for AlgodApiError {
+impl From<lookup_account_assets::LookupAccountAssetsError> for IndexerApiError {
     fn from(err: lookup_account_assets::LookupAccountAssetsError) -> Self {
-        AlgodApiError::LookupAccountAssets(err)
+        IndexerApiError::LookupAccountAssets(err)
     }
 }
 
-impl From<lookup_account_created_assets::LookupAccountCreatedAssetsError> for AlgodApiError {
+impl From<lookup_account_created_assets::LookupAccountCreatedAssetsError> for IndexerApiError {
     fn from(err: lookup_account_created_assets::LookupAccountCreatedAssetsError) -> Self {
-        AlgodApiError::LookupAccountCreatedAssets(err)
+        IndexerApiError::LookupAccountCreatedAssets(err)
     }
 }
 
-impl From<lookup_account_app_local_states::LookupAccountAppLocalStatesError> for AlgodApiError {
+impl From<lookup_account_app_local_states::LookupAccountAppLocalStatesError> for IndexerApiError {
     fn from(err: lookup_account_app_local_states::LookupAccountAppLocalStatesError) -> Self {
-        AlgodApiError::LookupAccountAppLocalStates(err)
+        IndexerApiError::LookupAccountAppLocalStates(err)
     }
 }
 
 impl From<lookup_account_created_applications::LookupAccountCreatedApplicationsError>
-    for AlgodApiError
+    for IndexerApiError
 {
     fn from(
         err: lookup_account_created_applications::LookupAccountCreatedApplicationsError,
     ) -> Self {
-        AlgodApiError::LookupAccountCreatedApplications(err)
+        IndexerApiError::LookupAccountCreatedApplications(err)
     }
 }
 
-impl From<lookup_account_transactions::LookupAccountTransactionsError> for AlgodApiError {
+impl From<lookup_account_transactions::LookupAccountTransactionsError> for IndexerApiError {
     fn from(err: lookup_account_transactions::LookupAccountTransactionsError) -> Self {
-        AlgodApiError::LookupAccountTransactions(err)
+        IndexerApiError::LookupAccountTransactions(err)
     }
 }
 
-impl From<search_for_applications::SearchForApplicationsError> for AlgodApiError {
+impl From<search_for_applications::SearchForApplicationsError> for IndexerApiError {
     fn from(err: search_for_applications::SearchForApplicationsError) -> Self {
-        AlgodApiError::SearchForApplications(err)
+        IndexerApiError::SearchForApplications(err)
     }
 }
 
-impl From<lookup_application_by_id::LookupApplicationByIdError> for AlgodApiError {
+impl From<lookup_application_by_id::LookupApplicationByIdError> for IndexerApiError {
     fn from(err: lookup_application_by_id::LookupApplicationByIdError) -> Self {
-        AlgodApiError::LookupApplicationById(err)
+        IndexerApiError::LookupApplicationById(err)
     }
 }
 
-impl From<search_for_application_boxes::SearchForApplicationBoxesError> for AlgodApiError {
+impl From<search_for_application_boxes::SearchForApplicationBoxesError> for IndexerApiError {
     fn from(err: search_for_application_boxes::SearchForApplicationBoxesError) -> Self {
-        AlgodApiError::SearchForApplicationBoxes(err)
+        IndexerApiError::SearchForApplicationBoxes(err)
     }
 }
 
 impl From<lookup_application_box_by_id_and_name::LookupApplicationBoxByIdAndNameError>
-    for AlgodApiError
+    for IndexerApiError
 {
     fn from(
         err: lookup_application_box_by_id_and_name::LookupApplicationBoxByIdAndNameError,
     ) -> Self {
-        AlgodApiError::LookupApplicationBoxByIdAndName(err)
+        IndexerApiError::LookupApplicationBoxByIdAndName(err)
     }
 }
 
-impl From<lookup_application_logs_by_id::LookupApplicationLogsByIdError> for AlgodApiError {
+impl From<lookup_application_logs_by_id::LookupApplicationLogsByIdError> for IndexerApiError {
     fn from(err: lookup_application_logs_by_id::LookupApplicationLogsByIdError) -> Self {
-        AlgodApiError::LookupApplicationLogsById(err)
+        IndexerApiError::LookupApplicationLogsById(err)
     }
 }
 
-impl From<search_for_assets::SearchForAssetsError> for AlgodApiError {
+impl From<search_for_assets::SearchForAssetsError> for IndexerApiError {
     fn from(err: search_for_assets::SearchForAssetsError) -> Self {
-        AlgodApiError::SearchForAssets(err)
+        IndexerApiError::SearchForAssets(err)
     }
 }
 
-impl From<lookup_asset_by_id::LookupAssetByIdError> for AlgodApiError {
+impl From<lookup_asset_by_id::LookupAssetByIdError> for IndexerApiError {
     fn from(err: lookup_asset_by_id::LookupAssetByIdError) -> Self {
-        AlgodApiError::LookupAssetById(err)
+        IndexerApiError::LookupAssetById(err)
     }
 }
 
-impl From<lookup_asset_balances::LookupAssetBalancesError> for AlgodApiError {
+impl From<lookup_asset_balances::LookupAssetBalancesError> for IndexerApiError {
     fn from(err: lookup_asset_balances::LookupAssetBalancesError) -> Self {
-        AlgodApiError::LookupAssetBalances(err)
+        IndexerApiError::LookupAssetBalances(err)
     }
 }
 
-impl From<lookup_asset_transactions::LookupAssetTransactionsError> for AlgodApiError {
+impl From<lookup_asset_transactions::LookupAssetTransactionsError> for IndexerApiError {
     fn from(err: lookup_asset_transactions::LookupAssetTransactionsError) -> Self {
-        AlgodApiError::LookupAssetTransactions(err)
+        IndexerApiError::LookupAssetTransactions(err)
     }
 }
 
-impl From<search_for_block_headers::SearchForBlockHeadersError> for AlgodApiError {
+impl From<search_for_block_headers::SearchForBlockHeadersError> for IndexerApiError {
     fn from(err: search_for_block_headers::SearchForBlockHeadersError) -> Self {
-        AlgodApiError::SearchForBlockHeaders(err)
+        IndexerApiError::SearchForBlockHeaders(err)
     }
 }
 
-impl From<lookup_block::LookupBlockError> for AlgodApiError {
+impl From<lookup_block::LookupBlockError> for IndexerApiError {
     fn from(err: lookup_block::LookupBlockError) -> Self {
-        AlgodApiError::LookupBlock(err)
+        IndexerApiError::LookupBlock(err)
     }
 }
 
-impl From<lookup_transaction::LookupTransactionError> for AlgodApiError {
+impl From<lookup_transaction::LookupTransactionError> for IndexerApiError {
     fn from(err: lookup_transaction::LookupTransactionError) -> Self {
-        AlgodApiError::LookupTransaction(err)
+        IndexerApiError::LookupTransaction(err)
     }
 }
 
-impl From<search_for_transactions::SearchForTransactionsError> for AlgodApiError {
+impl From<search_for_transactions::SearchForTransactionsError> for IndexerApiError {
     fn from(err: search_for_transactions::SearchForTransactionsError) -> Self {
-        AlgodApiError::SearchForTransactions(err)
+        IndexerApiError::SearchForTransactions(err)
     }
 }
 
-/// The main error type for all algod client operations
+/// The main error type for all indexer client operations
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("HTTP error: {0}")]
@@ -231,7 +231,7 @@ pub enum Error {
     #[error("Serialization error: {0}")]
     Serde(String),
     #[error("API error: {0}")]
-    Api(#[from] AlgodApiError),
+    Api(#[from] IndexerApiError),
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -261,7 +261,7 @@ pub fn urlencode<T: AsRef<str>>(s: T) -> String {
 }
 
 // Re-export the consolidated client
-pub use client::AlgodClient;
+pub use client::IndexerClient;
 
 // Re-export parameter enums
 pub use parameter_enums::*;
