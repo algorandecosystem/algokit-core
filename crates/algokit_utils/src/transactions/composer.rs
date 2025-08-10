@@ -139,7 +139,7 @@ impl From<&SendParams> for BuildParams {
 #[derive(Debug)]
 struct TransactionAnalysis {
     /// The fee difference required for this transaction
-    required_fee_delta: FeeDelta,
+    required_fee_delta: Option<FeeDelta>,
     /// Resources that this specific transaction accessed but didn't declare
     unnamed_resources_accessed: Option<SimulateUnnamedResourcesAccessed>,
 }
@@ -155,8 +155,6 @@ struct GroupAnalysis {
 /// Represents the fee difference for a transaction
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FeeDelta {
-    /// Transaction has the exact required fee
-    None,
     /// Transaction has an insufficient fee (needs more)
     Deficit(u64),
     /// Transaction has an excess fee (can cover other transactions in the group)
@@ -165,26 +163,20 @@ pub enum FeeDelta {
 
 impl FeeDelta {
     /// Create a FeeDelta from an i64 value (positive = deficit, negative = surplus, zero = none)
-    pub fn from_i64(value: i64) -> Self {
+    pub fn from_i64(value: i64) -> Option<Self> {
         match value.cmp(&0) {
-            std::cmp::Ordering::Greater => FeeDelta::Deficit(value as u64),
-            std::cmp::Ordering::Less => FeeDelta::Surplus((-value) as u64),
-            std::cmp::Ordering::Equal => FeeDelta::None,
+            std::cmp::Ordering::Greater => Some(FeeDelta::Deficit(value as u64)),
+            std::cmp::Ordering::Less => Some(FeeDelta::Surplus((-value) as u64)),
+            std::cmp::Ordering::Equal => None,
         }
     }
 
-    /// Convert to i64 representation (positive = deficit, negative = surplus, zero = none)
-    pub fn to_i64(&self) -> i64 {
+    /// Convert to i64 representation (positive = deficit, negative = surplus)
+    pub fn to_i64(self) -> i64 {
         match self {
-            FeeDelta::None => 0,
-            FeeDelta::Deficit(amount) => *amount as i64,
-            FeeDelta::Surplus(amount) => -(*amount as i64),
+            FeeDelta::Deficit(amount) => amount as i64,
+            FeeDelta::Surplus(amount) => -(amount as i64),
         }
-    }
-
-    /// Check if this represents no fee difference (neutral)
-    pub fn is_none(&self) -> bool {
-        matches!(self, FeeDelta::None)
     }
 
     /// Check if this represents a deficit (needs more fees)
@@ -200,14 +192,13 @@ impl FeeDelta {
     /// Get the amount regardless of whether it's deficit or surplus
     pub fn amount(&self) -> u64 {
         match self {
-            FeeDelta::None => 0,
             FeeDelta::Deficit(amount) | FeeDelta::Surplus(amount) => *amount,
         }
     }
 }
 
 impl std::ops::Add for FeeDelta {
-    type Output = FeeDelta;
+    type Output = Option<FeeDelta>;
 
     fn add(self, rhs: FeeDelta) -> Self::Output {
         FeeDelta::from_i64(self.to_i64() + rhs.to_i64())
@@ -218,8 +209,8 @@ impl std::ops::Add for FeeDelta {
 // By default PartialOrd and Ord provide the correct sorting logic, based the enum variant order.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 enum FeePriority {
-    /// Non-deficit transactions (lowest priority)
-    None,
+    /// Covered / Non-deficit transactions (lowest priority)
+    Covered,
     /// Application call transactions with deficits that can be modified
     ModifiableDeficit(u64),
     /// Non application call or immutable fee transactions with deficits (highest priority)
@@ -932,14 +923,17 @@ impl Composer {
                             let inner_txns_fee_delta = Self::calculate_inner_fee_delta(
                                 &simulate_txn_result.txn_result.inner_txns,
                                 suggested_params.min_fee,
-                                FeeDelta::None,
+                                None,
                             );
-                            inner_txns_fee_delta + txn_fee_delta
+                            FeeDelta::from_i64(
+                                inner_txns_fee_delta.map(FeeDelta::to_i64).unwrap_or(0)
+                                    + txn_fee_delta.map(FeeDelta::to_i64).unwrap_or(0),
+                            )
                         }
                         _ => txn_fee_delta,
                     }
                 } else {
-                    FeeDelta::None
+                    None
                 };
 
                 Ok(TransactionAnalysis {
@@ -966,8 +960,8 @@ impl Composer {
     fn calculate_inner_fee_delta(
         inner_transactions: &Option<Vec<PendingTransactionResponse>>,
         min_transaction_fee: u64,
-        acc: FeeDelta,
-    ) -> FeeDelta {
+        acc: Option<FeeDelta>,
+    ) -> Option<FeeDelta> {
         match inner_transactions {
             Some(txns) => {
                 // Surplus inner transaction fees do not pool up to the parent transaction.
@@ -983,14 +977,16 @@ impl Composer {
                         - inner_txn.txn.transaction.header().fee.unwrap_or(0) as i64,
                     );
 
-                    let current_fee_delta = recursive_delta + txn_fee_delta;
+                    let current_fee_delta = FeeDelta::from_i64(
+                        recursive_delta.map(FeeDelta::to_i64).unwrap_or(0)
+                            + txn_fee_delta.map(FeeDelta::to_i64).unwrap_or(0),
+                    );
 
                     // If after the recursive inner fee calculations we have a surplus,
-                    // return 0 to avoid pooling up surplus fees, which is not allowed.
-                    if current_fee_delta.is_surplus() {
-                        FeeDelta::None
-                    } else {
-                        current_fee_delta
+                    // return None to avoid pooling up surplus fees, which is not allowed.
+                    match current_fee_delta {
+                        Some(delta) if delta.is_surplus() => None,
+                        _ => current_fee_delta,
                     }
                 })
             }
@@ -1146,7 +1142,8 @@ impl Composer {
                     |(mut surplus_group_fees_acc, mut txn_analysis_acc),
                      (group_index, transaction_analysis)| {
                         // Accumulate surplus fees
-                        if let FeeDelta::Surplus(amount) = &transaction_analysis.required_fee_delta
+                        if let Some(FeeDelta::Surplus(amount)) =
+                            &transaction_analysis.required_fee_delta
                         {
                             surplus_group_fees_acc += amount;
                         }
@@ -1161,7 +1158,7 @@ impl Composer {
                             false
                         };
                         let priority = match &transaction_analysis.required_fee_delta {
-                            FeeDelta::Deficit(amount) => {
+                            Some(FeeDelta::Deficit(amount)) => {
                                 if is_immutable_fee
                                     || !matches!(txn, Transaction::ApplicationCall(_))
                                 {
@@ -1172,7 +1169,7 @@ impl Composer {
                                     FeePriority::ModifiableDeficit(*amount)
                                 }
                             }
-                            _ => FeePriority::None,
+                            _ => FeePriority::Covered,
                         };
 
                         txn_analysis_acc.push((
@@ -1191,24 +1188,24 @@ impl Composer {
 
             // Cover any additional fees required for the transactions
             for (group_index, required_fee_delta, _, resources_accessed) in transaction_analysis {
-                if let FeeDelta::Deficit(deficit_amount) = *required_fee_delta {
+                if let Some(FeeDelta::Deficit(deficit_amount)) = *required_fee_delta {
                     // First allocate surplus group fees to cover deficits
-                    let mut additional_fee_delta: FeeDelta = FeeDelta::None;
+                    let mut additional_fee_delta: Option<FeeDelta> = None;
                     if surplus_group_fees == 0 {
                         // No surplus groups fees, the transaction must cover its own deficit
-                        additional_fee_delta = FeeDelta::Deficit(deficit_amount);
+                        additional_fee_delta = Some(FeeDelta::Deficit(deficit_amount));
                     } else if surplus_group_fees >= deficit_amount {
                         // Surplus fully covers the deficit
                         surplus_group_fees -= deficit_amount;
                     } else {
                         // Surplus partially covers the deficit
                         additional_fee_delta =
-                            FeeDelta::Deficit(deficit_amount - surplus_group_fees);
+                            Some(FeeDelta::Deficit(deficit_amount - surplus_group_fees));
                         surplus_group_fees = 0;
                     }
 
                     // If there is any additional fee deficit, the transaction must cover it by modifying the fee
-                    if let FeeDelta::Deficit(deficit_amount) = additional_fee_delta {
+                    if let Some(FeeDelta::Deficit(deficit_amount)) = additional_fee_delta {
                         match transactions[group_index] {
                             Transaction::ApplicationCall(_) => {
                                 let txn_header = transactions[group_index].header_mut();
@@ -2264,45 +2261,37 @@ mod tests {
     #[test]
     fn test_fee_delta_operations() {
         // Test creation from i64
-        assert_eq!(FeeDelta::from_i64(100), FeeDelta::Deficit(100));
-        assert_eq!(FeeDelta::from_i64(-50), FeeDelta::Surplus(50));
-        assert_eq!(FeeDelta::from_i64(0), FeeDelta::None);
+        assert_eq!(FeeDelta::from_i64(100), Some(FeeDelta::Deficit(100)));
+        assert_eq!(FeeDelta::from_i64(-50), Some(FeeDelta::Surplus(50)));
+        assert_eq!(FeeDelta::from_i64(0), None);
 
         // Test conversion to i64
-        assert_eq!(FeeDelta::None.to_i64(), 0);
         assert_eq!(FeeDelta::Deficit(100).to_i64(), 100);
         assert_eq!(FeeDelta::Surplus(50).to_i64(), -50);
 
-        // Test is_none, is_deficit and is_surplus
-        assert!(FeeDelta::None.is_none());
-        assert!(!FeeDelta::None.is_deficit());
-        assert!(!FeeDelta::None.is_surplus());
-
+        // Test is_deficit and is_surplus
         assert!(FeeDelta::Deficit(100).is_deficit());
         assert!(!FeeDelta::Deficit(100).is_surplus());
-        assert!(!FeeDelta::Deficit(100).is_none());
 
         assert!(FeeDelta::Surplus(50).is_surplus());
         assert!(!FeeDelta::Surplus(50).is_deficit());
-        assert!(!FeeDelta::Surplus(50).is_none());
 
         // Test amount extraction
-        assert_eq!(FeeDelta::None.amount(), 0);
         assert_eq!(FeeDelta::Deficit(100).amount(), 100);
         assert_eq!(FeeDelta::Surplus(50).amount(), 50);
     }
 
     #[test]
     fn test_fee_priority_ordering() {
-        let no_deficit = FeePriority::None;
+        let covered = FeePriority::Covered;
         let modifiable_small = FeePriority::ModifiableDeficit(100);
         let modifiable_large = FeePriority::ModifiableDeficit(1000);
         let immutable_small = FeePriority::ImmutableDeficit(100);
         let immutable_large = FeePriority::ImmutableDeficit(1000);
 
-        // Test basic ordering: ImmutableDeficit > ModifiableDeficit > NoDeficit
+        // Test basic ordering: ImmutableDeficit > ModifiableDeficit > Covered
         assert!(immutable_small > modifiable_large);
-        assert!(modifiable_small > no_deficit);
+        assert!(modifiable_small > covered);
         assert!(immutable_large > modifiable_large);
 
         // Test within same priority class, larger deficits have higher priority
@@ -2311,7 +2300,7 @@ mod tests {
 
         // Create a sorted vector to verify the ordering behavior
         let mut priorities = [
-            no_deficit,
+            covered,
             modifiable_small,
             immutable_small,
             modifiable_large,
@@ -2325,7 +2314,7 @@ mod tests {
         assert_eq!(priorities[1], FeePriority::ImmutableDeficit(100));
         assert_eq!(priorities[2], FeePriority::ModifiableDeficit(1000));
         assert_eq!(priorities[3], FeePriority::ModifiableDeficit(100));
-        assert_eq!(priorities[4], FeePriority::None);
+        assert_eq!(priorities[4], FeePriority::Covered);
     }
 
     #[test]
