@@ -18,7 +18,7 @@ use serde_with::{Bytes, serde_as};
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct AccountParticipation {
     /// \[sel\] Selection public key (if any) currently registered for this round.
-    #[serde_as(as = "Bytes")]
+    #[serde_as(as = "serde_with::base64::Base64")]
     #[serde(rename = "selection-participation-key")]
     pub selection_participation_key: Vec<u8>,
     /// \[voteFst\] First round for which this participation is valid.
@@ -31,11 +31,11 @@ pub struct AccountParticipation {
     #[serde(rename = "vote-last-valid")]
     pub vote_last_valid: u64,
     /// \[vote\] root participation public key (if any) currently registered for this round.
-    #[serde_as(as = "Bytes")]
+    #[serde_as(as = "serde_with::base64::Base64")]
     #[serde(rename = "vote-participation-key")]
     pub vote_participation_key: Vec<u8>,
     /// \[stprf\] Root of the state proof key (if any)
-    #[serde_as(as = "Option<Bytes>")]
+    #[serde_as(as = "Option<serde_with::base64::Base64>")]
     #[serde(rename = "state-proof-key", skip_serializing_if = "Option::is_none")]
     pub state_proof_key: Option<Vec<u8>>,
 }

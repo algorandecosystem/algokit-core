@@ -94,7 +94,8 @@ pub struct {{ schema.rust_struct_name }} {
     {% if property.description %}
     {{ property.description | rust_doc_comment(4) }}
     {% endif %}
-    {% if schema.implements_algokit_msgpack %}
+    {% set is_account_related = schema.name in ['Account', 'AccountParticipation', 'AssetHolding', 'ApplicationLocalState', 'Application', 'Asset', 'AssetParams', 'ApplicationParams'] %}
+    {% if schema.implements_algokit_msgpack and not is_account_related %}
     {% if property.is_base64_encoded %}
     {% if property.required %}
     #[serde_as(as = "Bytes")]

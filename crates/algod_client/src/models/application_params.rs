@@ -24,11 +24,11 @@ pub struct ApplicationParams {
     #[serde(rename = "creator")]
     pub creator: String,
     /// \[approv\] approval program.
-    #[serde_as(as = "Bytes")]
+    #[serde_as(as = "serde_with::base64::Base64")]
     #[serde(rename = "approval-program")]
     pub approval_program: Vec<u8>,
     /// \[clearp\] approval program.
-    #[serde_as(as = "Bytes")]
+    #[serde_as(as = "serde_with::base64::Base64")]
     #[serde(rename = "clear-state-program")]
     pub clear_state_program: Vec<u8>,
     /// \[epp\] the amount of extra program pages available to this app.

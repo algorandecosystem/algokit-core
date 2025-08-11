@@ -41,14 +41,14 @@ pub struct AssetParams {
     #[serde(rename = "manager", skip_serializing_if = "Option::is_none")]
     pub manager: Option<String>,
     /// \[am\] A commitment to some unspecified asset metadata. The format of this metadata is up to the application.
-    #[serde_as(as = "Option<Bytes>")]
+    #[serde_as(as = "Option<serde_with::base64::Base64>")]
     #[serde(rename = "metadata-hash", skip_serializing_if = "Option::is_none")]
     pub metadata_hash: Option<Vec<u8>>,
     /// \[an\] Name of this asset, as supplied by the creator. Included only when the asset name is composed of printable utf-8 characters.
     #[serde(rename = "name", skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
     /// Base64 encoded name of this asset, as supplied by the creator.
-    #[serde_as(as = "Option<Bytes>")]
+    #[serde_as(as = "Option<serde_with::base64::Base64>")]
     #[serde(rename = "name-b64", skip_serializing_if = "Option::is_none")]
     pub name_b64: Option<Vec<u8>>,
     /// \[r\] Address of account holding reserve (non-minted) units of this asset.
@@ -61,14 +61,14 @@ pub struct AssetParams {
     #[serde(rename = "unit-name", skip_serializing_if = "Option::is_none")]
     pub unit_name: Option<String>,
     /// Base64 encoded name of a unit of this asset, as supplied by the creator.
-    #[serde_as(as = "Option<Bytes>")]
+    #[serde_as(as = "Option<serde_with::base64::Base64>")]
     #[serde(rename = "unit-name-b64", skip_serializing_if = "Option::is_none")]
     pub unit_name_b64: Option<Vec<u8>>,
     /// \[au\] URL where more information about the asset can be retrieved. Included only when the URL is composed of printable utf-8 characters.
     #[serde(rename = "url", skip_serializing_if = "Option::is_none")]
     pub url: Option<String>,
     /// Base64 encoded URL where more information about the asset can be retrieved.
-    #[serde_as(as = "Option<Bytes>")]
+    #[serde_as(as = "Option<serde_with::base64::Base64>")]
     #[serde(rename = "url-b64", skip_serializing_if = "Option::is_none")]
     pub url_b64: Option<Vec<u8>>,
 }
