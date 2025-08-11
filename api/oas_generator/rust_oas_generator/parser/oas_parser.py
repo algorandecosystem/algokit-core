@@ -412,6 +412,8 @@ class Schema:
     has_required_fields: bool = field(init=False)
     implements_algokit_msgpack: bool = field(init=False)
     has_signed_transaction_fields: bool = field(init=False)
+    # For non-object schemas (e.g. top-level arrays) we capture the underlying rust type
+    underlying_rust_type: str | None = None
 
     def __post_init__(self) -> None:
         # Keep the original struct name without renaming
@@ -859,47 +861,54 @@ class OASParser:
             if key.startswith("x-"):
                 vendor_extensions[key] = value
 
-        properties = []
-        for prop_name, prop_data in properties_data.items():
-            rust_type = rust_type_from_openapi(prop_data, self.schemas, set())
-            is_base64_encoded = detect_msgpack_field(prop_data)
+        properties: list[Property] = []
 
-            # Extract vendor extensions for this property
-            prop_vendor_extensions = []
-            for key, value in prop_data.items():
-                if key.startswith("x-"):
-                    prop_vendor_extensions.append((key, value))
+        # Special handling: if the schema itself is an array, we represent it as a type alias (Vec<...>) not a struct
+        underlying_rust_type: str | None = None
+        if schema_type == "array":
+            items = schema_data.get("items", {})
+            underlying_rust_type = f"Vec<{rust_type_from_openapi(items, self.schemas, set())}>"
+        else:
+            for prop_name, prop_data in properties_data.items():
+                rust_type = rust_type_from_openapi(prop_data, self.schemas, set())
+                is_base64_encoded = detect_msgpack_field(prop_data)
 
-            # Handle array items with vendor extensions
-            items_property = None
-            if prop_data.get("type") == "array" and "items" in prop_data:
-                items_data = prop_data["items"]
-                items_vendor_extensions = []
-                for key, value in items_data.items():
+                # Extract vendor extensions for this property
+                prop_vendor_extensions = []
+                for key, value in prop_data.items():
                     if key.startswith("x-"):
-                        items_vendor_extensions.append((key, value))
+                        prop_vendor_extensions.append((key, value))
 
-                items_property = Property(
-                    name=f"{prop_name}_item",
-                    rust_type=rust_type_from_openapi(items_data, self.schemas, set()),
-                    required=False,
-                    description=items_data.get("description"),
-                    is_base64_encoded=detect_msgpack_field(items_data),
-                    vendor_extensions=items_vendor_extensions,
-                    format=items_data.get("format"),
+                # Handle array items with vendor extensions
+                items_property = None
+                if prop_data.get("type") == "array" and "items" in prop_data:
+                    items_data = prop_data["items"]
+                    items_vendor_extensions = []
+                    for key, value in items_data.items():
+                        if key.startswith("x-"):
+                            items_vendor_extensions.append((key, value))
+
+                    items_property = Property(
+                        name=f"{prop_name}_item",
+                        rust_type=rust_type_from_openapi(items_data, self.schemas, set()),
+                        required=False,
+                        description=items_data.get("description"),
+                        is_base64_encoded=detect_msgpack_field(items_data),
+                        vendor_extensions=items_vendor_extensions,
+                        format=items_data.get("format"),
+                    )
+
+                prop = Property(
+                    name=prop_name,
+                    rust_type=rust_type,
+                    required=prop_name in required_fields,
+                    description=prop_data.get("description"),
+                    is_base64_encoded=is_base64_encoded,
+                    vendor_extensions=prop_vendor_extensions,
+                    format=prop_data.get("format"),
+                    items=items_property,
                 )
-
-            prop = Property(
-                name=prop_name,
-                rust_type=rust_type,
-                required=prop_name in required_fields,
-                description=prop_data.get("description"),
-                is_base64_encoded=is_base64_encoded,
-                vendor_extensions=prop_vendor_extensions,
-                format=prop_data.get("format"),
-                items=items_property,
-            )
-            properties.append(prop)
+                properties.append(prop)
 
         return Schema(
             name=name,
@@ -908,6 +917,7 @@ class OASParser:
             properties=properties,
             required_fields=required_fields,
             vendor_extensions=vendor_extensions,
+            underlying_rust_type=underlying_rust_type,
         )
 
     def _extract_content_types(self) -> list[str]:

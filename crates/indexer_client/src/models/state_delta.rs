@@ -10,13 +10,7 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
-/// Application state delta.
-#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct StateDelta {}
+use crate::models::EvalDeltaKeyValue;
 
-impl StateDelta {
-    /// Default constructor for StateDelta
-    pub fn new() -> StateDelta {
-        StateDelta::default()
-    }
-}
+/// Application state delta.
+pub type StateDelta = Vec<EvalDeltaKeyValue>;
