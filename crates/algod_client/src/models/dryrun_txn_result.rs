@@ -14,7 +14,7 @@ use serde_with::{Bytes, serde_as};
 
 use crate::models::AccountStateDelta;
 use crate::models::DryrunState;
-use crate::models::EvalDeltaKeyValue;
+use crate::models::StateDelta;
 
 /// DryrunTxnResult contains any LogicSig or ApplicationCall program debug information and state updates from a dryrun.
 #[serde_as]
@@ -38,7 +38,7 @@ pub struct DryrunTxnResult {
     #[serde(rename = "app-call-messages", skip_serializing_if = "Option::is_none")]
     pub app_call_messages: Option<Vec<String>>,
     #[serde(rename = "global-delta", skip_serializing_if = "Option::is_none")]
-    pub global_delta: Option<Vec<EvalDeltaKeyValue>>,
+    pub global_delta: Option<StateDelta>,
     #[serde(rename = "local-deltas", skip_serializing_if = "Option::is_none")]
     pub local_deltas: Option<Vec<AccountStateDelta>>,
     #[serde_as(as = "Option<Vec<serde_with::base64::Base64>>")]

@@ -765,7 +765,7 @@ async fn test_mixed_avm_version_same_account(
         app_id: avm_9_app_id,
         on_complete: OnApplicationComplete::NoOp,
         args: Some(vec![
-            method_selectors.address_balance.clone(),
+            method_selectors.address_balance,
             abi_types
                 .address
                 .encode(&ABIValue::Address(alice.to_string()))?,

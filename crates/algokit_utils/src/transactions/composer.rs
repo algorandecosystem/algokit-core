@@ -1345,7 +1345,7 @@ impl Composer {
 
             // Apply the group level resource population logic
             if let Some(ref group_resources) = group_analysis.unnamed_resources_accessed {
-                self.populate_group_resources(&mut transactions, group_resources)?;
+                Composer::populate_group_resources(&mut transactions, group_resources)?;
             }
         }
 
@@ -1360,7 +1360,6 @@ impl Composer {
 
     /// Populate group-level resources for app call transactions
     fn populate_group_resources(
-        &self,
         transactions: &mut [Transaction],
         group_resources: &SimulateUnnamedResourcesAccessed,
     ) -> Result<(), ComposerError> {
@@ -1373,7 +1372,7 @@ impl Composer {
         // Process cross-reference resources first (app locals and asset holdings) as they are most restrictive
         if let Some(ref app_locals) = group_resources.app_locals {
             for app_local in app_locals {
-                self.populate_group_resource(
+                Composer::populate_group_resource(
                     transactions,
                     &GroupResourceType::AppLocal(app_local.clone()),
                 )?;
@@ -1386,7 +1385,7 @@ impl Composer {
 
         if let Some(ref asset_holdings) = group_resources.asset_holdings {
             for asset_holding in asset_holdings {
-                self.populate_group_resource(
+                Composer::populate_group_resource(
                     transactions,
                     &GroupResourceType::AssetHolding(asset_holding.clone()),
                 )?;
@@ -1399,12 +1398,15 @@ impl Composer {
 
         // Process accounts next because account limit is 4
         for account in remaining_accounts {
-            self.populate_group_resource(transactions, &GroupResourceType::Account(account))?;
+            Composer::populate_group_resource(transactions, &GroupResourceType::Account(account))?;
         }
 
         // Process boxes
         for box_ref in remaining_boxes {
-            self.populate_group_resource(transactions, &GroupResourceType::Box(box_ref.clone()))?;
+            Composer::populate_group_resource(
+                transactions,
+                &GroupResourceType::Box(box_ref.clone()),
+            )?;
 
             // Remove apps as resource if we're adding it here
             remaining_apps.retain(|app| *app != box_ref.app);
@@ -1412,60 +1414,59 @@ impl Composer {
 
         // Process assets
         for asset in remaining_assets {
-            self.populate_group_resource(transactions, &GroupResourceType::Asset(asset))?;
+            Composer::populate_group_resource(transactions, &GroupResourceType::Asset(asset))?;
         }
 
         // Process remaining apps
         for app in remaining_apps {
-            self.populate_group_resource(transactions, &GroupResourceType::App(app))?;
+            Composer::populate_group_resource(transactions, &GroupResourceType::App(app))?;
         }
 
         // Handle extra box refs
         if let Some(extra_box_refs) = group_resources.extra_box_refs {
             for _ in 0..extra_box_refs {
-                self.populate_group_resource(transactions, &GroupResourceType::ExtraBoxRef)?;
+                Composer::populate_group_resource(transactions, &GroupResourceType::ExtraBoxRef)?;
             }
         }
 
         Ok(())
     }
 
+    // Helper function to check if an application call transaction is below resource limit
+    fn is_app_call_below_resource_limit(txn: &Transaction) -> bool {
+        if let Transaction::ApplicationCall(app_call) = txn {
+            let accounts_count = app_call
+                .account_references
+                .as_ref()
+                .map(|a| a.len())
+                .unwrap_or(0);
+            let assets_count = app_call
+                .asset_references
+                .as_ref()
+                .map(|a| a.len())
+                .unwrap_or(0);
+            let apps_count = app_call
+                .app_references
+                .as_ref()
+                .map(|a| a.len())
+                .unwrap_or(0);
+            let boxes_count = app_call
+                .box_references
+                .as_ref()
+                .map(|b| b.len())
+                .unwrap_or(0);
+
+            (accounts_count + assets_count + apps_count + boxes_count) < MAX_OVERALL_REFERENCES
+        } else {
+            false
+        }
+    }
+
     /// Helper function to populate a specific resource into a transaction group
     fn populate_group_resource(
-        &self,
         transactions: &mut [Transaction],
         resource: &GroupResourceType,
     ) -> Result<(), ComposerError> {
-        // Helper function to check if an application call transaction is below reference limit
-        let is_app_call_below_limit = |txn: &Transaction| -> bool {
-            if let Transaction::ApplicationCall(app_call) = txn {
-                let accounts_count = app_call
-                    .account_references
-                    .as_ref()
-                    .map(|a| a.len())
-                    .unwrap_or(0);
-                let assets_count = app_call
-                    .asset_references
-                    .as_ref()
-                    .map(|a| a.len())
-                    .unwrap_or(0);
-                let apps_count = app_call
-                    .app_references
-                    .as_ref()
-                    .map(|a| a.len())
-                    .unwrap_or(0);
-                let boxes_count = app_call
-                    .box_references
-                    .as_ref()
-                    .map(|b| b.len())
-                    .unwrap_or(0);
-
-                (accounts_count + assets_count + apps_count + boxes_count) < MAX_OVERALL_REFERENCES
-            } else {
-                false
-            }
-        };
-
         // For asset holdings and app locals, first try to find a transaction that already has the account available
         match resource {
             GroupResourceType::AssetHolding(_) | GroupResourceType::AppLocal(_) => {
@@ -1477,7 +1478,7 @@ impl Composer {
 
                 // Try to find a transaction that already has the account available
                 let group_index = transactions.iter().position(|txn| {
-                    if !is_app_call_below_limit(txn) {
+                    if !Composer::is_app_call_below_resource_limit(txn) {
                         return false;
                     }
 
@@ -1528,12 +1529,13 @@ impl Composer {
                             _ => {}
                         }
                     }
+
                     return Ok(());
                 }
 
                 // Try to find a transaction that already has the asset/app available and space for account
                 let group_index = transactions.iter().position(|txn| {
-                    if !is_app_call_below_limit(txn) {
+                    if !Composer::is_app_call_below_resource_limit(txn) {
                         return false;
                     }
 
@@ -1589,7 +1591,7 @@ impl Composer {
             GroupResourceType::Box(box_ref) => {
                 // For boxes, first try to find a transaction that already has the app available
                 let group_index = transactions.iter().position(|txn| {
-                    if !is_app_call_below_limit(txn) {
+                    if !Composer::is_app_call_below_resource_limit(txn) {
                         return false;
                     }
 

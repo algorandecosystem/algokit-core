@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::{Bytes, serde_as};
 
 use crate::models::ApplicationStateSchema;
-use crate::models::TealKeyValue;
+use crate::models::TealKeyValueStore;
 
 /// Stores the global information associated with an application.
 #[serde_as]
@@ -45,7 +45,7 @@ pub struct ApplicationParams {
     )]
     pub global_state_schema: Option<ApplicationStateSchema>,
     #[serde(rename = "global-state", skip_serializing_if = "Option::is_none")]
-    pub global_state: Option<Vec<TealKeyValue>>,
+    pub global_state: Option<TealKeyValueStore>,
     /// \[v\] the number of updates to the application programs
     #[serde(rename = "version", skip_serializing_if = "Option::is_none")]
     pub version: Option<u64>,

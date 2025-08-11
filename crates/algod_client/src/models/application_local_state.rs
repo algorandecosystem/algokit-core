@@ -13,7 +13,7 @@ use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransa
 use serde::{Deserialize, Serialize};
 
 use crate::models::ApplicationStateSchema;
-use crate::models::TealKeyValue;
+use crate::models::TealKeyValueStore;
 
 /// Stores local state associated with an application.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
@@ -24,7 +24,7 @@ pub struct ApplicationLocalState {
     #[serde(rename = "schema")]
     pub schema: ApplicationStateSchema,
     #[serde(rename = "key-value", skip_serializing_if = "Option::is_none")]
-    pub key_value: Option<Vec<TealKeyValue>>,
+    pub key_value: Option<TealKeyValueStore>,
 }
 
 impl AlgorandMsgpack for ApplicationLocalState {

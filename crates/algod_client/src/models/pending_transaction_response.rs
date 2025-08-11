@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::{Bytes, serde_as};
 
 use crate::models::AccountStateDelta;
-use crate::models::EvalDeltaKeyValue;
+use crate::models::StateDelta;
 
 /// Details about a pending transaction. If the transaction was recently confirmed, includes confirmation details like the round and reward details.
 #[serde_as]
@@ -54,7 +54,7 @@ pub struct PendingTransactionResponse {
     #[serde(rename = "local-state-delta", skip_serializing_if = "Option::is_none")]
     pub local_state_delta: Option<Vec<AccountStateDelta>>,
     #[serde(rename = "global-state-delta", skip_serializing_if = "Option::is_none")]
-    pub global_state_delta: Option<Vec<EvalDeltaKeyValue>>,
+    pub global_state_delta: Option<StateDelta>,
     /// Logs for the application being executed by this transaction.
     #[serde_as(as = "Option<Vec<Bytes>>")]
     #[serde(rename = "logs", skip_serializing_if = "Option::is_none")]
