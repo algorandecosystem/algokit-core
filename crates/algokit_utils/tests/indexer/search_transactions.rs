@@ -4,48 +4,32 @@ use algokit_utils::{ClientManager, CommonParams, PaymentParams, testing::*};
 use indexer_client::IndexerClient;
 use std::sync::Arc;
 
-use crate::common::{init_test_logging, wait_for_indexer_transaction};
+use crate::common::init_test_logging;
 
 #[tokio::test]
-async fn test_search_transactions() {
+async fn finds_sent_transaction() {
     init_test_logging();
 
-    let mut fixture = algorand_fixture().await.expect("Failed to create fixture");
-    fixture
-        .new_scope()
-        .await
-        .expect("Failed to create new scope");
+    let mut fixture = algorand_fixture().await.unwrap();
+    fixture.new_scope().await.unwrap();
 
-    let receiver = fixture
-        .generate_account(None)
-        .await
-        .expect("Failed to create receiver");
-    let receiver_account = receiver.account().expect("Failed to get receiver account");
-
-    let context = fixture.context().expect("Failed to get context");
-    let sender_account = context
-        .test_account
-        .account()
-        .expect("Failed to get sender account");
+    let receiver = fixture.generate_account(None).await.unwrap();
+    let context = fixture.context().unwrap();
+    let sender = context.test_account.account().unwrap();
 
     let payment_params = PaymentParams {
         common_params: CommonParams {
-            sender: sender_account.address(),
+            sender: sender.address(),
             ..Default::default()
         },
-        receiver: receiver_account.address(),
+        receiver: receiver.account().unwrap().address(),
         amount: 500_000,
     };
 
     let mut composer = context.composer.clone();
-    composer
-        .add_payment(payment_params)
-        .expect("Failed to add payment");
-    let result = composer.send(None).await.expect("Failed to send payment");
-    let txid = result.confirmations[0]
-        .txn
-        .id()
-        .expect("Failed to get transaction ID");
+    composer.add_payment(payment_params).unwrap();
+    let result = composer.send(None).await.unwrap();
+    let txid = result.confirmations[0].txn.id().unwrap();
 
     let config = ClientManager::get_config_from_environment_or_localnet();
     let base_url = if let Some(port) = config.indexer_config.port {
@@ -53,14 +37,13 @@ async fn test_search_transactions() {
     } else {
         config.indexer_config.server.clone()
     };
-    let http_client = Arc::new(DefaultHttpClient::new(&base_url));
-    let indexer_client = IndexerClient::new(http_client);
+    let indexer_client = IndexerClient::new(Arc::new(DefaultHttpClient::new(&base_url)));
 
-    wait_for_indexer_transaction(&indexer_client, &txid, 15)
+    wait_for_indexer_transaction(&indexer_client, &txid, None)
         .await
-        .expect("Transaction should be indexed");
+        .unwrap();
 
-    let search_result = indexer_client
+    let response = indexer_client
         .search_for_transactions(
             None,
             None,
@@ -83,53 +66,30 @@ async fn test_search_transactions() {
             None,
             None,
         )
-        .await;
+        .await
+        .unwrap();
 
-    assert!(
-        search_result.is_ok(),
-        "Search transactions should succeed: {:?}",
-        search_result.err()
-    );
-
-    let response = search_result.unwrap();
-    assert!(
-        !response.transactions.is_empty(),
-        "Should find the sent transaction"
-    );
-
+    assert!(!response.transactions.is_empty());
     let found_tx = &response.transactions[0];
-    assert_eq!(found_tx.id, Some(txid), "Transaction ID should match");
-    assert_eq!(
-        found_tx.sender,
-        sender_account.address().to_string(),
-        "Sender should match"
-    );
-    assert_eq!(
-        found_tx.tx_type,
-        "pay".to_string(),
-        "Transaction type should be payment"
-    );
+    assert_eq!(found_tx.id, Some(txid));
+    assert_eq!(found_tx.sender, sender.address().to_string());
+    assert_eq!(found_tx.tx_type, "pay");
 
     if let Some(payment_tx) = &found_tx.payment_transaction {
-        assert_eq!(payment_tx.amount, 500_000, "Amount should match");
+        assert_eq!(payment_tx.amount, 500_000);
         assert_eq!(
             payment_tx.receiver,
-            receiver_account.address().to_string(),
-            "Receiver should match"
+            receiver.account().unwrap().address().to_string()
         );
-    }
-
-    if let Some(token) = &response.next_token {
-        assert!(!token.is_empty(), "Next token should not be empty");
     }
 }
 
 #[tokio::test]
-async fn test_search_transactions_error_handling() {
+async fn handles_invalid_indexer() {
     init_test_logging();
 
-    let http_client = Arc::new(DefaultHttpClient::new("http://invalid-host:8980"));
-    let indexer_client = IndexerClient::new(http_client);
+    let indexer_client =
+        IndexerClient::new(Arc::new(DefaultHttpClient::new("http://invalid-host:8980")));
 
     let result = indexer_client
         .search_for_transactions(
@@ -138,5 +98,5 @@ async fn test_search_transactions_error_handling() {
         )
         .await;
 
-    assert!(result.is_err(), "Invalid indexer should fail");
+    assert!(result.is_err());
 }
