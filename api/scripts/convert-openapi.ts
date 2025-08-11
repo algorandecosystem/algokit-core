@@ -262,6 +262,19 @@ class OpenAPIProcessor {
   constructor(private config: ProcessingConfig) {}
 
   /**
+   * Apply typo fixes to raw JSON content
+   */
+  private patchTypos(content: string): string {
+    const patches = [
+      ["ana ccount", "an account"],
+      ["since eposh", "since epoch"],
+      ["* update\\n* update\\n* delete", "* update\\n* delete"],
+    ];
+    
+    return patches.reduce((text, [find, replace]) => text.replaceAll(find, replace), content);
+  }
+
+  /**
    * Fetch spec from URL or file
    */
   private async fetchSpec(): Promise<OpenAPISpec> {
@@ -273,7 +286,9 @@ class OpenAPIProcessor {
       if (!response.ok) {
         throw new Error(`Failed to fetch spec: ${response.status} ${response.statusText}`);
       }
-      const spec = await response.json();
+      const rawContent = await response.text();
+      const patchedContent = this.patchTypos(rawContent);
+      const spec = JSON.parse(patchedContent);
       console.log("✅ Successfully fetched OpenAPI specification");
       return spec;
     } else {

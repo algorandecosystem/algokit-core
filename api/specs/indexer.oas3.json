@@ -3733,7 +3733,7 @@
           },
           "timestamp": {
             "type": "integer",
-            "description": "\\[ts\\] Block creation timestamp in seconds since eposh"
+            "description": "\\[ts\\] Block creation timestamp in seconds since epoch"
           },
           "transactions": {
             "type": "array",
@@ -3995,7 +3995,7 @@
       },
       "OnCompletion": {
         "type": "string",
-        "description": "\\[apan\\] defines the what additional actions occur with the transaction.\n\nValid types:\n* noop\n* optin\n* closeout\n* clear\n* update\n* update\n* delete",
+        "description": "\\[apan\\] defines the what additional actions occur with the transaction.\n\nValid types:\n* noop\n* optin\n* closeout\n* clear\n* update\n* delete",
         "enum": [
           "noop",
           "optin",
@@ -4599,7 +4599,7 @@
           "logic": {
             "pattern": "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$",
             "type": "string",
-            "description": "\\[l\\] Program signed by a signature or multi signature, or hashed to be the address of ana ccount. Base64 encoded TEAL program.",
+            "description": "\\[l\\] Program signed by a signature or multi signature, or hashed to be the address of an account. Base64 encoded TEAL program.",
             "format": "byte"
           },
           "multisig-signature": {

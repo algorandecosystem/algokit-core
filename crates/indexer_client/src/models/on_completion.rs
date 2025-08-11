@@ -18,7 +18,6 @@ use serde::{Deserialize, Serialize};
 ///   * closeout
 ///   * clear
 ///   * update
-///   * update
 ///   * delete
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct OnCompletion {}

@@ -63,7 +63,7 @@ pub struct Block {
         skip_serializing_if = "Option::is_none"
     )]
     pub state_proof_tracking: Option<Vec<StateProofTracking>>,
-    /// \[ts\] Block creation timestamp in seconds since eposh
+    /// \[ts\] Block creation timestamp in seconds since epoch
     #[serde(rename = "timestamp")]
     pub timestamp: u64,
     /// \[txns\] list of transactions corresponding to a given round.

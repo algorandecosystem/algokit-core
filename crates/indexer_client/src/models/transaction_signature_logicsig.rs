@@ -24,7 +24,7 @@ pub struct TransactionSignatureLogicsig {
     #[serde_as(as = "Option<serde_with::base64::Base64>")]
     #[serde(rename = "args", skip_serializing_if = "Option::is_none")]
     pub args: Option<Vec<u8>>,
-    /// \[l\] Program signed by a signature or multi signature, or hashed to be the address of ana ccount. Base64 encoded TEAL program.
+    /// \[l\] Program signed by a signature or multi signature, or hashed to be the address of an account. Base64 encoded TEAL program.
     #[serde_as(as = "serde_with::base64::Base64")]
     #[serde(rename = "logic")]
     pub logic: Vec<u8>,

@@ -214,7 +214,6 @@ Valid types:
 * closeout
 * clear
 * update
-* update
 * delete
 - `ParticipationUpdates` - Participation account data that needs to be checked/acted on by the network.
 - `StateDelta` - Application state delta.
