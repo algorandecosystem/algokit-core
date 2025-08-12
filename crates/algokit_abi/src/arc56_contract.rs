@@ -427,9 +427,8 @@ pub struct Method {
 
 impl Method {
     /// Get the ABI signature for this method
-    pub fn get_signature(&self) -> String {
-        let arg_types: Vec<String> = self.args.iter().map(|arg| arg.arg_type.clone()).collect();
-        format!("{}({})", self.name, arg_types.join(","))
+    pub fn get_signature(&self) -> Result<String, ABIError> {
+        self.to_abi_method()?.signature()
     }
 
     /// Convert to ABIMethod
@@ -580,7 +579,9 @@ impl Arc56Contract {
             }
 
             if methods.len() > 1 {
-                let signatures: Vec<String> = methods.iter().map(|m| m.get_signature()).collect();
+                let signatures: Result<Vec<String>, ABIError> =
+                    methods.iter().map(|m| m.get_signature()).collect();
+                let signatures = signatures?;
                 return Err(ABIError::ValidationError(format!(
                     "Received a call to method {} in contract {}, but this resolved to multiple methods; \
                      please pass in an ABI signature instead: {}",
@@ -595,7 +596,10 @@ impl Arc56Contract {
             // Find by signature
             self.methods
                 .iter()
-                .find(|m| m.get_signature() == method_name_or_signature)
+                .find(|m| {
+                    m.get_signature()
+                        .is_ok_and(|sig| sig == method_name_or_signature)
+                })
                 .ok_or_else(|| {
                     ABIError::ValidationError(format!(
                         "Unable to find method {} in {} app",
