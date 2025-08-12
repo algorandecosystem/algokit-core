@@ -38,13 +38,13 @@ pub struct StructField {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum StructFieldType {
-    Simple(String),
+    Value(String),
     Nested(Vec<StructField>),
 }
 
 /// Enum representing different call types for application transactions
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub enum CallEnum {
+pub enum CallOnApplicationComplete {
     ClearState,
     CloseOut,
     DeleteApplication,
@@ -55,7 +55,7 @@ pub enum CallEnum {
 
 /// Enum representing different create types for application transactions
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub enum CreateEnum {
+pub enum CreateOnApplicationComplete {
     DeleteApplication,
     NoOp,
     OptIn,
@@ -66,9 +66,9 @@ pub enum CreateEnum {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BareActions {
     /// OnCompletes this method allows when appID !== 0
-    pub call: Vec<CallEnum>,
+    pub call: Vec<CallOnApplicationComplete>,
     /// OnCompletes this method allows when appID === 0
-    pub create: Vec<CreateEnum>,
+    pub create: Vec<CreateOnApplicationComplete>,
 }
 
 /// The compiled bytecode for the application.
@@ -151,16 +151,9 @@ impl Source {
     }
 }
 
-/// Global state schema
+/// State schema for global and local state allocation
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Global {
-    pub bytes: u32,
-    pub ints: u32,
-}
-
-/// Local state schema
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Local {
+pub struct StateSchema {
     pub bytes: u32,
     pub ints: u32,
 }
@@ -169,9 +162,9 @@ pub struct Local {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Schema {
     #[serde(rename = "global")]
-    pub global_state: Global,
+    pub global_state: StateSchema,
     #[serde(rename = "local")]
-    pub local_state: Local,
+    pub local_state: StateSchema,
 }
 
 /// Template variables are variables in the TEAL that should be substituted prior to compilation.
@@ -210,9 +203,9 @@ pub struct Event {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Actions {
     /// OnCompletes this method allows when appID === 0
-    pub create: Vec<CreateEnum>,
+    pub create: Vec<CreateOnApplicationComplete>,
     /// OnCompletes this method allows when appID !== 0
-    pub call: Vec<CallEnum>,
+    pub call: Vec<CallOnApplicationComplete>,
 }
 
 /// Source of default value
@@ -625,7 +618,7 @@ impl Arc56Contract {
             let mut value = decoded_tuple.get(i).cloned().unwrap_or(Value::Null);
 
             match &field.field_type {
-                StructFieldType::Simple(type_name) => {
+                StructFieldType::Value(type_name) => {
                     if let Some(nested_fields) = structs.get(type_name) {
                         if let Some(arr) = value.as_array() {
                             value = Value::Object(

@@ -115,7 +115,7 @@ pub mod zero_coupon_bond {
         include_str!("../contracts/zero_coupon_bond/application.arc56.json");
 }
 
-/// NFD (Name Finance Domain) contract artifacts
+/// NFD (Non Fungible Domains) contract artifacts
 pub mod nfd {
     /// NFD instance contract (ARC56)
     ///
