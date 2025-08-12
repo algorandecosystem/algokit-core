@@ -174,14 +174,18 @@ def rust_type_from_openapi(
     return _get_openapi_type_mapping(schema_type, schema_format)
 
 
-def detect_msgpack_field(prop_data: dict[str, Any]) -> bool:
-    """Detect if a property should use msgpack/base64 encoding.
+def detect_binary_field(prop_data: dict[str, Any]) -> bool:
+    """Detect if a property contains binary data that needs base64 decoding.
+
+    This function identifies fields that contain binary data (which could be
+    raw bytes, cryptographic keys, program bytecode, or MessagePack data)
+    that is transmitted as base64-encoded strings in JSON APIs.
 
     Args:
         prop_data: The property data dictionary.
 
     Returns:
-        True if the property should use msgpack encoding.
+        True if the property contains binary data that's base64-encoded in JSON.
     """
     # Check format
     if prop_data.get("format") == "byte":
@@ -277,7 +281,7 @@ def rust_type_with_msgpack(
     Returns:
         Rust type string, using Vec<u8> for msgpack fields.
     """
-    return "Vec<u8>" if detect_msgpack_field(schema) else rust_type_from_openapi(schema, schemas, visited)
+    return "Vec<u8>" if detect_binary_field(schema) else rust_type_from_openapi(schema, schemas, visited)
 
 
 @dataclass
@@ -365,7 +369,7 @@ class Property:
     rust_type: str
     required: bool
     description: str | None = None
-    is_base64_encoded: bool = False
+    is_base64_encoded: bool = False  # True if field contains binary data encoded as base64
     vendor_extensions: list[tuple[str, Any]] = field(default_factory=list)
     format: str | None = None
     items: "Property | None" = None
@@ -911,7 +915,7 @@ class OASParser:
     def _create_property(self, prop_name: str, prop_data: dict[str, Any], required_fields: list[str]) -> Property:
         """Create a Property object from property data."""
         rust_type = rust_type_from_openapi(prop_data, self.schemas, set())
-        is_base64_encoded = detect_msgpack_field(prop_data)
+        is_binary_field = detect_binary_field(prop_data)
         prop_vendor_extensions = self._extract_property_vendor_extensions(prop_data)
         items_property = self._create_items_property_if_needed(prop_name, prop_data)
 
@@ -920,7 +924,7 @@ class OASParser:
             rust_type=rust_type,
             required=prop_name in required_fields,
             description=prop_data.get("description"),
-            is_base64_encoded=is_base64_encoded,
+            is_base64_encoded=is_binary_field,
             vendor_extensions=prop_vendor_extensions,
             format=prop_data.get("format"),
             items=items_property,
@@ -945,7 +949,7 @@ class OASParser:
                 rust_type=rust_type_from_openapi(items_data, self.schemas, set()),
                 required=False,
                 description=items_data.get("description"),
-                is_base64_encoded=detect_msgpack_field(items_data),
+                is_base64_encoded=detect_binary_field(items_data),
                 vendor_extensions=items_vendor_extensions,
                 format=items_data.get("format"),
             )

@@ -62,7 +62,7 @@ impl IndexerClient {
                 "X-Indexer-API-Token",
                 "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             )
-            .expect("Failed to create HTTP client with X-Indexer-API-Token header"),
+            .expect("Failed to create HTTP client with API token header"),
         );
         Self::new(http_client)
     }
