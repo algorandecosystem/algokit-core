@@ -1,6 +1,6 @@
 use algokit_http_client::DefaultHttpClient;
 use algokit_transact::{OnApplicationComplete, StateSchema};
-use algokit_utils::{ApplicationCreateParams, ClientManager, CommonParams, testing::*};
+use algokit_utils::{AppCreateParams, ClientManager, CommonParams, testing::*};
 use indexer_client::{IndexerClient, apis::Error as IndexerError};
 use std::sync::Arc;
 
@@ -16,7 +16,7 @@ async fn create_app(
     context: &AlgorandTestContext,
     sender: algokit_transact::Address,
 ) -> Option<u64> {
-    let params = ApplicationCreateParams {
+    let params = AppCreateParams {
         common_params: CommonParams {
             sender,
             ..Default::default()
@@ -41,7 +41,7 @@ async fn create_app(
     };
 
     let mut composer = context.composer.clone();
-    composer.add_application_create(params).unwrap();
+    composer.add_app_create(params).unwrap();
     let result = composer.send(None).await.unwrap();
     result.confirmations[0].application_index
 }
