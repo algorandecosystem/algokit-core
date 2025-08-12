@@ -9,6 +9,8 @@
 
 use crate::models;
 use serde::{Deserialize, Serialize};
+use std::fmt;
+use std::str::FromStr;
 
 /// \[apan\] defines the what additional actions occur with the transaction.
 ///
@@ -19,8 +21,58 @@ use serde::{Deserialize, Serialize};
 ///   * clear
 ///   * update
 ///   * delete
-#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct OnCompletion {}
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub enum OnCompletion {
+    /// noop
+    #[serde(rename = "noop")]
+    #[default]
+    Noop,
+    /// optin
+    #[serde(rename = "optin")]
+    Optin,
+    /// closeout
+    #[serde(rename = "closeout")]
+    Closeout,
+    /// clear
+    #[serde(rename = "clear")]
+    Clear,
+    /// update
+    #[serde(rename = "update")]
+    Update,
+    /// delete
+    #[serde(rename = "delete")]
+    Delete,
+}
+
+impl fmt::Display for OnCompletion {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let value = match self {
+            OnCompletion::Noop => "noop",
+            OnCompletion::Optin => "optin",
+            OnCompletion::Closeout => "closeout",
+            OnCompletion::Clear => "clear",
+            OnCompletion::Update => "update",
+            OnCompletion::Delete => "delete",
+        };
+        write!(f, "{}", value)
+    }
+}
+
+impl FromStr for OnCompletion {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "noop" => Ok(OnCompletion::Noop),
+            "optin" => Ok(OnCompletion::Optin),
+            "closeout" => Ok(OnCompletion::Closeout),
+            "clear" => Ok(OnCompletion::Clear),
+            "update" => Ok(OnCompletion::Update),
+            "delete" => Ok(OnCompletion::Delete),
+            _ => Err(format!("Invalid OnCompletion: {}", s)),
+        }
+    }
+}
 
 impl OnCompletion {
     /// Default constructor for OnCompletion
