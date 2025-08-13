@@ -109,6 +109,15 @@ impl From<&SendParams> for BuildParams {
     }
 }
 
+impl From<SendParams> for BuildParams {
+    fn from(send_params: SendParams) -> Self {
+        BuildParams {
+            cover_app_call_inner_transaction_fees: send_params
+                .cover_app_call_inner_transaction_fees,
+        }
+    }
+}
+
 #[derive(Debug)]
 struct TransactionAnalysis {
     /// The fee difference required for this transaction
@@ -1475,6 +1484,21 @@ impl Composer {
             confirmations,
             abi_returns,
         })
+    }
+
+    /// Extract ABI method mapping from built transactions.
+    /// Maps transaction index to the ABI method used to create it.
+    /// Used by TransactionCreator to populate BuiltTransactions.method_calls.
+    pub(crate) fn extract_method_calls(&self) -> HashMap<usize, ABIMethod> {
+        let mut method_calls = HashMap::new();
+
+        for (i, transaction) in self.transactions.iter().enumerate() {
+            if let Some(method) = self.get_method_from_transaction(transaction) {
+                method_calls.insert(i, method.clone());
+            }
+        }
+
+        method_calls
     }
 }
 

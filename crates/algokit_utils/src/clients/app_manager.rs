@@ -1,0 +1,622 @@
+use algod_client::{
+    apis::{AlgodClient, Error as AlgodError},
+    models::TealKeyValue,
+};
+use algokit_abi::{ABIType, ABIValue};
+use algokit_transact::Address;
+use base64::{Engine, engine::general_purpose::STANDARD as Base64};
+use sha2::{Digest, Sha512_256};
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
+
+#[derive(Debug, Clone)]
+pub enum TealTemplateValue {
+    Int(u64),
+    Bytes(Vec<u8>),
+    String(String),
+}
+
+#[derive(Debug, Clone)]
+pub struct DeploymentMetadata {
+    pub updatable: Option<bool>,
+    pub deletable: Option<bool>,
+}
+
+pub type TealTemplateParams = HashMap<String, TealTemplateValue>;
+
+#[derive(Debug, Clone)]
+pub struct CompiledTeal {
+    pub teal: String,
+    pub compiled: String,
+    pub compiled_hash: String,
+    pub compiled_base64_to_bytes: Vec<u8>,
+    pub source_map: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Clone)]
+pub struct AppState {
+    pub key_raw: Vec<u8>,
+    pub key_base64: String,
+    pub value_raw: Option<Vec<u8>>,
+    pub value_base64: Option<String>,
+    pub value: AppStateValue,
+}
+
+#[derive(Debug, Clone)]
+pub enum AppStateValue {
+    Uint(u64),
+    Bytes(String),
+}
+
+#[derive(Debug, Clone)]
+pub struct AppInformation {
+    pub app_id: u64,
+    pub app_address: Address,
+    pub approval_program: Vec<u8>,
+    pub clear_state_program: Vec<u8>,
+    pub creator: String,
+    pub local_ints: u32,
+    pub local_byte_slices: u32,
+    pub global_ints: u32,
+    pub global_byte_slices: u32,
+    pub extra_program_pages: Option<u32>,
+    pub global_state: HashMap<String, AppState>,
+}
+
+#[derive(Debug, Clone)]
+pub struct BoxName {
+    pub name_raw: Vec<u8>,
+    pub name_base64: String,
+    pub name: String,
+}
+
+pub type BoxIdentifier = String;
+
+pub const UPDATABLE_TEMPLATE_NAME: &str = "TMPL_UPDATABLE";
+pub const DELETABLE_TEMPLATE_NAME: &str = "TMPL_DELETABLE";
+
+#[derive(Debug, Clone)]
+pub struct ParsedABIReturn {
+    pub raw_value: Vec<u8>,
+    pub parsed_value: Option<ABIValue>,
+    pub decode_error: Option<String>,
+}
+
+/// Manages TEAL compilation and application state.
+#[derive(Clone)]
+pub struct AppManager {
+    algod_client: Arc<AlgodClient>,
+    compilation_results: Arc<Mutex<HashMap<String, CompiledTeal>>>,
+}
+
+impl AppManager {
+    pub fn new(algod_client: Arc<AlgodClient>) -> Self {
+        Self {
+            algod_client,
+            compilation_results: Arc::new(Mutex::new(HashMap::new())),
+        }
+    }
+
+    pub async fn compile_teal(&self, teal_code: &str) -> Result<CompiledTeal, AppManagerError> {
+        // Check cache first
+        {
+            let cache = self.compilation_results.lock().unwrap();
+            if let Some(cached) = cache.get(teal_code) {
+                return Ok(cached.clone());
+            }
+        }
+
+        let compile_response = self
+            .algod_client
+            .teal_compile(teal_code.as_bytes().to_vec(), Some(true))
+            .await
+            .map_err(AppManagerError::AlgodClientError)?;
+
+        let result = CompiledTeal {
+            teal: teal_code.to_string(),
+            compiled: Base64.encode(&compile_response.result),
+            compiled_hash: compile_response.hash.clone(),
+            compiled_base64_to_bytes: compile_response.result.clone(),
+            source_map: compile_response.sourcemap,
+        };
+
+        // Cache the result
+        {
+            let mut cache = self.compilation_results.lock().unwrap();
+            cache.insert(teal_code.to_string(), result.clone());
+        }
+
+        Ok(result)
+    }
+
+    pub async fn compile_teal_template(
+        &self,
+        teal_template_code: &str,
+        template_params: Option<&TealTemplateParams>,
+        deployment_metadata: Option<&DeploymentMetadata>,
+    ) -> Result<CompiledTeal, AppManagerError> {
+        let mut teal_code = Self::strip_teal_comments(teal_template_code);
+
+        if let Some(params) = template_params {
+            teal_code = Self::replace_template_variables(&teal_code, params)?;
+        }
+
+        if let Some(metadata) = deployment_metadata {
+            teal_code =
+                Self::replace_teal_template_deploy_time_control_params(&teal_code, metadata)?;
+        }
+
+        self.compile_teal(&teal_code).await
+    }
+
+    pub fn get_compilation_result(&self, teal_code: &str) -> Option<CompiledTeal> {
+        let cache = self.compilation_results.lock().unwrap();
+        cache.get(teal_code).cloned()
+    }
+
+    pub async fn get_by_id(&self, app_id: u64) -> Result<AppInformation, AppManagerError> {
+        let app = self
+            .algod_client
+            .get_application_by_id(app_id)
+            .await
+            .map_err(AppManagerError::AlgodClientError)?;
+
+        Ok(AppInformation {
+            app_id,
+            app_address: self.get_app_address(app_id),
+            approval_program: Base64
+                .decode(&app.params.approval_program)
+                .map_err(|e| AppManagerError::DecodingError(e.to_string()))?,
+            clear_state_program: Base64
+                .decode(&app.params.clear_state_program)
+                .map_err(|e| AppManagerError::DecodingError(e.to_string()))?,
+            creator: app.params.creator,
+            local_ints: app
+                .params
+                .local_state_schema
+                .as_ref()
+                .map(|s| s.num_uint as u32)
+                .unwrap_or(0),
+            local_byte_slices: app
+                .params
+                .local_state_schema
+                .as_ref()
+                .map(|s| s.num_byte_slice as u32)
+                .unwrap_or(0),
+            global_ints: app
+                .params
+                .global_state_schema
+                .as_ref()
+                .map(|s| s.num_uint as u32)
+                .unwrap_or(0),
+            global_byte_slices: app
+                .params
+                .global_state_schema
+                .as_ref()
+                .map(|s| s.num_byte_slice as u32)
+                .unwrap_or(0),
+            extra_program_pages: app.params.extra_program_pages.map(|p| p as u32),
+            global_state: Self::decode_app_state(&app.params.global_state.unwrap_or_default())?,
+        })
+    }
+
+    /// Get global state of application.
+    pub async fn get_global_state(
+        &self,
+        app_id: u64,
+    ) -> Result<HashMap<String, AppState>, AppManagerError> {
+        let app_info = self.get_by_id(app_id).await?;
+        Ok(app_info.global_state)
+    }
+
+    /// Get local state for account in application.
+    pub async fn get_local_state(
+        &self,
+        app_id: u64,
+        address: &str,
+    ) -> Result<HashMap<String, AppState>, AppManagerError> {
+        let app_info = self
+            .algod_client
+            .account_application_information(address, app_id, None)
+            .await
+            .map_err(AppManagerError::AlgodClientError)?;
+
+        let local_state = app_info
+            .app_local_state
+            .and_then(|state| state.key_value)
+            .ok_or(AppManagerError::StateNotFound)?;
+
+        Self::decode_app_state(&local_state)
+    }
+
+    /// Get names of all boxes for application.
+    pub async fn get_box_names(&self, app_id: u64) -> Result<Vec<BoxName>, AppManagerError> {
+        let box_result = self
+            .algod_client
+            .get_application_boxes(app_id, None)
+            .await
+            .map_err(AppManagerError::AlgodClientError)?;
+
+        let mut box_names = Vec::new();
+        for b in box_result.boxes {
+            let name_raw = b.name;
+            let name_base64 = Base64.encode(&name_raw);
+            let name =
+                String::from_utf8(name_raw.clone()).unwrap_or_else(|_| format!("{:?}", name_raw));
+
+            box_names.push(BoxName {
+                name_raw,
+                name_base64,
+                name,
+            });
+        }
+        Ok(box_names)
+    }
+
+    /// Get value stored in box.
+    pub async fn get_box_value(
+        &self,
+        app_id: u64,
+        box_name: &BoxIdentifier,
+    ) -> Result<Vec<u8>, AppManagerError> {
+        let (_, name_bytes) = Self::get_box_reference(box_name);
+        let name_base64 = Base64.encode(&name_bytes);
+
+        let box_result = self
+            .algod_client
+            .get_application_box_by_name(app_id, &name_base64)
+            .await
+            .map_err(AppManagerError::AlgodClientError)?;
+
+        Base64
+            .decode(&box_result.value)
+            .map_err(|e| AppManagerError::DecodingError(e.to_string()))
+    }
+
+    /// Get values for multiple boxes.
+    pub async fn get_box_values(
+        &self,
+        app_id: u64,
+        box_names: &[BoxIdentifier],
+    ) -> Result<Vec<Vec<u8>>, AppManagerError> {
+        let mut values = Vec::new();
+        for box_name in box_names {
+            values.push(self.get_box_value(app_id, box_name).await?);
+        }
+        Ok(values)
+    }
+
+    /// Decode box value using ABI type.
+    pub async fn get_box_value_from_abi_type(
+        &self,
+        app_id: u64,
+        box_name: &BoxIdentifier,
+        abi_type: &ABIType,
+    ) -> Result<ABIValue, AppManagerError> {
+        let value = self.get_box_value(app_id, box_name).await?;
+        abi_type
+            .decode(&value)
+            .map_err(|e| AppManagerError::ABIDecodeError(e.to_string()))
+    }
+
+    /// Decode multiple box values using ABI type.
+    pub async fn get_box_values_from_abi_type(
+        &self,
+        app_id: u64,
+        box_names: &[BoxIdentifier],
+        abi_type: &ABIType,
+    ) -> Result<Vec<ABIValue>, AppManagerError> {
+        let mut values = Vec::new();
+        for box_name in box_names {
+            values.push(
+                self.get_box_value_from_abi_type(app_id, box_name, abi_type)
+                    .await?,
+            );
+        }
+        Ok(values)
+    }
+
+    /// Get ABI return value from transaction confirmation (instance method for consistency).
+    pub fn parse_abi_return(
+        &self,
+        confirmation_data: &[u8],
+        abi_type: Option<&ABIType>,
+    ) -> Option<ParsedABIReturn> {
+        Self::get_abi_return(confirmation_data, abi_type)
+    }
+
+    /// Get ABI return value from transaction confirmation.
+    pub fn get_abi_return(
+        confirmation_data: &[u8],
+        abi_type: Option<&ABIType>,
+    ) -> Option<ParsedABIReturn> {
+        if let Some(abi_type) = abi_type {
+            let parsed_value = abi_type
+                .decode(confirmation_data)
+                .map_err(|e| e.to_string());
+
+            Some(ParsedABIReturn {
+                raw_value: confirmation_data.to_vec(),
+                parsed_value: parsed_value.as_ref().ok().cloned(),
+                decode_error: parsed_value.err(),
+            })
+        } else {
+            None
+        }
+    }
+
+    /// Get escrow address for application.
+    pub fn get_app_address(&self, app_id: u64) -> Address {
+        let app_id_bytes = app_id.to_be_bytes();
+        let mut data = Vec::with_capacity(app_id_bytes.len() + 5);
+        data.extend_from_slice(b"appID");
+        data.extend_from_slice(&app_id_bytes);
+
+        let hash = Sha512_256::digest(&data);
+        let address_bytes: [u8; 32] = hash.as_slice()[..32]
+            .try_into()
+            .expect("SHA512_256 should produce at least 32 bytes");
+        Address(address_bytes)
+    }
+
+    /// Get box reference from identifier.
+    pub fn get_box_reference(box_id: &BoxIdentifier) -> (u64, Vec<u8>) {
+        (0, box_id.as_bytes().to_vec())
+    }
+
+    /// Decode application state from raw format.
+    pub fn decode_app_state(
+        state: &[TealKeyValue],
+    ) -> Result<HashMap<String, AppState>, AppManagerError> {
+        let mut state_values = HashMap::new();
+
+        for state_val in state {
+            let key_raw = Base64
+                .decode(&state_val.key)
+                .map_err(|e| AppManagerError::DecodingError(e.to_string()))?;
+            let key = String::from_utf8(key_raw.clone()).unwrap_or_else(|_| hex::encode(&key_raw));
+
+            let (value_raw, value_base64, value) = match state_val.value.r#type {
+                1 => {
+                    // Bytes
+                    let value_raw = Base64
+                        .decode(&state_val.value.bytes)
+                        .map_err(|e| AppManagerError::DecodingError(e.to_string()))?;
+                    let value_str = String::from_utf8(value_raw.clone())
+                        .unwrap_or_else(|_| hex::encode(&value_raw));
+                    (
+                        Some(value_raw),
+                        Some(state_val.value.bytes.clone()),
+                        AppStateValue::Bytes(value_str),
+                    )
+                }
+                2 => (None, None, AppStateValue::Uint(state_val.value.uint)),
+                _ => {
+                    return Err(AppManagerError::DecodingError(format!(
+                        "Unknown state data type: {}",
+                        state_val.value.r#type
+                    )));
+                }
+            };
+
+            state_values.insert(
+                key,
+                AppState {
+                    key_raw: key_raw.clone(),
+                    key_base64: Base64.encode(&key_raw),
+                    value_raw,
+                    value_base64,
+                    value,
+                },
+            );
+        }
+
+        Ok(state_values)
+    }
+
+    /// Replace template variables in TEAL code.
+    pub fn replace_template_variables(
+        program: &str,
+        template_values: &TealTemplateParams,
+    ) -> Result<String, AppManagerError> {
+        let mut program_lines: Vec<String> = program.lines().map(|line| line.to_string()).collect();
+
+        for (template_variable_name, template_value) in template_values {
+            let token = if template_variable_name.starts_with("TMPL_") {
+                template_variable_name.clone()
+            } else {
+                format!("TMPL_{}", template_variable_name)
+            };
+
+            let value = match template_value {
+                TealTemplateValue::Int(i) => i.to_string(),
+                TealTemplateValue::String(s) => {
+                    if s.parse::<i64>().is_ok() {
+                        s.clone()
+                    } else {
+                        format!("0x{}", hex::encode(s.as_bytes()))
+                    }
+                }
+                TealTemplateValue::Bytes(b) => format!("0x{}", hex::encode(b)),
+            };
+
+            program_lines = Self::replace_template_variable(&program_lines, &token, &value);
+        }
+
+        Ok(program_lines.join("\n"))
+    }
+
+    /// Replace template variable with proper boundary checking.
+    fn replace_template_variable(
+        program_lines: &[String],
+        token: &str,
+        replacement: &str,
+    ) -> Vec<String> {
+        let mut result = Vec::new();
+        let token_index_offset = replacement.len() as i32 - token.len() as i32;
+
+        for line in program_lines {
+            let comment_index = Self::find_unquoted_string(line, "//").unwrap_or(line.len());
+            let mut code = line[..comment_index].to_string();
+            let comment = &line[comment_index..];
+            let mut trailing_index = 0;
+
+            while let Some(token_index) = Self::find_template_token(&code, token, trailing_index) {
+                trailing_index = token_index + token.len();
+                let prefix = &code[..token_index];
+                let suffix = &code[trailing_index..];
+                code = format!("{}{}{}", prefix, replacement, suffix);
+                trailing_index = ((trailing_index as i32) + token_index_offset).max(0) as usize;
+            }
+
+            result.push(format!("{}{}", code, comment));
+        }
+
+        result
+    }
+
+    /// Find template token with boundary checking.
+    fn find_template_token(line: &str, token: &str, start_index: usize) -> Option<usize> {
+        let end_index = line.len();
+        let mut index = start_index;
+
+        while index < end_index {
+            if let Some(token_index) = Self::find_unquoted_string(&line[index..], token) {
+                let actual_token_index = index + token_index;
+                let trailing_index = actual_token_index + token.len();
+
+                // Check boundaries - ensure it's a whole token
+                let valid_start = actual_token_index == 0
+                    || !Self::is_valid_token_character(
+                        line.chars()
+                            .nth(actual_token_index.saturating_sub(1))
+                            .unwrap_or(' '),
+                    );
+                let valid_end = trailing_index >= line.len()
+                    || !Self::is_valid_token_character(
+                        line.chars().nth(trailing_index).unwrap_or(' '),
+                    );
+
+                if valid_start && valid_end {
+                    return Some(actual_token_index);
+                }
+                index = trailing_index;
+            } else {
+                break;
+            }
+        }
+        None
+    }
+
+    /// Check if character is valid for token.
+    fn is_valid_token_character(ch: char) -> bool {
+        ch.is_alphanumeric() || ch == '_'
+    }
+
+    /// Replace deploy-time control parameters.
+    pub fn replace_teal_template_deploy_time_control_params(
+        teal_template_code: &str,
+        params: &DeploymentMetadata,
+    ) -> Result<String, AppManagerError> {
+        let mut result = teal_template_code.to_string();
+
+        if let Some(updatable) = params.updatable {
+            if !teal_template_code.contains(UPDATABLE_TEMPLATE_NAME) {
+                return Err(AppManagerError::TemplateVariableNotFound(format!(
+                    "Deploy-time updatability control requested, but {} not present in TEAL code",
+                    UPDATABLE_TEMPLATE_NAME
+                )));
+            }
+            result = result.replace(UPDATABLE_TEMPLATE_NAME, &(updatable as u8).to_string());
+        }
+
+        if let Some(deletable) = params.deletable {
+            if !teal_template_code.contains(DELETABLE_TEMPLATE_NAME) {
+                return Err(AppManagerError::TemplateVariableNotFound(format!(
+                    "Deploy-time deletability control requested, but {} not present in TEAL code",
+                    DELETABLE_TEMPLATE_NAME
+                )));
+            }
+            result = result.replace(DELETABLE_TEMPLATE_NAME, &(deletable as u8).to_string());
+        }
+
+        Ok(result)
+    }
+
+    /// Strip comments from TEAL code.
+    pub fn strip_teal_comments(teal_code: &str) -> String {
+        teal_code
+            .lines()
+            .map(|line| {
+                if let Some(comment_pos) = Self::find_unquoted_string(line, "//") {
+                    line[..comment_pos].trim_end()
+                } else {
+                    line
+                }
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+
+    /// Find unquoted string in TEAL line.
+    fn find_unquoted_string(line: &str, token: &str) -> Option<usize> {
+        let mut in_quotes = false;
+        let mut in_base64 = false;
+        let chars: Vec<char> = line.chars().collect();
+        let mut i = 0;
+
+        while i < chars.len() {
+            match chars[i] {
+                ' ' | '(' if !in_quotes && Self::last_token_base64(line, i) => {
+                    in_base64 = true;
+                }
+                ' ' | ')' if !in_quotes && in_base64 => {
+                    in_base64 = false;
+                }
+                '\\' if in_quotes => {
+                    // Skip next character
+                    i += 1;
+                }
+                '"' => {
+                    in_quotes = !in_quotes;
+                }
+                _ if !in_quotes && !in_base64 => {
+                    if i + token.len() <= line.len() && &line[i..i + token.len()] == token {
+                        return Some(i);
+                    }
+                }
+                _ => {}
+            }
+            i += 1;
+        }
+        None
+    }
+
+    /// Check if last token is base64.
+    fn last_token_base64(line: &str, index: usize) -> bool {
+        if let Some(last_token) = line[..index].split_whitespace().last() {
+            matches!(last_token, "base64" | "b64")
+        } else {
+            false
+        }
+    }
+}
+
+/// Errors that can occur during app manager operations.
+#[derive(Debug, thiserror::Error)]
+pub enum AppManagerError {
+    #[error("Algod client error: {0}")]
+    AlgodClientError(AlgodError),
+
+    #[error("Template variable not found: {0}")]
+    TemplateVariableNotFound(String),
+
+    #[error("Decoding error: {0}")]
+    DecodingError(String),
+
+    #[error("State not found")]
+    StateNotFound,
+
+    #[error("ABI decode error: {0}")]
+    ABIDecodeError(String),
+}
