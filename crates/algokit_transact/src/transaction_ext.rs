@@ -12,14 +12,14 @@ pub trait TransactionExt {
     /// Returns true if this is an asset transfer transaction
     fn is_asset_transfer(&self) -> bool;
 
-    /// Returns true if this is an asset config transaction
-    fn is_asset_config(&self) -> bool;
+    /// Returns true if this is an asset create transaction
+    fn is_asset_create(&self) -> bool;
 
     /// Returns true if this is an asset freeze transaction
     fn is_asset_freeze(&self) -> bool;
 
-    /// Returns true if this is an application call transaction
-    fn is_application_call(&self) -> bool;
+    /// Returns true if this is an app call transaction
+    fn is_app_call(&self) -> bool;
 
     /// Returns true if this is a key registration transaction
     fn is_key_registration(&self) -> bool;
@@ -30,14 +30,14 @@ pub trait TransactionExt {
     /// Returns a reference to the asset transfer transaction if this is an asset transfer
     fn as_asset_transfer(&self) -> Option<&AssetTransferTransactionFields>;
 
-    /// Returns a reference to the asset config transaction if this is an asset config
-    fn as_asset_config(&self) -> Option<&AssetConfigTransactionFields>;
+    /// Returns a reference to the asset create transaction if this is an asset create
+    fn as_asset_create(&self) -> Option<&AssetConfigTransactionFields>;
 
     /// Returns a reference to the asset freeze transaction if this is an asset freeze
     fn as_asset_freeze(&self) -> Option<&AssetFreezeTransactionFields>;
 
-    /// Returns a reference to the application call transaction if this is an application call
-    fn as_application_call(&self) -> Option<&ApplicationCallTransactionFields>;
+    /// Returns a reference to the app call transaction if this is an app call
+    fn as_app_call(&self) -> Option<&ApplicationCallTransactionFields>;
 
     /// Returns a reference to the key registration transaction if this is a key registration
     fn as_key_registration(&self) -> Option<&KeyRegistrationTransactionFields>;
@@ -71,7 +71,7 @@ impl TransactionExt for Transaction {
         matches!(self, Transaction::AssetTransfer(_))
     }
 
-    fn is_asset_config(&self) -> bool {
+    fn is_asset_create(&self) -> bool {
         matches!(self, Transaction::AssetConfig(_))
     }
 
@@ -79,7 +79,7 @@ impl TransactionExt for Transaction {
         matches!(self, Transaction::AssetFreeze(_))
     }
 
-    fn is_application_call(&self) -> bool {
+    fn is_app_call(&self) -> bool {
         matches!(self, Transaction::ApplicationCall(_))
     }
 
@@ -103,7 +103,7 @@ impl TransactionExt for Transaction {
         }
     }
 
-    fn as_asset_config(&self) -> Option<&AssetConfigTransactionFields> {
+    fn as_asset_create(&self) -> Option<&AssetConfigTransactionFields> {
         if let Transaction::AssetConfig(asset_config) = self {
             Some(asset_config)
         } else {
@@ -119,7 +119,7 @@ impl TransactionExt for Transaction {
         }
     }
 
-    fn as_application_call(&self) -> Option<&ApplicationCallTransactionFields> {
+    fn as_app_call(&self) -> Option<&ApplicationCallTransactionFields> {
         if let Transaction::ApplicationCall(app_call) = self {
             Some(app_call)
         } else {
@@ -139,9 +139,9 @@ impl TransactionExt for Transaction {
         match self {
             Transaction::Payment(_) => "Payment",
             Transaction::AssetTransfer(_) => "AssetTransfer",
-            Transaction::AssetConfig(_) => "AssetConfig",
+            Transaction::AssetConfig(_) => "AssetCreate",
             Transaction::AssetFreeze(_) => "AssetFreeze",
-            Transaction::ApplicationCall(_) => "ApplicationCall",
+            Transaction::ApplicationCall(_) => "AppCall",
             Transaction::KeyRegistration(_) => "KeyRegistration",
         }
     }

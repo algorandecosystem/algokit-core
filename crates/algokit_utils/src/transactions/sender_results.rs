@@ -245,7 +245,7 @@ impl SendTransactionResult {
     pub fn application_call_transactions(
         &self,
     ) -> Vec<(&Transaction, &PendingTransactionResponse)> {
-        self.filter_transactions(|tx| tx.is_application_call())
+        self.filter_transactions(|tx| tx.is_app_call())
     }
 }
 
@@ -264,7 +264,7 @@ impl SendAssetCreateResult {
 
     /// Get the asset configuration transaction from the base transaction
     pub fn asset_config_transaction(&self) -> Option<&AssetConfigTransactionFields> {
-        self.base.transaction.as_asset_config()
+        self.base.transaction.as_asset_create()
     }
 }
 
@@ -298,7 +298,7 @@ impl SendAppCreateResult {
 
     /// Get the application call transaction from the base transaction
     pub fn application_call_transaction(&self) -> Option<&ApplicationCallTransactionFields> {
-        self.base.transaction.as_application_call()
+        self.base.transaction.as_app_call()
     }
 }
 
