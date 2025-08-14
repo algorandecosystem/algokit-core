@@ -455,15 +455,14 @@ impl AppManager {
 
             let (value_raw, value_base64, value) = match state_val.value.r#type {
                 1 => {
-                    // Bytes
-                    let value_raw = Base64
-                        .decode(&state_val.value.bytes)
-                        .map_err(|e| AppManagerError::DecodingError(e.to_string()))?;
+                    // Bytes - now already decoded from base64 by serde
+                    let value_raw = state_val.value.bytes.clone();
+                    let value_base64 = Base64.encode(&value_raw);
                     let value_str = String::from_utf8(value_raw.clone())
                         .unwrap_or_else(|_| hex::encode(&value_raw));
                     (
                         Some(value_raw),
-                        Some(state_val.value.bytes.clone()),
+                        Some(value_base64),
                         AppStateValue::Bytes(value_str),
                     )
                 }

@@ -340,7 +340,7 @@ fn test_box_identifier_binary_handling() {
     assert_eq!(ref_bytes, string_box_id);
 }
 
-/// Test that app state keys are now Vec<u8> for TypeScript consistency
+/// Test that app state keys and bytes are now Vec<u8> for TypeScript consistency
 #[test]
 fn test_app_state_keys_as_vec_u8() {
     use algod_client::models::{TealKeyValue, TealValue};
@@ -354,7 +354,7 @@ fn test_app_state_keys_as_vec_u8() {
         key: key_base64,
         value: TealValue {
             r#type: 2, // Uint type
-            bytes: String::new(),
+            bytes: Vec::new(),
             uint: 42,
         },
     };
@@ -381,7 +381,7 @@ fn test_app_state_keys_as_vec_u8() {
         key: binary_key_base64,
         value: TealValue {
             r#type: 2,
-            bytes: String::new(),
+            bytes: Vec::new(),
             uint: 123,
         },
     };
@@ -393,4 +393,35 @@ fn test_app_state_keys_as_vec_u8() {
     assert!(binary_result.contains_key(&binary_key));
     let binary_app_state = &binary_result[&binary_key];
     assert_eq!(binary_app_state.key_raw, binary_key);
+
+    // Test bytes value type with base64 deserialization
+    let bytes_key = b"bytes_key".to_vec();
+    let bytes_key_base64 = Base64.encode(&bytes_key);
+    let bytes_value = b"Hello, World!".to_vec();
+    
+    let bytes_state_val = TealKeyValue {
+        key: bytes_key_base64,
+        value: TealValue {
+            r#type: 1, // Bytes type
+            bytes: bytes_value.clone(),
+            uint: 0,
+        },
+    };
+
+    let bytes_state = vec![bytes_state_val];
+    let bytes_result = AppManager::decode_app_state(&bytes_state).unwrap();
+
+    // Verify bytes value handling
+    assert!(bytes_result.contains_key(&bytes_key));
+    let bytes_app_state = &bytes_result[&bytes_key];
+    assert_eq!(bytes_app_state.key_raw, bytes_key);
+    assert_eq!(bytes_app_state.value_raw, Some(bytes_value.clone()));
+    assert_eq!(bytes_app_state.value_base64, Some(Base64.encode(&bytes_value)));
+    
+    // Check that the bytes value is correctly decoded as UTF-8 string
+    if let AppStateValue::Bytes(ref value_str) = bytes_app_state.value {
+        assert_eq!(value_str, "Hello, World!");
+    } else {
+        panic!("Expected AppStateValue::Bytes");
+    }
 }

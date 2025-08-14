@@ -9,8 +9,10 @@
 
 use crate::models;
 use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
 
 /// Represents a TEAL value.
+#[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TealValue {
     /// type of the value. Value `1` refers to **bytes**, value `2` refers to **uint**
@@ -18,7 +20,8 @@ pub struct TealValue {
     pub r#type: u32,
     /// bytes value.
     #[serde(rename = "bytes")]
-    pub bytes: String,
+    #[serde_as(as = "serde_with::base64::Base64")]
+    pub bytes: Vec<u8>,
     /// uint value.
     #[serde(rename = "uint")]
     pub uint: u64,
@@ -26,7 +29,7 @@ pub struct TealValue {
 
 impl TealValue {
     /// Constructor for TealValue
-    pub fn new(r#type: u32, bytes: String, uint: u64) -> TealValue {
+    pub fn new(r#type: u32, bytes: Vec<u8>, uint: u64) -> TealValue {
         TealValue {
             r#type,
             bytes,

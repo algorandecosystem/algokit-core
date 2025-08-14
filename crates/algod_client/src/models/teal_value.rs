@@ -11,8 +11,10 @@
 use crate::models;
 use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
 use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
 
 /// Represents a TEAL value.
+#[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TealValue {
     /// \[tt\] value type. Value `1` refers to **bytes**, value `2` refers to **uint**
@@ -20,7 +22,8 @@ pub struct TealValue {
     pub r#type: u64,
     /// \[tb\] bytes value.
     #[serde(rename = "bytes")]
-    pub bytes: String,
+    #[serde_as(as = "serde_with::base64::Base64")]
+    pub bytes: Vec<u8>,
     /// \[ui\] uint value.
     #[serde(rename = "uint")]
     pub uint: u64,
@@ -32,7 +35,7 @@ impl AlgorandMsgpack for TealValue {
 
 impl TealValue {
     /// Constructor for TealValue
-    pub fn new(r#type: u64, bytes: String, uint: u64) -> TealValue {
+    pub fn new(r#type: u64, bytes: Vec<u8>, uint: u64) -> TealValue {
         TealValue {
             r#type,
             bytes,
