@@ -2,7 +2,7 @@ use crate::common::init_test_logging;
 use algokit_abi::abi_type::BitSize;
 use algokit_abi::{ABIMethod, ABIType, ABIValue};
 use algokit_test_artifacts::{inner_fee_contract, nested_contract};
-use algokit_transact::{Address, OnApplicationComplete, TransactionId, get_application_address};
+use algokit_transact::{Address, OnApplicationComplete, TransactionId};
 use algokit_utils::transactions::composer::SendParams;
 use algokit_utils::{AppCallParams, AppCreateParams, PaymentParams, testing::*};
 use algokit_utils::{CommonParams, Composer};
@@ -1913,7 +1913,7 @@ async fn fund_app_accounts(
     let mut dispenser = LocalNetDispenser::new(context.algod.clone());
 
     for app_id in app_ids {
-        let app_address = get_application_address(*app_id);
+        let app_address = Address::from_app_id(app_id);
         dispenser
             .fund_account(&app_address.to_string(), amount)
             .await?;

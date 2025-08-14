@@ -132,27 +132,6 @@ impl AlgorandMsgpack for GroupedTransactions {
     const PREFIX: &'static [u8] = b"TG";
 }
 
-pub fn get_application_address(app_id: u64) -> Address {
-    let mut hasher = Sha512_256::new();
-    hasher.update(b"appID");
-    hasher.update(app_id.to_be_bytes());
-
-    let hash = hasher.finalize();
-    let mut addr_bytes = [0u8; ALGORAND_PUBLIC_KEY_BYTE_LENGTH];
-    addr_bytes.copy_from_slice(&hash[..ALGORAND_PUBLIC_KEY_BYTE_LENGTH]);
-
-    Address(addr_bytes)
-}
-
 #[cfg(test)]
 mod tests {
-    use super::*;
-
-    #[test]
-    fn test_get_application_address() {
-        let app_id = 123u64;
-        let address = get_application_address(app_id);
-        let address_str = address.to_string();
-        assert!(address_str == "WRBMNT66ECE2AOYKM76YVWIJMBW6Z3XCQZOKG5BL7NISAQC2LBGEKTZLRM");
-    }
 }

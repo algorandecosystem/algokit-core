@@ -10,6 +10,7 @@ use crate::utils::pub_key_to_checksum;
 use crate::{
     ALGORAND_ADDRESS_LENGTH, ALGORAND_CHECKSUM_BYTE_LENGTH, ALGORAND_PUBLIC_KEY_BYTE_LENGTH,
 };
+use sha2::{Digest, Sha512_256};
 use serde::{Deserialize, Serialize};
 use serde_with::{Bytes, serde_as};
 use std::fmt::{Display, Formatter, Result as FmtResult};
@@ -29,6 +30,22 @@ impl Address {
     /// Returns the 32 bytes of the address as a byte array reference.
     pub fn as_bytes(&self) -> &Byte32 {
         &self.0
+    }
+
+    /// Creates an Address from an application ID.
+    /// 
+    /// This computes the application address by hashing the application ID
+    /// with the "appID" prefix, as per Algorand's application address derivation.
+    pub fn from_app_id(app_id: &u64) -> Address {
+        let mut hasher = Sha512_256::new();
+        hasher.update(b"appID");
+        hasher.update(app_id.to_be_bytes());
+
+        let hash = hasher.finalize();
+        let mut addr_bytes = [0u8; ALGORAND_PUBLIC_KEY_BYTE_LENGTH];
+        addr_bytes.copy_from_slice(&hash[..ALGORAND_PUBLIC_KEY_BYTE_LENGTH]);
+
+        Address(addr_bytes)
     }
 
     /// Returns the base32-encoded string representation of the address, including the checksum.
@@ -101,5 +118,18 @@ impl Display for Address {
     /// Formats the address as a base32-encoded string.
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         write!(f, "{}", self.as_str())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_from_app_id() {
+        let app_id = 123u64;
+        let address = Address::from_app_id(&app_id);
+        let address_str = address.to_string();
+        assert_eq!(address_str, "WRBMNT66ECE2AOYKM76YVWIJMBW6Z3XCQZOKG5BL7NISAQC2LBGEKTZLRM");
     }
 }

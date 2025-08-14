@@ -22,7 +22,6 @@ pub use transactions::{
     OnApplicationComplete, PaymentTransactionBuilder, PaymentTransactionFields, SignedTransaction,
     StateSchema, Transaction, TransactionHeader, TransactionHeaderBuilder,
 };
-pub use utils::get_application_address;
 
 #[cfg(test)]
 mod tests;

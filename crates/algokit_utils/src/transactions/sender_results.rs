@@ -3,7 +3,6 @@ use super::transaction_ext::TransactionExt;
 use algod_client::models::PendingTransactionResponse;
 use algokit_transact::{
     Address, ApplicationCallTransactionFields, AssetConfigTransactionFields, Transaction,
-    get_application_address,
 };
 
 /// The unified, comprehensive result of sending a single transaction or transaction group.
@@ -279,7 +278,7 @@ impl SendAppCreateResult {
         })?;
 
         // Calculate app address
-        let app_address = get_application_address(app_id);
+        let app_address = Address::from_app_id(&app_id);
 
         Ok(SendAppCreateResult {
             base,
