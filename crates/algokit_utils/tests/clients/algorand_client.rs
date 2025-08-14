@@ -13,11 +13,11 @@ async fn test_algorand_client_basic_functionality()
         .map_err(|e| format!("Failed to get suggested params: {}", e))?;
 
     // Basic validation that we got a valid response
-    // Note: fee might be 0 on localnet with flat fees, so we check it exists
-    // Fee is u64, so always >= 0
+    // Note: fee might be 0 on localnet with flat fees, but min_fee should always be set
     assert!(!suggested_params.genesis_id.is_empty());
     assert!(!suggested_params.genesis_hash.is_empty());
     assert!(suggested_params.last_round > 0);
+    assert!(suggested_params.min_fee > 0, "Min fee should always be greater than 0");
 
     Ok(())
 }
@@ -60,6 +60,7 @@ async fn test_algorand_client_with_fixture() -> Result<(), Box<dyn std::error::E
 
     // Basic validation
     assert!(suggested_params.last_round > 0);
+    assert!(suggested_params.min_fee > 0, "Min fee should always be greater than 0");
 
     Ok(())
 }
