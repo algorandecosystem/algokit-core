@@ -23,32 +23,32 @@ impl AlgorandClient {
         let app_manager = AppManager::new(algod_client.clone());
 
         // Create closure for new_group function
-        let algod_for_sender = algod_client.clone();
-        let new_group_fn = move || {
-            Composer::new(
-                algod_for_sender.clone(),
-                // TODO: Replace EmptySigner with dynamic signer resolution once AccountManager
-                // abstraction is implemented. Should resolve default signers from sender addresses
-                // similar to TypeScript implementation's getSigner function.
-                Arc::new(crate::transactions::EmptySigner {}),
-            )
-        };
-
-        let transaction_sender =
-            TransactionSender::new(new_group_fn, asset_manager.clone(), app_manager.clone());
+        let algod_client_for_sender = algod_client.clone();
+        let transaction_sender = TransactionSender::new(
+            move || {
+                Composer::new(
+                    algod_client_for_sender.clone(),
+                    // TODO: Replace EmptySigner with dynamic signer resolution once AccountManager
+                    // abstraction is implemented. Should resolve default signers from sender addresses
+                    // similar to py/ts utils implementation's get signer function.
+                    Arc::new(crate::transactions::EmptySigner {}),
+                )
+            },
+            asset_manager.clone(),
+            app_manager.clone(),
+        );
 
         // Create closure for TransactionCreator
-        let algod_for_creator = algod_client.clone();
-        let new_group_fn_creator = Arc::new(move || {
+        let algod_client_for_creator = algod_client.clone();
+        let transaction_creator = TransactionCreator::new(move || {
             Composer::new(
-                algod_for_creator.clone(),
+                algod_client_for_creator.clone(),
                 // TODO: Replace EmptySigner with dynamic signer resolution once AccountManager
                 // abstraction is implemented. Should resolve default signers from sender addresses
-                // similar to TypeScript implementation's getSigner function.
+                // similar to py/ts utils implementation's get signer function.
                 Arc::new(crate::transactions::EmptySigner {}),
             )
         });
-        let transaction_creator = TransactionCreator::new(new_group_fn_creator);
 
         Self {
             client_manager,
@@ -91,7 +91,13 @@ impl AlgorandClient {
 
     /// Create a new transaction composer for building transaction groups
     pub fn new_group(&self) -> Composer {
-        self.transaction_sender.new_group()
+        // TODO: Replace EmptySigner with dynamic signer resolution once AccountManager
+        // abstraction is implemented. Should resolve default signers from sender addresses
+        // similar to py/ts utils implementation's get signer function.
+        Composer::new(
+            self.client_manager.algod().clone(),
+            Arc::new(crate::transactions::EmptySigner {}),
+        )
     }
 
     pub fn default_localnet() -> Self {

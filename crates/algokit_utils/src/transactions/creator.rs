@@ -28,8 +28,10 @@ pub struct TransactionCreator {
 }
 
 impl TransactionCreator {
-    pub fn new(new_group: Arc<dyn Fn() -> Composer>) -> Self {
-        Self { new_group }
+    pub fn new(new_group: impl Fn() -> Composer + 'static) -> Self {
+        Self {
+            new_group: Arc::new(new_group),
+        }
     }
 
     pub(crate) async fn transaction<F>(
