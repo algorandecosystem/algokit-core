@@ -5,7 +5,7 @@ use algod_client::{
 use algokit_abi::{ABIType, ABIValue};
 use algokit_transact::Address;
 use base64::{Engine, engine::general_purpose::STANDARD as Base64};
-use sha2::{Digest, Sha512_256};
+use sha2::{Digest, Sha256, Sha512_256};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
@@ -97,11 +97,22 @@ impl AppManager {
         }
     }
 
+    /// Create a SHA256 hash of the TEAL code for use as cache key.
+    /// This optimization reduces memory usage by storing a fixed-size hash
+    /// instead of the full TEAL code string as the cache key.
+    fn hash_teal_code(teal_code: &str) -> String {
+        let mut hasher = Sha256::new();
+        hasher.update(teal_code.as_bytes());
+        hex::encode(hasher.finalize())
+    }
+
     pub async fn compile_teal(&self, teal_code: &str) -> Result<CompiledTeal, AppManagerError> {
+        let cache_key = Self::hash_teal_code(teal_code);
+        
         // Check cache first
         {
             let cache = self.compilation_results.lock().unwrap();
-            if let Some(cached) = cache.get(teal_code) {
+            if let Some(cached) = cache.get(&cache_key) {
                 return Ok(cached.clone());
             }
         }
@@ -123,7 +134,7 @@ impl AppManager {
         // Cache the result
         {
             let mut cache = self.compilation_results.lock().unwrap();
-            cache.insert(teal_code.to_string(), result.clone());
+            cache.insert(cache_key, result.clone());
         }
 
         Ok(result)
@@ -150,8 +161,9 @@ impl AppManager {
     }
 
     pub fn get_compilation_result(&self, teal_code: &str) -> Option<CompiledTeal> {
+        let cache_key = Self::hash_teal_code(teal_code);
         let cache = self.compilation_results.lock().unwrap();
-        cache.get(teal_code).cloned()
+        cache.get(&cache_key).cloned()
     }
 
     pub async fn get_by_id(&self, app_id: u64) -> Result<AppInformation, AppManagerError> {
