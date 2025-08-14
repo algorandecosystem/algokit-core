@@ -434,8 +434,8 @@ impl TransactionSender {
             .map_err(TransactionSenderError::TransactionResultError)
     }
 
-    /// Send asset reconfigure transaction.
-    pub async fn asset_reconfigure(
+    /// Send asset configuration transaction.
+    pub async fn asset_config(
         &self,
         params: AssetReconfigureParams,
         send_params: Option<SendParams>,
