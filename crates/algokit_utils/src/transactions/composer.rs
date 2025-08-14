@@ -1040,7 +1040,10 @@ impl Composer {
                     ComposerTransaction::AssetClawback(params) => {
                         build_asset_clawback(params, header)
                     }
-                    ComposerTransaction::AssetCreate(params) => build_asset_create(params, header),
+                    ComposerTransaction::AssetCreate(params) => {
+                        build_asset_create(params, header)
+                            .map_err(|e| ComposerError::TransactionError(e))?
+                    }
                     ComposerTransaction::AssetReconfigure(params) => {
                         build_asset_reconfigure(params, header)
                     }
@@ -1051,7 +1054,10 @@ impl Composer {
                     ComposerTransaction::AssetUnfreeze(params) => {
                         build_asset_unfreeze(params, header)
                     }
-                    ComposerTransaction::AppCall(params) => build_app_call(params, header),
+                    ComposerTransaction::AppCall(params) => {
+                        build_app_call(params, header)
+                            .map_err(|e| ComposerError::TransactionError(e))?
+                    }
                     ComposerTransaction::AppCreateCall(params) => {
                         build_app_create_call(params, header)
                     }

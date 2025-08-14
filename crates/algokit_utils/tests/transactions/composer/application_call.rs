@@ -1596,3 +1596,59 @@ async fn test_more_than_15_args_app_call_method_call(#[future] setup: SetupResul
 
     Ok(())
 }
+
+#[tokio::test]
+async fn test_app_call_validation_errors() {
+    init_test_logging();
+
+    let mut fixture = algorand_fixture().await.expect("Failed to create fixture");
+    fixture
+        .new_scope()
+        .await
+        .expect("Failed to create new scope");
+    let context = fixture.context().expect("Failed to get context");
+    let sender_addr: Address = context
+        .test_account
+        .account()
+        .expect("Failed to get sender address")
+        .into();
+
+    // Test app call with invalid app_id (0)
+    let invalid_app_call_params = AppCallParams {
+        common_params: CommonParams {
+            sender: sender_addr.clone(),
+            ..Default::default()
+        },
+        app_id: 0, // Invalid: should be > 0 for app calls (0 is for app creation)
+        on_complete: OnApplicationComplete::NoOp,
+        args: None,
+        account_references: None,
+        app_references: None,
+        asset_references: None,
+        box_references: None,
+    };
+
+    let mut composer = context.composer.clone();
+    composer.add_app_call(invalid_app_call_params)
+        .expect("Adding invalid app call should succeed at composer level");
+    
+    // The validation should fail when building the transaction group
+    let result = composer.build(None).await;
+    
+    // The build should return an error due to validation failures
+    assert!(result.is_err(), "Build with invalid app call parameters should fail");
+    
+    let error = result.unwrap_err();
+    let error_string = error.to_string();
+    
+    // Check that the error contains validation-related messages from the transact crate
+    assert!(
+        error_string.contains("validation") || 
+        error_string.contains("app_id") ||
+        error_string.contains("Application") ||
+        error_string.contains("zero") ||
+        error_string.contains("0"),
+        "Error should contain validation failure details: {}",
+        error_string
+    );
+}

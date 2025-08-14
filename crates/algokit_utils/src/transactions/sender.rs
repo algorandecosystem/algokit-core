@@ -400,20 +400,6 @@ impl TransactionSender {
         params: AssetCreateParams,
         send_params: Option<SendParams>,
     ) -> Result<SendAssetCreateResult, TransactionSenderError> {
-        if params.total == 0 {
-            return Err(TransactionSenderError::InvalidParameters(
-                "Asset total must be greater than 0".to_string(),
-            ));
-        }
-
-        if let Some(decimals) = params.decimals {
-            if decimals > 19 {
-                return Err(TransactionSenderError::InvalidParameters(
-                    "Asset decimals cannot exceed 19".to_string(),
-                ));
-            }
-        }
-
         let mut composer = self.new_group();
         composer.add_asset_create(params)?;
         let base_result = self.send_and_parse(composer, send_params).await?;
@@ -471,13 +457,6 @@ impl TransactionSender {
         params: AppCallParams,
         send_params: Option<SendParams>,
     ) -> Result<SendTransactionResult, TransactionSenderError> {
-        // Enhanced parameter validation
-        if params.app_id == 0 {
-            return Err(TransactionSenderError::InvalidParameters(
-                "Application ID must be greater than 0".to_string(),
-            ));
-        }
-
         let mut composer = self.new_group();
         composer.add_app_call(params)?;
         self.send_and_parse(composer, send_params).await
