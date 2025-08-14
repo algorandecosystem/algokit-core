@@ -115,7 +115,7 @@ async fn create_test_asset(
     let sender = TransactionSender::new(
         {
             let client = algod_client.clone();
-            move || Composer::new((*client).clone(), Arc::new(EmptySigner {}))
+            move || Composer::new(client.clone(), Arc::new(EmptySigner {}))
         },
         AssetManager::new(algod_client.clone()),
         AppManager::new(algod_client.clone()),
@@ -150,7 +150,7 @@ async fn create_test_asset_with_creator(
     let sender = TransactionSender::new(
         {
             let client = algod_client.clone();
-            move || Composer::new((*client).clone(), Arc::new(EmptySigner {}))
+            move || Composer::new(client.clone(), Arc::new(EmptySigner {}))
         },
         AssetManager::new(algod_client.clone()),
         AppManager::new(algod_client.clone()),

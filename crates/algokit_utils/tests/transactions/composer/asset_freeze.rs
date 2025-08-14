@@ -58,7 +58,7 @@ async fn test_asset_freeze_unfreeze() {
 
     // Create a composer for the target account that can send transactions
     let target_composer = Composer::new(
-        context.algod.clone(),
+        Arc::new(context.algod.clone()),
         std::sync::Arc::new(target_account.clone()),
     );
 

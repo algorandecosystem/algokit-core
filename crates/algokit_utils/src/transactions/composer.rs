@@ -311,14 +311,14 @@ impl ComposerTransaction {
 #[derive(Clone)]
 pub struct Composer {
     transactions: Vec<ComposerTransaction>,
-    algod_client: AlgodClient,
+    algod_client: Arc<AlgodClient>,
     signer_getter: Arc<dyn TransactionSignerGetter>,
     built_group: Option<Vec<TransactionWithSigner>>,
     signed_group: Option<Vec<SignedTransaction>>,
 }
 
 impl Composer {
-    pub fn new(algod_client: AlgodClient, signer_getter: Arc<dyn TransactionSignerGetter>) -> Self {
+    pub fn new(algod_client: Arc<AlgodClient>, signer_getter: Arc<dyn TransactionSignerGetter>) -> Self {
         Composer {
             transactions: Vec::new(),
             algod_client,
@@ -334,7 +334,7 @@ impl Composer {
 
         Composer {
             transactions: Vec::new(),
-            algod_client: AlgodClient::testnet(),
+            algod_client: Arc::new(AlgodClient::testnet()),
             signer_getter: Arc::new(EmptySigner {}),
             built_group: None,
             signed_group: None,

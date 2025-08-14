@@ -50,7 +50,7 @@ impl AlgorandFixture {
             .ok_or("Context not initialized; call new_scope() first")?;
 
         Ok(Composer::new(
-            context.algod.clone(),
+            Arc::new(context.algod.clone()),
             Arc::new(context.test_account.clone()),
         ))
     }
@@ -72,7 +72,7 @@ impl AlgorandFixture {
             .map_err(|e| format!("Failed to create test account: {}", e))?;
 
         // Now TestAccount implements TransactionSignerGetter directly, so we can use it without a wrapper
-        let composer = Composer::new(algod.clone(), Arc::new(test_account.clone()));
+        let composer = Composer::new(Arc::new(algod.clone()), Arc::new(test_account.clone()));
 
         self.context = Some(AlgorandTestContext {
             algod,

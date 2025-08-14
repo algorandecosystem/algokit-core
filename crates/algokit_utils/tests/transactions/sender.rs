@@ -27,7 +27,7 @@ async fn sender_setup() -> Result<SenderSetup, Box<dyn std::error::Error + Send 
     let sender = TransactionSender::new(
         {
             let client = algod_client.clone();
-            move || Composer::new((*client).clone(), Arc::new(EmptySigner {}))
+            move || Composer::new(client.clone(), Arc::new(EmptySigner {}))
         },
         AssetManager::new(algod_client.clone()),
         AppManager::new(algod_client.clone()),

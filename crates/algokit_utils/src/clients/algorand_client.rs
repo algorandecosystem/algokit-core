@@ -26,7 +26,7 @@ impl AlgorandClient {
         let algod_for_sender = algod_client.clone();
         let new_group_fn = move || {
             Composer::new(
-                (*algod_for_sender).clone(),
+                algod_for_sender.clone(),
                 Arc::new(crate::transactions::EmptySigner {}),
             )
         };
@@ -38,7 +38,7 @@ impl AlgorandClient {
         let algod_for_creator = algod_client.clone();
         let new_group_fn_creator = Arc::new(move || {
             Composer::new(
-                (*algod_for_creator).clone(),
+                algod_for_creator.clone(),
                 Arc::new(crate::transactions::EmptySigner {}),
             )
         });
