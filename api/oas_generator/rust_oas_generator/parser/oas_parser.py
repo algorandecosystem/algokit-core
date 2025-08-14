@@ -380,7 +380,9 @@ class Property:
     is_signed_transaction: bool = field(init=False)
 
     def __post_init__(self) -> None:
-        self.rust_name = rust_snake_case(self.name)
+        # Apply field name transformations for better developer experience
+        transformed_name = self._transform_field_name(self.name)
+        self.rust_name = rust_snake_case(transformed_name)
         self.rust_field_name = escape_rust_keyword(self.rust_name)
         if self.is_base64_encoded:
             self.rust_type_with_msgpack = "Vec<u8>"
@@ -398,6 +400,15 @@ class Property:
             self.is_signed_transaction = self.is_signed_transaction or any(
                 "x-algokit-signed-txn" in ext_name and ext_value for ext_name, ext_value in self.items.vendor_extensions
             )
+
+    def _transform_field_name(self, original_name: str) -> str:
+        """Transform field names for better developer experience."""
+        # Transform API field names to more ergonomic Rust field names
+        field_transformations = {
+            "application-index": "app-id",
+            "asset-index": "asset-id",
+        }
+        return field_transformations.get(original_name, original_name)
 
 
 @dataclass
@@ -872,7 +883,7 @@ class OASParser:
         if schema_type == "array":
             underlying_rust_type = self._handle_array_schema(schema_data)
         else:
-            properties = self._parse_properties(properties_data, required_fields)
+            properties = self._parse_properties(properties_data, required_fields, name)
 
         return Schema(
             name=name,
@@ -904,18 +915,23 @@ class OASParser:
         items = schema_data.get("items", {})
         return f"Vec<{rust_type_from_openapi(items, self.schemas, set())}>"
 
-    def _parse_properties(self, properties_data: dict[str, Any], required_fields: list[str]) -> list[Property]:
+    def _parse_properties(self, properties_data: dict[str, Any], required_fields: list[str], schema_name: str = "") -> list[Property]:
         """Parse properties from properties data."""
         properties = []
         for prop_name, prop_data in properties_data.items():
-            prop = self._create_property(prop_name, prop_data, required_fields)
+            prop = self._create_property(prop_name, prop_data, required_fields, schema_name)
             properties.append(prop)
         return properties
 
-    def _create_property(self, prop_name: str, prop_data: dict[str, Any], required_fields: list[str]) -> Property:
+    def _create_property(self, prop_name: str, prop_data: dict[str, Any], required_fields: list[str], schema_name: str = "") -> Property:
         """Create a Property object from property data."""
         rust_type = rust_type_from_openapi(prop_data, self.schemas, set())
         is_binary_field = detect_binary_field(prop_data)
+        
+        # Special case: TealValue.bytes should be Vec<u8> with base64 deserialization
+        if schema_name == "TealValue" and prop_name == "bytes":
+            rust_type = "Vec<u8>"
+            is_binary_field = True
         prop_vendor_extensions = self._extract_property_vendor_extensions(prop_data)
         items_property = self._create_items_property_if_needed(prop_name, prop_data)
 

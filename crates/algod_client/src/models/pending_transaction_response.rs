@@ -20,10 +20,10 @@ use crate::models::StateDelta;
 #[serde_as]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct PendingTransactionResponse {
-    /// The asset ID if the transaction was found and it created an asset.
+    /// The asset index if the transaction was found and it created an asset.
     #[serde(rename = "asset-index", skip_serializing_if = "Option::is_none")]
     pub asset_id: Option<u64>,
-    /// The application ID if the transaction was found and it created an application.
+    /// The application index if the transaction was found and it created an application.
     #[serde(rename = "application-index", skip_serializing_if = "Option::is_none")]
     pub app_id: Option<u64>,
     /// Rewards in microalgos applied to the close remainder to account.

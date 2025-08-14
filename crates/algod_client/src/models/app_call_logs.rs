@@ -20,7 +20,7 @@ pub struct AppCallLogs {
     #[serde_as(as = "Vec<Bytes>")]
     #[serde(rename = "logs")]
     pub logs: Vec<Vec<u8>>,
-    /// The application ID from which the logs were generated
+    /// The application from which the logs were generated
     #[serde(rename = "application-index")]
     pub app_id: u64,
     /// The transaction ID of the outer app call that lead to these logs
