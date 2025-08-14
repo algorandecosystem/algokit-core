@@ -7,6 +7,7 @@ use super::{
     asset_config::{AssetCreateParams, AssetDestroyParams, AssetReconfigureParams},
     asset_freeze::{AssetFreezeParams, AssetUnfreezeParams},
     asset_transfer::{AssetOptInParams, AssetOptOutParams, AssetTransferParams},
+    common::{CommonParams, TransactionSigner},
     composer::{Composer, ComposerError, SendParams},
     key_registration::{OfflineKeyRegistrationParams, OnlineKeyRegistrationParams},
     payment::{AccountCloseParams, PaymentParams},
@@ -347,7 +348,7 @@ impl TransactionSender {
     /// Send asset opt-out transaction.
     pub async fn asset_opt_out(
         &self,
-        mut params: AssetOptOutParams,
+        params: AssetOptOutParams,
         send_params: Option<SendParams>,
         ensure_zero_balance: Option<bool>,
     ) -> Result<SendTransactionResult, TransactionSenderError> {
@@ -372,29 +373,52 @@ impl TransactionSender {
             }
         }
 
-        if params.creator.is_none() {
-            let asset_info = self
-                .asset_manager
-                .get_by_id(params.asset_id)
-                .await
-                .map_err(|e| {
-                    TransactionSenderError::ValidationError(format!(
-                        "Asset {} validation failed: {}",
-                        params.asset_id, e
-                    ))
-                })?;
-            let creator_address = &asset_info.creator;
-            params.creator = Some(Address::from_str(creator_address).map_err(|e| {
-                TransactionSenderError::InvalidParameters(format!(
-                    "Invalid creator address for asset {}: {}",
-                    params.asset_id, e
-                ))
-            })?);
-        }
-
         let mut composer = self.new_group();
         composer.add_asset_opt_out(params)?;
         self.send_and_parse(composer, send_params).await
+    }
+
+    /// Send asset opt-out transaction with automatic creator resolution.
+    /// This is a convenience method that automatically resolves the asset creator
+    /// for backward compatibility with code that doesn't explicitly provide the creator.
+    pub async fn asset_opt_out_with_auto_creator(
+        &self,
+        asset_id: u64,
+        sender: Address,
+        signer: Option<Arc<dyn TransactionSigner>>,
+        send_params: Option<SendParams>,
+        ensure_zero_balance: Option<bool>,
+    ) -> Result<SendTransactionResult, TransactionSenderError> {
+        // Auto-resolve the creator
+        let asset_info = self
+            .asset_manager
+            .get_by_id(asset_id)
+            .await
+            .map_err(|e| {
+                TransactionSenderError::ValidationError(format!(
+                    "Asset {} validation failed: {}",
+                    asset_id, e
+                ))
+            })?;
+        
+        let creator_address = Address::from_str(&asset_info.creator).map_err(|e| {
+            TransactionSenderError::InvalidParameters(format!(
+                "Invalid creator address for asset {}: {}",
+                asset_id, e
+            ))
+        })?;
+
+        let params = AssetOptOutParams {
+            common_params: CommonParams {
+                sender,
+                signer,
+                ..Default::default()
+            },
+            asset_id,
+            creator: creator_address,
+        };
+
+        self.asset_opt_out(params, send_params, ensure_zero_balance).await
     }
 
     /// Send asset creation transaction.
