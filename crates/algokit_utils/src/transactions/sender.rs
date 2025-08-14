@@ -7,7 +7,7 @@ use super::{
     asset_config::{AssetCreateParams, AssetDestroyParams, AssetReconfigureParams},
     asset_freeze::{AssetFreezeParams, AssetUnfreezeParams},
     asset_transfer::{AssetOptInParams, AssetOptOutParams, AssetTransferParams},
-    common::{CommonParams, TransactionSigner},
+
     composer::{Composer, ComposerError, SendParams},
     key_registration::{OfflineKeyRegistrationParams, OnlineKeyRegistrationParams},
     payment::{AccountCloseParams, PaymentParams},
@@ -20,8 +20,7 @@ use crate::clients::app_manager::{AppManager, AppManagerError, CompiledTeal};
 use crate::clients::asset_manager::{AssetManager, AssetManagerError};
 use algod_client::apis::AlgodApiError;
 use algokit_abi::{ABIMethod, ABIReturn};
-use algokit_transact::Address;
-use std::str::FromStr;
+
 use std::sync::Arc;
 
 #[derive(Debug, thiserror::Error)]
@@ -399,48 +398,7 @@ impl TransactionSender {
             .await
     }
 
-    /// Send asset opt-out transaction with automatic creator resolution.
-    /// This is a convenience method that automatically resolves the asset creator
-    /// for backward compatibility with code that doesn't explicitly provide the creator.
-    pub async fn asset_opt_out_with_auto_creator(
-        &self,
-        asset_id: u64,
-        sender: Address,
-        signer: Option<Arc<dyn TransactionSigner>>,
-        send_params: Option<SendParams>,
-        ensure_zero_balance: Option<bool>,
-    ) -> Result<SendTransactionResult, TransactionSenderError> {
-        // Auto-resolve the creator
-        let asset_info = self
-            .asset_manager
-            .get_by_id(asset_id)
-            .await
-            .map_err(|e| {
-                TransactionSenderError::ValidationError(format!(
-                    "Asset {} validation failed: {}",
-                    asset_id, e
-                ))
-            })?;
-        
-        let creator_address = Address::from_str(&asset_info.creator).map_err(|e| {
-            TransactionSenderError::InvalidParameters(format!(
-                "Invalid creator address for asset {}: {}",
-                asset_id, e
-            ))
-        })?;
 
-        let params = AssetOptOutParams {
-            common_params: CommonParams {
-                sender,
-                signer,
-                ..Default::default()
-            },
-            asset_id,
-            creator: creator_address,
-        };
-
-        self.asset_opt_out(params, send_params, ensure_zero_balance).await
-    }
 
     /// Send asset creation transaction.
     pub async fn asset_create(

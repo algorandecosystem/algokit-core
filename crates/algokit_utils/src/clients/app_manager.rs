@@ -2,7 +2,7 @@ use algod_client::{
     apis::{AlgodClient, Error as AlgodError},
     models::TealKeyValue,
 };
-use algokit_abi::{ABIType, ABIValue, ABIReturn, ABIMethod};
+use algokit_abi::{ABIReturn, ABIMethod};
 use algokit_transact::Address;
 use base64::{Engine, engine::general_purpose::STANDARD as Base64};
 use sha2::{Digest, Sha256};
@@ -311,35 +311,7 @@ impl AppManager {
         Ok(values)
     }
 
-    /// Decode box value using ABI type.
-    pub async fn get_box_value_from_abi_type(
-        &self,
-        app_id: u64,
-        box_name: &BoxIdentifier,
-        abi_type: &ABIType,
-    ) -> Result<ABIValue, AppManagerError> {
-        let value = self.get_box_value(app_id, box_name).await?;
-        abi_type
-            .decode(&value)
-            .map_err(|e| AppManagerError::ABIDecodeError(e.to_string()))
-    }
 
-    /// Decode multiple box values using ABI type.
-    pub async fn get_box_values_from_abi_type(
-        &self,
-        app_id: u64,
-        box_names: &[BoxIdentifier],
-        abi_type: &ABIType,
-    ) -> Result<Vec<ABIValue>, AppManagerError> {
-        let mut values = Vec::new();
-        for box_name in box_names {
-            values.push(
-                self.get_box_value_from_abi_type(app_id, box_name, abi_type)
-                    .await?,
-            );
-        }
-        Ok(values)
-    }
 
     /// Decode box value using ABI method return type, returns ABIReturn for consistency.
     /// 
