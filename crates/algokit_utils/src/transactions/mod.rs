@@ -9,7 +9,6 @@ pub mod key_registration;
 pub mod payment;
 pub mod sender;
 pub mod sender_results;
-pub mod transaction_ext;
 
 // Re-export commonly used transaction types
 pub use application_call::{
@@ -39,4 +38,3 @@ pub use sender_results::{
     SendAppCallResult, SendAppCreateResult, SendAppUpdateResult, SendAssetCreateResult,
     SendTransactionResult, TransactionResultError,
 };
-pub use transaction_ext::TransactionExt;

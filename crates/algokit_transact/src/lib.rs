@@ -4,6 +4,7 @@ mod error;
 mod keypair_account;
 pub mod multisig;
 mod traits;
+mod transaction_ext;
 mod transactions;
 mod utils;
 
@@ -14,6 +15,7 @@ pub use error::AlgoKitTransactError;
 pub use keypair_account::KeyPairAccount;
 pub use multisig::*;
 pub use traits::{AlgorandMsgpack, EstimateTransactionSize, TransactionId, Transactions, Validate};
+pub use transaction_ext::TransactionExt;
 pub use transactions::{
     ApplicationCallTransactionBuilder, ApplicationCallTransactionFields,
     AssetConfigTransactionBuilder, AssetConfigTransactionFields, AssetFreezeTransactionBuilder,

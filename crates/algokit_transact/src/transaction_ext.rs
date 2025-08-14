@@ -1,4 +1,4 @@
-use algokit_transact::{
+use crate::{
     Address, ApplicationCallTransactionFields, AssetConfigTransactionFields,
     AssetFreezeTransactionFields, AssetTransferTransactionFields, KeyRegistrationTransactionFields,
     PaymentTransactionFields, Transaction,
@@ -170,7 +170,7 @@ impl TransactionExt for Transaction {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use algokit_transact::{PaymentTransactionFields, TransactionHeader};
+    use crate::{PaymentTransactionFields, TransactionHeader};
 
     #[test]
     fn test_payment_transaction_ext() {

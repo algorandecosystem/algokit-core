@@ -1,8 +1,8 @@
-use super::transaction_ext::TransactionExt;
 use algokit_abi::ABIReturn;
 use algod_client::models::PendingTransactionResponse;
 use algokit_transact::{
     Address, ApplicationCallTransactionFields, AssetConfigTransactionFields, Transaction,
+    TransactionExt,
 };
 
 /// The unified, comprehensive result of sending a single transaction or transaction group.
