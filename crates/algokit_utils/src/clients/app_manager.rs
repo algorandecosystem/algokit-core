@@ -338,6 +338,72 @@ impl AppManager {
         Ok(values)
     }
 
+    /// Decode box value using ABI method return type, returns ABIReturn for consistency.
+    /// 
+    /// This method takes an ABIMethod and uses its return type to decode the box value,
+    /// returning an ABIReturn that includes the method context. This approach aligns
+    /// with TypeScript patterns and enables better integration with ABIReturn-based workflows.
+    ///
+    /// # Arguments
+    /// * `app_id` - The application ID
+    /// * `box_name` - The box name identifier
+    /// * `method` - The ABI method whose return type should be used for decoding
+    ///
+    /// # Returns
+    /// An ABIReturn containing the method context, raw value, and decoded ABI value
+    pub async fn get_box_value_from_abi_method(
+        &self,
+        app_id: u64,
+        box_name: &BoxIdentifier,
+        method: &ABIMethod,
+    ) -> Result<ABIReturn, AppManagerError> {
+        if let Some(return_type) = &method.returns {
+            let raw_value = self.get_box_value(app_id, box_name).await?;
+            let return_value = return_type
+                .decode(&raw_value)
+                .map_err(|e| AppManagerError::ABIDecodeError(e.to_string()))?;
+
+            Ok(ABIReturn {
+                method: method.clone(),
+                raw_return_value: raw_value,
+                return_value,
+            })
+        } else {
+            Err(AppManagerError::ABIDecodeError(
+                "Method has no return type".to_string(),
+            ))
+        }
+    }
+
+    /// Decode multiple box values using ABI method return type, returns ABIReturn for consistency.
+    ///
+    /// This method takes an ABIMethod and uses its return type to decode multiple box values,
+    /// returning ABIReturn objects that include the method context. This approach aligns
+    /// with TypeScript patterns and enables better integration with ABIReturn-based workflows.
+    ///
+    /// # Arguments
+    /// * `app_id` - The application ID
+    /// * `box_names` - The box name identifiers
+    /// * `method` - The ABI method whose return type should be used for decoding
+    ///
+    /// # Returns
+    /// A vector of ABIReturn objects, each containing the method context, raw value, and decoded ABI value
+    pub async fn get_box_values_from_abi_method(
+        &self,
+        app_id: u64,
+        box_names: &[BoxIdentifier],
+        method: &ABIMethod,
+    ) -> Result<Vec<ABIReturn>, AppManagerError> {
+        let mut values = Vec::new();
+        for box_name in box_names {
+            values.push(
+                self.get_box_value_from_abi_method(app_id, box_name, method)
+                    .await?,
+            );
+        }
+        Ok(values)
+    }
+
     /// Get ABI return value from transaction confirmation (instance method for consistency).
     pub fn parse_abi_return(
         &self,
