@@ -31,7 +31,7 @@ pub struct AssetOptOutParams {
     /// without additional side effects.
     pub common_params: CommonParams,
     pub asset_id: u64,
-    pub creator: Address,
+    pub close_remainder_to: Address,
 }
 
 #[derive(Debug, Clone)]
@@ -81,7 +81,7 @@ pub fn build_asset_opt_out(params: &AssetOptOutParams, header: TransactionHeader
         amount: 0,
         receiver: sender,
         asset_sender: None,
-        close_remainder_to: Some(params.creator.clone()),
+        close_remainder_to: Some(params.close_remainder_to.clone()),
     })
 }
 

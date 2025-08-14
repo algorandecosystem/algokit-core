@@ -242,7 +242,7 @@ async fn test_asset_opt_out_uses_asset_manager_coordination(
             ..Default::default()
         },
         asset_id,
-        creator: sender_address, // Provide the creator address directly
+        close_remainder_to: sender_address, // Provide the creator address directly
     };
 
     let result = sender.asset_opt_out(params, None, Some(true)).await?;
@@ -296,7 +296,7 @@ async fn test_asset_opt_out_with_balance_validation(
             ..Default::default()
         },
         asset_id,
-        creator: sender_address.clone(), // Provide the creator address directly
+        close_remainder_to: sender_address.clone(), // Provide the creator address directly
     };
 
     let result = sender.asset_opt_out(params, None, Some(true)).await;
@@ -333,7 +333,7 @@ async fn test_validation_error_propagation(
             ..Default::default()
         },
         asset_id: 999999999, // Non-existent asset
-        creator: dummy_creator_address, // Valid dummy creator for non-existent asset
+        close_remainder_to: dummy_creator_address, // Valid dummy creator for non-existent asset
     };
 
     let result = sender.asset_opt_out(params, None, Some(true)).await;
