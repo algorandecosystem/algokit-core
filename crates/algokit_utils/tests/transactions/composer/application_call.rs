@@ -1227,7 +1227,7 @@ async fn create_test_app(context: &AlgorandTestContext, sender: Address) -> Opti
         .await
         .expect("Failed to send application create");
 
-    result.confirmations[0].application_index
+    result.confirmations[0].app_id
 }
 
 async fn deploy_app(
@@ -1287,7 +1287,7 @@ async fn deploy_app(
         .expect("Failed to send application create");
 
     result.confirmations[0]
-        .application_index
+        .app_id
         .expect("No app ID returned")
 }
 
@@ -1345,7 +1345,7 @@ async fn test_more_than_15_args_with_ref_types_app_call_method_call(
         .await
         .expect("Failed to send asset create");
     let asset_id = asset_result.confirmations[0]
-        .asset_index
+        .asset_id
         .expect("No asset ID returned");
 
     let abi_method = arc56_contract

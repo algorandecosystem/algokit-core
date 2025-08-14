@@ -151,7 +151,7 @@ async fn test_asset_reconfigure_transaction() {
         .await
         .expect("Failed to send asset create");
     let asset_id = create_result.confirmations[0]
-        .asset_index
+        .asset_id
         .expect("Failed to get asset ID");
 
     // Now reconfigure the asset
@@ -250,7 +250,7 @@ async fn test_asset_destroy_transaction() {
         .await
         .expect("Failed to send asset create");
     let asset_id = create_result.confirmations[0]
-        .asset_index
+        .asset_id
         .expect("Failed to get asset ID");
 
     // Now destroy the asset

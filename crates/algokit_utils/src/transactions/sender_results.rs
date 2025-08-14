@@ -253,7 +253,7 @@ impl SendAssetCreateResult {
     /// Create a new asset creation result by extracting the asset ID from the confirmation
     pub fn new(base: SendTransactionResult) -> Result<Self, TransactionResultError> {
         // Extract asset ID from the confirmation
-        let asset_id = base.confirmation.asset_index.ok_or_else(|| {
+        let asset_id = base.confirmation.asset_id.ok_or_else(|| {
             TransactionResultError::InvalidConfirmation(
                 "Asset creation confirmation missing asset-index".to_string(),
             )
@@ -277,7 +277,7 @@ impl SendAppCreateResult {
         compiled_clear: Option<Vec<u8>>,
     ) -> Result<Self, TransactionResultError> {
         // Extract app ID from the confirmation
-        let app_id = base.confirmation.application_index.ok_or_else(|| {
+        let app_id = base.confirmation.app_id.ok_or_else(|| {
             TransactionResultError::InvalidConfirmation(
                 "Application creation confirmation missing application-index".to_string(),
             )
@@ -350,8 +350,8 @@ mod tests {
 
         // Mock confirmation (in real usage this comes from algod)
         let confirmation = PendingTransactionResponse {
-            application_index: None,
-            asset_index: None,
+            app_id: None,
+            asset_id: None,
             asset_closing_amount: None,
             close_rewards: None,
             closing_amount: None,

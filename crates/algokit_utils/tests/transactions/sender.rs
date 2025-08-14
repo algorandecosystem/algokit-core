@@ -455,7 +455,7 @@ async fn deploy_abi_app(
     let result = composer.send(None).await?;
 
     Ok(result.confirmations[0]
-        .application_index
+        .app_id
         .expect("No app ID returned"))
 }
 

@@ -1,38 +1,45 @@
-#![allow(unused_imports)]
-#![allow(clippy::too_many_arguments)]
-
-pub mod apis;
-pub mod models;
-
-// Re-export the main client for convenience
-pub use apis::AlgodClient;
-
 #[cfg(test)]
 mod field_rename_tests {
-    use crate::models::{AppCallLogs, PendingTransactionResponse};
+    use algod_client::models::{AppCallLogs, PendingTransactionResponse};
     use algokit_transact::{SignedTransaction, Transaction, TransactionHeader, PaymentTransactionFields};
     use serde_json;
 
     #[test]
     fn test_pending_transaction_response_field_renaming() {
-        // Test field renaming by creating a struct and serializing it
-        let response = PendingTransactionResponse {
-            app_id: Some(123),
-            asset_id: Some(456),
-            pool_error: "".to_string(),
-            ..Default::default()
-        };
+        // Create a JSON string with the wire format field names
+        let json_str = r#"{
+            "application-index": 123,
+            "asset-index": 456,
+            "pool-error": "",
+            "txn": {
+                "sig": null,
+                "msig": null,
+                "lsig": null,
+                "txn": {
+                    "type": "pay",
+                    "snd": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "rcv": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "amt": 1000,
+                    "fee": 1000,
+                    "fv": 1,
+                    "lv": 1000
+                }
+            }
+        }"#;
 
-        // Test serialization - should use wire format field names
-        let serialized = serde_json::to_string(&response).unwrap();
+        // Test deserialization
+        let response: PendingTransactionResponse = serde_json::from_str(json_str).unwrap();
         
-        // Verify that the JSON uses the correct wire format field names
-        assert!(serialized.contains("\"application-index\":123"));
-        assert!(serialized.contains("\"asset-index\":456"));
-
-        // Verify we can access the fields with developer-friendly names
+        // Check that the fields are correctly mapped to the new field names
         assert_eq!(response.app_id, Some(123));
         assert_eq!(response.asset_id, Some(456));
+
+        // Test serialization back to JSON
+        let serialized = serde_json::to_string(&response).unwrap();
+        
+        // Verify that the JSON still uses the correct wire format field names
+        assert!(serialized.contains("\"application-index\":123"));
+        assert!(serialized.contains("\"asset-index\":456"));
     }
 
     #[test]

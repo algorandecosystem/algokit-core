@@ -1900,8 +1900,8 @@ async fn deploy_app(
     let result = composer.send(None).await?;
 
     result.confirmations[0]
-        .application_index
-        .ok_or_else(|| "No application index returned".into())
+        .app_id
+        .ok_or_else(|| "No application ID returned".into())
 }
 
 // Helper function to fund app accounts
