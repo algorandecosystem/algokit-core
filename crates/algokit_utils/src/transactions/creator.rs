@@ -68,6 +68,14 @@ impl TransactionCreator {
         &self,
         params: AssetTransferParams,
     ) -> Result<Transaction, ComposerError> {
+        // Enhanced parameter validation
+        if params.asset_id == 0 {
+            return Err(ComposerError::TransactionError(
+                "Asset ID must be greater than 0".to_string(),
+            ));
+        }
+        // Note: amount can be 0 for opt-in transactions, so we don't validate it here
+
         self.transaction(|composer| composer.add_asset_transfer(params))
             .await
     }
