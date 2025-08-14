@@ -42,9 +42,6 @@ pub trait TransactionExt {
     /// Returns a reference to the key registration transaction if this is a key registration
     fn as_key_registration(&self) -> Option<&KeyRegistrationTransactionFields>;
 
-    /// Returns the transaction type as a string for display purposes
-    fn transaction_type(&self) -> &'static str;
-
     // Header field accessors
     /// Returns the sender address of the transaction
     fn sender(&self) -> &Address;
@@ -135,17 +132,6 @@ impl TransactionExt for Transaction {
         }
     }
 
-    fn transaction_type(&self) -> &'static str {
-        match self {
-            Transaction::Payment(_) => "Payment",
-            Transaction::AssetTransfer(_) => "AssetTransfer",
-            Transaction::AssetConfig(_) => "AssetCreate",
-            Transaction::AssetFreeze(_) => "AssetFreeze",
-            Transaction::ApplicationCall(_) => "AppCall",
-            Transaction::KeyRegistration(_) => "KeyRegistration",
-        }
-    }
-
     fn sender(&self) -> &Address {
         &self.header().sender
     }
@@ -197,7 +183,6 @@ mod tests {
 
         assert!(transaction.is_payment());
         assert!(!transaction.is_asset_transfer());
-        assert_eq!(transaction.transaction_type(), "Payment");
 
         let payment_ref = transaction.as_payment().unwrap();
         assert_eq!(payment_ref.amount, 1000);
