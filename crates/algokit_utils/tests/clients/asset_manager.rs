@@ -20,7 +20,7 @@ async fn test_get_asset_by_id() -> Result<(), Box<dyn std::error::Error + Send +
     let asset_manager = AssetManager::new(Arc::new(context.algod.clone()));
 
     // Create test asset
-    let asset_id = create_test_asset(&mut fixture).await?;
+    let (asset_id, _) = create_test_asset_with_creator(&mut fixture).await?;
 
     // Test successful retrieval
     let asset_info = asset_manager.get_by_id(asset_id).await?;
@@ -86,7 +86,7 @@ async fn test_get_account_information_not_opted_in()
     let context = fixture.context()?;
     let asset_manager = AssetManager::new(Arc::new(context.algod.clone()));
 
-    let asset_id = create_test_asset(&mut fixture).await?;
+    let (asset_id, _) = create_test_asset_with_creator(&mut fixture).await?;
     let test_account = fixture.generate_account(None).await?;
 
     // Test account information for non-opted-in account should return error
@@ -102,41 +102,6 @@ async fn test_get_account_information_not_opted_in()
     ));
 
     Ok(())
-}
-
-/// Test opt-in status checking
-/// Helper function to create a test asset and return its ID
-async fn create_test_asset(
-    fixture: &mut algokit_utils::testing::AlgorandFixture,
-) -> Result<u64, Box<dyn std::error::Error + Send + Sync>> {
-    let creator = fixture.generate_account(None).await?;
-    let context = fixture.context()?;
-    let algod_client = Arc::new(context.algod.clone());
-    let sender = TransactionSender::new(
-        {
-            let client = algod_client.clone();
-            move || Composer::new(client.clone(), Arc::new(EmptySigner {}))
-        },
-        AssetManager::new(algod_client.clone()),
-        AppManager::new(algod_client.clone()),
-    );
-
-    let params = AssetCreateParams {
-        common_params: CommonParams {
-            sender: creator.account()?.address(),
-            signer: Some(Arc::new(creator.clone())),
-            ..Default::default()
-        },
-        total: 1000,
-        decimals: Some(0),
-        unit_name: Some("TEST".to_string()),
-        asset_name: Some("Test Asset".to_string()),
-        ..Default::default()
-    };
-
-    let result = sender.asset_create(params, None).await?;
-
-    Ok(result.asset_id)
 }
 
 /// Helper function to create a test asset and return both asset ID and creator address
