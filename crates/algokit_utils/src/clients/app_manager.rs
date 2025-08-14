@@ -5,7 +5,7 @@ use algod_client::{
 use algokit_abi::{ABIType, ABIValue, ABIReturn, ABIMethod};
 use algokit_transact::Address;
 use base64::{Engine, engine::general_purpose::STANDARD as Base64};
-use sha2::{Digest, Sha256, Sha512_256};
+use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
@@ -185,7 +185,7 @@ impl AppManager {
 
         Ok(AppInformation {
             app_id,
-            app_address: self.get_app_address(app_id),
+            app_address: Address::from_app_id(&app_id),
             approval_program: Base64
                 .decode(&app.params.approval_program)
                 .map_err(|e| AppManagerError::DecodingError(e.to_string()))?,
@@ -431,20 +431,6 @@ impl AppManager {
         } else {
             Ok(None)
         }
-    }
-
-    /// Get escrow address for application.
-    pub fn get_app_address(&self, app_id: u64) -> Address {
-        let app_id_bytes = app_id.to_be_bytes();
-        let mut data = Vec::with_capacity(app_id_bytes.len() + 5);
-        data.extend_from_slice(b"appID");
-        data.extend_from_slice(&app_id_bytes);
-
-        let hash = Sha512_256::digest(&data);
-        let address_bytes: [u8; 32] = hash.as_slice()[..32]
-            .try_into()
-            .expect("SHA512_256 should produce at least 32 bytes");
-        Address(address_bytes)
     }
 
     /// Get box reference from identifier.
