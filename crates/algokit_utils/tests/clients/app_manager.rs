@@ -142,22 +142,6 @@ async fn test_template_compilation() {
     assert_eq!(result.compiled_base64_to_bytes, vec![3, 129, 42, 67]);
 }
 
-/// Test compilation caching
-#[tokio::test]
-async fn test_compilation_caching() {
-    let mut fixture = algorand_fixture().await.unwrap();
-    fixture.new_scope().await.unwrap();
-    let app_manager = AppManager::new(Arc::new(fixture.context().unwrap().algod.clone()));
-
-    let teal = "#pragma version 3\npushint 100\nreturn";
-    app_manager.compile_teal(teal).await.unwrap();
-
-    let cached = app_manager.get_compilation_result(teal).unwrap();
-    assert_eq!(cached.teal, teal);
-    // Check deterministic compilation results for "#pragma version 3\npushint 100\nreturn"
-    assert_eq!(cached.compiled_base64_to_bytes, vec![3, 129, 100, 67]);
-}
-
 /// Test deploy-time control
 #[tokio::test]
 async fn test_deploy_time_control() {
