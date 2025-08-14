@@ -1,13 +1,11 @@
 use super::{
     application_call::{
-        AppCallMethodCallParams, AppCallParams, AppCreateMethodCallParams,
-        AppCreateParams, AppDeleteMethodCallParams, AppDeleteParams, AppUpdateMethodCallParams,
-        AppUpdateParams,
+        AppCallMethodCallParams, AppCallParams, AppCreateMethodCallParams, AppCreateParams,
+        AppDeleteMethodCallParams, AppDeleteParams, AppUpdateMethodCallParams, AppUpdateParams,
     },
     asset_config::{AssetCreateParams, AssetDestroyParams, AssetReconfigureParams},
     asset_freeze::{AssetFreezeParams, AssetUnfreezeParams},
     asset_transfer::{AssetOptInParams, AssetOptOutParams, AssetTransferParams},
-
     composer::{Composer, ComposerError, SendParams},
     key_registration::{OfflineKeyRegistrationParams, OnlineKeyRegistrationParams},
     payment::{AccountCloseParams, PaymentParams},
@@ -179,24 +177,23 @@ impl TransactionSender {
             .unwrap_or_else(|| "".to_string());
 
         // Enhanced ABI return processing using app_manager
-        let abi_returns: Option<Vec<ABIReturn>> =
-            if !composer_results.abi_returns.is_empty() {
-                let returns: Result<Vec<_>, _> = composer_results
-                    .abi_returns
-                    .into_iter()
-                    .map(|result| result.map_err(TransactionSenderError::ComposerError))
-                    .collect();
-                match returns {
-                    Ok(returns) => {
-                        // Process ABI returns with app_manager for enhanced parsing
-                        let processed_returns: Vec<_> = returns.into_iter().flatten().collect();
-                        Some(processed_returns)
-                    }
-                    Err(_) => None,
+        let abi_returns: Option<Vec<ABIReturn>> = if !composer_results.abi_returns.is_empty() {
+            let returns: Result<Vec<_>, _> = composer_results
+                .abi_returns
+                .into_iter()
+                .map(|result| result.map_err(TransactionSenderError::ComposerError))
+                .collect();
+            match returns {
+                Ok(returns) => {
+                    // Process ABI returns with app_manager for enhanced parsing
+                    let processed_returns: Vec<_> = returns.into_iter().flatten().collect();
+                    Some(processed_returns)
                 }
-            } else {
-                None
-            };
+                Err(_) => None,
+            }
+        } else {
+            None
+        };
 
         let result = SendTransactionResult::new(
             group_id,
@@ -403,8 +400,6 @@ impl TransactionSender {
             .await
     }
 
-
-
     /// Send asset creation transaction.
     pub async fn asset_create(
         &self,
@@ -414,8 +409,10 @@ impl TransactionSender {
         self.send_single_transaction_with_result(
             send_params,
             |composer| composer.add_asset_create(params),
-            |base_result| SendAssetCreateResult::new(base_result)
-                .map_err(TransactionSenderError::TransactionResultError),
+            |base_result| {
+                SendAssetCreateResult::new(base_result)
+                    .map_err(TransactionSenderError::TransactionResultError)
+            },
         )
         .await
     }
@@ -426,8 +423,10 @@ impl TransactionSender {
         params: AssetReconfigureParams,
         send_params: Option<SendParams>,
     ) -> Result<SendTransactionResult, TransactionSenderError> {
-        self.send_single_transaction(send_params, |composer| composer.add_asset_reconfigure(params))
-            .await
+        self.send_single_transaction(send_params, |composer| {
+            composer.add_asset_reconfigure(params)
+        })
+        .await
     }
 
     /// Send asset destroy transaction.
@@ -636,8 +635,10 @@ impl TransactionSender {
         params: OnlineKeyRegistrationParams,
         send_params: Option<SendParams>,
     ) -> Result<SendTransactionResult, TransactionSenderError> {
-        self.send_single_transaction(send_params, |composer| composer.add_online_key_registration(params))
-            .await
+        self.send_single_transaction(send_params, |composer| {
+            composer.add_online_key_registration(params)
+        })
+        .await
     }
 
     /// Send offline key registration transaction.
@@ -646,8 +647,10 @@ impl TransactionSender {
         params: OfflineKeyRegistrationParams,
         send_params: Option<SendParams>,
     ) -> Result<SendTransactionResult, TransactionSenderError> {
-        self.send_single_transaction(send_params, |composer| composer.add_offline_key_registration(params))
-            .await
+        self.send_single_transaction(send_params, |composer| {
+            composer.add_offline_key_registration(params)
+        })
+        .await
     }
 
     /// Generate lease from arbitrary data.

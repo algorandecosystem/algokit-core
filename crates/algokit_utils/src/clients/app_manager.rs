@@ -2,7 +2,7 @@ use algod_client::{
     apis::{AlgodClient, Error as AlgodError},
     models::TealKeyValue,
 };
-use algokit_abi::{ABIReturn, ABIMethod};
+use algokit_abi::{ABIMethod, ABIReturn};
 use algokit_transact::Address;
 use base64::{Engine, engine::general_purpose::STANDARD as Base64};
 use sha2::{Digest, Sha256};
@@ -311,10 +311,8 @@ impl AppManager {
         Ok(values)
     }
 
-
-
     /// Decode box value using ABI method return type, returns ABIReturn for consistency.
-    /// 
+    ///
     /// This method takes an ABIMethod and uses its return type to decode the box value,
     /// returning an ABIReturn that includes the method context. This approach aligns
     /// with TypeScript patterns and enables better integration with ABIReturn-based workflows.

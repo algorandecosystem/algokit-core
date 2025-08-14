@@ -1286,9 +1286,7 @@ async fn deploy_app(
         .await
         .expect("Failed to send application create");
 
-    result.confirmations[0]
-        .app_id
-        .expect("No app ID returned")
+    result.confirmations[0].app_id.expect("No app ID returned")
 }
 
 #[rstest]
@@ -1629,25 +1627,29 @@ async fn test_app_call_validation_errors() {
     };
 
     let mut composer = context.composer.clone();
-    composer.add_app_call(invalid_app_call_params)
+    composer
+        .add_app_call(invalid_app_call_params)
         .expect("Adding invalid app call should succeed at composer level");
-    
+
     // The validation should fail when building the transaction group
     let result = composer.build(None).await;
-    
+
     // The build should return an error due to validation failures
-    assert!(result.is_err(), "Build with invalid app call parameters should fail");
-    
+    assert!(
+        result.is_err(),
+        "Build with invalid app call parameters should fail"
+    );
+
     let error = result.unwrap_err();
     let error_string = error.to_string();
-    
+
     // Check that the error contains validation-related messages from the transact crate
     assert!(
-        error_string.contains("validation") || 
-        error_string.contains("app_id") ||
-        error_string.contains("Application") ||
-        error_string.contains("zero") ||
-        error_string.contains("0"),
+        error_string.contains("validation")
+            || error_string.contains("app_id")
+            || error_string.contains("Application")
+            || error_string.contains("zero")
+            || error_string.contains("0"),
         "Error should contain validation failure details: {}",
         error_string
     );

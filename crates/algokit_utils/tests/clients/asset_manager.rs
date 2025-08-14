@@ -5,7 +5,9 @@ use algokit_utils::{
         asset_manager::{AssetManager, AssetManagerError},
     },
     testing::algorand_fixture,
-    transactions::{AssetCreateParams, AssetOptInParams, CommonParams, Composer, EmptySigner, TransactionSender},
+    transactions::{
+        AssetCreateParams, AssetOptInParams, CommonParams, Composer, EmptySigner, TransactionSender,
+    },
 };
 use rstest::*;
 use std::sync::Arc;
@@ -69,7 +71,10 @@ async fn test_get_account_information() -> Result<(), Box<dyn std::error::Error 
         .get_account_information(&creator_address, asset_id)
         .await?;
 
-    let asset_holding = account_info.asset_holding.as_ref().expect("Creator should have asset holding");
+    let asset_holding = account_info
+        .asset_holding
+        .as_ref()
+        .expect("Creator should have asset holding");
     assert_eq!(asset_holding.asset_id, asset_id);
     assert_eq!(asset_holding.amount, 1000); // Creator gets all initial supply
     assert!(!asset_holding.is_frozen);
@@ -172,7 +177,11 @@ async fn test_bulk_opt_in_success() -> Result<(), Box<dyn std::error::Error + Se
 
     // Perform bulk opt-in
     let results = asset_manager
-        .bulk_opt_in(&opt_in_address, &asset_ids, Arc::new(opt_in_account.clone()))
+        .bulk_opt_in(
+            &opt_in_address,
+            &asset_ids,
+            Arc::new(opt_in_account.clone()),
+        )
         .await?;
 
     // Verify results
@@ -187,7 +196,10 @@ async fn test_bulk_opt_in_success() -> Result<(), Box<dyn std::error::Error + Se
         let account_info = asset_manager
             .get_account_information(&opt_in_address, asset_id)
             .await?;
-        let asset_holding = account_info.asset_holding.as_ref().expect("Account should be opted in");
+        let asset_holding = account_info
+            .asset_holding
+            .as_ref()
+            .expect("Account should be opted in");
         assert_eq!(asset_holding.asset_id, asset_id);
         assert_eq!(asset_holding.amount, 0); // Should have zero balance after opt-in
     }
@@ -229,14 +241,14 @@ async fn test_bulk_opt_out_success() -> Result<(), Box<dyn std::error::Error + S
     // Create and opt-in an account
     let test_account = fixture.generate_account(None).await?;
     let test_address = test_account.account()?.address();
-    
+
     let context = fixture.context()?;
     let asset_manager = AssetManager::new(context.algod.clone());
-    
+
     // First, opt into the assets individually using the Composer
     let algod_client = context.algod.clone();
     let mut composer = Composer::new(algod_client.clone(), Arc::new(test_account.clone()));
-    
+
     for &asset_id in &asset_ids {
         let opt_in_params = AssetOptInParams {
             common_params: CommonParams {
@@ -248,7 +260,7 @@ async fn test_bulk_opt_out_success() -> Result<(), Box<dyn std::error::Error + S
         };
         composer.add_asset_opt_in(opt_in_params)?;
     }
-    
+
     composer.send(Default::default()).await?;
 
     // Verify accounts are opted in
@@ -256,13 +268,21 @@ async fn test_bulk_opt_out_success() -> Result<(), Box<dyn std::error::Error + S
         let account_info = asset_manager
             .get_account_information(&test_address, asset_id)
             .await?;
-        let asset_holding = account_info.asset_holding.as_ref().expect("Account should be opted in");
+        let asset_holding = account_info
+            .asset_holding
+            .as_ref()
+            .expect("Account should be opted in");
         assert_eq!(asset_holding.amount, 0); // Should be zero balance
     }
 
     // Now perform bulk opt-out
     let results = asset_manager
-        .bulk_opt_out(&test_address, &asset_ids, Some(true), Arc::new(test_account.clone()))
+        .bulk_opt_out(
+            &test_address,
+            &asset_ids,
+            Some(true),
+            Arc::new(test_account.clone()),
+        )
         .await?;
 
     // Verify results
@@ -307,20 +327,26 @@ async fn test_bulk_opt_out_empty_list() -> Result<(), Box<dyn std::error::Error 
 /// Test bulk opt-out with non-zero balance (should fail)
 #[rstest]
 #[tokio::test]
-async fn test_bulk_opt_out_non_zero_balance() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+async fn test_bulk_opt_out_non_zero_balance() -> Result<(), Box<dyn std::error::Error + Send + Sync>>
+{
     let mut fixture = algorand_fixture().await?;
     fixture.new_scope().await?;
 
     // Create a test asset
     let (asset_id, creator_address) = create_test_asset_with_creator(&mut fixture).await?;
-    
+
     let context = fixture.context()?;
     let asset_manager = AssetManager::new(context.algod.clone());
 
     // The creator account has the entire supply (1000), so it has non-zero balance
     let creator_account = fixture.generate_account(None).await?;
     let result = asset_manager
-        .bulk_opt_out(&creator_address, &[asset_id], Some(true), Arc::new(creator_account))
+        .bulk_opt_out(
+            &creator_address,
+            &[asset_id],
+            Some(true),
+            Arc::new(creator_account),
+        )
         .await;
 
     // Should fail due to non-zero balance
@@ -336,7 +362,8 @@ async fn test_bulk_opt_out_non_zero_balance() -> Result<(), Box<dyn std::error::
 /// Test bulk opt-out without balance check
 #[rstest]
 #[tokio::test]
-async fn test_bulk_opt_out_without_balance_check() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+async fn test_bulk_opt_out_without_balance_check()
+-> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let mut fixture = algorand_fixture().await?;
     fixture.new_scope().await?;
 
@@ -346,13 +373,13 @@ async fn test_bulk_opt_out_without_balance_check() -> Result<(), Box<dyn std::er
     // Create a test account and opt it in
     let test_account = fixture.generate_account(None).await?;
     let test_address = test_account.account()?.address();
-    
+
     let context = fixture.context()?;
     let asset_manager = AssetManager::new(context.algod.clone());
-    
+
     let algod_client = context.algod.clone();
     let mut composer = Composer::new(algod_client.clone(), Arc::new(test_account.clone()));
-    
+
     let opt_in_params = AssetOptInParams {
         common_params: CommonParams {
             sender: test_address.clone(),
@@ -366,7 +393,12 @@ async fn test_bulk_opt_out_without_balance_check() -> Result<(), Box<dyn std::er
 
     // Opt out without balance check (ensure_zero_balance = false)
     let results = asset_manager
-        .bulk_opt_out(&test_address, &[asset_id], Some(false), Arc::new(test_account))
+        .bulk_opt_out(
+            &test_address,
+            &[asset_id],
+            Some(false),
+            Arc::new(test_account),
+        )
         .await?;
 
     assert_eq!(results.len(), 1);

@@ -29,9 +29,9 @@ use crate::{
 };
 
 use super::application_call::{
-    AppCallParams, AppCreateMethodCallParams, AppCreateParams,
-    AppDeleteMethodCallParams, AppDeleteParams, AppUpdateMethodCallParams, AppUpdateParams,
-    build_app_call, build_app_create_call, build_app_delete_call, build_app_update_call,
+    AppCallParams, AppCreateMethodCallParams, AppCreateParams, AppDeleteMethodCallParams,
+    AppDeleteParams, AppUpdateMethodCallParams, AppUpdateParams, build_app_call,
+    build_app_create_call, build_app_delete_call, build_app_update_call,
 };
 use super::asset_config::{
     AssetCreateParams, AssetDestroyParams, AssetReconfigureParams, build_asset_create,
@@ -1031,10 +1031,8 @@ impl Composer {
                     ComposerTransaction::AssetClawback(params) => {
                         build_asset_clawback(params, header)
                     }
-                    ComposerTransaction::AssetCreate(params) => {
-                        build_asset_create(params, header)
-                            .map_err(|e| ComposerError::TransactionError(e))?
-                    }
+                    ComposerTransaction::AssetCreate(params) => build_asset_create(params, header)
+                        .map_err(ComposerError::TransactionError)?,
                     ComposerTransaction::AssetReconfigure(params) => {
                         build_asset_reconfigure(params, header)
                     }
@@ -1046,8 +1044,7 @@ impl Composer {
                         build_asset_unfreeze(params, header)
                     }
                     ComposerTransaction::AppCall(params) => {
-                        build_app_call(params, header)
-                            .map_err(|e| ComposerError::TransactionError(e))?
+                        build_app_call(params, header).map_err(ComposerError::TransactionError)?
                     }
                     ComposerTransaction::AppCreateCall(params) => {
                         build_app_create_call(params, header)

@@ -112,32 +112,44 @@ async fn test_teal_compilation() {
     assert_eq!(result.teal, teal);
     // Check deterministic compilation results for "#pragma version 3\npushint 1\nreturn"
     assert_eq!(result.compiled_base64_to_bytes, vec![3, 129, 1, 67]);
-    assert_eq!(result.compiled_hash, "LKKM53XYIPYORMMTKCCUXWFPADWRFYAYZ27QZ2HUWER4OU7TKTVW3C4BRQ");
+    assert_eq!(
+        result.compiled_hash,
+        "LKKM53XYIPYORMMTKCCUXWFPADWRFYAYZ27QZ2HUWER4OU7TKTVW3C4BRQ"
+    );
 
     // Test caching behavior - verify that compilation results are cached and reused
     // First verify the result was cached
     let cached_result = app_manager.get_compilation_result(teal);
-    assert!(cached_result.is_some(), "Result should be cached after first compilation");
+    assert!(
+        cached_result.is_some(),
+        "Result should be cached after first compilation"
+    );
     assert_eq!(cached_result.unwrap().compiled_hash, result.compiled_hash);
-    
+
     // Verify subsequent compilation calls return the cached result (not recompiled)
     let cached = app_manager.compile_teal(teal).await.unwrap();
     assert_eq!(result.compiled_hash, cached.compiled_hash);
     assert_eq!(result.teal, cached.teal);
-    assert_eq!(result.compiled_base64_to_bytes, cached.compiled_base64_to_bytes);
-    
+    assert_eq!(
+        result.compiled_base64_to_bytes,
+        cached.compiled_base64_to_bytes
+    );
+
     // Test cache with different TEAL code to ensure cache keys work correctly
     let different_teal = "#pragma version 3\npushint 2\nreturn";
     let different_result = app_manager.compile_teal(different_teal).await.unwrap();
     assert_ne!(result.compiled_hash, different_result.compiled_hash);
-    
+
     // Verify both results are now cached independently
     let original_cached = app_manager.get_compilation_result(teal);
     let different_cached = app_manager.get_compilation_result(different_teal);
     assert!(original_cached.is_some());
     assert!(different_cached.is_some());
     assert_eq!(original_cached.unwrap().compiled_hash, result.compiled_hash);
-    assert_eq!(different_cached.unwrap().compiled_hash, different_result.compiled_hash);
+    assert_eq!(
+        different_cached.unwrap().compiled_hash,
+        different_result.compiled_hash
+    );
 }
 
 /// Test template compilation
@@ -214,9 +226,30 @@ async fn test_real_contract_compilation() {
         .unwrap();
 
     // Check deterministic compilation results for the real contract with fixed template parameters
-    let expected_bytes = vec![10, 32, 2, 1, 42, 38, 3, 5, 104, 101, 108, 108, 111, 128, 1, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 64, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 49, 24, 20, 129, 6, 11, 49, 25, 8, 141, 12, 0, 80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 66, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 136, 0, 2, 34, 67, 138, 0, 0, 40, 176, 35, 68, 137, 136, 0, 2, 34, 67, 138, 0, 0, 40, 41, 42, 132, 137, 136, 0, 2, 34, 67, 138, 0, 0, 0, 137, 128, 4, 21, 31, 124, 117, 136, 0, 12, 73, 21, 22, 87, 6, 2, 76, 80, 80, 176, 34, 67, 138, 0, 1, 35, 22, 137, 34, 67, 128, 4, 184, 68, 123, 54, 54, 26, 0, 142, 1, 255, 241, 0, 128, 4, 154, 113, 210, 180, 128, 4, 223, 77, 92, 59, 128, 4, 61, 135, 13, 135, 128, 4, 188, 11, 23, 6, 54, 26, 0, 142, 4, 255, 140, 255, 153, 255, 166, 255, 176, 0];
+    let expected_bytes = vec![
+        10, 32, 2, 1, 42, 38, 3, 5, 104, 101, 108, 108, 111, 128, 1, 48, 49, 50, 51, 52, 53, 54,
+        55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99,
+        100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49,
+        50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55,
+        56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100,
+        101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50,
+        51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 64, 48, 49, 50, 51, 52, 53, 54, 55,
+        56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100,
+        101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50,
+        51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 49, 24, 20, 129, 6, 11, 49, 25, 8,
+        141, 12, 0, 80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 66, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 136,
+        0, 2, 34, 67, 138, 0, 0, 40, 176, 35, 68, 137, 136, 0, 2, 34, 67, 138, 0, 0, 40, 41, 42,
+        132, 137, 136, 0, 2, 34, 67, 138, 0, 0, 0, 137, 128, 4, 21, 31, 124, 117, 136, 0, 12, 73,
+        21, 22, 87, 6, 2, 76, 80, 80, 176, 34, 67, 138, 0, 1, 35, 22, 137, 34, 67, 128, 4, 184, 68,
+        123, 54, 54, 26, 0, 142, 1, 255, 241, 0, 128, 4, 154, 113, 210, 180, 128, 4, 223, 77, 92,
+        59, 128, 4, 61, 135, 13, 135, 128, 4, 188, 11, 23, 6, 54, 26, 0, 142, 4, 255, 140, 255,
+        153, 255, 166, 255, 176, 0,
+    ];
     assert_eq!(result.compiled_base64_to_bytes, expected_bytes);
-    assert_eq!(result.compiled_hash, "P2FNVZSIY7ETR6HLNUMUA7SXEK5ZHQBWLFH3T2IJKHBKHMLKA5KAIWQZFE");
+    assert_eq!(
+        result.compiled_hash,
+        "P2FNVZSIY7ETR6HLNUMUA7SXEK5ZHQBWLFH3T2IJKHBKHMLKA5KAIWQZFE"
+    );
 }
 
 /// Test template substitution
@@ -359,7 +392,7 @@ fn test_app_state_keys_as_vec_u8() {
     // Create mock state data
     let key_raw = b"test_key".to_vec();
     let key_base64 = Base64.encode(&key_raw);
-    
+
     let state_val = TealKeyValue {
         key: key_base64,
         value: TealValue {
@@ -382,11 +415,11 @@ fn test_app_state_keys_as_vec_u8() {
     let app_state = &result[&key_raw];
     assert_eq!(app_state.key_raw, key_raw);
     assert_eq!(app_state.key_base64, Base64.encode(&key_raw));
-    
+
     // Test with binary key data (non-UTF-8)
     let binary_key = vec![0xFF, 0xFE, 0xFD, 0x00];
     let binary_key_base64 = Base64.encode(&binary_key);
-    
+
     let binary_state_val = TealKeyValue {
         key: binary_key_base64,
         value: TealValue {
@@ -408,7 +441,7 @@ fn test_app_state_keys_as_vec_u8() {
     let bytes_key = b"bytes_key".to_vec();
     let bytes_key_base64 = Base64.encode(&bytes_key);
     let bytes_value = b"Hello, World!".to_vec();
-    
+
     let bytes_state_val = TealKeyValue {
         key: bytes_key_base64,
         value: TealValue {
@@ -426,8 +459,11 @@ fn test_app_state_keys_as_vec_u8() {
     let bytes_app_state = &bytes_result[&bytes_key];
     assert_eq!(bytes_app_state.key_raw, bytes_key);
     assert_eq!(bytes_app_state.value_raw, Some(bytes_value.clone()));
-    assert_eq!(bytes_app_state.value_base64, Some(Base64.encode(&bytes_value)));
-    
+    assert_eq!(
+        bytes_app_state.value_base64,
+        Some(Base64.encode(&bytes_value))
+    );
+
     // Check that the bytes value is correctly decoded as UTF-8 string
     if let AppStateValue::Bytes(ref value_str) = bytes_app_state.value {
         assert_eq!(value_str, "Hello, World!");

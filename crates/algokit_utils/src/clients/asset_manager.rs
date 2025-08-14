@@ -1,5 +1,5 @@
 use algod_client::apis::{AlgodClient, Error as AlgodError};
-use algod_client::models::{Asset, AccountAssetInformation as AlgodAccountAssetInformation};
+use algod_client::models::{AccountAssetInformation as AlgodAccountAssetInformation, Asset};
 use algokit_transact::Address;
 use std::{str::FromStr, sync::Arc};
 

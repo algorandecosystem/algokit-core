@@ -383,14 +383,14 @@ class Property:
         # Check for field name override from vendor extension
         field_name_override = self._get_field_name_override()
         field_name = field_name_override if field_name_override else self.name
-        
+
         self.rust_name = rust_snake_case(field_name)
         self.rust_field_name = escape_rust_keyword(self.rust_name)
-        
+
         # Check for bytes base64 override from vendor extension
         if self._has_bytes_base64_extension():
             self.is_base64_encoded = True
-        
+
         if self.is_base64_encoded:
             self.rust_type_with_msgpack = "Vec<u8>"
         elif self.items and self.items.is_base64_encoded and self.rust_type.startswith("Vec<"):
@@ -421,8 +421,6 @@ class Property:
             if ext_name == "x-algokit-bytes-base64" and ext_value is True:
                 return True
         return False
-
-
 
 
 @dataclass

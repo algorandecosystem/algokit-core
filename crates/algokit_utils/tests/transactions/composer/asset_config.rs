@@ -306,7 +306,7 @@ async fn test_asset_create_validation_errors() {
             sender: sender_addr.clone(),
             ..Default::default()
         },
-        total: 0, // Invalid: should be > 0 (will be caught by transact validation)
+        total: 0,           // Invalid: should be > 0 (will be caught by transact validation)
         decimals: Some(25), // Invalid: should be <= 19
         default_frozen: Some(false),
         asset_name: Some("a".repeat(50)), // Invalid: should be <= 32 bytes
@@ -320,26 +320,30 @@ async fn test_asset_create_validation_errors() {
     };
 
     let mut composer = context.composer.clone();
-    composer.add_asset_create(invalid_asset_create_params)
+    composer
+        .add_asset_create(invalid_asset_create_params)
         .expect("Adding invalid asset create should succeed at composer level");
-    
+
     // The validation should fail when building the transaction group
     let result = composer.build(None).await;
-    
+
     // The build should return an error due to validation failures
-    assert!(result.is_err(), "Build with invalid asset create parameters should fail");
-    
+    assert!(
+        result.is_err(),
+        "Build with invalid asset create parameters should fail"
+    );
+
     let error = result.unwrap_err();
     let error_string = error.to_string();
-    
+
     // Check that the error contains validation-related messages from the transact crate
     assert!(
-        error_string.contains("validation") || 
-        error_string.contains("Total") ||
-        error_string.contains("Decimals") ||
-        error_string.contains("Asset name") ||
-        error_string.contains("Unit name") ||
-        error_string.contains("URL"),
+        error_string.contains("validation")
+            || error_string.contains("Total")
+            || error_string.contains("Decimals")
+            || error_string.contains("Asset name")
+            || error_string.contains("Unit name")
+            || error_string.contains("URL"),
         "Error should contain validation failure details: {}",
         error_string
     );

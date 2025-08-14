@@ -13,8 +13,8 @@ use algokit_abi::{
     abi_type::BitSize,
 };
 use algokit_transact::{
-    Address, ApplicationCallTransactionFields, ApplicationCallTransactionBuilder, BoxReference, OnApplicationComplete, StateSchema,
-    Transaction, TransactionHeader,
+    Address, ApplicationCallTransactionBuilder, ApplicationCallTransactionFields, BoxReference,
+    OnApplicationComplete, StateSchema, Transaction, TransactionHeader,
 };
 use num_bigint::BigUint;
 use std::str::FromStr;
@@ -757,33 +757,36 @@ fn encode_args_individually(
     Ok(encoded_args.to_vec())
 }
 
-pub fn build_app_call(params: &AppCallParams, header: TransactionHeader) -> Result<Transaction, String> {
+pub fn build_app_call(
+    params: &AppCallParams,
+    header: TransactionHeader,
+) -> Result<Transaction, String> {
     let mut builder = ApplicationCallTransactionBuilder::default();
     builder
         .header(header)
         .app_id(params.app_id)
         .on_complete(params.on_complete);
-    
+
     if let Some(ref args) = params.args {
         builder.args(args.clone());
     }
-    
+
     if let Some(ref account_references) = params.account_references {
         builder.account_references(account_references.clone());
     }
-    
+
     if let Some(ref app_references) = params.app_references {
         builder.app_references(app_references.clone());
     }
-    
+
     if let Some(ref asset_references) = params.asset_references {
         builder.asset_references(asset_references.clone());
     }
-    
+
     if let Some(ref box_references) = params.box_references {
         builder.box_references(box_references.clone());
     }
-    
+
     builder.build().map_err(|e| e.to_string())
 }
 

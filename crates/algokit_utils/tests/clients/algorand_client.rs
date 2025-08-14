@@ -17,7 +17,10 @@ async fn test_algorand_client_basic_functionality()
     assert!(!suggested_params.genesis_id.is_empty());
     assert!(!suggested_params.genesis_hash.is_empty());
     assert!(suggested_params.last_round > 0);
-    assert!(suggested_params.min_fee > 0, "Min fee should always be greater than 0");
+    assert!(
+        suggested_params.min_fee > 0,
+        "Min fee should always be greater than 0"
+    );
 
     Ok(())
 }
@@ -60,7 +63,10 @@ async fn test_algorand_client_with_fixture() -> Result<(), Box<dyn std::error::E
 
     // Basic validation
     assert!(suggested_params.last_round > 0);
-    assert!(suggested_params.min_fee > 0, "Min fee should always be greater than 0");
+    assert!(
+        suggested_params.min_fee > 0,
+        "Min fee should always be greater than 0"
+    );
 
     Ok(())
 }

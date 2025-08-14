@@ -332,7 +332,7 @@ async fn test_validation_error_propagation(
             signer: Some(Arc::new(opt_out_account)),
             ..Default::default()
         },
-        asset_id: 999999999, // Non-existent asset
+        asset_id: 999999999,                       // Non-existent asset
         close_remainder_to: dummy_creator_address, // Valid dummy creator for non-existent asset
     };
 
@@ -491,9 +491,7 @@ async fn deploy_abi_app(
     composer.add_app_create(params)?;
     let result = composer.send(None).await?;
 
-    Ok(result.confirmations[0]
-        .app_id
-        .expect("No app ID returned"))
+    Ok(result.confirmations[0].app_id.expect("No app ID returned"))
 }
 
 // Test constants removed - using simple programs instead

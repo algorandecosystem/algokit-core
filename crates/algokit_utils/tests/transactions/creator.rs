@@ -147,7 +147,10 @@ async fn asset_operations(#[case] test_case: AssetTestCase) {
                 Transaction::AssetTransfer(transfer_fields) => {
                     assert_eq!(transfer_fields.header.sender, sender_address);
                     assert_eq!(transfer_fields.receiver, sender_address); // Opts out by sending to self
-                    assert_eq!(transfer_fields.close_remainder_to, Some(sender_address.clone())); // Now properly uses creator field
+                    assert_eq!(
+                        transfer_fields.close_remainder_to,
+                        Some(sender_address.clone())
+                    ); // Now properly uses creator field
                     assert_eq!(transfer_fields.asset_id, 1);
                     assert_eq!(transfer_fields.amount, 0); // Opt-out sends 0 amount
                 }
