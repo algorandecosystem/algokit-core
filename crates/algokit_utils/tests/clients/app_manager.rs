@@ -2,7 +2,7 @@ use algokit_test_artifacts::template_variables;
 use algokit_utils::{clients::app_manager::*, testing::algorand_fixture};
 use base64::prelude::*;
 use rstest::*;
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 
 /// Test template variable replacement behavior
 #[rstest]
@@ -104,7 +104,7 @@ pushbytes "b64 //8=""#;
 async fn test_teal_compilation() {
     let mut fixture = algorand_fixture().await.unwrap();
     fixture.new_scope().await.unwrap();
-    let app_manager = AppManager::new(Arc::new(fixture.context().unwrap().algod.clone()));
+    let app_manager = AppManager::new(fixture.context().unwrap().algod.clone());
 
     let teal = "#pragma version 3\npushint 1\nreturn";
     let result = app_manager.compile_teal(teal).await.unwrap();
@@ -145,7 +145,7 @@ async fn test_teal_compilation() {
 async fn test_template_compilation() {
     let mut fixture = algorand_fixture().await.unwrap();
     fixture.new_scope().await.unwrap();
-    let app_manager = AppManager::new(Arc::new(fixture.context().unwrap().algod.clone()));
+    let app_manager = AppManager::new(fixture.context().unwrap().algod.clone());
 
     let template_params = HashMap::from([("VALUE".to_string(), TealTemplateValue::Int(42))]);
     let result = app_manager
@@ -168,7 +168,7 @@ async fn test_template_compilation() {
 async fn test_deploy_time_control() {
     let mut fixture = algorand_fixture().await.unwrap();
     fixture.new_scope().await.unwrap();
-    let app_manager = AppManager::new(Arc::new(fixture.context().unwrap().algod.clone()));
+    let app_manager = AppManager::new(fixture.context().unwrap().algod.clone());
 
     let template = format!(
         "#pragma version 3\npushint {}\npushint {}\nreturn",
@@ -194,7 +194,7 @@ async fn test_deploy_time_control() {
 async fn test_real_contract_compilation() {
     let mut fixture = algorand_fixture().await.unwrap();
     fixture.new_scope().await.unwrap();
-    let app_manager = AppManager::new(Arc::new(fixture.context().unwrap().algod.clone()));
+    let app_manager = AppManager::new(fixture.context().unwrap().algod.clone());
 
     let contract: serde_json::Value =
         serde_json::from_str(template_variables::APPLICATION_ARC56).unwrap();
@@ -283,7 +283,7 @@ NOTTMPL_STR // not replaced
 async fn test_compilation_errors() {
     let mut fixture = algorand_fixture().await.unwrap();
     fixture.new_scope().await.unwrap();
-    let app_manager = AppManager::new(Arc::new(fixture.context().unwrap().algod.clone()));
+    let app_manager = AppManager::new(fixture.context().unwrap().algod.clone());
 
     // Invalid TEAL should fail
     let result = app_manager

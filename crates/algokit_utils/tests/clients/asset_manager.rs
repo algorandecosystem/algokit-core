@@ -17,7 +17,7 @@ async fn test_get_asset_by_id() -> Result<(), Box<dyn std::error::Error + Send +
     let mut fixture = algorand_fixture().await?;
     fixture.new_scope().await?;
     let context = fixture.context()?;
-    let asset_manager = AssetManager::new(Arc::new(context.algod.clone()));
+    let asset_manager = AssetManager::new(context.algod.clone());
 
     // Create test asset
     let (asset_id, _) = create_test_asset_with_creator(&mut fixture).await?;
@@ -40,7 +40,7 @@ async fn test_get_asset_by_id_nonexistent() -> Result<(), Box<dyn std::error::Er
     let mut fixture = algorand_fixture().await?;
     fixture.new_scope().await?;
     let context = fixture.context()?;
-    let asset_manager = AssetManager::new(Arc::new(context.algod.clone()));
+    let asset_manager = AssetManager::new(context.algod.clone());
 
     // Test non-existent asset
     let result = asset_manager.get_by_id(999999999).await;
@@ -60,7 +60,7 @@ async fn test_get_account_information() -> Result<(), Box<dyn std::error::Error 
     let mut fixture = algorand_fixture().await?;
     fixture.new_scope().await?;
     let context = fixture.context()?;
-    let asset_manager = AssetManager::new(Arc::new(context.algod.clone()));
+    let asset_manager = AssetManager::new(context.algod.clone());
 
     let (asset_id, creator_address) = create_test_asset_with_creator(&mut fixture).await?;
 
@@ -84,7 +84,7 @@ async fn test_get_account_information_not_opted_in()
     let mut fixture = algorand_fixture().await?;
     fixture.new_scope().await?;
     let context = fixture.context()?;
-    let asset_manager = AssetManager::new(Arc::new(context.algod.clone()));
+    let asset_manager = AssetManager::new(context.algod.clone());
 
     let (asset_id, _) = create_test_asset_with_creator(&mut fixture).await?;
     let test_account = fixture.generate_account(None).await?;
@@ -111,7 +111,7 @@ async fn create_test_asset_with_creator(
     let creator = fixture.generate_account(None).await?;
     let creator_address = creator.account()?.address();
     let context = fixture.context()?;
-    let algod_client = Arc::new(context.algod.clone());
+    let algod_client = context.algod.clone();
     let sender = TransactionSender::new(
         {
             let client = algod_client.clone();
@@ -159,7 +159,7 @@ async fn test_bulk_opt_in_success() -> Result<(), Box<dyn std::error::Error + Se
     let mut fixture = algorand_fixture().await?;
     fixture.new_scope().await?;
     let context = fixture.context()?;
-    let asset_manager = AssetManager::new(Arc::new(context.algod.clone()));
+    let asset_manager = AssetManager::new(context.algod.clone());
 
     // Create multiple test assets
     let assets = create_multiple_test_assets(&mut fixture, 3).await?;
@@ -200,7 +200,7 @@ async fn test_bulk_opt_in_empty_list() -> Result<(), Box<dyn std::error::Error +
     let mut fixture = algorand_fixture().await?;
     fixture.new_scope().await?;
     let context = fixture.context()?;
-    let asset_manager = AssetManager::new(Arc::new(context.algod.clone()));
+    let asset_manager = AssetManager::new(context.algod.clone());
 
     let test_account = fixture.generate_account(None).await?;
     let test_address = test_account.account()?.address();
@@ -229,10 +229,10 @@ async fn test_bulk_opt_out_success() -> Result<(), Box<dyn std::error::Error + S
     let test_address = test_account.account()?.address();
     
     let context = fixture.context()?;
-    let asset_manager = AssetManager::new(Arc::new(context.algod.clone()));
+    let asset_manager = AssetManager::new(context.algod.clone());
     
     // First, opt into the assets individually using the Composer
-    let algod_client = Arc::new(context.algod.clone());
+    let algod_client = context.algod.clone();
     let mut composer = Composer::new(algod_client.clone(), Arc::new(test_account.clone()));
     
     for &asset_id in &asset_ids {
@@ -288,7 +288,7 @@ async fn test_bulk_opt_out_empty_list() -> Result<(), Box<dyn std::error::Error 
     let mut fixture = algorand_fixture().await?;
     fixture.new_scope().await?;
     let context = fixture.context()?;
-    let asset_manager = AssetManager::new(Arc::new(context.algod.clone()));
+    let asset_manager = AssetManager::new(context.algod.clone());
 
     let test_account = fixture.generate_account(None).await?;
     let test_address = test_account.account()?.address();
@@ -312,7 +312,7 @@ async fn test_bulk_opt_out_non_zero_balance() -> Result<(), Box<dyn std::error::
     let (asset_id, creator_address) = create_test_asset_with_creator(&mut fixture).await?;
     
     let context = fixture.context()?;
-    let asset_manager = AssetManager::new(Arc::new(context.algod.clone()));
+    let asset_manager = AssetManager::new(context.algod.clone());
 
     // The creator account has the entire supply (1000), so it has non-zero balance
     let creator_account = fixture.generate_account(None).await?;
@@ -345,9 +345,9 @@ async fn test_bulk_opt_out_without_balance_check() -> Result<(), Box<dyn std::er
     let test_address = test_account.account()?.address();
     
     let context = fixture.context()?;
-    let asset_manager = AssetManager::new(Arc::new(context.algod.clone()));
+    let asset_manager = AssetManager::new(context.algod.clone());
     
-    let algod_client = Arc::new(context.algod.clone());
+    let algod_client = context.algod.clone();
     let mut composer = Composer::new(algod_client.clone(), Arc::new(test_account.clone()));
     
     let opt_in_params = AssetOptInParams {

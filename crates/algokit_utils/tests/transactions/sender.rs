@@ -23,7 +23,7 @@ async fn sender_setup() -> Result<SenderSetup, Box<dyn std::error::Error + Send 
     fixture.new_scope().await?;
     let context = fixture.context()?;
 
-    let algod_client = Arc::new(context.algod.clone());
+    let algod_client = context.algod.clone();
     let sender = TransactionSender::new(
         {
             let client = algod_client.clone();

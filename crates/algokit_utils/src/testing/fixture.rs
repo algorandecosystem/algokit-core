@@ -11,7 +11,7 @@ pub struct AlgorandFixture {
 }
 
 pub struct AlgorandTestContext {
-    pub algod: AlgodClient,
+    pub algod: Arc<AlgodClient>,
 
     pub composer: Composer,
 
@@ -50,13 +50,13 @@ impl AlgorandFixture {
             .ok_or("Context not initialized; call new_scope() first")?;
 
         Ok(Composer::new(
-            Arc::new(context.algod.clone()),
+            context.algod.clone(),
             Arc::new(context.test_account.clone()),
         ))
     }
 
     pub async fn new_scope(&mut self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        let algod = ClientManager::get_algod_client(&self.config.algod_config);
+        let algod = Arc::new(ClientManager::get_algod_client(&self.config.algod_config));
 
         let mut account_manager = TestAccountManager::new(algod.clone());
 
@@ -72,7 +72,7 @@ impl AlgorandFixture {
             .map_err(|e| format!("Failed to create test account: {}", e))?;
 
         // Now TestAccount implements TransactionSignerGetter directly, so we can use it without a wrapper
-        let composer = Composer::new(Arc::new(algod.clone()), Arc::new(test_account.clone()));
+        let composer = Composer::new(algod.clone(), Arc::new(test_account.clone()));
 
         self.context = Some(AlgorandTestContext {
             algod,

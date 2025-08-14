@@ -7,7 +7,6 @@ use algokit_utils::{
         AssetCreateParams, AssetFreezeParams, AssetTransferParams, AssetUnfreezeParams,
     },
 };
-use std::sync::Arc;
 
 use crate::common::init_test_logging;
 
@@ -59,7 +58,7 @@ async fn test_asset_freeze_unfreeze() {
 
     // Create a composer for the target account that can send transactions
     let target_composer = Composer::new(
-        Arc::new(context.algod.clone()),
+        context.algod.clone(),
         std::sync::Arc::new(target_account.clone()),
     );
 
