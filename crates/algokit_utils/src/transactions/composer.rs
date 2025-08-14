@@ -109,15 +109,6 @@ impl From<&SendParams> for BuildParams {
     }
 }
 
-impl From<SendParams> for BuildParams {
-    fn from(send_params: SendParams) -> Self {
-        BuildParams {
-            cover_app_call_inner_transaction_fees: send_params
-                .cover_app_call_inner_transaction_fees,
-        }
-    }
-}
-
 #[derive(Debug)]
 struct TransactionAnalysis {
     /// The fee difference required for this transaction
