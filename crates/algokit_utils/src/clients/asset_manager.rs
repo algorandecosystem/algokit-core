@@ -1,4 +1,5 @@
 use algod_client::apis::{AlgodClient, Error as AlgodError};
+use algod_client::models::{Asset, AccountAssetInformation as AlgodAccountAssetInformation};
 use algokit_transact::Address;
 use std::{str::FromStr, sync::Arc};
 
@@ -13,33 +14,8 @@ pub struct BulkAssetOptInOutResult {
     pub transaction_id: String,
 }
 
-#[derive(Debug, Clone)]
-pub struct AccountAssetInformation {
-    pub asset_id: u64,
-    pub balance: u64,
-    pub frozen: bool,
-    pub round: u64,
-}
-
-#[derive(Debug, Clone)]
-pub struct AssetInformation {
-    pub asset_id: u64,
-    pub creator: String,
-    pub total: u64,
-    pub decimals: u32,
-    pub default_frozen: Option<bool>,
-    pub manager: Option<String>,
-    pub reserve: Option<String>,
-    pub freeze: Option<String>,
-    pub clawback: Option<String>,
-    pub unit_name: Option<String>,
-    pub unit_name_as_bytes: Option<Vec<u8>>,
-    pub asset_name: Option<String>,
-    pub asset_name_as_bytes: Option<Vec<u8>>,
-    pub url: Option<String>,
-    pub url_as_bytes: Option<Vec<u8>>,
-    pub metadata_hash: Option<Vec<u8>>,
-}
+// Note: AssetInformation has been replaced with algod_client::models::Asset
+// AccountAssetInformation has been replaced with algod_client::models::AccountAssetInformation
 
 #[derive(Debug, Clone)]
 pub struct AssetValidationError {
@@ -58,58 +34,28 @@ impl AssetManager {
         Self { algod_client }
     }
 
-    pub async fn get_by_id(&self, asset_id: u64) -> Result<AssetInformation, AssetManagerError> {
-        let asset = self
-            .algod_client
+    /// Get asset information by asset ID.
+    /// Returns the raw algod Asset type with all asset parameters.
+    /// Access asset parameters via `asset.params.*` fields.
+    pub async fn get_by_id(&self, asset_id: u64) -> Result<Asset, AssetManagerError> {
+        self.algod_client
             .get_asset_by_id(asset_id)
             .await
-            .map_err(AssetManagerError::AlgodClientError)?;
-
-        Ok(AssetInformation {
-            asset_id,
-            creator: asset.params.creator,
-            total: asset.params.total,
-            decimals: asset.params.decimals as u32,
-            default_frozen: asset.params.default_frozen,
-            manager: asset.params.manager,
-            reserve: asset.params.reserve,
-            freeze: asset.params.freeze,
-            clawback: asset.params.clawback,
-            unit_name: asset.params.unit_name,
-            unit_name_as_bytes: asset.params.unit_name_b64,
-            asset_name: asset.params.name,
-            asset_name_as_bytes: asset.params.name_b64,
-            url: asset.params.url,
-            url_as_bytes: asset.params.url_b64,
-            metadata_hash: asset.params.metadata_hash,
-        })
+            .map_err(AssetManagerError::AlgodClientError)
     }
 
+    /// Get account's asset information.
+    /// Returns the raw algod AccountAssetInformation type.
+    /// Access asset holding via `account_info.asset_holding` and asset params via `account_info.asset_params`.
     pub async fn get_account_information(
         &self,
         sender: &Address,
         asset_id: u64,
-    ) -> Result<AccountAssetInformation, AssetManagerError> {
-        let account_info = self
-            .algod_client
+    ) -> Result<AlgodAccountAssetInformation, AssetManagerError> {
+        self.algod_client
             .account_asset_information(&sender.to_string(), asset_id, None)
             .await
-            .map_err(AssetManagerError::AlgodClientError)?;
-
-        Ok(AccountAssetInformation {
-            asset_id,
-            balance: account_info
-                .asset_holding
-                .as_ref()
-                .map(|h| h.amount)
-                .unwrap_or(0),
-            frozen: account_info
-                .asset_holding
-                .as_ref()
-                .map(|h| h.is_frozen)
-                .unwrap_or(false),
-            round: account_info.round,
-        })
+            .map_err(AssetManagerError::AlgodClientError)
     }
 
     pub async fn bulk_opt_in(
@@ -175,11 +121,16 @@ impl AssetManager {
         if should_check_balance {
             for &asset_id in asset_ids {
                 let account_info = self.get_account_information(account, asset_id).await?;
-                if account_info.balance > 0 {
+                let balance = account_info
+                    .asset_holding
+                    .as_ref()
+                    .map(|h| h.amount)
+                    .unwrap_or(0);
+                if balance > 0 {
                     return Err(AssetManagerError::NonZeroBalance {
                         address: account.to_string(),
                         asset_id,
-                        balance: account_info.balance,
+                        balance,
                     });
                 }
             }
@@ -189,7 +140,7 @@ impl AssetManager {
         let mut asset_creators = Vec::new();
         for &asset_id in asset_ids {
             let asset_info = self.get_by_id(asset_id).await?;
-            let creator = Address::from_str(&asset_info.creator)
+            let creator = Address::from_str(&asset_info.params.creator)
                 .map_err(|_| AssetManagerError::AssetNotFound(asset_id))?;
             asset_creators.push(creator);
         }

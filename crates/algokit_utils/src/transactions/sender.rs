@@ -386,7 +386,12 @@ impl TransactionSender {
                     ))
                 })?;
 
-            if account_info.balance != 0 {
+            let balance = account_info
+                .asset_holding
+                .as_ref()
+                .map(|h| h.amount)
+                .unwrap_or(0);
+            if balance != 0 {
                 return Err(TransactionSenderError::ValidationError(format!(
                     "Account {} does not have a zero balance for Asset {}; can't opt-out.",
                     params.common_params.sender, params.asset_id

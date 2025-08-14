@@ -24,11 +24,11 @@ async fn test_get_asset_by_id() -> Result<(), Box<dyn std::error::Error + Send +
 
     // Test successful retrieval
     let asset_info = asset_manager.get_by_id(asset_id).await?;
-    assert_eq!(asset_info.asset_id, asset_id);
-    assert_eq!(asset_info.total, 1000);
-    assert_eq!(asset_info.decimals, 0);
-    assert_eq!(asset_info.unit_name, Some("TEST".to_string()));
-    assert_eq!(asset_info.asset_name, Some("Test Asset".to_string()));
+    assert_eq!(asset_info.index, asset_id);
+    assert_eq!(asset_info.params.total, 1000);
+    assert_eq!(asset_info.params.decimals, 0);
+    assert_eq!(asset_info.params.unit_name, Some("TEST".to_string()));
+    assert_eq!(asset_info.params.name, Some("Test Asset".to_string()));
 
     Ok(())
 }
@@ -69,9 +69,10 @@ async fn test_get_account_information() -> Result<(), Box<dyn std::error::Error 
         .get_account_information(&creator_address, asset_id)
         .await?;
 
-    assert_eq!(account_info.asset_id, asset_id);
-    assert_eq!(account_info.balance, 1000); // Creator gets all initial supply
-    assert!(!account_info.frozen);
+    let asset_holding = account_info.asset_holding.as_ref().expect("Creator should have asset holding");
+    assert_eq!(asset_holding.asset_id, asset_id);
+    assert_eq!(asset_holding.amount, 1000); // Creator gets all initial supply
+    assert!(!asset_holding.is_frozen);
     assert!(account_info.round > 0);
 
     Ok(())
@@ -186,8 +187,9 @@ async fn test_bulk_opt_in_success() -> Result<(), Box<dyn std::error::Error + Se
         let account_info = asset_manager
             .get_account_information(&opt_in_address, asset_id)
             .await?;
-        assert_eq!(account_info.asset_id, asset_id);
-        assert_eq!(account_info.balance, 0); // Should have zero balance after opt-in
+        let asset_holding = account_info.asset_holding.as_ref().expect("Account should be opted in");
+        assert_eq!(asset_holding.asset_id, asset_id);
+        assert_eq!(asset_holding.amount, 0); // Should have zero balance after opt-in
     }
 
     Ok(())
@@ -254,7 +256,8 @@ async fn test_bulk_opt_out_success() -> Result<(), Box<dyn std::error::Error + S
         let account_info = asset_manager
             .get_account_information(&test_address, asset_id)
             .await?;
-        assert_eq!(account_info.balance, 0); // Should be zero balance
+        let asset_holding = account_info.asset_holding.as_ref().expect("Account should be opted in");
+        assert_eq!(asset_holding.amount, 0); // Should be zero balance
     }
 
     // Now perform bulk opt-out
