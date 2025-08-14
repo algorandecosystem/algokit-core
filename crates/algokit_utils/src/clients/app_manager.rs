@@ -425,6 +425,7 @@ impl AppManager {
                 .decode(&state_val.key)
                 .map_err(|e| AppManagerError::DecodingError(e.to_string()))?;
 
+            // TODO(stabilization): Consider r#type pattern consistency across API vs ABI types (PR #229 comment)
             let (value_raw, value_base64, value) = match state_val.value.r#type {
                 1 => {
                     // Bytes - now already decoded from base64 by serde
