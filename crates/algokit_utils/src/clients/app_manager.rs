@@ -50,23 +50,37 @@ pub enum AppStateValue {
 
 #[derive(Debug, Clone)]
 pub struct AppInformation {
+    /// The application ID
     pub app_id: u64,
+    /// The address of the application account
     pub app_address: Address,
+    /// The approval program as bytecode
     pub approval_program: Vec<u8>,
+    /// The clear state program as bytecode
     pub clear_state_program: Vec<u8>,
+    /// The creator address of the application
     pub creator: String,
+    /// Number of local state integers allocated
     pub local_ints: u32,
+    /// Number of local state byte slices allocated
     pub local_byte_slices: u32,
+    /// Number of global state integers allocated
     pub global_ints: u32,
+    /// Number of global state byte slices allocated
     pub global_byte_slices: u32,
+    /// Number of extra program pages (if any)
     pub extra_program_pages: Option<u32>,
+    /// The current global state of the application
     pub global_state: HashMap<String, AppState>,
 }
 
 #[derive(Debug, Clone)]
 pub struct BoxName {
+    /// The raw box name as bytes
     pub name_raw: Vec<u8>,
+    /// The box name encoded as base64
     pub name_base64: String,
+    /// The box name as a UTF-8 string (if valid)
     pub name: String,
 }
 
@@ -77,8 +91,11 @@ pub const DELETABLE_TEMPLATE_NAME: &str = "TMPL_DELETABLE";
 
 #[derive(Debug, Clone)]
 pub struct ParsedABIReturn {
+    /// The raw return value as bytes
     pub raw_value: Vec<u8>,
+    /// The parsed ABI value (if parsing succeeded)
     pub parsed_value: Option<ABIValue>,
+    /// Error message if decoding failed
     pub decode_error: Option<String>,
 }
 
