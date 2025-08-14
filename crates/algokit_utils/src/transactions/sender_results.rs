@@ -59,6 +59,10 @@ pub struct SendAppCreateResult {
     pub app_address: Address,
     /// The ABI return value if this was an ABI method call
     pub abi_return: Option<ABIReturn>,
+    /// The compiled approval program (if provided)
+    pub compiled_approval: Option<Vec<u8>>,
+    /// The compiled clear state program (if provided)
+    pub compiled_clear: Option<Vec<u8>>,
 }
 
 /// Result of sending an application update transaction.
@@ -269,6 +273,8 @@ impl SendAppCreateResult {
     pub fn new(
         base: SendTransactionResult,
         abi_return: Option<ABIReturn>,
+        compiled_approval: Option<Vec<u8>>,
+        compiled_clear: Option<Vec<u8>>,
     ) -> Result<Self, TransactionResultError> {
         // Extract app ID from the confirmation
         let app_id = base.confirmation.application_index.ok_or_else(|| {
@@ -285,6 +291,8 @@ impl SendAppCreateResult {
             app_id,
             app_address,
             abi_return,
+            compiled_approval,
+            compiled_clear,
         })
     }
 

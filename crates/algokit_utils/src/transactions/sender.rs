@@ -495,14 +495,18 @@ impl TransactionSender {
         params: AppCreateParams,
         send_params: Option<SendParams>,
     ) -> Result<SendAppCreateResult, TransactionSenderError> {
-        // Extract compilation metadata for potential future use
-        let _compilation_metadata = self.extract_compilation_metadata(&params);
+        // Extract compilation metadata using helper method
+        let (compiled_approval, compiled_clear) = self.extract_compilation_metadata(&params);
 
         let mut composer = self.new_group();
         composer.add_app_create(params)?;
         let base_result = self.send_and_parse(composer, send_params).await?;
 
-        SendAppCreateResult::new(base_result, None)
+        // Convert CompiledTeal to Vec<u8> for the result
+        let approval_bytes = compiled_approval.map(|ct| ct.compiled_base64_to_bytes);
+        let clear_bytes = compiled_clear.map(|ct| ct.compiled_base64_to_bytes);
+
+        SendAppCreateResult::new(base_result, None, approval_bytes, clear_bytes)
             .map_err(TransactionSenderError::TransactionResultError)
     }
 
@@ -564,6 +568,9 @@ impl TransactionSender {
         params: AppCreateMethodCallParams,
         send_params: Option<SendParams>,
     ) -> Result<SendAppCreateResult, TransactionSenderError> {
+        // Extract compilation metadata using helper method
+        let (compiled_approval, compiled_clear) = self.extract_compilation_metadata(&params);
+
         let mut composer = self.new_group();
         composer.add_app_create_method_call(params.clone())?;
         let base_result = self.send_and_parse(composer, send_params).await?;
@@ -571,7 +578,11 @@ impl TransactionSender {
         // Extract ABI return using helper method for enhanced processing
         let abi_return = self.extract_abi_return_from_result(&base_result, &params);
 
-        SendAppCreateResult::new(base_result, abi_return)
+        // Convert CompiledTeal to Vec<u8> for the result
+        let approval_bytes = compiled_approval.map(|ct| ct.compiled_base64_to_bytes);
+        let clear_bytes = compiled_clear.map(|ct| ct.compiled_base64_to_bytes);
+
+        SendAppCreateResult::new(base_result, abi_return, approval_bytes, clear_bytes)
             .map_err(TransactionSenderError::TransactionResultError)
     }
 
