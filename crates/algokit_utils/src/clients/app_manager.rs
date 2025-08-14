@@ -311,11 +311,11 @@ impl AppManager {
         Ok(values)
     }
 
-    /// Decode box value using ABI method return type, returns ABIReturn for consistency.
+    /// Decode box value using ABI method return type.
     ///
     /// This method takes an ABIMethod and uses its return type to decode the box value,
-    /// returning an ABIReturn that includes the method context. This approach aligns
-    /// with TypeScript patterns and enables better integration with ABIReturn-based workflows.
+    /// returning an ABIReturn that includes the method context and enables integration
+    /// with ABIReturn-based workflows.
     ///
     /// # Arguments
     /// * `app_id` - The application ID
@@ -348,11 +348,11 @@ impl AppManager {
         }
     }
 
-    /// Decode multiple box values using ABI method return type, returns ABIReturn for consistency.
+    /// Decode multiple box values using ABI method return type.
     ///
     /// This method takes an ABIMethod and uses its return type to decode multiple box values,
-    /// returning ABIReturn objects that include the method context. This approach aligns
-    /// with TypeScript patterns and enables better integration with ABIReturn-based workflows.
+    /// returning ABIReturn objects that include the method context and enable integration
+    /// with ABIReturn-based workflows.
     ///
     /// # Arguments
     /// * `app_id` - The application ID
