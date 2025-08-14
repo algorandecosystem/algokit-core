@@ -291,13 +291,6 @@ impl TransactionSender {
         params: PaymentParams,
         send_params: Option<SendParams>,
     ) -> Result<SendTransactionResult, TransactionSenderError> {
-        // Enhanced parameter validation
-        if params.amount == 0 {
-            return Err(TransactionSenderError::InvalidParameters(
-                "Payment amount must be greater than 0".to_string(),
-            ));
-        }
-
         let mut composer = self.new_group();
         composer.add_payment(params)?;
         self.send_and_parse(composer, send_params).await

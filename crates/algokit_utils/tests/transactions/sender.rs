@@ -70,6 +70,43 @@ async fn test_payment_returns_rich_result(
 
 #[rstest]
 #[tokio::test]
+async fn test_zero_amount_payment_allowed(
+    #[future] sender_setup: Result<SenderSetup, Box<dyn std::error::Error + Send + Sync>>,
+) -> TestResult {
+    let (sender, mut fixture, sender_address) = sender_setup.await?;
+    let receiver = fixture.generate_account(None).await?;
+    let test_account = fixture.context()?.test_account.clone();
+
+    let params = PaymentParams {
+        common_params: CommonParams {
+            sender: sender_address,
+            signer: Some(Arc::new(test_account)),
+            ..Default::default()
+        },
+        receiver: receiver.account()?.address(),
+        amount: 0, // Zero amount should be allowed
+    };
+
+    let result = sender.payment(params, None).await?;
+
+    // Validate that zero-amount payment succeeds
+    assert!(!result.tx_ids.is_empty());
+    assert!(!result.confirmations.is_empty());
+    assert!(result.confirmation.confirmed_round.is_some());
+    assert_eq!(result.transactions.len(), 1);
+
+    // Verify the transaction has amount 0
+    if let algokit_transact::Transaction::Payment(payment_fields) = &result.transactions[0] {
+        assert_eq!(payment_fields.amount, 0);
+    } else {
+        panic!("Expected payment transaction");
+    }
+
+    Ok(())
+}
+
+#[rstest]
+#[tokio::test]
 async fn test_asset_create_extracts_asset_id(
     #[future] sender_setup: Result<SenderSetup, Box<dyn std::error::Error + Send + Sync>>,
 ) -> TestResult {
