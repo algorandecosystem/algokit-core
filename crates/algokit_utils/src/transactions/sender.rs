@@ -319,7 +319,6 @@ impl TransactionSender {
                 "Asset ID must be greater than 0".to_string(),
             ));
         }
-
         // Note: amount can be 0 for opt-in transactions, so we don't validate it here
 
         let mut composer = self.new_group();
