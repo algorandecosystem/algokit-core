@@ -110,8 +110,9 @@ async fn test_teal_compilation() {
     let result = app_manager.compile_teal(teal).await.unwrap();
 
     assert_eq!(result.teal, teal);
-    assert!(!result.compiled_base64_to_bytes.is_empty());
-    assert!(!result.compiled_hash.is_empty());
+    // Check deterministic compilation results for "#pragma version 3\npushint 1\nreturn"
+    assert_eq!(result.compiled_base64_to_bytes, vec![3, 129, 1, 67]);
+    assert_eq!(result.compiled_hash, "LKKM53XYIPYORMMTKCCUXWFPADWRFYAYZ27QZ2HUWER4OU7TKTVW3C4BRQ");
 
     // Test caching
     let cached = app_manager.compile_teal(teal).await.unwrap();
@@ -137,7 +138,8 @@ async fn test_template_compilation() {
 
     assert!(result.teal.contains("pushint 42"));
     assert!(!result.teal.contains("TMPL_"));
-    assert!(!result.compiled_base64_to_bytes.is_empty());
+    // Check deterministic compilation results for template with int 42
+    assert_eq!(result.compiled_base64_to_bytes, vec![3, 129, 42, 67]);
 }
 
 /// Test compilation caching
@@ -152,7 +154,8 @@ async fn test_compilation_caching() {
 
     let cached = app_manager.get_compilation_result(teal).unwrap();
     assert_eq!(cached.teal, teal);
-    assert!(!cached.compiled_base64_to_bytes.is_empty());
+    // Check deterministic compilation results for "#pragma version 3\npushint 100\nreturn"
+    assert_eq!(cached.compiled_base64_to_bytes, vec![3, 129, 100, 67]);
 }
 
 /// Test deploy-time control
@@ -205,8 +208,10 @@ async fn test_real_contract_compilation() {
         .await
         .unwrap();
 
-    assert!(!result.compiled_base64_to_bytes.is_empty());
-    assert!(!result.compiled_hash.is_empty());
+    // Check deterministic compilation results for the real contract with fixed template parameters
+    let expected_bytes = vec![10, 32, 2, 1, 42, 38, 3, 5, 104, 101, 108, 108, 111, 128, 1, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 64, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 49, 24, 20, 129, 6, 11, 49, 25, 8, 141, 12, 0, 80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 66, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 136, 0, 2, 34, 67, 138, 0, 0, 40, 176, 35, 68, 137, 136, 0, 2, 34, 67, 138, 0, 0, 40, 41, 42, 132, 137, 136, 0, 2, 34, 67, 138, 0, 0, 0, 137, 128, 4, 21, 31, 124, 117, 136, 0, 12, 73, 21, 22, 87, 6, 2, 76, 80, 80, 176, 34, 67, 138, 0, 1, 35, 22, 137, 34, 67, 128, 4, 184, 68, 123, 54, 54, 26, 0, 142, 1, 255, 241, 0, 128, 4, 154, 113, 210, 180, 128, 4, 223, 77, 92, 59, 128, 4, 61, 135, 13, 135, 128, 4, 188, 11, 23, 6, 54, 26, 0, 142, 4, 255, 140, 255, 153, 255, 166, 255, 176, 0];
+    assert_eq!(result.compiled_base64_to_bytes, expected_bytes);
+    assert_eq!(result.compiled_hash, "P2FNVZSIY7ETR6HLNUMUA7SXEK5ZHQBWLFH3T2IJKHBKHMLKA5KAIWQZFE");
 }
 
 /// Test template substitution
