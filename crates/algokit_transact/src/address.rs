@@ -6,13 +6,12 @@
 
 use crate::constants::Byte32;
 use crate::error::AlgoKitTransactError;
-use crate::utils::pub_key_to_checksum;
+use crate::utils::{hash, pub_key_to_checksum};
 use crate::{
     ALGORAND_ADDRESS_LENGTH, ALGORAND_CHECKSUM_BYTE_LENGTH, ALGORAND_PUBLIC_KEY_BYTE_LENGTH,
 };
 use serde::{Deserialize, Serialize};
 use serde_with::{Bytes, serde_as};
-use sha2::{Digest, Sha512_256};
 use std::fmt::{Display, Formatter, Result as FmtResult};
 use std::str::FromStr;
 
@@ -32,20 +31,11 @@ impl Address {
         &self.0
     }
 
-    /// Creates an Address from an application ID.
-    ///
-    /// This computes the application address by hashing the application ID
-    /// with the "appID" prefix, as per Algorand's application address derivation.
-    pub fn from_app_id(app_id: &u64) -> Address {
-        let mut hasher = Sha512_256::new();
-        hasher.update(b"appID");
-        hasher.update(app_id.to_be_bytes());
-
-        let hash = hasher.finalize();
-        let mut addr_bytes = [0u8; ALGORAND_PUBLIC_KEY_BYTE_LENGTH];
-        addr_bytes.copy_from_slice(&hash[..ALGORAND_PUBLIC_KEY_BYTE_LENGTH]);
-
-        Address(addr_bytes)
+    /// Computes the address from an application ID.
+    pub fn from_app_id(app_id: &u64) -> Self {
+        let mut to_hash = b"appID".to_vec();
+        to_hash.extend_from_slice(&app_id.to_be_bytes());
+        Address(hash(&to_hash))
     }
 
     /// Returns the base32-encoded string representation of the address, including the checksum.
