@@ -88,8 +88,7 @@ impl TransactionCreator {
             .await
     }
 
-    // TODO: Rename to `asset_config` to align with Python/TypeScript implementations
-    pub async fn asset_reconfigure(
+    pub async fn asset_config(
         &self,
         params: AssetReconfigureParams,
     ) -> Result<Transaction, ComposerError> {
