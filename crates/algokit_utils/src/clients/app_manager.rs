@@ -84,7 +84,10 @@ pub struct BoxName {
     pub name: String,
 }
 
-pub type BoxIdentifier = String;
+/// Box identifier represented as binary data.
+/// Box identifiers in Algorand are arbitrary binary data that can contain
+/// non-UTF-8 bytes. They are base64-encoded when sent over HTTP APIs.
+pub type BoxIdentifier = Vec<u8>;
 
 pub const UPDATABLE_TEMPLATE_NAME: &str = "TMPL_UPDATABLE";
 pub const DELETABLE_TEMPLATE_NAME: &str = "TMPL_DELETABLE";
@@ -125,7 +128,7 @@ impl AppManager {
 
     pub async fn compile_teal(&self, teal_code: &str) -> Result<CompiledTeal, AppManagerError> {
         let cache_key = Self::hash_teal_code(teal_code);
-        
+
         // Check cache first
         {
             let cache = self.compilation_results.lock().unwrap();
@@ -390,7 +393,7 @@ impl AppManager {
 
     /// Get box reference from identifier.
     pub fn get_box_reference(box_id: &BoxIdentifier) -> (u64, Vec<u8>) {
-        (0, box_id.as_bytes().to_vec())
+        (0, box_id.clone())
     }
 
     /// Decode application state from raw format.

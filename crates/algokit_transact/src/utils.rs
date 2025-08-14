@@ -133,5 +133,4 @@ impl AlgorandMsgpack for GroupedTransactions {
 }
 
 #[cfg(test)]
-mod tests {
-}
+mod tests {}

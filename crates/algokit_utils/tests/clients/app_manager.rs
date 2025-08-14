@@ -295,3 +295,47 @@ async fn test_compilation_errors() {
         Err(_) => {} // Both outcomes are acceptable
     }
 }
+
+/// Test that BoxIdentifier correctly handles binary data
+#[test]
+fn test_box_identifier_binary_handling() {
+    use base64::{Engine, engine::general_purpose::STANDARD as Base64};
+
+    // Test with UTF-8 string data (common case)
+    let text_data = "hello_world".as_bytes().to_vec();
+    let (app_id, name_bytes) = AppManager::get_box_reference(&text_data);
+    assert_eq!(app_id, 0);
+    assert_eq!(name_bytes, text_data);
+    assert_eq!(name_bytes, b"hello_world".to_vec());
+
+    // Test with pure binary data (non-UTF-8)
+    let binary_data = vec![0xFF, 0xFE, 0xFD, 0x00, 0x01, 0x02];
+    let (app_id, name_bytes) = AppManager::get_box_reference(&binary_data);
+    assert_eq!(app_id, 0);
+    assert_eq!(name_bytes, binary_data);
+
+    // Test with empty data
+    let empty_data = vec![];
+    let (app_id, name_bytes) = AppManager::get_box_reference(&empty_data);
+    assert_eq!(app_id, 0);
+    assert_eq!(name_bytes, empty_data);
+
+    // Test that box identifiers can be constructed from different sources
+
+    // From UTF-8 string
+    let string_box_id: BoxIdentifier = "my_box".as_bytes().to_vec();
+    assert_eq!(string_box_id, b"my_box".to_vec());
+
+    // From hex data (representing binary data)
+    let hex_box_id: BoxIdentifier = vec![0xDE, 0xAD, 0xBE, 0xEF];
+    assert_eq!(hex_box_id.len(), 4);
+
+    // From base64-decoded data
+    let base64_str = "SGVsbG8gV29ybGQ="; // "Hello World" in base64
+    let base64_box_id: BoxIdentifier = Base64.decode(base64_str).unwrap();
+    assert_eq!(base64_box_id, b"Hello World".to_vec());
+
+    // Test that the box reference function works consistently
+    let (_, ref_bytes) = AppManager::get_box_reference(&string_box_id);
+    assert_eq!(ref_bytes, string_box_id);
+}

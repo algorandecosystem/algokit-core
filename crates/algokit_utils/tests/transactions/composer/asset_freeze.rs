@@ -7,6 +7,7 @@ use algokit_utils::{
         AssetCreateParams, AssetFreezeParams, AssetTransferParams, AssetUnfreezeParams,
     },
 };
+use std::sync::Arc;
 
 use crate::common::init_test_logging;
 

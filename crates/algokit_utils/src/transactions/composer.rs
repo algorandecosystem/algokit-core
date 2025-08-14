@@ -318,7 +318,10 @@ pub struct Composer {
 }
 
 impl Composer {
-    pub fn new(algod_client: Arc<AlgodClient>, signer_getter: Arc<dyn TransactionSignerGetter>) -> Self {
+    pub fn new(
+        algod_client: Arc<AlgodClient>,
+        signer_getter: Arc<dyn TransactionSignerGetter>,
+    ) -> Self {
         Composer {
             transactions: Vec::new(),
             algod_client,

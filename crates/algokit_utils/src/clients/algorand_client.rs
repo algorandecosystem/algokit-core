@@ -27,7 +27,7 @@ impl AlgorandClient {
         let new_group_fn = move || {
             Composer::new(
                 algod_for_sender.clone(),
-                // TODO: Replace EmptySigner with dynamic signer resolution once AccountManager 
+                // TODO: Replace EmptySigner with dynamic signer resolution once AccountManager
                 // abstraction is implemented. Should resolve default signers from sender addresses
                 // similar to TypeScript implementation's getSigner function.
                 Arc::new(crate::transactions::EmptySigner {}),
@@ -42,7 +42,7 @@ impl AlgorandClient {
         let new_group_fn_creator = Arc::new(move || {
             Composer::new(
                 algod_for_creator.clone(),
-                // TODO: Replace EmptySigner with dynamic signer resolution once AccountManager 
+                // TODO: Replace EmptySigner with dynamic signer resolution once AccountManager
                 // abstraction is implemented. Should resolve default signers from sender addresses
                 // similar to TypeScript implementation's getSigner function.
                 Arc::new(crate::transactions::EmptySigner {}),
