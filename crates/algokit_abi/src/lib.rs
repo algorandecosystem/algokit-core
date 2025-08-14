@@ -15,5 +15,5 @@ pub use error::ABIError;
 
 pub use method::{
     ABIMethod, ABIMethodArg, ABIMethodArgType, ABIReferenceType, ABIReferenceValue,
-    ABITransactionType,
+    ABITransactionType, ABIReturn,
 };

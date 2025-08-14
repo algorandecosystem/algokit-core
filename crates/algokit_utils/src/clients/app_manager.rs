@@ -2,7 +2,7 @@ use algod_client::{
     apis::{AlgodClient, Error as AlgodError},
     models::TealKeyValue,
 };
-use algokit_abi::{ABIType, ABIValue};
+use algokit_abi::{ABIType, ABIValue, ABIReturn, ABIMethod};
 use algokit_transact::Address;
 use base64::{Engine, engine::general_purpose::STANDARD as Base64};
 use sha2::{Digest, Sha256, Sha512_256};
@@ -91,16 +91,6 @@ pub type BoxIdentifier = Vec<u8>;
 
 pub const UPDATABLE_TEMPLATE_NAME: &str = "TMPL_UPDATABLE";
 pub const DELETABLE_TEMPLATE_NAME: &str = "TMPL_DELETABLE";
-
-#[derive(Debug, Clone)]
-pub struct ParsedABIReturn {
-    /// The raw return value as bytes
-    pub raw_value: Vec<u8>,
-    /// The parsed ABI value (if parsing succeeded)
-    pub parsed_value: Option<ABIValue>,
-    /// Error message if decoding failed
-    pub decode_error: Option<String>,
-}
 
 /// Manages TEAL compilation and application state.
 #[derive(Clone)]
@@ -352,28 +342,28 @@ impl AppManager {
     pub fn parse_abi_return(
         &self,
         confirmation_data: &[u8],
-        abi_type: Option<&ABIType>,
-    ) -> Option<ParsedABIReturn> {
-        Self::get_abi_return(confirmation_data, abi_type)
+        method: &ABIMethod,
+    ) -> Result<Option<ABIReturn>, AppManagerError> {
+        Self::get_abi_return(confirmation_data, method)
     }
 
     /// Get ABI return value from transaction confirmation.
     pub fn get_abi_return(
         confirmation_data: &[u8],
-        abi_type: Option<&ABIType>,
-    ) -> Option<ParsedABIReturn> {
-        if let Some(abi_type) = abi_type {
-            let parsed_value = abi_type
+        method: &ABIMethod,
+    ) -> Result<Option<ABIReturn>, AppManagerError> {
+        if let Some(return_type) = &method.returns {
+            let return_value = return_type
                 .decode(confirmation_data)
-                .map_err(|e| e.to_string());
+                .map_err(|e| AppManagerError::ABIDecodeError(e.to_string()))?;
 
-            Some(ParsedABIReturn {
-                raw_value: confirmation_data.to_vec(),
-                parsed_value: parsed_value.as_ref().ok().cloned(),
-                decode_error: parsed_value.err(),
-            })
+            Ok(Some(ABIReturn {
+                method: method.clone(),
+                raw_return_value: confirmation_data.to_vec(),
+                return_value,
+            }))
         } else {
-            None
+            Ok(None)
         }
     }
 

@@ -354,13 +354,6 @@ where
     pub box_references: Option<Vec<BoxReference>>,
 }
 
-#[derive(Debug, Clone)]
-pub struct ABIReturn {
-    pub method: ABIMethod,
-    pub raw_return_value: Vec<u8>,
-    pub return_value: ABIValue,
-}
-
 const ARGS_TUPLE_PACKING_THRESHOLD: usize = 14; // 14+ args trigger tuple packing, excluding the method selector  (arg 0)
 
 fn process_app_method_call_args(args: &[AppMethodCallArg]) -> Vec<ProcessedAppMethodCallArg> {

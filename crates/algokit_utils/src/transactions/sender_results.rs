@@ -1,5 +1,5 @@
-use super::application_call::ABIReturn;
 use super::transaction_ext::TransactionExt;
+use algokit_abi::ABIReturn;
 use algod_client::models::PendingTransactionResponse;
 use algokit_transact::{
     Address, ApplicationCallTransactionFields, AssetConfigTransactionFields, Transaction,

@@ -1,6 +1,6 @@
 use super::{
     application_call::{
-        ABIReturn, AppCallMethodCallParams, AppCallParams, AppCreateMethodCallParams,
+        AppCallMethodCallParams, AppCallParams, AppCreateMethodCallParams,
         AppCreateParams, AppDeleteMethodCallParams, AppDeleteParams, AppUpdateMethodCallParams,
         AppUpdateParams,
     },
@@ -18,7 +18,7 @@ use super::{
 use crate::clients::app_manager::{AppManager, AppManagerError, CompiledTeal};
 use crate::clients::asset_manager::{AssetManager, AssetManagerError};
 use algod_client::apis::AlgodApiError;
-use algokit_abi::ABIMethod;
+use algokit_abi::{ABIMethod, ABIReturn};
 use algokit_transact::Address;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -179,7 +179,7 @@ impl TransactionSender {
             .unwrap_or_else(|| "".to_string());
 
         // Enhanced ABI return processing using app_manager
-        let abi_returns: Option<Vec<super::application_call::ABIReturn>> =
+        let abi_returns: Option<Vec<ABIReturn>> =
             if !composer_results.abi_returns.is_empty() {
                 let returns: Result<Vec<_>, _> = composer_results
                     .abi_returns
@@ -232,21 +232,24 @@ impl TransactionSender {
         let method = params.method();
 
         // If the method has a return type, validate and enhance the return
-        if let Some(return_type) = &method.returns {
-            // Use app manager instance method to parse the return value with proper type information
-            if let Some(parsed) = self
+        if method.returns.is_some() {
+            // Use app manager instance method to parse the return value with proper method information
+            match self
                 .app_manager
-                .parse_abi_return(&abi_return.raw_return_value, Some(return_type))
+                .parse_abi_return(&abi_return.raw_return_value, method)
             {
-                // Return enhanced ABIReturn with validated parsing
-                Some(ABIReturn {
-                    method: method.clone(),
-                    raw_return_value: parsed.raw_value,
-                    return_value: parsed.parsed_value.unwrap_or(abi_return.return_value),
-                })
-            } else {
-                // Return original if parsing fails
-                Some(abi_return)
+                Ok(Some(parsed)) => {
+                    // Return enhanced ABIReturn with validated parsing
+                    Some(parsed)
+                }
+                Ok(None) => {
+                    // Method has no return type
+                    Some(abi_return)
+                }
+                Err(_) => {
+                    // Return original if parsing fails
+                    Some(abi_return)
+                }
             }
         } else {
             // Method has no return type, return as-is
