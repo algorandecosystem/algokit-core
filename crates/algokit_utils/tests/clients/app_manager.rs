@@ -339,3 +339,58 @@ fn test_box_identifier_binary_handling() {
     let (_, ref_bytes) = AppManager::get_box_reference(&string_box_id);
     assert_eq!(ref_bytes, string_box_id);
 }
+
+/// Test that app state keys are now Vec<u8> for TypeScript consistency
+#[test]
+fn test_app_state_keys_as_vec_u8() {
+    use algod_client::models::{TealKeyValue, TealValue};
+    use base64::{Engine, engine::general_purpose::STANDARD as Base64};
+
+    // Create mock state data
+    let key_raw = b"test_key".to_vec();
+    let key_base64 = Base64.encode(&key_raw);
+    
+    let state_val = TealKeyValue {
+        key: key_base64,
+        value: TealValue {
+            r#type: 2, // Uint type
+            bytes: String::new(),
+            uint: 42,
+        },
+    };
+
+    let state = vec![state_val];
+
+    // Decode the app state
+    let result = AppManager::decode_app_state(&state).unwrap();
+
+    // Verify that the HashMap key is Vec<u8>
+    assert_eq!(result.len(), 1);
+    assert!(result.contains_key(&key_raw));
+
+    // Verify the actual data in AppState
+    let app_state = &result[&key_raw];
+    assert_eq!(app_state.key_raw, key_raw);
+    assert_eq!(app_state.key_base64, Base64.encode(&key_raw));
+    
+    // Test with binary key data (non-UTF-8)
+    let binary_key = vec![0xFF, 0xFE, 0xFD, 0x00];
+    let binary_key_base64 = Base64.encode(&binary_key);
+    
+    let binary_state_val = TealKeyValue {
+        key: binary_key_base64,
+        value: TealValue {
+            r#type: 2,
+            bytes: String::new(),
+            uint: 123,
+        },
+    };
+
+    let binary_state = vec![binary_state_val];
+    let binary_result = AppManager::decode_app_state(&binary_state).unwrap();
+
+    // Verify binary key works correctly
+    assert!(binary_result.contains_key(&binary_key));
+    let binary_app_state = &binary_result[&binary_key];
+    assert_eq!(binary_app_state.key_raw, binary_key);
+}

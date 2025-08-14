@@ -71,7 +71,8 @@ pub struct AppInformation {
     /// Number of extra program pages (if any)
     pub extra_program_pages: Option<u32>,
     /// The current global state of the application
-    pub global_state: HashMap<String, AppState>,
+    /// Keys are stored as Vec<u8> for binary data support, matching TypeScript UInt8Array typing
+    pub global_state: HashMap<Vec<u8>, AppState>,
 }
 
 #[derive(Debug, Clone)]
@@ -223,20 +224,22 @@ impl AppManager {
     }
 
     /// Get global state of application.
+    /// Returns state keys as Vec<u8> for binary data support, matching TypeScript UInt8Array typing.
     pub async fn get_global_state(
         &self,
         app_id: u64,
-    ) -> Result<HashMap<String, AppState>, AppManagerError> {
+    ) -> Result<HashMap<Vec<u8>, AppState>, AppManagerError> {
         let app_info = self.get_by_id(app_id).await?;
         Ok(app_info.global_state)
     }
 
     /// Get local state for account in application.
+    /// Returns state keys as Vec<u8> for binary data support, matching TypeScript UInt8Array typing.
     pub async fn get_local_state(
         &self,
         app_id: u64,
         address: &str,
-    ) -> Result<HashMap<String, AppState>, AppManagerError> {
+    ) -> Result<HashMap<Vec<u8>, AppState>, AppManagerError> {
         let app_info = self
             .algod_client
             .account_application_information(address, app_id, None)
@@ -439,16 +442,16 @@ impl AppManager {
     }
 
     /// Decode application state from raw format.
+    /// Keys are decoded from base64 to Vec<u8> for binary data support, matching TypeScript UInt8Array typing.
     pub fn decode_app_state(
         state: &[TealKeyValue],
-    ) -> Result<HashMap<String, AppState>, AppManagerError> {
+    ) -> Result<HashMap<Vec<u8>, AppState>, AppManagerError> {
         let mut state_values = HashMap::new();
 
         for state_val in state {
             let key_raw = Base64
                 .decode(&state_val.key)
                 .map_err(|e| AppManagerError::DecodingError(e.to_string()))?;
-            let key = String::from_utf8(key_raw.clone()).unwrap_or_else(|_| hex::encode(&key_raw));
 
             let (value_raw, value_base64, value) = match state_val.value.r#type {
                 1 => {
@@ -474,7 +477,7 @@ impl AppManager {
             };
 
             state_values.insert(
-                key,
+                key_raw.clone(),
                 AppState {
                     key_raw: key_raw.clone(),
                     key_base64: Base64.encode(&key_raw),
