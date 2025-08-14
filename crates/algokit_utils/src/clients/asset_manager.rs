@@ -1,6 +1,11 @@
 use algod_client::apis::{AlgodClient, Error as AlgodError};
 use algokit_transact::Address;
-use std::sync::Arc;
+use std::{str::FromStr, sync::Arc};
+
+use crate::transactions::{
+    AssetOptInParams, AssetOptOutParams, CommonParams, Composer, ComposerError,
+    TransactionSignerGetter,
+};
 
 #[derive(Debug, Clone)]
 pub struct BulkAssetOptInOutResult {
@@ -109,19 +114,121 @@ impl AssetManager {
 
     pub async fn bulk_opt_in(
         &self,
-        _account: &Address,
-        _asset_ids: &[u64],
+        account: &Address,
+        asset_ids: &[u64],
+        signer_getter: Arc<dyn TransactionSignerGetter>,
     ) -> Result<Vec<BulkAssetOptInOutResult>, AssetManagerError> {
-        todo!("Implement bulk opt-in")
+        if asset_ids.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let mut composer = Composer::new(self.algod_client.clone(), signer_getter);
+
+        // Add asset opt-in transactions for each asset
+        for &asset_id in asset_ids {
+            let opt_in_params = AssetOptInParams {
+                common_params: CommonParams {
+                    sender: account.clone(),
+                    ..Default::default()
+                },
+                asset_id,
+            };
+
+            composer
+                .add_asset_opt_in(opt_in_params)
+                .map_err(AssetManagerError::ComposerError)?;
+        }
+
+        // Send the transaction group
+        let results = composer
+            .send(Default::default())
+            .await
+            .map_err(AssetManagerError::ComposerError)?;
+
+        // Map transaction IDs back to assets
+        let bulk_results: Vec<BulkAssetOptInOutResult> = asset_ids
+            .iter()
+            .zip(results.transaction_ids.iter())
+            .map(|(&asset_id, transaction_id)| BulkAssetOptInOutResult {
+                asset_id,
+                transaction_id: transaction_id.clone(),
+            })
+            .collect();
+
+        Ok(bulk_results)
     }
 
     pub async fn bulk_opt_out(
         &self,
-        _account: &Address,
-        _asset_ids: &[u64],
-        _ensure_zero_balance: Option<bool>,
+        account: &Address,
+        asset_ids: &[u64],
+        ensure_zero_balance: Option<bool>,
+        signer_getter: Arc<dyn TransactionSignerGetter>,
     ) -> Result<Vec<BulkAssetOptInOutResult>, AssetManagerError> {
-        todo!("Implement bulk opt-out")
+        if asset_ids.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let should_check_balance = ensure_zero_balance.unwrap_or(false);
+
+        // If we need to check balances, verify they are all zero
+        if should_check_balance {
+            for &asset_id in asset_ids {
+                let account_info = self.get_account_information(account, asset_id).await?;
+                if account_info.balance > 0 {
+                    return Err(AssetManagerError::NonZeroBalance {
+                        address: account.to_string(),
+                        asset_id,
+                        balance: account_info.balance,
+                    });
+                }
+            }
+        }
+
+        // Fetch asset information to get creators
+        let mut asset_creators = Vec::new();
+        for &asset_id in asset_ids {
+            let asset_info = self.get_by_id(asset_id).await?;
+            let creator = Address::from_str(&asset_info.creator)
+                .map_err(|_| AssetManagerError::AssetNotFound(asset_id))?;
+            asset_creators.push(creator);
+        }
+
+        let mut composer = Composer::new(self.algod_client.clone(), signer_getter);
+
+        // Add asset opt-out transactions for each asset
+        for (i, &asset_id) in asset_ids.iter().enumerate() {
+            let opt_out_params = AssetOptOutParams {
+                common_params: CommonParams {
+                    sender: account.clone(),
+                    ..Default::default()
+                },
+                asset_id,
+                creator: asset_creators[i].clone(),
+            };
+
+            composer
+                .add_asset_opt_out(opt_out_params)
+                .map_err(AssetManagerError::ComposerError)?;
+        }
+
+        // Send the transaction group
+        let results = composer
+            .send(Default::default())
+            .await
+            .map_err(AssetManagerError::ComposerError)?;
+
+        // Map transaction IDs back to assets
+        let bulk_results: Vec<BulkAssetOptInOutResult> = asset_ids
+            .iter()
+            .zip(results.transaction_ids.iter())
+            .map(|(&asset_id, transaction_id)| BulkAssetOptInOutResult {
+                asset_id,
+                transaction_id: transaction_id.clone(),
+            })
+            .collect();
+
+        Ok(bulk_results)
     }
 }
 
@@ -129,6 +236,9 @@ impl AssetManager {
 pub enum AssetManagerError {
     #[error("Algod client error: {0}")]
     AlgodClientError(AlgodError),
+
+    #[error("Composer error: {0}")]
+    ComposerError(ComposerError),
 
     #[error("Asset not found: {0}")]
     AssetNotFound(u64),
