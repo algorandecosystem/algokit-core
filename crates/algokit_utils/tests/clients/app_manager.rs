@@ -453,22 +453,16 @@ fn test_app_state_keys_as_vec_u8() {
     }
 }
 
-/// Test the difference between ABIType-based and ABIMethod-based box value methods
+/// Test ABIType-based box value methods structure
 #[test]
-fn test_abi_type_vs_abi_method_approaches() {
-    // This test demonstrates the API design differences between the two approaches:
+fn test_abi_type_box_value_methods() {
+    // This test demonstrates the ABIType-based box value approach:
     //
-    // 1. ABIType-based methods (get_box_value_from_abi_type, get_box_values_from_abi_type):
+    // ABIType-based methods (get_box_value_from_abi_type, get_box_values_from_abi_type):
     //    - Take ABIType directly as parameter
     //    - Return ABIValue directly
     //    - Simpler API that matches TypeScript/Python implementations
-    //    - Ideal for straightforward decoding scenarios
-    //
-    // 2. ABIMethod-based methods (get_box_value_from_abi_method, get_box_values_from_abi_method):
-    //    - Take ABIMethod as parameter and use its return type
-    //    - Return ABIReturn with method context
-    //    - Richer context for workflow integration
-    //    - Maintains method information for logging, debugging, and complex workflows
+    //    - Ideal for box data decoding based on actual storage format
 
     // Create a simple uint64 ABI type for testing
     let uint64_type = ABIType::Uint(BitSize::new(64).unwrap());
@@ -477,7 +471,6 @@ fn test_abi_type_vs_abi_method_approaches() {
     assert_eq!(format!("{}", uint64_type), "uint64");
 
     // The actual network testing would be done in integration tests with real algod
-    // This unit test just validates the type structure differences
-    println!("ABIType approach: Direct type -> ABIValue");
-    println!("ABIMethod approach: Method context -> ABIReturn (with method info + ABIValue)");
+    // This unit test validates the correct approach for box data decoding
+    println!("ABIType approach for box data: Storage type -> ABIValue");
 }
