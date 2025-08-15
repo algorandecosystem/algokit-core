@@ -2,7 +2,7 @@ use algod_client::{
     apis::{AlgodClient, Error as AlgodError},
     models::TealKeyValue,
 };
-use algokit_abi::{ABIMethod, ABIReturn};
+use algokit_abi::{ABIMethod, ABIReturn, ABIType, ABIValue};
 use algokit_transact::Address;
 use base64::{Engine, engine::general_purpose::STANDARD as Base64};
 use sha2::{Digest, Sha256};
@@ -371,6 +371,61 @@ impl AppManager {
         for box_name in box_names {
             values.push(
                 self.get_box_value_from_abi_method(app_id, box_name, method)
+                    .await?,
+            );
+        }
+        Ok(values)
+    }
+
+    /// Decode box value using ABI type.
+    ///
+    /// This method takes an ABIType directly and uses it to decode the box value,
+    /// returning an ABIValue directly for simpler usage patterns that match the
+    /// TypeScript and Python implementations.
+    ///
+    /// # Arguments
+    /// * `app_id` - The application ID
+    /// * `box_name` - The box name identifier
+    /// * `abi_type` - The ABI type to use for decoding
+    ///
+    /// # Returns
+    /// An ABIValue containing the decoded box value
+    pub async fn get_box_value_from_abi_type(
+        &self,
+        app_id: u64,
+        box_name: &BoxIdentifier,
+        abi_type: &ABIType,
+    ) -> Result<ABIValue, AppManagerError> {
+        let raw_value = self.get_box_value(app_id, box_name).await?;
+        let decoded_value = abi_type
+            .decode(&raw_value)
+            .map_err(|e| AppManagerError::ABIDecodeError(e.to_string()))?;
+        Ok(decoded_value)
+    }
+
+    /// Decode multiple box values using ABI type.
+    ///
+    /// This method takes an ABIType directly and uses it to decode multiple box values,
+    /// returning ABIValue objects directly for simpler usage patterns that match the
+    /// TypeScript and Python implementations.
+    ///
+    /// # Arguments
+    /// * `app_id` - The application ID
+    /// * `box_names` - The box name identifiers
+    /// * `abi_type` - The ABI type to use for decoding
+    ///
+    /// # Returns
+    /// A vector of ABIValue objects containing the decoded box values
+    pub async fn get_box_values_from_abi_type(
+        &self,
+        app_id: u64,
+        box_names: &[BoxIdentifier],
+        abi_type: &ABIType,
+    ) -> Result<Vec<ABIValue>, AppManagerError> {
+        let mut values = Vec::new();
+        for box_name in box_names {
+            values.push(
+                self.get_box_value_from_abi_type(app_id, box_name, abi_type)
                     .await?,
             );
         }

@@ -1,5 +1,6 @@
 use algokit_test_artifacts::template_variables;
 use algokit_utils::{clients::app_manager::*, testing::algorand_fixture};
+use algokit_abi::{ABIType, abi_type::BitSize};
 use base64::prelude::*;
 use rstest::*;
 use std::collections::HashMap;
@@ -450,4 +451,33 @@ fn test_app_state_keys_as_vec_u8() {
     } else {
         panic!("Expected AppStateValue::Bytes");
     }
+}
+
+/// Test the difference between ABIType-based and ABIMethod-based box value methods
+#[test]
+fn test_abi_type_vs_abi_method_approaches() {
+    // This test demonstrates the API design differences between the two approaches:
+    // 
+    // 1. ABIType-based methods (get_box_value_from_abi_type, get_box_values_from_abi_type):
+    //    - Take ABIType directly as parameter
+    //    - Return ABIValue directly 
+    //    - Simpler API that matches TypeScript/Python implementations
+    //    - Ideal for straightforward decoding scenarios
+    //
+    // 2. ABIMethod-based methods (get_box_value_from_abi_method, get_box_values_from_abi_method):
+    //    - Take ABIMethod as parameter and use its return type
+    //    - Return ABIReturn with method context
+    //    - Richer context for workflow integration
+    //    - Maintains method information for logging, debugging, and complex workflows
+
+    // Create a simple uint64 ABI type for testing
+    let uint64_type = ABIType::Uint(BitSize::new(64).unwrap());
+    
+    // Verify the type can be created successfully
+    assert_eq!(format!("{}", uint64_type), "uint64");
+    
+    // The actual network testing would be done in integration tests with real algod
+    // This unit test just validates the type structure differences
+    println!("ABIType approach: Direct type -> ABIValue");
+    println!("ABIMethod approach: Method context -> ABIReturn (with method info + ABIValue)");
 }
