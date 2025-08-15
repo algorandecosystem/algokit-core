@@ -266,8 +266,7 @@ impl TransactionSender {
         // If the method has a return type, validate and enhance the return
         if method.returns.is_some() {
             // Use app manager static method to parse the return value with proper method information
-            match AppManager::get_abi_return(&abi_return.raw_return_value, method)
-            {
+            match AppManager::get_abi_return(&abi_return.raw_return_value, method) {
                 Ok(Some(parsed)) => {
                     // Return enhanced ABIReturn with validated parsing
                     Some(parsed)
@@ -381,14 +380,14 @@ impl TransactionSender {
                         params.asset_id, e
                     ))
                 })?;
-            
-            let creator = Address::from_str(&asset_info.params.creator).map_err(|e| {
+
+            let creator = Address::from_str(&asset_info.creator).map_err(|e| {
                 TransactionSenderError::ValidationError(format!(
                     "Invalid creator address for asset {}: {}",
                     params.asset_id, e
                 ))
             })?;
-            
+
             params.close_remainder_to = Some(creator);
         }
 

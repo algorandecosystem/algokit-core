@@ -329,7 +329,7 @@ async fn test_validation_error_propagation(
             signer: Some(Arc::new(opt_out_account)),
             ..Default::default()
         },
-        asset_id: 999999999,                       // Non-existent asset
+        asset_id: 999999999,      // Non-existent asset
         close_remainder_to: None, // Let it try to auto-resolve (will fail for non-existent asset)
     };
 

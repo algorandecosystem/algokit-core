@@ -7,7 +7,9 @@ pub mod network_client;
 // Re-export commonly used client types
 pub use algorand_client::AlgorandClient;
 pub use app_manager::{AppManager, AppManagerError};
-pub use asset_manager::{AssetManager, AssetManagerError, BulkAssetOptInOutResult};
+pub use asset_manager::{
+    AssetInformation, AssetManager, AssetManagerError, BulkAssetOptInOutResult,
+};
 pub use client_manager::ClientManager;
 pub use network_client::{
     AlgoClientConfig, AlgoConfig, AlgorandNetwork, AlgorandService, NetworkDetails, TokenHeader,

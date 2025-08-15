@@ -5,8 +5,8 @@ pub mod transactions;
 // Re-exports for clean UniFFI surface
 pub use clients::{
     AlgoClientConfig, AlgoConfig, AlgorandClient, AlgorandNetwork, AlgorandService, AppManager,
-    AppManagerError, AssetManager, AssetManagerError, BulkAssetOptInOutResult, ClientManager,
-    NetworkDetails, TokenHeader, genesis_id_is_localnet,
+    AppManagerError, AssetInformation, AssetManager, AssetManagerError, BulkAssetOptInOutResult,
+    ClientManager, NetworkDetails, TokenHeader, genesis_id_is_localnet,
 };
 // Re-export ABI types for convenience
 pub use algokit_abi::ABIReturn;

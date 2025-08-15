@@ -679,6 +679,4 @@ mod transaction_ext_tests {
         assert!(type_set.contains(&TransactionType::AssetTransfer));
         assert!(!type_set.contains(&TransactionType::ApplicationCall));
     }
-
-
 }

@@ -259,7 +259,10 @@ impl SendAssetCreateResult {
             )
         })?;
 
-        Ok(SendAssetCreateResult { common_params, asset_id })
+        Ok(SendAssetCreateResult {
+            common_params,
+            asset_id,
+        })
     }
 
     /// Get the asset configuration transaction from the common transaction
@@ -322,7 +325,10 @@ impl SendAppUpdateResult {
 impl SendAppCallResult {
     /// Create a new app call result with ABI return
     pub fn new(common_params: SendTransactionResult, abi_return: Option<ABIReturn>) -> Self {
-        SendAppCallResult { common_params, abi_return }
+        SendAppCallResult {
+            common_params,
+            abi_return,
+        }
     }
 }
 
