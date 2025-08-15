@@ -203,7 +203,7 @@ async fn test_abi_method_returns_enhanced_processing(
         box_references: None,
     };
 
-    let result = sender.app_call_method(params, None).await?;
+    let result = sender.app_call_method_call(params, None).await?;
 
     // Validate enhanced ABI return processing with AppManager - Sender's orchestration value
     assert!(!result.base.tx_ids.is_empty());

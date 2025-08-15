@@ -532,7 +532,7 @@ impl TransactionSender {
     }
 
     /// Send ABI method call transaction.
-    pub async fn app_call_method(
+    pub async fn app_call_method_call(
         &self,
         params: AppCallMethodCallParams,
         send_params: Option<SendParams>,
@@ -551,7 +551,7 @@ impl TransactionSender {
     }
 
     /// Send ABI method call for app creation.
-    pub async fn app_create_method(
+    pub async fn app_create_method_call(
         &self,
         params: AppCreateMethodCallParams,
         send_params: Option<SendParams>,
@@ -579,7 +579,7 @@ impl TransactionSender {
     }
 
     /// Send ABI method call for app update.
-    pub async fn app_update_method(
+    pub async fn app_update_method_call(
         &self,
         params: AppUpdateMethodCallParams,
         send_params: Option<SendParams>,
@@ -611,7 +611,7 @@ impl TransactionSender {
     }
 
     /// Send ABI method call for app deletion.
-    pub async fn app_delete_method(
+    pub async fn app_delete_method_call(
         &self,
         params: AppDeleteMethodCallParams,
         send_params: Option<SendParams>,
