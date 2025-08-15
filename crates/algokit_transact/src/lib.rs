@@ -21,6 +21,7 @@ pub use transactions::{
     BoxReference, FeeParams, KeyRegistrationTransactionBuilder, KeyRegistrationTransactionFields,
     OnApplicationComplete, PaymentTransactionBuilder, PaymentTransactionFields, SignedTransaction,
     StateSchema, Transaction, TransactionExt, TransactionHeader, TransactionHeaderBuilder,
+    TransactionType,
 };
 
 #[cfg(test)]

@@ -39,6 +39,41 @@ use serde::{Deserialize, Serialize};
 use serde_with::{Bytes, serde_as};
 use std::any::Any;
 
+/// Enumeration of transaction types for pattern matching and type identification.
+///
+/// This enum provides a convenient way to identify transaction types without
+/// inspecting the full transaction structure. It complements the existing
+/// `is_*()` methods by enabling ergonomic pattern matching.
+///
+/// # Example
+/// ```rust
+/// use algokit_transact::{Transaction, TransactionExt, TransactionType};
+/// 
+/// fn handle_transaction(tx: &Transaction) {
+///     match tx.transaction_type() {
+///         TransactionType::Payment => println!("Processing payment"),
+///         TransactionType::ApplicationCall => println!("Processing app call"),
+///         TransactionType::AssetTransfer => println!("Processing asset transfer"),
+///         _ => println!("Processing other transaction type"),
+///     }
+/// }
+/// ```
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum TransactionType {
+    /// Payment transaction
+    Payment,
+    /// Asset transfer transaction
+    AssetTransfer,
+    /// Asset configuration transaction (create/update/destroy)
+    AssetCreate,
+    /// Asset freeze transaction
+    AssetFreeze,
+    /// Application call transaction
+    ApplicationCall,
+    /// Key registration transaction
+    KeyRegistration,
+}
+
 /// Enumeration of all transaction types.
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(tag = "type")]
@@ -261,6 +296,25 @@ impl Transactions for &[Transaction] {
 
 /// Extension trait providing accessor methods for Transaction enum variants
 pub trait TransactionExt {
+    /// Returns the transaction type as an enum for pattern matching
+    /// 
+    /// This method provides a convenient way to identify transaction types
+    /// for use in match statements and other type-based logic.
+    /// 
+    /// # Example
+    /// ```rust
+    /// use algokit_transact::{Transaction, TransactionExt, TransactionType};
+    /// 
+    /// fn process_transaction(tx: &Transaction) {
+    ///     match tx.transaction_type() {
+    ///         TransactionType::Payment => { /* handle payment */ },
+    ///         TransactionType::ApplicationCall => { /* handle app call */ },
+    ///         _ => { /* handle other types */ },
+    ///     }
+    /// }
+    /// ```
+    fn transaction_type(&self) -> TransactionType;
+
     /// Returns true if this is a payment transaction
     fn is_payment(&self) -> bool;
 
@@ -315,6 +369,17 @@ pub trait TransactionExt {
 }
 
 impl TransactionExt for Transaction {
+    fn transaction_type(&self) -> TransactionType {
+        match self {
+            Transaction::Payment(_) => TransactionType::Payment,
+            Transaction::AssetTransfer(_) => TransactionType::AssetTransfer,
+            Transaction::AssetConfig(_) => TransactionType::AssetCreate,
+            Transaction::AssetFreeze(_) => TransactionType::AssetFreeze,
+            Transaction::ApplicationCall(_) => TransactionType::ApplicationCall,
+            Transaction::KeyRegistration(_) => TransactionType::KeyRegistration,
+        }
+    }
+
     fn is_payment(&self) -> bool {
         matches!(self, Transaction::Payment(_))
     }
@@ -412,9 +477,8 @@ impl TransactionExt for Transaction {
 mod transaction_ext_tests {
     use super::*;
 
-    #[test]
-    fn test_payment_transaction_ext() {
-        let header = TransactionHeader {
+    fn create_test_header() -> TransactionHeader {
+        TransactionHeader {
             sender: Address([0u8; 32]),
             fee: Some(1000),
             first_valid: 100,
@@ -425,10 +489,13 @@ mod transaction_ext_tests {
             rekey_to: None,
             lease: None,
             group: None,
-        };
+        }
+    }
 
+    #[test]
+    fn test_payment_transaction_ext() {
         let payment = PaymentTransactionFields {
-            header,
+            header: create_test_header(),
             receiver: Address([1u8; 32]),
             amount: 1000,
             close_remainder_to: None,
@@ -447,5 +514,176 @@ mod transaction_ext_tests {
         assert_eq!(transaction.last_valid_round(), 200);
         assert_eq!(transaction.sender(), &Address([0u8; 32]));
         assert_eq!(transaction.note(), None);
+    }
+
+    #[test]
+    fn test_transaction_type_enum() {
+        // Test Payment transaction
+        let payment = Transaction::Payment(PaymentTransactionFields {
+            header: create_test_header(),
+            receiver: Address([1u8; 32]),
+            amount: 1000,
+            close_remainder_to: None,
+        });
+        assert_eq!(payment.transaction_type(), TransactionType::Payment);
+
+        // Test AssetTransfer transaction
+        let asset_transfer = Transaction::AssetTransfer(AssetTransferTransactionFields {
+            header: create_test_header(),
+            asset_id: 123,
+            amount: 500,
+            receiver: Address([2u8; 32]),
+            asset_sender: None,
+            close_remainder_to: None,
+        });
+        assert_eq!(asset_transfer.transaction_type(), TransactionType::AssetTransfer);
+
+        // Test AssetConfig transaction
+        let asset_config = Transaction::AssetConfig(AssetConfigTransactionFields {
+            header: create_test_header(),
+            asset_id: 456,
+            total: None,
+            decimals: None,
+            default_frozen: None,
+            asset_name: None,
+            unit_name: None,
+            url: None,
+            metadata_hash: None,
+            manager: None,
+            reserve: None,
+            freeze: None,
+            clawback: None,
+        });
+        assert_eq!(asset_config.transaction_type(), TransactionType::AssetCreate);
+
+        // Test AssetFreeze transaction
+        let asset_freeze = Transaction::AssetFreeze(AssetFreezeTransactionFields {
+            header: create_test_header(),
+            asset_id: 789,
+            freeze_target: Address([3u8; 32]),
+            frozen: true,
+        });
+        assert_eq!(asset_freeze.transaction_type(), TransactionType::AssetFreeze);
+
+        // Test ApplicationCall transaction
+        let app_call = Transaction::ApplicationCall(ApplicationCallTransactionFields {
+            header: create_test_header(),
+            app_id: 321,
+            on_complete: OnApplicationComplete::NoOp,
+            approval_program: None,
+            clear_state_program: None,
+            global_state_schema: None,
+            local_state_schema: None,
+            extra_program_pages: None,
+            args: None,
+            account_references: None,
+            app_references: None,
+            asset_references: None,
+            box_references: None,
+        });
+        assert_eq!(app_call.transaction_type(), TransactionType::ApplicationCall);
+
+        // Test KeyRegistration transaction
+        let key_reg = Transaction::KeyRegistration(KeyRegistrationTransactionFields {
+            header: create_test_header(),
+            vote_key: None,
+            selection_key: None,
+            state_proof_key: None,
+            vote_first: None,
+            vote_last: None,
+            vote_key_dilution: None,
+            non_participation: None,
+        });
+        assert_eq!(key_reg.transaction_type(), TransactionType::KeyRegistration);
+    }
+
+    #[test]
+    fn test_transaction_type_pattern_matching() {
+        let transactions = vec![
+            Transaction::Payment(PaymentTransactionFields {
+                header: create_test_header(),
+                receiver: Address([1u8; 32]),
+                amount: 1000,
+                close_remainder_to: None,
+            }),
+            Transaction::AssetTransfer(AssetTransferTransactionFields {
+                header: create_test_header(),
+                asset_id: 123,
+                amount: 500,
+                receiver: Address([2u8; 32]),
+                asset_sender: None,
+                close_remainder_to: None,
+            }),
+            Transaction::ApplicationCall(ApplicationCallTransactionFields {
+                header: create_test_header(),
+                app_id: 321,
+                on_complete: OnApplicationComplete::NoOp,
+                approval_program: None,
+                clear_state_program: None,
+                global_state_schema: None,
+                local_state_schema: None,
+                extra_program_pages: None,
+                args: None,
+                account_references: None,
+                app_references: None,
+                asset_references: None,
+                box_references: None,
+            }),
+        ];
+
+        let mut payment_count = 0;
+        let mut asset_count = 0;
+        let mut app_count = 0;
+
+        for tx in transactions {
+            match tx.transaction_type() {
+                TransactionType::Payment => payment_count += 1,
+                TransactionType::AssetTransfer => asset_count += 1,
+                TransactionType::ApplicationCall => app_count += 1,
+                _ => {}
+            }
+        }
+
+        assert_eq!(payment_count, 1);
+        assert_eq!(asset_count, 1);
+        assert_eq!(app_count, 1);
+    }
+
+    #[test]
+    fn test_transaction_type_enum_equality_and_hash() {
+        // Test PartialEq
+        assert_eq!(TransactionType::Payment, TransactionType::Payment);
+        assert_ne!(TransactionType::Payment, TransactionType::AssetTransfer);
+
+        // Test that enum can be used in collections that require Hash
+        use std::collections::HashSet;
+        let mut type_set = HashSet::new();
+        type_set.insert(TransactionType::Payment);
+        type_set.insert(TransactionType::AssetTransfer);
+        type_set.insert(TransactionType::Payment); // Duplicate should not increase size
+
+        assert_eq!(type_set.len(), 2);
+        assert!(type_set.contains(&TransactionType::Payment));
+        assert!(type_set.contains(&TransactionType::AssetTransfer));
+        assert!(!type_set.contains(&TransactionType::ApplicationCall));
+    }
+
+    #[test]
+    fn test_backwards_compatibility() {
+        // Ensure that existing is_* methods still work alongside new transaction_type() method
+        let payment = Transaction::Payment(PaymentTransactionFields {
+            header: create_test_header(),
+            receiver: Address([1u8; 32]),
+            amount: 1000,
+            close_remainder_to: None,
+        });
+
+        // Both approaches should give consistent results
+        assert!(payment.is_payment());
+        assert_eq!(payment.transaction_type(), TransactionType::Payment);
+
+        // Negative cases should also be consistent
+        assert!(!payment.is_asset_transfer());
+        assert_ne!(payment.transaction_type(), TransactionType::AssetTransfer);
     }
 }
