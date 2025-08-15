@@ -9,7 +9,7 @@ consulted: MakerX & Algorand Foundation AlgoKit engineering team
 
 ## Context and Problem Statement
 
-One of the languages that AlgoKit Core should support is TypeScript. The browser is one of the most popular environments for using AlgoKit, thus it is important that we have first-class support for it. For every language other than TypeScript, we use Uniffi, which uses C ABI bindings for each language via Foreign Function Interfaces (FFIs). C bindings, however, are not available for use in the browser because browsers cannot execute native code. This requires a seperate runtime (and potentially ABI) for browsers. The only option for executing *near*-native code in browser is WebAssembly. Rust does support compiling to WebAssembly and there are a lot of popular tools available for Rust and WASM. That being said, supporting WASM requires a separate set of tools for TypeScript bindings and comes with a some implications that are not applicable to other languages.
+One of the languages that AlgoKit Core should support is TypeScript. The browser is one of the most popular environments for using AlgoKit, thus it is important that we have first-class support for it. For every language other than TypeScript, we use Uniffi, which uses C ABI bindings for each language via Foreign Function Interfaces (FFIs). C bindings, however, are not available for use in the browser because browsers cannot execute native code. This requires a separate runtime (and potentially ABI) for browsers. The only option for executing *near*-native code in browser is WebAssembly. Rust does support compiling to WebAssembly and there are a lot of popular tools available for Rust and WASM. That being said, supporting WASM requires a separate set of tools for TypeScript bindings and comes with a some implications that are not applicable to other languages.
 
 ## Decision Drivers
 
@@ -48,38 +48,38 @@ One of the languages that AlgoKit Core should support is TypeScript. The browser
 - **Bad**: WASM boundary crosses are expensive (orders of magnitude more than C FFI)
 - **Bad**: WASM importing will impact all downstream dependents
 - **Bad**: Mixed support across popular runtimes (i.e Bun)
-- **Bad**: A seperate package would be required for React Native
+- **Bad**: A separate package would be required for React Native
 - **Bad**: WASM binaries can get quite large and are not tree-shakeable
 
 ## More Information
 
 ### Uniffi Bindgen React Native
 
-Historically, we have used [wasm_bindgen](https://github.com/wasm-bindgen/wasm-bindgen/) and [wasm-pack](https://github.com/drager/wasm-pack) to generate TypeScript bindings and package core TypeScript libraries. React Native, however, does not current support WASM out of the box. It also does not support [WeakRefs TC39 proposal](https://github.com/tc39/proposal-weakrefs), which is needed for proper garbage collection of Rust-owned objects. The [uniffi-bindgen-react-native](https://jhugman.github.io/uniffi-bindgen-react-native/) project aims to solve these issues by providing a way to generate React Native bindings via UniFFI and recently added support for WASM as well. Early spikes have demonstrated that this works, but it adds a sinificant amount of complexity to the build process (see React Native Support below). Additionally, this library is relatively immature compared to the other first and third-party uniffi binding generators we will be using for core.
+Historically, we have used [wasm_bindgen](https://github.com/wasm-bindgen/wasm-bindgen/) and [wasm-pack](https://github.com/drager/wasm-pack) to generate TypeScript bindings and package core TypeScript libraries. React Native, however, does not currently support WASM out of the box. It also does not support [WeakRefs TC39 proposal](https://github.com/tc39/proposal-weakrefs), which is needed for proper garbage collection of Rust-owned objects. The [uniffi-bindgen-react-native](https://jhugman.github.io/uniffi-bindgen-react-native/) project aims to solve these issues by providing a way to generate React Native bindings via UniFFI and recently added support for WASM as well. Early spikes have demonstrated that this works, but it adds a significant amount of complexity to the build process (see React Native Support below). Additionally, this library is relatively immature compared to the other first and third-party uniffi binding generators we will be using for core.
 
 ### WASM Runtime Support
 
-It is possible to get WASM modules working in Node.js and other runties such as bun, but how they must be imported and the level of support varies. For example, bun has ran into issues with WASM-based packages that have not been replicated in Node.js. It's also unclear how well other runtimes outside of Node.js support WASM.
+It is possible to get WASM modules working in Node.js and other runtimes such as bun, but how they must be imported and the level of support varies. For example, bun has ran into issues with WASM-based packages that have not been replicated in Node.js. It's also unclear how well other runtimes outside of Node.js support WASM.
 
 ### WASM "Coloring"
 
-Due to the fact that WASM modules are binary blobs that can be rather large, they are typically fethed and instantiated ascynronously. This means one of the follwing must be true:
+Due to the fact that WASM modules are binary blobs that can be rather large, they are typically fetched and instantiated asynchronously. This means one of the following must be true:
 
 1. All users of the library must support top-level await (ESM only)
-1. The library must have a single entry pint that is async (and automatically does the instantiation)
+1. The library must have a single entry point that is async (and automatically does the instantiation)
 1. All library functions that call into WASM must be async (and each one ensures the WASM module is instantiated)
 
 A common fix to this problem is to inline the WASM binary as a base64 string and decode it at runtime. This works, but it can significantly increase the size of the library.
 
 Furthermore, WASM support in popular bundlers is mixed and any user of the library may need to add additional configuration to their bundler to ensure the WASM module is properly included.
 
-All three of these problems are problems that are inhereted down to all dependents of the library. For example, if the entry point to our library is async, all dependents must also use an async entry point. Similarly, bundling decisions made upstream will impact all dependents.
+All three of these problems are problems that are inherited down to all dependents of the library. For example, if the entry point to our library is async, all dependents must also use an async entry point. Similarly, bundling decisions made upstream will impact all dependents.
 
 Further reading: https://nickb.dev/blog/recommendations-when-publishing-a-wasm-library/
 
 ### WASM Bundle Size
 
-WASM binaries can get quite large, especially when they include multiple features or dependencies. This can lead to significantly larger bundle sizes for applications that depend on the library. Additionally, WASM binaries are not tree-shakeable, meaning that even if only a small portion of the library is used, the entire WASM binary must still be included in the bundle. The initial bundle size can be reduced by async fetching the WASM binary, but that comes with the downsides mentioned above (and a large size is still not ideal for users with slow or metered connections). To properly reduce the WASM bundle size, extra though needs to be put into essentially every aspect of the Rust implementation such as dependency selection, feature flags, and memory allocators.
+WASM binaries can get quite large, especially when they include multiple features or dependencies. This can lead to significantly larger bundle sizes for applications that depend on the library. Additionally, WASM binaries are not tree-shakeable, meaning that even if only a small portion of the library is used, the entire WASM binary must still be included in the bundle. The initial bundle size can be reduced by async fetching the WASM binary, but that comes with the downsides mentioned above (and a large size is still not ideal for users with slow or metered connections). To properly reduce the WASM bundle size, extra thought needs to be put into essentially every aspect of the Rust implementation such as dependency selection, feature flags, and memory allocators.
 
 Further reading: https://nickb.dev/blog/the-dark-side-of-inlining-and-monomorphization/
 
@@ -91,7 +91,7 @@ Benchmarks for both WASM and uniffi (python) can be found here: https://github.c
 
 ### React Native Support
 
-Because React Native does not support WASM or WeakRefs, the uniffi-bindgen-react-native library must be used to generate bindings. This library generates TypeScript bindings to Rust bindings to JSI. This means the code path for React Native and other JavaScript runtimes (Node.js, browser, etc) are completely different. This also adds a significant amount of complexity to the build process because turbo modules must be built for each platform. This also requires a complteley new set of dependencies for React Native, thus necessitating a seperate package.
+Because React Native does not support WASM or WeakRefs, the uniffi-bindgen-react-native library must be used to generate bindings. This library generates TypeScript bindings to Rust bindings to JSI. This means the code path for React Native and other JavaScript runtimes (Node.js, browser, etc) are completely different. This also adds a significant amount of complexity to the build process because turbo modules must be built for each platform. This also requires a completely new set of dependencies for React Native, thus necessitating a separate package.
 
 ### Design Impact
 
