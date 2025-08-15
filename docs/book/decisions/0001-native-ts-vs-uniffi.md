@@ -45,6 +45,11 @@ One of the languages that AlgoKit Core should support is TypeScript. Because we 
 - **Bad**: React Native and WASM bindings might have different behavior or performance characteristics
 - **Bad**: uniffi-bindgen-react-native is relatively immature
 - **Bad**: May introduce significant migration (or glue code) from the existing TypeScript AlgoKit Utils library
+- **Bad**: WASM boundary crosses are expensive (orders of magnitude more than C FFI)
+- **Bad**: WASM importing will impact all downstream dependents
+- **Bad**: Mixed support across popular runtimes (i.e Bun)
+- **Bad**: A seperate package would be required for React Native
+- **Bad**: WASM binaries can get quite large and are not tree-shakeable
 
 ## More Information
 
