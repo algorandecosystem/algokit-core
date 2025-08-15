@@ -2,7 +2,6 @@ use algod_client::models::PendingTransactionResponse;
 use algokit_abi::ABIReturn;
 use algokit_transact::{
     Address, ApplicationCallTransactionFields, AssetConfigTransactionFields, Transaction,
-    TransactionExt,
 };
 
 /// The unified, comprehensive result of sending a single transaction or transaction group.
@@ -233,19 +232,19 @@ impl SendTransactionResult {
 
     /// Get all payment transactions from the group
     pub fn payment_transactions(&self) -> Vec<(&Transaction, &PendingTransactionResponse)> {
-        self.filter_transactions(|tx| tx.is_payment())
+        self.filter_transactions(|tx| matches!(tx, Transaction::Payment(_)))
     }
 
     /// Get all asset transfer transactions from the group
     pub fn asset_transfer_transactions(&self) -> Vec<(&Transaction, &PendingTransactionResponse)> {
-        self.filter_transactions(|tx| tx.is_asset_transfer())
+        self.filter_transactions(|tx| matches!(tx, Transaction::AssetTransfer(_)))
     }
 
     /// Get all application call transactions from the group
     pub fn application_call_transactions(
         &self,
     ) -> Vec<(&Transaction, &PendingTransactionResponse)> {
-        self.filter_transactions(|tx| tx.is_app_call())
+        self.filter_transactions(|tx| matches!(tx, Transaction::ApplicationCall(_)))
     }
 }
 
@@ -267,7 +266,11 @@ impl SendAssetCreateResult {
 
     /// Get the asset configuration transaction from the common transaction
     pub fn asset_config_transaction(&self) -> Option<&AssetConfigTransactionFields> {
-        self.common_params.transaction.as_asset_create()
+        if let Transaction::AssetConfig(asset_config) = &self.common_params.transaction {
+            Some(asset_config)
+        } else {
+            None
+        }
     }
 }
 
@@ -301,7 +304,10 @@ impl SendAppCreateResult {
 
     /// Get the application call transaction from the common transaction
     pub fn application_call_transaction(&self) -> Option<&ApplicationCallTransactionFields> {
-        self.common_params.transaction.as_app_call()
+        match &self.common_params.transaction {
+            Transaction::ApplicationCall(app_call) => Some(app_call),
+            _ => None,
+        }
     }
 }
 

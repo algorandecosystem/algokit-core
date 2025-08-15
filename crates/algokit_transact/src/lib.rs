@@ -20,8 +20,7 @@ pub use transactions::{
     AssetFreezeTransactionFields, AssetTransferTransactionBuilder, AssetTransferTransactionFields,
     BoxReference, FeeParams, KeyRegistrationTransactionBuilder, KeyRegistrationTransactionFields,
     OnApplicationComplete, PaymentTransactionBuilder, PaymentTransactionFields, SignedTransaction,
-    StateSchema, Transaction, TransactionExt, TransactionHeader, TransactionHeaderBuilder,
-    TransactionType,
+    StateSchema, Transaction, TransactionHeader, TransactionHeaderBuilder,
 };
 
 #[cfg(test)]
