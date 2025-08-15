@@ -48,7 +48,7 @@ use std::any::Any;
 /// # Example
 /// ```rust
 /// use algokit_transact::{Transaction, TransactionExt, TransactionType};
-/// 
+///
 /// fn handle_transaction(tx: &Transaction) {
 ///     match tx.transaction_type() {
 ///         TransactionType::Payment => println!("Processing payment"),
@@ -297,14 +297,14 @@ impl Transactions for &[Transaction] {
 /// Extension trait providing accessor methods for Transaction enum variants
 pub trait TransactionExt {
     /// Returns the transaction type as an enum for pattern matching
-    /// 
+    ///
     /// This method provides a convenient way to identify transaction types
     /// for use in match statements and other type-based logic.
-    /// 
+    ///
     /// # Example
     /// ```rust
     /// use algokit_transact::{Transaction, TransactionExt, TransactionType};
-    /// 
+    ///
     /// fn process_transaction(tx: &Transaction) {
     ///     match tx.transaction_type() {
     ///         TransactionType::Payment => { /* handle payment */ },
@@ -536,7 +536,10 @@ mod transaction_ext_tests {
             asset_sender: None,
             close_remainder_to: None,
         });
-        assert_eq!(asset_transfer.transaction_type(), TransactionType::AssetTransfer);
+        assert_eq!(
+            asset_transfer.transaction_type(),
+            TransactionType::AssetTransfer
+        );
 
         // Test AssetConfig transaction
         let asset_config = Transaction::AssetConfig(AssetConfigTransactionFields {
@@ -554,7 +557,10 @@ mod transaction_ext_tests {
             freeze: None,
             clawback: None,
         });
-        assert_eq!(asset_config.transaction_type(), TransactionType::AssetCreate);
+        assert_eq!(
+            asset_config.transaction_type(),
+            TransactionType::AssetCreate
+        );
 
         // Test AssetFreeze transaction
         let asset_freeze = Transaction::AssetFreeze(AssetFreezeTransactionFields {
@@ -563,7 +569,10 @@ mod transaction_ext_tests {
             freeze_target: Address([3u8; 32]),
             frozen: true,
         });
-        assert_eq!(asset_freeze.transaction_type(), TransactionType::AssetFreeze);
+        assert_eq!(
+            asset_freeze.transaction_type(),
+            TransactionType::AssetFreeze
+        );
 
         // Test ApplicationCall transaction
         let app_call = Transaction::ApplicationCall(ApplicationCallTransactionFields {
@@ -581,7 +590,10 @@ mod transaction_ext_tests {
             asset_references: None,
             box_references: None,
         });
-        assert_eq!(app_call.transaction_type(), TransactionType::ApplicationCall);
+        assert_eq!(
+            app_call.transaction_type(),
+            TransactionType::ApplicationCall
+        );
 
         // Test KeyRegistration transaction
         let key_reg = Transaction::KeyRegistration(KeyRegistrationTransactionFields {
@@ -668,22 +680,5 @@ mod transaction_ext_tests {
         assert!(!type_set.contains(&TransactionType::ApplicationCall));
     }
 
-    #[test]
-    fn test_backwards_compatibility() {
-        // Ensure that existing is_* methods still work alongside new transaction_type() method
-        let payment = Transaction::Payment(PaymentTransactionFields {
-            header: create_test_header(),
-            receiver: Address([1u8; 32]),
-            amount: 1000,
-            close_remainder_to: None,
-        });
 
-        // Both approaches should give consistent results
-        assert!(payment.is_payment());
-        assert_eq!(payment.transaction_type(), TransactionType::Payment);
-
-        // Negative cases should also be consistent
-        assert!(!payment.is_asset_transfer());
-        assert_ne!(payment.transaction_type(), TransactionType::AssetTransfer);
-    }
 }

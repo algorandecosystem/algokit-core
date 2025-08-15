@@ -34,33 +34,6 @@ impl Asset {
         Asset { index, params }
     }
 
-    /// Convenience method to get asset_id (alias for index field)
-    /// This provides more consistent naming for tests and client code
-    pub fn asset_id(&self) -> u64 {
-        self.index
-    }
-
-    /// Convenience method to get total supply without nested params access
-    /// This flattens the .params.total access pattern for better ergonomics
-    pub fn total(&self) -> u64 {
-        self.params.total
-    }
-
-    /// Convenience method to get decimals without nested params access
-    pub fn decimals(&self) -> u64 {
-        self.params.decimals
-    }
-
-    /// Convenience method to get unit name without nested params access
-    pub fn unit_name(&self) -> Option<&String> {
-        self.params.unit_name.as_ref()
-    }
-
-    /// Convenience method to get asset name without nested params access
-    pub fn name(&self) -> Option<&String> {
-        self.params.name.as_ref()
-    }
-
     /// Encode this struct to msgpack bytes using AlgorandMsgpack trait
     pub fn to_msgpack(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         Ok(self.encode()?)
