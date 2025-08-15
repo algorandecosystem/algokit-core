@@ -155,7 +155,7 @@ impl AssetManager {
                     ..Default::default()
                 },
                 asset_id,
-                close_remainder_to: asset_creators[i].clone(),
+                close_remainder_to: Some(asset_creators[i].clone()),
             };
 
             composer

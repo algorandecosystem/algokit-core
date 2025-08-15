@@ -18,8 +18,9 @@ use crate::clients::app_manager::{AppManager, AppManagerError, CompiledTeal};
 use crate::clients::asset_manager::{AssetManager, AssetManagerError};
 use algod_client::apis::AlgodApiError;
 use algokit_abi::{ABIMethod, ABIReturn};
+use algokit_transact::Address;
 
-use std::sync::Arc;
+use std::{str::FromStr, sync::Arc};
 
 #[derive(Debug, thiserror::Error)]
 pub enum TransactionSenderError {
@@ -364,10 +365,33 @@ impl TransactionSender {
     /// Send asset opt-out transaction.
     pub async fn asset_opt_out(
         &self,
-        params: AssetOptOutParams,
+        mut params: AssetOptOutParams,
         send_params: Option<SendParams>,
         ensure_zero_balance: Option<bool>,
     ) -> Result<SendTransactionResult, TransactionSenderError> {
+        // Resolve close_remainder_to to asset creator if not specified
+        if params.close_remainder_to.is_none() {
+            let asset_info = self
+                .asset_manager
+                .get_by_id(params.asset_id)
+                .await
+                .map_err(|e| {
+                    TransactionSenderError::ValidationError(format!(
+                        "Failed to get asset {} information: {}",
+                        params.asset_id, e
+                    ))
+                })?;
+            
+            let creator = Address::from_str(&asset_info.params.creator).map_err(|e| {
+                TransactionSenderError::ValidationError(format!(
+                    "Invalid creator address for asset {}: {}",
+                    params.asset_id, e
+                ))
+            })?;
+            
+            params.close_remainder_to = Some(creator);
+        }
+
         if ensure_zero_balance.unwrap_or(true) {
             // Ensure account has zero balance before opting out
             let account_info = self

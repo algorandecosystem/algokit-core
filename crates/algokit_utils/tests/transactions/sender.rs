@@ -242,7 +242,7 @@ async fn test_asset_opt_out_uses_asset_manager_coordination(
             ..Default::default()
         },
         asset_id,
-        close_remainder_to: sender_address, // Provide the creator address directly
+        close_remainder_to: None, // Let it auto-resolve to creator
     };
 
     let result = sender.asset_opt_out(params, None, Some(true)).await?;
@@ -296,7 +296,7 @@ async fn test_asset_opt_out_with_balance_validation(
             ..Default::default()
         },
         asset_id,
-        close_remainder_to: sender_address.clone(), // Provide the creator address directly
+        close_remainder_to: None, // Let it auto-resolve to creator
     };
 
     let result = sender.asset_opt_out(params, None, Some(true)).await;
@@ -322,9 +322,6 @@ async fn test_validation_error_propagation(
     let opt_out_account = fixture.generate_account(None).await?;
     let opt_out_address = opt_out_account.account()?.address();
 
-    let dummy_account = fixture.generate_account(None).await?;
-    let dummy_creator_address = dummy_account.account()?.address();
-
     // Try to opt out of non-existent asset - this triggers validation
     let params = AssetOptOutParams {
         common_params: CommonParams {
@@ -333,7 +330,7 @@ async fn test_validation_error_propagation(
             ..Default::default()
         },
         asset_id: 999999999,                       // Non-existent asset
-        close_remainder_to: dummy_creator_address, // Valid dummy creator for non-existent asset
+        close_remainder_to: None, // Let it try to auto-resolve (will fail for non-existent asset)
     };
 
     let result = sender.asset_opt_out(params, None, Some(true)).await;

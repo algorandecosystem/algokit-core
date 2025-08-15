@@ -140,7 +140,7 @@ async fn asset_operations(#[case] test_case: AssetTestCase) {
                     ..Default::default()
                 },
                 asset_id: 1,
-                close_remainder_to: sender_address.clone(),
+                close_remainder_to: Some(sender_address.clone()),
             };
             let tx = creator.asset_opt_out(params).await.unwrap();
             match &tx {
