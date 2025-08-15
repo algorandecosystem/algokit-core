@@ -364,12 +364,12 @@ impl TransactionSender {
     /// Send asset opt-out transaction.
     pub async fn asset_opt_out(
         &self,
-        mut params: AssetOptOutParams,
+        params: AssetOptOutParams,
         send_params: Option<SendParams>,
         ensure_zero_balance: Option<bool>,
     ) -> Result<SendTransactionResult, TransactionSenderError> {
         // Resolve close_remainder_to to asset creator if not specified
-        if params.close_remainder_to.is_none() {
+        let params = if params.close_remainder_to.is_none() {
             let asset_info = self
                 .asset_manager
                 .get_by_id(params.asset_id)
@@ -388,8 +388,13 @@ impl TransactionSender {
                 ))
             })?;
 
-            params.close_remainder_to = Some(creator);
-        }
+            AssetOptOutParams {
+                close_remainder_to: Some(creator),
+                ..params
+            }
+        } else {
+            params
+        };
 
         if ensure_zero_balance.unwrap_or(true) {
             // Ensure account has zero balance before opting out
