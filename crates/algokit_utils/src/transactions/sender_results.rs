@@ -40,8 +40,8 @@ pub struct SendTransactionResult {
 /// This is a specialized result that includes the asset ID extracted from the confirmation.
 #[derive(Debug, Clone)]
 pub struct SendAssetCreateResult {
-    /// The base transaction result containing all standard information
-    pub base: SendTransactionResult,
+    /// The common transaction result containing all standard information
+    pub common_params: SendTransactionResult,
     /// The ID of the newly created asset (extracted from confirmation)
     pub asset_id: u64,
 }
@@ -51,8 +51,8 @@ pub struct SendAssetCreateResult {
 /// This is a specialized result that includes the app ID and address extracted from the confirmation.
 #[derive(Debug, Clone)]
 pub struct SendAppCreateResult {
-    /// The base transaction result containing all standard information
-    pub base: SendTransactionResult,
+    /// The common transaction result containing all standard information
+    pub common_params: SendTransactionResult,
     /// The ID of the newly created application (extracted from confirmation)
     pub app_id: u64,
     /// The address of the newly created application
@@ -70,8 +70,8 @@ pub struct SendAppCreateResult {
 /// This is a specialized result that includes the ABI return and compilation results.
 #[derive(Debug, Clone)]
 pub struct SendAppUpdateResult {
-    /// The base transaction result containing all standard information
-    pub base: SendTransactionResult,
+    /// The common transaction result containing all standard information
+    pub common_params: SendTransactionResult,
     /// The ABI return value if this was an ABI method call
     pub abi_return: Option<ABIReturn>,
     /// The compiled approval program (if provided)
@@ -85,8 +85,8 @@ pub struct SendAppUpdateResult {
 /// This is a specialized result that includes the ABI return value.
 #[derive(Debug, Clone)]
 pub struct SendAppCallResult {
-    /// The base transaction result containing all standard information
-    pub base: SendTransactionResult,
+    /// The common transaction result containing all standard information
+    pub common_params: SendTransactionResult,
     /// The ABI return value if this was an ABI method call
     pub abi_return: Option<ABIReturn>,
 }
@@ -251,33 +251,33 @@ impl SendTransactionResult {
 
 impl SendAssetCreateResult {
     /// Create a new asset creation result by extracting the asset ID from the confirmation
-    pub fn new(base: SendTransactionResult) -> Result<Self, TransactionResultError> {
+    pub fn new(common_params: SendTransactionResult) -> Result<Self, TransactionResultError> {
         // Extract asset ID from the confirmation
-        let asset_id = base.confirmation.asset_id.ok_or_else(|| {
+        let asset_id = common_params.confirmation.asset_id.ok_or_else(|| {
             TransactionResultError::InvalidConfirmation(
                 "Asset creation confirmation missing asset-index".to_string(),
             )
         })?;
 
-        Ok(SendAssetCreateResult { base, asset_id })
+        Ok(SendAssetCreateResult { common_params, asset_id })
     }
 
-    /// Get the asset configuration transaction from the base transaction
+    /// Get the asset configuration transaction from the common transaction
     pub fn asset_config_transaction(&self) -> Option<&AssetConfigTransactionFields> {
-        self.base.transaction.as_asset_create()
+        self.common_params.transaction.as_asset_create()
     }
 }
 
 impl SendAppCreateResult {
     /// Create a new app creation result by extracting the app ID from the confirmation
     pub fn new(
-        base: SendTransactionResult,
+        common_params: SendTransactionResult,
         abi_return: Option<ABIReturn>,
         compiled_approval: Option<Vec<u8>>,
         compiled_clear: Option<Vec<u8>>,
     ) -> Result<Self, TransactionResultError> {
         // Extract app ID from the confirmation
-        let app_id = base.confirmation.app_id.ok_or_else(|| {
+        let app_id = common_params.confirmation.app_id.ok_or_else(|| {
             TransactionResultError::InvalidConfirmation(
                 "Application creation confirmation missing application-index".to_string(),
             )
@@ -287,7 +287,7 @@ impl SendAppCreateResult {
         let app_address = Address::from_app_id(&app_id);
 
         Ok(SendAppCreateResult {
-            base,
+            common_params,
             app_id,
             app_address,
             abi_return,
@@ -296,22 +296,22 @@ impl SendAppCreateResult {
         })
     }
 
-    /// Get the application call transaction from the base transaction
+    /// Get the application call transaction from the common transaction
     pub fn application_call_transaction(&self) -> Option<&ApplicationCallTransactionFields> {
-        self.base.transaction.as_app_call()
+        self.common_params.transaction.as_app_call()
     }
 }
 
 impl SendAppUpdateResult {
     /// Create a new app update result with compilation results
     pub fn new(
-        base: SendTransactionResult,
+        common_params: SendTransactionResult,
         abi_return: Option<ABIReturn>,
         compiled_approval: Option<Vec<u8>>,
         compiled_clear: Option<Vec<u8>>,
     ) -> Self {
         SendAppUpdateResult {
-            base,
+            common_params,
             abi_return,
             compiled_approval,
             compiled_clear,
@@ -321,8 +321,8 @@ impl SendAppUpdateResult {
 
 impl SendAppCallResult {
     /// Create a new app call result with ABI return
-    pub fn new(base: SendTransactionResult, abi_return: Option<ABIReturn>) -> Self {
-        SendAppCallResult { base, abi_return }
+    pub fn new(common_params: SendTransactionResult, abi_return: Option<ABIReturn>) -> Self {
+        SendAppCallResult { common_params, abi_return }
     }
 }
 

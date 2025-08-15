@@ -264,10 +264,8 @@ impl TransactionSender {
 
         // If the method has a return type, validate and enhance the return
         if method.returns.is_some() {
-            // Use app manager instance method to parse the return value with proper method information
-            match self
-                .app_manager
-                .parse_abi_return(&abi_return.raw_return_value, method)
+            // Use app manager static method to parse the return value with proper method information
+            match AppManager::get_abi_return(&abi_return.raw_return_value, method)
             {
                 Ok(Some(parsed)) => {
                     // Return enhanced ABIReturn with validated parsing

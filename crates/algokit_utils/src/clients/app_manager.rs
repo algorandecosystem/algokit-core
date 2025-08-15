@@ -87,7 +87,7 @@ pub struct BoxName {
 
 /// Box identifier represented as binary data.
 /// Box identifiers in Algorand are arbitrary binary data that can contain
-/// non-UTF-8 bytes. They are base64-encoded when sent over HTTP APIs.
+/// non-UTF-8 bytes. They are base64-encoded when sent over HTTP APIs as JSON responses.
 pub type BoxIdentifier = Vec<u8>;
 
 pub const UPDATABLE_TEMPLATE_NAME: &str = "TMPL_UPDATABLE";
@@ -430,15 +430,6 @@ impl AppManager {
             );
         }
         Ok(values)
-    }
-
-    /// Get ABI return value from transaction confirmation (instance method for consistency).
-    pub fn parse_abi_return(
-        &self,
-        confirmation_data: &[u8],
-        method: &ABIMethod,
-    ) -> Result<Option<ABIReturn>, AppManagerError> {
-        Self::get_abi_return(confirmation_data, method)
     }
 
     /// Get ABI return value from transaction confirmation.

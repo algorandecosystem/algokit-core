@@ -130,8 +130,8 @@ async fn test_asset_create_extracts_asset_id(
 
     // Validate ID extraction from confirmation - Sender's orchestration value
     assert!(result.asset_id > 0);
-    assert!(!result.base.tx_ids.is_empty());
-    assert!(result.base.confirmation.confirmed_round.is_some());
+    assert!(!result.common_params.tx_ids.is_empty());
+    assert!(result.common_params.confirmation.confirmed_round.is_some());
 
     Ok(())
 }
@@ -160,8 +160,8 @@ async fn test_app_create_extracts_app_id(
 
     // Validate ID extraction from confirmation - Sender's orchestration value
     assert!(result.app_id > 0);
-    assert!(!result.base.tx_ids.is_empty());
-    assert!(result.base.confirmation.confirmed_round.is_some());
+    assert!(!result.common_params.tx_ids.is_empty());
+    assert!(result.common_params.confirmation.confirmed_round.is_some());
 
     Ok(())
 }
@@ -206,8 +206,8 @@ async fn test_abi_method_returns_enhanced_processing(
     let result = sender.app_call_method_call(params, None).await?;
 
     // Validate enhanced ABI return processing with AppManager - Sender's orchestration value
-    assert!(!result.base.tx_ids.is_empty());
-    assert!(result.base.confirmation.confirmed_round.is_some());
+    assert!(!result.common_params.tx_ids.is_empty());
+    assert!(result.common_params.confirmation.confirmed_round.is_some());
     assert!(result.abi_return.is_some());
 
     Ok(())
