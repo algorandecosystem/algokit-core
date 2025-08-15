@@ -26,11 +26,11 @@ async fn test_get_asset_by_id() -> Result<(), Box<dyn std::error::Error + Send +
 
     // Test successful retrieval
     let asset_info = asset_manager.get_by_id(asset_id).await?;
-    assert_eq!(asset_info.index, asset_id);
-    assert_eq!(asset_info.params.total, 1000);
-    assert_eq!(asset_info.params.decimals, 0);
-    assert_eq!(asset_info.params.unit_name, Some("TEST".to_string()));
-    assert_eq!(asset_info.params.name, Some("Test Asset".to_string()));
+    assert_eq!(asset_info.asset_id(), asset_id);
+    assert_eq!(asset_info.total(), 1000);
+    assert_eq!(asset_info.decimals(), 0);
+    assert_eq!(asset_info.unit_name(), Some(&"TEST".to_string()));
+    assert_eq!(asset_info.name(), Some(&"Test Asset".to_string()));
 
     Ok(())
 }
