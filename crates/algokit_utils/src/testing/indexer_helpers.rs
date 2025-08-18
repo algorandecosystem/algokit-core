@@ -121,7 +121,7 @@ pub async fn wait_for_indexer_transaction(
                     .and_then(|response| {
                         if response.transactions.is_empty() {
                             // Return a string error that will be treated as "not found"
-                            Err(IndexerError::Serde("Transaction not found".to_string()))
+                            Err(IndexerError::Serde { message: "Transaction not found".to_string() })
                         } else {
                             Ok(())
                         }

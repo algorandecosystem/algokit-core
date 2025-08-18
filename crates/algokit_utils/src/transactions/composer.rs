@@ -1368,11 +1368,11 @@ impl Composer {
                     // All other errors indicate permanent issues and should fail fast
                     let is_retryable = matches!(
                         &error,
-                        algod_client::apis::Error::Api(
-                            algod_client::apis::AlgodApiError::PendingTransactionInformation(
-                                algod_client::apis::pending_transaction_information::PendingTransactionInformationError::Status404(_)
-                            )
-                        )
+                        algod_client::apis::Error::Api {
+                            source: algod_client::apis::AlgodApiError::PendingTransactionInformation {
+                                error: algod_client::apis::pending_transaction_information::PendingTransactionInformationError::Status404(_)
+                            }
+                        }
                     ) || error.to_string().contains("404");
 
                     if is_retryable {
