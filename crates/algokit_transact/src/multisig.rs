@@ -87,7 +87,7 @@ impl MultisigSignature {
             });
         }
         if threshold == 0 || threshold as usize > subsignatures.len() {
-            return Err(AlgoKitTransactError::InvalidMultisigSignature { message: "Threshold must be greater than zero and less than or equal                 to the number of sub-signers".to_string() });
+            return Err(AlgoKitTransactError::InvalidMultisigSignature { message: "Threshold must be greater than zero and less than or equal to the number of sub-signers".to_string() });
         }
         Ok(Self {
             version,
