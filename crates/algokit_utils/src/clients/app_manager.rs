@@ -6,9 +6,9 @@ use algokit_abi::{ABIMethod, ABIReturn, ABIType, ABIValue};
 use algokit_transact::Address;
 use base64::{Engine, engine::general_purpose::STANDARD as Base64};
 use sha2::{Digest, Sha256};
+use snafu::Snafu;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use snafu::Snafu;
 
 #[derive(Debug, Clone)]
 pub enum TealTemplateValue {
@@ -188,12 +188,16 @@ impl AppManager {
         Ok(AppInformation {
             app_id,
             app_address: Address::from_app_id(&app_id),
-            approval_program: Base64
-                .decode(&app.params.approval_program)
-                .map_err(|e| AppManagerError::DecodingError { message: e.to_string() })?,
+            approval_program: Base64.decode(&app.params.approval_program).map_err(|e| {
+                AppManagerError::DecodingError {
+                    message: e.to_string(),
+                }
+            })?,
             clear_state_program: Base64
                 .decode(&app.params.clear_state_program)
-                .map_err(|e| AppManagerError::DecodingError { message: e.to_string() })?,
+                .map_err(|e| AppManagerError::DecodingError {
+                    message: e.to_string(),
+                })?,
             creator: app.params.creator,
             local_ints: app
                 .params
@@ -296,7 +300,9 @@ impl AppManager {
 
         Base64
             .decode(&box_result.value)
-            .map_err(|e| AppManagerError::DecodingError { message: e.to_string() })
+            .map_err(|e| AppManagerError::DecodingError {
+                message: e.to_string(),
+            })
     }
 
     /// Get values for multiple boxes.
@@ -332,9 +338,12 @@ impl AppManager {
         abi_type: &ABIType,
     ) -> Result<ABIValue, AppManagerError> {
         let raw_value = self.get_box_value(app_id, box_name).await?;
-        let decoded_value = abi_type
-            .decode(&raw_value)
-            .map_err(|e| AppManagerError::ABIDecodeError { message: e.to_string() })?;
+        let decoded_value =
+            abi_type
+                .decode(&raw_value)
+                .map_err(|e| AppManagerError::ABIDecodeError {
+                    message: e.to_string(),
+                })?;
         Ok(decoded_value)
     }
 
@@ -373,9 +382,11 @@ impl AppManager {
         method: &ABIMethod,
     ) -> Result<Option<ABIReturn>, AppManagerError> {
         if let Some(return_type) = &method.returns {
-            let return_value = return_type
-                .decode(confirmation_data)
-                .map_err(|e| AppManagerError::ABIDecodeError { message: e.to_string() })?;
+            let return_value = return_type.decode(confirmation_data).map_err(|e| {
+                AppManagerError::ABIDecodeError {
+                    message: e.to_string(),
+                }
+            })?;
 
             Ok(Some(ABIReturn {
                 method: method.clone(),
@@ -400,9 +411,12 @@ impl AppManager {
         let mut state_values = HashMap::new();
 
         for state_val in state {
-            let key_raw = Base64
-                .decode(&state_val.key)
-                .map_err(|e| AppManagerError::DecodingError { message: e.to_string() })?;
+            let key_raw =
+                Base64
+                    .decode(&state_val.key)
+                    .map_err(|e| AppManagerError::DecodingError {
+                        message: e.to_string(),
+                    })?;
 
             // TODO(stabilization): Consider r#type pattern consistency across API vs ABI types (PR #229 comment)
             let (value_raw, value_base64, value) = match state_val.value.r#type {
@@ -420,10 +434,9 @@ impl AppManager {
                 }
                 2 => (None, None, AppStateValue::Uint(state_val.value.uint)),
                 _ => {
-                    return Err(AppManagerError::DecodingError { message: format!(
-                        "Unknown state data type: {}",
-                        state_val.value.r#type
-                    ) });
+                    return Err(AppManagerError::DecodingError {
+                        message: format!("Unknown state data type: {}", state_val.value.r#type),
+                    });
                 }
             };
 
@@ -550,20 +563,24 @@ impl AppManager {
 
         if let Some(updatable) = params.updatable {
             if !teal_template_code.contains(UPDATABLE_TEMPLATE_NAME) {
-                return Err(AppManagerError::TemplateVariableNotFound { message: format!(
-                    "Deploy-time updatability control requested, but {} not present in TEAL code",
-                    UPDATABLE_TEMPLATE_NAME
-                ) });
+                return Err(AppManagerError::TemplateVariableNotFound {
+                    message: format!(
+                        "Deploy-time updatability control requested, but {} not present in TEAL code",
+                        UPDATABLE_TEMPLATE_NAME
+                    ),
+                });
             }
             result = result.replace(UPDATABLE_TEMPLATE_NAME, &(updatable as u8).to_string());
         }
 
         if let Some(deletable) = params.deletable {
             if !teal_template_code.contains(DELETABLE_TEMPLATE_NAME) {
-                return Err(AppManagerError::TemplateVariableNotFound { message: format!(
-                    "Deploy-time deletability control requested, but {} not present in TEAL code",
-                    DELETABLE_TEMPLATE_NAME
-                ) });
+                return Err(AppManagerError::TemplateVariableNotFound {
+                    message: format!(
+                        "Deploy-time deletability control requested, but {} not present in TEAL code",
+                        DELETABLE_TEMPLATE_NAME
+                    ),
+                });
             }
             result = result.replace(DELETABLE_TEMPLATE_NAME, &(deletable as u8).to_string());
         }

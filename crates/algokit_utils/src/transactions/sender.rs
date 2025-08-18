@@ -42,23 +42,33 @@ pub enum TransactionSenderError {
 }
 
 impl From<AlgodApiError> for TransactionSenderError {
-    fn from(e: AlgodApiError) -> Self { Self::AlgodClientError { source: e } }
+    fn from(e: AlgodApiError) -> Self {
+        Self::AlgodClientError { source: e }
+    }
 }
 
 impl From<ComposerError> for TransactionSenderError {
-    fn from(e: ComposerError) -> Self { Self::ComposerError { source: e } }
+    fn from(e: ComposerError) -> Self {
+        Self::ComposerError { source: e }
+    }
 }
 
 impl From<AssetManagerError> for TransactionSenderError {
-    fn from(e: AssetManagerError) -> Self { Self::AssetManagerError { source: e } }
+    fn from(e: AssetManagerError) -> Self {
+        Self::AssetManagerError { source: e }
+    }
 }
 
 impl From<AppManagerError> for TransactionSenderError {
-    fn from(e: AppManagerError) -> Self { Self::AppManagerError { source: e } }
+    fn from(e: AppManagerError) -> Self {
+        Self::AppManagerError { source: e }
+    }
 }
 
 impl From<TransactionResultError> for TransactionSenderError {
-    fn from(e: TransactionResultError) -> Self { Self::TransactionResultError { source: e } }
+    fn from(e: TransactionResultError) -> Self {
+        Self::TransactionResultError { source: e }
+    }
 }
 
 /// Sends transactions and groups with validation and result processing.
@@ -203,7 +213,9 @@ impl TransactionSender {
             let returns: Result<Vec<_>, _> = composer_results
                 .abi_returns
                 .into_iter()
-                .map(|result| result.map_err(|e| TransactionSenderError::ComposerError { source: e }))
+                .map(|result| {
+                    result.map_err(|e| TransactionSenderError::ComposerError { source: e })
+                })
                 .collect();
             match returns {
                 Ok(returns) => {
@@ -362,7 +374,9 @@ impl TransactionSender {
     ) -> Result<SendTransactionResult, TransactionSenderError> {
         // Enhanced parameter validation
         if params.asset_id == 0 {
-            return Err(TransactionSenderError::InvalidParameters { message: "Asset ID must be greater than 0".to_string() });
+            return Err(TransactionSenderError::InvalidParameters {
+                message: "Asset ID must be greater than 0".to_string(),
+            });
         }
         // Note: amount can be 0 for opt-in transactions, so we don't validate it here
 
@@ -393,18 +407,17 @@ impl TransactionSender {
                 .asset_manager
                 .get_by_id(params.asset_id)
                 .await
-                .map_err(|e| {
-                    TransactionSenderError::ValidationError { message: format!(
-                        "Failed to get asset {} information: {}",
-                        params.asset_id, e
-                    ) }
+                .map_err(|e| TransactionSenderError::ValidationError {
+                    message: format!("Failed to get asset {} information: {}", params.asset_id, e),
                 })?;
 
             let creator = Address::from_str(&asset_info.creator).map_err(|e| {
-                TransactionSenderError::ValidationError { message: format!(
-                    "Invalid creator address for asset {}: {}",
-                    params.asset_id, e
-                ) }
+                TransactionSenderError::ValidationError {
+                    message: format!(
+                        "Invalid creator address for asset {}: {}",
+                        params.asset_id, e
+                    ),
+                }
             })?;
 
             AssetOptOutParams {
@@ -421,11 +434,11 @@ impl TransactionSender {
                 .asset_manager
                 .get_account_information(&params.common_params.sender, params.asset_id)
                 .await
-                .map_err(|e| {
-                    TransactionSenderError::ValidationError { message: format!(
+                .map_err(|e| TransactionSenderError::ValidationError {
+                    message: format!(
                         "Account {} validation failed for Asset {}: {}",
                         params.common_params.sender, params.asset_id, e
-                    ) }
+                    ),
                 })?;
 
             let balance = account_info
@@ -434,10 +447,12 @@ impl TransactionSender {
                 .map(|h| h.amount)
                 .unwrap_or(0);
             if balance != 0 {
-                return Err(TransactionSenderError::ValidationError { message: format!(
-                    "Account {} does not have a zero balance for Asset {}; can't opt-out.",
-                    params.common_params.sender, params.asset_id
-                ) });
+                return Err(TransactionSenderError::ValidationError {
+                    message: format!(
+                        "Account {} does not have a zero balance for Asset {}; can't opt-out.",
+                        params.common_params.sender, params.asset_id
+                    ),
+                });
             }
         }
 

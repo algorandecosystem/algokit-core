@@ -1,8 +1,8 @@
 use indexer_client::{IndexerClient, apis::Error as IndexerError};
+use snafu::Snafu;
 use std::future::Future;
 use std::time::Duration;
 use tokio::time::sleep;
-use snafu::Snafu;
 
 /// Configuration for indexer wait operations
 #[derive(Debug, Clone)]
@@ -59,7 +59,9 @@ where
 
                 // If it's not a 404-like error, fail immediately
                 if !is_not_found {
-                    return Err(IndexerWaitError::ClientError { message: last_error });
+                    return Err(IndexerWaitError::ClientError {
+                        message: last_error,
+                    });
                 }
 
                 // If we've reached max attempts, break out of the loop
@@ -121,7 +123,9 @@ pub async fn wait_for_indexer_transaction(
                     .and_then(|response| {
                         if response.transactions.is_empty() {
                             // Return a string error that will be treated as "not found"
-                            Err(IndexerError::Serde { message: "Transaction not found".to_string() })
+                            Err(IndexerError::Serde {
+                                message: "Transaction not found".to_string(),
+                            })
                         } else {
                             Ok(())
                         }

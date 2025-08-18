@@ -15,14 +15,18 @@ impl ABIType {
         let child_types = match self {
             ABIType::Tuple(child_types) => child_types.iter().collect::<Vec<_>>(),
             _ => {
-                return Err(ABIError::EncodingError { message: "ABI type mismatch, expected tuple".to_string() });
+                return Err(ABIError::EncodingError {
+                    message: "ABI type mismatch, expected tuple".to_string(),
+                });
             }
         };
 
         let values = match value {
             ABIValue::Array(n) => n,
             _ => {
-                return Err(ABIError::EncodingError { message: "ABI value mismatch, expected an array of values".to_string() });
+                return Err(ABIError::EncodingError {
+                    message: "ABI value mismatch, expected an array of values".to_string(),
+                });
             }
         };
 
@@ -33,7 +37,9 @@ impl ABIType {
         let child_types = match self {
             ABIType::Tuple(child_types) => child_types.iter().collect::<Vec<_>>(),
             _ => {
-                return Err(ABIError::DecodingError { message: "ABI type mismatch, expected tuple".to_string() });
+                return Err(ABIError::DecodingError {
+                    message: "ABI type mismatch, expected tuple".to_string(),
+                });
             }
         };
 
@@ -43,7 +49,9 @@ impl ABIType {
 
 pub fn encode_abi_types(abi_types: &[&ABIType], values: &[ABIValue]) -> Result<Vec<u8>, ABIError> {
     if abi_types.len() != values.len() {
-        return Err(ABIError::EncodingError { message: "Mismatch lengths between the values and types".to_string() });
+        return Err(ABIError::EncodingError {
+            message: "Mismatch lengths between the values and types".to_string(),
+        });
     }
 
     let mut heads: Vec<Vec<u8>> = Vec::new();
@@ -86,9 +94,10 @@ pub fn encode_abi_types(abi_types: &[&ABIType], values: &[ABIValue]) -> Result<V
     for i in 0..heads.len() {
         if let Some(true) = is_dynamic_index.get(&i) {
             let head_value = head_length + tail_length;
-            let head_value: u16 = u16::try_from(head_value).map_err(|_| {
-                ABIError::EncodingError { message: format!("Value {} cannot fit in u16", head_value) }
-            })?;
+            let head_value: u16 =
+                u16::try_from(head_value).map_err(|_| ABIError::EncodingError {
+                    message: format!("Value {} cannot fit in u16", head_value),
+                })?;
             heads[i] = head_value.to_be_bytes().to_vec();
         }
         tail_length += tails[i].len();
@@ -115,10 +124,12 @@ pub fn decode_abi_types(abi_types: &[&ABIType], bytes: &[u8]) -> Result<ABIValue
 
 fn compress_bools(values: &[ABIValue]) -> Result<u8, ABIError> {
     if values.len() > 8 {
-        return Err(ABIError::EncodingError { message: format!(
-            "Expected no more than 8 bool values, received {}",
-            values.len()
-        ) });
+        return Err(ABIError::EncodingError {
+            message: format!(
+                "Expected no more than 8 bool values, received {}",
+                values.len()
+            ),
+        });
     }
 
     let mut result: u8 = 0;
@@ -130,7 +141,9 @@ fn compress_bools(values: &[ABIValue]) -> Result<u8, ABIError> {
                 }
             }
             _ => {
-                return Err(ABIError::EncodingError { message: "Expected all values to be ABIValue::Bool".to_string() });
+                return Err(ABIError::EncodingError {
+                    message: "Expected all values to be ABIValue::Bool".to_string(),
+                });
             }
         }
     }
@@ -148,13 +161,19 @@ fn extract_values(abi_types: &[&ABIType], bytes: &[u8]) -> Result<Vec<Vec<u8>>, 
 
         if child_type.is_dynamic() {
             if bytes[bytes_cursor..].len() < LENGTH_ENCODE_BYTE_SIZE {
-                return Err(ABIError::DecodingError { message: "Byte array is too short to be decoded".to_string() });
+                return Err(ABIError::DecodingError {
+                    message: "Byte array is too short to be decoded".to_string(),
+                });
             }
 
             let dynamic_index = u16::from_be_bytes([bytes[bytes_cursor], bytes[bytes_cursor + 1]]);
             if let Some(last_segment) = dynamic_segments.last_mut() {
                 if dynamic_index < last_segment.left {
-                    return Err(ABIError::DecodingError { message: "Dynamic index segment miscalculation: left is greater than right index".to_string() });
+                    return Err(ABIError::DecodingError {
+                        message:
+                            "Dynamic index segment miscalculation: left is greater than right index"
+                                .to_string(),
+                    });
                 }
                 last_segment.right = dynamic_index;
             }
@@ -202,27 +221,35 @@ fn extract_values(abi_types: &[&ABIType], bytes: &[u8]) -> Result<Vec<Vec<u8>>, 
             }
         }
         if abi_types_cursor != abi_types.len() - 1 && bytes_cursor >= bytes.len() {
-            return Err(ABIError::DecodingError { message: "Input bytes not enough to decode".to_string() });
+            return Err(ABIError::DecodingError {
+                message: "Input bytes not enough to decode".to_string(),
+            });
         }
         abi_types_cursor += 1;
     }
 
     if let Some(last_segment) = dynamic_segments.last_mut() {
         let bytes_length = bytes.len();
-        last_segment.right = u16::try_from(bytes_length).map_err(|_| {
-            ABIError::EncodingError { message: format!("Value {} cannot fit in u16", bytes_length) }
+        last_segment.right = u16::try_from(bytes_length).map_err(|_| ABIError::EncodingError {
+            message: format!("Value {} cannot fit in u16", bytes_length),
         })?;
     } else if bytes_cursor < bytes.len() {
-        return Err(ABIError::DecodingError { message: "Input bytes not fully consumed".to_string() });
+        return Err(ABIError::DecodingError {
+            message: "Input bytes not fully consumed".to_string(),
+        });
     }
 
     for i in 0..dynamic_segments.len() {
         let segment = &dynamic_segments[i];
         if segment.left > segment.right {
-            return Err(ABIError::DecodingError { message: "Dynamic segment should display a [l, r] space with l <= r".to_string() });
+            return Err(ABIError::DecodingError {
+                message: "Dynamic segment should display a [l, r] space with l <= r".to_string(),
+            });
         }
         if i != dynamic_segments.len() - 1 && segment.right != dynamic_segments[i + 1].left {
-            return Err(ABIError::DecodingError { message: "Dynamic segments should be consecutive".to_string() });
+            return Err(ABIError::DecodingError {
+                message: "Dynamic segments should be consecutive".to_string(),
+            });
         }
     }
 
@@ -244,8 +271,8 @@ fn extract_values(abi_types: &[&ABIType], bytes: &[u8]) -> Result<Vec<Vec<u8>>, 
         .into_iter()
         .enumerate()
         .map(|(i, partition)| {
-            partition.ok_or_else(|| {
-                ABIError::DecodingError { message: format!("Value partition at index {} is None", i) }
+            partition.ok_or_else(|| ABIError::DecodingError {
+                message: format!("Value partition at index {} is None", i),
             })
         })
         .collect::<Result<Vec<Vec<u8>>, ABIError>>()?;

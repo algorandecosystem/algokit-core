@@ -14,8 +14,8 @@ use algokit_transact::{
     Transactions,
 };
 use derive_more::Debug;
-use std::{collections::HashMap, sync::Arc};
 use snafu::Snafu;
+use std::{collections::HashMap, sync::Arc};
 
 use crate::{
     AppMethodCallArg,
@@ -83,11 +83,15 @@ pub enum ComposerError {
 }
 
 impl From<AlgodError> for ComposerError {
-    fn from(e: AlgodError) -> Self { Self::AlgodClientError { source: e } }
+    fn from(e: AlgodError) -> Self {
+        Self::AlgodClientError { source: e }
+    }
 }
 
 impl From<AlgoKitTransactError> for ComposerError {
-    fn from(e: AlgoKitTransactError) -> Self { Self::TransactError { source: e } }
+    fn from(e: AlgoKitTransactError) -> Self {
+        Self::TransactError { source: e }
+    }
 }
 
 #[derive(Debug)]
@@ -691,19 +695,23 @@ impl Composer {
         let last_log = match confirmation.logs.as_ref().and_then(|logs| logs.last()) {
             Some(log) => log,
             None => {
-                return Err(ComposerError::ABIDecodingError { message: format!(
-                    "No logs found for method {} which requires a return type",
-                    method.name
-                ) });
+                return Err(ComposerError::ABIDecodingError {
+                    message: format!(
+                        "No logs found for method {} which requires a return type",
+                        method.name
+                    ),
+                });
             }
         };
 
         // Check if the last log entry has the ABI return prefix
         if !last_log.starts_with(ABI_RETURN_PREFIX) {
-            return Err(ComposerError::ABIDecodingError { message: format!(
-                "Transaction log for method {} doesn't match with ABI return value format",
-                method.name
-            ) });
+            return Err(ComposerError::ABIDecodingError {
+                message: format!(
+                    "Transaction log for method {} doesn't match with ABI return value format",
+                    method.name
+                ),
+            });
         }
 
         // Extract the return value bytes (skip the prefix)
@@ -716,10 +724,12 @@ impl Composer {
                 raw_return_value: return_bytes.to_vec(),
                 return_value,
             })),
-            Err(e) => Err(ComposerError::ABIDecodingError { message: format!(
-                "Failed to decode ABI return value for method {}: {}",
-                method.name, e
-            ) }),
+            Err(e) => Err(ComposerError::ABIDecodingError {
+                message: format!(
+                    "Failed to decode ABI return value for method {}: {}",
+                    method.name, e
+                ),
+            }),
         }
     }
 
@@ -805,9 +815,12 @@ impl Composer {
 
         // Regroup the transactions, as the transactions have likely been adjusted
         if transactions.len() > 1 {
-            transactions = transactions.assign_group().map_err(|e| {
-                ComposerError::TransactionError { message: format!("Failed to assign group: {}", e) }
-            })?;
+            transactions =
+                transactions
+                    .assign_group()
+                    .map_err(|e| ComposerError::TransactionError {
+                        message: format!("Failed to assign group: {}", e),
+                    })?;
         }
 
         let signed_transactions = transactions
@@ -821,14 +834,16 @@ impl Composer {
             .collect();
 
         if cover_inner_fees && !app_call_indexes_without_max_fees.is_empty() {
-            return Err(ComposerError::StateError { message: format!(
-                "Please provide a max fee for each application call transaction when inner transaction fee coverage is enabled. Required for transaction {}",
-                app_call_indexes_without_max_fees
-                    .iter()
-                    .map(|i| i.to_string())
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            ) });
+            return Err(ComposerError::StateError {
+                message: format!(
+                    "Please provide a max fee for each application call transaction when inner transaction fee coverage is enabled. Required for transaction {}",
+                    app_call_indexes_without_max_fees
+                        .iter()
+                        .map(|i| i.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                ),
+            });
         }
 
         let txn_group = SimulateRequestTransactionGroup {
@@ -868,10 +883,12 @@ impl Composer {
                 })
                 .unwrap_or_else(|| "unknown".to_string());
 
-            return Err(ComposerError::StateError { message: format!(
-                "Error analyzing group requirements via simulate in transaction {}: {}",
-                failed_at, failure_message
-            ) });
+            return Err(ComposerError::StateError {
+                message: format!(
+                    "Error analyzing group requirements via simulate in transaction {}: {}",
+                    failed_at, failure_message
+                ),
+            });
         }
 
         let txn_analysis_results: Result<Vec<TransactionAnalysis>, ComposerError> = group_response
@@ -888,11 +905,8 @@ impl Composer {
                             min_fee: suggested_params.min_fee,
                             ..Default::default()
                         })
-                        .map_err(|e| {
-                            ComposerError::TransactionError { message: format!(
-                                "Failed to calculate min transaction fee: {}",
-                                e
-                            ) }
+                        .map_err(|e| ComposerError::TransactionError {
+                            message: format!("Failed to calculate min transaction fee: {}", e),
                         })?;
 
                     let txn_fee = btxn.header().fee.unwrap_or(0);
@@ -982,7 +996,9 @@ impl Composer {
                     .genesis_hash
                     .clone()
                     .try_into()
-                    .map_err(|_e| ComposerError::DecodeError { message: "Invalid genesis hash".to_string() })?,
+                    .map_err(|_e| ComposerError::DecodeError {
+                        message: "Invalid genesis hash".to_string(),
+                    })?,
             ),
             first_valid,
             last_valid: common_params.last_valid_round.unwrap_or_else(|| {
@@ -1039,7 +1055,9 @@ impl Composer {
                         build_asset_clawback(params, header)
                     }
                     ComposerTransaction::AssetCreate(params) => build_asset_create(params, header)
-                        .map_err(|e| ComposerError::TransactionError { message: e.to_string() })?,
+                        .map_err(|e| ComposerError::TransactionError {
+                            message: e.to_string(),
+                        })?,
                     ComposerTransaction::AssetReconfigure(params) => {
                         build_asset_reconfigure(params, header)
                     }
@@ -1050,9 +1068,10 @@ impl Composer {
                     ComposerTransaction::AssetUnfreeze(params) => {
                         build_asset_unfreeze(params, header)
                     }
-                    ComposerTransaction::AppCall(params) => {
-                        build_app_call(params, header).map_err(|e| ComposerError::TransactionError { message: e.to_string() })?
-                    }
+                    ComposerTransaction::AppCall(params) => build_app_call(params, header)
+                        .map_err(|e| ComposerError::TransactionError {
+                            message: e.to_string(),
+                        })?,
                     ComposerTransaction::AppCreateCall(params) => {
                         build_app_create_call(params, header)
                     }
@@ -1093,7 +1112,9 @@ impl Composer {
                             extra_fee: common_params.extra_fee,
                             max_fee: common_params.max_fee,
                         })
-                        .map_err(|e| ComposerError::TransactionError { message: e.to_string() })?;
+                        .map_err(|e| ComposerError::TransactionError {
+                            message: e.to_string(),
+                        })?;
                 }
 
                 Ok(transaction)
@@ -1180,21 +1201,25 @@ impl Composer {
                                 if logical_max_fee.is_none()
                                     || transaction_fee > logical_max_fee.unwrap()
                                 {
-                                    return Err(ComposerError::TransactionError { message: format!(
-                                        "Calculated transaction fee {} µALGO is greater than max of {} for transaction {}",
-                                        transaction_fee,
-                                        logical_max_fee.unwrap_or(0),
-                                        group_index
-                                    ) });
+                                    return Err(ComposerError::TransactionError {
+                                        message: format!(
+                                            "Calculated transaction fee {} µALGO is greater than max of {} for transaction {}",
+                                            transaction_fee,
+                                            logical_max_fee.unwrap_or(0),
+                                            group_index
+                                        ),
+                                    });
                                 }
 
                                 txn_header.fee = Some(transaction_fee);
                             }
                             _ => {
-                                return Err(ComposerError::TransactionError { message: format!(
-                                    "An additional fee of {} µALGO is required for non application call transaction {}",
-                                    deficit_amount, group_index
-                                ) });
+                                return Err(ComposerError::TransactionError {
+                                    message: format!(
+                                        "An additional fee of {} µALGO is required for non application call transaction {}",
+                                        deficit_amount, group_index
+                                    ),
+                                });
                             }
                         }
                     }
@@ -1203,9 +1228,12 @@ impl Composer {
         }
 
         if transactions.len() > 1 {
-            transactions = transactions.assign_group().map_err(|e| {
-                ComposerError::TransactionError { message: format!("Failed to assign group: {}", e) }
-            })?;
+            transactions =
+                transactions
+                    .assign_group()
+                    .map_err(|e| ComposerError::TransactionError {
+                        message: format!("Failed to assign group: {}", e),
+                    })?;
         }
 
         Ok(transactions)
@@ -1269,10 +1297,9 @@ impl Composer {
                 } else {
                     let sender_address = txn.header().sender.clone();
                     self.get_signer(sender_address.clone())
-                        .ok_or(ComposerError::SigningError { message: format!(
-                            "No signer found for address: {}",
-                            sender_address
-                        ) })?
+                        .ok_or(ComposerError::SigningError {
+                            message: format!("No signer found for address: {}", sender_address),
+                        })?
                 };
                 Ok(TransactionWithSigner {
                     transaction: txn,
@@ -1288,7 +1315,10 @@ impl Composer {
         }
 
         let transactions_with_signers =
-            self.built_group.as_ref().ok_or(ComposerError::StateError { message: "Cannot gather signatures before building the transaction group".to_string() })?;
+            self.built_group.as_ref().ok_or(ComposerError::StateError {
+                message: "Cannot gather signatures before building the transaction group"
+                    .to_string(),
+            })?;
 
         // Group transactions by signer
         let mut transactions = Vec::new();
@@ -1309,7 +1339,9 @@ impl Composer {
             let signed_txns = signer
                 .sign_transactions(&transactions, &indices)
                 .await
-                .map_err(|e| ComposerError::SigningError { message: e.to_string() })?;
+                .map_err(|e| ComposerError::SigningError {
+                    message: e.to_string(),
+                })?;
 
             for (i, &index) in indices.iter().enumerate() {
                 signed_transactions[index] = Some(signed_txns[i].to_owned());
@@ -1320,11 +1352,8 @@ impl Composer {
             .into_iter()
             .enumerate()
             .map(|(i, signed_transaction)| {
-                signed_transaction.ok_or_else(|| {
-                    ComposerError::SigningError { message: format!(
-                        "Transaction at index {} was not signed",
-                        i
-                    ) }
+                signed_transaction.ok_or_else(|| ComposerError::SigningError {
+                    message: format!("Transaction at index {} was not signed", i),
                 })
             })
             .collect();
@@ -1339,9 +1368,13 @@ impl Composer {
         tx_id: &str,
         max_rounds: u64,
     ) -> Result<PendingTransactionResponse, ComposerError> {
-        let status = self.algod_client.get_status().await.map_err(|e| {
-            ComposerError::TransactionError { message: format!("Failed to get status: {:?}", e) }
-        })?;
+        let status =
+            self.algod_client
+                .get_status()
+                .await
+                .map_err(|e| ComposerError::TransactionError {
+                    message: format!("Failed to get status: {:?}", e),
+                })?;
 
         let start_round = status.last_round + 1;
         let mut current_round = start_round;
@@ -1355,7 +1388,9 @@ impl Composer {
                 Ok(response) => {
                     // Check for pool errors first - transaction was kicked out of pool
                     if !response.pool_error.is_empty() {
-                        return Err(ComposerError::PoolError { message: response.pool_error.clone() });
+                        return Err(ComposerError::PoolError {
+                            message: response.pool_error.clone(),
+                        });
                     }
 
                     // Check if transaction is confirmed
@@ -1388,10 +1423,12 @@ impl Composer {
             current_round += 1;
         }
 
-        Err(ComposerError::MaxWaitRoundExpired { message: format!(
-            "Transaction {} unconfirmed after {} rounds",
-            tx_id, max_rounds
-        ) })
+        Err(ComposerError::MaxWaitRoundExpired {
+            message: format!(
+                "Transaction {} unconfirmed after {} rounds",
+                tx_id, max_rounds
+            ),
+        })
     }
 
     pub async fn send(
@@ -1403,19 +1440,27 @@ impl Composer {
         self.build(build_params).await?;
 
         let group_id = {
-            let transactions_with_signers = self.built_group.as_ref().ok_or(
-                ComposerError::StateError { message: "No transactions built".to_string() },
-            )?;
+            let transactions_with_signers =
+                self.built_group.as_ref().ok_or(ComposerError::StateError {
+                    message: "No transactions built".to_string(),
+                })?;
 
             if transactions_with_signers.is_empty() {
-                return Err(ComposerError::StateError { message: "No transactions to send".to_string() });
+                return Err(ComposerError::StateError {
+                    message: "No transactions to send".to_string(),
+                });
             }
             transactions_with_signers[0].transaction.header().group
         };
 
         self.gather_signatures().await?;
 
-        let signed_transactions = self.signed_group.as_ref().ok_or(ComposerError::StateError { message: "No signed transactions".to_string() })?;
+        let signed_transactions = self
+            .signed_group
+            .as_ref()
+            .ok_or(ComposerError::StateError {
+                message: "No signed transactions".to_string(),
+            })?;
 
         let wait_rounds = if let Some(max_rounds_to_wait_for_confirmation) =
             params.and_then(|p| p.max_rounds_to_wait_for_confirmation)
@@ -1426,13 +1471,17 @@ impl Composer {
                 .iter()
                 .map(|signed_transaction| signed_transaction.transaction.header().first_valid)
                 .min()
-                .ok_or(ComposerError::StateError { message: "Failed to calculate first valid round".to_string() })?;
+                .ok_or(ComposerError::StateError {
+                    message: "Failed to calculate first valid round".to_string(),
+                })?;
 
             let last_round: u64 = signed_transactions
                 .iter()
                 .map(|signed_transaction| signed_transaction.transaction.header().last_valid)
                 .max()
-                .ok_or(ComposerError::StateError { message: "Failed to calculate last valid round".to_string() })?;
+                .ok_or(ComposerError::StateError {
+                    message: "Failed to calculate last valid round".to_string(),
+                })?;
 
             last_round - first_round
         };
@@ -1441,12 +1490,11 @@ impl Composer {
         let mut encoded_bytes = Vec::new();
 
         for signed_txn in signed_transactions {
-            let encoded_txn = signed_txn.encode().map_err(|e| {
-                ComposerError::TransactionError { message: format!(
-                    "Failed to encode signed transaction: {}",
-                    e
-                ) }
-            })?;
+            let encoded_txn = signed_txn
+                .encode()
+                .map_err(|e| ComposerError::TransactionError {
+                    message: format!("Failed to encode signed transaction: {}", e),
+                })?;
             encoded_bytes.extend_from_slice(&encoded_txn);
         }
 
@@ -1454,8 +1502,8 @@ impl Composer {
             .algod_client
             .raw_transaction(encoded_bytes)
             .await
-            .map_err(|e| {
-                ComposerError::TransactionError { message: format!("Failed to submit transaction(s): {:?}", e) }
+            .map_err(|e| ComposerError::TransactionError {
+                message: format!("Failed to submit transaction(s): {:?}", e),
             })?;
 
         let transaction_ids: Vec<String> = signed_transactions

@@ -1,8 +1,8 @@
 use algod_client::apis::{AlgodClient, Error as AlgodError};
 use algod_client::models::{AccountAssetInformation as AlgodAccountAssetInformation, Asset};
 use algokit_transact::Address;
-use std::{str::FromStr, sync::Arc};
 use snafu::Snafu;
+use std::{str::FromStr, sync::Arc};
 
 use crate::transactions::{
     AssetOptInParams, AssetOptOutParams, CommonParams, Composer, ComposerError,
