@@ -265,18 +265,17 @@ impl HttpClient for WasmHttpClient {
         let result = self
             .request(method.as_str(), &path, &query_js, &body_js, &headers_js)
             .await
-            .map_err(|e| {
-                HttpError::RequestError(
-                    e.as_string().unwrap_or(
-                        "A HTTP error occurred in JavaScript, but it cannot be converted to a string"
-                            .to_string(),
-                    ),
-                )
+            .map_err(|e| HttpError::RequestError {
+                message: e.as_string().unwrap_or(
+                    "A HTTP error occurred in JavaScript, but it cannot be converted to a string"
+                        .to_string(),
+                ),
             })?;
 
         // Parse the response from JavaScript
-        let response = HttpResponse::from_js(result)
-            .map_err(|e| HttpError::RequestError(format!("Failed to parse response: {:?}", e)))?;
+        let response = HttpResponse::from_js(result).map_err(|e| HttpError::RequestError {
+            message: format!("Failed to parse response: {:?}", e),
+        })?;
 
         Ok(response)
     }

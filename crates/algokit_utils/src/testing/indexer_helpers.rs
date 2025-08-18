@@ -198,6 +198,9 @@ mod tests {
     async fn fails_immediately_on_non_retriable_error() {
         let result = wait_for_indexer(|| async { Err::<(), &str>("server error") }, None).await;
 
-        assert!(matches!(result, Err(IndexerWaitError::ClientError(_))));
+        assert!(matches!(
+            result,
+            Err(IndexerWaitError::ClientError { message: _ })
+        ));
     }
 }
