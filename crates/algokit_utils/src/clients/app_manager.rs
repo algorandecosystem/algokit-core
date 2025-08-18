@@ -8,6 +8,7 @@ use base64::{Engine, engine::general_purpose::STANDARD as Base64};
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
+use snafu::Snafu;
 
 #[derive(Debug, Clone)]
 pub enum TealTemplateValue {
@@ -132,7 +133,7 @@ impl AppManager {
             .algod_client
             .teal_compile(teal_code.as_bytes().to_vec(), Some(true))
             .await
-            .map_err(AppManagerError::AlgodClientError)?;
+            .map_err(|e| AppManagerError::AlgodClientError { source: e })?;
 
         let result = CompiledTeal {
             teal: teal_code.to_string(),
@@ -182,17 +183,17 @@ impl AppManager {
             .algod_client
             .get_application_by_id(app_id)
             .await
-            .map_err(AppManagerError::AlgodClientError)?;
+            .map_err(|e| AppManagerError::AlgodClientError { source: e })?;
 
         Ok(AppInformation {
             app_id,
             app_address: Address::from_app_id(&app_id),
             approval_program: Base64
                 .decode(&app.params.approval_program)
-                .map_err(|e| AppManagerError::DecodingError(e.to_string()))?,
+                .map_err(|e| AppManagerError::DecodingError { message: e.to_string() })?,
             clear_state_program: Base64
                 .decode(&app.params.clear_state_program)
-                .map_err(|e| AppManagerError::DecodingError(e.to_string()))?,
+                .map_err(|e| AppManagerError::DecodingError { message: e.to_string() })?,
             creator: app.params.creator,
             local_ints: app
                 .params
@@ -244,7 +245,7 @@ impl AppManager {
             .algod_client
             .account_application_information(address, app_id, None)
             .await
-            .map_err(AppManagerError::AlgodClientError)?;
+            .map_err(|e| AppManagerError::AlgodClientError { source: e })?;
 
         let local_state = app_info
             .app_local_state
@@ -260,7 +261,7 @@ impl AppManager {
             .algod_client
             .get_application_boxes(app_id, None)
             .await
-            .map_err(AppManagerError::AlgodClientError)?;
+            .map_err(|e| AppManagerError::AlgodClientError { source: e })?;
 
         let mut box_names = Vec::new();
         for b in box_result.boxes {
@@ -291,11 +292,11 @@ impl AppManager {
             .algod_client
             .get_application_box_by_name(app_id, &name_base64)
             .await
-            .map_err(AppManagerError::AlgodClientError)?;
+            .map_err(|e| AppManagerError::AlgodClientError { source: e })?;
 
         Base64
             .decode(&box_result.value)
-            .map_err(|e| AppManagerError::DecodingError(e.to_string()))
+            .map_err(|e| AppManagerError::DecodingError { message: e.to_string() })
     }
 
     /// Get values for multiple boxes.
@@ -333,7 +334,7 @@ impl AppManager {
         let raw_value = self.get_box_value(app_id, box_name).await?;
         let decoded_value = abi_type
             .decode(&raw_value)
-            .map_err(|e| AppManagerError::ABIDecodeError(e.to_string()))?;
+            .map_err(|e| AppManagerError::ABIDecodeError { message: e.to_string() })?;
         Ok(decoded_value)
     }
 
@@ -374,7 +375,7 @@ impl AppManager {
         if let Some(return_type) = &method.returns {
             let return_value = return_type
                 .decode(confirmation_data)
-                .map_err(|e| AppManagerError::ABIDecodeError(e.to_string()))?;
+                .map_err(|e| AppManagerError::ABIDecodeError { message: e.to_string() })?;
 
             Ok(Some(ABIReturn {
                 method: method.clone(),
@@ -401,7 +402,7 @@ impl AppManager {
         for state_val in state {
             let key_raw = Base64
                 .decode(&state_val.key)
-                .map_err(|e| AppManagerError::DecodingError(e.to_string()))?;
+                .map_err(|e| AppManagerError::DecodingError { message: e.to_string() })?;
 
             // TODO(stabilization): Consider r#type pattern consistency across API vs ABI types (PR #229 comment)
             let (value_raw, value_base64, value) = match state_val.value.r#type {
@@ -419,10 +420,10 @@ impl AppManager {
                 }
                 2 => (None, None, AppStateValue::Uint(state_val.value.uint)),
                 _ => {
-                    return Err(AppManagerError::DecodingError(format!(
+                    return Err(AppManagerError::DecodingError { message: format!(
                         "Unknown state data type: {}",
                         state_val.value.r#type
-                    )));
+                    ) });
                 }
             };
 
@@ -549,20 +550,20 @@ impl AppManager {
 
         if let Some(updatable) = params.updatable {
             if !teal_template_code.contains(UPDATABLE_TEMPLATE_NAME) {
-                return Err(AppManagerError::TemplateVariableNotFound(format!(
+                return Err(AppManagerError::TemplateVariableNotFound { message: format!(
                     "Deploy-time updatability control requested, but {} not present in TEAL code",
                     UPDATABLE_TEMPLATE_NAME
-                )));
+                ) });
             }
             result = result.replace(UPDATABLE_TEMPLATE_NAME, &(updatable as u8).to_string());
         }
 
         if let Some(deletable) = params.deletable {
             if !teal_template_code.contains(DELETABLE_TEMPLATE_NAME) {
-                return Err(AppManagerError::TemplateVariableNotFound(format!(
+                return Err(AppManagerError::TemplateVariableNotFound { message: format!(
                     "Deploy-time deletability control requested, but {} not present in TEAL code",
                     DELETABLE_TEMPLATE_NAME
-                )));
+                ) });
             }
             result = result.replace(DELETABLE_TEMPLATE_NAME, &(deletable as u8).to_string());
         }
@@ -630,20 +631,20 @@ impl AppManager {
 }
 
 /// Errors that can occur during app manager operations.
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, Snafu)]
 pub enum AppManagerError {
-    #[error("Algod client error: {0}")]
-    AlgodClientError(AlgodError),
+    #[snafu(display("Algod client error: {source}"))]
+    AlgodClientError { source: AlgodError },
 
-    #[error("Template variable not found: {0}")]
-    TemplateVariableNotFound(String),
+    #[snafu(display("Template variable not found: {message}"))]
+    TemplateVariableNotFound { message: String },
 
-    #[error("Decoding error: {0}")]
-    DecodingError(String),
+    #[snafu(display("Decoding error: {message}"))]
+    DecodingError { message: String },
 
-    #[error("State not found")]
+    #[snafu(display("State not found"))]
     StateNotFound,
 
-    #[error("ABI decode error: {0}")]
-    ABIDecodeError(String),
+    #[snafu(display("ABI decode error: {message}"))]
+    ABIDecodeError { message: String },
 }

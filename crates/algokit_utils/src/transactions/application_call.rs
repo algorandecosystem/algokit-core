@@ -570,7 +570,7 @@ fn populate_method_args_into_reference_arrays(
             match value {
                 ABIReferenceValue::Account(addr_str) => {
                     let address = Address::from_str(addr_str).map_err(|_e| {
-                        ComposerError::TransactionError(format!("Invalid address {}", addr_str))
+                        ComposerError::TransactionError { message: format!("Invalid address {}", addr_str) }
                     })?;
 
                     if address != *sender && !account_references.contains(&address) {
@@ -605,7 +605,7 @@ fn calculate_method_arg_reference_array_index(
     match ref_value {
         ABIReferenceValue::Account(addr_str) => {
             let address = Address::from_str(addr_str).map_err(|_e| {
-                ComposerError::TransactionError(format!("Invalid address {}", addr_str))
+                ComposerError::TransactionError { message: format!("Invalid address {}", addr_str) }
             })?;
 
             if address == *sender {
@@ -618,10 +618,10 @@ fn calculate_method_arg_reference_array_index(
                 // If address already exists in account_references, use existing index + 1
                 Ok((existing_index + 1) as u8)
             } else {
-                Err(ComposerError::ABIEncodingError(format!(
+                Err(ComposerError::ABIEncodingError { message: format!(
                     "Account {} not found in reference array",
                     addr_str
-                )))
+                ) })
             }
         }
         ABIReferenceValue::Asset(asset_id) => {
@@ -632,10 +632,10 @@ fn calculate_method_arg_reference_array_index(
                 // If asset already exists in asset_references, use existing index
                 Ok(existing_index as u8)
             } else {
-                Err(ComposerError::ABIEncodingError(format!(
+                Err(ComposerError::ABIEncodingError { message: format!(
                     "Asset {} not found in reference array",
                     asset_id
-                )))
+                ) })
             }
         }
         ABIReferenceValue::Application(app_id_ref) => {
@@ -649,10 +649,10 @@ fn calculate_method_arg_reference_array_index(
                 // If application already exists in app_references, use existing index + 1
                 Ok((existing_index + 1) as u8)
             } else {
-                Err(ComposerError::ABIEncodingError(format!(
+                Err(ComposerError::ABIEncodingError { message: format!(
                     "Application {} not found in reference array",
                     app_id_ref
-                )))
+                ) })
             }
         }
     }
@@ -703,9 +703,7 @@ fn encode_arguments(
         .collect::<Result<Vec<_>, _>>()?;
 
     if abi_values.len() != abi_types.len() {
-        return Err(ComposerError::ABIEncodingError(
-            "Mismatch in length of non-transaction arguments".to_string(),
-        ));
+        return Err(ComposerError::ABIEncodingError { message: "Mismatch in length of non-transaction arguments".to_string() });
     }
 
     // Apply ARC-4 tuple packing for methods with more than 14 arguments
@@ -733,7 +731,7 @@ fn encode_args_with_tuple_packing(
     let tuple_type = ABIType::Tuple(remaining_abi_types.to_vec());
     let tuple_value = ABIValue::Array(remaining_abi_values.to_vec());
     let tuple_encoded = tuple_type.encode(&tuple_value).map_err(|e| {
-        ComposerError::ABIEncodingError(format!("Failed to encode ABI value: {}", e))
+        ComposerError::ABIEncodingError { message: format!("Failed to encode ABI value: {}", e) }
     })?;
 
     encoded_args.push(tuple_encoded);
@@ -749,7 +747,7 @@ fn encode_args_individually(
 
     for (abi_value, abi_type) in abi_values.iter().zip(abi_types.iter()) {
         let encoded = abi_type.encode(abi_value).map_err(|e| {
-            ComposerError::ABIEncodingError(format!("Failed to encode ABI value: {}", e))
+            ComposerError::ABIEncodingError { message: format!("Failed to encode ABI value: {}", e) }
         })?;
         encoded_args.push(encoded);
     }
@@ -878,7 +876,7 @@ where
 
     // Insert method selector at the front
     let method_selector = params.method().selector().map_err(|e| {
-        ComposerError::ABIEncodingError(format!("Failed to get method selector: {}", e))
+        ComposerError::ABIEncodingError { message: format!("Failed to get method selector: {}", e) }
     })?;
     encoded_args.insert(0, method_selector);
 

@@ -72,7 +72,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
- "thiserror 2.0.12",
+ "snafu",
 ]
 
 [[package]]
@@ -84,7 +84,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde-wasm-bindgen",
- "thiserror 2.0.12",
+ "snafu",
  "tsify-next",
  "uniffi",
  "wasm-bindgen",
@@ -167,7 +167,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
- "thiserror 2.0.12",
+ "snafu",
  "tokio",
  "tokio-test",
 ]

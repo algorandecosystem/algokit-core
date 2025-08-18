@@ -2,6 +2,7 @@ use indexer_client::{IndexerClient, apis::Error as IndexerError};
 use std::future::Future;
 use std::time::Duration;
 use tokio::time::sleep;
+use snafu::Snafu;
 
 /// Configuration for indexer wait operations
 #[derive(Debug, Clone)]
@@ -22,13 +23,13 @@ impl Default for IndexerWaitConfig {
 }
 
 /// Error types for indexer wait operations
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, Snafu)]
 pub enum IndexerWaitError {
-    #[error("Indexer operation failed after {attempts} attempts: {last_error}")]
+    #[snafu(display("Indexer operation failed after {attempts} attempts: {last_error}"))]
     MaxAttemptsExceeded { attempts: u32, last_error: String },
-    #[error("Indexer client error: {0}")]
-    ClientError(String),
-    #[error("Transaction {tx_id} not found after {attempts} attempts")]
+    #[snafu(display("Indexer client error: {message}"))]
+    ClientError { message: String },
+    #[snafu(display("Transaction {tx_id} not found after {attempts} attempts"))]
     TransactionNotFound { tx_id: String, attempts: u32 },
 }
 
@@ -58,7 +59,7 @@ where
 
                 // If it's not a 404-like error, fail immediately
                 if !is_not_found {
-                    return Err(IndexerWaitError::ClientError(last_error));
+                    return Err(IndexerWaitError::ClientError { message: last_error });
                 }
 
                 // If we've reached max attempts, break out of the loop
