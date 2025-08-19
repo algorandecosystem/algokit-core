@@ -152,8 +152,8 @@ async fn test_errors_when_inner_fees_not_covered_and_fee_coverage_disabled(
 
     let result = composer
         .send(Some(SendParams {
-            cover_app_call_inner_transaction_fees: Some(false),
-            populate_app_call_resources: Some(true), // Ensure the same behaviour when simulating due to resource population
+            cover_app_call_inner_transaction_fees: false,
+            populate_app_call_resources: true, // Ensure the same behaviour when simulating due to resource population
             ..Default::default()
         }))
         .await;
@@ -1617,7 +1617,7 @@ async fn test_readonly_fixed_opcode_budget(
 
     let result = composer
         .send(Some(SendParams {
-            cover_app_call_inner_transaction_fees: Some(cover_inner_fees),
+            cover_app_call_inner_transaction_fees: cover_inner_fees,
             ..Default::default()
         }))
         .await?;
@@ -1800,9 +1800,9 @@ struct Arc32AppSpec {
 }
 
 const COVER_FEES_SEND_PARAMS: Option<SendParams> = Some(SendParams {
-    cover_app_call_inner_transaction_fees: Some(true),
+    cover_app_call_inner_transaction_fees: true,
     max_rounds_to_wait_for_confirmation: None,
-    populate_app_call_resources: Some(false),
+    populate_app_call_resources: false,
 });
 
 fn get_inner_fee_teal_programs()
@@ -1929,7 +1929,7 @@ async fn assert_min_fee(mut composer: Composer, params: &AppCallParams, fee: u64
 
     let result = composer
         .send(Some(SendParams {
-            cover_app_call_inner_transaction_fees: Some(false),
+            cover_app_call_inner_transaction_fees: false,
             ..Default::default()
         }))
         .await;

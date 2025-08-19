@@ -113,17 +113,36 @@ pub struct SendTransactionComposerResults {
     pub abi_returns: Vec<Result<Option<ABIReturn>, ComposerError>>,
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub struct SendParams {
     pub max_rounds_to_wait_for_confirmation: Option<u64>,
-    pub cover_app_call_inner_transaction_fees: Option<bool>,
-    pub populate_app_call_resources: Option<bool>,
+    pub cover_app_call_inner_transaction_fees: bool,
+    pub populate_app_call_resources: bool,
 }
 
-#[derive(Debug, Default, Clone)]
+impl Default for SendParams {
+    fn default() -> Self {
+        Self {
+            max_rounds_to_wait_for_confirmation: None,
+            cover_app_call_inner_transaction_fees: COVER_APP_CALL_INNER_TRANSACTION_FEES_DEFAULT,
+            populate_app_call_resources: POPULATE_APP_CALL_RESOURCES_DEFAULT,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct BuildParams {
-    pub cover_app_call_inner_transaction_fees: Option<bool>,
-    pub populate_app_call_resources: Option<bool>,
+    pub cover_app_call_inner_transaction_fees: bool,
+    pub populate_app_call_resources: bool,
+}
+
+impl Default for BuildParams {
+    fn default() -> Self {
+        Self {
+            cover_app_call_inner_transaction_fees: COVER_APP_CALL_INNER_TRANSACTION_FEES_DEFAULT,
+            populate_app_call_resources: POPULATE_APP_CALL_RESOURCES_DEFAULT,
+        }
+    }
 }
 
 impl From<&SendParams> for BuildParams {
@@ -788,12 +807,6 @@ impl Composer {
         default_validity_window: &u64,
         build_params: &BuildParams,
     ) -> Result<GroupAnalysis, ComposerError> {
-        let cover_inner_fees = build_params
-            .cover_app_call_inner_transaction_fees
-            .unwrap_or(COVER_APP_CALL_INNER_TRANSACTION_FEES_DEFAULT);
-        let populate_resources = build_params
-            .populate_app_call_resources
-            .unwrap_or(POPULATE_APP_CALL_RESOURCES_DEFAULT);
         let mut app_call_indexes_without_max_fees = Vec::new();
 
         let built_transactions = &self
@@ -808,7 +821,7 @@ impl Composer {
                 let mut txn_to_simulate = txn.clone();
                 let txn_header = txn_to_simulate.header_mut();
                 txn_header.group = None;
-                if cover_inner_fees {
+                if build_params.cover_app_call_inner_transaction_fees {
                     if let Transaction::ApplicationCall(_) = txn {
                         match ctxn.logical_max_fee() {
                             Some(logical_max_fee) => txn_header.fee = Some(logical_max_fee),
@@ -837,7 +850,9 @@ impl Composer {
             })
             .collect();
 
-        if cover_inner_fees && !app_call_indexes_without_max_fees.is_empty() {
+        if build_params.cover_app_call_inner_transaction_fees
+            && !app_call_indexes_without_max_fees.is_empty()
+        {
             return Err(ComposerError::StateError(format!(
                 "Please provide a max fee for each application call transaction when inner transaction fee coverage is enabled. Required for transaction {}",
                 app_call_indexes_without_max_fees
@@ -869,7 +884,9 @@ impl Composer {
 
         // Handle any simulation failures
         if let Some(failure_message) = &group_response.failure_message {
-            if cover_inner_fees && failure_message.contains("fee too small") {
+            if build_params.cover_app_call_inner_transaction_fees
+                && failure_message.contains("fee too small")
+            {
                 return Err(ComposerError::StateError(
                     "Fees were too small to analyze group requirements via simulate. You may need to increase an application call transaction max fee.".to_string()
                 ));
@@ -900,7 +917,7 @@ impl Composer {
             .map(|(group_index, simulate_txn_result)| {
                 let btxn = &built_transactions[group_index];
 
-                let required_fee_delta = if cover_inner_fees {
+                let required_fee_delta = if build_params.cover_app_call_inner_transaction_fees {
                     let min_txn_fee: u64 = btxn
                         .calculate_fee(FeeParams {
                             fee_per_byte: suggested_params.fee,
@@ -938,7 +955,7 @@ impl Composer {
 
                 Ok(TransactionAnalysis {
                     required_fee_delta,
-                    unnamed_resources_accessed: if populate_resources {
+                    unnamed_resources_accessed: if build_params.populate_app_call_resources {
                         simulate_txn_result.unnamed_resources_accessed.clone()
                     } else {
                         None
@@ -949,7 +966,7 @@ impl Composer {
 
         Ok(GroupAnalysis {
             transactions: txn_analysis_results?,
-            unnamed_resources_accessed: if populate_resources {
+            unnamed_resources_accessed: if build_params.populate_app_call_resources {
                 group_response.unnamed_resources_accessed.clone()
             } else {
                 None
@@ -1134,7 +1151,7 @@ impl Composer {
             })
             .collect::<Result<Vec<Transaction>, ComposerError>>()?;
 
-        if let Some(group_analysis) = group_analysis {
+        if let Some(mut group_analysis) = group_analysis {
             // Process fee adjustments
             let (mut surplus_group_fees, mut transaction_analysis): (u64, Vec<_>) =
                 group_analysis.transactions.iter().enumerate().fold(
@@ -1344,7 +1361,7 @@ impl Composer {
             }
 
             // Apply the group level resource population logic
-            if let Some(ref group_resources) = group_analysis.unnamed_resources_accessed {
+            if let Some(group_resources) = group_analysis.unnamed_resources_accessed.take() {
                 Composer::populate_group_resources(&mut transactions, group_resources)?;
             }
         }
@@ -1361,38 +1378,43 @@ impl Composer {
     /// Populate group-level resources for app call transactions
     fn populate_group_resources(
         transactions: &mut [Transaction],
-        group_resources: &SimulateUnnamedResourcesAccessed,
+        group_resources: SimulateUnnamedResourcesAccessed,
     ) -> Result<(), ComposerError> {
-        // Clone the group resources so we can modify them as we allocate resources
-        let mut remaining_accounts = group_resources.accounts.clone().unwrap_or_default();
-        let mut remaining_apps = group_resources.apps.clone().unwrap_or_default();
-        let mut remaining_assets = group_resources.assets.clone().unwrap_or_default();
-        let remaining_boxes = group_resources.boxes.clone().unwrap_or_default();
+        let mut remaining_accounts = group_resources.accounts.unwrap_or_default();
+        let mut remaining_apps = group_resources.apps.unwrap_or_default();
+        let mut remaining_assets = group_resources.assets.unwrap_or_default();
+        let remaining_boxes = group_resources.boxes.unwrap_or_default();
 
         // Process cross-reference resources first (app locals and asset holdings) as they are most restrictive
-        if let Some(ref app_locals) = group_resources.app_locals {
+        if let Some(app_locals) = group_resources.app_locals {
             for app_local in app_locals {
+                let app_local_app = app_local.app;
+                let app_local_account = app_local.account.clone();
+
                 Composer::populate_group_resource(
                     transactions,
-                    &GroupResourceType::AppLocal(app_local.clone()),
+                    &GroupResourceType::AppLocal(app_local),
                 )?;
 
                 // Remove resources from remaining if we're adding them here
-                remaining_accounts.retain(|acc| acc != &app_local.account);
-                remaining_apps.retain(|app| *app != app_local.app);
+                remaining_accounts.retain(|acc| acc != &app_local_account);
+                remaining_apps.retain(|app| *app != app_local_app);
             }
         }
 
-        if let Some(ref asset_holdings) = group_resources.asset_holdings {
+        if let Some(asset_holdings) = group_resources.asset_holdings {
             for asset_holding in asset_holdings {
+                let asset_holding_asset = asset_holding.asset;
+                let asset_holding_account = asset_holding.account.clone();
+
                 Composer::populate_group_resource(
                     transactions,
-                    &GroupResourceType::AssetHolding(asset_holding.clone()),
+                    &GroupResourceType::AssetHolding(asset_holding),
                 )?;
 
                 // Remove resources from remaining if we're adding them here
-                remaining_accounts.retain(|acc| acc != &asset_holding.account);
-                remaining_assets.retain(|asset| *asset != asset_holding.asset);
+                remaining_accounts.retain(|acc| acc != &asset_holding_account);
+                remaining_assets.retain(|asset| *asset != asset_holding_asset);
             }
         }
 
@@ -1403,13 +1425,12 @@ impl Composer {
 
         // Process boxes
         for box_ref in remaining_boxes {
-            Composer::populate_group_resource(
-                transactions,
-                &GroupResourceType::Box(box_ref.clone()),
-            )?;
+            let box_ref_app = box_ref.app;
+
+            Composer::populate_group_resource(transactions, &GroupResourceType::Box(box_ref))?;
 
             // Remove apps as resource if we're adding it here
-            remaining_apps.retain(|app| *app != box_ref.app);
+            remaining_apps.retain(|app| *app != box_ref_app);
         }
 
         // Process assets
@@ -1790,12 +1811,8 @@ impl Composer {
 
         let group_analysis = match params.as_ref() {
             Some(params)
-                if params
-                    .cover_app_call_inner_transaction_fees
-                    .unwrap_or(COVER_APP_CALL_INNER_TRANSACTION_FEES_DEFAULT)
-                    || params
-                        .populate_app_call_resources
-                        .unwrap_or(POPULATE_APP_CALL_RESOURCES_DEFAULT) =>
+                if params.cover_app_call_inner_transaction_fees
+                    || params.populate_app_call_resources =>
             {
                 Some(
                     self.analyze_group_requirements(
@@ -2322,23 +2339,20 @@ mod tests {
     #[test]
     fn test_build_params_default() {
         let params = BuildParams::default();
-        assert_eq!(params.cover_app_call_inner_transaction_fees, None);
-        assert_eq!(params.populate_app_call_resources, None);
+        assert!(!params.cover_app_call_inner_transaction_fees);
+        assert!(params.populate_app_call_resources);
     }
 
     #[test]
     fn test_build_params_from_send_params() {
         let send_params = SendParams {
             max_rounds_to_wait_for_confirmation: Some(10),
-            cover_app_call_inner_transaction_fees: Some(true),
-            populate_app_call_resources: Some(true),
+            cover_app_call_inner_transaction_fees: true,
+            populate_app_call_resources: true,
         };
 
         let build_params = BuildParams::from(&send_params);
-        assert_eq!(
-            build_params.cover_app_call_inner_transaction_fees,
-            Some(true)
-        );
-        assert_eq!(build_params.populate_app_call_resources, Some(true));
+        assert!(build_params.cover_app_call_inner_transaction_fees);
+        assert!(build_params.populate_app_call_resources);
     }
 }

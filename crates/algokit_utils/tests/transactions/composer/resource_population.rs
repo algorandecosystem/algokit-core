@@ -103,8 +103,8 @@ async fn test_accounts_errors_when_resource_population_disabled(
 
     let result = composer
         .send(Some(SendParams {
-            populate_app_call_resources: Some(false),
-            cover_app_call_inner_transaction_fees: Some(true), // Ensure the same behaviour when simulating due to inner fee coverage
+            populate_app_call_resources: false,
+            cover_app_call_inner_transaction_fees: true, // Ensure the same behaviour when simulating due to inner fee coverage
             ..Default::default()
         }))
         .await;
@@ -207,7 +207,7 @@ async fn test_boxes_errors_when_resource_population_disabled(
 
     let result = composer
         .send(Some(SendParams {
-            populate_app_call_resources: Some(false),
+            populate_app_call_resources: false,
             ..Default::default()
         }))
         .await;
@@ -333,7 +333,7 @@ async fn test_apps_errors_when_resource_population_disabled(
 
     let result = composer
         .send(Some(SendParams {
-            populate_app_call_resources: Some(false),
+            populate_app_call_resources: false,
             ..Default::default()
         }))
         .await;
@@ -415,7 +415,7 @@ async fn test_assets_errors_when_resource_population_disabled(
 
     let result = composer
         .send(Some(SendParams {
-            populate_app_call_resources: Some(false),
+            populate_app_call_resources: false,
             ..Default::default()
         }))
         .await;
@@ -517,7 +517,7 @@ async fn test_cross_product_assets_and_accounts_errors_when_resource_population_
 
     let result = composer
         .send(Some(SendParams {
-            populate_app_call_resources: Some(false),
+            populate_app_call_resources: false,
             ..Default::default()
         }))
         .await;
@@ -626,7 +626,7 @@ async fn test_cross_product_account_app_errors_when_resource_population_disabled
 
     let result = composer
         .send(Some(SendParams {
-            populate_app_call_resources: Some(false),
+            populate_app_call_resources: false,
             ..Default::default()
         }))
         .await;
@@ -891,7 +891,7 @@ async fn test_error(
 
     let result = composer
         .send(Some(SendParams {
-            populate_app_call_resources: populate_resources,
+            populate_app_call_resources: populate_resources.unwrap_or(true), // Default to true
             ..Default::default()
         }))
         .await;
@@ -1145,8 +1145,8 @@ struct TealSource {
 }
 
 const POPULATE_RESOURCES_SEND_PARAMS: Option<SendParams> = Some(SendParams {
-    populate_app_call_resources: Some(true),
-    cover_app_call_inner_transaction_fees: None,
+    populate_app_call_resources: true,
+    cover_app_call_inner_transaction_fees: false,
     max_rounds_to_wait_for_confirmation: None,
 });
 
