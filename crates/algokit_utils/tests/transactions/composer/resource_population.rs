@@ -3,7 +3,7 @@ use algokit_abi::{ABIMethod, ABIType, ABIValue};
 use algokit_transact::Transaction;
 use algokit_transact::{Address, BoxReference, OnApplicationComplete, StateSchema};
 use algokit_utils::CommonParams;
-use algokit_utils::transactions::composer::SendParams;
+use algokit_utils::transactions::composer::{ResourcePopulation, SendParams};
 use algokit_utils::{AppCallParams, AppCreateParams, PaymentParams, testing::*};
 use base64::{Engine, prelude::BASE64_STANDARD};
 use rstest::*;
@@ -103,7 +103,7 @@ async fn test_accounts_errors_when_resource_population_disabled(
 
     let result = composer
         .send(Some(SendParams {
-            populate_app_call_resources: false,
+            populate_app_call_resources: ResourcePopulation::Disabled,
             cover_app_call_inner_transaction_fees: true, // Ensure the same behaviour when simulating due to inner fee coverage
             ..Default::default()
         }))
@@ -207,7 +207,7 @@ async fn test_boxes_errors_when_resource_population_disabled(
 
     let result = composer
         .send(Some(SendParams {
-            populate_app_call_resources: false,
+            populate_app_call_resources: ResourcePopulation::Disabled,
             ..Default::default()
         }))
         .await;
@@ -333,7 +333,7 @@ async fn test_apps_errors_when_resource_population_disabled(
 
     let result = composer
         .send(Some(SendParams {
-            populate_app_call_resources: false,
+            populate_app_call_resources: ResourcePopulation::Disabled,
             ..Default::default()
         }))
         .await;
@@ -415,7 +415,7 @@ async fn test_assets_errors_when_resource_population_disabled(
 
     let result = composer
         .send(Some(SendParams {
-            populate_app_call_resources: false,
+            populate_app_call_resources: ResourcePopulation::Disabled,
             ..Default::default()
         }))
         .await;
@@ -517,7 +517,7 @@ async fn test_cross_product_assets_and_accounts_errors_when_resource_population_
 
     let result = composer
         .send(Some(SendParams {
-            populate_app_call_resources: false,
+            populate_app_call_resources: ResourcePopulation::Disabled,
             ..Default::default()
         }))
         .await;
@@ -626,7 +626,7 @@ async fn test_cross_product_account_app_errors_when_resource_population_disabled
 
     let result = composer
         .send(Some(SendParams {
-            populate_app_call_resources: false,
+            populate_app_call_resources: ResourcePopulation::Disabled,
             ..Default::default()
         }))
         .await;
@@ -891,7 +891,12 @@ async fn test_error(
 
     let result = composer
         .send(Some(SendParams {
-            populate_app_call_resources: populate_resources.unwrap_or(true), // Default to true
+            populate_app_call_resources: match populate_resources.unwrap_or(true) {
+                true => ResourcePopulation::Enabled {
+                    use_access_list: false,
+                },
+                false => ResourcePopulation::Disabled,
+            }, // Default to enabled
             ..Default::default()
         }))
         .await;
@@ -1145,7 +1150,9 @@ struct TealSource {
 }
 
 const POPULATE_RESOURCES_SEND_PARAMS: Option<SendParams> = Some(SendParams {
-    populate_app_call_resources: true,
+    populate_app_call_resources: ResourcePopulation::Enabled {
+        use_access_list: false,
+    },
     cover_app_call_inner_transaction_fees: false,
     max_rounds_to_wait_for_confirmation: None,
 });
@@ -1182,8 +1189,8 @@ async fn deploy_resource_population_app(
     let result = composer.send(None).await?;
 
     result.confirmations[0]
-        .application_index
-        .ok_or_else(|| "No application index returned".into())
+        .app_id
+        .ok_or_else(|| "No app id returned".into())
 }
 
 async fn bootstrap_resource_population_app(

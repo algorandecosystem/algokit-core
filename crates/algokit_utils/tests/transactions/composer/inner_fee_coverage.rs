@@ -3,7 +3,7 @@ use algokit_abi::abi_type::BitSize;
 use algokit_abi::{ABIMethod, ABIType, ABIValue};
 use algokit_test_artifacts::{inner_fee_contract, nested_contract};
 use algokit_transact::{Address, OnApplicationComplete, TransactionId};
-use algokit_utils::transactions::composer::SendParams;
+use algokit_utils::transactions::composer::{ResourcePopulation, SendParams};
 use algokit_utils::{AppCallParams, AppCreateParams, PaymentParams, testing::*};
 use algokit_utils::{CommonParams, Composer};
 use base64::{Engine, prelude::BASE64_STANDARD};
@@ -153,7 +153,9 @@ async fn test_errors_when_inner_fees_not_covered_and_fee_coverage_disabled(
     let result = composer
         .send(Some(SendParams {
             cover_app_call_inner_transaction_fees: false,
-            populate_app_call_resources: true, // Ensure the same behaviour when simulating due to resource population
+            populate_app_call_resources: ResourcePopulation::Enabled {
+                use_access_list: false,
+            }, // Ensure the same behaviour when simulating due to resource population
             ..Default::default()
         }))
         .await;
@@ -1802,7 +1804,7 @@ struct Arc32AppSpec {
 const COVER_FEES_SEND_PARAMS: Option<SendParams> = Some(SendParams {
     cover_app_call_inner_transaction_fees: true,
     max_rounds_to_wait_for_confirmation: None,
-    populate_app_call_resources: false,
+    populate_app_call_resources: ResourcePopulation::Disabled,
 });
 
 fn get_inner_fee_teal_programs()

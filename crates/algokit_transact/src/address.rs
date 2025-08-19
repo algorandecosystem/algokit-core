@@ -53,13 +53,6 @@ impl Address {
     pub fn checksum(&self) -> [u8; ALGORAND_CHECKSUM_BYTE_LENGTH] {
         pub_key_to_checksum(&self.0)
     }
-
-    /// Computes the address from an application ID.
-    pub fn from_app_id(app_id: &u64) -> Self {
-        let mut to_hash = b"appID".to_vec();
-        to_hash.extend_from_slice(&app_id.to_be_bytes());
-        Address(hash(&to_hash))
-    }
 }
 
 impl FromStr for Address {

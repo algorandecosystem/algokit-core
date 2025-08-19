@@ -62,10 +62,43 @@ use super::key_registration::{
 use super::payment::{AccountCloseParams, PaymentParams};
 
 const COVER_APP_CALL_INNER_TRANSACTION_FEES_DEFAULT: bool = false;
-const POPULATE_APP_CALL_RESOURCES_DEFAULT: bool = true;
 
 // ABI return values are stored in logs with the prefix 0x151f7c75
 const ABI_RETURN_PREFIX: &[u8] = &[0x15, 0x1f, 0x7c, 0x75];
+
+/// Configuration for application call resource population
+#[derive(Debug, Clone)]
+pub enum ResourcePopulation {
+    /// Resource population is disabled
+    Disabled,
+    /// Resource population is enabled with optional access list usage
+    Enabled { use_access_list: bool },
+}
+
+impl ResourcePopulation {
+    /// Returns true if resource population is enabled
+    pub fn is_enabled(&self) -> bool {
+        matches!(self, ResourcePopulation::Enabled { .. })
+    }
+
+    /// Returns true if access list should be used (only relevant when enabled)
+    pub fn use_access_list(&self) -> bool {
+        matches!(
+            self,
+            ResourcePopulation::Enabled {
+                use_access_list: true
+            }
+        )
+    }
+}
+
+impl Default for ResourcePopulation {
+    fn default() -> Self {
+        ResourcePopulation::Enabled {
+            use_access_list: false,
+        }
+    }
+}
 
 /// Types of resources that can be populated at the group level
 #[derive(Debug, Clone)]
@@ -117,7 +150,7 @@ pub struct SendTransactionComposerResults {
 pub struct SendParams {
     pub max_rounds_to_wait_for_confirmation: Option<u64>,
     pub cover_app_call_inner_transaction_fees: bool,
-    pub populate_app_call_resources: bool,
+    pub populate_app_call_resources: ResourcePopulation,
 }
 
 impl Default for SendParams {
@@ -125,7 +158,7 @@ impl Default for SendParams {
         Self {
             max_rounds_to_wait_for_confirmation: None,
             cover_app_call_inner_transaction_fees: COVER_APP_CALL_INNER_TRANSACTION_FEES_DEFAULT,
-            populate_app_call_resources: POPULATE_APP_CALL_RESOURCES_DEFAULT,
+            populate_app_call_resources: ResourcePopulation::default(),
         }
     }
 }
@@ -133,14 +166,14 @@ impl Default for SendParams {
 #[derive(Debug, Clone)]
 pub struct BuildParams {
     pub cover_app_call_inner_transaction_fees: bool,
-    pub populate_app_call_resources: bool,
+    pub populate_app_call_resources: ResourcePopulation,
 }
 
 impl Default for BuildParams {
     fn default() -> Self {
         Self {
             cover_app_call_inner_transaction_fees: COVER_APP_CALL_INNER_TRANSACTION_FEES_DEFAULT,
-            populate_app_call_resources: POPULATE_APP_CALL_RESOURCES_DEFAULT,
+            populate_app_call_resources: ResourcePopulation::default(),
         }
     }
 }
@@ -150,7 +183,7 @@ impl From<&SendParams> for BuildParams {
         BuildParams {
             cover_app_call_inner_transaction_fees: send_params
                 .cover_app_call_inner_transaction_fees,
-            populate_app_call_resources: send_params.populate_app_call_resources,
+            populate_app_call_resources: send_params.populate_app_call_resources.clone(),
         }
     }
 }
@@ -955,7 +988,10 @@ impl Composer {
 
                 Ok(TransactionAnalysis {
                     required_fee_delta,
-                    unnamed_resources_accessed: if build_params.populate_app_call_resources {
+                    unnamed_resources_accessed: if build_params
+                        .populate_app_call_resources
+                        .is_enabled()
+                    {
                         simulate_txn_result.unnamed_resources_accessed.clone()
                     } else {
                         None
@@ -966,7 +1002,7 @@ impl Composer {
 
         Ok(GroupAnalysis {
             transactions: txn_analysis_results?,
-            unnamed_resources_accessed: if build_params.populate_app_call_resources {
+            unnamed_resources_accessed: if build_params.populate_app_call_resources.is_enabled() {
                 group_response.unnamed_resources_accessed.clone()
             } else {
                 None
@@ -1812,7 +1848,7 @@ impl Composer {
         let group_analysis = match params.as_ref() {
             Some(params)
                 if params.cover_app_call_inner_transaction_fees
-                    || params.populate_app_call_resources =>
+                    || params.populate_app_call_resources.is_enabled() =>
             {
                 Some(
                     self.analyze_group_requirements(
@@ -2340,7 +2376,7 @@ mod tests {
     fn test_build_params_default() {
         let params = BuildParams::default();
         assert!(!params.cover_app_call_inner_transaction_fees);
-        assert!(params.populate_app_call_resources);
+        assert!(params.populate_app_call_resources.is_enabled());
     }
 
     #[test]
@@ -2348,11 +2384,13 @@ mod tests {
         let send_params = SendParams {
             max_rounds_to_wait_for_confirmation: Some(10),
             cover_app_call_inner_transaction_fees: true,
-            populate_app_call_resources: true,
+            populate_app_call_resources: ResourcePopulation::Enabled {
+                use_access_list: true,
+            },
         };
 
         let build_params = BuildParams::from(&send_params);
         assert!(build_params.cover_app_call_inner_transaction_fees);
-        assert!(build_params.populate_app_call_resources);
+        assert!(build_params.populate_app_call_resources.is_enabled());
     }
 }
