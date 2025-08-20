@@ -1107,7 +1107,7 @@ impl Composer {
         })
     }
 
-    async fn get_suggested_params(&self) -> Result<TransactionParams, ComposerError> {
+    pub async fn get_suggested_params(&self) -> Result<TransactionParams, ComposerError> {
         Ok(self.algod_client.transaction_params().await?)
     }
 
