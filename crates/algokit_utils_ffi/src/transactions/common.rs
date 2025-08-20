@@ -3,6 +3,7 @@ use std::sync::Arc;
 use algokit_transact::SignedTransaction as RustSignedTransaction;
 use algokit_transact::Transaction as RustTransaction;
 use algokit_transact_ffi::{SignedTransaction, Transaction};
+use algokit_utils::transactions::common::CommonParams as RustCommonParams;
 use algokit_utils::transactions::common::TransactionSigner as RustTransactionSigner;
 use algokit_utils::transactions::common::TransactionWithSigner as RustTransactionWithSigner;
 
@@ -122,6 +123,72 @@ impl TryFrom<RustTransactionWithSigner> for TransactionWithSigner {
             signer: Arc::new(FfiTransactionSignerFromRust {
                 rust_signer: value.signer,
             }),
+        })
+    }
+}
+
+#[derive(uniffi::Record)]
+pub struct CommonParams {
+    pub sender: String,
+    pub signer: Option<Arc<dyn TransactionSigner>>,
+    pub rekey_to: Option<String>,
+    pub note: Option<Vec<u8>>,
+    pub lease: Option<Vec<u8>>,
+    pub static_fee: Option<u64>,
+    pub extra_fee: Option<u64>,
+    pub max_fee: Option<u64>,
+    pub validity_window: Option<u64>,
+    pub first_valid_round: Option<u64>,
+    pub last_valid_round: Option<u64>,
+}
+
+impl From<RustCommonParams> for CommonParams {
+    fn from(params: RustCommonParams) -> Self {
+        CommonParams {
+            sender: params.sender.as_str().to_string(),
+            signer: params.signer.map(|rust_signer| {
+                Arc::new(FfiTransactionSignerFromRust { rust_signer }) as Arc<dyn TransactionSigner>
+            }),
+            rekey_to: params.rekey_to.map(|a| a.as_str().to_string()),
+            note: params.note,
+            lease: params.lease.map(|l| l.to_vec()),
+            static_fee: params.static_fee,
+            extra_fee: params.extra_fee,
+            max_fee: params.max_fee,
+            validity_window: params.validity_window,
+            first_valid_round: params.first_valid_round,
+            last_valid_round: params.last_valid_round,
+        }
+    }
+}
+
+impl TryFrom<CommonParams> for RustCommonParams {
+    type Error = String;
+
+    fn try_from(params: CommonParams) -> Result<Self, Self::Error> {
+        Ok(RustCommonParams {
+            sender: params
+                .sender
+                .parse()
+                .map_err(|e| format!("Invalid sender address: {e}"))?,
+            signer: params.signer.map(|ffi_signer| {
+                Arc::new(RustTransactionSignerFromFfi { ffi_signer })
+                    as Arc<dyn RustTransactionSigner>
+            }),
+            rekey_to: params
+                .rekey_to
+                .map(|a| a.parse().map_err(|e| format!("Invalid rekey address: {e}")))
+                .transpose()?,
+            note: params.note,
+            lease: params
+                .lease
+                .map(|l| l.try_into().expect("Invalid lease format")),
+            static_fee: params.static_fee,
+            extra_fee: params.extra_fee,
+            max_fee: params.max_fee,
+            validity_window: params.validity_window,
+            first_valid_round: params.first_valid_round,
+            last_valid_round: params.last_valid_round,
         })
     }
 }
