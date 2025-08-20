@@ -145,12 +145,12 @@ pub trait TransactionSigner: Send + Sync {
     }
 }
 
-struct FfiTransactionSigner {
+struct RustTransactionSignerFromFfi {
     ffi_signer: Arc<dyn TransactionSigner>,
 }
 
 #[async_trait]
-impl RustTransactionSigner for FfiTransactionSigner {
+impl RustTransactionSigner for RustTransactionSignerFromFfi {
     async fn sign_transactions(
         &self,
         transactions: &[RustTransaction],
@@ -173,14 +173,34 @@ impl RustTransactionSigner for FfiTransactionSigner {
             .collect();
         signed_txns.map_err(|e| format!("Failed to convert signed transactions: {}", e))
     }
+}
 
-    async fn sign_transaction(
+struct FfiTransactionSignerFromRust {
+    rust_signer: Arc<dyn RustTransactionSigner>,
+}
+
+#[async_trait]
+impl TransactionSigner for FfiTransactionSignerFromRust {
+    async fn sign_transactions(
         &self,
-        transaction: &RustTransaction,
-    ) -> Result<RustSignedTransaction, String> {
-        self.sign_transactions(&[transaction.clone()], &[0])
-            .await
-            .map(|txns| txns[0].clone())
+        transactions: Vec<Transaction>,
+        indices: Vec<u8>,
+    ) -> Result<Vec<SignedTransaction>, String> {
+        let rust_txns: Result<Vec<RustTransaction>, _> =
+            transactions.into_iter().map(|t| t.try_into()).collect();
+        let rust_txns = rust_txns.map_err(|e| format!("Failed to convert transactions: {}", e))?;
+
+        let signed_txns = self
+            .rust_signer
+            .sign_transactions(
+                &rust_txns,
+                &indices.iter().map(|&i| i as usize).collect::<Vec<_>>(),
+            )
+            .await?;
+
+        let ffi_signed_txns: Result<Vec<SignedTransaction>, _> =
+            signed_txns.into_iter().map(|st| st.try_into()).collect();
+        ffi_signed_txns.map_err(|e| format!("Failed to convert signed transactions: {}", e))
     }
 }
 ```
