@@ -5,6 +5,7 @@ This section contains Architecture Decision Records documenting important decisi
 ## Contents
 
 - **[0000: Native Implementations vs FFI](./0000-native-implementations-vs-ffi.md)** - Decision on implementation strategy for multi-language support
+- **[0001: Package Naming Strategy](./0001-package-naming-strategy.md)** - Decision on naming convention for multi-language AlgoKit libraries
 
 ## ADR Format
 
