@@ -1,10 +1,12 @@
 use std::sync::Arc;
 
+use algokit_transact::Address;
 use algokit_transact::SignedTransaction as RustSignedTransaction;
 use algokit_transact::Transaction as RustTransaction;
 use algokit_transact_ffi::{SignedTransaction, Transaction};
 use algokit_utils::transactions::common::CommonParams as RustCommonParams;
 use algokit_utils::transactions::common::TransactionSigner as RustTransactionSigner;
+use algokit_utils::transactions::common::TransactionSignerGetter as RustTransactionSignerGetter;
 use algokit_utils::transactions::common::TransactionWithSigner as RustTransactionWithSigner;
 
 use async_trait::async_trait;
@@ -83,6 +85,40 @@ impl TransactionSigner for FfiTransactionSignerFromRust {
         let ffi_signed_txns: Result<Vec<SignedTransaction>, _> =
             signed_txns.into_iter().map(|st| st.try_into()).collect();
         ffi_signed_txns.map_err(|e| format!("Failed to convert signed transactions: {}", e))
+    }
+}
+
+#[uniffi::export(with_foreign)]
+pub trait TransactionSignerGetter: Send + Sync {
+    fn get_signer(&self, address: String) -> Option<Arc<dyn TransactionSigner>>;
+}
+
+pub struct RustTransactionSignerGetterFromFfi {
+    pub ffi_signer_getter: Arc<dyn TransactionSignerGetter>,
+}
+
+impl RustTransactionSignerGetter for RustTransactionSignerGetterFromFfi {
+    fn get_signer(&self, address: Address) -> Option<Arc<dyn RustTransactionSigner>> {
+        self.ffi_signer_getter
+            .get_signer(address.to_string())
+            .map(|ffi_signer| {
+                Arc::new(RustTransactionSignerFromFfi { ffi_signer })
+                    as Arc<dyn RustTransactionSigner>
+            })
+    }
+}
+
+pub struct FfiTransactionSignerGetterFromRust {
+    pub rust_signer_getter: Arc<dyn RustTransactionSignerGetter>,
+}
+
+impl TransactionSignerGetter for FfiTransactionSignerGetterFromRust {
+    fn get_signer(&self, address: String) -> Option<Arc<dyn TransactionSigner>> {
+        self.rust_signer_getter
+            .get_signer(address.parse().ok()?)
+            .map(|rust_signer| {
+                Arc::new(FfiTransactionSignerFromRust { rust_signer }) as Arc<dyn TransactionSigner>
+            })
     }
 }
 
