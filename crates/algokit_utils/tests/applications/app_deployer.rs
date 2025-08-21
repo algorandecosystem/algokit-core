@@ -315,7 +315,7 @@ async fn test_deploy_new_app(#[future] setup: SetupResult) -> TestResult {
     let result = app_deployer.deploy(deployment).await?;
     let (app, create_result) = match &result {
         AppDeployResult::Create { app, result } => (app, result),
-        _ => panic!("Expected Create result"),
+        _ => return Err("Expected Create result".into()),
     };
 
     assert_eq!(app.app_id, create_result.confirmations[0].app_id.unwrap());
@@ -430,7 +430,7 @@ async fn test_deploy_update_to_updatable_app(#[future] setup: SetupResult) -> Te
         AppDeployResult::Create { app, result } => {
             (app, app.app_id, result.transaction_ids[0].clone())
         }
-        _ => panic!("Expected Create result"),
+        _ => return Err("Expected Create result".into()),
     };
 
     context.wait_for_indexer_transaction(&tx_id).await?;
@@ -453,7 +453,7 @@ async fn test_deploy_update_to_updatable_app(#[future] setup: SetupResult) -> Te
     let result_2 = app_deployer.deploy(deployment_2).await?;
     let (app_2, update_result) = match result_2 {
         AppDeployResult::Update { app, result } => (app, result),
-        _ => panic!("Expected Update result"),
+        _ => return Err("Expected Update result".into()),
     };
 
     assert_eq!(app_2.app_id, app_1_id);
@@ -497,7 +497,7 @@ async fn test_deploy_update_to_immutable_app_fails(#[future] setup: SetupResult)
     context
         .wait_for_indexer_transaction(&match result_1 {
             AppDeployResult::Create { result, .. } => result.transaction_ids[0].clone(),
-            _ => panic!("Expected Create result"),
+            _ => return Err("Expected Create result".into()),
         })
         .await?;
 
@@ -551,7 +551,7 @@ async fn test_deploy_failure_for_updated_app_when_on_update_fail(
     context
         .wait_for_indexer_transaction(&match result_1 {
             AppDeployResult::Create { result, .. } => result.transaction_ids[0].clone(),
-            _ => panic!("Expected Create result"),
+            _ => return Err("Expected Create result".into()),
         })
         .await?;
 
@@ -599,13 +599,13 @@ async fn test_deploy_replacement_to_deletable_updated_app(
     let result_1 = app_deployer.deploy(deployment_1).await?;
     let app_1_id = match &result_1 {
         AppDeployResult::Create { app, .. } => app.app_id,
-        _ => panic!("Expected Create result"),
+        _ => return Err("Expected Create result".into()),
     };
 
     context
         .wait_for_indexer_transaction(&match result_1 {
             AppDeployResult::Create { result, .. } => result.transaction_ids[0].clone(),
-            _ => panic!("Expected Create result"),
+            _ => return Err("Expected Create result".into()),
         })
         .await?;
 
@@ -628,7 +628,7 @@ async fn test_deploy_replacement_to_deletable_updated_app(
     let result_2 = app_deployer.deploy(deployment_2).await?;
     let (app_2, create_result) = match result_2 {
         AppDeployResult::Replace { app, result, .. } => (app, result),
-        _ => panic!("Expected Replace result"),
+        _ => return Err("Expected Replace result".into()),
     };
 
     assert_ne!(app_2.app_id, app_1_id);
@@ -673,7 +673,7 @@ async fn test_deploy_failure_for_replacement_of_permanent_updated_app(
     context
         .wait_for_indexer_transaction(&match result_1 {
             AppDeployResult::Create { result, .. } => result.transaction_ids[0].clone(),
-            _ => panic!("Expected Create result"),
+            _ => return Err("Expected Create result".into()),
         })
         .await?;
 
@@ -726,7 +726,7 @@ async fn test_deploy_replacement_of_deletable_schema_broken_app(
     let result_1 = app_deployer.deploy(deployment_1).await?;
     let (app_1, tx_id) = match result_1 {
         AppDeployResult::Create { app, result } => (app, result.transaction_ids[0].clone()),
-        _ => panic!("Expected Create result"),
+        _ => return Err("Expected Create result".into()),
     };
 
     context.wait_for_indexer_transaction(&tx_id).await?;
@@ -750,7 +750,7 @@ async fn test_deploy_replacement_of_deletable_schema_broken_app(
     let result_2 = app_deployer.deploy(deployment_2).await?;
     let (app_2, create_result) = match result_2 {
         AppDeployResult::Replace { app, result, .. } => (app, result),
-        _ => panic!("Expected Replace result"),
+        _ => return Err("Expected Replace result".into()),
     };
 
     // Verify the app was replaced
@@ -794,7 +794,7 @@ async fn test_deploy_replacement_to_schema_broken_permanent_app_fails(
     context
         .wait_for_indexer_transaction(&match result_1 {
             AppDeployResult::Create { result, .. } => result.transaction_ids[0].clone(),
-            _ => panic!("Expected Create result"),
+            _ => return Err("Expected Create result".into()),
         })
         .await?;
 
@@ -848,7 +848,7 @@ async fn test_deploy_failure_for_replacement_of_schema_broken_app_when_on_schema
     context
         .wait_for_indexer_transaction(&match result_1 {
             AppDeployResult::Create { result, .. } => result.transaction_ids[0].clone(),
-            _ => panic!("Expected Create result"),
+            _ => return Err("Expected Create result".into()),
         })
         .await?;
 
@@ -897,7 +897,7 @@ async fn test_do_nothing_if_deploying_app_with_no_changes(
     let result_1 = app_deployer.deploy(deployment.clone()).await?;
     let (app_1, tx_id) = match result_1 {
         AppDeployResult::Create { app, result } => (app, result.transaction_ids[0].clone()),
-        _ => panic!("Expected Create result"),
+        _ => return Err("Expected Create result".into()),
     };
 
     context.wait_for_indexer_transaction(&tx_id).await?;
@@ -906,7 +906,7 @@ async fn test_do_nothing_if_deploying_app_with_no_changes(
     let result_2 = app_deployer.deploy(deployment).await?;
     let app_2 = match result_2 {
         AppDeployResult::Nothing { app } => app,
-        _ => panic!("Expected Nothing result"),
+        _ => return Err("Expected Nothing result".into()),
     };
 
     assert_eq!(app_2.app_id, app_1.app_id);
@@ -946,7 +946,7 @@ async fn test_deploy_append_for_schema_broken_app_when_on_schema_break_append_ap
     let result_1 = app_deployer.deploy(deployment_1).await?;
     let (app_1, tx_id) = match result_1 {
         AppDeployResult::Create { app, result } => (app, result.transaction_ids[0].clone()),
-        _ => panic!("Expected Create result"),
+        _ => return Err("Expected Create result".into()),
     };
 
     context.wait_for_indexer_transaction(&tx_id).await?;
@@ -965,7 +965,7 @@ async fn test_deploy_append_for_schema_broken_app_when_on_schema_break_append_ap
     let result_2 = app_deployer.deploy(deployment_2).await?;
     let (app_2, create_result) = match result_2 {
         AppDeployResult::Create { app, result } => (app, result),
-        _ => panic!("Expected Create result for append"),
+        _ => return Err("Expected Create result".into()),
     };
 
     assert_ne!(app_2.app_id, app_1.app_id);
@@ -1005,7 +1005,7 @@ async fn test_deploy_append_for_update_app_when_on_update_append_app(
     let result_1 = app_deployer.deploy(deployment_1).await?;
     let (app_1, tx_id) = match result_1 {
         AppDeployResult::Create { app, result } => (app, result.transaction_ids[0].clone()),
-        _ => panic!("Expected Create result"),
+        _ => return Err("Expected Create result".into()),
     };
 
     context.wait_for_indexer_transaction(&tx_id).await?;
@@ -1028,7 +1028,7 @@ async fn test_deploy_append_for_update_app_when_on_update_append_app(
     let result_2 = app_deployer.deploy(deployment_2).await?;
     let (app_2, create_result) = match result_2 {
         AppDeployResult::Create { app, result } => (app, result),
-        _ => panic!("Expected Create result for append"),
+        _ => return Err("Expected Create result".into()),
     };
 
     assert_ne!(app_2.app_id, app_1.app_id);

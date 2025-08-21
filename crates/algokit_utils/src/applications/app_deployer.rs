@@ -544,13 +544,13 @@ impl AppDeployer {
         creator_address: &Address,
         ignore_cache: Option<bool>,
     ) -> Result<AppLookup, AppDeployError> {
-        let address_str = creator_address.to_string();
+        let creator_address_str = creator_address.to_string();
         let ignore_cache = ignore_cache.unwrap_or(false);
 
         if !ignore_cache {
             {
                 let app_lookups = self.app_lookups.lock().unwrap();
-                if let Some(cached_lookup) = app_lookups.get(&address_str) {
+                if let Some(cached_lookup) = app_lookups.get(&creator_address_str) {
                     return Ok(cached_lookup.clone());
                 }
             }
@@ -567,7 +567,7 @@ impl AppDeployer {
 
         // Query indexer for apps created by this address
         let created_apps_response = indexer
-            .lookup_account_created_applications(&address_str, None, Some(true), None, None)
+            .lookup_account_created_applications(&creator_address_str, None, Some(true), None, None)
             .await
             .map_err(|e| AppDeployError::IndexerError { source: e })?;
 
@@ -602,7 +602,7 @@ impl AppDeployer {
                         None,
                         None,
                         None,
-                        Some(&address_str),
+                        Some(&creator_address_str),
                         Some(indexer_client::apis::parameter_enums::AddressRole::Sender),
                         None,
                         None,
@@ -615,13 +615,9 @@ impl AppDeployer {
                 let mut latest_app_update_transaction = None;
 
                 // Filter transactions to find creation and latest update
-                let mut app_transactions: Vec<_> = transactions_response
-                    .transactions
-                    .into_iter()
-                    .filter(|t| t.sender == address_str)
-                    .collect();
-
+                let mut app_transactions: Vec<_> = transactions_response.transactions;
                 // Sort by confirmed round (desc) and intra-round offset (desc) to get latest first
+                // In theory this is the order that indexer returns them, but this ensures it
                 app_transactions.sort_by(|a, b| {
                     match b
                         .confirmed_round
@@ -638,6 +634,10 @@ impl AppDeployer {
 
                 // Find creation transaction and latest update transaction
                 for transaction in &app_transactions {
+                    if transaction.sender != creator_address_str {
+                        continue; // Skip transactions not from the creator
+                    }
+
                     if let Some(app_transaction) = &transaction.application_transaction {
                         if app_transaction.application_id == 0 {
                             // App creation transaction
@@ -691,7 +691,7 @@ impl AppDeployer {
 
         {
             let mut app_lookups = self.app_lookups.lock().unwrap();
-            app_lookups.insert(address_str, lookup.clone());
+            app_lookups.insert(creator_address_str, lookup.clone());
         }
         Ok(lookup)
     }
