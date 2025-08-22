@@ -10,6 +10,15 @@ use algokit_utils::transactions::common::TransactionSignerGetter as RustTransact
 use algokit_utils::transactions::common::TransactionWithSigner as RustTransactionWithSigner;
 
 use async_trait::async_trait;
+use derive_more::Debug;
+use snafu::Snafu;
+
+// TODO: implement proper errors
+#[derive(Debug, Snafu, uniffi::Error)]
+pub enum UtilsError {
+    #[snafu(display("UtilsError: {message}"))]
+    UtilsError { message: String },
+}
 
 #[uniffi::export(with_foreign)]
 #[async_trait]
@@ -17,13 +26,13 @@ pub trait TransactionSigner: Send + Sync {
     async fn sign_transactions(
         &self,
         transactions: Vec<Transaction>,
-        indices: Vec<u8>,
-    ) -> Result<Vec<SignedTransaction>, String>;
+        indices: Vec<u32>,
+    ) -> Result<Vec<SignedTransaction>, UtilsError>;
 
     async fn sign_transaction(
         &self,
         transaction: Transaction,
-    ) -> Result<SignedTransaction, String> {
+    ) -> Result<SignedTransaction, UtilsError> {
         let result = self.sign_transactions(vec![transaction], vec![0]).await?;
         Ok(result[0].clone())
     }
@@ -48,8 +57,9 @@ impl RustTransactionSigner for RustTransactionSignerFromFfi {
 
         let ffi_signed_txns = self
             .ffi_signer
-            .sign_transactions(ffi_txns, indices.iter().map(|&i| i as u8).collect())
-            .await?;
+            .sign_transactions(ffi_txns, indices.iter().map(|&i| i as u32).collect())
+            .await
+            .map_err(|e| e.to_string())?;
 
         let signed_txns: Result<Vec<RustSignedTransaction>, _> = ffi_signed_txns
             .into_iter()
@@ -68,11 +78,13 @@ impl TransactionSigner for FfiTransactionSignerFromRust {
     async fn sign_transactions(
         &self,
         transactions: Vec<Transaction>,
-        indices: Vec<u8>,
-    ) -> Result<Vec<SignedTransaction>, String> {
+        indices: Vec<u32>,
+    ) -> Result<Vec<SignedTransaction>, UtilsError> {
         let rust_txns: Result<Vec<RustTransaction>, _> =
             transactions.into_iter().map(|t| t.try_into()).collect();
-        let rust_txns = rust_txns.map_err(|e| format!("Failed to convert transactions: {}", e))?;
+        let rust_txns = rust_txns.map_err(|e| UtilsError::UtilsError {
+            message: format!("Failed to convert transactions: {}", e),
+        })?;
 
         let signed_txns = self
             .rust_signer
@@ -80,11 +92,16 @@ impl TransactionSigner for FfiTransactionSignerFromRust {
                 &rust_txns,
                 &indices.iter().map(|&i| i as usize).collect::<Vec<_>>(),
             )
-            .await?;
+            .await
+            .map_err(|e| UtilsError::UtilsError {
+                message: e.to_string(),
+            })?;
 
         let ffi_signed_txns: Result<Vec<SignedTransaction>, _> =
             signed_txns.into_iter().map(|st| st.try_into()).collect();
-        ffi_signed_txns.map_err(|e| format!("Failed to convert signed transactions: {}", e))
+        ffi_signed_txns.map_err(|e| UtilsError::UtilsError {
+            message: format!("Failed to convert signed transactions: {}", e),
+        })
     }
 }
 
@@ -128,13 +145,16 @@ pub struct TransactionWithSigner {
 }
 
 impl TryFrom<TransactionWithSigner> for RustTransactionWithSigner {
-    type Error = String;
+    type Error = UtilsError;
 
     fn try_from(value: TransactionWithSigner) -> Result<Self, Self::Error> {
-        let rust_txn: RustTransaction = value
-            .transaction
-            .try_into()
-            .map_err(|e| format!("Failed to convert transaction: {}", e))?;
+        let rust_txn: RustTransaction =
+            value
+                .transaction
+                .try_into()
+                .map_err(|e| UtilsError::UtilsError {
+                    message: format!("Failed to convert transaction: {}", e),
+                })?;
 
         Ok(RustTransactionWithSigner {
             transaction: rust_txn,
@@ -146,13 +166,16 @@ impl TryFrom<TransactionWithSigner> for RustTransactionWithSigner {
 }
 
 impl TryFrom<RustTransactionWithSigner> for TransactionWithSigner {
-    type Error = String;
+    type Error = UtilsError;
 
     fn try_from(value: RustTransactionWithSigner) -> Result<Self, Self::Error> {
-        let ffi_txn: Transaction = value
-            .transaction
-            .try_into()
-            .map_err(|e| format!("Failed to convert transaction: {}", e))?;
+        let ffi_txn: Transaction =
+            value
+                .transaction
+                .try_into()
+                .map_err(|e| UtilsError::UtilsError {
+                    message: format!("Failed to convert transaction: {}", e),
+                })?;
 
         Ok(TransactionWithSigner {
             transaction: ffi_txn,
@@ -163,18 +186,29 @@ impl TryFrom<RustTransactionWithSigner> for TransactionWithSigner {
     }
 }
 
-#[derive(uniffi::Record)]
+#[derive(Debug, uniffi::Record)]
 pub struct CommonParams {
     pub sender: String,
+    #[debug(skip)]
+    #[uniffi(default = None)]
     pub signer: Option<Arc<dyn TransactionSigner>>,
+    #[uniffi(default = None)]
     pub rekey_to: Option<String>,
+    #[uniffi(default = None)]
     pub note: Option<Vec<u8>>,
+    #[uniffi(default = None)]
     pub lease: Option<Vec<u8>>,
+    #[uniffi(default = None)]
     pub static_fee: Option<u64>,
+    #[uniffi(default = None)]
     pub extra_fee: Option<u64>,
+    #[uniffi(default = None)]
     pub max_fee: Option<u64>,
+    #[uniffi(default = None)]
     pub validity_window: Option<u64>,
+    #[uniffi(default = None)]
     pub first_valid_round: Option<u64>,
+    #[uniffi(default = None)]
     pub last_valid_round: Option<u64>,
 }
 
@@ -199,21 +233,24 @@ impl From<RustCommonParams> for CommonParams {
 }
 
 impl TryFrom<CommonParams> for RustCommonParams {
-    type Error = String;
+    type Error = UtilsError;
 
     fn try_from(params: CommonParams) -> Result<Self, Self::Error> {
         Ok(RustCommonParams {
-            sender: params
-                .sender
-                .parse()
-                .map_err(|e| format!("Invalid sender address: {e}"))?,
+            sender: params.sender.parse().map_err(|e| UtilsError::UtilsError {
+                message: format!("Invalid sender address: {e}"),
+            })?,
             signer: params.signer.map(|ffi_signer| {
                 Arc::new(RustTransactionSignerFromFfi { ffi_signer })
                     as Arc<dyn RustTransactionSigner>
             }),
             rekey_to: params
                 .rekey_to
-                .map(|a| a.parse().map_err(|e| format!("Invalid rekey address: {e}")))
+                .map(|a| {
+                    a.parse().map_err(|e| UtilsError::UtilsError {
+                        message: format!("Invalid rekey address: {e}"),
+                    })
+                })
                 .transpose()?,
             note: params.note,
             lease: params

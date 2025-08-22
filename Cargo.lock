@@ -181,7 +181,9 @@ dependencies = [
  "algokit_transact_ffi",
  "algokit_utils",
  "async-trait",
+ "derive_more",
  "ffi_mutex",
+ "snafu",
  "uniffi",
 ]
 

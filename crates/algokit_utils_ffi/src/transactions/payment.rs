@@ -1,3 +1,5 @@
+use crate::transactions::common::UtilsError;
+
 use super::common::CommonParams;
 use algokit_utils::transactions::PaymentParams as RustPaymentParams;
 
@@ -16,7 +18,7 @@ pub struct PaymentParams {
 }
 
 impl TryFrom<PaymentParams> for RustPaymentParams {
-    type Error = String;
+    type Error = UtilsError;
 
     fn try_from(params: PaymentParams) -> Result<Self, Self::Error> {
         let common_params = params.common_params.try_into()?;
@@ -25,7 +27,9 @@ impl TryFrom<PaymentParams> for RustPaymentParams {
             receiver: params
                 .receiver
                 .parse()
-                .map_err(|_| "Invalid receiver address")?,
+                .map_err(|_| UtilsError::UtilsError {
+                    message: "Invalid receiver address".to_string(),
+                })?,
             amount: params.amount,
         })
     }

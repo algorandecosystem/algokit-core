@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
-use crate::transactions::common::{RustTransactionSignerGetterFromFfi, TransactionSignerGetter};
+use crate::transactions::common::{
+    RustTransactionSignerGetterFromFfi, TransactionSignerGetter, UtilsError,
+};
 use algod_client::AlgodClient as RustAlgodClient;
 use algokit_utils::transactions::composer::Composer as RustComposer;
 use ffi_mutex::FfiMutex as Mutex;
@@ -8,6 +10,13 @@ use ffi_mutex::FfiMutex as Mutex;
 #[derive(uniffi::Object)]
 pub struct AlgodClient {
     inner_algod_client: Mutex<RustAlgodClient>,
+}
+
+#[uniffi::export]
+pub fn algod_localnet() -> AlgodClient {
+    AlgodClient {
+        inner_algod_client: Mutex::new(RustAlgodClient::localnet()),
+    }
 }
 
 #[derive(uniffi::Object)]
@@ -38,16 +47,35 @@ impl Composer {
         }
     }
 
-    pub fn add_payment(&self, params: super::payment::PaymentParams) -> Result<(), String> {
+    pub fn add_payment(&self, params: super::payment::PaymentParams) -> Result<(), UtilsError> {
         let mut composer = self.inner_composer.blocking_lock();
         composer
             .add_payment(params.try_into()?)
-            .map_err(|e| e.to_string())
+            .map_err(|e| UtilsError::UtilsError {
+                message: e.to_string(),
+            })
     }
 
-    pub async fn send(&self) -> Result<Vec<String>, String> {
+    pub async fn send(&self) -> Result<Vec<String>, UtilsError> {
         let mut composer = self.inner_composer.blocking_lock();
-        let result = composer.send(None).await.map_err(|e| e.to_string())?;
+        let result = composer
+            .send(None)
+            .await
+            .map_err(|e| UtilsError::UtilsError {
+                message: e.to_string(),
+            })?;
         Ok(result.transaction_ids)
+    }
+
+    pub async fn build(&self) -> Result<(), UtilsError> {
+        let mut composer = self.inner_composer.blocking_lock();
+        composer
+            .build(None)
+            .await
+            .map_err(|e| UtilsError::UtilsError {
+                message: e.to_string(),
+            })?;
+
+        Ok(())
     }
 }

@@ -3,13 +3,18 @@ name = "algokit_utils_ffi"
 version = "0.1.0"
 edition = "2024"
 
+[lib]
+crate-type = ["lib", "cdylib", "staticlib"]
+
 [dependencies]
 algod_client = { version = "0.0.1", path = "../algod_client" }
 algokit_transact = { version = "0.1.0", path = "../algokit_transact" }
 algokit_transact_ffi = { version = "0.1.0", path = "../algokit_transact_ffi" }
 algokit_utils = { version = "0.1.0", path = "../algokit_utils" }
 async-trait = "0.1.89"
+derive_more = "2.0.1"
 ffi_mutex = { version = "0.1.0", path = "../ffi_mutex" }
+snafu.workspace = true
 uniffi = { workspace = true, features = [
   "scaffolding-ffi-buffer-fns",
 ] }
