@@ -19,7 +19,7 @@ pub struct MultisigSubsignature {
     /// Address of the participant.
     address: String,
     /// Optional signature bytes for the participant.
-    signature: Option<ByteBuf>,
+    signature: Option<Vec<u8>>,
 }
 
 impl From<algokit_transact::MultisigSignature> for MultisigSignature {

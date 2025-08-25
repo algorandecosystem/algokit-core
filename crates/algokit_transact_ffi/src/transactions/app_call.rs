@@ -19,13 +19,13 @@ pub struct AppCallTransactionFields {
     ///
     /// Approval programs may reject the transaction.
     /// Only required for app creation and update transactions.
-    approval_program: Option<ByteBuf>,
+    approval_program: Option<Vec<u8>>,
 
     /// Logic executed for app call transactions with on-completion set to "clear".
     ///
     /// Clear state programs cannot reject the transaction.
     /// Only required for app creation and update transactions.
-    clear_state_program: Option<ByteBuf>,
+    clear_state_program: Option<Vec<u8>>,
 
     /// Holds the maximum number of global state values.
     ///
@@ -50,7 +50,7 @@ pub struct AppCallTransactionFields {
 
     /// Transaction specific arguments available in the app's
     /// approval program and clear state program.
-    args: Option<Vec<ByteBuf>>,
+    args: Option<Vec<Vec<u8>>>,
 
     /// List of accounts in addition to the sender that may be accessed
     /// from the app's approval program and clear state program.
@@ -112,14 +112,12 @@ impl TryFrom<Transaction> for algokit_transact::AppCallTransactionFields {
             header,
             app_id: data.app_id,
             on_complete: data.on_complete.into(),
-            approval_program: data.approval_program.map(ByteBuf::into_vec),
-            clear_state_program: data.clear_state_program.map(ByteBuf::into_vec),
+            approval_program: data.approval_program,
+            clear_state_program: data.clear_state_program,
             global_state_schema: data.global_state_schema.map(Into::into),
             local_state_schema: data.local_state_schema.map(Into::into),
             extra_program_pages: data.extra_program_pages,
-            args: data
-                .args
-                .map(|args| args.into_iter().map(ByteBuf::into_vec).collect()),
+            args: data.args,
             account_references: data
                 .account_references
                 .map(|addrs| {
@@ -157,7 +155,7 @@ pub struct BoxReference {
     app_id: u64,
 
     /// Name of the box.
-    name: ByteBuf,
+    name: Vec<u8>,
 }
 
 impl From<algokit_transact::BoxReference> for BoxReference {
@@ -173,7 +171,7 @@ impl From<BoxReference> for algokit_transact::BoxReference {
     fn from(val: BoxReference) -> Self {
         algokit_transact::BoxReference {
             app_id: val.app_id,
-            name: val.name.into_vec(),
+            name: val.name,
         }
     }
 }

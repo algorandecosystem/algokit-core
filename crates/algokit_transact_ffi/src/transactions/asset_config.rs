@@ -75,7 +75,7 @@ pub struct AssetConfigTransactionFields {
     /// The format of this metadata is up to the application.
     ///
     /// This field can only be specified upon asset creation.
-    metadata_hash: Option<ByteBuf>,
+    metadata_hash: Option<Vec<u8>>,
 
     /// The address of the optional account that can manage the configuration of the asset and destroy it.
     ///

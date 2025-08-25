@@ -7,7 +7,6 @@ use algokit_transact::{
 };
 use ffi_macros::{ffi_enum, ffi_func, ffi_record};
 use serde::{Deserialize, Serialize};
-use serde_bytes::ByteBuf;
 
 pub use multisig::{MultisigSignature, MultisigSubsignature};
 pub use transactions::AppCallTransactionFields;
@@ -86,24 +85,6 @@ use uniffi::{self};
 #[cfg(feature = "ffi_uniffi")]
 uniffi::setup_scaffolding!();
 
-// We need to use ByteBuf directly in the structs to get Uint8Array in TSify
-// custom_type! and this impl is used to convert the ByteBuf to a Vec<u8> for the UniFFI bindings
-#[cfg(feature = "ffi_uniffi")]
-impl UniffiCustomTypeConverter for ByteBuf {
-    type Builtin = Vec<u8>;
-
-    fn into_custom(val: Self::Builtin) -> uniffi::Result<Self> {
-        Ok(ByteBuf::from(val))
-    }
-
-    fn from_custom(obj: Self) -> Self::Builtin {
-        obj.to_vec()
-    }
-}
-
-#[cfg(feature = "ffi_uniffi")]
-uniffi::custom_type!(ByteBuf, Vec<u8>);
-
 // This becomes an enum in UniFFI language bindings and a
 // string literal union in TS
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -119,7 +100,7 @@ pub enum TransactionType {
 
 #[ffi_record]
 pub struct KeyPairAccount {
-    pub_key: ByteBuf,
+    pub_key: Vec<u8>,
 }
 
 impl From<algokit_transact::KeyPairAccount> for KeyPairAccount {
@@ -185,17 +166,17 @@ pub struct Transaction {
 
     last_valid: u64,
 
-    genesis_hash: Option<ByteBuf>,
+    genesis_hash: Option<Vec<u8>>,
 
     genesis_id: Option<String>,
 
-    note: Option<ByteBuf>,
+    note: Option<Vec<u8>>,
 
     rekey_to: Option<String>,
 
-    lease: Option<ByteBuf>,
+    lease: Option<Vec<u8>>,
 
-    group: Option<ByteBuf>,
+    group: Option<Vec<u8>>,
 
     payment: Option<PaymentTransactionFields>,
 
@@ -268,7 +249,7 @@ impl TryFrom<Transaction> for algokit_transact::TransactionHeader {
                 .genesis_hash
                 .map(|buf| bytebuf_to_bytes::<32>(&buf))
                 .transpose()?,
-            note: tx.note.map(ByteBuf::into_vec),
+            note: tx.note,
             rekey_to: tx.rekey_to.map(|addr| addr.parse()).transpose()?,
             lease: tx
                 .lease
@@ -375,7 +356,7 @@ pub struct SignedTransaction {
     pub transaction: Transaction,
 
     /// Optional Ed25519 signature authorizing the transaction.
-    pub signature: Option<ByteBuf>,
+    pub signature: Option<Vec<u8>>,
 
     /// Optional auth address applicable if the transaction sender is a rekeyed account.
     pub auth_address: Option<String>,
@@ -423,16 +404,12 @@ impl TryFrom<SignedTransaction> for algokit_transact::SignedTransaction {
     }
 }
 
-fn bytebuf_to_bytes<const N: usize>(buf: &ByteBuf) -> Result<[u8; N], AlgoKitTransactError> {
+fn bytebuf_to_bytes<const N: usize>(buf: &Vec<u8>) -> Result<[u8; N], AlgoKitTransactError> {
     buf.to_vec()
         .try_into()
         .map_err(|_| AlgoKitTransactError::DecodingError {
             message: format!("Expected {} bytes but got a different length", N),
         })
-}
-
-fn byte32_to_bytebuf(b32: Byte32) -> ByteBuf {
-    ByteBuf::from(b32.to_vec())
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -453,11 +430,11 @@ fn build_transaction(
         first_valid: header.first_valid,
         last_valid: header.last_valid,
         genesis_id: header.genesis_id,
-        genesis_hash: header.genesis_hash.map(byte32_to_bytebuf),
+        genesis_hash: header.genesis_hash.map(Into::into),
         note: header.note.map(Into::into),
         rekey_to: header.rekey_to.map(|addr| addr.as_str()),
-        lease: header.lease.map(byte32_to_bytebuf),
-        group: header.group.map(byte32_to_bytebuf),
+        lease: header.lease.map(Into::into),
+        group: header.group.map(Into::into),
         payment,
         asset_transfer,
         asset_config,
