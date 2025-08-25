@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2025-08-15
 decision-makers: David Rojas
 consulted: MakerX & Algorand Foundation AlgoKit engineering team
