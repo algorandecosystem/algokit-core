@@ -7,7 +7,6 @@ use algokit_transact::{
 };
 use ffi_macros::{ffi_enum, ffi_func, ffi_record};
 use serde::{Deserialize, Serialize};
-use serde_bytes::ByteBuf;
 
 pub use multisig::{MultisigSignature, MultisigSubsignature};
 pub use transactions::AppCallTransactionFields;
@@ -32,16 +31,6 @@ pub enum AlgoKitTransactError {
     InputError { message: String },
     #[snafu(display("MsgPackError: {message}"))]
     MsgPackError { message: String },
-}
-
-// For now, in WASM we just throw the string, hence the error
-// type being included in the error string above
-// Perhaps in the future we could use a class like in UniFFI
-#[cfg(feature = "ffi_wasm")]
-impl From<AlgoKitTransactError> for JsValue {
-    fn from(e: AlgoKitTransactError) -> Self {
-        JsValue::from(e.to_string())
-    }
 }
 
 // Convert errors from the Rust crate into the FFI-specific errors
@@ -96,36 +85,9 @@ use uniffi::{self};
 #[cfg(feature = "ffi_uniffi")]
 uniffi::setup_scaffolding!();
 
-#[cfg(feature = "ffi_wasm")]
-use js_sys::Uint8Array;
-#[cfg(feature = "ffi_wasm")]
-use tsify_next::Tsify;
-#[cfg(feature = "ffi_wasm")]
-use wasm_bindgen::prelude::*;
-
-// We need to use ByteBuf directly in the structs to get Uint8Array in TSify
-// custom_type! and this impl is used to convert the ByteBuf to a Vec<u8> for the UniFFI bindings
-#[cfg(feature = "ffi_uniffi")]
-impl UniffiCustomTypeConverter for ByteBuf {
-    type Builtin = Vec<u8>;
-
-    fn into_custom(val: Self::Builtin) -> uniffi::Result<Self> {
-        Ok(ByteBuf::from(val))
-    }
-
-    fn from_custom(obj: Self) -> Self::Builtin {
-        obj.to_vec()
-    }
-}
-
-#[cfg(feature = "ffi_uniffi")]
-uniffi::custom_type!(ByteBuf, Vec<u8>);
-
 // This becomes an enum in UniFFI language bindings and a
 // string literal union in TS
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-#[cfg_attr(feature = "ffi_wasm", derive(Tsify))]
-#[cfg_attr(feature = "ffi_wasm", tsify(into_wasm_abi, from_wasm_abi))]
 #[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Enum))]
 pub enum TransactionType {
     Payment,
@@ -138,13 +100,13 @@ pub enum TransactionType {
 
 #[ffi_record]
 pub struct KeyPairAccount {
-    pub_key: ByteBuf,
+    pub_key: Vec<u8>,
 }
 
 impl From<algokit_transact::KeyPairAccount> for KeyPairAccount {
     fn from(value: algokit_transact::KeyPairAccount) -> Self {
         Self {
-            pub_key: value.pub_key.to_vec().into(),
+            pub_key: value.pub_key.to_vec(),
         }
     }
 }
@@ -153,9 +115,11 @@ impl TryFrom<KeyPairAccount> for algokit_transact::KeyPairAccount {
     type Error = AlgoKitTransactError;
 
     fn try_from(value: KeyPairAccount) -> Result<Self, Self::Error> {
-        let pub_key: [u8; ALGORAND_PUBLIC_KEY_BYTE_LENGTH] = bytebuf_to_bytes(&value.pub_key)
-            .map_err(|e| AlgoKitTransactError::DecodingError {
-                message: format!("Error while decoding a public key: {}", e),
+        let pub_key: [u8; ALGORAND_PUBLIC_KEY_BYTE_LENGTH] =
+            vec_to_array(&value.pub_key, "public key").map_err(|e| {
+                AlgoKitTransactError::DecodingError {
+                    message: format!("Error while decoding a public key: {}", e),
+                }
             })?;
 
         Ok(algokit_transact::KeyPairAccount::from_pubkey(&pub_key))
@@ -165,7 +129,7 @@ impl TryFrom<KeyPairAccount> for algokit_transact::KeyPairAccount {
 impl From<algokit_transact::Address> for KeyPairAccount {
     fn from(value: algokit_transact::Address) -> Self {
         Self {
-            pub_key: value.as_bytes().to_vec().into(),
+            pub_key: value.as_bytes().to_vec(),
         }
     }
 }
@@ -204,17 +168,17 @@ pub struct Transaction {
 
     last_valid: u64,
 
-    genesis_hash: Option<ByteBuf>,
+    genesis_hash: Option<Vec<u8>>,
 
     genesis_id: Option<String>,
 
-    note: Option<ByteBuf>,
+    note: Option<Vec<u8>>,
 
     rekey_to: Option<String>,
 
-    lease: Option<ByteBuf>,
+    lease: Option<Vec<u8>>,
 
-    group: Option<ByteBuf>,
+    group: Option<Vec<u8>>,
 
     payment: Option<PaymentTransactionFields>,
 
@@ -285,17 +249,17 @@ impl TryFrom<Transaction> for algokit_transact::TransactionHeader {
             genesis_id: tx.genesis_id,
             genesis_hash: tx
                 .genesis_hash
-                .map(|buf| bytebuf_to_bytes::<32>(&buf))
+                .map(|buf| vec_to_array::<32>(&buf, "genesis hash"))
                 .transpose()?,
-            note: tx.note.map(ByteBuf::into_vec),
+            note: tx.note,
             rekey_to: tx.rekey_to.map(|addr| addr.parse()).transpose()?,
             lease: tx
                 .lease
-                .map(|buf| bytebuf_to_bytes::<32>(&buf))
+                .map(|buf| vec_to_array::<32>(&buf, "lease"))
                 .transpose()?,
             group: tx
                 .group
-                .map(|buf| bytebuf_to_bytes::<32>(&buf))
+                .map(|buf| vec_to_array::<32>(&buf, "group ID"))
                 .transpose()?,
         })
     }
@@ -394,7 +358,7 @@ pub struct SignedTransaction {
     pub transaction: Transaction,
 
     /// Optional Ed25519 signature authorizing the transaction.
-    pub signature: Option<ByteBuf>,
+    pub signature: Option<Vec<u8>>,
 
     /// Optional auth address applicable if the transaction sender is a rekeyed account.
     pub auth_address: Option<String>,
@@ -407,7 +371,7 @@ impl From<algokit_transact::SignedTransaction> for SignedTransaction {
     fn from(signed_tx: algokit_transact::SignedTransaction) -> Self {
         Self {
             transaction: signed_tx.transaction.try_into().unwrap(),
-            signature: signed_tx.signature.map(|sig| sig.to_vec().into()),
+            signature: signed_tx.signature.map(|sig| sig.to_vec()),
             auth_address: signed_tx.auth_address.map(|addr| addr.as_str()),
             multisignature: signed_tx.multisignature.map(Into::into),
         }
@@ -422,7 +386,7 @@ impl TryFrom<SignedTransaction> for algokit_transact::SignedTransaction {
             transaction: signed_tx.transaction.try_into()?,
             signature: signed_tx
                 .signature
-                .map(|sig| bytebuf_to_bytes(&sig))
+                .map(|sig| vec_to_array(&sig, "signature"))
                 .transpose()
                 .map_err(|e| AlgoKitTransactError::DecodingError {
                     message: format!(
@@ -442,16 +406,20 @@ impl TryFrom<SignedTransaction> for algokit_transact::SignedTransaction {
     }
 }
 
-fn bytebuf_to_bytes<const N: usize>(buf: &ByteBuf) -> Result<[u8; N], AlgoKitTransactError> {
+fn vec_to_array<const N: usize>(
+    buf: &[u8],
+    context: &str,
+) -> Result<[u8; N], AlgoKitTransactError> {
     buf.to_vec()
         .try_into()
         .map_err(|_| AlgoKitTransactError::DecodingError {
-            message: format!("Expected {} bytes but got a different length", N),
+            message: format!(
+                "Expected {} {} bytes but got {} bytes",
+                context,
+                N,
+                buf.len(),
+            ),
         })
-}
-
-fn byte32_to_bytebuf(b32: Byte32) -> ByteBuf {
-    ByteBuf::from(b32.to_vec())
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -472,11 +440,11 @@ fn build_transaction(
         first_valid: header.first_valid,
         last_valid: header.last_valid,
         genesis_id: header.genesis_id,
-        genesis_hash: header.genesis_hash.map(byte32_to_bytebuf),
-        note: header.note.map(Into::into),
+        genesis_hash: header.genesis_hash.map(Into::into),
+        note: header.note,
         rekey_to: header.rekey_to.map(|addr| addr.as_str()),
-        lease: header.lease.map(byte32_to_bytebuf),
-        group: header.group.map(byte32_to_bytebuf),
+        lease: header.lease.map(Into::into),
+        group: header.group.map(Into::into),
         payment,
         asset_transfer,
         asset_config,
@@ -485,9 +453,6 @@ fn build_transaction(
         asset_freeze,
     })
 }
-
-// Each function need to be explicitly renamed for WASM
-// and exported for UniFFI
 
 /// Get the transaction type from the encoded transaction.
 /// This is particularly useful when decoding a transaction that has an unknown type
@@ -519,23 +484,6 @@ pub fn encode_transaction(tx: Transaction) -> Result<Vec<u8>, AlgoKitTransactErr
 ///
 /// # Returns
 /// A collection of MsgPack encoded bytes or an error if encoding fails.
-#[cfg(feature = "ffi_wasm")]
-#[ffi_func]
-/// Encode transactions with the domain separation (e.g. "TX") prefix
-pub fn encode_transactions(txs: Vec<Transaction>) -> Result<Vec<Uint8Array>, AlgoKitTransactError> {
-    txs.into_iter()
-        .map(|tx| encode_transaction(tx).map(|bytes| bytes.as_slice().into()))
-        .collect()
-}
-
-/// Encode transactions to MsgPack with the domain separation (e.g. "TX") prefix.
-///
-/// # Parameters
-/// * `txs` - A collection of transactions to encode
-///
-/// # Returns
-/// A collection of MsgPack encoded bytes or an error if encoding fails.
-#[cfg(not(feature = "ffi_wasm"))]
 #[ffi_func]
 pub fn encode_transactions(txs: Vec<Transaction>) -> Result<Vec<Vec<u8>>, AlgoKitTransactError> {
     txs.into_iter().map(encode_transaction).collect()
@@ -569,25 +517,6 @@ pub fn decode_transaction(encoded_tx: &[u8]) -> Result<Transaction, AlgoKitTrans
 ///
 /// # Returns
 /// A collection of decoded transactions or an error if decoding fails.
-#[cfg(feature = "ffi_wasm")]
-#[ffi_func]
-pub fn decode_transactions(
-    encoded_txs: Vec<Uint8Array>,
-) -> Result<Vec<Transaction>, AlgoKitTransactError> {
-    encoded_txs
-        .iter()
-        .map(|bytes| decode_transaction(bytes.to_vec().as_slice()))
-        .collect()
-}
-
-/// Decodes a collection of MsgPack bytes into a transaction collection.
-///
-/// # Parameters
-/// * `encoded_txs` - A collection of MsgPack encoded bytes, each representing a transaction.
-///
-/// # Returns
-/// A collection of decoded transactions or an error if decoding fails.
-#[cfg(not(feature = "ffi_wasm"))]
 #[ffi_func]
 pub fn decode_transactions(
     encoded_txs: Vec<Vec<u8>>,
@@ -772,25 +701,6 @@ pub fn decode_signed_transaction(bytes: &[u8]) -> Result<SignedTransaction, Algo
 ///
 /// # Returns
 /// A collection of decoded signed transactions or an error if decoding fails.
-#[cfg(feature = "ffi_wasm")]
-#[ffi_func]
-pub fn decode_signed_transactions(
-    encoded_signed_txs: Vec<Uint8Array>,
-) -> Result<Vec<SignedTransaction>, AlgoKitTransactError> {
-    encoded_signed_txs
-        .iter()
-        .map(|bytes| decode_signed_transaction(bytes.to_vec().as_slice()))
-        .collect()
-}
-
-/// Decodes a collection of MsgPack bytes into a signed transaction collection.
-///
-/// # Parameters
-/// * `encoded_signed_txs` - A collection of MsgPack encoded bytes, each representing a signed transaction.
-///
-/// # Returns
-/// A collection of decoded signed transactions or an error if decoding fails.
-#[cfg(not(feature = "ffi_wasm"))]
 #[ffi_func]
 pub fn decode_signed_transactions(
     encoded_signed_txs: Vec<Vec<u8>>,
@@ -827,27 +737,6 @@ pub fn encode_signed_transaction(
 ///
 /// # Returns
 /// A collection of MsgPack encoded bytes or an error if encoding fails.
-#[cfg(feature = "ffi_wasm")]
-#[ffi_func]
-pub fn encode_signed_transactions(
-    signed_txs: Vec<SignedTransaction>,
-) -> Result<Vec<Uint8Array>, AlgoKitTransactError> {
-    signed_txs
-        .into_iter()
-        .map(|tx| encode_signed_transaction(tx).map(|bytes| bytes.as_slice().into()))
-        .collect()
-}
-
-/// Encode signed transactions to MsgPack for sending on the network.
-///
-/// This method performs canonical encoding. No domain separation prefix is applicable.
-///
-/// # Parameters
-/// * `signed_txs` - A collection of signed transactions to encode
-///
-/// # Returns
-/// A collection of MsgPack encoded bytes or an error if encoding fails.
-#[cfg(not(feature = "ffi_wasm"))]
 #[ffi_func]
 pub fn encode_signed_transactions(
     signed_txs: Vec<SignedTransaction>,
