@@ -75,14 +75,12 @@ impl From<algokit_transact::AppCallTransactionFields> for AppCallTransactionFiel
         Self {
             app_id: tx.app_id,
             on_complete: tx.on_complete.into(),
-            approval_program: tx.approval_program.map(Into::into),
-            clear_state_program: tx.clear_state_program.map(Into::into),
+            approval_program: tx.approval_program,
+            clear_state_program: tx.clear_state_program,
             global_state_schema: tx.global_state_schema.map(Into::into),
             local_state_schema: tx.local_state_schema.map(Into::into),
             extra_program_pages: tx.extra_program_pages,
-            args: tx
-                .args
-                .map(|args| args.into_iter().map(Into::into).collect()),
+            args: tx.args.map(|args| args.into_iter().collect()),
             account_references: tx
                 .account_references
                 .map(|addrs| addrs.into_iter().map(|addr| addr.as_str()).collect()),
@@ -162,7 +160,7 @@ impl From<algokit_transact::BoxReference> for BoxReference {
     fn from(value: algokit_transact::BoxReference) -> Self {
         Self {
             app_id: value.app_id,
-            name: value.name.into(),
+            name: value.name,
         }
     }
 }

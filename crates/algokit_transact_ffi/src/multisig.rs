@@ -52,7 +52,7 @@ impl From<algokit_transact::MultisigSubsignature> for MultisigSubsignature {
     fn from(value: algokit_transact::MultisigSubsignature) -> Self {
         Self {
             address: value.address.as_str(),
-            signature: value.signature.map(|sig| sig.to_vec().into()),
+            signature: value.signature.map(|sig| sig.to_vec()),
         }
     }
 }

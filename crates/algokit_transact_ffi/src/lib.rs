@@ -106,7 +106,7 @@ pub struct KeyPairAccount {
 impl From<algokit_transact::KeyPairAccount> for KeyPairAccount {
     fn from(value: algokit_transact::KeyPairAccount) -> Self {
         Self {
-            pub_key: value.pub_key.to_vec().into(),
+            pub_key: value.pub_key.to_vec(),
         }
     }
 }
@@ -129,7 +129,7 @@ impl TryFrom<KeyPairAccount> for algokit_transact::KeyPairAccount {
 impl From<algokit_transact::Address> for KeyPairAccount {
     fn from(value: algokit_transact::Address) -> Self {
         Self {
-            pub_key: value.as_bytes().to_vec().into(),
+            pub_key: value.as_bytes().to_vec(),
         }
     }
 }
@@ -371,7 +371,7 @@ impl From<algokit_transact::SignedTransaction> for SignedTransaction {
     fn from(signed_tx: algokit_transact::SignedTransaction) -> Self {
         Self {
             transaction: signed_tx.transaction.try_into().unwrap(),
-            signature: signed_tx.signature.map(|sig| sig.to_vec().into()),
+            signature: signed_tx.signature.map(|sig| sig.to_vec()),
             auth_address: signed_tx.auth_address.map(|addr| addr.as_str()),
             multisignature: signed_tx.multisignature.map(Into::into),
         }
@@ -441,7 +441,7 @@ fn build_transaction(
         last_valid: header.last_valid,
         genesis_id: header.genesis_id,
         genesis_hash: header.genesis_hash.map(Into::into),
-        note: header.note.map(Into::into),
+        note: header.note,
         rekey_to: header.rekey_to.map(|addr| addr.as_str()),
         lease: header.lease.map(Into::into),
         group: header.group.map(Into::into),

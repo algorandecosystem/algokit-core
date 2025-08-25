@@ -124,7 +124,7 @@ impl From<algokit_transact::AssetConfigTransactionFields> for AssetConfigTransac
             asset_name: tx.asset_name,
             unit_name: tx.unit_name,
             url: tx.url,
-            metadata_hash: tx.metadata_hash.map(|h| h.to_vec().into()),
+            metadata_hash: tx.metadata_hash.map(|h| h.to_vec()),
             manager: tx.manager.map(|addr| addr.as_str()),
             reserve: tx.reserve.map(|addr| addr.as_str()),
             freeze: tx.freeze.map(|addr| addr.as_str()),
