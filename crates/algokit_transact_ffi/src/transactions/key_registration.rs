@@ -4,9 +4,6 @@
 //! transactions that can be used across language bindings.
 use crate::*;
 
-#[cfg(feature = "ffi_wasm")]
-use tsify_next::Tsify;
-
 #[ffi_record]
 pub struct KeyRegistrationTransactionFields {
     /// Root participation public key (32 bytes)

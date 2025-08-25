@@ -182,8 +182,6 @@ impl From<BoxReference> for algokit_transact::BoxReference {
 ///
 /// These values define what additional actions occur with the transaction.
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-#[cfg_attr(feature = "ffi_wasm", derive(Tsify))]
-#[cfg_attr(feature = "ffi_wasm", tsify(into_wasm_abi, from_wasm_abi))]
 #[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Enum))]
 pub enum OnApplicationComplete {
     /// NoOp indicates that an app transaction will simply call its
