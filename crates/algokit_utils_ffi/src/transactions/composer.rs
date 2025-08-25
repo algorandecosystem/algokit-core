@@ -6,14 +6,16 @@ use crate::transactions::common::{
 use algod_client::AlgodClient as RustAlgodClient;
 use algokit_http_client::HttpClient;
 use algokit_utils::transactions::composer::Composer as RustComposer;
-use ffi_mutex::FfiMutex as Mutex;
+use tokio::sync::Mutex;
 
 #[derive(uniffi::Object)]
 pub struct AlgodClient {
     inner_algod_client: Mutex<RustAlgodClient>,
 }
 
+#[uniffi::export]
 impl AlgodClient {
+    #[uniffi::constructor]
     pub fn new(http_client: Arc<dyn HttpClient>) -> Self {
         let algod_client = RustAlgodClient::new(http_client);
         AlgodClient {

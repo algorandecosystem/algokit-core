@@ -453,7 +453,7 @@ def _uniffi_load_indirect():
 
 def _uniffi_check_contract_api_version(lib):
     # Get the bindings contract version from our ComponentInterface
-    bindings_contract_version = 26
+    bindings_contract_version = 29
     # Get the scaffolding contract version by calling the into the dylib
     scaffolding_contract_version = lib.ffi_algokit_transact_ffi_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version:
@@ -1203,19 +1203,19 @@ class _UniffiConverterBytes(_UniffiConverterRustBuffer):
         buf.write(value)
 
 
-class ApplicationCallTransactionFields:
+class AppCallTransactionFields:
     """
-    Represents an application call transaction that interacts with Algorand Smart Contracts.
+    Represents an app call transaction that interacts with Algorand Smart Contracts.
 
-    Application call transactions are used to create, update, delete, opt-in to,
+    App call transactions are used to create, update, delete, opt-in to,
     close out of, or clear state from Algorand applications (smart contracts).
     """
 
     app_id: "int"
     """
-    ID of the application being called.
+    ID of the app being called.
 
-    Set this to 0 to indicate an application creation call.
+    Set this to 0 to indicate an app creation call.
     """
 
     on_complete: "OnApplicationComplete"
@@ -1223,28 +1223,28 @@ class ApplicationCallTransactionFields:
     Defines what additional actions occur with the transaction.
     """
 
-    approval_program: "typing.Optional[ByteBuf]"
+    approval_program: "typing.Optional[bytes]"
     """
-    Logic executed for every application call transaction, except when
+    Logic executed for every app call transaction, except when
     on-completion is set to "clear".
 
     Approval programs may reject the transaction.
-    Only required for application creation and update transactions.
+    Only required for app creation and update transactions.
     """
 
-    clear_state_program: "typing.Optional[ByteBuf]"
+    clear_state_program: "typing.Optional[bytes]"
     """
-    Logic executed for application call transactions with on-completion set to "clear".
+    Logic executed for app call transactions with on-completion set to "clear".
 
     Clear state programs cannot reject the transaction.
-    Only required for application creation and update transactions.
+    Only required for app creation and update transactions.
     """
 
     global_state_schema: "typing.Optional[StateSchema]"
     """
     Holds the maximum number of global state values.
 
-    Only required for application creation transactions.
+    Only required for app creation transactions.
     This cannot be changed after creation.
     """
 
@@ -1252,13 +1252,13 @@ class ApplicationCallTransactionFields:
     """
     Holds the maximum number of local state values.
 
-    Only required for application creation transactions.
+    Only required for app creation transactions.
     This cannot be changed after creation.
     """
 
     extra_program_pages: "typing.Optional[int]"
     """
-    Number of additional pages allocated to the application's approval
+    Number of additional pages allocated to the app's approval
     and clear state programs.
 
     Each extra program page is 2048 bytes. The sum of approval program
@@ -1267,27 +1267,27 @@ class ApplicationCallTransactionFields:
     This cannot be changed after creation.
     """
 
-    args: "typing.Optional[typing.List[ByteBuf]]"
+    args: "typing.Optional[typing.List[bytes]]"
     """
-    Transaction specific arguments available in the application's
+    Transaction specific arguments available in the app's
     approval program and clear state program.
     """
 
     account_references: "typing.Optional[typing.List[str]]"
     """
     List of accounts in addition to the sender that may be accessed
-    from the application's approval program and clear state program.
+    from the app's approval program and clear state program.
     """
 
     app_references: "typing.Optional[typing.List[int]]"
     """
-    List of applications in addition to the current application that may be called
-    from the application's approval program and clear state program.
+    List of apps in addition to the current app that may be called
+    from the app's approval program and clear state program.
     """
 
     asset_references: "typing.Optional[typing.List[int]]"
     """
-    Lists the assets whose parameters may be accessed by this application's
+    Lists the assets whose parameters may be accessed by this app's
     approval program and clear state program.
 
     The access is read-only.
@@ -1298,7 +1298,7 @@ class ApplicationCallTransactionFields:
     The boxes that should be made available for the runtime of the program.
     """
 
-    def __init__(self, *, app_id: "int", on_complete: "OnApplicationComplete", approval_program: "typing.Optional[ByteBuf]" = _DEFAULT, clear_state_program: "typing.Optional[ByteBuf]" = _DEFAULT, global_state_schema: "typing.Optional[StateSchema]" = _DEFAULT, local_state_schema: "typing.Optional[StateSchema]" = _DEFAULT, extra_program_pages: "typing.Optional[int]" = _DEFAULT, args: "typing.Optional[typing.List[ByteBuf]]" = _DEFAULT, account_references: "typing.Optional[typing.List[str]]" = _DEFAULT, app_references: "typing.Optional[typing.List[int]]" = _DEFAULT, asset_references: "typing.Optional[typing.List[int]]" = _DEFAULT, box_references: "typing.Optional[typing.List[BoxReference]]" = _DEFAULT):
+    def __init__(self, *, app_id: "int", on_complete: "OnApplicationComplete", approval_program: "typing.Optional[bytes]" = _DEFAULT, clear_state_program: "typing.Optional[bytes]" = _DEFAULT, global_state_schema: "typing.Optional[StateSchema]" = _DEFAULT, local_state_schema: "typing.Optional[StateSchema]" = _DEFAULT, extra_program_pages: "typing.Optional[int]" = _DEFAULT, args: "typing.Optional[typing.List[bytes]]" = _DEFAULT, account_references: "typing.Optional[typing.List[str]]" = _DEFAULT, app_references: "typing.Optional[typing.List[int]]" = _DEFAULT, asset_references: "typing.Optional[typing.List[int]]" = _DEFAULT, box_references: "typing.Optional[typing.List[BoxReference]]" = _DEFAULT):
         self.app_id = app_id
         self.on_complete = on_complete
         if approval_program is _DEFAULT:
@@ -1343,7 +1343,7 @@ class ApplicationCallTransactionFields:
             self.box_references = box_references
 
     def __str__(self):
-        return "ApplicationCallTransactionFields(app_id={}, on_complete={}, approval_program={}, clear_state_program={}, global_state_schema={}, local_state_schema={}, extra_program_pages={}, args={}, account_references={}, app_references={}, asset_references={}, box_references={})".format(self.app_id, self.on_complete, self.approval_program, self.clear_state_program, self.global_state_schema, self.local_state_schema, self.extra_program_pages, self.args, self.account_references, self.app_references, self.asset_references, self.box_references)
+        return "AppCallTransactionFields(app_id={}, on_complete={}, approval_program={}, clear_state_program={}, global_state_schema={}, local_state_schema={}, extra_program_pages={}, args={}, account_references={}, app_references={}, asset_references={}, box_references={})".format(self.app_id, self.on_complete, self.approval_program, self.clear_state_program, self.global_state_schema, self.local_state_schema, self.extra_program_pages, self.args, self.account_references, self.app_references, self.asset_references, self.box_references)
 
     def __eq__(self, other):
         if self.app_id != other.app_id:
@@ -1372,18 +1372,18 @@ class ApplicationCallTransactionFields:
             return False
         return True
 
-class _UniffiConverterTypeApplicationCallTransactionFields(_UniffiConverterRustBuffer):
+class _UniffiConverterTypeAppCallTransactionFields(_UniffiConverterRustBuffer):
     @staticmethod
     def read(buf):
-        return ApplicationCallTransactionFields(
+        return AppCallTransactionFields(
             app_id=_UniffiConverterUInt64.read(buf),
             on_complete=_UniffiConverterTypeOnApplicationComplete.read(buf),
-            approval_program=_UniffiConverterOptionalTypeByteBuf.read(buf),
-            clear_state_program=_UniffiConverterOptionalTypeByteBuf.read(buf),
+            approval_program=_UniffiConverterOptionalBytes.read(buf),
+            clear_state_program=_UniffiConverterOptionalBytes.read(buf),
             global_state_schema=_UniffiConverterOptionalTypeStateSchema.read(buf),
             local_state_schema=_UniffiConverterOptionalTypeStateSchema.read(buf),
             extra_program_pages=_UniffiConverterOptionalUInt64.read(buf),
-            args=_UniffiConverterOptionalSequenceTypeByteBuf.read(buf),
+            args=_UniffiConverterOptionalSequenceBytes.read(buf),
             account_references=_UniffiConverterOptionalSequenceString.read(buf),
             app_references=_UniffiConverterOptionalSequenceUInt64.read(buf),
             asset_references=_UniffiConverterOptionalSequenceUInt64.read(buf),
@@ -1394,12 +1394,12 @@ class _UniffiConverterTypeApplicationCallTransactionFields(_UniffiConverterRustB
     def check_lower(value):
         _UniffiConverterUInt64.check_lower(value.app_id)
         _UniffiConverterTypeOnApplicationComplete.check_lower(value.on_complete)
-        _UniffiConverterOptionalTypeByteBuf.check_lower(value.approval_program)
-        _UniffiConverterOptionalTypeByteBuf.check_lower(value.clear_state_program)
+        _UniffiConverterOptionalBytes.check_lower(value.approval_program)
+        _UniffiConverterOptionalBytes.check_lower(value.clear_state_program)
         _UniffiConverterOptionalTypeStateSchema.check_lower(value.global_state_schema)
         _UniffiConverterOptionalTypeStateSchema.check_lower(value.local_state_schema)
         _UniffiConverterOptionalUInt64.check_lower(value.extra_program_pages)
-        _UniffiConverterOptionalSequenceTypeByteBuf.check_lower(value.args)
+        _UniffiConverterOptionalSequenceBytes.check_lower(value.args)
         _UniffiConverterOptionalSequenceString.check_lower(value.account_references)
         _UniffiConverterOptionalSequenceUInt64.check_lower(value.app_references)
         _UniffiConverterOptionalSequenceUInt64.check_lower(value.asset_references)
@@ -1409,12 +1409,12 @@ class _UniffiConverterTypeApplicationCallTransactionFields(_UniffiConverterRustB
     def write(value, buf):
         _UniffiConverterUInt64.write(value.app_id, buf)
         _UniffiConverterTypeOnApplicationComplete.write(value.on_complete, buf)
-        _UniffiConverterOptionalTypeByteBuf.write(value.approval_program, buf)
-        _UniffiConverterOptionalTypeByteBuf.write(value.clear_state_program, buf)
+        _UniffiConverterOptionalBytes.write(value.approval_program, buf)
+        _UniffiConverterOptionalBytes.write(value.clear_state_program, buf)
         _UniffiConverterOptionalTypeStateSchema.write(value.global_state_schema, buf)
         _UniffiConverterOptionalTypeStateSchema.write(value.local_state_schema, buf)
         _UniffiConverterOptionalUInt64.write(value.extra_program_pages, buf)
-        _UniffiConverterOptionalSequenceTypeByteBuf.write(value.args, buf)
+        _UniffiConverterOptionalSequenceBytes.write(value.args, buf)
         _UniffiConverterOptionalSequenceString.write(value.account_references, buf)
         _UniffiConverterOptionalSequenceUInt64.write(value.app_references, buf)
         _UniffiConverterOptionalSequenceUInt64.write(value.asset_references, buf)
@@ -1507,7 +1507,7 @@ class AssetConfigTransactionFields:
     This field can only be specified upon asset creation.
     """
 
-    metadata_hash: "typing.Optional[ByteBuf]"
+    metadata_hash: "typing.Optional[bytes]"
     """
     32-byte hash of some metadata that is relevant to your asset and/or asset holders.
 
@@ -1560,7 +1560,7 @@ class AssetConfigTransactionFields:
     If not set or set to the Zero address is permanently empty.
     """
 
-    def __init__(self, *, asset_id: "int", total: "typing.Optional[int]" = _DEFAULT, decimals: "typing.Optional[int]" = _DEFAULT, default_frozen: "typing.Optional[bool]" = _DEFAULT, asset_name: "typing.Optional[str]" = _DEFAULT, unit_name: "typing.Optional[str]" = _DEFAULT, url: "typing.Optional[str]" = _DEFAULT, metadata_hash: "typing.Optional[ByteBuf]" = _DEFAULT, manager: "typing.Optional[str]" = _DEFAULT, reserve: "typing.Optional[str]" = _DEFAULT, freeze: "typing.Optional[str]" = _DEFAULT, clawback: "typing.Optional[str]" = _DEFAULT):
+    def __init__(self, *, asset_id: "int", total: "typing.Optional[int]" = _DEFAULT, decimals: "typing.Optional[int]" = _DEFAULT, default_frozen: "typing.Optional[bool]" = _DEFAULT, asset_name: "typing.Optional[str]" = _DEFAULT, unit_name: "typing.Optional[str]" = _DEFAULT, url: "typing.Optional[str]" = _DEFAULT, metadata_hash: "typing.Optional[bytes]" = _DEFAULT, manager: "typing.Optional[str]" = _DEFAULT, reserve: "typing.Optional[str]" = _DEFAULT, freeze: "typing.Optional[str]" = _DEFAULT, clawback: "typing.Optional[str]" = _DEFAULT):
         self.asset_id = asset_id
         if total is _DEFAULT:
             self.total = None
@@ -1648,7 +1648,7 @@ class _UniffiConverterTypeAssetConfigTransactionFields(_UniffiConverterRustBuffe
             asset_name=_UniffiConverterOptionalString.read(buf),
             unit_name=_UniffiConverterOptionalString.read(buf),
             url=_UniffiConverterOptionalString.read(buf),
-            metadata_hash=_UniffiConverterOptionalTypeByteBuf.read(buf),
+            metadata_hash=_UniffiConverterOptionalBytes.read(buf),
             manager=_UniffiConverterOptionalString.read(buf),
             reserve=_UniffiConverterOptionalString.read(buf),
             freeze=_UniffiConverterOptionalString.read(buf),
@@ -1664,7 +1664,7 @@ class _UniffiConverterTypeAssetConfigTransactionFields(_UniffiConverterRustBuffe
         _UniffiConverterOptionalString.check_lower(value.asset_name)
         _UniffiConverterOptionalString.check_lower(value.unit_name)
         _UniffiConverterOptionalString.check_lower(value.url)
-        _UniffiConverterOptionalTypeByteBuf.check_lower(value.metadata_hash)
+        _UniffiConverterOptionalBytes.check_lower(value.metadata_hash)
         _UniffiConverterOptionalString.check_lower(value.manager)
         _UniffiConverterOptionalString.check_lower(value.reserve)
         _UniffiConverterOptionalString.check_lower(value.freeze)
@@ -1679,7 +1679,7 @@ class _UniffiConverterTypeAssetConfigTransactionFields(_UniffiConverterRustBuffe
         _UniffiConverterOptionalString.write(value.asset_name, buf)
         _UniffiConverterOptionalString.write(value.unit_name, buf)
         _UniffiConverterOptionalString.write(value.url, buf)
-        _UniffiConverterOptionalTypeByteBuf.write(value.metadata_hash, buf)
+        _UniffiConverterOptionalBytes.write(value.metadata_hash, buf)
         _UniffiConverterOptionalString.write(value.manager, buf)
         _UniffiConverterOptionalString.write(value.reserve, buf)
         _UniffiConverterOptionalString.write(value.freeze, buf)
@@ -1816,7 +1816,7 @@ class _UniffiConverterTypeAssetTransferTransactionFields(_UniffiConverterRustBuf
 
 class BoxReference:
     """
-    Box reference for application call transactions.
+    Box reference for app call transactions.
 
     References a specific box that should be made available for the runtime
     of the program.
@@ -1824,16 +1824,16 @@ class BoxReference:
 
     app_id: "int"
     """
-    Application ID that owns the box.
-    A value of 0 indicates the current application.
+    App ID that owns the box.
+    A value of 0 indicates the current app.
     """
 
-    name: "ByteBuf"
+    name: "bytes"
     """
     Name of the box.
     """
 
-    def __init__(self, *, app_id: "int", name: "ByteBuf"):
+    def __init__(self, *, app_id: "int", name: "bytes"):
         self.app_id = app_id
         self.name = name
 
@@ -1852,18 +1852,18 @@ class _UniffiConverterTypeBoxReference(_UniffiConverterRustBuffer):
     def read(buf):
         return BoxReference(
             app_id=_UniffiConverterUInt64.read(buf),
-            name=_UniffiConverterTypeByteBuf.read(buf),
+            name=_UniffiConverterBytes.read(buf),
         )
 
     @staticmethod
     def check_lower(value):
         _UniffiConverterUInt64.check_lower(value.app_id)
-        _UniffiConverterTypeByteBuf.check_lower(value.name)
+        _UniffiConverterBytes.check_lower(value.name)
 
     @staticmethod
     def write(value, buf):
         _UniffiConverterUInt64.write(value.app_id, buf)
-        _UniffiConverterTypeByteBuf.write(value.name, buf)
+        _UniffiConverterBytes.write(value.name, buf)
 
 
 class FeeParams:
@@ -1923,8 +1923,8 @@ class _UniffiConverterTypeFeeParams(_UniffiConverterRustBuffer):
 
 
 class KeyPairAccount:
-    pub_key: "ByteBuf"
-    def __init__(self, *, pub_key: "ByteBuf"):
+    pub_key: "bytes"
+    def __init__(self, *, pub_key: "bytes"):
         self.pub_key = pub_key
 
     def __str__(self):
@@ -1939,30 +1939,30 @@ class _UniffiConverterTypeKeyPairAccount(_UniffiConverterRustBuffer):
     @staticmethod
     def read(buf):
         return KeyPairAccount(
-            pub_key=_UniffiConverterTypeByteBuf.read(buf),
+            pub_key=_UniffiConverterBytes.read(buf),
         )
 
     @staticmethod
     def check_lower(value):
-        _UniffiConverterTypeByteBuf.check_lower(value.pub_key)
+        _UniffiConverterBytes.check_lower(value.pub_key)
 
     @staticmethod
     def write(value, buf):
-        _UniffiConverterTypeByteBuf.write(value.pub_key, buf)
+        _UniffiConverterBytes.write(value.pub_key, buf)
 
 
 class KeyRegistrationTransactionFields:
-    vote_key: "typing.Optional[ByteBuf]"
+    vote_key: "typing.Optional[bytes]"
     """
     Root participation public key (32 bytes)
     """
 
-    selection_key: "typing.Optional[ByteBuf]"
+    selection_key: "typing.Optional[bytes]"
     """
     VRF public key (32 bytes)
     """
 
-    state_proof_key: "typing.Optional[ByteBuf]"
+    state_proof_key: "typing.Optional[bytes]"
     """
     State proof key (64 bytes)
     """
@@ -1987,7 +1987,7 @@ class KeyRegistrationTransactionFields:
     Mark account as non-reward earning
     """
 
-    def __init__(self, *, vote_key: "typing.Optional[ByteBuf]" = _DEFAULT, selection_key: "typing.Optional[ByteBuf]" = _DEFAULT, state_proof_key: "typing.Optional[ByteBuf]" = _DEFAULT, vote_first: "typing.Optional[int]" = _DEFAULT, vote_last: "typing.Optional[int]" = _DEFAULT, vote_key_dilution: "typing.Optional[int]" = _DEFAULT, non_participation: "typing.Optional[bool]" = _DEFAULT):
+    def __init__(self, *, vote_key: "typing.Optional[bytes]" = _DEFAULT, selection_key: "typing.Optional[bytes]" = _DEFAULT, state_proof_key: "typing.Optional[bytes]" = _DEFAULT, vote_first: "typing.Optional[int]" = _DEFAULT, vote_last: "typing.Optional[int]" = _DEFAULT, vote_key_dilution: "typing.Optional[int]" = _DEFAULT, non_participation: "typing.Optional[bool]" = _DEFAULT):
         if vote_key is _DEFAULT:
             self.vote_key = None
         else:
@@ -2041,9 +2041,9 @@ class _UniffiConverterTypeKeyRegistrationTransactionFields(_UniffiConverterRustB
     @staticmethod
     def read(buf):
         return KeyRegistrationTransactionFields(
-            vote_key=_UniffiConverterOptionalTypeByteBuf.read(buf),
-            selection_key=_UniffiConverterOptionalTypeByteBuf.read(buf),
-            state_proof_key=_UniffiConverterOptionalTypeByteBuf.read(buf),
+            vote_key=_UniffiConverterOptionalBytes.read(buf),
+            selection_key=_UniffiConverterOptionalBytes.read(buf),
+            state_proof_key=_UniffiConverterOptionalBytes.read(buf),
             vote_first=_UniffiConverterOptionalUInt64.read(buf),
             vote_last=_UniffiConverterOptionalUInt64.read(buf),
             vote_key_dilution=_UniffiConverterOptionalUInt64.read(buf),
@@ -2052,9 +2052,9 @@ class _UniffiConverterTypeKeyRegistrationTransactionFields(_UniffiConverterRustB
 
     @staticmethod
     def check_lower(value):
-        _UniffiConverterOptionalTypeByteBuf.check_lower(value.vote_key)
-        _UniffiConverterOptionalTypeByteBuf.check_lower(value.selection_key)
-        _UniffiConverterOptionalTypeByteBuf.check_lower(value.state_proof_key)
+        _UniffiConverterOptionalBytes.check_lower(value.vote_key)
+        _UniffiConverterOptionalBytes.check_lower(value.selection_key)
+        _UniffiConverterOptionalBytes.check_lower(value.state_proof_key)
         _UniffiConverterOptionalUInt64.check_lower(value.vote_first)
         _UniffiConverterOptionalUInt64.check_lower(value.vote_last)
         _UniffiConverterOptionalUInt64.check_lower(value.vote_key_dilution)
@@ -2062,9 +2062,9 @@ class _UniffiConverterTypeKeyRegistrationTransactionFields(_UniffiConverterRustB
 
     @staticmethod
     def write(value, buf):
-        _UniffiConverterOptionalTypeByteBuf.write(value.vote_key, buf)
-        _UniffiConverterOptionalTypeByteBuf.write(value.selection_key, buf)
-        _UniffiConverterOptionalTypeByteBuf.write(value.state_proof_key, buf)
+        _UniffiConverterOptionalBytes.write(value.vote_key, buf)
+        _UniffiConverterOptionalBytes.write(value.selection_key, buf)
+        _UniffiConverterOptionalBytes.write(value.state_proof_key, buf)
         _UniffiConverterOptionalUInt64.write(value.vote_first, buf)
         _UniffiConverterOptionalUInt64.write(value.vote_last, buf)
         _UniffiConverterOptionalUInt64.write(value.vote_key_dilution, buf)
@@ -2142,12 +2142,12 @@ class MultisigSubsignature:
     Address of the participant.
     """
 
-    signature: "typing.Optional[ByteBuf]"
+    signature: "typing.Optional[bytes]"
     """
     Optional signature bytes for the participant.
     """
 
-    def __init__(self, *, address: "str", signature: "typing.Optional[ByteBuf]" = _DEFAULT):
+    def __init__(self, *, address: "str", signature: "typing.Optional[bytes]" = _DEFAULT):
         self.address = address
         if signature is _DEFAULT:
             self.signature = None
@@ -2169,18 +2169,18 @@ class _UniffiConverterTypeMultisigSubsignature(_UniffiConverterRustBuffer):
     def read(buf):
         return MultisigSubsignature(
             address=_UniffiConverterString.read(buf),
-            signature=_UniffiConverterOptionalTypeByteBuf.read(buf),
+            signature=_UniffiConverterOptionalBytes.read(buf),
         )
 
     @staticmethod
     def check_lower(value):
         _UniffiConverterString.check_lower(value.address)
-        _UniffiConverterOptionalTypeByteBuf.check_lower(value.signature)
+        _UniffiConverterOptionalBytes.check_lower(value.signature)
 
     @staticmethod
     def write(value, buf):
         _UniffiConverterString.write(value.address, buf)
-        _UniffiConverterOptionalTypeByteBuf.write(value.signature, buf)
+        _UniffiConverterOptionalBytes.write(value.signature, buf)
 
 
 class PaymentTransactionFields:
@@ -2235,7 +2235,7 @@ class SignedTransaction:
     The transaction that has been signed.
     """
 
-    signature: "typing.Optional[ByteBuf]"
+    signature: "typing.Optional[bytes]"
     """
     Optional Ed25519 signature authorizing the transaction.
     """
@@ -2250,7 +2250,7 @@ class SignedTransaction:
     Optional multisig signature if the transaction is a multisig transaction.
     """
 
-    def __init__(self, *, transaction: "Transaction", signature: "typing.Optional[ByteBuf]" = _DEFAULT, auth_address: "typing.Optional[str]" = _DEFAULT, multisignature: "typing.Optional[MultisigSignature]" = _DEFAULT):
+    def __init__(self, *, transaction: "Transaction", signature: "typing.Optional[bytes]" = _DEFAULT, auth_address: "typing.Optional[str]" = _DEFAULT, multisignature: "typing.Optional[MultisigSignature]" = _DEFAULT):
         self.transaction = transaction
         if signature is _DEFAULT:
             self.signature = None
@@ -2284,7 +2284,7 @@ class _UniffiConverterTypeSignedTransaction(_UniffiConverterRustBuffer):
     def read(buf):
         return SignedTransaction(
             transaction=_UniffiConverterTypeTransaction.read(buf),
-            signature=_UniffiConverterOptionalTypeByteBuf.read(buf),
+            signature=_UniffiConverterOptionalBytes.read(buf),
             auth_address=_UniffiConverterOptionalString.read(buf),
             multisignature=_UniffiConverterOptionalTypeMultisigSignature.read(buf),
         )
@@ -2292,23 +2292,23 @@ class _UniffiConverterTypeSignedTransaction(_UniffiConverterRustBuffer):
     @staticmethod
     def check_lower(value):
         _UniffiConverterTypeTransaction.check_lower(value.transaction)
-        _UniffiConverterOptionalTypeByteBuf.check_lower(value.signature)
+        _UniffiConverterOptionalBytes.check_lower(value.signature)
         _UniffiConverterOptionalString.check_lower(value.auth_address)
         _UniffiConverterOptionalTypeMultisigSignature.check_lower(value.multisignature)
 
     @staticmethod
     def write(value, buf):
         _UniffiConverterTypeTransaction.write(value.transaction, buf)
-        _UniffiConverterOptionalTypeByteBuf.write(value.signature, buf)
+        _UniffiConverterOptionalBytes.write(value.signature, buf)
         _UniffiConverterOptionalString.write(value.auth_address, buf)
         _UniffiConverterOptionalTypeMultisigSignature.write(value.multisignature, buf)
 
 
 class StateSchema:
     """
-    Schema for application state storage.
+    Schema for app state storage.
 
-    Defines the maximum number of values that may be stored in application
+    Defines the maximum number of values that may be stored in app
     key/value storage for both global and local state.
     """
 
@@ -2375,19 +2375,19 @@ class Transaction:
 
     first_valid: "int"
     last_valid: "int"
-    genesis_hash: "typing.Optional[ByteBuf]"
+    genesis_hash: "typing.Optional[bytes]"
     genesis_id: "typing.Optional[str]"
-    note: "typing.Optional[ByteBuf]"
+    note: "typing.Optional[bytes]"
     rekey_to: "typing.Optional[str]"
-    lease: "typing.Optional[ByteBuf]"
-    group: "typing.Optional[ByteBuf]"
+    lease: "typing.Optional[bytes]"
+    group: "typing.Optional[bytes]"
     payment: "typing.Optional[PaymentTransactionFields]"
     asset_transfer: "typing.Optional[AssetTransferTransactionFields]"
     asset_config: "typing.Optional[AssetConfigTransactionFields]"
-    application_call: "typing.Optional[ApplicationCallTransactionFields]"
+    app_call: "typing.Optional[AppCallTransactionFields]"
     key_registration: "typing.Optional[KeyRegistrationTransactionFields]"
     asset_freeze: "typing.Optional[AssetFreezeTransactionFields]"
-    def __init__(self, *, transaction_type: "TransactionType", sender: "str", fee: "typing.Optional[int]" = _DEFAULT, first_valid: "int", last_valid: "int", genesis_hash: "typing.Optional[ByteBuf]", genesis_id: "typing.Optional[str]", note: "typing.Optional[ByteBuf]" = _DEFAULT, rekey_to: "typing.Optional[str]" = _DEFAULT, lease: "typing.Optional[ByteBuf]" = _DEFAULT, group: "typing.Optional[ByteBuf]" = _DEFAULT, payment: "typing.Optional[PaymentTransactionFields]" = _DEFAULT, asset_transfer: "typing.Optional[AssetTransferTransactionFields]" = _DEFAULT, asset_config: "typing.Optional[AssetConfigTransactionFields]" = _DEFAULT, application_call: "typing.Optional[ApplicationCallTransactionFields]" = _DEFAULT, key_registration: "typing.Optional[KeyRegistrationTransactionFields]" = _DEFAULT, asset_freeze: "typing.Optional[AssetFreezeTransactionFields]" = _DEFAULT):
+    def __init__(self, *, transaction_type: "TransactionType", sender: "str", fee: "typing.Optional[int]" = _DEFAULT, first_valid: "int", last_valid: "int", genesis_hash: "typing.Optional[bytes]", genesis_id: "typing.Optional[str]", note: "typing.Optional[bytes]" = _DEFAULT, rekey_to: "typing.Optional[str]" = _DEFAULT, lease: "typing.Optional[bytes]" = _DEFAULT, group: "typing.Optional[bytes]" = _DEFAULT, payment: "typing.Optional[PaymentTransactionFields]" = _DEFAULT, asset_transfer: "typing.Optional[AssetTransferTransactionFields]" = _DEFAULT, asset_config: "typing.Optional[AssetConfigTransactionFields]" = _DEFAULT, app_call: "typing.Optional[AppCallTransactionFields]" = _DEFAULT, key_registration: "typing.Optional[KeyRegistrationTransactionFields]" = _DEFAULT, asset_freeze: "typing.Optional[AssetFreezeTransactionFields]" = _DEFAULT):
         self.transaction_type = transaction_type
         self.sender = sender
         if fee is _DEFAULT:
@@ -2426,10 +2426,10 @@ class Transaction:
             self.asset_config = None
         else:
             self.asset_config = asset_config
-        if application_call is _DEFAULT:
-            self.application_call = None
+        if app_call is _DEFAULT:
+            self.app_call = None
         else:
-            self.application_call = application_call
+            self.app_call = app_call
         if key_registration is _DEFAULT:
             self.key_registration = None
         else:
@@ -2440,7 +2440,7 @@ class Transaction:
             self.asset_freeze = asset_freeze
 
     def __str__(self):
-        return "Transaction(transaction_type={}, sender={}, fee={}, first_valid={}, last_valid={}, genesis_hash={}, genesis_id={}, note={}, rekey_to={}, lease={}, group={}, payment={}, asset_transfer={}, asset_config={}, application_call={}, key_registration={}, asset_freeze={})".format(self.transaction_type, self.sender, self.fee, self.first_valid, self.last_valid, self.genesis_hash, self.genesis_id, self.note, self.rekey_to, self.lease, self.group, self.payment, self.asset_transfer, self.asset_config, self.application_call, self.key_registration, self.asset_freeze)
+        return "Transaction(transaction_type={}, sender={}, fee={}, first_valid={}, last_valid={}, genesis_hash={}, genesis_id={}, note={}, rekey_to={}, lease={}, group={}, payment={}, asset_transfer={}, asset_config={}, app_call={}, key_registration={}, asset_freeze={})".format(self.transaction_type, self.sender, self.fee, self.first_valid, self.last_valid, self.genesis_hash, self.genesis_id, self.note, self.rekey_to, self.lease, self.group, self.payment, self.asset_transfer, self.asset_config, self.app_call, self.key_registration, self.asset_freeze)
 
     def __eq__(self, other):
         if self.transaction_type != other.transaction_type:
@@ -2471,7 +2471,7 @@ class Transaction:
             return False
         if self.asset_config != other.asset_config:
             return False
-        if self.application_call != other.application_call:
+        if self.app_call != other.app_call:
             return False
         if self.key_registration != other.key_registration:
             return False
@@ -2488,16 +2488,16 @@ class _UniffiConverterTypeTransaction(_UniffiConverterRustBuffer):
             fee=_UniffiConverterOptionalUInt64.read(buf),
             first_valid=_UniffiConverterUInt64.read(buf),
             last_valid=_UniffiConverterUInt64.read(buf),
-            genesis_hash=_UniffiConverterOptionalTypeByteBuf.read(buf),
+            genesis_hash=_UniffiConverterOptionalBytes.read(buf),
             genesis_id=_UniffiConverterOptionalString.read(buf),
-            note=_UniffiConverterOptionalTypeByteBuf.read(buf),
+            note=_UniffiConverterOptionalBytes.read(buf),
             rekey_to=_UniffiConverterOptionalString.read(buf),
-            lease=_UniffiConverterOptionalTypeByteBuf.read(buf),
-            group=_UniffiConverterOptionalTypeByteBuf.read(buf),
+            lease=_UniffiConverterOptionalBytes.read(buf),
+            group=_UniffiConverterOptionalBytes.read(buf),
             payment=_UniffiConverterOptionalTypePaymentTransactionFields.read(buf),
             asset_transfer=_UniffiConverterOptionalTypeAssetTransferTransactionFields.read(buf),
             asset_config=_UniffiConverterOptionalTypeAssetConfigTransactionFields.read(buf),
-            application_call=_UniffiConverterOptionalTypeApplicationCallTransactionFields.read(buf),
+            app_call=_UniffiConverterOptionalTypeAppCallTransactionFields.read(buf),
             key_registration=_UniffiConverterOptionalTypeKeyRegistrationTransactionFields.read(buf),
             asset_freeze=_UniffiConverterOptionalTypeAssetFreezeTransactionFields.read(buf),
         )
@@ -2509,16 +2509,16 @@ class _UniffiConverterTypeTransaction(_UniffiConverterRustBuffer):
         _UniffiConverterOptionalUInt64.check_lower(value.fee)
         _UniffiConverterUInt64.check_lower(value.first_valid)
         _UniffiConverterUInt64.check_lower(value.last_valid)
-        _UniffiConverterOptionalTypeByteBuf.check_lower(value.genesis_hash)
+        _UniffiConverterOptionalBytes.check_lower(value.genesis_hash)
         _UniffiConverterOptionalString.check_lower(value.genesis_id)
-        _UniffiConverterOptionalTypeByteBuf.check_lower(value.note)
+        _UniffiConverterOptionalBytes.check_lower(value.note)
         _UniffiConverterOptionalString.check_lower(value.rekey_to)
-        _UniffiConverterOptionalTypeByteBuf.check_lower(value.lease)
-        _UniffiConverterOptionalTypeByteBuf.check_lower(value.group)
+        _UniffiConverterOptionalBytes.check_lower(value.lease)
+        _UniffiConverterOptionalBytes.check_lower(value.group)
         _UniffiConverterOptionalTypePaymentTransactionFields.check_lower(value.payment)
         _UniffiConverterOptionalTypeAssetTransferTransactionFields.check_lower(value.asset_transfer)
         _UniffiConverterOptionalTypeAssetConfigTransactionFields.check_lower(value.asset_config)
-        _UniffiConverterOptionalTypeApplicationCallTransactionFields.check_lower(value.application_call)
+        _UniffiConverterOptionalTypeAppCallTransactionFields.check_lower(value.app_call)
         _UniffiConverterOptionalTypeKeyRegistrationTransactionFields.check_lower(value.key_registration)
         _UniffiConverterOptionalTypeAssetFreezeTransactionFields.check_lower(value.asset_freeze)
 
@@ -2529,16 +2529,16 @@ class _UniffiConverterTypeTransaction(_UniffiConverterRustBuffer):
         _UniffiConverterOptionalUInt64.write(value.fee, buf)
         _UniffiConverterUInt64.write(value.first_valid, buf)
         _UniffiConverterUInt64.write(value.last_valid, buf)
-        _UniffiConverterOptionalTypeByteBuf.write(value.genesis_hash, buf)
+        _UniffiConverterOptionalBytes.write(value.genesis_hash, buf)
         _UniffiConverterOptionalString.write(value.genesis_id, buf)
-        _UniffiConverterOptionalTypeByteBuf.write(value.note, buf)
+        _UniffiConverterOptionalBytes.write(value.note, buf)
         _UniffiConverterOptionalString.write(value.rekey_to, buf)
-        _UniffiConverterOptionalTypeByteBuf.write(value.lease, buf)
-        _UniffiConverterOptionalTypeByteBuf.write(value.group, buf)
+        _UniffiConverterOptionalBytes.write(value.lease, buf)
+        _UniffiConverterOptionalBytes.write(value.group, buf)
         _UniffiConverterOptionalTypePaymentTransactionFields.write(value.payment, buf)
         _UniffiConverterOptionalTypeAssetTransferTransactionFields.write(value.asset_transfer, buf)
         _UniffiConverterOptionalTypeAssetConfigTransactionFields.write(value.asset_config, buf)
-        _UniffiConverterOptionalTypeApplicationCallTransactionFields.write(value.application_call, buf)
+        _UniffiConverterOptionalTypeAppCallTransactionFields.write(value.app_call, buf)
         _UniffiConverterOptionalTypeKeyRegistrationTransactionFields.write(value.key_registration, buf)
         _UniffiConverterOptionalTypeAssetFreezeTransactionFields.write(value.asset_freeze, buf)
 
@@ -2780,51 +2780,51 @@ class _UniffiConverterTypeAlgorandConstant(_UniffiConverterRustBuffer):
 
 class OnApplicationComplete(enum.Enum):
     """
-    On-completion actions for application transactions.
+    On-completion actions for app transactions.
 
     These values define what additional actions occur with the transaction.
     """
 
     NO_OP = 0
     """
-    NoOp indicates that an application transaction will simply call its
+    NoOp indicates that an app transaction will simply call its
     approval program without any additional action.
     """
 
     
     OPT_IN = 1
     """
-    OptIn indicates that an application transaction will allocate some
-    local state for the application in the sender's account.
+    OptIn indicates that an app transaction will allocate some
+    local state for the app in the sender's account.
     """
 
     
     CLOSE_OUT = 2
     """
-    CloseOut indicates that an application transaction will deallocate
-    some local state for the application from the user's account.
+    CloseOut indicates that an app transaction will deallocate
+    some local state for the app from the user's account.
     """
 
     
     CLEAR_STATE = 3
     """
     ClearState is similar to CloseOut, but may never fail. This
-    allows users to reclaim their minimum balance from an application
+    allows users to reclaim their minimum balance from an app
     they no longer wish to opt in to.
     """
 
     
     UPDATE_APPLICATION = 4
     """
-    UpdateApplication indicates that an application transaction will
-    update the approval program and clear state program for the application.
+    UpdateApplication indicates that an app transaction will
+    update the approval program and clear state program for the app.
     """
 
     
     DELETE_APPLICATION = 5
     """
-    DeleteApplication indicates that an application transaction will
-    delete the application parameters for the application from the creator's
+    DeleteApplication indicates that an app transaction will
+    delete the app parameters for the app from the creator's
     balance record.
     """
 
@@ -2897,7 +2897,7 @@ class TransactionType(enum.Enum):
     
     KEY_REGISTRATION = 4
     
-    APPLICATION_CALL = 5
+    APP_CALL = 5
     
 
 
@@ -2916,7 +2916,7 @@ class _UniffiConverterTypeTransactionType(_UniffiConverterRustBuffer):
         if variant == 5:
             return TransactionType.KEY_REGISTRATION
         if variant == 6:
-            return TransactionType.APPLICATION_CALL
+            return TransactionType.APP_CALL
         raise InternalError("Raw enum value doesn't match any cases")
 
     @staticmethod
@@ -2931,7 +2931,7 @@ class _UniffiConverterTypeTransactionType(_UniffiConverterRustBuffer):
             return
         if value == TransactionType.KEY_REGISTRATION:
             return
-        if value == TransactionType.APPLICATION_CALL:
+        if value == TransactionType.APP_CALL:
             return
         raise ValueError(value)
 
@@ -2947,7 +2947,7 @@ class _UniffiConverterTypeTransactionType(_UniffiConverterRustBuffer):
             buf.write_i32(4)
         if value == TransactionType.KEY_REGISTRATION:
             buf.write_i32(5)
-        if value == TransactionType.APPLICATION_CALL:
+        if value == TransactionType.APP_CALL:
             buf.write_i32(6)
 
 
@@ -3062,11 +3062,11 @@ class _UniffiConverterOptionalString(_UniffiConverterRustBuffer):
 
 
 
-class _UniffiConverterOptionalTypeApplicationCallTransactionFields(_UniffiConverterRustBuffer):
+class _UniffiConverterOptionalBytes(_UniffiConverterRustBuffer):
     @classmethod
     def check_lower(cls, value):
         if value is not None:
-            _UniffiConverterTypeApplicationCallTransactionFields.check_lower(value)
+            _UniffiConverterBytes.check_lower(value)
 
     @classmethod
     def write(cls, value, buf):
@@ -3075,7 +3075,7 @@ class _UniffiConverterOptionalTypeApplicationCallTransactionFields(_UniffiConver
             return
 
         buf.write_u8(1)
-        _UniffiConverterTypeApplicationCallTransactionFields.write(value, buf)
+        _UniffiConverterBytes.write(value, buf)
 
     @classmethod
     def read(cls, buf):
@@ -3083,7 +3083,34 @@ class _UniffiConverterOptionalTypeApplicationCallTransactionFields(_UniffiConver
         if flag == 0:
             return None
         elif flag == 1:
-            return _UniffiConverterTypeApplicationCallTransactionFields.read(buf)
+            return _UniffiConverterBytes.read(buf)
+        else:
+            raise InternalError("Unexpected flag byte for optional type")
+
+
+
+class _UniffiConverterOptionalTypeAppCallTransactionFields(_UniffiConverterRustBuffer):
+    @classmethod
+    def check_lower(cls, value):
+        if value is not None:
+            _UniffiConverterTypeAppCallTransactionFields.check_lower(value)
+
+    @classmethod
+    def write(cls, value, buf):
+        if value is None:
+            buf.write_u8(0)
+            return
+
+        buf.write_u8(1)
+        _UniffiConverterTypeAppCallTransactionFields.write(value, buf)
+
+    @classmethod
+    def read(cls, buf):
+        flag = buf.read_u8()
+        if flag == 0:
+            return None
+        elif flag == 1:
+            return _UniffiConverterTypeAppCallTransactionFields.read(buf)
         else:
             raise InternalError("Unexpected flag byte for optional type")
 
@@ -3332,6 +3359,33 @@ class _UniffiConverterOptionalSequenceString(_UniffiConverterRustBuffer):
 
 
 
+class _UniffiConverterOptionalSequenceBytes(_UniffiConverterRustBuffer):
+    @classmethod
+    def check_lower(cls, value):
+        if value is not None:
+            _UniffiConverterSequenceBytes.check_lower(value)
+
+    @classmethod
+    def write(cls, value, buf):
+        if value is None:
+            buf.write_u8(0)
+            return
+
+        buf.write_u8(1)
+        _UniffiConverterSequenceBytes.write(value, buf)
+
+    @classmethod
+    def read(cls, buf):
+        flag = buf.read_u8()
+        if flag == 0:
+            return None
+        elif flag == 1:
+            return _UniffiConverterSequenceBytes.read(buf)
+        else:
+            raise InternalError("Unexpected flag byte for optional type")
+
+
+
 class _UniffiConverterOptionalSequenceTypeBoxReference(_UniffiConverterRustBuffer):
     @classmethod
     def check_lower(cls, value):
@@ -3354,60 +3408,6 @@ class _UniffiConverterOptionalSequenceTypeBoxReference(_UniffiConverterRustBuffe
             return None
         elif flag == 1:
             return _UniffiConverterSequenceTypeBoxReference.read(buf)
-        else:
-            raise InternalError("Unexpected flag byte for optional type")
-
-
-
-class _UniffiConverterOptionalSequenceTypeByteBuf(_UniffiConverterRustBuffer):
-    @classmethod
-    def check_lower(cls, value):
-        if value is not None:
-            _UniffiConverterSequenceTypeByteBuf.check_lower(value)
-
-    @classmethod
-    def write(cls, value, buf):
-        if value is None:
-            buf.write_u8(0)
-            return
-
-        buf.write_u8(1)
-        _UniffiConverterSequenceTypeByteBuf.write(value, buf)
-
-    @classmethod
-    def read(cls, buf):
-        flag = buf.read_u8()
-        if flag == 0:
-            return None
-        elif flag == 1:
-            return _UniffiConverterSequenceTypeByteBuf.read(buf)
-        else:
-            raise InternalError("Unexpected flag byte for optional type")
-
-
-
-class _UniffiConverterOptionalTypeByteBuf(_UniffiConverterRustBuffer):
-    @classmethod
-    def check_lower(cls, value):
-        if value is not None:
-            _UniffiConverterTypeByteBuf.check_lower(value)
-
-    @classmethod
-    def write(cls, value, buf):
-        if value is None:
-            buf.write_u8(0)
-            return
-
-        buf.write_u8(1)
-        _UniffiConverterTypeByteBuf.write(value, buf)
-
-    @classmethod
-    def read(cls, buf):
-        flag = buf.read_u8()
-        if flag == 0:
-            return None
-        elif flag == 1:
-            return _UniffiConverterTypeByteBuf.read(buf)
         else:
             raise InternalError("Unexpected flag byte for optional type")
 
@@ -3586,53 +3586,7 @@ class _UniffiConverterSequenceTypeTransaction(_UniffiConverterRustBuffer):
             _UniffiConverterTypeTransaction.read(buf) for i in range(count)
         ]
 
-
-
-class _UniffiConverterSequenceTypeByteBuf(_UniffiConverterRustBuffer):
-    @classmethod
-    def check_lower(cls, value):
-        for item in value:
-            _UniffiConverterTypeByteBuf.check_lower(item)
-
-    @classmethod
-    def write(cls, value, buf):
-        items = len(value)
-        buf.write_i32(items)
-        for item in value:
-            _UniffiConverterTypeByteBuf.write(item, buf)
-
-    @classmethod
-    def read(cls, buf):
-        count = buf.read_i32()
-        if count < 0:
-            raise InternalError("Unexpected negative sequence length")
-
-        return [
-            _UniffiConverterTypeByteBuf.read(buf) for i in range(count)
-        ]
-
-
-class _UniffiConverterTypeByteBuf:
-    @staticmethod
-    def write(value, buf):
-        _UniffiConverterBytes.write(value, buf)
-
-    @staticmethod
-    def read(buf):
-        return _UniffiConverterBytes.read(buf)
-
-    @staticmethod
-    def lift(value):
-        return _UniffiConverterBytes.lift(value)
-
-    @staticmethod
-    def check_lower(value):
-        return _UniffiConverterBytes.check_lower(value)
-
-    @staticmethod
-    def lower(value):
-        return _UniffiConverterBytes.lower(value)
-ByteBuf = bytes
+# objects.
 
 # Async support
 
@@ -3971,7 +3925,7 @@ __all__ = [
     "AlgorandConstant",
     "OnApplicationComplete",
     "TransactionType",
-    "ApplicationCallTransactionFields",
+    "AppCallTransactionFields",
     "AssetConfigTransactionFields",
     "AssetFreezeTransactionFields",
     "AssetTransferTransactionFields",

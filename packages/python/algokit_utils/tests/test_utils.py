@@ -1,6 +1,8 @@
 from typing import override
+import typing
+from algokit_utils.algokit_http_client import HttpClient, HttpMethod, HttpResponse
 from algokit_utils.algokit_transact_ffi import SignedTransaction, Transaction
-from algokit_utils import algod_localnet, TransactionSigner
+from algokit_utils import AlgodClient, TransactionSigner
 from algokit_utils.algokit_utils_ffi import (
     CommonParams,
     Composer,
@@ -40,10 +42,24 @@ class SignerGetter(TransactionSignerGetter):
         return TestSigner()
 
 
+class HttpClientImpl(HttpClient):
+    @override
+    async def request(  # type: ignore
+        self,
+        method: HttpMethod,
+        path: str,
+        query: typing.Optional[dict[str, str]],
+        body: typing.Optional[bytes],
+        headers: typing.Optional[dict[str, str]],
+    ) -> HttpResponse:
+        print(f"HTTP {method} {path} {query} {headers}")
+        return HttpResponse(body=b"", headers={})
+
+
 @pytest.mark.asyncio
 async def test_composer():
+    algod = AlgodClient(HttpClientImpl())
     # Test that algod_localnet is an object
-    algod = algod_localnet()
     composer = Composer(
         algod_client=algod,
         signer_getter=SignerGetter(),
@@ -61,4 +77,4 @@ async def test_composer():
         )
     )
 
-    await composer.build()
+    await composer.build()  # <-- Error here

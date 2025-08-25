@@ -29,10 +29,13 @@ import traceback
 import typing
 import asyncio
 import platform
+from .algokit_http_client import HttpClient
+from .algokit_http_client import _UniffiConverterTypeHttpClient
 from .algokit_transact_ffi import SignedTransaction
 from .algokit_transact_ffi import Transaction
 from .algokit_transact_ffi import _UniffiConverterTypeSignedTransaction
 from .algokit_transact_ffi import _UniffiConverterTypeTransaction
+from .algokit_http_client import _UniffiRustBuffer as _UniffiRustBufferHttpClient
 from .algokit_transact_ffi import _UniffiRustBuffer as _UniffiRustBufferSignedTransaction
 from .algokit_transact_ffi import _UniffiRustBuffer as _UniffiRustBufferTransaction
 
@@ -460,7 +463,7 @@ def _uniffi_load_indirect():
 
 def _uniffi_check_contract_api_version(lib):
     # Get the bindings contract version from our ComponentInterface
-    bindings_contract_version = 26
+    bindings_contract_version = 29
     # Get the scaffolding contract version by calling the into the dylib
     scaffolding_contract_version = lib.ffi_algokit_utils_ffi_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version:
@@ -478,6 +481,8 @@ def _uniffi_check_api_checksums(lib):
     if lib.uniffi_algokit_utils_ffi_checksum_method_transactionsigner_sign_transaction() != 13641:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algokit_utils_ffi_checksum_method_transactionsignergetter_get_signer() != 50234:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algokit_utils_ffi_checksum_constructor_algodclient_new() != 702:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algokit_utils_ffi_checksum_constructor_composer_new() != 44040:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
@@ -615,6 +620,11 @@ _UniffiLib.uniffi_algokit_utils_ffi_fn_free_algodclient.argtypes = (
     ctypes.POINTER(_UniffiRustCallStatus),
 )
 _UniffiLib.uniffi_algokit_utils_ffi_fn_free_algodclient.restype = None
+_UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_algodclient_new.argtypes = (
+    ctypes.c_void_p,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_algodclient_new.restype = ctypes.c_void_p
 _UniffiLib.uniffi_algokit_utils_ffi_fn_clone_composer.argtypes = (
     ctypes.c_void_p,
     ctypes.POINTER(_UniffiRustCallStatus),
@@ -976,6 +986,9 @@ _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_transactionsigner_sign_trans
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_transactionsignergetter_get_signer.argtypes = (
 )
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_transactionsignergetter_get_signer.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_constructor_algodclient_new.argtypes = (
+)
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_constructor_algodclient_new.restype = ctypes.c_uint16
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_constructor_composer_new.argtypes = (
 )
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_constructor_composer_new.restype = ctypes.c_uint16
@@ -987,7 +1000,38 @@ _uniffi_check_contract_api_version(_UniffiLib)
 # _uniffi_check_api_checksums(_UniffiLib)
 
 # Public interface members begin here.
+# Magic number for the Rust proxy to call using the same mechanism as every other method,
+# to free the callback once it's dropped by Rust.
+_UNIFFI_IDX_CALLBACK_FREE = 0
+# Return codes for callback calls
+_UNIFFI_CALLBACK_SUCCESS = 0
+_UNIFFI_CALLBACK_ERROR = 1
+_UNIFFI_CALLBACK_UNEXPECTED_ERROR = 2
 
+class _UniffiCallbackInterfaceFfiConverter:
+    _handle_map = _UniffiHandleMap()
+
+    @classmethod
+    def lift(cls, handle):
+        return cls._handle_map.get(handle)
+
+    @classmethod
+    def read(cls, buf):
+        handle = buf.read_u64()
+        cls.lift(handle)
+
+    @classmethod
+    def check_lower(cls, cb):
+        pass
+
+    @classmethod
+    def lower(cls, cb):
+        handle = cls._handle_map.insert(cb)
+        return handle
+
+    @classmethod
+    def write(cls, cb, buf):
+        buf.write_u64(cls.lower(cb))
 
 class _UniffiConverterUInt32(_UniffiConverterPrimitiveInt):
     CLASS_NAME = "u32"
@@ -1069,518 +1113,11 @@ class _UniffiConverterBytes(_UniffiConverterRustBuffer):
 
 
 
-class AlgodClientProtocol(typing.Protocol):
-    pass
 
 
-class AlgodClient:
-    _pointer: ctypes.c_void_p
-    
-    def __init__(self, *args, **kwargs):
-        raise ValueError("This class has no default constructor")
 
-    def __del__(self):
-        # In case of partial initialization of instances.
-        pointer = getattr(self, "_pointer", None)
-        if pointer is not None:
-            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_free_algodclient, pointer)
 
-    def _uniffi_clone_pointer(self):
-        return _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_algodclient, self._pointer)
 
-    # Used by alternative constructors or any methods which return this type.
-    @classmethod
-    def _make_instance_(cls, pointer):
-        # Lightly yucky way to bypass the usual __init__ logic
-        # and just create a new instance with the required pointer.
-        inst = cls.__new__(cls)
-        inst._pointer = pointer
-        return inst
-
-
-
-class _UniffiConverterTypeAlgodClient:
-
-    @staticmethod
-    def lift(value: int):
-        return AlgodClient._make_instance_(value)
-
-    @staticmethod
-    def check_lower(value: AlgodClient):
-        if not isinstance(value, AlgodClient):
-            raise TypeError("Expected AlgodClient instance, {} found".format(type(value).__name__))
-
-    @staticmethod
-    def lower(value: AlgodClientProtocol):
-        if not isinstance(value, AlgodClient):
-            raise TypeError("Expected AlgodClient instance, {} found".format(type(value).__name__))
-        return value._uniffi_clone_pointer()
-
-    @classmethod
-    def read(cls, buf: _UniffiRustBuffer):
-        ptr = buf.read_u64()
-        if ptr == 0:
-            raise InternalError("Raw pointer value was null")
-        return cls.lift(ptr)
-
-    @classmethod
-    def write(cls, value: AlgodClientProtocol, buf: _UniffiRustBuffer):
-        buf.write_u64(cls.lower(value))
-
-
-
-class ComposerProtocol(typing.Protocol):
-    def add_payment(self, params: "PaymentParams"):
-        raise NotImplementedError
-    def build(self, ):
-        raise NotImplementedError
-    def send(self, ):
-        raise NotImplementedError
-
-
-class Composer:
-    _pointer: ctypes.c_void_p
-    def __init__(self, algod_client: "AlgodClient",signer_getter: "TransactionSignerGetter"):
-        _UniffiConverterTypeAlgodClient.check_lower(algod_client)
-        
-        _UniffiConverterTypeTransactionSignerGetter.check_lower(signer_getter)
-        
-        self._pointer = _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_composer_new,
-        _UniffiConverterTypeAlgodClient.lower(algod_client),
-        _UniffiConverterTypeTransactionSignerGetter.lower(signer_getter))
-
-    def __del__(self):
-        # In case of partial initialization of instances.
-        pointer = getattr(self, "_pointer", None)
-        if pointer is not None:
-            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_free_composer, pointer)
-
-    def _uniffi_clone_pointer(self):
-        return _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_composer, self._pointer)
-
-    # Used by alternative constructors or any methods which return this type.
-    @classmethod
-    def _make_instance_(cls, pointer):
-        # Lightly yucky way to bypass the usual __init__ logic
-        # and just create a new instance with the required pointer.
-        inst = cls.__new__(cls)
-        inst._pointer = pointer
-        return inst
-
-
-    def add_payment(self, params: "PaymentParams") -> None:
-        _UniffiConverterTypePaymentParams.check_lower(params)
-        
-        _uniffi_rust_call_with_error(_UniffiConverterTypeUtilsError,_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_payment,self._uniffi_clone_pointer(),
-        _UniffiConverterTypePaymentParams.lower(params))
-
-
-
-
-
-    async def build(self, ) -> None:
-
-        return await _uniffi_rust_call_async(
-            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_build(
-                self._uniffi_clone_pointer(), 
-            ),
-            _UniffiLib.ffi_algokit_utils_ffi_rust_future_poll_void,
-            _UniffiLib.ffi_algokit_utils_ffi_rust_future_complete_void,
-            _UniffiLib.ffi_algokit_utils_ffi_rust_future_free_void,
-            # lift function
-            lambda val: None,
-            
-            
-    # Error FFI converter
-_UniffiConverterTypeUtilsError,
-
-        )
-
-
-
-    async def send(self, ) -> "typing.List[str]":
-        return await _uniffi_rust_call_async(
-            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_send(
-                self._uniffi_clone_pointer(), 
-            ),
-            _UniffiLib.ffi_algokit_utils_ffi_rust_future_poll_rust_buffer,
-            _UniffiLib.ffi_algokit_utils_ffi_rust_future_complete_rust_buffer,
-            _UniffiLib.ffi_algokit_utils_ffi_rust_future_free_rust_buffer,
-            # lift function
-            _UniffiConverterSequenceString.lift,
-            
-    # Error FFI converter
-_UniffiConverterTypeUtilsError,
-
-        )
-
-
-
-
-
-class _UniffiConverterTypeComposer:
-
-    @staticmethod
-    def lift(value: int):
-        return Composer._make_instance_(value)
-
-    @staticmethod
-    def check_lower(value: Composer):
-        if not isinstance(value, Composer):
-            raise TypeError("Expected Composer instance, {} found".format(type(value).__name__))
-
-    @staticmethod
-    def lower(value: ComposerProtocol):
-        if not isinstance(value, Composer):
-            raise TypeError("Expected Composer instance, {} found".format(type(value).__name__))
-        return value._uniffi_clone_pointer()
-
-    @classmethod
-    def read(cls, buf: _UniffiRustBuffer):
-        ptr = buf.read_u64()
-        if ptr == 0:
-            raise InternalError("Raw pointer value was null")
-        return cls.lift(ptr)
-
-    @classmethod
-    def write(cls, value: ComposerProtocol, buf: _UniffiRustBuffer):
-        buf.write_u64(cls.lower(value))
-
-
-
-class TransactionSigner(typing.Protocol):
-    def sign_transactions(self, transactions: "typing.List[Transaction]",indices: "typing.List[int]"):
-        raise NotImplementedError
-    def sign_transaction(self, transaction: "Transaction"):
-        raise NotImplementedError
-
-
-class TransactionSignerImpl:
-    _pointer: ctypes.c_void_p
-    
-    def __init__(self, *args, **kwargs):
-        raise ValueError("This class has no default constructor")
-
-    def __del__(self):
-        # In case of partial initialization of instances.
-        pointer = getattr(self, "_pointer", None)
-        if pointer is not None:
-            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_free_transactionsigner, pointer)
-
-    def _uniffi_clone_pointer(self):
-        return _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_transactionsigner, self._pointer)
-
-    # Used by alternative constructors or any methods which return this type.
-    @classmethod
-    def _make_instance_(cls, pointer):
-        # Lightly yucky way to bypass the usual __init__ logic
-        # and just create a new instance with the required pointer.
-        inst = cls.__new__(cls)
-        inst._pointer = pointer
-        return inst
-
-    async def sign_transactions(self, transactions: "typing.List[Transaction]",indices: "typing.List[int]") -> "typing.List[SignedTransaction]":
-        _UniffiConverterSequenceTypeTransaction.check_lower(transactions)
-        
-        _UniffiConverterSequenceUInt32.check_lower(indices)
-        
-        return await _uniffi_rust_call_async(
-            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_transactionsigner_sign_transactions(
-                self._uniffi_clone_pointer(), 
-        _UniffiConverterSequenceTypeTransaction.lower(transactions),
-        _UniffiConverterSequenceUInt32.lower(indices)
-            ),
-            _UniffiLib.ffi_algokit_utils_ffi_rust_future_poll_rust_buffer,
-            _UniffiLib.ffi_algokit_utils_ffi_rust_future_complete_rust_buffer,
-            _UniffiLib.ffi_algokit_utils_ffi_rust_future_free_rust_buffer,
-            # lift function
-            _UniffiConverterSequenceTypeSignedTransaction.lift,
-            
-    # Error FFI converter
-_UniffiConverterTypeUtilsError,
-
-        )
-
-
-
-    async def sign_transaction(self, transaction: "Transaction") -> "SignedTransaction":
-        _UniffiConverterTypeTransaction.check_lower(transaction)
-        
-        return await _uniffi_rust_call_async(
-            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_transactionsigner_sign_transaction(
-                self._uniffi_clone_pointer(), 
-        _UniffiConverterTypeTransaction.lower(transaction)
-            ),
-            _UniffiLib.ffi_algokit_utils_ffi_rust_future_poll_rust_buffer,
-            _UniffiLib.ffi_algokit_utils_ffi_rust_future_complete_rust_buffer,
-            _UniffiLib.ffi_algokit_utils_ffi_rust_future_free_rust_buffer,
-            # lift function
-            _UniffiConverterTypeSignedTransaction.lift,
-            
-    # Error FFI converter
-_UniffiConverterTypeUtilsError,
-
-        )
-
-
-# Magic number for the Rust proxy to call using the same mechanism as every other method,
-# to free the callback once it's dropped by Rust.
-_UNIFFI_IDX_CALLBACK_FREE = 0
-# Return codes for callback calls
-_UNIFFI_CALLBACK_SUCCESS = 0
-_UNIFFI_CALLBACK_ERROR = 1
-_UNIFFI_CALLBACK_UNEXPECTED_ERROR = 2
-
-class _UniffiCallbackInterfaceFfiConverter:
-    _handle_map = _UniffiHandleMap()
-
-    @classmethod
-    def lift(cls, handle):
-        return cls._handle_map.get(handle)
-
-    @classmethod
-    def read(cls, buf):
-        handle = buf.read_u64()
-        cls.lift(handle)
-
-    @classmethod
-    def check_lower(cls, cb):
-        pass
-
-    @classmethod
-    def lower(cls, cb):
-        handle = cls._handle_map.insert(cb)
-        return handle
-
-    @classmethod
-    def write(cls, cb, buf):
-        buf.write_u64(cls.lower(cb))
-
-# Put all the bits inside a class to keep the top-level namespace clean
-class _UniffiTraitImplTransactionSigner:
-    # For each method, generate a callback function to pass to Rust
-
-    @_UNIFFI_CALLBACK_INTERFACE_TRANSACTION_SIGNER_METHOD0
-    def sign_transactions(
-            uniffi_handle,
-            transactions,
-            indices,
-            uniffi_future_callback,
-            uniffi_callback_data,
-            uniffi_out_return,
-        ):
-        uniffi_obj = _UniffiConverterTypeTransactionSigner._handle_map.get(uniffi_handle)
-        def make_call():
-            args = (_UniffiConverterSequenceTypeTransaction.lift(transactions), _UniffiConverterSequenceUInt32.lift(indices), )
-            method = uniffi_obj.sign_transactions
-            return method(*args)
-
-        
-        def handle_success(return_value):
-            uniffi_future_callback(
-                uniffi_callback_data,
-                _UniffiForeignFutureStructRustBuffer(
-                    _UniffiConverterSequenceTypeSignedTransaction.lower(return_value),
-                    _UniffiRustCallStatus.default()
-                )
-            )
-
-        def handle_error(status_code, rust_buffer):
-            uniffi_future_callback(
-                uniffi_callback_data,
-                _UniffiForeignFutureStructRustBuffer(
-                    _UniffiRustBuffer.default(),
-                    _UniffiRustCallStatus(status_code, rust_buffer),
-                )
-            )
-        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, UtilsError, _UniffiConverterTypeUtilsError.lower)
-
-    @_UNIFFI_CALLBACK_INTERFACE_TRANSACTION_SIGNER_METHOD1
-    def sign_transaction(
-            uniffi_handle,
-            transaction,
-            uniffi_future_callback,
-            uniffi_callback_data,
-            uniffi_out_return,
-        ):
-        uniffi_obj = _UniffiConverterTypeTransactionSigner._handle_map.get(uniffi_handle)
-        def make_call():
-            args = (_UniffiConverterTypeTransaction.lift(transaction), )
-            method = uniffi_obj.sign_transaction
-            return method(*args)
-
-        
-        def handle_success(return_value):
-            uniffi_future_callback(
-                uniffi_callback_data,
-                _UniffiForeignFutureStructRustBuffer(
-                    _UniffiConverterTypeSignedTransaction.lower(return_value),
-                    _UniffiRustCallStatus.default()
-                )
-            )
-
-        def handle_error(status_code, rust_buffer):
-            uniffi_future_callback(
-                uniffi_callback_data,
-                _UniffiForeignFutureStructRustBuffer(
-                    _UniffiRustBufferSignedTransaction.default(),
-                    _UniffiRustCallStatus(status_code, rust_buffer),
-                )
-            )
-        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, UtilsError, _UniffiConverterTypeUtilsError.lower)
-
-    @_UNIFFI_CALLBACK_INTERFACE_FREE
-    def _uniffi_free(uniffi_handle):
-        _UniffiConverterTypeTransactionSigner._handle_map.remove(uniffi_handle)
-
-    # Generate the FFI VTable.  This has a field for each callback interface method.
-    _uniffi_vtable = _UniffiVTableCallbackInterfaceTransactionSigner(
-        sign_transactions,
-        sign_transaction,
-        _uniffi_free
-    )
-    # Send Rust a pointer to the VTable.  Note: this means we need to keep the struct alive forever,
-    # or else bad things will happen when Rust tries to access it.
-    _UniffiLib.uniffi_algokit_utils_ffi_fn_init_callback_vtable_transactionsigner(ctypes.byref(_uniffi_vtable))
-
-
-
-class _UniffiConverterTypeTransactionSigner:
-    _handle_map = _UniffiHandleMap()
-
-    @staticmethod
-    def lift(value: int):
-        return TransactionSignerImpl._make_instance_(value)
-
-    @staticmethod
-    def check_lower(value: TransactionSigner):
-        pass
-
-    @staticmethod
-    def lower(value: TransactionSigner):
-        return _UniffiConverterTypeTransactionSigner._handle_map.insert(value)
-
-    @classmethod
-    def read(cls, buf: _UniffiRustBuffer):
-        ptr = buf.read_u64()
-        if ptr == 0:
-            raise InternalError("Raw pointer value was null")
-        return cls.lift(ptr)
-
-    @classmethod
-    def write(cls, value: TransactionSigner, buf: _UniffiRustBuffer):
-        buf.write_u64(cls.lower(value))
-
-
-
-class TransactionSignerGetter(typing.Protocol):
-    def get_signer(self, address: "str"):
-        raise NotImplementedError
-
-
-class TransactionSignerGetterImpl:
-    _pointer: ctypes.c_void_p
-    
-    def __init__(self, *args, **kwargs):
-        raise ValueError("This class has no default constructor")
-
-    def __del__(self):
-        # In case of partial initialization of instances.
-        pointer = getattr(self, "_pointer", None)
-        if pointer is not None:
-            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_free_transactionsignergetter, pointer)
-
-    def _uniffi_clone_pointer(self):
-        return _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_transactionsignergetter, self._pointer)
-
-    # Used by alternative constructors or any methods which return this type.
-    @classmethod
-    def _make_instance_(cls, pointer):
-        # Lightly yucky way to bypass the usual __init__ logic
-        # and just create a new instance with the required pointer.
-        inst = cls.__new__(cls)
-        inst._pointer = pointer
-        return inst
-
-
-    def get_signer(self, address: "str") -> "typing.Optional[TransactionSigner]":
-        _UniffiConverterString.check_lower(address)
-        
-        return _UniffiConverterOptionalTypeTransactionSigner.lift(
-            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_method_transactionsignergetter_get_signer,self._uniffi_clone_pointer(),
-        _UniffiConverterString.lower(address))
-        )
-
-
-
-
-
-# Put all the bits inside a class to keep the top-level namespace clean
-class _UniffiTraitImplTransactionSignerGetter:
-    # For each method, generate a callback function to pass to Rust
-
-    @_UNIFFI_CALLBACK_INTERFACE_TRANSACTION_SIGNER_GETTER_METHOD0
-    def get_signer(
-            uniffi_handle,
-            address,
-            uniffi_out_return,
-            uniffi_call_status_ptr,
-        ):
-        uniffi_obj = _UniffiConverterTypeTransactionSignerGetter._handle_map.get(uniffi_handle)
-        def make_call():
-            args = (_UniffiConverterString.lift(address), )
-            method = uniffi_obj.get_signer
-            return method(*args)
-
-        
-        def write_return_value(v):
-            uniffi_out_return[0] = _UniffiConverterOptionalTypeTransactionSigner.lower(v)
-        _uniffi_trait_interface_call(
-                uniffi_call_status_ptr.contents,
-                make_call,
-                write_return_value,
-        )
-
-    @_UNIFFI_CALLBACK_INTERFACE_FREE
-    def _uniffi_free(uniffi_handle):
-        _UniffiConverterTypeTransactionSignerGetter._handle_map.remove(uniffi_handle)
-
-    # Generate the FFI VTable.  This has a field for each callback interface method.
-    _uniffi_vtable = _UniffiVTableCallbackInterfaceTransactionSignerGetter(
-        get_signer,
-        _uniffi_free
-    )
-    # Send Rust a pointer to the VTable.  Note: this means we need to keep the struct alive forever,
-    # or else bad things will happen when Rust tries to access it.
-    _UniffiLib.uniffi_algokit_utils_ffi_fn_init_callback_vtable_transactionsignergetter(ctypes.byref(_uniffi_vtable))
-
-
-
-class _UniffiConverterTypeTransactionSignerGetter:
-    _handle_map = _UniffiHandleMap()
-
-    @staticmethod
-    def lift(value: int):
-        return TransactionSignerGetterImpl._make_instance_(value)
-
-    @staticmethod
-    def check_lower(value: TransactionSignerGetter):
-        pass
-
-    @staticmethod
-    def lower(value: TransactionSignerGetter):
-        return _UniffiConverterTypeTransactionSignerGetter._handle_map.insert(value)
-
-    @classmethod
-    def read(cls, buf: _UniffiRustBuffer):
-        ptr = buf.read_u64()
-        if ptr == 0:
-            raise InternalError("Raw pointer value was null")
-        return cls.lift(ptr)
-
-    @classmethod
-    def write(cls, value: TransactionSignerGetter, buf: _UniffiRustBuffer):
-        buf.write_u64(cls.lower(value))
 
 
 class CommonParams:
@@ -2026,15 +1563,501 @@ class _UniffiConverterSequenceTypeTransaction(_UniffiConverterRustBuffer):
             _UniffiConverterTypeTransaction.read(buf) for i in range(count)
         ]
 
-# External type SignedTransaction is in namespace "algokit_transact_ffi", crate algokit_transact_ffi
+# objects.
+class TransactionSignerProtocol(typing.Protocol):
+    def sign_transactions(self, transactions: "typing.List[Transaction]",indices: "typing.List[int]"):
+        raise NotImplementedError
+    def sign_transaction(self, transaction: "Transaction"):
+        raise NotImplementedError
+# TransactionSigner is a foreign trait so treated like a callback interface, where the
+# primary use-case is the trait being implemented locally.
+# It is a base-class local implementations might subclass.
+
+
+class TransactionSigner():
+    def sign_transactions(self, transactions: "typing.List[Transaction]",indices: "typing.List[int]"):
+        raise NotImplementedError
+    def sign_transaction(self, transaction: "Transaction"):
+        raise NotImplementedError
+# `TransactionSignerImpl` is the implementation for a Rust implemented version.
+class TransactionSignerImpl():
+    _pointer: ctypes.c_void_p
+    
+    def __init__(self, *args, **kwargs):
+        raise ValueError("This class has no default constructor")
+
+    def __del__(self):
+        # In case of partial initialization of instances.
+        pointer = getattr(self, "_pointer", None)
+        if pointer is not None:
+            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_free_transactionsigner, pointer)
+
+    def _uniffi_clone_pointer(self):
+        return _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_transactionsigner, self._pointer)
+
+    # Used by alternative constructors or any methods which return this type.
+    @classmethod
+    def _make_instance_(cls, pointer):
+        # Lightly yucky way to bypass the usual __init__ logic
+        # and just create a new instance with the required pointer.
+        inst = cls.__new__(cls)
+        inst._pointer = pointer
+        return inst
+
+    async def sign_transactions(self, transactions: "typing.List[Transaction]",indices: "typing.List[int]") -> "typing.List[SignedTransaction]":
+        _UniffiConverterSequenceTypeTransaction.check_lower(transactions)
+        
+        _UniffiConverterSequenceUInt32.check_lower(indices)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_transactionsigner_sign_transactions(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterSequenceTypeTransaction.lower(transactions),
+        _UniffiConverterSequenceUInt32.lower(indices)
+            ),
+            _UniffiLib.ffi_algokit_utils_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algokit_utils_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algokit_utils_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterSequenceTypeSignedTransaction.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeUtilsError,
+
+        )
+
+
+
+    async def sign_transaction(self, transaction: "Transaction") -> "SignedTransaction":
+        _UniffiConverterTypeTransaction.check_lower(transaction)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_transactionsigner_sign_transaction(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterTypeTransaction.lower(transaction)
+            ),
+            _UniffiLib.ffi_algokit_utils_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algokit_utils_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algokit_utils_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeSignedTransaction.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeUtilsError,
+
+        )
 
 
 
 
-# External type Transaction is in namespace "algokit_transact_ffi", crate algokit_transact_ffi
+# Put all the bits inside a class to keep the top-level namespace clean
+class _UniffiTraitImplTransactionSigner:
+    # For each method, generate a callback function to pass to Rust
+
+    @_UNIFFI_CALLBACK_INTERFACE_TRANSACTION_SIGNER_METHOD0
+    def sign_transactions(
+            uniffi_handle,
+            transactions,
+            indices,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeTransactionSigner._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterSequenceTypeTransaction.lift(transactions), _UniffiConverterSequenceUInt32.lift(indices), )
+            method = uniffi_obj.sign_transactions
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterSequenceTypeSignedTransaction.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, UtilsError, _UniffiConverterTypeUtilsError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_TRANSACTION_SIGNER_METHOD1
+    def sign_transaction(
+            uniffi_handle,
+            transaction,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeTransactionSigner._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterTypeTransaction.lift(transaction), )
+            method = uniffi_obj.sign_transaction
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeSignedTransaction.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBufferSignedTransaction.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, UtilsError, _UniffiConverterTypeUtilsError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_FREE
+    def _uniffi_free(uniffi_handle):
+        _UniffiConverterTypeTransactionSigner._handle_map.remove(uniffi_handle)
+
+    # Generate the FFI VTable.  This has a field for each callback interface method.
+    _uniffi_vtable = _UniffiVTableCallbackInterfaceTransactionSigner(
+        sign_transactions,
+        sign_transaction,
+        _uniffi_free
+    )
+    # Send Rust a pointer to the VTable.  Note: this means we need to keep the struct alive forever,
+    # or else bad things will happen when Rust tries to access it.
+    _UniffiLib.uniffi_algokit_utils_ffi_fn_init_callback_vtable_transactionsigner(ctypes.byref(_uniffi_vtable))
 
 
 
+class _UniffiConverterTypeTransactionSigner:
+    _handle_map = _UniffiHandleMap()
+
+    @staticmethod
+    def lift(value: int):
+        return TransactionSignerImpl._make_instance_(value)
+
+    @staticmethod
+    def check_lower(value: TransactionSigner):
+        pass
+
+    @staticmethod
+    def lower(value: TransactionSignerProtocol):
+        return _UniffiConverterTypeTransactionSigner._handle_map.insert(value)
+
+    @classmethod
+    def read(cls, buf: _UniffiRustBuffer):
+        ptr = buf.read_u64()
+        if ptr == 0:
+            raise InternalError("Raw pointer value was null")
+        return cls.lift(ptr)
+
+    @classmethod
+    def write(cls, value: TransactionSignerProtocol, buf: _UniffiRustBuffer):
+        buf.write_u64(cls.lower(value))
+class TransactionSignerGetterProtocol(typing.Protocol):
+    def get_signer(self, address: "str"):
+        raise NotImplementedError
+# TransactionSignerGetter is a foreign trait so treated like a callback interface, where the
+# primary use-case is the trait being implemented locally.
+# It is a base-class local implementations might subclass.
+
+
+class TransactionSignerGetter():
+    def get_signer(self, address: "str"):
+        raise NotImplementedError
+# `TransactionSignerGetterImpl` is the implementation for a Rust implemented version.
+class TransactionSignerGetterImpl():
+    _pointer: ctypes.c_void_p
+    
+    def __init__(self, *args, **kwargs):
+        raise ValueError("This class has no default constructor")
+
+    def __del__(self):
+        # In case of partial initialization of instances.
+        pointer = getattr(self, "_pointer", None)
+        if pointer is not None:
+            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_free_transactionsignergetter, pointer)
+
+    def _uniffi_clone_pointer(self):
+        return _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_transactionsignergetter, self._pointer)
+
+    # Used by alternative constructors or any methods which return this type.
+    @classmethod
+    def _make_instance_(cls, pointer):
+        # Lightly yucky way to bypass the usual __init__ logic
+        # and just create a new instance with the required pointer.
+        inst = cls.__new__(cls)
+        inst._pointer = pointer
+        return inst
+
+
+    def get_signer(self, address: "str") -> "typing.Optional[TransactionSigner]":
+        _UniffiConverterString.check_lower(address)
+        
+        return _UniffiConverterOptionalTypeTransactionSigner.lift(
+            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_method_transactionsignergetter_get_signer,self._uniffi_clone_pointer(),
+        _UniffiConverterString.lower(address))
+        )
+
+
+
+
+
+# Put all the bits inside a class to keep the top-level namespace clean
+class _UniffiTraitImplTransactionSignerGetter:
+    # For each method, generate a callback function to pass to Rust
+
+    @_UNIFFI_CALLBACK_INTERFACE_TRANSACTION_SIGNER_GETTER_METHOD0
+    def get_signer(
+            uniffi_handle,
+            address,
+            uniffi_out_return,
+            uniffi_call_status_ptr,
+        ):
+        uniffi_obj = _UniffiConverterTypeTransactionSignerGetter._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterString.lift(address), )
+            method = uniffi_obj.get_signer
+            return method(*args)
+
+        
+        def write_return_value(v):
+            uniffi_out_return[0] = _UniffiConverterOptionalTypeTransactionSigner.lower(v)
+        _uniffi_trait_interface_call(
+                uniffi_call_status_ptr.contents,
+                make_call,
+                write_return_value,
+        )
+
+    @_UNIFFI_CALLBACK_INTERFACE_FREE
+    def _uniffi_free(uniffi_handle):
+        _UniffiConverterTypeTransactionSignerGetter._handle_map.remove(uniffi_handle)
+
+    # Generate the FFI VTable.  This has a field for each callback interface method.
+    _uniffi_vtable = _UniffiVTableCallbackInterfaceTransactionSignerGetter(
+        get_signer,
+        _uniffi_free
+    )
+    # Send Rust a pointer to the VTable.  Note: this means we need to keep the struct alive forever,
+    # or else bad things will happen when Rust tries to access it.
+    _UniffiLib.uniffi_algokit_utils_ffi_fn_init_callback_vtable_transactionsignergetter(ctypes.byref(_uniffi_vtable))
+
+
+
+class _UniffiConverterTypeTransactionSignerGetter:
+    _handle_map = _UniffiHandleMap()
+
+    @staticmethod
+    def lift(value: int):
+        return TransactionSignerGetterImpl._make_instance_(value)
+
+    @staticmethod
+    def check_lower(value: TransactionSignerGetter):
+        pass
+
+    @staticmethod
+    def lower(value: TransactionSignerGetterProtocol):
+        return _UniffiConverterTypeTransactionSignerGetter._handle_map.insert(value)
+
+    @classmethod
+    def read(cls, buf: _UniffiRustBuffer):
+        ptr = buf.read_u64()
+        if ptr == 0:
+            raise InternalError("Raw pointer value was null")
+        return cls.lift(ptr)
+
+    @classmethod
+    def write(cls, value: TransactionSignerGetterProtocol, buf: _UniffiRustBuffer):
+        buf.write_u64(cls.lower(value))
+class AlgodClientProtocol(typing.Protocol):
+    pass
+# AlgodClient is a Rust-only trait - it's a wrapper around a Rust implementation.
+class AlgodClient():
+    _pointer: ctypes.c_void_p
+    def __init__(self, http_client: "HttpClient"):
+        _UniffiConverterTypeHttpClient.check_lower(http_client)
+        
+        self._pointer = _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_algodclient_new,
+        _UniffiConverterTypeHttpClient.lower(http_client))
+
+    def __del__(self):
+        # In case of partial initialization of instances.
+        pointer = getattr(self, "_pointer", None)
+        if pointer is not None:
+            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_free_algodclient, pointer)
+
+    def _uniffi_clone_pointer(self):
+        return _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_algodclient, self._pointer)
+
+    # Used by alternative constructors or any methods which return this type.
+    @classmethod
+    def _make_instance_(cls, pointer):
+        # Lightly yucky way to bypass the usual __init__ logic
+        # and just create a new instance with the required pointer.
+        inst = cls.__new__(cls)
+        inst._pointer = pointer
+        return inst
+
+
+
+class _UniffiConverterTypeAlgodClient:
+
+    @staticmethod
+    def lift(value: int):
+        return AlgodClient._make_instance_(value)
+
+    @staticmethod
+    def check_lower(value: AlgodClient):
+        if not isinstance(value, AlgodClient):
+            raise TypeError("Expected AlgodClient instance, {} found".format(type(value).__name__))
+
+    @staticmethod
+    def lower(value: AlgodClientProtocol):
+        if not isinstance(value, AlgodClient):
+            raise TypeError("Expected AlgodClient instance, {} found".format(type(value).__name__))
+        return value._uniffi_clone_pointer()
+
+    @classmethod
+    def read(cls, buf: _UniffiRustBuffer):
+        ptr = buf.read_u64()
+        if ptr == 0:
+            raise InternalError("Raw pointer value was null")
+        return cls.lift(ptr)
+
+    @classmethod
+    def write(cls, value: AlgodClientProtocol, buf: _UniffiRustBuffer):
+        buf.write_u64(cls.lower(value))
+class ComposerProtocol(typing.Protocol):
+    def add_payment(self, params: "PaymentParams"):
+        raise NotImplementedError
+    def build(self, ):
+        raise NotImplementedError
+    def send(self, ):
+        raise NotImplementedError
+# Composer is a Rust-only trait - it's a wrapper around a Rust implementation.
+class Composer():
+    _pointer: ctypes.c_void_p
+    def __init__(self, algod_client: "AlgodClient",signer_getter: "TransactionSignerGetter"):
+        _UniffiConverterTypeAlgodClient.check_lower(algod_client)
+        
+        _UniffiConverterTypeTransactionSignerGetter.check_lower(signer_getter)
+        
+        self._pointer = _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_composer_new,
+        _UniffiConverterTypeAlgodClient.lower(algod_client),
+        _UniffiConverterTypeTransactionSignerGetter.lower(signer_getter))
+
+    def __del__(self):
+        # In case of partial initialization of instances.
+        pointer = getattr(self, "_pointer", None)
+        if pointer is not None:
+            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_free_composer, pointer)
+
+    def _uniffi_clone_pointer(self):
+        return _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_composer, self._pointer)
+
+    # Used by alternative constructors or any methods which return this type.
+    @classmethod
+    def _make_instance_(cls, pointer):
+        # Lightly yucky way to bypass the usual __init__ logic
+        # and just create a new instance with the required pointer.
+        inst = cls.__new__(cls)
+        inst._pointer = pointer
+        return inst
+
+
+    def add_payment(self, params: "PaymentParams") -> None:
+        _UniffiConverterTypePaymentParams.check_lower(params)
+        
+        _uniffi_rust_call_with_error(_UniffiConverterTypeUtilsError,_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_payment,self._uniffi_clone_pointer(),
+        _UniffiConverterTypePaymentParams.lower(params))
+
+
+
+
+
+    async def build(self, ) -> None:
+
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_build(
+                self._uniffi_clone_pointer(), 
+            ),
+            _UniffiLib.ffi_algokit_utils_ffi_rust_future_poll_void,
+            _UniffiLib.ffi_algokit_utils_ffi_rust_future_complete_void,
+            _UniffiLib.ffi_algokit_utils_ffi_rust_future_free_void,
+            # lift function
+            lambda val: None,
+            
+            
+    # Error FFI converter
+_UniffiConverterTypeUtilsError,
+
+        )
+
+
+
+    async def send(self, ) -> "typing.List[str]":
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_send(
+                self._uniffi_clone_pointer(), 
+            ),
+            _UniffiLib.ffi_algokit_utils_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algokit_utils_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algokit_utils_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterSequenceString.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeUtilsError,
+
+        )
+
+
+
+
+
+class _UniffiConverterTypeComposer:
+
+    @staticmethod
+    def lift(value: int):
+        return Composer._make_instance_(value)
+
+    @staticmethod
+    def check_lower(value: Composer):
+        if not isinstance(value, Composer):
+            raise TypeError("Expected Composer instance, {} found".format(type(value).__name__))
+
+    @staticmethod
+    def lower(value: ComposerProtocol):
+        if not isinstance(value, Composer):
+            raise TypeError("Expected Composer instance, {} found".format(type(value).__name__))
+        return value._uniffi_clone_pointer()
+
+    @classmethod
+    def read(cls, buf: _UniffiRustBuffer):
+        ptr = buf.read_u64()
+        if ptr == 0:
+            raise InternalError("Raw pointer value was null")
+        return cls.lift(ptr)
+
+    @classmethod
+    def write(cls, value: ComposerProtocol, buf: _UniffiRustBuffer):
+        buf.write_u64(cls.lower(value))
+
+# External type HttpClient: `from .algokit_http_client import HttpClient`
+
+# External type SignedTransaction: `from .algokit_transact_ffi import SignedTransaction`
+
+# External type Transaction: `from .algokit_transact_ffi import Transaction`
 
 # Async support# RustFuturePoll values
 _UNIFFI_RUST_FUTURE_POLL_READY = 0

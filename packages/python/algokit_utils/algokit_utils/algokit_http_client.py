@@ -454,7 +454,7 @@ def _uniffi_load_indirect():
 
 def _uniffi_check_contract_api_version(lib):
     # Get the bindings contract version from our ComponentInterface
-    bindings_contract_version = 26
+    bindings_contract_version = 29
     # Get the scaffolding contract version by calling the into the dylib
     scaffolding_contract_version = lib.ffi_algokit_http_client_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version:
@@ -878,7 +878,38 @@ _uniffi_check_contract_api_version(_UniffiLib)
 # _uniffi_check_api_checksums(_UniffiLib)
 
 # Public interface members begin here.
+# Magic number for the Rust proxy to call using the same mechanism as every other method,
+# to free the callback once it's dropped by Rust.
+_UNIFFI_IDX_CALLBACK_FREE = 0
+# Return codes for callback calls
+_UNIFFI_CALLBACK_SUCCESS = 0
+_UNIFFI_CALLBACK_ERROR = 1
+_UNIFFI_CALLBACK_UNEXPECTED_ERROR = 2
 
+class _UniffiCallbackInterfaceFfiConverter:
+    _handle_map = _UniffiHandleMap()
+
+    @classmethod
+    def lift(cls, handle):
+        return cls._handle_map.get(handle)
+
+    @classmethod
+    def read(cls, buf):
+        handle = buf.read_u64()
+        cls.lift(handle)
+
+    @classmethod
+    def check_lower(cls, cb):
+        pass
+
+    @classmethod
+    def lower(cls, cb):
+        handle = cls._handle_map.insert(cb)
+        return handle
+
+    @classmethod
+    def write(cls, cb, buf):
+        buf.write_u64(cls.lower(cb))
 
 class _UniffiConverterString:
     @staticmethod
@@ -933,199 +964,6 @@ class _UniffiConverterBytes(_UniffiConverterRustBuffer):
         buf.write(value)
 
 
-
-class HttpClient(typing.Protocol):
-    """
-    This trait must be implemented by any HTTP client that is used by our Rust crates.
-    It is assumed the implementing type will provide the hostname, port, headers, etc. as needed for each request.
-
-    By default, this trait requires the implementing type to be `Send + Sync`.
-    For WASM targets, enable the `ffi_wasm` feature to use a different implementation that is compatible with WASM.
-    """
-
-    def request(self, method: "HttpMethod",path: "str",query: "typing.Optional[dict[str, str]]",body: "typing.Optional[bytes]",headers: "typing.Optional[dict[str, str]]"):
-        raise NotImplementedError
-
-
-class HttpClientImpl:
-    """
-    This trait must be implemented by any HTTP client that is used by our Rust crates.
-    It is assumed the implementing type will provide the hostname, port, headers, etc. as needed for each request.
-
-    By default, this trait requires the implementing type to be `Send + Sync`.
-    For WASM targets, enable the `ffi_wasm` feature to use a different implementation that is compatible with WASM.
-    """
-
-    _pointer: ctypes.c_void_p
-    
-    def __init__(self, *args, **kwargs):
-        raise ValueError("This class has no default constructor")
-
-    def __del__(self):
-        # In case of partial initialization of instances.
-        pointer = getattr(self, "_pointer", None)
-        if pointer is not None:
-            _uniffi_rust_call(_UniffiLib.uniffi_algokit_http_client_fn_free_httpclient, pointer)
-
-    def _uniffi_clone_pointer(self):
-        return _uniffi_rust_call(_UniffiLib.uniffi_algokit_http_client_fn_clone_httpclient, self._pointer)
-
-    # Used by alternative constructors or any methods which return this type.
-    @classmethod
-    def _make_instance_(cls, pointer):
-        # Lightly yucky way to bypass the usual __init__ logic
-        # and just create a new instance with the required pointer.
-        inst = cls.__new__(cls)
-        inst._pointer = pointer
-        return inst
-
-    async def request(self, method: "HttpMethod",path: "str",query: "typing.Optional[dict[str, str]]",body: "typing.Optional[bytes]",headers: "typing.Optional[dict[str, str]]") -> "HttpResponse":
-        _UniffiConverterTypeHttpMethod.check_lower(method)
-        
-        _UniffiConverterString.check_lower(path)
-        
-        _UniffiConverterOptionalMapStringString.check_lower(query)
-        
-        _UniffiConverterOptionalBytes.check_lower(body)
-        
-        _UniffiConverterOptionalMapStringString.check_lower(headers)
-        
-        return await _uniffi_rust_call_async(
-            _UniffiLib.uniffi_algokit_http_client_fn_method_httpclient_request(
-                self._uniffi_clone_pointer(), 
-        _UniffiConverterTypeHttpMethod.lower(method),
-        _UniffiConverterString.lower(path),
-        _UniffiConverterOptionalMapStringString.lower(query),
-        _UniffiConverterOptionalBytes.lower(body),
-        _UniffiConverterOptionalMapStringString.lower(headers)
-            ),
-            _UniffiLib.ffi_algokit_http_client_rust_future_poll_rust_buffer,
-            _UniffiLib.ffi_algokit_http_client_rust_future_complete_rust_buffer,
-            _UniffiLib.ffi_algokit_http_client_rust_future_free_rust_buffer,
-            # lift function
-            _UniffiConverterTypeHttpResponse.lift,
-            
-    # Error FFI converter
-_UniffiConverterTypeHttpError,
-
-        )
-
-
-# Magic number for the Rust proxy to call using the same mechanism as every other method,
-# to free the callback once it's dropped by Rust.
-_UNIFFI_IDX_CALLBACK_FREE = 0
-# Return codes for callback calls
-_UNIFFI_CALLBACK_SUCCESS = 0
-_UNIFFI_CALLBACK_ERROR = 1
-_UNIFFI_CALLBACK_UNEXPECTED_ERROR = 2
-
-class _UniffiCallbackInterfaceFfiConverter:
-    _handle_map = _UniffiHandleMap()
-
-    @classmethod
-    def lift(cls, handle):
-        return cls._handle_map.get(handle)
-
-    @classmethod
-    def read(cls, buf):
-        handle = buf.read_u64()
-        cls.lift(handle)
-
-    @classmethod
-    def check_lower(cls, cb):
-        pass
-
-    @classmethod
-    def lower(cls, cb):
-        handle = cls._handle_map.insert(cb)
-        return handle
-
-    @classmethod
-    def write(cls, cb, buf):
-        buf.write_u64(cls.lower(cb))
-
-# Put all the bits inside a class to keep the top-level namespace clean
-class _UniffiTraitImplHttpClient:
-    # For each method, generate a callback function to pass to Rust
-
-    @_UNIFFI_CALLBACK_INTERFACE_HTTP_CLIENT_METHOD0
-    def request(
-            uniffi_handle,
-            method,
-            path,
-            query,
-            body,
-            headers,
-            uniffi_future_callback,
-            uniffi_callback_data,
-            uniffi_out_return,
-        ):
-        uniffi_obj = _UniffiConverterTypeHttpClient._handle_map.get(uniffi_handle)
-        def make_call():
-            args = (_UniffiConverterTypeHttpMethod.lift(method), _UniffiConverterString.lift(path), _UniffiConverterOptionalMapStringString.lift(query), _UniffiConverterOptionalBytes.lift(body), _UniffiConverterOptionalMapStringString.lift(headers), )
-            method = uniffi_obj.request
-            return method(*args)
-
-        
-        def handle_success(return_value):
-            uniffi_future_callback(
-                uniffi_callback_data,
-                _UniffiForeignFutureStructRustBuffer(
-                    _UniffiConverterTypeHttpResponse.lower(return_value),
-                    _UniffiRustCallStatus.default()
-                )
-            )
-
-        def handle_error(status_code, rust_buffer):
-            uniffi_future_callback(
-                uniffi_callback_data,
-                _UniffiForeignFutureStructRustBuffer(
-                    _UniffiRustBuffer.default(),
-                    _UniffiRustCallStatus(status_code, rust_buffer),
-                )
-            )
-        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, HttpError, _UniffiConverterTypeHttpError.lower)
-
-    @_UNIFFI_CALLBACK_INTERFACE_FREE
-    def _uniffi_free(uniffi_handle):
-        _UniffiConverterTypeHttpClient._handle_map.remove(uniffi_handle)
-
-    # Generate the FFI VTable.  This has a field for each callback interface method.
-    _uniffi_vtable = _UniffiVTableCallbackInterfaceHttpClient(
-        request,
-        _uniffi_free
-    )
-    # Send Rust a pointer to the VTable.  Note: this means we need to keep the struct alive forever,
-    # or else bad things will happen when Rust tries to access it.
-    _UniffiLib.uniffi_algokit_http_client_fn_init_callback_vtable_httpclient(ctypes.byref(_uniffi_vtable))
-
-
-
-class _UniffiConverterTypeHttpClient:
-    _handle_map = _UniffiHandleMap()
-
-    @staticmethod
-    def lift(value: int):
-        return HttpClientImpl._make_instance_(value)
-
-    @staticmethod
-    def check_lower(value: HttpClient):
-        pass
-
-    @staticmethod
-    def lower(value: HttpClient):
-        return _UniffiConverterTypeHttpClient._handle_map.insert(value)
-
-    @classmethod
-    def read(cls, buf: _UniffiRustBuffer):
-        ptr = buf.read_u64()
-        if ptr == 0:
-            raise InternalError("Raw pointer value was null")
-        return cls.lift(ptr)
-
-    @classmethod
-    def write(cls, value: HttpClient, buf: _UniffiRustBuffer):
-        buf.write_u64(cls.lower(value))
 
 
 class HttpResponse:
@@ -1377,6 +1215,181 @@ class _UniffiConverterMapStringString(_UniffiConverterRustBuffer):
             val = _UniffiConverterString.read(buf)
             d[key] = val
         return d
+
+# objects.
+class HttpClientProtocol(typing.Protocol):
+    """
+    This trait must be implemented by any HTTP client that is used by our Rust crates.
+    It is assumed the implementing type will provide the hostname, port, headers, etc. as needed for each request.
+
+    By default, this trait requires the implementing type to be `Send + Sync`.
+    """
+
+    def request(self, method: "HttpMethod",path: "str",query: "typing.Optional[dict[str, str]]",body: "typing.Optional[bytes]",headers: "typing.Optional[dict[str, str]]"):
+        raise NotImplementedError
+# HttpClient is a foreign trait so treated like a callback interface, where the
+# primary use-case is the trait being implemented locally.
+# It is a base-class local implementations might subclass.
+
+
+class HttpClient():
+    """
+    This trait must be implemented by any HTTP client that is used by our Rust crates.
+    It is assumed the implementing type will provide the hostname, port, headers, etc. as needed for each request.
+
+    By default, this trait requires the implementing type to be `Send + Sync`.
+    """
+
+    def request(self, method: "HttpMethod",path: "str",query: "typing.Optional[dict[str, str]]",body: "typing.Optional[bytes]",headers: "typing.Optional[dict[str, str]]"):
+        raise NotImplementedError
+# `HttpClientImpl` is the implementation for a Rust implemented version.
+class HttpClientImpl():
+    """
+    This trait must be implemented by any HTTP client that is used by our Rust crates.
+    It is assumed the implementing type will provide the hostname, port, headers, etc. as needed for each request.
+
+    By default, this trait requires the implementing type to be `Send + Sync`.
+    """
+
+    _pointer: ctypes.c_void_p
+    
+    def __init__(self, *args, **kwargs):
+        raise ValueError("This class has no default constructor")
+
+    def __del__(self):
+        # In case of partial initialization of instances.
+        pointer = getattr(self, "_pointer", None)
+        if pointer is not None:
+            _uniffi_rust_call(_UniffiLib.uniffi_algokit_http_client_fn_free_httpclient, pointer)
+
+    def _uniffi_clone_pointer(self):
+        return _uniffi_rust_call(_UniffiLib.uniffi_algokit_http_client_fn_clone_httpclient, self._pointer)
+
+    # Used by alternative constructors or any methods which return this type.
+    @classmethod
+    def _make_instance_(cls, pointer):
+        # Lightly yucky way to bypass the usual __init__ logic
+        # and just create a new instance with the required pointer.
+        inst = cls.__new__(cls)
+        inst._pointer = pointer
+        return inst
+
+    async def request(self, method: "HttpMethod",path: "str",query: "typing.Optional[dict[str, str]]",body: "typing.Optional[bytes]",headers: "typing.Optional[dict[str, str]]") -> "HttpResponse":
+        _UniffiConverterTypeHttpMethod.check_lower(method)
+        
+        _UniffiConverterString.check_lower(path)
+        
+        _UniffiConverterOptionalMapStringString.check_lower(query)
+        
+        _UniffiConverterOptionalBytes.check_lower(body)
+        
+        _UniffiConverterOptionalMapStringString.check_lower(headers)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algokit_http_client_fn_method_httpclient_request(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterTypeHttpMethod.lower(method),
+        _UniffiConverterString.lower(path),
+        _UniffiConverterOptionalMapStringString.lower(query),
+        _UniffiConverterOptionalBytes.lower(body),
+        _UniffiConverterOptionalMapStringString.lower(headers)
+            ),
+            _UniffiLib.ffi_algokit_http_client_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algokit_http_client_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algokit_http_client_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeHttpResponse.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeHttpError,
+
+        )
+
+
+
+
+# Put all the bits inside a class to keep the top-level namespace clean
+class _UniffiTraitImplHttpClient:
+    # For each method, generate a callback function to pass to Rust
+
+    @_UNIFFI_CALLBACK_INTERFACE_HTTP_CLIENT_METHOD0
+    def request(
+            uniffi_handle,
+            method,
+            path,
+            query,
+            body,
+            headers,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeHttpClient._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterTypeHttpMethod.lift(method), _UniffiConverterString.lift(path), _UniffiConverterOptionalMapStringString.lift(query), _UniffiConverterOptionalBytes.lift(body), _UniffiConverterOptionalMapStringString.lift(headers), )
+            method = uniffi_obj.request
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeHttpResponse.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, HttpError, _UniffiConverterTypeHttpError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_FREE
+    def _uniffi_free(uniffi_handle):
+        _UniffiConverterTypeHttpClient._handle_map.remove(uniffi_handle)
+
+    # Generate the FFI VTable.  This has a field for each callback interface method.
+    _uniffi_vtable = _UniffiVTableCallbackInterfaceHttpClient(
+        request,
+        _uniffi_free
+    )
+    # Send Rust a pointer to the VTable.  Note: this means we need to keep the struct alive forever,
+    # or else bad things will happen when Rust tries to access it.
+    _UniffiLib.uniffi_algokit_http_client_fn_init_callback_vtable_httpclient(ctypes.byref(_uniffi_vtable))
+
+
+
+class _UniffiConverterTypeHttpClient:
+    _handle_map = _UniffiHandleMap()
+
+    @staticmethod
+    def lift(value: int):
+        return HttpClientImpl._make_instance_(value)
+
+    @staticmethod
+    def check_lower(value: HttpClient):
+        pass
+
+    @staticmethod
+    def lower(value: HttpClientProtocol):
+        return _UniffiConverterTypeHttpClient._handle_map.insert(value)
+
+    @classmethod
+    def read(cls, buf: _UniffiRustBuffer):
+        ptr = buf.read_u64()
+        if ptr == 0:
+            raise InternalError("Raw pointer value was null")
+        return cls.lift(ptr)
+
+    @classmethod
+    def write(cls, value: HttpClientProtocol, buf: _UniffiRustBuffer):
+        buf.write_u64(cls.lower(value))
 
 # Async support# RustFuturePoll values
 _UNIFFI_RUST_FUTURE_POLL_READY = 0
