@@ -67,7 +67,7 @@ impl TryFrom<MultisigSubsignature> for algokit_transact::MultisigSubsignature {
             address,
             signature: value
                 .signature
-                .map(|sig| bytebuf_to_bytes(&sig))
+                .map(|sig| vec_to_array(&sig, "signature"))
                 .transpose()
                 .map_err(|e| AlgoKitTransactError::DecodingError {
                     message: format!("Error while decoding a subsignature: {}", e),

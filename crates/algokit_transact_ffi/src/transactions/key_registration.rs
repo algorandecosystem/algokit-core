@@ -61,15 +61,15 @@ impl TryFrom<crate::Transaction> for algokit_transact::KeyRegistrationTransactio
             header,
             vote_key: data
                 .vote_key
-                .map(|buf| bytebuf_to_bytes::<32>(&buf))
+                .map(|buf| vec_to_array::<32>(&buf, "vote key"))
                 .transpose()?,
             selection_key: data
                 .selection_key
-                .map(|buf| bytebuf_to_bytes::<32>(&buf))
+                .map(|buf| vec_to_array::<32>(&buf, "selection key"))
                 .transpose()?,
             state_proof_key: data
                 .state_proof_key
-                .map(|buf| bytebuf_to_bytes::<64>(&buf))
+                .map(|buf| vec_to_array::<64>(&buf, "state proof key"))
                 .transpose()?,
             vote_first: data.vote_first,
             vote_last: data.vote_last,

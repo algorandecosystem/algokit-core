@@ -115,9 +115,11 @@ impl TryFrom<KeyPairAccount> for algokit_transact::KeyPairAccount {
     type Error = AlgoKitTransactError;
 
     fn try_from(value: KeyPairAccount) -> Result<Self, Self::Error> {
-        let pub_key: [u8; ALGORAND_PUBLIC_KEY_BYTE_LENGTH] = bytebuf_to_bytes(&value.pub_key)
-            .map_err(|e| AlgoKitTransactError::DecodingError {
-                message: format!("Error while decoding a public key: {}", e),
+        let pub_key: [u8; ALGORAND_PUBLIC_KEY_BYTE_LENGTH] =
+            vec_to_array(&value.pub_key, "public key").map_err(|e| {
+                AlgoKitTransactError::DecodingError {
+                    message: format!("Error while decoding a public key: {}", e),
+                }
             })?;
 
         Ok(algokit_transact::KeyPairAccount::from_pubkey(&pub_key))
@@ -247,17 +249,17 @@ impl TryFrom<Transaction> for algokit_transact::TransactionHeader {
             genesis_id: tx.genesis_id,
             genesis_hash: tx
                 .genesis_hash
-                .map(|buf| bytebuf_to_bytes::<32>(&buf))
+                .map(|buf| vec_to_array::<32>(&buf, "genesis hash"))
                 .transpose()?,
             note: tx.note,
             rekey_to: tx.rekey_to.map(|addr| addr.parse()).transpose()?,
             lease: tx
                 .lease
-                .map(|buf| bytebuf_to_bytes::<32>(&buf))
+                .map(|buf| vec_to_array::<32>(&buf, "lease"))
                 .transpose()?,
             group: tx
                 .group
-                .map(|buf| bytebuf_to_bytes::<32>(&buf))
+                .map(|buf| vec_to_array::<32>(&buf, "group ID"))
                 .transpose()?,
         })
     }
@@ -384,7 +386,7 @@ impl TryFrom<SignedTransaction> for algokit_transact::SignedTransaction {
             transaction: signed_tx.transaction.try_into()?,
             signature: signed_tx
                 .signature
-                .map(|sig| bytebuf_to_bytes(&sig))
+                .map(|sig| vec_to_array(&sig, "signature"))
                 .transpose()
                 .map_err(|e| AlgoKitTransactError::DecodingError {
                     message: format!(
@@ -404,11 +406,19 @@ impl TryFrom<SignedTransaction> for algokit_transact::SignedTransaction {
     }
 }
 
-fn bytebuf_to_bytes<const N: usize>(buf: &Vec<u8>) -> Result<[u8; N], AlgoKitTransactError> {
+fn vec_to_array<const N: usize>(
+    buf: &[u8],
+    context: &str,
+) -> Result<[u8; N], AlgoKitTransactError> {
     buf.to_vec()
         .try_into()
         .map_err(|_| AlgoKitTransactError::DecodingError {
-            message: format!("Expected {} bytes but got a different length", N),
+            message: format!(
+                "Expected {} {} bytes but got {} bytes",
+                context,
+                N,
+                buf.len(),
+            ),
         })
 }
 

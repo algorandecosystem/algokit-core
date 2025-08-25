@@ -148,7 +148,7 @@ impl TryFrom<Transaction> for algokit_transact::AssetConfigTransactionFields {
 
         let metadata_hash = data
             .metadata_hash
-            .map(|buf| bytebuf_to_bytes::<32>(&buf))
+            .map(|buf| vec_to_array::<32>(&buf, "metadata hash"))
             .transpose()?;
 
         let transaction_fields = algokit_transact::AssetConfigTransactionFields {
