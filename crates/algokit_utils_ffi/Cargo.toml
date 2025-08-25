@@ -7,7 +7,8 @@ edition = "2024"
 crate-type = ["lib", "cdylib", "staticlib"]
 
 [dependencies]
-algod_client = { version = "0.0.1", path = "../algod_client" }
+algod_client = { version = "0.0.1", path = "../algod_client", default-features = false }
+algokit_http_client = { version = "0.1.0", path = "../algokit_http_client", features = ["ffi_uniffi"], default-features = false }
 algokit_transact = { version = "0.1.0", path = "../algokit_transact" }
 algokit_transact_ffi = { version = "0.1.0", path = "../algokit_transact_ffi" }
 algokit_utils = { version = "0.1.0", path = "../algokit_utils" }

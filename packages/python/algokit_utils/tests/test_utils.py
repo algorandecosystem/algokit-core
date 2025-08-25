@@ -1,5 +1,5 @@
 from typing import override
-from algokit_utils.algokit_transact_ffi import Transaction
+from algokit_utils.algokit_transact_ffi import SignedTransaction, Transaction
 from algokit_utils import algod_localnet, TransactionSigner
 from algokit_utils.algokit_utils_ffi import (
     CommonParams,
@@ -21,17 +21,21 @@ ADDR = "BEMJKX676TZOOWJYMJPOMGIW4UT6S7UDTUUDCUQNKFC42TY6HVKOIWFOYA"
 
 class TestSigner(TransactionSigner):
     @override
-    def sign_transactions(self, transactions: list[Transaction], indices: list[int]):
-        print("Signing")
+    def sign_transactions(  # type: ignore
+        self, transactions: list[Transaction], indices: list[int]
+    ) -> list[SignedTransaction]:
+        print("Signing transactions")
+        return []
 
     @override
-    def sign_transaction(self, transaction: Transaction):
+    def sign_transaction(self, transaction: Transaction) -> SignedTransaction:  # type: ignore
         print("Signing single transaction")
+        return self.sign_transactions([transaction], [0])[0]
 
 
 class SignerGetter(TransactionSignerGetter):
     @override
-    def get_signer(self, address: str) -> TransactionSigner:
+    def get_signer(self, address: str) -> TransactionSigner:  # type: ignore
         print("Getting signer")
         return TestSigner()
 

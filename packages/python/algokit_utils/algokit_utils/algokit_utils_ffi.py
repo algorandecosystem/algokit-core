@@ -467,8 +467,6 @@ def _uniffi_check_contract_api_version(lib):
         raise InternalError("UniFFI contract version mismatch: try cleaning and rebuilding your project")
 
 def _uniffi_check_api_checksums(lib):
-    if lib.uniffi_algokit_utils_ffi_checksum_func_algod_localnet() != 6253:
-        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algokit_utils_ffi_checksum_method_composer_add_payment() != 9188:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algokit_utils_ffi_checksum_method_composer_build() != 13184:
@@ -692,10 +690,6 @@ _UniffiLib.uniffi_algokit_utils_ffi_fn_method_transactionsignergetter_get_signer
     ctypes.POINTER(_UniffiRustCallStatus),
 )
 _UniffiLib.uniffi_algokit_utils_ffi_fn_method_transactionsignergetter_get_signer.restype = _UniffiRustBuffer
-_UniffiLib.uniffi_algokit_utils_ffi_fn_func_algod_localnet.argtypes = (
-    ctypes.POINTER(_UniffiRustCallStatus),
-)
-_UniffiLib.uniffi_algokit_utils_ffi_fn_func_algod_localnet.restype = ctypes.c_void_p
 _UniffiLib.ffi_algokit_utils_ffi_rustbuffer_alloc.argtypes = (
     ctypes.c_uint64,
     ctypes.POINTER(_UniffiRustCallStatus),
@@ -964,9 +958,6 @@ _UniffiLib.ffi_algokit_utils_ffi_rust_future_complete_void.argtypes = (
     ctypes.POINTER(_UniffiRustCallStatus),
 )
 _UniffiLib.ffi_algokit_utils_ffi_rust_future_complete_void.restype = None
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_func_algod_localnet.argtypes = (
-)
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_func_algod_localnet.restype = ctypes.c_uint16
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_payment.argtypes = (
 )
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_payment.restype = ctypes.c_uint16
@@ -2157,16 +2148,11 @@ def _uniffi_foreign_future_do_free(task):
     if not task.done():
         task.cancel()
 
-def algod_localnet() -> "AlgodClient":
-    return _UniffiConverterTypeAlgodClient.lift(_uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_func_algod_localnet,))
-
-
 __all__ = [
     "InternalError",
     "UtilsError",
     "CommonParams",
     "PaymentParams",
-    "algod_localnet",
     "AlgodClient",
     "Composer",
     "TransactionSigner",

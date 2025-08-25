@@ -4,6 +4,7 @@ use crate::transactions::common::{
     RustTransactionSignerGetterFromFfi, TransactionSignerGetter, UtilsError,
 };
 use algod_client::AlgodClient as RustAlgodClient;
+use algokit_http_client::HttpClient;
 use algokit_utils::transactions::composer::Composer as RustComposer;
 use ffi_mutex::FfiMutex as Mutex;
 
@@ -12,10 +13,12 @@ pub struct AlgodClient {
     inner_algod_client: Mutex<RustAlgodClient>,
 }
 
-#[uniffi::export]
-pub fn algod_localnet() -> AlgodClient {
-    AlgodClient {
-        inner_algod_client: Mutex::new(RustAlgodClient::localnet()),
+impl AlgodClient {
+    pub fn new(http_client: Arc<dyn HttpClient>) -> Self {
+        let algod_client = RustAlgodClient::new(http_client);
+        AlgodClient {
+            inner_algod_client: Mutex::new(algod_client),
+        }
     }
 }
 
