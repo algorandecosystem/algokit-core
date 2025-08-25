@@ -461,7 +461,7 @@ def _uniffi_check_contract_api_version(lib):
         raise InternalError("UniFFI contract version mismatch: try cleaning and rebuilding your project")
 
 def _uniffi_check_api_checksums(lib):
-    if lib.uniffi_algokit_http_client_checksum_method_httpclient_request() != 42501:
+    if lib.uniffi_algokit_http_client_checksum_method_httpclient_request() != 1454:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
 
 # A ctypes library to expose the extern-C FFI definitions.
@@ -1225,7 +1225,7 @@ class HttpClientProtocol(typing.Protocol):
     By default, this trait requires the implementing type to be `Send + Sync`.
     """
 
-    def request(self, method: "HttpMethod",path: "str",query: "typing.Optional[dict[str, str]]",body: "typing.Optional[bytes]",headers: "typing.Optional[dict[str, str]]"):
+    def request(self, http_method: "HttpMethod",path: "str",query: "typing.Optional[dict[str, str]]",body: "typing.Optional[bytes]",headers: "typing.Optional[dict[str, str]]"):
         raise NotImplementedError
 # HttpClient is a foreign trait so treated like a callback interface, where the
 # primary use-case is the trait being implemented locally.
@@ -1240,7 +1240,7 @@ class HttpClient():
     By default, this trait requires the implementing type to be `Send + Sync`.
     """
 
-    def request(self, method: "HttpMethod",path: "str",query: "typing.Optional[dict[str, str]]",body: "typing.Optional[bytes]",headers: "typing.Optional[dict[str, str]]"):
+    def request(self, http_method: "HttpMethod",path: "str",query: "typing.Optional[dict[str, str]]",body: "typing.Optional[bytes]",headers: "typing.Optional[dict[str, str]]"):
         raise NotImplementedError
 # `HttpClientImpl` is the implementation for a Rust implemented version.
 class HttpClientImpl():
@@ -1274,8 +1274,8 @@ class HttpClientImpl():
         inst._pointer = pointer
         return inst
 
-    async def request(self, method: "HttpMethod",path: "str",query: "typing.Optional[dict[str, str]]",body: "typing.Optional[bytes]",headers: "typing.Optional[dict[str, str]]") -> "HttpResponse":
-        _UniffiConverterTypeHttpMethod.check_lower(method)
+    async def request(self, http_method: "HttpMethod",path: "str",query: "typing.Optional[dict[str, str]]",body: "typing.Optional[bytes]",headers: "typing.Optional[dict[str, str]]") -> "HttpResponse":
+        _UniffiConverterTypeHttpMethod.check_lower(http_method)
         
         _UniffiConverterString.check_lower(path)
         
@@ -1288,7 +1288,7 @@ class HttpClientImpl():
         return await _uniffi_rust_call_async(
             _UniffiLib.uniffi_algokit_http_client_fn_method_httpclient_request(
                 self._uniffi_clone_pointer(), 
-        _UniffiConverterTypeHttpMethod.lower(method),
+        _UniffiConverterTypeHttpMethod.lower(http_method),
         _UniffiConverterString.lower(path),
         _UniffiConverterOptionalMapStringString.lower(query),
         _UniffiConverterOptionalBytes.lower(body),
@@ -1315,7 +1315,7 @@ class _UniffiTraitImplHttpClient:
     @_UNIFFI_CALLBACK_INTERFACE_HTTP_CLIENT_METHOD0
     def request(
             uniffi_handle,
-            method,
+            http_method,
             path,
             query,
             body,
@@ -1326,7 +1326,7 @@ class _UniffiTraitImplHttpClient:
         ):
         uniffi_obj = _UniffiConverterTypeHttpClient._handle_map.get(uniffi_handle)
         def make_call():
-            args = (_UniffiConverterTypeHttpMethod.lift(method), _UniffiConverterString.lift(path), _UniffiConverterOptionalMapStringString.lift(query), _UniffiConverterOptionalBytes.lift(body), _UniffiConverterOptionalMapStringString.lift(headers), )
+            args = (_UniffiConverterTypeHttpMethod.lift(http_method), _UniffiConverterString.lift(path), _UniffiConverterOptionalMapStringString.lift(query), _UniffiConverterOptionalBytes.lift(body), _UniffiConverterOptionalMapStringString.lift(headers), )
             method = uniffi_obj.request
             return method(*args)
 
