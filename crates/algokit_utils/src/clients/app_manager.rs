@@ -51,27 +51,27 @@ pub enum AppStateValue {
 
 #[derive(Debug, Clone)]
 pub struct AppInformation {
-    /// The application ID
+    /// The app ID
     pub app_id: u64,
-    /// The address of the application account
+    /// The address of the app account
     pub app_address: Address,
     /// The approval program as bytecode
     pub approval_program: Vec<u8>,
     /// The clear state program as bytecode
     pub clear_state_program: Vec<u8>,
-    /// The creator address of the application
+    /// The creator address of the app
     pub creator: String,
     /// Number of local state integers allocated
-    pub local_ints: u32,
+    pub local_ints: u64,
     /// Number of local state byte slices allocated
-    pub local_byte_slices: u32,
+    pub local_byte_slices: u64,
     /// Number of global state integers allocated
-    pub global_ints: u32,
+    pub global_ints: u64,
     /// Number of global state byte slices allocated
-    pub global_byte_slices: u32,
+    pub global_byte_slices: u64,
     /// Number of extra program pages (if any)
-    pub extra_program_pages: Option<u32>,
-    /// The current global state of the application
+    pub extra_program_pages: Option<u64>,
+    /// The current global state of the app
     /// Keys are stored as Vec<u8> for binary data support, matching TypeScript UInt8Array typing
     pub global_state: HashMap<Vec<u8>, AppState>,
 }
@@ -94,7 +94,7 @@ pub type BoxIdentifier = Vec<u8>;
 pub const UPDATABLE_TEMPLATE_NAME: &str = "TMPL_UPDATABLE";
 pub const DELETABLE_TEMPLATE_NAME: &str = "TMPL_DELETABLE";
 
-/// Manages TEAL compilation and application state.
+/// Manages TEAL compilation and app state.
 #[derive(Clone)]
 pub struct AppManager {
     algod_client: Arc<AlgodClient>,
@@ -188,47 +188,39 @@ impl AppManager {
         Ok(AppInformation {
             app_id,
             app_address: Address::from_app_id(&app_id),
-            approval_program: Base64.decode(&app.params.approval_program).map_err(|e| {
-                AppManagerError::DecodingError {
-                    message: e.to_string(),
-                }
-            })?,
-            clear_state_program: Base64
-                .decode(&app.params.clear_state_program)
-                .map_err(|e| AppManagerError::DecodingError {
-                    message: e.to_string(),
-                })?,
+            approval_program: app.params.approval_program,
+            clear_state_program: app.params.clear_state_program,
             creator: app.params.creator,
             local_ints: app
                 .params
                 .local_state_schema
                 .as_ref()
-                .map(|s| s.num_uint as u32)
+                .map(|s| s.num_uint)
                 .unwrap_or(0),
             local_byte_slices: app
                 .params
                 .local_state_schema
                 .as_ref()
-                .map(|s| s.num_byte_slice as u32)
+                .map(|s| s.num_byte_slice)
                 .unwrap_or(0),
             global_ints: app
                 .params
                 .global_state_schema
                 .as_ref()
-                .map(|s| s.num_uint as u32)
+                .map(|s| s.num_uint)
                 .unwrap_or(0),
             global_byte_slices: app
                 .params
                 .global_state_schema
                 .as_ref()
-                .map(|s| s.num_byte_slice as u32)
+                .map(|s| s.num_byte_slice)
                 .unwrap_or(0),
-            extra_program_pages: app.params.extra_program_pages.map(|p| p as u32),
+            extra_program_pages: app.params.extra_program_pages,
             global_state: Self::decode_app_state(&app.params.global_state.unwrap_or_default())?,
         })
     }
 
-    /// Get global state of application.
+    /// Get global state of an application.
     /// Returns state keys as Vec<u8> for binary data support, matching TypeScript UInt8Array typing.
     pub async fn get_global_state(
         &self,
@@ -238,7 +230,7 @@ impl AppManager {
         Ok(app_info.global_state)
     }
 
-    /// Get local state for account in application.
+    /// Get local state for account in an application.
     /// Returns state keys as Vec<u8> for binary data support, matching TypeScript UInt8Array typing.
     pub async fn get_local_state(
         &self,
@@ -325,7 +317,7 @@ impl AppManager {
     /// TypeScript and Python implementations.
     ///
     /// # Arguments
-    /// * `app_id` - The application ID
+    /// * `app_id` - The app ID
     /// * `box_name` - The box name identifier
     /// * `abi_type` - The ABI type to use for decoding
     ///
@@ -354,7 +346,7 @@ impl AppManager {
     /// TypeScript and Python implementations.
     ///
     /// # Arguments
-    /// * `app_id` - The application ID
+    /// * `app_id` - The app ID
     /// * `box_names` - The box name identifiers
     /// * `abi_type` - The ABI type to use for decoding
     ///
