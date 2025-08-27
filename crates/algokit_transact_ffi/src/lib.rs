@@ -137,49 +137,6 @@ pub enum TransactionType {
 }
 
 #[ffi_record]
-pub struct KeyPairAccount {
-    pub_key: ByteBuf,
-}
-
-impl From<algokit_transact::KeyPairAccount> for KeyPairAccount {
-    fn from(value: algokit_transact::KeyPairAccount) -> Self {
-        Self {
-            pub_key: value.pub_key.to_vec().into(),
-        }
-    }
-}
-
-impl TryFrom<KeyPairAccount> for algokit_transact::KeyPairAccount {
-    type Error = AlgoKitTransactError;
-
-    fn try_from(value: KeyPairAccount) -> Result<Self, Self::Error> {
-        let pub_key: [u8; ALGORAND_PUBLIC_KEY_BYTE_LENGTH] = bytebuf_to_bytes(&value.pub_key)
-            .map_err(|e| AlgoKitTransactError::DecodingError {
-                message: format!("Error while decoding a public key: {}", e),
-            })?;
-
-        Ok(algokit_transact::KeyPairAccount::from_pubkey(&pub_key))
-    }
-}
-
-impl From<algokit_transact::Address> for KeyPairAccount {
-    fn from(value: algokit_transact::Address) -> Self {
-        Self {
-            pub_key: value.as_bytes().to_vec().into(),
-        }
-    }
-}
-
-impl TryFrom<KeyPairAccount> for algokit_transact::Address {
-    type Error = AlgoKitTransactError;
-
-    fn try_from(value: KeyPairAccount) -> Result<Self, Self::Error> {
-        let impl_keypair_account: algokit_transact::KeyPairAccount = value.try_into()?;
-        Ok(impl_keypair_account.address())
-    }
-}
-
-#[ffi_record]
 pub struct FeeParams {
     fee_per_byte: u64,
     min_fee: u64,
@@ -601,8 +558,8 @@ pub fn decode_transactions(
 /// Return the size of the transaction in bytes as if it was already signed and encoded.
 /// This is useful for estimating the fee for the transaction.
 #[ffi_func]
-pub fn estimate_transaction_size(transaction: Transaction) -> Result<u64, AlgoKitTransactError> {
-    let core_tx: algokit_transact::Transaction = transaction.try_into()?;
+pub fn estimate_transaction_size(tx: Transaction) -> Result<u64, AlgoKitTransactError> {
+    let core_tx: algokit_transact::Transaction = tx.try_into()?;
     core_tx
         .estimate_size()?
         .try_into()
@@ -612,11 +569,9 @@ pub fn estimate_transaction_size(transaction: Transaction) -> Result<u64, AlgoKi
 }
 
 #[ffi_func]
-pub fn keypair_account_from_pub_key(
-    pub_key: &[u8],
-) -> Result<KeyPairAccount, AlgoKitTransactError> {
+pub fn address_from_public_key(public_key: &[u8]) -> Result<String, AlgoKitTransactError> {
     Ok(
-        algokit_transact::KeyPairAccount::from_pubkey(pub_key.try_into().map_err(|_| {
+        algokit_transact::KeyPairAccount::from_pubkey(public_key.try_into().map_err(|_| {
             AlgoKitTransactError::EncodingError {
                 message: format!(
                     "public key should be {} bytes",
@@ -624,23 +579,15 @@ pub fn keypair_account_from_pub_key(
                 ),
             }
         })?)
-        .into(),
+        .to_string(),
     )
 }
 
 #[ffi_func]
-pub fn keypair_account_from_address(address: &str) -> Result<KeyPairAccount, AlgoKitTransactError> {
+pub fn public_key_from_address(address: &str) -> Result<Vec<u8>, AlgoKitTransactError> {
     Ok(address
         .parse::<algokit_transact::KeyPairAccount>()
-        .map(Into::into)?)
-}
-
-#[ffi_func]
-pub fn address_from_keypair_account(
-    account: KeyPairAccount,
-) -> Result<String, AlgoKitTransactError> {
-    let impl_keypair_account: algokit_transact::KeyPairAccount = account.try_into()?;
-    Ok(impl_keypair_account.address().as_str())
+        .map(|a| a.pub_key.to_vec())?)
 }
 
 /// Get the raw 32-byte transaction ID for a transaction.
