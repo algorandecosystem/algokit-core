@@ -569,8 +569,8 @@ pub fn decode_transactions(
 /// Return the size of the transaction in bytes as if it was already signed and encoded.
 /// This is useful for estimating the fee for the transaction.
 #[ffi_func]
-pub fn estimate_transaction_size(transaction: Transaction) -> Result<u64, AlgoKitTransactError> {
-    let core_tx: algokit_transact::Transaction = transaction.try_into()?;
+pub fn estimate_transaction_size(tx: Transaction) -> Result<u64, AlgoKitTransactError> {
+    let core_tx: algokit_transact::Transaction = tx.try_into()?;
     core_tx
         .estimate_size()?
         .try_into()
