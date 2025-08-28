@@ -189,15 +189,15 @@ pub struct Transaction {
 impl TryFrom<Transaction> for algokit_transact::Transaction {
     type Error = AlgoKitTransactError;
 
-    fn try_from(tx: Transaction) -> Result<Self, AlgoKitTransactError> {
+    fn try_from(transaction: Transaction) -> Result<Self, AlgoKitTransactError> {
         // Ensure there is never more than 1 transaction type specific field set
         if [
-            tx.payment.is_some(),
-            tx.asset_transfer.is_some(),
-            tx.asset_config.is_some(),
-            tx.key_registration.is_some(),
-            tx.app_call.is_some(),
-            tx.asset_freeze.is_some(),
+            transaction.payment.is_some(),
+            transaction.asset_transfer.is_some(),
+            transaction.asset_config.is_some(),
+            transaction.key_registration.is_some(),
+            transaction.app_call.is_some(),
+            transaction.asset_freeze.is_some(),
         ]
         .into_iter()
         .filter(|&x| x)
@@ -209,23 +209,27 @@ impl TryFrom<Transaction> for algokit_transact::Transaction {
             });
         }
 
-        match tx.transaction_type {
-            TransactionType::Payment => Ok(algokit_transact::Transaction::Payment(tx.try_into()?)),
-            TransactionType::AssetTransfer => {
-                Ok(algokit_transact::Transaction::AssetTransfer(tx.try_into()?))
-            }
+        match transaction.transaction_type {
+            TransactionType::Payment => Ok(algokit_transact::Transaction::Payment(
+                transaction.try_into()?,
+            )),
+            TransactionType::AssetTransfer => Ok(algokit_transact::Transaction::AssetTransfer(
+                transaction.try_into()?,
+            )),
             TransactionType::KeyRegistration => Ok(algokit_transact::Transaction::KeyRegistration(
-                tx.try_into()?,
+                transaction.try_into()?,
             )),
 
-            TransactionType::AssetConfig => {
-                Ok(algokit_transact::Transaction::AssetConfig(tx.try_into()?))
-            }
+            TransactionType::AssetConfig => Ok(algokit_transact::Transaction::AssetConfig(
+                transaction.try_into()?,
+            )),
 
-            TransactionType::AppCall => Ok(algokit_transact::Transaction::AppCall(tx.try_into()?)),
-            TransactionType::AssetFreeze => {
-                Ok(algokit_transact::Transaction::AssetFreeze(tx.try_into()?))
-            }
+            TransactionType::AppCall => Ok(algokit_transact::Transaction::AppCall(
+                transaction.try_into()?,
+            )),
+            TransactionType::AssetFreeze => Ok(algokit_transact::Transaction::AssetFreeze(
+                transaction.try_into()?,
+            )),
         }
     }
 }
@@ -233,24 +237,24 @@ impl TryFrom<Transaction> for algokit_transact::Transaction {
 impl TryFrom<Transaction> for algokit_transact::TransactionHeader {
     type Error = AlgoKitTransactError;
 
-    fn try_from(tx: Transaction) -> Result<Self, AlgoKitTransactError> {
+    fn try_from(transaction: Transaction) -> Result<Self, AlgoKitTransactError> {
         Ok(Self {
-            sender: tx.sender.parse()?,
-            fee: tx.fee,
-            first_valid: tx.first_valid,
-            last_valid: tx.last_valid,
-            genesis_id: tx.genesis_id,
-            genesis_hash: tx
+            sender: transaction.sender.parse()?,
+            fee: transaction.fee,
+            first_valid: transaction.first_valid,
+            last_valid: transaction.last_valid,
+            genesis_id: transaction.genesis_id,
+            genesis_hash: transaction
                 .genesis_hash
                 .map(|buf| bytebuf_to_bytes::<32>(&buf))
                 .transpose()?,
-            note: tx.note.map(ByteBuf::into_vec),
-            rekey_to: tx.rekey_to.map(|addr| addr.parse()).transpose()?,
-            lease: tx
+            note: transaction.note.map(ByteBuf::into_vec),
+            rekey_to: transaction.rekey_to.map(|addr| addr.parse()).transpose()?,
+            lease: transaction
                 .lease
                 .map(|buf| bytebuf_to_bytes::<32>(&buf))
                 .transpose()?,
-            group: tx
+            group: transaction
                 .group
                 .map(|buf| bytebuf_to_bytes::<32>(&buf))
                 .transpose()?,
@@ -261,8 +265,8 @@ impl TryFrom<Transaction> for algokit_transact::TransactionHeader {
 impl TryFrom<algokit_transact::Transaction> for Transaction {
     type Error = AlgoKitTransactError;
 
-    fn try_from(tx: algokit_transact::Transaction) -> Result<Self, AlgoKitTransactError> {
-        match tx {
+    fn try_from(transaction: algokit_transact::Transaction) -> Result<Self, AlgoKitTransactError> {
+        match transaction {
             algokit_transact::Transaction::Payment(payment) => {
                 let payment_fields = payment.clone().into();
                 build_transaction(
@@ -361,12 +365,12 @@ pub struct SignedTransaction {
 }
 
 impl From<algokit_transact::SignedTransaction> for SignedTransaction {
-    fn from(signed_tx: algokit_transact::SignedTransaction) -> Self {
+    fn from(signed_transaction: algokit_transact::SignedTransaction) -> Self {
         Self {
-            transaction: signed_tx.transaction.try_into().unwrap(),
-            signature: signed_tx.signature.map(|sig| sig.to_vec().into()),
-            auth_address: signed_tx.auth_address.map(|addr| addr.as_str()),
-            multisignature: signed_tx.multisignature.map(Into::into),
+            transaction: signed_transaction.transaction.try_into().unwrap(),
+            signature: signed_transaction.signature.map(|sig| sig.to_vec().into()),
+            auth_address: signed_transaction.auth_address.map(|addr| addr.as_str()),
+            multisignature: signed_transaction.multisignature.map(Into::into),
         }
     }
 }
@@ -374,10 +378,10 @@ impl From<algokit_transact::SignedTransaction> for SignedTransaction {
 impl TryFrom<SignedTransaction> for algokit_transact::SignedTransaction {
     type Error = AlgoKitTransactError;
 
-    fn try_from(signed_tx: SignedTransaction) -> Result<Self, Self::Error> {
+    fn try_from(signed_transaction: SignedTransaction) -> Result<Self, Self::Error> {
         Ok(Self {
-            transaction: signed_tx.transaction.try_into()?,
-            signature: signed_tx
+            transaction: signed_transaction.transaction.try_into()?,
+            signature: signed_transaction
                 .signature
                 .map(|sig| bytebuf_to_bytes(&sig))
                 .transpose()
@@ -387,11 +391,11 @@ impl TryFrom<SignedTransaction> for algokit_transact::SignedTransaction {
                         e
                     ),
                 })?,
-            auth_address: signed_tx
+            auth_address: signed_transaction
                 .auth_address
                 .map(|addr| addr.parse())
                 .transpose()?,
-            multisignature: signed_tx
+            multisignature: signed_transaction
                 .multisignature
                 .map(TryInto::try_into)
                 .transpose()?,
@@ -449,8 +453,10 @@ fn build_transaction(
 /// Get the transaction type from the encoded transaction.
 /// This is particularly useful when decoding a transaction that has an unknown type
 #[ffi_func]
-pub fn get_encoded_transaction_type(bytes: &[u8]) -> Result<TransactionType, AlgoKitTransactError> {
-    let decoded = algokit_transact::Transaction::decode(bytes)?;
+pub fn get_encoded_transaction_type(
+    encoded_transaction: &[u8],
+) -> Result<TransactionType, AlgoKitTransactError> {
+    let decoded = algokit_transact::Transaction::decode(encoded_transaction)?;
 
     match decoded {
         algokit_transact::Transaction::Payment(_) => Ok(TransactionType::Payment),
@@ -464,23 +470,26 @@ pub fn get_encoded_transaction_type(bytes: &[u8]) -> Result<TransactionType, Alg
 
 #[ffi_func]
 /// Encode the transaction with the domain separation (e.g. "TX") prefix
-pub fn encode_transaction(tx: Transaction) -> Result<Vec<u8>, AlgoKitTransactError> {
-    let ctx: algokit_transact::Transaction = tx.try_into()?;
+pub fn encode_transaction(transaction: Transaction) -> Result<Vec<u8>, AlgoKitTransactError> {
+    let ctx: algokit_transact::Transaction = transaction.try_into()?;
     Ok(ctx.encode()?)
 }
 
 /// Encode transactions to MsgPack with the domain separation (e.g. "TX") prefix.
 ///
 /// # Parameters
-/// * `txs` - A collection of transactions to encode
+/// * `transactions` - A collection of transactions to encode
 ///
 /// # Returns
 /// A collection of MsgPack encoded bytes or an error if encoding fails.
 #[cfg(feature = "ffi_wasm")]
 #[ffi_func]
 /// Encode transactions with the domain separation (e.g. "TX") prefix
-pub fn encode_transactions(txs: Vec<Transaction>) -> Result<Vec<Uint8Array>, AlgoKitTransactError> {
-    txs.into_iter()
+pub fn encode_transactions(
+    transactions: Vec<Transaction>,
+) -> Result<Vec<Uint8Array>, AlgoKitTransactError> {
+    transactions
+        .into_iter()
         .map(|tx| encode_transaction(tx).map(|bytes| bytes.as_slice().into()))
         .collect()
 }
@@ -488,21 +497,23 @@ pub fn encode_transactions(txs: Vec<Transaction>) -> Result<Vec<Uint8Array>, Alg
 /// Encode transactions to MsgPack with the domain separation (e.g. "TX") prefix.
 ///
 /// # Parameters
-/// * `txs` - A collection of transactions to encode
+/// * `transactions` - A collection of transactions to encode
 ///
 /// # Returns
 /// A collection of MsgPack encoded bytes or an error if encoding fails.
 #[cfg(not(feature = "ffi_wasm"))]
 #[ffi_func]
-pub fn encode_transactions(txs: Vec<Transaction>) -> Result<Vec<Vec<u8>>, AlgoKitTransactError> {
-    txs.into_iter().map(encode_transaction).collect()
+pub fn encode_transactions(
+    transactions: Vec<Transaction>,
+) -> Result<Vec<Vec<u8>>, AlgoKitTransactError> {
+    transactions.into_iter().map(encode_transaction).collect()
 }
 
 #[ffi_func]
 /// Encode the transaction without the domain separation (e.g. "TX") prefix
 /// This is useful for encoding the transaction for signing with tools that automatically add "TX" prefix to the transaction bytes.
-pub fn encode_transaction_raw(tx: Transaction) -> Result<Vec<u8>, AlgoKitTransactError> {
-    let ctx: algokit_transact::Transaction = tx.try_into()?;
+pub fn encode_transaction_raw(transaction: Transaction) -> Result<Vec<u8>, AlgoKitTransactError> {
+    let ctx: algokit_transact::Transaction = transaction.try_into()?;
     Ok(ctx.encode_raw()?)
 }
 
@@ -558,8 +569,8 @@ pub fn decode_transactions(
 /// Return the size of the transaction in bytes as if it was already signed and encoded.
 /// This is useful for estimating the fee for the transaction.
 #[ffi_func]
-pub fn estimate_transaction_size(tx: Transaction) -> Result<u64, AlgoKitTransactError> {
-    let core_tx: algokit_transact::Transaction = tx.try_into()?;
+pub fn estimate_transaction_size(transaction: Transaction) -> Result<u64, AlgoKitTransactError> {
+    let core_tx: algokit_transact::Transaction = transaction.try_into()?;
     core_tx
         .estimate_size()?
         .try_into()
@@ -592,28 +603,30 @@ pub fn public_key_from_address(address: &str) -> Result<Vec<u8>, AlgoKitTransact
 
 /// Get the raw 32-byte transaction ID for a transaction.
 #[ffi_func]
-pub fn get_transaction_id_raw(tx: Transaction) -> Result<Vec<u8>, AlgoKitTransactError> {
-    let tx_internal: algokit_transact::Transaction = tx.try_into()?;
-    let id_raw = tx_internal.id_raw()?;
+pub fn get_transaction_id_raw(transaction: Transaction) -> Result<Vec<u8>, AlgoKitTransactError> {
+    let tx: algokit_transact::Transaction = transaction.try_into()?;
+    let id_raw = tx.id_raw()?;
     Ok(id_raw.to_vec())
 }
 
 /// Get the base32 transaction ID string for a transaction.
 #[ffi_func]
-pub fn get_transaction_id(tx: Transaction) -> Result<String, AlgoKitTransactError> {
-    let tx_internal: algokit_transact::Transaction = tx.try_into()?;
-    Ok(tx_internal.id()?)
+pub fn get_transaction_id(transaction: Transaction) -> Result<String, AlgoKitTransactError> {
+    let tx: algokit_transact::Transaction = transaction.try_into()?;
+    Ok(tx.id()?)
 }
 
 /// Groups a collection of transactions by calculating and assigning the group to each transaction.
 #[ffi_func]
-pub fn group_transactions(txs: Vec<Transaction>) -> Result<Vec<Transaction>, AlgoKitTransactError> {
-    let txs_internal: Vec<algokit_transact::Transaction> = txs
+pub fn group_transactions(
+    transactions: Vec<Transaction>,
+) -> Result<Vec<Transaction>, AlgoKitTransactError> {
+    let txs: Vec<algokit_transact::Transaction> = transactions
         .into_iter()
         .map(|tx| tx.try_into())
         .collect::<Result<Vec<_>, _>>()?;
 
-    let grouped_txs: Vec<Transaction> = txs_internal
+    let grouped_txs: Vec<Transaction> = txs
         .assign_group()?
         .into_iter()
         .map(|tx| tx.try_into())
@@ -688,13 +701,13 @@ impl TryFrom<FeeParams> for algokit_transact::FeeParams {
 
 #[ffi_func]
 pub fn assign_fee(
-    txn: Transaction,
+    transaction: Transaction,
     fee_params: FeeParams,
 ) -> Result<Transaction, AlgoKitTransactError> {
-    let txn_internal: algokit_transact::Transaction = txn.try_into()?;
+    let txn: algokit_transact::Transaction = transaction.try_into()?;
     let fee_params_internal: algokit_transact::FeeParams = fee_params.try_into()?;
 
-    let updated_txn = txn_internal.assign_fee(fee_params_internal)?;
+    let updated_txn = txn.assign_fee(fee_params_internal)?;
 
     updated_txn.try_into()
 }
@@ -702,29 +715,32 @@ pub fn assign_fee(
 /// Decodes a signed transaction.
 ///
 /// # Parameters
-/// * `bytes` - The MsgPack encoded signed transaction bytes
+/// * `encoded_signed_transaction` - The MsgPack encoded signed transaction bytes
 ///
 /// # Returns
 /// The decoded SignedTransaction or an error if decoding fails.
 #[ffi_func]
-pub fn decode_signed_transaction(bytes: &[u8]) -> Result<SignedTransaction, AlgoKitTransactError> {
-    let signed_tx = algokit_transact::SignedTransaction::decode(bytes)?;
-    Ok(signed_tx.into())
+pub fn decode_signed_transaction(
+    encoded_signed_transaction: &[u8],
+) -> Result<SignedTransaction, AlgoKitTransactError> {
+    let signed_transaction =
+        algokit_transact::SignedTransaction::decode(encoded_signed_transaction)?;
+    Ok(signed_transaction.into())
 }
 
 /// Decodes a collection of MsgPack bytes into a signed transaction collection.
 ///
 /// # Parameters
-/// * `encoded_signed_txs` - A collection of MsgPack encoded bytes, each representing a signed transaction.
+/// * `encoded_signed_transactions` - A collection of MsgPack encoded bytes, each representing a signed transaction.
 ///
 /// # Returns
 /// A collection of decoded signed transactions or an error if decoding fails.
 #[cfg(feature = "ffi_wasm")]
 #[ffi_func]
 pub fn decode_signed_transactions(
-    encoded_signed_txs: Vec<Uint8Array>,
+    encoded_signed_transactions: Vec<Uint8Array>,
 ) -> Result<Vec<SignedTransaction>, AlgoKitTransactError> {
-    encoded_signed_txs
+    encoded_signed_transactions
         .iter()
         .map(|bytes| decode_signed_transaction(bytes.to_vec().as_slice()))
         .collect()
@@ -733,16 +749,16 @@ pub fn decode_signed_transactions(
 /// Decodes a collection of MsgPack bytes into a signed transaction collection.
 ///
 /// # Parameters
-/// * `encoded_signed_txs` - A collection of MsgPack encoded bytes, each representing a signed transaction.
+/// * `encoded_signed_transactions` - A collection of MsgPack encoded bytes, each representing a signed transaction.
 ///
 /// # Returns
 /// A collection of decoded signed transactions or an error if decoding fails.
 #[cfg(not(feature = "ffi_wasm"))]
 #[ffi_func]
 pub fn decode_signed_transactions(
-    encoded_signed_txs: Vec<Vec<u8>>,
+    encoded_signed_transactions: Vec<Vec<u8>>,
 ) -> Result<Vec<SignedTransaction>, AlgoKitTransactError> {
-    encoded_signed_txs
+    encoded_signed_transactions
         .iter()
         .map(|tx| decode_signed_transaction(tx))
         .collect()
@@ -753,16 +769,16 @@ pub fn decode_signed_transactions(
 /// This method performs canonical encoding. No domain separation prefix is applicable.
 ///
 /// # Parameters
-/// * `signed_tx` - The signed transaction to encode
+/// * `signed_transaction` - The signed transaction to encode
 ///
 /// # Returns
 /// The MsgPack encoded bytes or an error if encoding fails.
 #[ffi_func]
 pub fn encode_signed_transaction(
-    signed_tx: SignedTransaction,
+    signed_transaction: SignedTransaction,
 ) -> Result<Vec<u8>, AlgoKitTransactError> {
-    let signed_tx_internal: algokit_transact::SignedTransaction = signed_tx.try_into()?;
-    Ok(signed_tx_internal.encode()?)
+    let stx: algokit_transact::SignedTransaction = signed_transaction.try_into()?;
+    Ok(stx.encode()?)
 }
 
 /// Encode signed transactions to MsgPack for sending on the network.
@@ -770,16 +786,16 @@ pub fn encode_signed_transaction(
 /// This method performs canonical encoding. No domain separation prefix is applicable.
 ///
 /// # Parameters
-/// * `signed_txs` - A collection of signed transactions to encode
+/// * `signed_transactions` - A collection of signed transactions to encode
 ///
 /// # Returns
 /// A collection of MsgPack encoded bytes or an error if encoding fails.
 #[cfg(feature = "ffi_wasm")]
 #[ffi_func]
 pub fn encode_signed_transactions(
-    signed_txs: Vec<SignedTransaction>,
+    signed_transactions: Vec<SignedTransaction>,
 ) -> Result<Vec<Uint8Array>, AlgoKitTransactError> {
-    signed_txs
+    signed_transactions
         .into_iter()
         .map(|tx| encode_signed_transaction(tx).map(|bytes| bytes.as_slice().into()))
         .collect()
@@ -790,16 +806,16 @@ pub fn encode_signed_transactions(
 /// This method performs canonical encoding. No domain separation prefix is applicable.
 ///
 /// # Parameters
-/// * `signed_txs` - A collection of signed transactions to encode
+/// * `signed_transactions` - A collection of signed transactions to encode
 ///
 /// # Returns
 /// A collection of MsgPack encoded bytes or an error if encoding fails.
 #[cfg(not(feature = "ffi_wasm"))]
 #[ffi_func]
 pub fn encode_signed_transactions(
-    signed_txs: Vec<SignedTransaction>,
+    signed_transactions: Vec<SignedTransaction>,
 ) -> Result<Vec<Vec<u8>>, AlgoKitTransactError> {
-    signed_txs
+    signed_transactions
         .into_iter()
         .map(encode_signed_transaction)
         .collect()
