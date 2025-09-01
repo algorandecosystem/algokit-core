@@ -7,7 +7,7 @@ use super::{
     AppCallMethodCallParams, AppCallParams, AppCreateMethodCallParams, AppCreateParams,
     AppDeleteMethodCallParams, AppDeleteParams, AppUpdateMethodCallParams, AppUpdateParams,
     AssetClawbackParams, AssetCreateParams, AssetDestroyParams, AssetFreezeParams,
-    AssetOptInParams, AssetOptOutParams, AssetReconfigureParams, AssetTransferParams,
+    AssetOptInParams, AssetOptOutParams, AssetConfigParams, AssetTransferParams,
     AssetUnfreezeParams, NonParticipationKeyRegistrationParams, OfflineKeyRegistrationParams,
     OnlineKeyRegistrationParams, PaymentParams,
     common::TransactionSigner,
@@ -100,9 +100,9 @@ impl TransactionCreator {
 
     pub async fn asset_config(
         &self,
-        params: AssetReconfigureParams,
+        params: AssetConfigParams,
     ) -> Result<Transaction, ComposerError> {
-        self.transaction(|composer| composer.add_asset_reconfigure(params))
+        self.transaction(|composer| composer.add_asset_config(params))
             .await
     }
 

@@ -1,6 +1,6 @@
 use algokit_transact::MAX_TX_GROUP_SIZE;
 use algokit_transact::test_utils::TransactionGroupMother;
-use algokit_utils::{AssetCreateParams, CommonParams, PaymentParams};
+use algokit_utils::{AssetCreateParams, CommonTransactionParams, PaymentParams};
 use rstest::*;
 
 use crate::common::{AlgorandFixtureResult, TestResult, algorand_fixture};
@@ -17,7 +17,7 @@ async fn test_payment_and_asset_create_group(
     let receiver_addr = receiver.account().address();
 
     let payment_params = PaymentParams {
-        common_params: CommonParams {
+        common_params: CommonTransactionParams {
             sender: sender_address.clone(),
             ..Default::default()
         },
@@ -26,7 +26,7 @@ async fn test_payment_and_asset_create_group(
     };
 
     let asset_create_params = AssetCreateParams {
-        common_params: CommonParams {
+        common_params: CommonTransactionParams {
             sender: sender_address.clone(),
             ..Default::default()
         },
@@ -61,8 +61,7 @@ async fn test_payment_and_asset_create_group(
         "Should have 2 confirmations in the group"
     );
 
-    let group_id = result.group_id;
-    assert!(group_id.is_some(), "Group ID should be set");
+    assert!(result.group.is_some(), "Group ID should be set");
 
     // Verify payment transaction
     let payment_confirmation = &result.confirmations[0];
@@ -154,7 +153,7 @@ async fn test_add_transactions_to_group_max_size(
 
     for i in 0..MAX_TX_GROUP_SIZE - 2 {
         let payment_params = PaymentParams {
-            common_params: CommonParams {
+            common_params: CommonTransactionParams {
                 sender: sender_address.clone(),
                 ..Default::default()
             },
@@ -165,11 +164,18 @@ async fn test_add_transactions_to_group_max_size(
         composer.add_payment(payment_params)?;
     }
 
-    let new_transactions = TransactionGroupMother::group_of(2);
+    let new_transactions = TransactionGroupMother::group_of(2)
+        .iter()
+        .map(|tx| {
+            let mut tx = tx.clone();
+            tx.header_mut().sender = sender_address.clone();
+            tx
+        })
+        .collect::<Vec<_>>();
 
     composer.add_transactions(new_transactions)?;
 
-    assert!(composer.transactions().len() == MAX_TX_GROUP_SIZE);
+    assert!(composer.build(None).await.unwrap().len() == MAX_TX_GROUP_SIZE);
 
     Ok(())
 }
@@ -189,7 +195,7 @@ async fn test_add_transactions_to_group_too_big(
 
     for i in 0..MAX_TX_GROUP_SIZE - 2 {
         let payment_params = PaymentParams {
-            common_params: CommonParams {
+            common_params: CommonTransactionParams {
                 sender: sender_address.clone(),
                 ..Default::default()
             },
