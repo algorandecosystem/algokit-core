@@ -911,7 +911,7 @@ where
     )?;
 
     let encoded_args = encode_method_arguments(
-        &params.method(),
+        params.method(),
         params.args(),
         &header.sender,
         params.app_id(),

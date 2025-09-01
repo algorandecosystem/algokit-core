@@ -4,7 +4,7 @@ use algokit_transact::{Address, OnApplicationComplete, Transaction};
 use algokit_utils::transactions::{
     AppCallMethodCallParams, AppCallParams, AppCreateParams, AppDeleteParams, AppUpdateParams,
     AssetClawbackParams, AssetCreateParams, AssetDestroyParams, AssetFreezeParams,
-        AssetOptInParams, AssetOptOutParams, AssetTransferParams, CommonTransactionParams,
+    AssetOptInParams, AssetOptOutParams, AssetTransferParams, CommonTransactionParams,
     NonParticipationKeyRegistrationParams, OfflineKeyRegistrationParams,
     OnlineKeyRegistrationParams, PaymentParams,
 };
@@ -421,7 +421,7 @@ async fn key_registration_operations(
                 .algorand_client
                 .create()
                 .online_key_registration(OnlineKeyRegistrationParams {
-                common_params: CommonTransactionParams {
+                    common_params: CommonTransactionParams {
                         sender: sender_address.clone(),
                         ..Default::default()
                     },
@@ -439,7 +439,7 @@ async fn key_registration_operations(
                 .algorand_client
                 .create()
                 .offline_key_registration(OfflineKeyRegistrationParams {
-                common_params: CommonTransactionParams {
+                    common_params: CommonTransactionParams {
                         sender: sender_address.clone(),
                         ..Default::default()
                     },
@@ -451,7 +451,7 @@ async fn key_registration_operations(
                 .algorand_client
                 .create()
                 .non_participation_key_registration(NonParticipationKeyRegistrationParams {
-                common_params: CommonTransactionParams {
+                    common_params: CommonTransactionParams {
                         sender: sender_address.clone(),
                         ..Default::default()
                     },

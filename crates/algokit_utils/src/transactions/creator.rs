@@ -6,8 +6,8 @@ use std::{collections::HashMap, sync::Arc};
 use super::{
     AppCallMethodCallParams, AppCallParams, AppCreateMethodCallParams, AppCreateParams,
     AppDeleteMethodCallParams, AppDeleteParams, AppUpdateMethodCallParams, AppUpdateParams,
-    AssetClawbackParams, AssetCreateParams, AssetDestroyParams, AssetFreezeParams,
-    AssetOptInParams, AssetOptOutParams, AssetConfigParams, AssetTransferParams,
+    AssetClawbackParams, AssetConfigParams, AssetCreateParams, AssetDestroyParams,
+    AssetFreezeParams, AssetOptInParams, AssetOptOutParams, AssetTransferParams,
     AssetUnfreezeParams, NonParticipationKeyRegistrationParams, OfflineKeyRegistrationParams,
     OnlineKeyRegistrationParams, PaymentParams,
     common::TransactionSigner,

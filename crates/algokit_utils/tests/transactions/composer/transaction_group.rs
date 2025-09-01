@@ -1,5 +1,5 @@
-use algokit_transact::MAX_TX_GROUP_SIZE;
 use algokit_transact::test_utils::TransactionGroupMother;
+use algokit_transact::{MAX_TX_GROUP_SIZE, test_utils::TransactionMother};
 use algokit_utils::{AssetCreateParams, CommonTransactionParams, PaymentParams};
 use rstest::*;
 
@@ -173,7 +173,9 @@ async fn test_add_transactions_to_group_max_size(
         })
         .collect::<Vec<_>>();
 
-    composer.add_transactions(new_transactions)?;
+    for tx in new_transactions {
+        composer.add_transaction(tx, None)?;
+    }
 
     assert!(composer.build(None).await.unwrap().len() == MAX_TX_GROUP_SIZE);
 
@@ -182,7 +184,7 @@ async fn test_add_transactions_to_group_max_size(
 
 #[rstest]
 #[tokio::test]
-async fn test_add_transactions_to_group_too_big(
+async fn test_add_transaction_to_group_too_big(
     #[future] algorand_fixture: AlgorandFixtureResult,
 ) -> TestResult {
     let mut algorand_fixture = algorand_fixture.await?;
@@ -193,7 +195,7 @@ async fn test_add_transactions_to_group_too_big(
 
     let mut composer = algorand_fixture.algorand_client.new_group();
 
-    for i in 0..MAX_TX_GROUP_SIZE - 2 {
+    for i in 0..MAX_TX_GROUP_SIZE {
         let payment_params = PaymentParams {
             common_params: CommonTransactionParams {
                 sender: sender_address.clone(),
@@ -206,9 +208,10 @@ async fn test_add_transactions_to_group_too_big(
         composer.add_payment(payment_params)?;
     }
 
-    let new_transactions = TransactionGroupMother::group_of(3);
+    let new_transaction = TransactionMother::simple_payment().build()?;
 
-    let result = composer.add_transactions(new_transactions);
+    let result = composer.add_transaction(new_transaction, None);
+
     assert!(
         result
             .unwrap_err()

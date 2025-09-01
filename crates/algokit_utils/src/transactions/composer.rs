@@ -761,41 +761,20 @@ impl Composer {
         }
     }
 
-    pub fn add_transaction(&mut self, transaction: Transaction) -> Result<(), ComposerError> {
-        self.push(ComposerTransaction::Transaction(transaction))
-    }
-
-    pub fn add_transactions(
+    pub fn add_transaction(
         &mut self,
-        transactions: Vec<Transaction>,
+        transaction: Transaction,
+        signer: Option<Arc<dyn TransactionSigner>>,
     ) -> Result<(), ComposerError> {
-        if self.transactions.len() + transactions.len() > MAX_TX_GROUP_SIZE {
-            return Err(ComposerError::GroupSizeError);
+        match signer {
+            Some(signer) => self.push(ComposerTransaction::TransactionWithSigner(
+                TransactionWithSigner {
+                    transaction,
+                    signer,
+                },
+            )),
+            None => self.push(ComposerTransaction::Transaction(transaction)),
         }
-
-        transactions
-            .into_iter()
-            .try_for_each(|transaction| self.add_transaction(transaction))
-    }
-
-    pub fn add_transaction_with_signer(
-        &mut self,
-        transaction: TransactionWithSigner,
-    ) -> Result<(), ComposerError> {
-        self.push(ComposerTransaction::TransactionWithSigner(transaction))
-    }
-
-    pub fn add_transactions_with_signers(
-        &mut self,
-        transactions: Vec<TransactionWithSigner>,
-    ) -> Result<(), ComposerError> {
-        if self.transactions.len() + transactions.len() > MAX_TX_GROUP_SIZE {
-            return Err(ComposerError::GroupSizeError);
-        }
-
-        transactions
-            .into_iter()
-            .try_for_each(|transaction| self.add_transaction_with_signer(transaction))
     }
 
     async fn analyze_group_requirements(
@@ -2145,7 +2124,7 @@ mod tests {
     fn test_add_transaction() {
         let mut composer = Composer::testnet();
         let txn = TransactionMother::simple_payment().build().unwrap();
-        assert!(composer.add_transaction(txn).is_ok());
+        assert!(composer.add_transaction(txn, None).is_ok());
     }
 
     #[test]
@@ -2153,10 +2132,10 @@ mod tests {
         let mut composer = Composer::testnet();
         for _ in 0..16 {
             let txn = TransactionMother::simple_payment().build().unwrap();
-            assert!(composer.add_transaction(txn).is_ok());
+            assert!(composer.add_transaction(txn, None).is_ok());
         }
         let txn = TransactionMother::simple_payment().build().unwrap();
-        assert!(composer.add_transaction(txn).is_err());
+        assert!(composer.add_transaction(txn, None).is_err());
     }
 
     #[tokio::test]
