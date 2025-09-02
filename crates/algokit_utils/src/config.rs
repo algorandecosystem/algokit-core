@@ -1,5 +1,6 @@
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
+use std::sync::atomic::{AtomicBool, Ordering};
 use tokio::sync::broadcast;
 
 /// Minimal lifecycle event types
@@ -52,53 +53,33 @@ impl AsyncEventEmitter {
     }
 }
 
-/// Configuration with minimal flags compatible with TS Config
-#[derive(Clone)]
-pub struct ConfigInner {
-    pub debug: bool,
-    pub trace_all: bool,
-    pub events: AsyncEventEmitter,
-}
-
-impl Default for ConfigInner {
-    fn default() -> Self {
-        Self {
-            debug: false,
-            trace_all: false,
-            events: AsyncEventEmitter::new(32),
-        }
-    }
-}
+/// Global flags and event emitter
+static DEBUG: AtomicBool = AtomicBool::new(false);
+static TRACE_ALL: AtomicBool = AtomicBool::new(false);
+static EVENTS: Lazy<AsyncEventEmitter> = Lazy::new(|| AsyncEventEmitter::new(32));
 
 /// Global runtime config singleton
 pub struct Config;
 
 impl Config {
-    pub fn get() -> &'static Lazy<std::sync::Mutex<ConfigInner>> {
-        static INSTANCE: Lazy<std::sync::Mutex<ConfigInner>> =
-            Lazy::new(|| std::sync::Mutex::new(ConfigInner::default()));
-        &INSTANCE
-    }
-
     pub fn debug() -> bool {
-        Self::get().lock().unwrap().debug
+        DEBUG.load(Ordering::Relaxed)
     }
 
     pub fn trace_all() -> bool {
-        Self::get().lock().unwrap().trace_all
+        TRACE_ALL.load(Ordering::Relaxed)
     }
 
     pub fn events() -> AsyncEventEmitter {
-        Self::get().lock().unwrap().events.clone()
+        EVENTS.clone()
     }
 
     pub fn configure(new_debug: Option<bool>, new_trace_all: Option<bool>) {
-        let mut cfg = Self::get().lock().unwrap();
         if let Some(d) = new_debug {
-            cfg.debug = d;
+            DEBUG.store(d, Ordering::Relaxed);
         }
         if let Some(t) = new_trace_all {
-            cfg.trace_all = t;
+            TRACE_ALL.store(t, Ordering::Relaxed);
         }
     }
 }

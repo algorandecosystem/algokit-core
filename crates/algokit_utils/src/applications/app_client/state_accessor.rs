@@ -138,12 +138,13 @@ impl GlobalStateAccessor<'_> {
                 continue;
             }
             let tail = &key_raw[prefix_bytes.len()..];
-            // Represent key as base64 for map keys to avoid ABIValue Hash/Eq bounds
-            let key_b64 = base64::engine::general_purpose::STANDARD.encode(key_raw);
-            // Validate that tail decodes successfully as key_type (ignore decode error entries)
-            let _ = key_type.decode(tail).map_err(|_e| ()).ok();
+            // Decode the map key tail according to ABI type, error if invalid
+            let decoded_key = key_type
+                .decode(tail)
+                .map_err(|e| format!("Failed to decode key for map '{}': {}", map_name, e))?;
+            let key_str = abi_value_to_string(&decoded_key);
             let value = decode_app_state_value(&map.value_type, app_state)?;
-            result.insert(key_b64, value);
+            result.insert(key_str, value);
         }
         Ok(result)
     }
@@ -247,10 +248,12 @@ impl LocalStateAccessor<'_> {
                 continue;
             }
             let tail = &key_raw[prefix_bytes.len()..];
-            let key_b64 = base64::engine::general_purpose::STANDARD.encode(key_raw);
-            let _ = key_type.decode(tail).map_err(|_e| ()).ok();
+            let decoded_key = key_type
+                .decode(tail)
+                .map_err(|e| format!("Failed to decode key for map '{}': {}", map_name, e))?;
+            let key_str = abi_value_to_string(&decoded_key);
             let value = decode_app_state_value(&map.value_type, app_state)?;
-            result.insert(key_b64, value);
+            result.insert(key_str, value);
         }
         Ok(result)
     }
@@ -336,6 +339,8 @@ impl BoxStateAccessor<'_> {
             Vec::new()
         };
 
+        let key_type = ABIType::from_str(&map.key_type)
+            .map_err(|e| format!("Invalid ABI type '{}': {}", map.key_type, e))?;
         let value_type = ABIType::from_str(&map.value_type)
             .map_err(|e| format!("Invalid ABI type '{}': {}", map.value_type, e))?;
 
@@ -345,7 +350,11 @@ impl BoxStateAccessor<'_> {
             if !box_name.name_raw.starts_with(&prefix_bytes) {
                 continue;
             }
-            let key_b64 = base64::engine::general_purpose::STANDARD.encode(&box_name.name_raw);
+            let tail = &box_name.name_raw[prefix_bytes.len()..];
+            let decoded_key = key_type
+                .decode(tail)
+                .map_err(|e| format!("Failed to decode key for map '{}': {}", map_name, e))?;
+            let key_str = abi_value_to_string(&decoded_key);
             let val = self
                 .client
                 .algorand()
@@ -357,7 +366,7 @@ impl BoxStateAccessor<'_> {
                 )
                 .await
                 .map_err(|e| e.to_string())?;
-            result.insert(key_b64, val);
+            result.insert(key_str, val);
         }
         Ok(result)
     }
@@ -408,6 +417,20 @@ fn decode_app_state_value(
             abi_type
                 .decode(&raw)
                 .map_err(|e| format!("Failed to decode state value: {}", e))
+        }
+    }
+}
+
+fn abi_value_to_string(value: &ABIValue) -> String {
+    match value {
+        ABIValue::Bool(b) => b.to_string(),
+        ABIValue::Uint(u) => u.to_string(),
+        ABIValue::String(s) => s.clone(),
+        ABIValue::Byte(b) => b.to_string(),
+        ABIValue::Address(addr) => addr.clone(),
+        ABIValue::Array(arr) => {
+            let inner: Vec<String> = arr.iter().map(abi_value_to_string).collect();
+            format!("[{}]", inner.join(","))
         }
     }
 }

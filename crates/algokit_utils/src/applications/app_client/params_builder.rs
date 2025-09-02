@@ -1,6 +1,5 @@
 use algokit_abi::ABIMethod;
 use algokit_transact::OnApplicationComplete;
-use std::str::FromStr;
 
 use crate::transactions::{
     AppCallMethodCallParams, AppCallParams, AppMethodCallArg, CommonTransactionParams,
@@ -136,7 +135,7 @@ impl<'a> ParamsBuilder<'a> {
                 .ok_or_else(|| "Missing app_id".to_string())?,
             method: abimethod,
             args: resolved_args,
-            account_references: self.parse_account_refs(&params.account_references)?,
+            account_references: super::utils::parse_account_refs_strs(&params.account_references)?,
             app_references: params.app_references.clone(),
             asset_references: params.asset_references.clone(),
             box_references: params.box_references.clone(),
@@ -161,13 +160,6 @@ impl<'a> ParamsBuilder<'a> {
             first_valid_round: params.first_valid_round,
             last_valid_round: params.last_valid_round,
         })
-    }
-
-    fn parse_account_refs(
-        &self,
-        account_refs: &Option<Vec<String>>,
-    ) -> Result<Option<Vec<algokit_transact::Address>>, String> {
-        super::utils::parse_account_refs_strs(account_refs)
     }
 
     fn to_abimethod(&self, method_name_or_sig: &str) -> Result<ABIMethod, String> {
@@ -275,7 +267,7 @@ impl BareParamsBuilder<'_> {
                 .ok_or_else(|| "Missing app_id".to_string())?,
             on_complete: params.on_complete.unwrap_or(default_on_complete),
             args: params.args,
-            account_references: self.parse_account_refs(&params.account_references)?,
+            account_references: super::utils::parse_account_refs_strs(&params.account_references)?,
             app_references: params.app_references,
             asset_references: params.asset_references,
             box_references: params.box_references,
@@ -299,24 +291,5 @@ impl BareParamsBuilder<'_> {
             first_valid_round: params.first_valid_round,
             last_valid_round: params.last_valid_round,
         })
-    }
-
-    fn parse_account_refs(
-        &self,
-        account_refs: &Option<Vec<String>>,
-    ) -> Result<Option<Vec<algokit_transact::Address>>, String> {
-        match account_refs {
-            None => Ok(None),
-            Some(refs) => {
-                let mut result = Vec::with_capacity(refs.len());
-                for s in refs {
-                    result.push(
-                        algokit_transact::Address::from_str(s)
-                            .map_err(|e| format!("Invalid address: {}", e))?,
-                    );
-                }
-                Ok(Some(result))
-            }
-        }
     }
 }
