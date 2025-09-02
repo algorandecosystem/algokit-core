@@ -96,7 +96,69 @@ impl<'a> TransactionSender<'a> {
             .method_call(&params)
             .await
             .map_err(|e| TransactionSenderError::ValidationError { message: e })?;
-        // TODO: Debug mode integration - simulate if readonly
+        // If debug enabled and readonly method, simulate with tracing
+        let is_readonly = self.client.is_readonly_method(&method_params.method);
+        if crate::config::Config::debug() && is_readonly {
+            let mut composer = self.client.algorand().new_group();
+            composer
+                .add_app_call_method_call(method_params)
+                .map_err(|e| TransactionSenderError::ValidationError {
+                    message: e.to_string(),
+                })?;
+
+            let sim_params = crate::transactions::composer::SimulateParams {
+                allow_more_logging: Some(true),
+                allow_empty_signatures: None,
+                allow_unnamed_resources: None,
+                extra_opcode_budget: None,
+                exec_trace_config: Some(algod_client::models::SimulateTraceConfig {
+                    enable: Some(true),
+                    scratch_change: Some(true),
+                    stack_change: Some(true),
+                    state_change: Some(true),
+                }),
+                simulation_round: None,
+                skip_signatures: false,
+            };
+
+            let sim = composer.simulate(Some(sim_params)).await.map_err(|e| {
+                TransactionSenderError::ValidationError {
+                    message: e.to_string(),
+                }
+            })?;
+
+            if crate::config::Config::trace_all() {
+                let json = serde_json::to_value(&sim.confirmations)
+                    .unwrap_or(serde_json::json!({"error":"failed to serialize confirmations"}));
+                let event = crate::config::TxnGroupSimulatedEventData {
+                    simulate_response: json,
+                };
+                crate::config::Config::events()
+                    .emit(
+                        crate::config::EventType::TxnGroupSimulated,
+                        crate::config::EventData::TxnGroupSimulated(event),
+                    )
+                    .await;
+            }
+
+            // Build a SendAppCallResult-like structure from simulate output
+            // Reuse transaction sender to send normally to keep API consistent
+            return self
+                .client
+                .algorand
+                .send()
+                .app_call_method_call(
+                    self.client
+                        .params()
+                        .method_call(&params)
+                        .await
+                        .map_err(|e| TransactionSenderError::ValidationError { message: e })?,
+                    None,
+                )
+                .await
+                .map_err(|e| super::utils::transform_tx_error(self.client, e, false));
+        }
+
         self.client
             .algorand
             .send()

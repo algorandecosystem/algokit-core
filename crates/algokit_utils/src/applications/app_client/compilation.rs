@@ -10,6 +10,34 @@ impl AppClient {
             .compile_approval_with_params(compilation_params)
             .await?;
         let clear = self.compile_clear_with_params(compilation_params).await?;
+
+        // Emit AppCompiled event when debug flag is enabled
+        if crate::config::Config::debug() {
+            let app_name = self.app_name.clone();
+            let approval_map = self
+                .algorand()
+                .app()
+                .get_compilation_result(&String::from_utf8_lossy(&approval))
+                .and_then(|c| c.source_map);
+            let clear_map = self
+                .algorand()
+                .app()
+                .get_compilation_result(&String::from_utf8_lossy(&clear))
+                .and_then(|c| c.source_map);
+
+            let event = crate::config::AppCompiledEventData {
+                app_name,
+                approval_source_map: approval_map,
+                clear_source_map: clear_map,
+            };
+            crate::config::Config::events()
+                .emit(
+                    crate::config::EventType::AppCompiled,
+                    crate::config::EventData::AppCompiled(event),
+                )
+                .await;
+        }
+
         Ok((approval, clear))
     }
 
