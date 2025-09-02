@@ -408,10 +408,68 @@ impl AppClient {
         &self,
         params: super::types::AppClientMethodCallParams,
     ) -> Result<algokit_abi::ABIReturn, String> {
-        // TODO: Debug mode integration - use actual simulate API when available
-        // Currently using regular send path which simulates readonly methods automatically
+        // Prefer simulate when debug is enabled to gather traces; otherwise use send path
         let method_params =
             self.build_method_call_params_no_defaults(&params.method, params.sender.as_deref())?;
+
+        if crate::config::Config::debug() {
+            // Build transactions and simulate via TransactionCreator
+            let _built = self
+                .algorand()
+                .create()
+                .app_call_method_call(method_params.clone())
+                .await
+                .map_err(|e| e.to_string())?;
+
+            // Use composer directly to simulate with extra logging when debug
+            let mut composer = self.algorand().new_group();
+            composer
+                .add_app_call_method_call(method_params)
+                .map_err(|e| e.to_string())?;
+
+            let params = crate::transactions::composer::SimulateParams {
+                allow_more_logging: Some(true),
+                allow_empty_signatures: None,
+                allow_unnamed_resources: None,
+                extra_opcode_budget: None,
+                exec_trace_config: Some(algod_client::models::SimulateTraceConfig {
+                    enable: Some(true),
+                    scratch_change: Some(true),
+                    stack_change: Some(true),
+                    state_change: Some(true),
+                }),
+                simulation_round: None,
+                skip_signatures: false,
+            };
+
+            let sim = composer
+                .simulate(Some(params))
+                .await
+                .map_err(|e| e.to_string())?;
+
+            if crate::config::Config::trace_all() {
+                // Emit simulate response as JSON for listeners
+                let json = serde_json::to_value(&sim.confirmations)
+                    .unwrap_or(serde_json::json!({"error":"failed to serialize confirmations"}));
+                let event = crate::config::TxnGroupSimulatedEventData {
+                    simulate_response: json,
+                };
+                crate::config::Config::events()
+                    .emit(
+                        crate::config::EventType::TxnGroupSimulated,
+                        crate::config::EventData::TxnGroupSimulated(event),
+                    )
+                    .await;
+            }
+
+            // Extract last ABI return if available from returns collected during simulate
+            let ret = sim
+                .returns
+                .last()
+                .cloned()
+                .ok_or_else(|| "No ABI return found in simulate result".to_string())?;
+            return Ok(ret);
+        }
 
         let send_res = self
             .algorand

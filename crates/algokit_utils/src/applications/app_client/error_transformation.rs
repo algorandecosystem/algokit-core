@@ -21,8 +21,7 @@ impl AppClient {
         let source_map = self.get_source_map(is_clear).cloned();
         let transaction_id = Self::extract_transaction_id(&err_str);
 
-        // TODO: Debug mode integration - extract program bytes and traces
-        LogicError {
+        let logic = LogicError {
             logic_error_str: err_str.clone(),
             program: None,
             source_map,
@@ -35,7 +34,13 @@ impl AppClient {
                 Some(listing)
             },
             traces: None,
+        };
+
+        if crate::config::Config::debug() {
+            // TODO: Add traces to LogicError
         }
+
+        logic
     }
 
     fn extract_transaction_id(error_str: &str) -> Option<String> {

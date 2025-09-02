@@ -6,7 +6,7 @@ use algokit_transact::{BoxReference, OnApplicationComplete};
 use std::collections::HashMap;
 
 /// Container for source maps captured during compilation/simulation.
-#[derive(Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct AppSourceMaps {
     pub approval_source_map: Option<serde_json::Value>,
     pub clear_source_map: Option<serde_json::Value>,
