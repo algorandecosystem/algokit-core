@@ -282,19 +282,18 @@ impl AppManager {
         box_name: &BoxIdentifier,
     ) -> Result<Vec<u8>, AppManagerError> {
         let (_, name_bytes) = Self::get_box_reference(box_name);
-        let name_base64 = Base64.encode(&name_bytes);
+        // Algod expects goal-arg style encoding for box name query param in 'encoding:value'.
+        // However our HTTP client decodes base64 automatically into bytes for the Box model fields.
+        // The API still requires 'b64:<base64>' for the query parameter value.
+        let name_goal = format!("b64:{}", Base64.encode(&name_bytes));
 
         let box_result = self
             .algod_client
-            .get_application_box_by_name(app_id, &name_base64)
+            .get_application_box_by_name(app_id, &name_goal)
             .await
             .map_err(|e| AppManagerError::AlgodClientError { source: e })?;
 
-        Base64
-            .decode(&box_result.value)
-            .map_err(|e| AppManagerError::DecodingError {
-                message: e.to_string(),
-            })
+        Ok(box_result.value)
     }
 
     /// Get values for multiple boxes.

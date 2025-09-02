@@ -23,3 +23,5 @@ pub use transactions::{
     TransactionResultError, TransactionSender, TransactionSenderError, TransactionSigner,
     TransactionWithSigner,
 };
+
+pub use applications::app_client::{AppClient, AppClientError, AppClientParams, AppSourceMaps};

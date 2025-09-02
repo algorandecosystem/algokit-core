@@ -158,7 +158,32 @@ pub struct SendTransactionComposerResults {
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct TransactionComposerConfig {
+pub struct TransactionComposerConfig {}
+
+#[derive(Debug, Clone, Default)]
+pub struct SimulateParams {
+    pub allow_more_logging: Option<bool>,
+    pub allow_empty_signatures: Option<bool>,
+    pub allow_unnamed_resources: Option<bool>,
+    pub extra_opcode_budget: Option<u64>,
+    pub exec_trace_config: Option<algod_client::models::SimulateTraceConfig>,
+    pub simulation_round: Option<u64>,
+    pub skip_signatures: bool,
+}
+
+#[derive(Debug, Clone)]
+pub struct SimulateComposerResults {
+    pub group: Option<Byte32>,
+    pub transaction_ids: Vec<String>,
+    pub confirmations: Vec<PendingTransactionResponse>,
+    pub abi_returns: Vec<ABIReturn>,
+    pub simulate_response: SimulateTransaction,
+}
+
+#[derive(Debug, Clone)]
+pub struct SendParams {
+    pub max_rounds_to_wait_for_confirmation: Option<u32>,
+}
     pub cover_app_call_inner_transaction_fees: bool,
     pub populate_app_call_resources: ResourcePopulation,
 }
@@ -2100,6 +2125,147 @@ impl Composer {
 
     pub fn count(&self) -> usize {
         self.transactions.len()
+    }
+
+    pub async fn simulate(
+        &mut self,
+        params: Option<SimulateParams>,
+    ) -> Result<SimulateComposerResults, ComposerError> {
+        let params = params.unwrap_or_default();
+
+        // Build transactions (this also runs analysis for resource population/fees as configured)
+        self.build(None).await?;
+
+        // Prepare transactions for simulation: drop group field and use empty signatures or gather signatures
+        let transactions_with_signers =
+            self.built_group.as_ref().ok_or(ComposerError::StateError {
+                message: "No transactions built".to_string(),
+            })?;
+
+        // If skip_signatures, attach NULL signatures; else gather signatures then strip sigs for simulate
+        let signed: Vec<SignedTransaction> = if params.skip_signatures {
+            transactions_with_signers
+                .iter()
+                .map(|txn_with_signer| SignedTransaction {
+                    transaction: txn_with_signer.transaction.clone(),
+                    signature: Some(EMPTY_SIGNATURE),
+                    auth_address: None,
+                    multisignature: None,
+                })
+                .collect()
+        } else {
+            // Ensure signatures are available to resolve signers then use empty signatures per simulate API
+            let signed_group = self.gather_signatures().await?.clone();
+            signed_group
+                .into_iter()
+                .map(|mut s| {
+                    // Replace actual signatures with empty signature for simulate
+                    s.signature = Some(EMPTY_SIGNATURE);
+                    s
+                })
+                .collect()
+        };
+
+        // Clear group on each txn and re-group
+        let mut txns: Vec<Transaction> = signed
+            .iter()
+            .map(|s| {
+                let mut t = s.transaction.clone();
+                let header = t.header_mut();
+                header.group = None;
+                t
+            })
+            .collect();
+        if txns.len() > 1 {
+            txns = txns
+                .assign_group()
+                .map_err(|e| ComposerError::TransactionError {
+                    message: format!("Failed to assign group: {}", e),
+                })?;
+        }
+
+        // Wrap for simulate request
+        let signed_for_sim: Vec<SignedTransaction> = txns
+            .into_iter()
+            .map(|t| SignedTransaction {
+                transaction: t,
+                signature: Some(EMPTY_SIGNATURE),
+                auth_address: None,
+                multisignature: None,
+            })
+            .collect();
+
+        let txn_group = SimulateRequestTransactionGroup {
+            txns: signed_for_sim,
+        };
+        let simulate_request = SimulateRequest {
+            txn_groups: vec![txn_group],
+            round: params.simulation_round,
+            allow_empty_signatures: Some(params.allow_empty_signatures.unwrap_or(true)),
+            allow_more_logging: params.allow_more_logging,
+            allow_unnamed_resources: params.allow_unnamed_resources,
+            extra_opcode_budget: params.extra_opcode_budget,
+            exec_trace_config: params.exec_trace_config,
+            fix_signers: Some(true),
+        };
+
+        // Call simulate endpoint
+        let response = self
+            .algod_client
+            .simulate_transaction(simulate_request, Some(Format::Msgpack))
+            .await
+            .map_err(|e| ComposerError::AlgodClientError { source: e })?;
+
+        let group = &response.txn_groups[0];
+
+        if let Some(failure_message) = &group.failure_message {
+            let failed_at = group
+                .failed_at
+                .as_ref()
+                .map(|v| {
+                    v.iter()
+                        .map(|i| i.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                })
+                .unwrap_or_else(|| "unknown".to_string());
+            return Err(ComposerError::StateError {
+                message: format!(
+                    "Error analyzing group requirements via simulate in transaction {}: {}",
+                    failed_at, failure_message
+                ),
+            });
+        }
+
+        // Collect confirmations and ABI returns similar to send()
+        let confirmations: Vec<PendingTransactionResponse> = group
+            .txn_results
+            .iter()
+            .map(|r| r.txn_result.clone())
+            .collect();
+
+        let transactions: Vec<Transaction> = self
+            .built_group
+            .as_ref()
+            .unwrap()
+            .iter()
+            .map(|tw| tw.transaction.clone())
+            .collect();
+
+        let abi_returns = self.parse_abi_return_values(&confirmations);
+        let returns: Vec<ABIReturn> = abi_returns
+            .into_iter()
+            .filter_map(|r| match r {
+                Ok(Some(v)) => Some(v),
+                _ => None,
+            })
+            .collect();
+
+        Ok(SimulateComposerResults {
+            transactions,
+            confirmations,
+            returns,
+        })
     }
 }
 
