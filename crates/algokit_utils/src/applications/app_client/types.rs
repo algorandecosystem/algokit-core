@@ -13,7 +13,13 @@ pub struct AppSourceMaps {
 }
 
 /// Parameters required to construct an AppClient instance.
-// Note: Do not derive Clone for AlgorandClient field
+// Important: do NOT derive Clone for this struct while it contains `AlgorandClient`.
+// `AlgorandClient` is intentionally non-Clone: it owns live HTTP clients, internal caches,
+// and shared mutable state (e.g., signer registry via Arc<Mutex<_>>). Forcing Clone here
+// would either require making `AlgorandClient` Clone or wrapping it in Arc implicitly,
+// which encourages accidental copying of a process-wide client and confusing ownership/
+// lifetime semantics. If you need to share the client, wrap it in Arc at the call site
+// and pass that explicitly, rather than deriving Clone on this params type.
 pub struct AppClientParams {
     pub app_id: Option<u64>,
     pub app_spec: Arc56Contract,
@@ -25,6 +31,7 @@ pub struct AppClientParams {
 
 /// Parameters for constructing an AppClient from a JSON app spec.
 /// The JSON must be a valid ARC-56 contract specification string.
+// See note above on not deriving Clone while this contains `AlgorandClient`.
 pub struct AppClientJsonParams<'a> {
     pub app_id: Option<u64>,
     pub app_spec_json: &'a str,
