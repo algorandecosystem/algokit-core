@@ -1,3 +1,5 @@
+/// This module is to be later integrated into the abi crate to further simplify app client logic
+/// For now, it consolidates main functionality not covered by the abi crate and required in app client
 use algokit_abi::ABIMethod;
 use algokit_abi::{ABIType, ABIValue};
 use base64::Engine;
