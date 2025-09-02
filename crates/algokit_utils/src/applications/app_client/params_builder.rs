@@ -3,7 +3,8 @@ use algokit_transact::OnApplicationComplete;
 use std::str::FromStr;
 
 use crate::transactions::{
-    AppCallMethodCallParams, AppCallParams, AppMethodCallArg, CommonParams, PaymentParams,
+    AppCallMethodCallParams, AppCallParams, AppMethodCallArg, CommonTransactionParams,
+    PaymentParams,
 };
 
 use super::AppClient;
@@ -80,7 +81,7 @@ impl<'a> ParamsBuilder<'a> {
         let rekey_to = AppClient::get_optional_address(&params.rekey_to)?;
 
         Ok(PaymentParams {
-            common_params: CommonParams {
+            common_params: CommonTransactionParams {
                 sender,
                 signer: None,
                 rekey_to,
@@ -146,8 +147,8 @@ impl<'a> ParamsBuilder<'a> {
     fn build_common_params_from_method(
         &self,
         params: &AppClientMethodCallParams,
-    ) -> Result<CommonParams, String> {
-        Ok(CommonParams {
+    ) -> Result<CommonTransactionParams, String> {
+        Ok(CommonTransactionParams {
             sender: self.client.get_sender_address(&params.sender)?,
             signer: None,
             rekey_to: AppClient::get_optional_address(&params.rekey_to)?,
@@ -284,8 +285,8 @@ impl BareParamsBuilder<'_> {
     fn build_common_params_from_bare(
         &self,
         params: &AppClientBareCallParams,
-    ) -> Result<CommonParams, String> {
-        Ok(CommonParams {
+    ) -> Result<CommonTransactionParams, String> {
+        Ok(CommonTransactionParams {
             sender: self.client.get_sender_address(&params.sender)?,
             signer: None,
             rekey_to: AppClient::get_optional_address(&params.rekey_to)?,

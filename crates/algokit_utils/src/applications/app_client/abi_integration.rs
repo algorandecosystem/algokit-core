@@ -4,7 +4,7 @@ use base64::Engine;
 use std::str::FromStr;
 
 use super::AppClient;
-use crate::transactions::{AppCallMethodCallParams, AppMethodCallArg, CommonParams};
+use crate::transactions::{AppCallMethodCallParams, AppMethodCallArg, CommonTransactionParams};
 
 impl AppClient {
     fn build_method_call_params_no_defaults(
@@ -18,7 +18,7 @@ impl AppClient {
             .map_err(|e| e.to_string())?
             .to_abi_method()
             .map_err(|e| e.to_string())?;
-        let common_params = CommonParams {
+        let common_params = CommonTransactionParams {
             sender: self.get_sender_address(&sender.map(|s| s.to_string()))?,
             signer: None,
             rekey_to: None,

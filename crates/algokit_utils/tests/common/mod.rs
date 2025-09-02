@@ -12,7 +12,7 @@ use algokit_transact::Address;
 use algokit_utils::clients::app_manager::{
     AppManager, DeploymentMetadata, TealTemplateParams, TealTemplateValue,
 };
-use algokit_utils::{AppCreateParams, CommonParams};
+use algokit_utils::{AppCreateParams, CommonTransactionParams};
 use base64::prelude::*;
 
 pub use fixture::{AlgorandFixture, AlgorandFixtureResult, algorand_fixture};
@@ -28,8 +28,8 @@ pub async fn deploy_arc56_contract(
     fixture: &AlgorandFixture,
     sender: &Address,
     arc56_contract: &Arc56Contract,
-    mut template_params: Option<TealTemplateParams>,
-    mut deploy_metadata: Option<DeploymentMetadata>,
+    template_params: Option<TealTemplateParams>,
+    deploy_metadata: Option<DeploymentMetadata>,
 ) -> Result<u64, Box<dyn std::error::Error + Send + Sync>> {
     let teal_source = arc56_contract
         .source
