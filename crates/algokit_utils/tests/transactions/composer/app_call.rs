@@ -9,6 +9,7 @@ use algokit_transact::{
     TransactionHeader, TransactionId,
 };
 use algokit_utils::{AppCallMethodCallParams, AssetCreateParams, ComposerError};
+use algokit_utils::transactions::composer::SimulateParams;
 use algokit_utils::{
     AppCallParams, AppCreateParams, AppDeleteParams, AppMethodCallArg, AppUpdateParams,
     PaymentParams,
@@ -812,6 +813,84 @@ async fn test_get_returned_value_of_nested_app_call_method_calls(
         }
         _ => Err("Return value should be a UInt".into()),
     }
+}
+
+#[rstest]
+#[tokio::test]
+async fn group_simulate_matches_send(
+    #[future] arc56_algorand_fixture: Arc56AppFixtureResult,
+) -> TestResult {
+    let Arc56AppFixture {
+        sender_address: sender,
+        app_id,
+        arc56_contract,
+        algorand_fixture,
+    } = arc56_algorand_fixture.await?;
+
+    // Compose group: add(uint64,uint64)uint64 + payment + hello_world(string)string
+    let mut composer = algorand_fixture.algorand_client.new_group();
+
+    // 1) add(uint64,uint64)uint64
+    let method_add = get_abi_method(&arc56_contract, "add")?;
+    let add_params = AppCallMethodCallParams {
+        common_params: CommonTransactionParams {
+            sender: sender.clone(),
+            ..Default::default()
+        },
+        app_id,
+        method: method_add,
+        args: vec![
+            AppMethodCallArg::ABIValue(ABIValue::Uint(BigUint::from(1u64))),
+            AppMethodCallArg::ABIValue(ABIValue::Uint(BigUint::from(2u64))),
+        ],
+        ..Default::default()
+    };
+    composer.add_app_call_method_call(add_params)?;
+
+    // 2) payment
+    let payment = PaymentParams {
+        common_params: CommonTransactionParams {
+            sender: sender.clone(),
+            ..Default::default()
+        },
+        receiver: sender.clone(),
+        amount: 10_000,
+    };
+    composer.add_payment(payment)?;
+
+    // 3) hello_world(string)string
+    let method_hello = get_abi_method(&arc56_contract, "hello_world")?;
+    let call_params = AppCallMethodCallParams {
+        common_params: CommonTransactionParams {
+            sender: sender.clone(),
+            ..Default::default()
+        },
+        app_id,
+        method: method_hello,
+        args: vec![AppMethodCallArg::ABIValue(ABIValue::String(
+            "test".to_string(),
+        ))],
+        ..Default::default()
+    };
+    composer.add_app_call_method_call(call_params)?;
+
+    let simulate = composer
+        .simulate(Some(SimulateParams {
+            skip_signatures: true,
+            ..Default::default()
+        }))
+        .await?;
+    let send = composer.send(None).await?;
+
+    assert_eq!(simulate.transactions.len(), send.transaction_ids.len());
+    let last_idx = send.abi_returns.len().saturating_sub(1);
+    if !simulate.returns.is_empty() && send.abi_returns.get(last_idx).is_some() {
+        let sim_ret = simulate.returns.last().unwrap();
+        if let Some(Ok(Some(send_ret))) = send.abi_returns.get(last_idx) {
+            assert_eq!(sim_ret.return_value, send_ret.return_value);
+        }
+    }
+    Ok(())
 }
 
 struct Arc56AppFixture {

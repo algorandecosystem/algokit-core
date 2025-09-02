@@ -1,17 +1,12 @@
 use crate::common::{AlgorandFixtureResult, TestResult, algorand_fixture, deploy_arc56_contract};
 use algokit_abi::Arc56Contract;
 use algokit_transact::BoxReference;
-use algokit_utils::applications::app_client::{
-    AppClient, AppClientBareCallParams, AppClientJsonParams, AppClientParams,
-};
-use algokit_utils::clients::app_manager::{
-    DeploymentMetadata, TealTemplateParams, TealTemplateValue,
-};
-use algokit_utils::{AlgorandClient as RootAlgorandClient, transactions::composer::SimulateParams};
+use algokit_utils::AlgorandClient as RootAlgorandClient;
+use algokit_utils::applications::app_client::{AppClient, AppClientJsonParams, AppClientParams};
+use algokit_utils::clients::app_manager::{TealTemplateParams, TealTemplateValue};
 use rstest::*;
 use std::str::FromStr;
 use std::sync::Arc;
-use std::time::Duration;
 
 fn get_testing_app_spec() -> Arc56Contract {
     let json = algokit_test_artifacts::testing_app::APPLICATION_ARC56;
@@ -42,10 +37,10 @@ fn get_sandbox_spec() -> Arc56Contract {
 
 #[rstest]
 #[tokio::test]
-async fn retrieve_state() -> TestResult {
+async fn retrieve_state(#[future] algorand_fixture: AlgorandFixtureResult) -> TestResult {
     use algokit_utils::applications::app_client::AppClientMethodCallParams as MCP;
 
-    let fixture = crate::common::algorand_fixture().await?;
+    let fixture = algorand_fixture.await?;
     let sender = fixture.test_account.account().address();
 
     // Deploy testing_app
@@ -296,12 +291,14 @@ async fn retrieve_state() -> TestResult {
 
 #[rstest]
 #[tokio::test]
-async fn logic_error_exposure_with_source_maps() -> TestResult {
+async fn logic_error_exposure_with_source_maps(
+    #[future] algorand_fixture: AlgorandFixtureResult,
+) -> TestResult {
     use algokit_utils::applications::app_client::AppClientMethodCallParams as MCP;
     use algokit_utils::applications::app_client::AppSourceMaps;
     use algokit_utils::transactions::sender_results::TransactionResultError;
 
-    let fixture = crate::common::algorand_fixture().await?;
+    let fixture = algorand_fixture.await?;
     let sender = fixture.test_account.account().address();
 
     // Deploy testing_app with template params
@@ -386,10 +383,12 @@ async fn logic_error_exposure_with_source_maps() -> TestResult {
 
 #[rstest]
 #[tokio::test]
-async fn box_methods_with_manually_encoded_abi_args() -> TestResult {
+async fn box_methods_with_manually_encoded_abi_args(
+    #[future] algorand_fixture: AlgorandFixtureResult,
+) -> TestResult {
     use algokit_utils::applications::app_client::AppClientMethodCallParams as MCP;
 
-    let fixture = crate::common::algorand_fixture().await?;
+    let fixture = algorand_fixture.await?;
     let sender = fixture.test_account.account().address();
 
     // Deploy testing_app_puya
@@ -504,9 +503,13 @@ async fn box_methods_with_manually_encoded_abi_args() -> TestResult {
 
     Ok(())
 }
-async fn construct_transaction_with_abi_encoding_including_foreign_references_not_in_signature()
--> TestResult {
-    let fixture = crate::common::algorand_fixture().await?;
+
+#[rstest]
+#[tokio::test]
+async fn construct_transaction_with_abi_encoding_including_foreign_references_not_in_signature(
+    #[future] algorand_fixture: AlgorandFixtureResult,
+) -> TestResult {
+    let fixture = algorand_fixture.await?;
     let sender = fixture.test_account.account().address();
     // Deploy testing_app which has call_abi_foreign_refs()string
     let mut tmpl: TealTemplateParams = Default::default();
@@ -529,7 +532,6 @@ async fn construct_transaction_with_abi_encoding_including_foreign_references_no
     });
 
     // Create a secondary account for account_references
-    let mut new_algorand = RootAlgorandClient::default_localnet();
     let mut new_fixture = fixture; // reuse underlying clients for funding convenience
     let new_account = new_fixture.generate_account(None).await?;
     let new_addr = new_account.account().address();
@@ -571,8 +573,10 @@ async fn construct_transaction_with_abi_encoding_including_foreign_references_no
 
 #[rstest]
 #[tokio::test]
-async fn abi_with_default_arg_from_local_state() -> TestResult {
-    let fixture = crate::common::algorand_fixture().await?;
+async fn abi_with_default_arg_from_local_state(
+    #[future] algorand_fixture: AlgorandFixtureResult,
+) -> TestResult {
+    let fixture = algorand_fixture.await?;
     let sender = fixture.test_account.account().address();
     let mut tmpl: TealTemplateParams = Default::default();
     tmpl.insert("VALUE".to_string(), TealTemplateValue::Int(0));
@@ -709,8 +713,10 @@ async fn abi_with_default_arg_from_local_state() -> TestResult {
 }
 #[rstest]
 #[tokio::test]
-async fn bare_call_with_box_reference_builds_and_sends() -> TestResult {
-    let fixture = crate::common::algorand_fixture().await?;
+async fn bare_call_with_box_reference_builds_and_sends(
+    #[future] algorand_fixture: AlgorandFixtureResult,
+) -> TestResult {
+    let fixture = algorand_fixture.await?;
     let sender = fixture.test_account.account().address();
 
     let app_id = deploy_arc56_contract(&fixture, &sender, &get_sandbox_spec(), None, None).await?;
@@ -726,28 +732,6 @@ async fn bare_call_with_box_reference_builds_and_sends() -> TestResult {
         default_sender: Some(sender.to_string()),
         source_maps: None,
     });
-
-    let params = AppClientBareCallParams {
-        args: None,
-        sender: Some(sender.to_string()),
-        rekey_to: None,
-        note: None,
-        lease: None,
-        static_fee: None,
-        extra_fee: None,
-        max_fee: None,
-        validity_window: None,
-        first_valid_round: None,
-        last_valid_round: None,
-        account_references: None,
-        app_references: None,
-        asset_references: None,
-        box_references: Some(vec![BoxReference {
-            app_id: 0,
-            name: b"1".to_vec(),
-        }]),
-        on_complete: None,
-    };
 
     // Use method call (sandbox does not allow bare NoOp)
     let result = client
@@ -799,8 +783,10 @@ async fn bare_call_with_box_reference_builds_and_sends() -> TestResult {
 
 #[rstest]
 #[tokio::test]
-async fn construct_transaction_with_boxes() -> TestResult {
-    let fixture = crate::common::algorand_fixture().await?;
+async fn construct_transaction_with_boxes(
+    #[future] algorand_fixture: AlgorandFixtureResult,
+) -> TestResult {
+    let fixture = algorand_fixture.await?;
     let sender = fixture.test_account.account().address();
     let app_id = deploy_arc56_contract(&fixture, &sender, &get_sandbox_spec(), None, None).await?;
 
@@ -864,98 +850,10 @@ async fn construct_transaction_with_boxes() -> TestResult {
 
 #[rstest]
 #[tokio::test]
-async fn group_simulate_matches_send() -> TestResult {
-    let fixture = crate::common::algorand_fixture().await?;
-    let sender = fixture.test_account.account().address();
-    let app_id = deploy_arc56_contract(&fixture, &sender, &get_sandbox_spec(), None, None).await?;
-
-    let client = AppClient::new(AppClientParams {
-        app_id: Some(app_id),
-        app_spec: get_testing_app_spec(),
-        algorand: RootAlgorandClient::default_localnet(),
-        app_name: None,
-        default_sender: Some(sender.to_string()),
-        source_maps: None,
-    });
-
-    // Compose group: set_global + payment + call_abi
-    let mut composer = fixture.algorand_client.new_group();
-
-    // 1) add(uint64,uint64)uint64
-    let method_set_global = algokit_abi::ABIMethod::from_str("add(uint64,uint64)uint64").unwrap();
-    let set_params = algokit_utils::AppCallMethodCallParams {
-        common_params: algokit_utils::CommonParams {
-            sender: sender.clone(),
-            ..Default::default()
-        },
-        app_id,
-        method: method_set_global,
-        args: vec![
-            algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from(1u64)),
-            algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from(2u64)),
-        ],
-        account_references: None,
-        app_references: None,
-        asset_references: None,
-        box_references: None,
-        on_complete: algokit_transact::OnApplicationComplete::NoOp,
-    };
-    composer.add_app_call_method_call(set_params)?;
-
-    // 2) payment
-    let payment = algokit_utils::PaymentParams {
-        common_params: algokit_utils::CommonParams {
-            sender: sender.clone(),
-            ..Default::default()
-        },
-        receiver: sender.clone(),
-        amount: 10_000,
-    };
-    composer.add_payment(payment)?;
-
-    // 3) hello_world(string)string
-    let method_call_abi = algokit_abi::ABIMethod::from_str("hello_world(string)string").unwrap();
-    let call_params = algokit_utils::AppCallMethodCallParams {
-        common_params: algokit_utils::CommonParams {
-            sender: sender.clone(),
-            ..Default::default()
-        },
-        app_id,
-        method: method_call_abi,
-        args: vec![algokit_utils::AppMethodCallArg::ABIValue(
-            algokit_abi::ABIValue::from("test"),
-        )],
-        account_references: None,
-        app_references: None,
-        asset_references: None,
-        box_references: None,
-        on_complete: algokit_transact::OnApplicationComplete::NoOp,
-    };
-    composer.add_app_call_method_call(call_params)?;
-
-    let simulate = composer
-        .simulate(Some(SimulateParams {
-            skip_signatures: true,
-            ..Default::default()
-        }))
-        .await?;
-    let send = composer.send(None).await?;
-
-    assert_eq!(simulate.transactions.len(), send.transaction_ids.len());
-    let last_idx = send.abi_returns.len().saturating_sub(1);
-    if !simulate.returns.is_empty() && send.abi_returns.get(last_idx).is_some() {
-        let sim_ret = simulate.returns.last().unwrap();
-        if let Some(Ok(Some(send_ret))) = send.abi_returns.get(last_idx).map(|r| r.as_ref()) {
-            assert_eq!(sim_ret.return_value, send_ret.return_value);
-        }
-    }
-    Ok(())
-}
-
-#[rstest]
-#[tokio::test]
-async fn construct_transaction_with_abi_encoding_including_transaction() -> TestResult {
-    let fixture = crate::common::algorand_fixture().await?;
+async fn construct_transaction_with_abi_encoding_including_transaction(
+    #[future] algorand_fixture: AlgorandFixtureResult,
+) -> TestResult {
+    let fixture = algorand_fixture.await?;
     let sender = fixture.test_account.account().address();
     // Use sandbox which has get_pay_txn_amount(pay)uint64
     let spec = get_sandbox_spec();
@@ -974,7 +872,7 @@ async fn construct_transaction_with_abi_encoding_including_transaction() -> Test
 
     // Prepare a payment as an ABI transaction argument
     let payment = algokit_utils::PaymentParams {
-        common_params: algokit_utils::CommonParams {
+        common_params: algokit_utils::CommonTransactionParams {
             sender: sender.clone(),
             ..Default::default()
         },
@@ -1021,10 +919,12 @@ async fn construct_transaction_with_abi_encoding_including_transaction() -> Test
 
 #[rstest]
 #[tokio::test]
-async fn box_methods_with_arc4_returns_parametrized() -> TestResult {
+async fn box_methods_with_arc4_returns_parametrized(
+    #[future] algorand_fixture: AlgorandFixtureResult,
+) -> TestResult {
     use algokit_utils::applications::app_client::AppClientMethodCallParams as MCP;
 
-    let fixture = crate::common::algorand_fixture().await?;
+    let fixture = algorand_fixture.await?;
     let sender = fixture.test_account.account().address();
 
     // Deploy testing_app_puya
@@ -1173,9 +1073,11 @@ async fn box_methods_with_arc4_returns_parametrized() -> TestResult {
 
 #[rstest]
 #[tokio::test]
-async fn app_client_from_network_resolves_id() -> TestResult {
+async fn app_client_from_network_resolves_id(
+    #[future] algorand_fixture: AlgorandFixtureResult,
+) -> TestResult {
     // Deploy hello_world and write networks mapping into spec, then call from_network
-    let fixture = crate::common::algorand_fixture().await?;
+    let fixture = algorand_fixture.await?;
     let sender = fixture.test_account.account().address();
 
     let spec = Arc56Contract::from_json(algokit_test_artifacts::hello_world::APPLICATION_ARC56)

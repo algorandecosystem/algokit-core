@@ -28,8 +28,8 @@ pub async fn deploy_arc56_contract(
     fixture: &AlgorandFixture,
     sender: &Address,
     arc56_contract: &Arc56Contract,
-    mut template_params: Option<TealTemplateParams>,
-    mut deploy_metadata: Option<DeploymentMetadata>,
+    template_params: Option<TealTemplateParams>,
+    deploy_metadata: Option<DeploymentMetadata>,
 ) -> Result<u64, Box<dyn std::error::Error + Send + Sync>> {
     let teal_source = arc56_contract
         .source

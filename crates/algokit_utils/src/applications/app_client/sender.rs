@@ -126,7 +126,7 @@ impl<'a> TransactionSender<'a> {
                 })?
         };
 
-        let common_params = crate::transactions::CommonParams {
+        let common_params = crate::transactions::CommonTransactionParams {
             sender: self
                 .client
                 .get_sender_address(&params.sender)
