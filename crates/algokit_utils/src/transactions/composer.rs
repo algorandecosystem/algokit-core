@@ -1,3 +1,4 @@
+use crate::config::Config;
 use crate::{
     genesis_id_is_localnet,
     transactions::{
@@ -2142,53 +2143,11 @@ impl Composer {
                 message: "No transactions built".to_string(),
             })?;
 
-        // If skip_signatures, attach NULL signatures; else gather signatures then strip sigs for simulate
-        let signed: Vec<SignedTransaction> = if params.skip_signatures {
-            transactions_with_signers
-                .iter()
-                .map(|txn_with_signer| SignedTransaction {
-                    transaction: txn_with_signer.transaction.clone(),
-                    signature: Some(EMPTY_SIGNATURE),
-                    auth_address: None,
-                    multisignature: None,
-                })
-                .collect()
-        } else {
-            // Ensure signatures are available to resolve signers then use empty signatures per simulate API
-            let signed_group = self.gather_signatures().await?.clone();
-            signed_group
-                .into_iter()
-                .map(|mut s| {
-                    // Replace actual signatures with empty signature for simulate
-                    s.signature = Some(EMPTY_SIGNATURE);
-                    s
-                })
-                .collect()
-        };
-
-        // Clear group on each txn and re-group
-        let mut txns: Vec<Transaction> = signed
+        // Prepare transactions for simulate by using empty signatures without re-grouping or signing
+        let signed_for_sim: Vec<SignedTransaction> = transactions_with_signers
             .iter()
-            .map(|s| {
-                let mut t = s.transaction.clone();
-                let header = t.header_mut();
-                header.group = None;
-                t
-            })
-            .collect();
-        if txns.len() > 1 {
-            txns = txns
-                .assign_group()
-                .map_err(|e| ComposerError::TransactionError {
-                    message: format!("Failed to assign group: {}", e),
-                })?;
-        }
-
-        // Wrap for simulate request
-        let signed_for_sim: Vec<SignedTransaction> = txns
-            .into_iter()
-            .map(|t| SignedTransaction {
-                transaction: t,
+            .map(|txn_with_signer| SignedTransaction {
+                transaction: txn_with_signer.transaction.clone(),
                 signature: Some(EMPTY_SIGNATURE),
                 auth_address: None,
                 multisignature: None,
@@ -2201,7 +2160,11 @@ impl Composer {
         let simulate_request = SimulateRequest {
             txn_groups: vec![txn_group],
             round: params.simulation_round,
-            allow_empty_signatures: Some(params.allow_empty_signatures.unwrap_or(true)),
+            allow_empty_signatures: if Config::debug() || params.skip_signatures {
+                Some(true)
+            } else {
+                params.allow_empty_signatures
+            },
             allow_more_logging: params.allow_more_logging,
             allow_unnamed_resources: params.allow_unnamed_resources,
             extra_opcode_budget: params.extra_opcode_budget,
