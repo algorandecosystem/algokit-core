@@ -14,7 +14,6 @@ from nacl.signing import SigningKey
 import base64
 import pytest
 import requests
-import msgpack
 
 MN = "gas net tragic valid celery want good neglect maid nuclear core false chunk place asthma three acoustic moon box million finish bargain onion ability shallow"
 SEED_B64: str = to_private_key(MN)  # type: ignore
@@ -38,14 +37,12 @@ class TestSigner(TransactionSigner):
 
     @override
     async def sign_transaction(self, transaction: Transaction) -> SignedTransaction:  # type: ignore
-        print("Signing single transaction")
         return (await self.sign_transactions([transaction], [0]))[0]
 
 
 class SignerGetter(TransactionSignerGetter):
     @override
     def get_signer(self, address: str) -> TransactionSigner:  # type: ignore
-        print("Getting signer")
         return TestSigner()
 
 
@@ -59,8 +56,6 @@ class HttpClientImpl(HttpClient):
         body: typing.Optional[bytes],
         headers: typing.Optional[dict[str, str]],
     ) -> HttpResponse:
-        print(f"HTTP {method} {path} {query} {headers}")
-
         headers = headers or {}
         headers["X-Algo-API-Token"] = "a" * 64
 
@@ -74,27 +69,23 @@ class HttpClientImpl(HttpClient):
         if res.status_code != 200:
             raise Exception(f"HTTP request failed: {res.status_code} {res.text}")
 
-        if res.headers.get("Content-Type") == "application/msgpack":
-            print(msgpack.unpackb(res.content, raw=False, strict_map_key=False))
-        else:
-            print(res.text)
+        # NOTE: Headers needing to be lowercase was a bit surprising, so we need to make sure we document that
+        headers = {k.lower(): v for k, v in res.headers.items()}
 
         return HttpResponse(
             body=res.content,
-            headers=res.headers # type: ignore
+            headers=headers
         )
 
 
 @pytest.mark.asyncio
 async def test_composer():
     algod = AlgodClient(HttpClientImpl())
-    # Test that algod_localnet is an object
+
     composer = Composer(
         algod_client=algod,
         signer_getter=SignerGetter(),
     )
-    print(algod)
-    print(composer)
 
     composer.add_payment(
         params=PaymentParams(
@@ -107,4 +98,7 @@ async def test_composer():
     )
 
     await composer.build()
-    await composer.send()
+    txids = await composer.send()
+    assert(len(txids) == 1)
+    assert(len(txids[0]) == 52)
+    print(txids)
