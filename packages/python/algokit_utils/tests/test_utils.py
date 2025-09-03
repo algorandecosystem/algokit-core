@@ -1,7 +1,7 @@
 from typing import override
 import typing
 from algokit_utils.algokit_http_client import HttpClient, HttpMethod, HttpResponse
-from algokit_utils.algokit_transact_ffi import SignedTransaction, Transaction
+from algokit_utils.algokit_transact_ffi import SignedTransaction, Transaction, encode_transaction
 from algokit_utils import AlgodClient, TransactionSigner
 from algokit_utils.algokit_utils_ffi import (
     CommonParams,
@@ -13,26 +13,33 @@ from algosdk.mnemonic import to_private_key
 from nacl.signing import SigningKey
 import base64
 import pytest
+import requests
+import msgpack
 
-MN = "limb estate enhance elegant merry worry spell trophy elegant lab truly step enter destroy split leave beach chalk slight they ignore square tower abandon rough"
+MN = "gas net tragic valid celery want good neglect maid nuclear core false chunk place asthma three acoustic moon box million finish bargain onion ability shallow"
 SEED_B64: str = to_private_key(MN)  # type: ignore
 SEED_BYTES = base64.b64decode(SEED_B64)
 KEY = SigningKey(SEED_BYTES[:32])
-ADDR = "BEMJKX676TZOOWJYMJPOMGIW4UT6S7UDTUUDCUQNKFC42TY6HVKOIWFOYA"
+ADDR = "ON6AOPBATSSEL47ML7EPXATHGH7INOWONHWITMQEDRPXHTMDJYMPQXROMA"
 
 
 class TestSigner(TransactionSigner):
     @override
-    def sign_transactions(  # type: ignore
+    async def sign_transactions(  # type: ignore
         self, transactions: list[Transaction], indices: list[int]
     ) -> list[SignedTransaction]:
-        print("Signing transactions")
-        return []
+        stxns = []
+        for transaction in transactions:
+            tx_for_signing = encode_transaction(transaction)
+            sig = KEY.sign(tx_for_signing)
+            stxns.append(SignedTransaction(transaction=transaction, signature=sig.signature))
+
+        return stxns
 
     @override
-    def sign_transaction(self, transaction: Transaction) -> SignedTransaction:  # type: ignore
+    async def sign_transaction(self, transaction: Transaction) -> SignedTransaction:  # type: ignore
         print("Signing single transaction")
-        return self.sign_transactions([transaction], [0])[0]
+        return (await self.sign_transactions([transaction], [0]))[0]
 
 
 class SignerGetter(TransactionSignerGetter):
@@ -53,7 +60,29 @@ class HttpClientImpl(HttpClient):
         headers: typing.Optional[dict[str, str]],
     ) -> HttpResponse:
         print(f"HTTP {method} {path} {query} {headers}")
-        return HttpResponse(body=b"", headers={})
+
+        headers = headers or {}
+        headers["X-Algo-API-Token"] = "a" * 64
+
+        if method == HttpMethod.GET:
+            res = requests.get(f"http://localhost:4001/{path}", params=query, headers=headers)
+        elif method == HttpMethod.POST:
+            res = requests.post(f"http://localhost:4001/{path}", params=query, data=body, headers=headers)
+        else:
+            raise NotImplementedError(f"HTTP method {method} not implemented in test client")
+
+        if res.status_code != 200:
+            raise Exception(f"HTTP request failed: {res.status_code} {res.text}")
+
+        if res.headers.get("Content-Type") == "application/msgpack":
+            print(msgpack.unpackb(res.content, raw=False, strict_map_key=False))
+        else:
+            print(res.text)
+
+        return HttpResponse(
+            body=res.content,
+            headers=res.headers # type: ignore
+        )
 
 
 @pytest.mark.asyncio
@@ -77,4 +106,5 @@ async def test_composer():
         )
     )
 
-    await composer.build()  # <-- Error here
+    await composer.build()
+    await composer.send()
