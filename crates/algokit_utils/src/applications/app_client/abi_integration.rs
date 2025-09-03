@@ -22,16 +22,7 @@ impl AppClient {
             .map_err(|e| e.to_string())?;
         let common_params = CommonTransactionParams {
             sender: self.get_sender_address(&sender.map(|s| s.to_string()))?,
-            signer: None,
-            rekey_to: None,
-            note: None,
-            lease: None,
-            static_fee: None,
-            extra_fee: None,
-            max_fee: None,
-            validity_window: None,
-            first_valid_round: None,
-            last_valid_round: None,
+            ..Default::default()
         };
         Ok(AppCallMethodCallParams {
             common_params,

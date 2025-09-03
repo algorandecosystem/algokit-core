@@ -22,7 +22,7 @@ pub fn format_logic_error_message(error: &super::types::LogicError) -> String {
 }
 
 /// Transform a transaction error with logic error enhancement.
-pub fn transform_tx_error(
+pub fn transform_transaction_error(
     client: &AppClient,
     err: TransactionSenderError,
     is_clear: bool,

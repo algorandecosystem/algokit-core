@@ -3,7 +3,7 @@ use algokit_transact::OnApplicationComplete;
 
 use super::types::{AppClientBareCallParams, AppClientMethodCallParams, CompilationParams};
 use super::{AppClient, FundAppAccountParams};
-use std::str::FromStr;
+// use std::str::FromStr; // no longer needed after refactor
 
 pub struct TransactionSender<'a> {
     pub(crate) client: &'a AppClient,
@@ -63,7 +63,19 @@ impl<'a> TransactionSender<'a> {
         params: AppClientMethodCallParams,
         compilation_params: Option<CompilationParams>,
     ) -> Result<crate::transactions::SendAppUpdateResult, TransactionSenderError> {
-        self.update_method(params, compilation_params).await
+        let update_params = self
+            .client
+            .params()
+            .update(params, compilation_params)
+            .await
+            .map_err(|e| TransactionSenderError::ValidationError { message: e })?;
+
+        self.client
+            .algorand
+            .send()
+            .app_update_method_call(update_params, None)
+            .await
+            .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
     }
 
     /// Fund the application account.
@@ -81,7 +93,7 @@ impl<'a> TransactionSender<'a> {
             .send()
             .payment(payment, None)
             .await
-            .map_err(|e| super::utils::transform_tx_error(self.client, e, false))
+            .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
     }
 
     async fn method_call_with_on_complete(
@@ -96,181 +108,123 @@ impl<'a> TransactionSender<'a> {
             .method_call(&params)
             .await
             .map_err(|e| TransactionSenderError::ValidationError { message: e })?;
+        let is_delete = matches!(
+            method_params.on_complete,
+            OnApplicationComplete::DeleteApplication
+        );
         // If debug enabled and readonly method, simulate with tracing
         let is_readonly = self.client.is_readonly_method(&method_params.method);
         if crate::config::Config::debug() && is_readonly {
-            let mut composer = self.client.algorand().new_group();
+            self.simulate_readonly_with_tracing_for_debug(&params, is_delete)
+                .await?;
+        }
+
+        if is_delete {
+            let delete_params = crate::transactions::AppDeleteMethodCallParams {
+                common_params: method_params.common_params.clone(),
+                app_id: method_params.app_id,
+                method: method_params.method.clone(),
+                args: method_params.args.clone(),
+                account_references: method_params.account_references.clone(),
+                app_references: method_params.app_references.clone(),
+                asset_references: method_params.asset_references.clone(),
+                box_references: method_params.box_references.clone(),
+            };
+            self.client
+                .algorand
+                .send()
+                .app_delete_method_call(delete_params, None)
+                .await
+                .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
+        } else {
+            self.client
+                .algorand
+                .send()
+                .app_call_method_call(method_params, None)
+                .await
+                .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
+        }
+    }
+
+    // Simulate a readonly call when debug is enabled, emitting traces if configured.
+    async fn simulate_readonly_with_tracing_for_debug(
+        &self,
+        params: &AppClientMethodCallParams,
+        is_delete: bool,
+    ) -> Result<(), TransactionSenderError> {
+        let mut composer = self.client.algorand().new_group();
+        if is_delete {
+            let method_params_for_composer = self
+                .client
+                .params()
+                .method_call(params)
+                .await
+                .map_err(|e| TransactionSenderError::ValidationError { message: e })?;
+            let delete_params = crate::transactions::AppDeleteMethodCallParams {
+                common_params: method_params_for_composer.common_params.clone(),
+                app_id: method_params_for_composer.app_id,
+                method: method_params_for_composer.method.clone(),
+                args: method_params_for_composer.args.clone(),
+                account_references: method_params_for_composer.account_references.clone(),
+                app_references: method_params_for_composer.app_references.clone(),
+                asset_references: method_params_for_composer.asset_references.clone(),
+                box_references: method_params_for_composer.box_references.clone(),
+            };
             composer
-                .add_app_call_method_call(method_params)
+                .add_app_delete_method_call(delete_params)
                 .map_err(|e| TransactionSenderError::ValidationError {
                     message: e.to_string(),
                 })?;
-
-            let sim_params = crate::transactions::composer::SimulateParams {
-                allow_more_logging: Some(true),
-                allow_empty_signatures: None,
-                allow_unnamed_resources: None,
-                extra_opcode_budget: None,
-                exec_trace_config: Some(algod_client::models::SimulateTraceConfig {
-                    enable: Some(true),
-                    scratch_change: Some(true),
-                    stack_change: Some(true),
-                    state_change: Some(true),
-                }),
-                simulation_round: None,
-                skip_signatures: false,
-            };
-
-            let sim = composer.simulate(Some(sim_params)).await.map_err(|e| {
-                TransactionSenderError::ValidationError {
-                    message: e.to_string(),
-                }
-            })?;
-
-            if crate::config::Config::trace_all() {
-                let json = serde_json::to_value(&sim.confirmations)
-                    .unwrap_or(serde_json::json!({"error":"failed to serialize confirmations"}));
-                let event = crate::config::TxnGroupSimulatedEventData {
-                    simulate_response: json,
-                };
-                crate::config::Config::events()
-                    .emit(
-                        crate::config::EventType::TxnGroupSimulated,
-                        crate::config::EventData::TxnGroupSimulated(event),
-                    )
-                    .await;
-            }
-
-            // Build a SendAppCallResult-like structure from simulate output
-            // Reuse transaction sender to send normally to keep API consistent
-            return self
-                .client
-                .algorand
-                .send()
-                .app_call_method_call(
-                    self.client
-                        .params()
-                        .method_call(&params)
-                        .await
-                        .map_err(|e| TransactionSenderError::ValidationError { message: e })?,
-                    None,
-                )
-                .await
-                .map_err(|e| super::utils::transform_tx_error(self.client, e, false));
-        }
-
-        self.client
-            .algorand
-            .send()
-            .app_call_method_call(method_params, None)
-            .await
-            .map_err(|e| super::utils::transform_tx_error(self.client, e, false))
-    }
-
-    async fn update_method(
-        &self,
-        params: AppClientMethodCallParams,
-        compilation_params: Option<CompilationParams>,
-    ) -> Result<crate::transactions::SendAppUpdateResult, TransactionSenderError> {
-        let (approval_teal_bytes, clear_teal_bytes) = if let Some(ref cp) = compilation_params {
-            self.client.compile_with_params(cp).await.map_err(|e| {
-                TransactionSenderError::ValidationError {
-                    message: e.to_string(),
-                }
-            })?
         } else {
-            let default_cp = CompilationParams::default();
-            self.client
-                .compile_with_params(&default_cp)
+            let method_params_for_composer = self
+                .client
+                .params()
+                .method_call(params)
                 .await
+                .map_err(|e| TransactionSenderError::ValidationError { message: e })?;
+            composer
+                .add_app_call_method_call(method_params_for_composer)
                 .map_err(|e| TransactionSenderError::ValidationError {
                     message: e.to_string(),
-                })?
+                })?;
+        }
+
+        let sim_params = crate::transactions::composer::SimulateParams {
+            allow_more_logging: Some(true),
+            allow_empty_signatures: None,
+            allow_unnamed_resources: None,
+            extra_opcode_budget: None,
+            exec_trace_config: Some(algod_client::models::SimulateTraceConfig {
+                enable: Some(true),
+                scratch_change: Some(true),
+                stack_change: Some(true),
+                state_change: Some(true),
+            }),
+            simulation_round: None,
+            skip_signatures: false,
         };
 
-        let common_params = crate::transactions::CommonTransactionParams {
-            sender: self
-                .client
-                .get_sender_address(&params.sender)
-                .map_err(|e| TransactionSenderError::ValidationError { message: e })?,
-            signer: None,
-            rekey_to: AppClient::get_optional_address(&params.rekey_to)
-                .map_err(|e| TransactionSenderError::ValidationError { message: e })?,
-            note: params.note.clone(),
-            lease: params.lease,
-            static_fee: params.static_fee,
-            extra_fee: params.extra_fee,
-            max_fee: params.max_fee,
-            validity_window: params.validity_window,
-            first_valid_round: params.first_valid_round,
-            last_valid_round: params.last_valid_round,
-        };
-
-        let to_abimethod =
-            |method_name_or_sig: &str| -> Result<algokit_abi::ABIMethod, TransactionSenderError> {
-                let m = self
-                    .client
-                    .app_spec
-                    .get_arc56_method(method_name_or_sig)
-                    .map_err(|e| TransactionSenderError::ValidationError {
-                        message: e.to_string(),
-                    })?;
-                m.to_abi_method()
-                    .map_err(|e| TransactionSenderError::ValidationError {
-                        message: e.to_string(),
-                    })
-            };
-
-        let parse_account_refs = |account_refs: &Option<Vec<String>>| -> Result<
-            Option<Vec<algokit_transact::Address>>,
-            TransactionSenderError,
-        > {
-            match account_refs {
-                None => Ok(None),
-                Some(refs) => {
-                    let mut result = Vec::with_capacity(refs.len());
-                    for s in refs {
-                        result.push(algokit_transact::Address::from_str(s).map_err(|e| {
-                            TransactionSenderError::ValidationError {
-                                message: e.to_string(),
-                            }
-                        })?);
-                    }
-                    Ok(Some(result))
-                }
+        let sim = composer.simulate(Some(sim_params)).await.map_err(|e| {
+            TransactionSenderError::ValidationError {
+                message: e.to_string(),
             }
-        };
+        })?;
 
-        let encode_args = |args: &Option<Vec<crate::transactions::app_call::AppMethodCallArg>>| -> Vec<crate::transactions::AppMethodCallArg> {
-            args.as_ref()
-                .cloned()
-                .unwrap_or_default()
-        };
+        if crate::config::Config::trace_all() {
+            let json = serde_json::to_value(&sim.confirmations)
+                .unwrap_or(serde_json::json!({"error":"failed to serialize confirmations"}));
+            let event = crate::config::TxnGroupSimulatedEventData {
+                simulate_response: json,
+            };
+            crate::config::Config::events()
+                .emit(
+                    crate::config::EventType::TxnGroupSimulated,
+                    crate::config::EventData::TxnGroupSimulated(event),
+                )
+                .await;
+        }
 
-        let update_params = crate::transactions::AppUpdateMethodCallParams {
-            common_params,
-            app_id: self
-                .client
-                .app_id()
-                .ok_or(TransactionSenderError::ValidationError {
-                    message: "Missing app_id".to_string(),
-                })?,
-            approval_program: approval_teal_bytes,
-            clear_state_program: clear_teal_bytes,
-            method: to_abimethod(&params.method)?,
-            args: encode_args(&params.args),
-            account_references: parse_account_refs(&params.account_references)?,
-            app_references: params.app_references.clone(),
-            asset_references: params.asset_references.clone(),
-            box_references: params.box_references.clone(),
-        };
-
-        self.client
-            .algorand
-            .send()
-            .app_update_method_call(update_params, None)
-            .await
-            .map_err(|e| super::utils::transform_tx_error(self.client, e, false))
+        Ok(())
     }
 }
 
@@ -291,7 +245,7 @@ impl BareTransactionSender<'_> {
             .send()
             .app_call(app_call, None)
             .await
-            .map_err(|e| super::utils::transform_tx_error(self.client, e, false))
+            .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
     }
 
     /// Call with OptIn.
@@ -310,7 +264,7 @@ impl BareTransactionSender<'_> {
             .send()
             .app_call(app_call, None)
             .await
-            .map_err(|e| super::utils::transform_tx_error(self.client, e, false))
+            .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
     }
 
     /// Call with CloseOut.
@@ -329,7 +283,7 @@ impl BareTransactionSender<'_> {
             .send()
             .app_call(app_call, None)
             .await
-            .map_err(|e| super::utils::transform_tx_error(self.client, e, false))
+            .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
     }
 
     /// Call with Delete.
@@ -337,7 +291,7 @@ impl BareTransactionSender<'_> {
         &self,
         params: AppClientBareCallParams,
     ) -> Result<SendTransactionResult, TransactionSenderError> {
-        let app_call = self
+        let delete_params = self
             .client
             .params()
             .bare()
@@ -346,9 +300,9 @@ impl BareTransactionSender<'_> {
         self.client
             .algorand
             .send()
-            .app_call(app_call, None)
+            .app_delete(delete_params, None)
             .await
-            .map_err(|e| super::utils::transform_tx_error(self.client, e, false))
+            .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
     }
 
     /// Call with ClearState.
@@ -367,7 +321,7 @@ impl BareTransactionSender<'_> {
             .send()
             .app_call(app_call, None)
             .await
-            .map_err(|e| super::utils::transform_tx_error(self.client, e, true))
+            .map_err(|e| super::utils::transform_transaction_error(self.client, e, true))
     }
 
     /// Update with bare call.
@@ -376,46 +330,19 @@ impl BareTransactionSender<'_> {
         params: AppClientBareCallParams,
         compilation_params: Option<CompilationParams>,
     ) -> Result<crate::transactions::SendAppUpdateResult, TransactionSenderError> {
-        let (approval_teal_bytes, clear_teal_bytes) = if let Some(ref cp) = compilation_params {
-            self.client.compile_with_params(cp).await.map_err(|e| {
-                TransactionSenderError::ValidationError {
-                    message: e.to_string(),
-                }
-            })?
-        } else {
-            let default_cp = CompilationParams::default();
-            self.client
-                .compile_with_params(&default_cp)
-                .await
-                .map_err(|e| TransactionSenderError::ValidationError {
-                    message: e.to_string(),
-                })?
-        };
-
-        let app_call = self
+        let update_params = self
             .client
             .params()
             .bare()
             .update(params, compilation_params)
+            .await
             .map_err(|e| TransactionSenderError::ValidationError { message: e })?;
-
-        let update_params = crate::transactions::AppUpdateParams {
-            common_params: app_call.common_params,
-            app_id: app_call.app_id,
-            approval_program: approval_teal_bytes,
-            clear_state_program: clear_teal_bytes,
-            args: app_call.args,
-            account_references: app_call.account_references,
-            app_references: app_call.app_references,
-            asset_references: app_call.asset_references,
-            box_references: app_call.box_references,
-        };
 
         self.client
             .algorand
             .send()
             .app_update(update_params, None)
             .await
-            .map_err(|e| super::utils::transform_tx_error(self.client, e, false))
+            .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
     }
 }

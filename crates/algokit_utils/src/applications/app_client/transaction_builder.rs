@@ -3,7 +3,6 @@ use algokit_transact::OnApplicationComplete;
 
 use super::types::{AppClientBareCallParams, AppClientMethodCallParams, CompilationParams};
 use super::{AppClient, FundAppAccountParams};
-use std::str::FromStr;
 
 pub struct TransactionBuilder<'a> {
     pub(crate) client: &'a AppClient,
@@ -21,7 +20,7 @@ impl TransactionBuilder<'_> {
         }
     }
 
-    /// Call a method with NoOp.
+    /// Creates an ABI method call with NoOp.
     pub async fn call(
         &self,
         params: AppClientMethodCallParams,
@@ -30,7 +29,7 @@ impl TransactionBuilder<'_> {
             .await
     }
 
-    /// Call a method with OptIn.
+    /// Creates an ABI method call with OptIn.
     pub async fn opt_in(
         &self,
         params: AppClientMethodCallParams,
@@ -39,7 +38,7 @@ impl TransactionBuilder<'_> {
             .await
     }
 
-    /// Call a method with CloseOut.
+    /// Creates an ABI method call with CloseOut.
     pub async fn close_out(
         &self,
         params: AppClientMethodCallParams,
@@ -48,7 +47,7 @@ impl TransactionBuilder<'_> {
             .await
     }
 
-    /// Call a method with Delete.
+    /// Creates an ABI method call with Delete.
     pub async fn delete(
         &self,
         params: AppClientMethodCallParams,
@@ -63,7 +62,22 @@ impl TransactionBuilder<'_> {
         params: AppClientMethodCallParams,
         compilation_params: Option<CompilationParams>,
     ) -> Result<crate::transactions::BuiltTransactions, ComposerError> {
-        self.update_method(params, compilation_params).await
+        // Build update params via params builder (includes compilation)
+        let update_params = self
+            .client
+            .params()
+            .update(params, compilation_params)
+            .await
+            .map_err(|e| ComposerError::TransactionError { message: e })?;
+
+        // Create transactions directly using update params
+        let built = self
+            .client
+            .algorand
+            .create()
+            .app_update_method_call(update_params)
+            .await?;
+        Ok(built)
     }
 
     /// Fund the application account.
@@ -91,121 +105,35 @@ impl TransactionBuilder<'_> {
             .method_call(&params)
             .await
             .map_err(|e| ComposerError::TransactionError { message: e })?;
-        let built = self
-            .client
-            .algorand
-            .create()
-            .app_call_method_call(method_params)
-            .await?;
-        Ok(built.transactions[0].clone())
-    }
-
-    async fn update_method(
-        &self,
-        params: AppClientMethodCallParams,
-        compilation_params: Option<CompilationParams>,
-    ) -> Result<crate::transactions::BuiltTransactions, ComposerError> {
-        // Compile TEAL and populate AppManager cache
-        let (approval_teal_bytes, clear_teal_bytes) = if let Some(ref cp) = compilation_params {
-            self.client.compile_with_params(cp).await.map_err(|e| {
-                ComposerError::TransactionError {
-                    message: e.to_string(),
-                }
-            })?
-        } else {
-            // Fallback: decode source and compile with defaults
-            let default_cp = CompilationParams::default();
-            self.client
-                .compile_with_params(&default_cp)
-                .await
-                .map_err(|e| ComposerError::TransactionError {
-                    message: e.to_string(),
-                })?
-        };
-
-        // Build AppUpdateMethodCallParams
-        let common_params = crate::transactions::CommonTransactionParams {
-            sender: self
-                .client
-                .get_sender_address(&params.sender)
-                .map_err(|e| ComposerError::TransactionError { message: e })?,
-            signer: None,
-            rekey_to: AppClient::get_optional_address(&params.rekey_to)
-                .map_err(|e| ComposerError::TransactionError { message: e })?,
-            note: params.note.clone(),
-            lease: params.lease,
-            static_fee: params.static_fee,
-            extra_fee: params.extra_fee,
-            max_fee: params.max_fee,
-            validity_window: params.validity_window,
-            first_valid_round: params.first_valid_round,
-            last_valid_round: params.last_valid_round,
-        };
-
-        let to_abimethod =
-            |method_name_or_sig: &str| -> Result<algokit_abi::ABIMethod, ComposerError> {
-                let m = self
-                    .client
-                    .app_spec
-                    .get_arc56_method(method_name_or_sig)
-                    .map_err(|e| ComposerError::TransactionError {
-                        message: e.to_string(),
-                    })?;
-                m.to_abi_method()
-                    .map_err(|e| ComposerError::TransactionError {
-                        message: e.to_string(),
-                    })
+        let is_delete = matches!(
+            method_params.on_complete,
+            OnApplicationComplete::DeleteApplication
+        );
+        let built = if is_delete {
+            // Route delete on-complete to delete-specific API
+            let delete_params = crate::transactions::AppDeleteMethodCallParams {
+                common_params: method_params.common_params.clone(),
+                app_id: method_params.app_id,
+                method: method_params.method.clone(),
+                args: method_params.args.clone(),
+                account_references: method_params.account_references.clone(),
+                app_references: method_params.app_references.clone(),
+                asset_references: method_params.asset_references.clone(),
+                box_references: method_params.box_references.clone(),
             };
-
-        let parse_account_refs = |account_refs: &Option<Vec<String>>| -> Result<
-            Option<Vec<algokit_transact::Address>>,
-            ComposerError,
-        > {
-            match account_refs {
-                None => Ok(None),
-                Some(refs) => {
-                    let mut result = Vec::with_capacity(refs.len());
-                    for s in refs {
-                        result.push(algokit_transact::Address::from_str(s).map_err(|e| {
-                            ComposerError::TransactionError {
-                                message: e.to_string(),
-                            }
-                        })?);
-                    }
-                    Ok(Some(result))
-                }
-            }
+            self.client
+                .algorand
+                .create()
+                .app_delete_method_call(delete_params)
+                .await?
+        } else {
+            self.client
+                .algorand
+                .create()
+                .app_call_method_call(method_params)
+                .await?
         };
-
-        let encode_args = |args: &Option<Vec<crate::transactions::app_call::AppMethodCallArg>>| -> Vec<crate::transactions::AppMethodCallArg> {
-            args.as_ref()
-                .cloned()
-                .unwrap_or_default()
-        };
-
-        let update_params = crate::transactions::AppUpdateMethodCallParams {
-            common_params,
-            app_id: self
-                .client
-                .app_id()
-                .ok_or(ComposerError::TransactionError {
-                    message: "Missing app_id".to_string(),
-                })?,
-            approval_program: approval_teal_bytes,
-            clear_state_program: clear_teal_bytes,
-            method: to_abimethod(&params.method)?,
-            args: encode_args(&params.args),
-            account_references: parse_account_refs(&params.account_references)?,
-            app_references: params.app_references.clone(),
-            asset_references: params.asset_references.clone(),
-            box_references: params.box_references.clone(),
-        };
-
-        self.client
-            .algorand
-            .create()
-            .app_update_method_call(update_params)
-            .await
+        Ok(built.transactions[0].clone())
     }
 }
 
@@ -257,13 +185,18 @@ impl BareTransactionBuilder<'_> {
         &self,
         params: AppClientBareCallParams,
     ) -> Result<algokit_transact::Transaction, ComposerError> {
-        let app_call = self
+        let delete_params = self
             .client
             .params()
             .bare()
             .delete(params)
             .map_err(|e| ComposerError::TransactionError { message: e })?;
-        self.client.algorand.create().app_call(app_call).await
+        // Use delete-specific API for bare delete
+        self.client
+            .algorand
+            .create()
+            .app_delete(delete_params)
+            .await
     }
 
     /// Call with ClearState.
@@ -286,42 +219,14 @@ impl BareTransactionBuilder<'_> {
         params: AppClientBareCallParams,
         compilation_params: Option<CompilationParams>,
     ) -> Result<crate::transactions::BuiltTransactions, ComposerError> {
-        // Compile TEAL and populate AppManager cache
-        let (approval_teal_bytes, clear_teal_bytes) = if let Some(ref cp) = compilation_params {
-            self.client.compile_with_params(cp).await.map_err(|e| {
-                ComposerError::TransactionError {
-                    message: e.to_string(),
-                }
-            })?
-        } else {
-            let default_cp = CompilationParams::default();
-            self.client
-                .compile_with_params(&default_cp)
-                .await
-                .map_err(|e| ComposerError::TransactionError {
-                    message: e.to_string(),
-                })?
-        };
-
-        let app_call = self
+        // Build update params via params builder (includes compilation)
+        let update_params = self
             .client
             .params()
             .bare()
             .update(params, compilation_params)
+            .await
             .map_err(|e| ComposerError::TransactionError { message: e })?;
-
-        // Build update params with compiled programs
-        let update_params = crate::transactions::AppUpdateParams {
-            common_params: app_call.common_params,
-            app_id: app_call.app_id,
-            approval_program: approval_teal_bytes,
-            clear_state_program: clear_teal_bytes,
-            args: app_call.args,
-            account_references: app_call.account_references,
-            app_references: app_call.app_references,
-            asset_references: app_call.asset_references,
-            box_references: app_call.box_references,
-        };
 
         let built = self
             .client
