@@ -1,0 +1,61 @@
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+declare const require: any;
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { decode } = require("algo-msgpack-with-bigint");
+
+import type { IntDecoding } from "./json";
+
+export function decodeMsgPack(buffer: Uint8Array): any {
+  // eslint-disable-line @typescript-eslint/no-explicit-any
+  return decode(buffer);
+}
+
+export function normalizeMsgPackIntegers(value: any, intDecoding: IntDecoding): any {
+  // eslint-disable-line @typescript-eslint/no-explicit-any
+  switch (intDecoding) {
+    case "bigint":
+      return value;
+    case "unsafe":
+      return mapBigInts(value, (bi) => Number(bi));
+    case "safe":
+      // Throw if any bigint is not safely representable
+      traverse(value, (v) => {
+        if (typeof v === "bigint" && !Number.isSafeInteger(Number(v))) {
+          throw new Error('Integer exceeds safe range while INT_DECODING is "safe"');
+        }
+      });
+      return mapBigInts(value, (bi) => Number(bi));
+    case "mixed":
+    default:
+      return mapBigInts(value, (bi) => {
+        const asNum = Number(bi);
+        return Number.isSafeInteger(asNum) ? asNum : bi;
+      });
+  }
+}
+
+function traverse(obj: any, fn: (v: any) => void): void {
+  // eslint-disable-line @typescript-eslint/no-explicit-any
+  if (obj == null) return;
+  fn(obj);
+  if (Array.isArray(obj)) {
+    for (const v of obj) traverse(v, fn);
+  } else if (typeof obj === "object") {
+    for (const v of Object.values(obj)) traverse(v, fn);
+  }
+}
+
+function mapBigInts(obj: any, mapFn: (bi: bigint) => any): any {
+  // eslint-disable-line @typescript-eslint/no-explicit-any
+  if (obj == null) return obj;
+  if (typeof obj === "bigint") return mapFn(obj);
+  if (Array.isArray(obj)) return obj.map((v) => mapBigInts(v, mapFn));
+  if (typeof obj === "object") {
+    const out: any = Array.isArray(obj) ? [] : { ...obj }; // eslint-disable-line @typescript-eslint/no-explicit-any
+    for (const [k, v] of Object.entries(obj)) {
+      out[k] = mapBigInts(v, mapFn);
+    }
+    return out;
+  }
+  return obj;
+}

@@ -1,0 +1,21 @@
+import type { OpenAPIConfig } from './OpenAPI';
+
+export interface RequestOptions {
+  method: string;
+  url: string;
+  path?: Record<string, string | number | bigint>;
+  query?: Record<string, any>;
+  headers?: Record<string, string>;
+  body?: any;
+  mediaType?: string;
+  responseHeader?: string;
+  expectBinary?: boolean;
+}
+
+// Backwards/ergonomic alias used by generated services
+export type ApiRequestOptions = RequestOptions;
+
+export abstract class BaseHttpRequest {
+  constructor(public readonly config: OpenAPIConfig) {}
+  abstract request<T>(options: RequestOptions): Promise<T>;
+}

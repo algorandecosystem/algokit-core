@@ -1,0 +1,13 @@
+import type { OpenAPIConfig } from "./core/OpenAPI";
+import { FetchHttpRequest } from "./core/FetchHttpRequest";
+import { ApiService } from "./apis/api.service";
+
+export class Client {
+  public readonly request: FetchHttpRequest;
+  public readonly api: ApiService;
+
+  constructor(config: OpenAPIConfig) {
+    this.request = new FetchHttpRequest(config);
+    this.api = new ApiService(this.request);
+  }
+}

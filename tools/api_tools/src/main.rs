@@ -6,6 +6,7 @@ use std::process::Output;
 use clap::{Parser, Subcommand};
 use color_eyre::eyre::Result;
 use duct::cmd;
+use std::fs;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about = "API development tools", long_about = None)]
@@ -41,6 +42,15 @@ enum Commands {
     /// Generate both algod and indexer API clients
     #[command(name = "generate-all")]
     GenerateAll,
+    /// Generate TypeScript algod client
+    #[command(name = "generate-ts-algod")]
+    GenerateTsAlgod,
+    /// Generate TypeScript indexer client
+    #[command(name = "generate-ts-indexer")]
+    GenerateTsIndexer,
+    /// Generate both TypeScript clients (algod and indexer)
+    #[command(name = "generate-ts-all")]
+    GenerateTsAll,
     /// Convert OpenAPI specifications (both algod and indexer)
     #[command(name = "convert-openapi")]
     ConvertOpenapi,
@@ -85,6 +95,32 @@ fn run(
 }
 
 fn execute_command(command: &Commands) -> Result<()> {
+    fn clean_ts_package(rel_dir: &str) -> Result<()> {
+        let root = get_repo_root();
+        let pkg_dir = root.join(rel_dir);
+        if !pkg_dir.exists() {
+            return Ok(());
+        }
+
+        let preserve: Vec<&str> = vec!["tests", "node_modules"];
+        for entry in fs::read_dir(&pkg_dir)? {
+            let entry = entry?;
+            let name = entry.file_name();
+            let name_str = name.to_string_lossy();
+            if preserve.iter().any(|p| *p == name_str) {
+                continue;
+            }
+            let path = entry.path();
+            if path.is_dir() {
+                // Remove entire directory tree
+                fs::remove_dir_all(&path)?;
+            } else {
+                // Remove file
+                fs::remove_file(&path)?;
+            }
+        }
+        Ok(())
+    }
     match command {
         Commands::TestOas => {
             run("uv run pytest", Some(Path::new("api/oas_generator")), None)?;
@@ -172,6 +208,88 @@ fn execute_command(command: &Commands) -> Result<()> {
             run(
                 "cargo fmt --manifest-path Cargo.toml -p indexer_client",
                 None,
+                None,
+            )?;
+        }
+        Commands::GenerateTsAlgod => {
+            // Clean package directory but preserve manual tests and node_modules
+            clean_ts_package("packages/typescript/algod_client")?;
+            // Generate the TypeScript client (algod)
+            run(
+                "uv run python -m ts_oas_generator.cli ../specs/algod.oas3.json --output ../../packages/typescript/algod_client/ --package-name algod_client --description \"TypeScript client for algod interaction.\" --verbose",
+                Some(Path::new("api/oas_generator")),
+                None,
+            )?;
+            // Format generated code
+            run(
+                "npx --yes prettier --write .",
+                Some(Path::new("packages/typescript/algod_client")),
+                None,
+            )?;
+            // Build the generated package
+            run(
+                "bun run build",
+                Some(Path::new("packages/typescript/algod_client")),
+                None,
+            )?;
+        }
+        Commands::GenerateTsIndexer => {
+            // Clean package directory but preserve manual tests and node_modules
+            clean_ts_package("packages/typescript/indexer_client")?;
+            // Generate the TypeScript client (indexer)
+            run(
+                "uv run python -m ts_oas_generator.cli ../specs/indexer.oas3.json --output ../../packages/typescript/indexer_client/ --package-name indexer_client --description \"TypeScript client for indexer interaction.\" --verbose",
+                Some(Path::new("api/oas_generator")),
+                None,
+            )?;
+            // Format generated code
+            run(
+                "npx --yes prettier --write .",
+                Some(Path::new("packages/typescript/indexer_client")),
+                None,
+            )?;
+            // Build the generated package
+            run(
+                "bun run build",
+                Some(Path::new("packages/typescript/indexer_client")),
+                None,
+            )?;
+        }
+        Commands::GenerateTsAll => {
+            // Clean package directories while preserving manual tests and node_modules
+            clean_ts_package("packages/typescript/algod_client")?;
+            clean_ts_package("packages/typescript/indexer_client")?;
+            // Generate both TypeScript clients
+            run(
+                "uv run python -m ts_oas_generator.cli ../specs/algod.oas3.json --output ../../packages/typescript/algod_client/ --package-name algod_client --description \"TypeScript client for algod interaction.\"",
+                Some(Path::new("api/oas_generator")),
+                None,
+            )?;
+            run(
+                "uv run python -m ts_oas_generator.cli ../specs/indexer.oas3.json --output ../../packages/typescript/indexer_client/ --package-name indexer_client --description \"TypeScript client for indexer interaction.\"",
+                Some(Path::new("api/oas_generator")),
+                None,
+            )?;
+            // Format both generated packages
+            run(
+                "npx --yes prettier --write .",
+                Some(Path::new("packages/typescript/algod_client")),
+                None,
+            )?;
+            run(
+                "npx --yes prettier --write .",
+                Some(Path::new("packages/typescript/indexer_client")),
+                None,
+            )?;
+            // Build both packages
+            run(
+                "bun run build",
+                Some(Path::new("packages/typescript/algod_client")),
+                None,
+            )?;
+            run(
+                "bun run build",
+                Some(Path::new("packages/typescript/indexer_client")),
                 None,
             )?;
         }

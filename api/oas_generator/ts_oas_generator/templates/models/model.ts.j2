@@ -1,0 +1,22 @@
+{% set refTypes = schema | collect_schema_refs(schema_name) %}
+{% if refTypes and refTypes|length > 0 %}
+import type { {{ refTypes | join(', ') }} } from './index';
+
+{% endif %}
+{{ schema.description | ts_doc_comment }}
+{% set modelName = schema_name | ts_pascal_case %}
+{% set isObject = schema.get('type') == 'object' or ('properties' in schema) %}
+{% if isObject and schema.get('allOf') is not defined and schema.get('oneOf') is not defined and schema.get('anyOf') is not defined %}
+export interface {{ modelName }} {
+{%   for prop_name, prop_schema in (schema.get('properties') or {}).items() %}
+  {{ prop_name | ts_property_name }}{{ '' if (schema.get('required') or []) | list | select('equalto', prop_name) | list | length > 0 else '?' }}: {{ prop_schema | ts_type(schemas) }};
+{%   endfor %}
+{%   if schema.get('additionalProperties') is sameas true %}
+  [key: string]: any;
+{%   elif schema.get('additionalProperties') %}
+  [key: string]: {{ schema.get('additionalProperties') | ts_type(schemas) }};
+{%   endif %}
+}
+{% else %}
+export type {{ modelName }} = {{ schema | ts_type(schemas) }};
+{% endif %}

@@ -1,0 +1,24 @@
+{
+  "name": "algod_client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "TypeScript client for algod interaction.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "json-bigint": "^1.0.0",
+    "algo-msgpack-with-bigint": "^2.1.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "@types/json-bigint": "^1.0.0",
+    "vitest": "^2.0.0",
+    "@types/node": "^20.0.0",
+    "algosdk": "^2.7.0"
+  }
+}

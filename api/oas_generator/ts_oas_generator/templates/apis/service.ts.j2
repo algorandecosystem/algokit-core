@@ -1,0 +1,83 @@
+import type { BaseHttpRequest, ApiRequestOptions } from '../core/BaseHttpRequest';
+{% if import_types and import_types|length > 0 %}
+import type { {{ import_types | sort | join(', ') }} } from '../models/index';
+{% endif %}
+
+export class ApiService {
+  constructor(public readonly httpRequest: BaseHttpRequest) {}
+
+{% for op in operations %}
+  {{ op.operationId | ts_camel_case }}(
+{%- for p in op.pathParameters %}
+    {{ p.varName }}: {{ p.tsType }},
+{%- endfor %}
+{%- if op.otherParameters|length > 0 or op.requestBody %}
+    params?: {
+{%- for p in op.otherParameters %}
+      {{ p.varName }}{% if not p.required %}?{% endif %}: {{ p.tsType }};
+{%- endfor %}
+{%- if op.requestBody %}
+      body{% if not op.requestBody.required %}?{% endif %}: {{ op.requestBody.tsType }};
+{%- endif %}
+    },
+{%- endif %}
+    requestOptions?: ApiRequestOptions
+  ): Promise<{{ op.responseTsType }}> {
+    const headers: Record<string, string> = {};
+{%   if op.acceptsMsgpack %}
+    // Content negotiation:
+    // - If explicit format=json, prefer JSON
+    // - Else if server supports JSON, prefer JSON by default
+    // - Else fall back to msgpack
+{%     if op.hasFormatParam and op.formatVarName %}
+    const hasExplicitJson = params?.{{ op.formatVarName }} === 'json';
+    const prefersJson = hasExplicitJson || {{ 'true' if op.supportsJson else 'false' }};
+    headers['Accept'] = prefersJson ? 'application/json' : 'application/msgpack';
+{%     else %}
+    headers['Accept'] = {{ "'application/json'" if op.supportsJson else "'application/msgpack'" }};
+{%     endif %}
+{%   else %}
+    headers['Accept'] = 'application/json';
+{%   endif %}
+{%   if op.requestBody and op.requestBody.get('mediaType') %}
+    headers['Content-Type'] = '{{ op.requestBody['mediaType'] }}';
+{%   endif %}
+
+    // Header parameters
+{%   for p in op.otherParameters if p['in'] == 'header' %}
+    if (params?.{{ p.varName }} !== undefined) {
+      headers['{{ p.name }}'] = String(params.{{ p.varName }});
+    }
+{%   endfor %}
+
+    return this.httpRequest.request({
+      method: '{{ op.method }}',
+      url: '{{ op.path }}',
+      path: {
+{%- for p in op.pathParameters %}
+        '{{ p.name }}': {% if p['stringifyBigInt'] %}(typeof {{ p.varName }} === 'bigint' ? {{ p.varName }}.toString() : {{ p.varName }}){% else %}{{ p.varName }}{% endif %},
+{%- endfor %}
+      },
+      query: {
+{%- for p in op.otherParameters if p['in'] == 'query' %}
+        '{{ p.name }}': {% if p['stringifyBigInt'] %}(typeof params?.{{ p.varName }} === 'bigint' ? (params!.{{ p.varName }} as bigint).toString() : params?.{{ p.varName }}){% else %}params?.{{ p.varName }}{% endif %},
+{%- endfor %}
+      },
+      headers,
+      body: {% if op.requestBody %}params?.body{% else %}undefined{% endif %},
+      mediaType: {% if op.requestBody %}'{{ op.requestBody['mediaType'] }}'{% else %}undefined{% endif %},
+{%   if op.returnsMsgpack %}
+{%     if op.hasFormatParam and op.formatVarName %}
+      expectBinary: params?.{{ op.formatVarName }} === 'json' ? false : {{ 'false' if op.supportsJson else 'true' }},
+{%     else %}
+      expectBinary: {{ 'false' if op.supportsJson else 'true' }},
+{%     endif %}
+{%   else %}
+      expectBinary: false,
+{%   endif %}
+      ...(requestOptions ?? {}),
+    });
+  }
+
+{% endfor %}
+}
