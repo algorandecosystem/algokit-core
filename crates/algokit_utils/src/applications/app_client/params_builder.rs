@@ -116,7 +116,6 @@ impl<'a> ParamsBuilder<'a> {
         Ok(PaymentParams {
             common_params: CommonTransactionParams {
                 sender,
-                signer: None,
                 rekey_to,
                 note: params.note.clone(),
                 lease: params.lease,
@@ -126,6 +125,7 @@ impl<'a> ParamsBuilder<'a> {
                 validity_window: params.validity_window,
                 first_valid_round: params.first_valid_round,
                 last_valid_round: params.last_valid_round,
+                ..Default::default()
             },
             receiver,
             amount: params.amount,
@@ -177,13 +177,47 @@ impl<'a> ParamsBuilder<'a> {
         })
     }
 
+    /// Build method call params without performing default resolution.
+    /// Provided arguments are used as-is, only basic validation is applied.
+    pub fn method_call_no_defaults(
+        &self,
+        params: &AppClientMethodCallParams,
+    ) -> Result<AppCallMethodCallParams, String> {
+        let abimethod = self.to_abimethod(&params.method)?;
+        let provided_args = params.args.clone().unwrap_or_default();
+        let provided_len = provided_args.len();
+        let expected = abimethod.args.len();
+        if provided_len > expected {
+            return Err(format!(
+                "Unexpected arg at position {}. {} only expects {} args",
+                expected + 1,
+                abimethod.name,
+                expected
+            ));
+        }
+
+        Ok(AppCallMethodCallParams {
+            common_params: self.build_common_params_from_method(params)?,
+            app_id: self
+                .client
+                .app_id
+                .ok_or_else(|| "Missing app_id".to_string())?,
+            method: abimethod,
+            args: provided_args,
+            account_references: super::utils::parse_account_refs_strs(&params.account_references)?,
+            app_references: params.app_references.clone(),
+            asset_references: params.asset_references.clone(),
+            box_references: params.box_references.clone(),
+            on_complete: params.on_complete.unwrap_or(OnApplicationComplete::NoOp),
+        })
+    }
+
     fn build_common_params_from_method(
         &self,
         params: &AppClientMethodCallParams,
     ) -> Result<CommonTransactionParams, String> {
         Ok(CommonTransactionParams {
             sender: self.client.get_sender_address(&params.sender)?,
-            signer: None,
             rekey_to: AppClient::get_optional_address(&params.rekey_to)?,
             note: params.note.clone(),
             lease: params.lease,
@@ -193,6 +227,7 @@ impl<'a> ParamsBuilder<'a> {
             validity_window: params.validity_window,
             first_valid_round: params.first_valid_round,
             last_valid_round: params.last_valid_round,
+            ..Default::default()
         })
     }
 
@@ -202,7 +237,10 @@ impl<'a> ParamsBuilder<'a> {
             .app_spec
             .get_arc56_method(method_name_or_sig)
             .map_err(|e| e.to_string())?;
-        m.to_abi_method().map_err(|e| e.to_string())
+        self.client
+            .app_spec
+            .to_abi_method(m)
+            .map_err(|e| e.to_string())
     }
 
     async fn resolve_args_with_defaults(
@@ -251,7 +289,8 @@ impl<'a> ParamsBuilder<'a> {
                     let value = self
                         .client
                         .resolve_default_value_for_arg(&def, &abi_type_string, sender)
-                        .await?;
+                        .await
+                        .map_err(|e| e.to_string())?;
                     resolved.push(AppMethodCallArg::ABIValue(value));
                 }
                 (ABIMethodArgType::Value(_), Some(other)) => {
@@ -276,7 +315,8 @@ impl<'a> ParamsBuilder<'a> {
                         let value = self
                             .client
                             .resolve_default_value_for_arg(&def, &abi_type_string, sender)
-                            .await?;
+                            .await
+                            .map_err(|e| e.to_string())?;
                         resolved.push(AppMethodCallArg::ABIValue(value));
                     } else {
                         return Err(format!(
@@ -437,7 +477,6 @@ impl BareParamsBuilder<'_> {
     ) -> Result<CommonTransactionParams, String> {
         Ok(CommonTransactionParams {
             sender: self.client.get_sender_address(&params.sender)?,
-            signer: None,
             rekey_to: AppClient::get_optional_address(&params.rekey_to)?,
             note: params.note.clone(),
             lease: params.lease,
@@ -447,6 +486,7 @@ impl BareParamsBuilder<'_> {
             validity_window: params.validity_window,
             first_valid_round: params.first_valid_round,
             last_valid_round: params.last_valid_round,
+            ..Default::default()
         })
     }
 }

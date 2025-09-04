@@ -1,11 +1,9 @@
 use crate::abi_type::ABIType;
-use crate::abi_value::ABIValue;
 use crate::error::ABIError;
 use crate::method::{ABIMethod, ABIMethodArg, ABIMethodArgType};
+use crate::types::struct_type as abi_struct;
 use base64::{Engine as _, engine::general_purpose};
-use num_bigint::BigUint;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use std::collections::HashMap;
 use std::str::FromStr;
 
@@ -611,204 +609,94 @@ impl Arc56Contract {
         }
     }
 
-    /// Get ABI struct from ABI tuple
-    pub fn get_abi_struct_from_abi_tuple(
-        decoded_tuple: &[Value],
-        struct_fields: &[StructField],
-        structs: &HashMap<String, Vec<StructField>>,
-    ) -> HashMap<String, Value> {
-        let mut result = HashMap::new();
+    /// Build an ABIMethod from an ARC-56 Method, resolving struct types into ABIType::Struct
+    pub fn to_abi_method(&self, method: &Method) -> Result<ABIMethod, ABIError> {
+        // Resolve argument types
+        let args: Result<Vec<ABIMethodArg>, ABIError> = method
+            .args
+            .iter()
+            .map(|arg| {
+                let arg_type = self.resolve_method_arg_type(arg)?;
+                Ok(ABIMethodArg::new(
+                    arg_type,
+                    arg.name.clone(),
+                    arg.desc.clone(),
+                ))
+            })
+            .collect();
 
-        for (i, field) in struct_fields.iter().enumerate() {
-            let key = field.name.clone();
-            let mut value = decoded_tuple.get(i).cloned().unwrap_or(Value::Null);
+        // Resolve return type
+        let returns = if method.returns.return_type == "void" {
+            None
+        } else if let Some(struct_name) = &method.returns.struct_name {
+            Some(ABIType::Struct(self.build_struct_type(struct_name)?))
+        } else {
+            Some(ABIType::from_str(&method.returns.return_type)?)
+        };
 
-            match &field.field_type {
-                StructFieldType::Value(type_name) => {
-                    if let Some(nested_fields) = structs.get(type_name) {
-                        if let Some(arr) = value.as_array() {
-                            value = Value::Object(
-                                Self::get_abi_struct_from_abi_tuple(arr, nested_fields, structs)
-                                    .into_iter()
-                                    .collect(),
-                            );
-                        }
-                    }
-                }
-                StructFieldType::Nested(nested_fields) => {
-                    if let Some(arr) = value.as_array() {
-                        value = Value::Object(
-                            Self::get_abi_struct_from_abi_tuple(arr, nested_fields, structs)
-                                .into_iter()
-                                .collect(),
-                        );
-                    }
-                }
-            }
-
-            result.insert(key, value);
-        }
-
-        result
+        Ok(ABIMethod::new(
+            method.name.clone(),
+            args?,
+            returns,
+            method.desc.clone(),
+        ))
     }
 
-    /// Convert a map of struct field values (by name) into an ABI tuple (Vec<ABIValue>) following the struct definition order.
-    pub fn get_abi_tuple_from_abi_struct(
-        value_map: &HashMap<String, Value>,
-        struct_fields: &[StructField],
-        structs: &HashMap<String, Vec<StructField>>,
-    ) -> Result<Vec<ABIValue>, ABIError> {
-        fn json_to_biguint(v: &Value) -> Result<BigUint, ABIError> {
-            if let Some(u) = v.as_u64() {
-                return Ok(BigUint::from(u));
-            }
-            if let Some(s) = v.as_str() {
-                return s.parse::<BigUint>().map_err(|e| ABIError::ValidationError {
-                    message: format!("Failed to parse '{}' as big integer: {}", s, e),
-                });
-            }
-            Err(ABIError::ValidationError {
-                message: format!("Unsupported numeric JSON value: {}", v),
+    fn resolve_method_arg_type(&self, arg: &MethodArg) -> Result<ABIMethodArgType, ABIError> {
+        if let Some(struct_name) = &arg.struct_name {
+            let struct_ty = self.build_struct_type(struct_name)?;
+            return Ok(ABIMethodArgType::Value(ABIType::Struct(struct_ty)));
+        }
+        // Fallback to standard parsing for non-struct args (including refs/txns)
+        ABIMethodArgType::from_str(&arg.arg_type)
+    }
+
+    fn build_struct_type(&self, struct_name: &str) -> Result<abi_struct::StructType, ABIError> {
+        let fields = self
+            .structs
+            .get(struct_name)
+            .ok_or_else(|| ABIError::ValidationError {
+                message: format!("Unknown struct '{}' in ARC-56 spec", struct_name),
+            })?;
+        Ok(self.build_struct_type_from_fields(struct_name, fields))
+    }
+
+    fn build_struct_type_from_fields(
+        &self,
+        full_name: &str,
+        fields: &[StructField],
+    ) -> abi_struct::StructType {
+        let abi_fields: Vec<abi_struct::StructField> = fields
+            .iter()
+            .map(|f| {
+                let abi_ty = self.struct_field_type_to_abi_type(full_name, &f.name, &f.field_type);
+                abi_struct::StructField::new(f.name.clone(), abi_ty)
             })
-        }
+            .collect();
+        abi_struct::StructType::new(full_name.to_string(), abi_fields)
+    }
 
-        fn json_to_abi_value(abi_type: &ABIType, v: &Value) -> Result<ABIValue, ABIError> {
-            match abi_type {
-                ABIType::String => v
-                    .as_str()
-                    .map(|s| ABIValue::String(s.to_string()))
-                    .ok_or_else(|| ABIError::ValidationError {
-                        message: format!("Expected string for type {}, got {}", abi_type, v),
-                    }),
-                ABIType::Uint(_) | ABIType::UFixed(_, _) => json_to_biguint(v).map(ABIValue::Uint),
-                ABIType::Bool => {
-                    v.as_bool()
-                        .map(ABIValue::Bool)
-                        .ok_or_else(|| ABIError::ValidationError {
-                            message: format!("Expected bool for type {}, got {}", abi_type, v),
-                        })
-                }
-                ABIType::Byte => v
-                    .as_u64()
-                    .and_then(|u| u.try_into().ok())
-                    .map(ABIValue::Byte)
-                    .ok_or_else(|| ABIError::ValidationError {
-                        message: format!("Expected byte (0-255) for type {}, got {}", abi_type, v),
-                    }),
-                ABIType::Address => v
-                    .as_str()
-                    .map(|s| ABIValue::Address(s.to_string()))
-                    .ok_or_else(|| ABIError::ValidationError {
-                        message: format!(
-                            "Expected address string for type {}, got {}",
-                            abi_type, v
-                        ),
-                    }),
-                ABIType::StaticArray(child, length) => {
-                    let arr = v.as_array().ok_or_else(|| ABIError::ValidationError {
-                        message: format!("Expected array for type {}, got {}", abi_type, v),
-                    })?;
-                    if arr.len() != *length {
-                        return Err(ABIError::ValidationError {
-                            message: format!(
-                                "Invalid array length for {}, expected {}, got {}",
-                                abi_type,
-                                length,
-                                arr.len()
-                            ),
-                        });
-                    }
-                    let mut out = Vec::with_capacity(arr.len());
-                    for item in arr {
-                        out.push(json_to_abi_value(child, item)?);
-                    }
-                    Ok(ABIValue::Array(out))
-                }
-                ABIType::DynamicArray(child) => {
-                    let arr = v.as_array().ok_or_else(|| ABIError::ValidationError {
-                        message: format!("Expected array for type {}, got {}", abi_type, v),
-                    })?;
-                    let mut out = Vec::with_capacity(arr.len());
-                    for item in arr {
-                        out.push(json_to_abi_value(child, item)?);
-                    }
-                    Ok(ABIValue::Array(out))
-                }
-                ABIType::Tuple(child_types) => {
-                    // Accept either an array matching the tuple types, or an object we cannot ordering-determine here
-                    let arr = v.as_array().ok_or_else(|| ABIError::ValidationError {
-                        message: format!(
-                            "Expected JSON array for tuple value ({}), got {}",
-                            abi_type, v
-                        ),
-                    })?;
-                    if arr.len() != child_types.len() {
-                        return Err(ABIError::ValidationError {
-                            message: format!(
-                                "Invalid tuple length for {}, expected {}, got {}",
-                                abi_type,
-                                child_types.len(),
-                                arr.len()
-                            ),
-                        });
-                    }
-                    let mut out = Vec::with_capacity(arr.len());
-                    for (i, child_ty) in child_types.iter().enumerate() {
-                        out.push(json_to_abi_value(child_ty, &arr[i])?);
-                    }
-                    Ok(ABIValue::Array(out))
+    fn struct_field_type_to_abi_type(
+        &self,
+        parent_name: &str,
+        field_name: &str,
+        field_type: &StructFieldType,
+    ) -> ABIType {
+        match field_type {
+            StructFieldType::Value(type_name) => {
+                if let Some(nested_fields) = self.structs.get(type_name) {
+                    let nested_name = format!("{}.{}", parent_name, field_name);
+                    let nested = self.build_struct_type_from_fields(&nested_name, nested_fields);
+                    ABIType::Struct(nested)
+                } else {
+                    ABIType::from_str(type_name).unwrap_or(ABIType::String)
                 }
             }
-        }
-
-        let mut result: Vec<ABIValue> = Vec::with_capacity(struct_fields.len());
-
-        for field in struct_fields.iter() {
-            let v = value_map
-                .get(&field.name)
-                .ok_or_else(|| ABIError::ValidationError {
-                    message: format!("Missing field '{}' in struct value map", field.name),
-                })?;
-
-            match &field.field_type {
-                StructFieldType::Value(type_name) => {
-                    if let Some(nested_fields) = structs.get(type_name) {
-                        // Nested struct by name
-                        let obj = v.as_object().ok_or_else(|| ABIError::ValidationError {
-                            message: format!(
-                                "Expected JSON object for nested struct '{}' field '{}'",
-                                type_name, field.name
-                            ),
-                        })?;
-                        let nested_map: HashMap<String, Value> =
-                            obj.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
-                        let nested_tuple = Self::get_abi_tuple_from_abi_struct(
-                            &nested_map,
-                            nested_fields,
-                            structs,
-                        )?;
-                        result.push(ABIValue::Array(nested_tuple));
-                    } else {
-                        let abi_type = ABIType::from_str(type_name)?;
-                        result.push(json_to_abi_value(&abi_type, v)?);
-                    }
-                }
-                StructFieldType::Nested(nested_fields) => {
-                    let obj = v.as_object().ok_or_else(|| ABIError::ValidationError {
-                        message: format!(
-                            "Expected JSON object for nested struct field '{}'",
-                            field.name
-                        ),
-                    })?;
-                    let nested_map: HashMap<String, Value> =
-                        obj.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
-                    let nested_tuple =
-                        Self::get_abi_tuple_from_abi_struct(&nested_map, nested_fields, structs)?;
-                    result.push(ABIValue::Array(nested_tuple));
-                }
+            StructFieldType::Nested(nested_fields) => {
+                let nested_name = format!("{}.{}", parent_name, field_name);
+                let nested = self.build_struct_type_from_fields(&nested_name, nested_fields);
+                ABIType::Struct(nested)
             }
         }
-
-        Ok(result)
     }
 }

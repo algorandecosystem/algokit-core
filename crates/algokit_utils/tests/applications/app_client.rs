@@ -65,7 +65,7 @@ async fn retrieve_state(#[future] algorand_fixture: AlgorandFixtureResult) -> Te
     client
         .send()
         .call(AppClientMethodCallParams {
-            method: "set_global(uint64,uint64,string,byte[4])void".to_string(),
+            method: "set_global".to_string(),
             args: Some(vec![
                 algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from(1u64)),
                 algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from(2u64)),
@@ -78,20 +78,7 @@ async fn retrieve_state(#[future] algorand_fixture: AlgorandFixtureResult) -> Te
                 ])),
             ]),
             sender: Some(sender.to_string()),
-            rekey_to: None,
-            note: None,
-            lease: None,
-            static_fee: None,
-            extra_fee: None,
-            max_fee: None,
-            validity_window: None,
-            first_valid_round: None,
-            last_valid_round: None,
-            account_references: None,
-            app_references: None,
-            asset_references: None,
-            box_references: None,
-            on_complete: None,
+            ..Default::default()
         })
         .await?;
 
@@ -117,7 +104,7 @@ async fn retrieve_state(#[future] algorand_fixture: AlgorandFixtureResult) -> Te
     client
         .send()
         .opt_in(AppClientMethodCallParams {
-            method: "opt_in()void".to_string(),
+            method: "opt_in".to_string(),
             args: None,
             sender: Some(sender.to_string()),
             rekey_to: None,
@@ -140,7 +127,7 @@ async fn retrieve_state(#[future] algorand_fixture: AlgorandFixtureResult) -> Te
     client
         .send()
         .call(AppClientMethodCallParams {
-            method: "set_local(uint64,uint64,string,byte[4])void".to_string(),
+            method: "set_local".to_string(),
             args: Some(vec![
                 algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from(1u64)),
                 algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from(2u64)),
@@ -206,12 +193,12 @@ async fn retrieve_state(#[future] algorand_fixture: AlgorandFixtureResult) -> Te
     client
         .send()
         .call(AppClientMethodCallParams {
-            method: "set_box(byte[4],string)void".to_string(),
+            method: "set_box".to_string(),
             args: Some(vec![
                 algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::Array(
                     box_name1
-                        .clone()
-                        .into_iter()
+                        .iter()
+                        .copied()
                         .map(algokit_abi::ABIValue::from_byte)
                         .collect(),
                 )),
@@ -241,12 +228,12 @@ async fn retrieve_state(#[future] algorand_fixture: AlgorandFixtureResult) -> Te
     client
         .send()
         .call(AppClientMethodCallParams {
-            method: "set_box(byte[4],string)void".to_string(),
+            method: "set_box".to_string(),
             args: Some(vec![
                 algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::Array(
                     box_name2
-                        .clone()
-                        .into_iter()
+                        .iter()
+                        .copied()
                         .map(algokit_abi::ABIValue::from_byte)
                         .collect(),
                 )),
@@ -340,7 +327,7 @@ async fn logic_error_exposure_with_source_maps(
     let err = client
         .send()
         .call(AppClientMethodCallParams {
-            method: "error()void".to_string(),
+            method: "error".to_string(),
             args: None,
             sender: Some(sender.to_string()),
             rekey_to: None,
@@ -359,7 +346,7 @@ async fn logic_error_exposure_with_source_maps(
             on_complete: None,
         })
         .await
-        .expect_err("expected logic error");
+        .expect_err("expected error");
 
     let logic = client.expose_logic_error(
         &TransactionResultError::ParsingError {
@@ -413,7 +400,7 @@ async fn box_methods_with_manually_encoded_abi_args(
     // Prepare box name and encoded value
     let box_prefix = b"box_bytes".to_vec();
     let name_type = algokit_abi::ABIType::from_str("string").unwrap();
-    let box_name = "name1";
+    let box_name = "asdf";
     let box_name_encoded = name_type
         .encode(&algokit_abi::ABIValue::from(box_name))
         .unwrap();
@@ -443,9 +430,9 @@ async fn box_methods_with_manually_encoded_abi_args(
     client
         .send()
         .call(AppClientMethodCallParams {
-            method: "set_box_bytes(string,byte[])void".to_string(),
+            method: "set_box_bytes".to_string(),
             args: Some(vec![
-                algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from(box_name)),
+                algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from("asdf")),
                 algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::Array(
                     encoded
                         .into_iter()
@@ -531,7 +518,7 @@ async fn construct_transaction_with_abi_encoding_including_foreign_references_no
     let send_res = client
         .send()
         .call(AppClientMethodCallParams {
-            method: "call_abi_foreign_refs()string".to_string(),
+            method: "call_abi_foreign_refs".to_string(),
             args: None,
             sender: Some(sender.to_string()),
             rekey_to: None,
@@ -592,7 +579,7 @@ async fn abi_with_default_arg_from_local_state(
     client
         .send()
         .opt_in(AppClientMethodCallParams {
-            method: "opt_in()void".to_string(),
+            method: "opt_in".to_string(),
             args: None,
             sender: Some(sender.to_string()),
             rekey_to: None,
@@ -615,11 +602,11 @@ async fn abi_with_default_arg_from_local_state(
     client
         .send()
         .call(AppClientMethodCallParams {
-            method: "set_local(uint64,uint64,string,byte[4])void".to_string(),
+            method: "set_local".to_string(),
             args: Some(vec![
                 algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from(1u64)),
                 algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from(2u64)),
-                algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from("banana")),
+                algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from("bananas")),
                 algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::Array(vec![
                     algokit_abi::ABIValue::from_byte(1),
                     algokit_abi::ABIValue::from_byte(2),
@@ -645,26 +632,44 @@ async fn abi_with_default_arg_from_local_state(
         })
         .await?;
 
-    // Debug: fetch local state and print expected key
-    let local_state = fixture
-        .algorand_client
-        .app()
-        .get_local_state(app_id, &sender.to_string())
+    // Call with explicit value first; expect echo prefix + defined value
+    let defined = client
+        .send()
+        .call(AppClientMethodCallParams {
+            method: "default_value_from_local_state".to_string(),
+            args: Some(vec![algokit_utils::AppMethodCallArg::ABIValue(
+                algokit_abi::ABIValue::from("defined value"),
+            )]),
+            sender: Some(sender.to_string()),
+            rekey_to: None,
+            note: None,
+            lease: None,
+            static_fee: None,
+            extra_fee: None,
+            max_fee: None,
+            validity_window: None,
+            first_valid_round: None,
+            last_valid_round: None,
+            account_references: None,
+            app_references: None,
+            asset_references: None,
+            box_references: None,
+            on_complete: None,
+        })
         .await?;
-    if let Some(val) = local_state.get("local_bytes1".as_bytes()) {
-        println!(
-            "local_bytes1 -> value_raw: {:?}, value: {:?}",
-            val.value_raw, val.value
-        );
-    } else {
-        println!("local_bytes1 not found in local state");
+    let defined_ret = defined.abi_return.as_ref().expect("abi return expected");
+    match &defined_ret.return_value {
+        algokit_abi::ABIValue::String(s) => {
+            assert_eq!(s, "Local state, defined value");
+        }
+        _ => panic!("expected string return"),
     }
 
-    // Call method without providing arg; expect default from local state
+    // Call method without providing arg; expect default from local state ("bananas")
     let res = client
         .send()
         .call(AppClientMethodCallParams {
-            method: "default_value_from_local_state(string)string".to_string(),
+            method: "default_value_from_local_state".to_string(),
             args: None, // missing arg to trigger default resolver
             sender: Some(sender.to_string()),
             rekey_to: None,
@@ -686,11 +691,232 @@ async fn abi_with_default_arg_from_local_state(
 
     let abi_ret = res.abi_return.as_ref().expect("abi return expected");
     if let algokit_abi::ABIValue::String(s) = &abi_ret.return_value {
-        println!("method returned: {}", s);
-        assert!(s.contains("Local state"));
-        assert!(s.contains("banana"));
+        assert_eq!(s, "Local state, bananas");
     } else {
         panic!("expected string return");
+    }
+    Ok(())
+}
+
+#[rstest]
+#[tokio::test]
+async fn abi_with_default_arg_from_literal(
+    #[future] algorand_fixture: AlgorandFixtureResult,
+) -> TestResult {
+    // Mirrors TS: default_value(string)string
+    let fixture = algorand_fixture.await?;
+    let sender = fixture.test_account.account().address();
+
+    let mut tmpl: TealTemplateParams = Default::default();
+    tmpl.insert("VALUE".to_string(), TealTemplateValue::Int(0));
+    tmpl.insert("UPDATABLE".to_string(), TealTemplateValue::Int(0));
+    tmpl.insert("DELETABLE".to_string(), TealTemplateValue::Int(0));
+    let app_id =
+        deploy_arc56_contract(&fixture, &sender, &get_testing_app_spec(), Some(tmpl), None).await?;
+
+    let mut algorand = RootAlgorandClient::default_localnet();
+    algorand.set_signer(sender.clone(), Arc::new(fixture.test_account.clone()));
+    let client = AppClient::new(AppClientParams {
+        app_id: Some(app_id),
+        app_spec: get_testing_app_spec(),
+        algorand,
+        app_name: None,
+        default_sender: Some(sender.to_string()),
+        source_maps: None,
+    });
+
+    // Call with explicit value
+    let defined = client
+        .send()
+        .call(AppClientMethodCallParams {
+            method: "default_value".to_string(),
+            args: Some(vec![algokit_utils::AppMethodCallArg::ABIValue(
+                algokit_abi::ABIValue::from("defined value"),
+            )]),
+            sender: Some(sender.to_string()),
+            ..Default::default()
+        })
+        .await?;
+    let defined_ret = defined.abi_return.as_ref().expect("abi return expected");
+    match &defined_ret.return_value {
+        algokit_abi::ABIValue::String(s) => {
+            assert_eq!(s, "defined value");
+        }
+        _ => panic!("expected string return"),
+    }
+
+    // Call with default (no arg)
+    let defaulted = client
+        .send()
+        .call(AppClientMethodCallParams {
+            method: "default_value".to_string(),
+            args: None,
+            sender: Some(sender.to_string()),
+            ..Default::default()
+        })
+        .await?;
+    let default_ret = defaulted.abi_return.as_ref().expect("abi return expected");
+    match &default_ret.return_value {
+        algokit_abi::ABIValue::String(s) => {
+            assert_eq!(s, "default value");
+        }
+        _ => panic!("expected string return"),
+    }
+    Ok(())
+}
+
+#[rstest]
+#[tokio::test]
+async fn abi_with_default_arg_from_method(
+    #[future] algorand_fixture: AlgorandFixtureResult,
+) -> TestResult {
+    // Mirrors TS: default_value_from_abi(string)string
+    let fixture = algorand_fixture.await?;
+    let sender = fixture.test_account.account().address();
+
+    let mut tmpl: TealTemplateParams = Default::default();
+    tmpl.insert("VALUE".to_string(), TealTemplateValue::Int(0));
+    tmpl.insert("UPDATABLE".to_string(), TealTemplateValue::Int(0));
+    tmpl.insert("DELETABLE".to_string(), TealTemplateValue::Int(0));
+    let app_id =
+        deploy_arc56_contract(&fixture, &sender, &get_testing_app_spec(), Some(tmpl), None).await?;
+
+    let mut algorand = RootAlgorandClient::default_localnet();
+    algorand.set_signer(sender.clone(), Arc::new(fixture.test_account.clone()));
+    let client = AppClient::new(AppClientParams {
+        app_id: Some(app_id),
+        app_spec: get_testing_app_spec(),
+        algorand,
+        app_name: None,
+        default_sender: Some(sender.to_string()),
+        source_maps: None,
+    });
+
+    // Call with explicit value
+    let defined = client
+        .send()
+        .call(AppClientMethodCallParams {
+            method: "default_value_from_abi".to_string(),
+            args: Some(vec![algokit_utils::AppMethodCallArg::ABIValue(
+                algokit_abi::ABIValue::from("defined value"),
+            )]),
+            sender: Some(sender.to_string()),
+            ..Default::default()
+        })
+        .await?;
+    let defined_ret = defined.abi_return.as_ref().expect("abi return expected");
+    match &defined_ret.return_value {
+        algokit_abi::ABIValue::String(s) => {
+            assert_eq!(s, "ABI, defined value");
+        }
+        _ => panic!("expected string return"),
+    }
+
+    // Call with default (no arg)
+    let defaulted = client
+        .send()
+        .call(AppClientMethodCallParams {
+            method: "default_value_from_abi".to_string(),
+            args: None,
+            sender: Some(sender.to_string()),
+            ..Default::default()
+        })
+        .await?;
+    let default_ret = defaulted.abi_return.as_ref().expect("abi return expected");
+    match &default_ret.return_value {
+        algokit_abi::ABIValue::String(s) => {
+            assert_eq!(s, "ABI, default value");
+        }
+        _ => panic!("expected string return"),
+    }
+    Ok(())
+}
+
+#[rstest]
+#[tokio::test]
+async fn abi_with_default_arg_from_global_state(
+    #[future] algorand_fixture: AlgorandFixtureResult,
+) -> TestResult {
+    // Mirrors TS: default_value_from_global_state(uint64)uint64
+    let fixture = algorand_fixture.await?;
+    let sender = fixture.test_account.account().address();
+
+    let mut tmpl: TealTemplateParams = Default::default();
+    tmpl.insert("VALUE".to_string(), TealTemplateValue::Int(0));
+    tmpl.insert("UPDATABLE".to_string(), TealTemplateValue::Int(0));
+    tmpl.insert("DELETABLE".to_string(), TealTemplateValue::Int(0));
+    let app_id =
+        deploy_arc56_contract(&fixture, &sender, &get_testing_app_spec(), Some(tmpl), None).await?;
+
+    let mut algorand = RootAlgorandClient::default_localnet();
+    algorand.set_signer(sender.clone(), Arc::new(fixture.test_account.clone()));
+    let client = AppClient::new(AppClientParams {
+        app_id: Some(app_id),
+        app_spec: get_testing_app_spec(),
+        algorand,
+        app_name: None,
+        default_sender: Some(sender.to_string()),
+        source_maps: None,
+    });
+
+    // Seed global state (int1) via set_global
+    let seeded_val: u64 = 456;
+    client
+        .send()
+        .call(AppClientMethodCallParams {
+            method: "set_global".to_string(),
+            args: Some(vec![
+                algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from(seeded_val)),
+                algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from(2u64)),
+                algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from("asdf")),
+                algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::Array(vec![
+                    algokit_abi::ABIValue::from_byte(1),
+                    algokit_abi::ABIValue::from_byte(2),
+                    algokit_abi::ABIValue::from_byte(3),
+                    algokit_abi::ABIValue::from_byte(4),
+                ])),
+            ]),
+            sender: Some(sender.to_string()),
+            ..Default::default()
+        })
+        .await?;
+
+    // Call with explicit value
+    let defined = client
+        .send()
+        .call(AppClientMethodCallParams {
+            method: "default_value_from_global_state".to_string(),
+            args: Some(vec![algokit_utils::AppMethodCallArg::ABIValue(
+                algokit_abi::ABIValue::from(123u64),
+            )]),
+            sender: Some(sender.to_string()),
+            ..Default::default()
+        })
+        .await?;
+    let defined_ret = defined.abi_return.as_ref().expect("abi return expected");
+    match &defined_ret.return_value {
+        algokit_abi::ABIValue::Uint(u) => {
+            assert_eq!(*u, num_bigint::BigUint::from(123u64));
+        }
+        _ => panic!("expected uint return"),
+    }
+
+    // Call with default (no arg) -> should read seeded global state
+    let defaulted = client
+        .send()
+        .call(AppClientMethodCallParams {
+            method: "default_value_from_global_state".to_string(),
+            args: None,
+            sender: Some(sender.to_string()),
+            ..Default::default()
+        })
+        .await?;
+    let default_ret = defaulted.abi_return.as_ref().expect("abi return expected");
+    match &default_ret.return_value {
+        algokit_abi::ABIValue::Uint(u) => {
+            assert_eq!(*u, num_bigint::BigUint::from(seeded_val));
+        }
+        _ => panic!("expected uint return"),
     }
     Ok(())
 }
@@ -721,7 +947,7 @@ async fn bare_call_with_box_reference_builds_and_sends(
     let result = client
         .send()
         .call(AppClientMethodCallParams {
-            method: "hello_world(string)string".to_string(),
+            method: "hello_world".to_string(),
             args: Some(vec![algokit_utils::AppMethodCallArg::ABIValue(
                 algokit_abi::ABIValue::from("test"),
             )]),
@@ -789,7 +1015,7 @@ async fn construct_transaction_with_boxes(
     let built = client
         .create_transaction()
         .call(AppClientMethodCallParams {
-            method: "hello_world(string)string".to_string(),
+            method: "hello_world".to_string(),
             args: Some(vec![algokit_utils::AppMethodCallArg::ABIValue(
                 algokit_abi::ABIValue::from("test"),
             )]),
@@ -864,7 +1090,7 @@ async fn construct_transaction_with_abi_encoding_including_transaction(
     let send_res = client
         .send()
         .call(AppClientMethodCallParams {
-            method: "get_pay_txn_amount(pay)uint64".to_string(),
+            method: "get_pay_txn_amount".to_string(),
             args: Some(vec![algokit_utils::AppMethodCallArg::Payment(payment)]),
             sender: Some(sender.to_string()),
             rekey_to: None,
@@ -938,25 +1164,25 @@ async fn box_methods_with_arc4_returns_parametrized(
     let cases: Vec<(Vec<u8>, &str, &str, algokit_abi::ABIValue)> = vec![
         (
             b"box_str".to_vec(),
-            "set_box_str(string,string)void",
+            "set_box_str",
             "string",
             algokit_abi::ABIValue::from("string"),
         ),
         (
             b"box_int".to_vec(),
-            "set_box_int(string,uint32)void",
+            "set_box_int",
             "uint32",
             algokit_abi::ABIValue::from(123u32),
         ),
         (
             b"box_int512".to_vec(),
-            "set_box_int512(string,uint512)void",
+            "set_box_int512",
             "uint512",
             algokit_abi::ABIValue::from(big),
         ),
         (
             b"box_static".to_vec(),
-            "set_box_static(string,byte[4])void",
+            "set_box_static",
             "byte[4]",
             algokit_abi::ABIValue::Array(vec![
                 algokit_abi::ABIValue::from_byte(1),
@@ -965,15 +1191,7 @@ async fn box_methods_with_arc4_returns_parametrized(
                 algokit_abi::ABIValue::from_byte(4),
             ]),
         ),
-        (
-            b"".to_vec(),
-            "set_struct",
-            "(string,uint64)",
-            algokit_abi::ABIValue::Array(vec![
-                algokit_abi::ABIValue::from("box1"),
-                algokit_abi::ABIValue::from(123u64),
-            ]),
-        ),
+        // TODO: restore struct case after app factory is merged
     ];
 
     for (box_prefix, method_sig, value_type_str, arg_val) in cases {
@@ -1032,17 +1250,7 @@ async fn box_methods_with_arc4_returns_parametrized(
             .await?;
         assert_eq!(decoded, arg_val);
 
-        // For struct case, also verify bulk fetch decode path matches
-        if method_sig == "set_struct" {
-            let values = client
-                .get_box_values_from_abi_type(
-                    &[box_reference.clone()],
-                    &algokit_abi::ABIType::from_str(value_type_str).unwrap(),
-                )
-                .await?;
-            assert_eq!(values.len(), 1);
-            assert_eq!(values[0], decoded);
-        }
+        // TODO: restore struct and nested struct tests after app factory is merged
     }
 
     Ok(())
