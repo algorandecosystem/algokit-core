@@ -11,9 +11,6 @@ const NUMERIC_FIELDS = [
   "assetId",
   "total",
   "appId",
-  "extraProgramPages",
-  "numUints",
-  "numByteSlices",
   "voteFirst",
   "voteLast",
   "voteKeyDilution",
@@ -72,7 +69,7 @@ export const testData =
       | "optInAssetTransfer"
       | "assetCreate"
       | "assetDestroy"
-      | "assetReconfigure"
+      | "assetConfig"
       | "appCall"
       | "appCreate"
       | "appUpdate"

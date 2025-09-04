@@ -1,10 +1,14 @@
-use crate::common::init_test_logging;
+use crate::common::{
+    AlgorandFixture, AlgorandFixtureResult, LocalNetDispenser, TestAccountConfig, TestResult,
+    algorand_fixture,
+};
 use algokit_abi::{ABIMethod, ABIType, ABIValue};
+use algokit_test_artifacts::resource_population;
 use algokit_transact::Transaction;
 use algokit_transact::{Address, BoxReference, OnApplicationComplete, StateSchema};
-use algokit_utils::CommonParams;
+use algokit_utils::CommonTransactionParams;
 use algokit_utils::transactions::composer::{ResourcePopulation, SendParams};
-use algokit_utils::{AppCallParams, AppCreateParams, PaymentParams, testing::*};
+use algokit_utils::{AppCallParams, AppCreateParams, PaymentParams};
 use base64::{Engine, prelude::BASE64_STANDARD};
 use rstest::*;
 use std::str::FromStr;
@@ -12,13 +16,13 @@ use std::sync::Arc;
 use std::vec;
 
 #[fixture]
-async fn setup(#[default(8)] avm_version: u8) -> SetupResult {
-    init_test_logging();
-    let mut fixture = algorand_fixture().await?;
-    fixture.new_scope().await?;
+async fn fixture(
+    #[default(8)] avm_version: u8,
+    #[future] algorand_fixture: AlgorandFixtureResult,
+) -> FixtureResult {
+    let algorand_fixture = algorand_fixture.await?;
 
-    let context = fixture.context()?;
-    let sender_address = context.test_account.account()?.address();
+    let sender_address = algorand_fixture.test_account.account().address();
     let method_selectors = MethodSelectors {
         create_application: ABIMethod::from_str("createApplication()void")?.selector()?,
         bootstrap: ABIMethod::from_str("bootstrap()void")?.selector()?,
@@ -36,11 +40,12 @@ async fn setup(#[default(8)] avm_version: u8) -> SetupResult {
         error: ABIMethod::from_str("error()void")?.selector()?,
     };
 
-    let app_id = deploy_resource_population_app(context, &method_selectors, avm_version).await?;
-    fund_app_account(context, app_id, 2_334_300).await?;
-    bootstrap_resource_population_app(context, &method_selectors, app_id).await?;
+    let app_id =
+        deploy_resource_population_app(&algorand_fixture, &method_selectors, avm_version).await?;
+    fund_app_account(&algorand_fixture, app_id, 2_334_300).await?;
+    bootstrap_resource_population_app(&algorand_fixture, &method_selectors, app_id).await?;
 
-    let application_info = &context.algod.get_application_by_id(app_id).await?;
+    let application_info = &algorand_fixture.algod.get_application_by_id(app_id).await?;
     let external_app_id = application_info
         .params
         .global_state
@@ -52,11 +57,11 @@ async fn setup(#[default(8)] avm_version: u8) -> SetupResult {
         .value
         .uint;
 
-    Ok(TestData {
+    Ok(Fixture {
         sender_address,
         app_id,
         external_app_id,
-        fixture,
+        algorand_fixture,
         method_selectors,
         abi_types: ABITypes {
             address: ABIType::Address,
@@ -72,20 +77,24 @@ async fn test_accounts_errors_when_resource_population_disabled(
     #[case] _avm_version: u8,
     #[with(_avm_version)]
     #[future]
-    setup: SetupResult,
+    fixture: FixtureResult,
 ) -> TestResult {
-    let TestData {
+    let Fixture {
         sender_address,
         app_id,
         method_selectors,
-        mut fixture,
+        mut algorand_fixture,
         abi_types,
         ..
-    } = setup.await?;
-    let mut composer = fixture.context()?.composer.clone();
-    let alice = fixture.generate_account(None).await?.account()?.address();
+    } = fixture.await?;
+    let mut composer = algorand_fixture.algorand_client.new_group();
+    let alice = algorand_fixture
+        .generate_account(None)
+        .await?
+        .account()
+        .address();
     composer.add_app_call(AppCallParams {
-        common_params: CommonParams {
+        common_params: CommonTransactionParams {
             sender: sender_address.clone(),
             max_fee: Some(2000),
             ..Default::default()
@@ -128,20 +137,24 @@ async fn test_accounts_populated_when_resource_population_enabled(
     #[case] _avm_version: u8,
     #[with(_avm_version)]
     #[future]
-    setup: SetupResult,
+    fixture: FixtureResult,
 ) -> TestResult {
-    let TestData {
+    let Fixture {
         sender_address,
         app_id,
         method_selectors,
-        mut fixture,
+        mut algorand_fixture,
         abi_types,
         ..
-    } = setup.await?;
-    let mut composer = fixture.context()?.composer.clone();
-    let alice = fixture.generate_account(None).await?.account()?.address();
+    } = fixture.await?;
+    let mut composer = algorand_fixture.algorand_client.new_group();
+    let alice = algorand_fixture
+        .generate_account(None)
+        .await?
+        .account()
+        .address();
     composer.add_app_call(AppCallParams {
-        common_params: CommonParams {
+        common_params: CommonTransactionParams {
             sender: sender_address.clone(),
             ..Default::default()
         },
@@ -179,23 +192,23 @@ async fn test_boxes_errors_when_resource_population_disabled(
     #[case] box_size: &str,
     #[with(_avm_version)]
     #[future]
-    setup: SetupResult,
+    fixture: FixtureResult,
 ) -> TestResult {
-    let TestData {
+    let Fixture {
         sender_address,
         app_id,
         method_selectors,
-        fixture,
+        algorand_fixture,
         ..
-    } = setup.await?;
-    let mut composer = fixture.context()?.composer.clone();
+    } = fixture.await?;
+    let mut composer = algorand_fixture.algorand_client.new_group();
     let method_selector = match box_size {
         "small" => method_selectors.small_box,
         "medium" => method_selectors.medium_box,
         _ => return Err("Invalid box size".into()),
     };
     composer.add_app_call(AppCallParams {
-        common_params: CommonParams {
+        common_params: CommonTransactionParams {
             sender: sender_address.clone(),
             ..Default::default()
         },
@@ -233,16 +246,16 @@ async fn test_boxes_populated_when_resource_population_enabled(
     #[case] box_size: &str,
     #[with(_avm_version)]
     #[future]
-    setup: SetupResult,
+    fixture: FixtureResult,
 ) -> TestResult {
-    let TestData {
+    let Fixture {
         sender_address,
         app_id,
         method_selectors,
-        fixture,
+        algorand_fixture,
         ..
-    } = setup.await?;
-    let mut composer = fixture.context()?.composer.clone();
+    } = fixture.await?;
+    let mut composer = algorand_fixture.algorand_client.new_group();
     let (method_selector, box_refs) = match box_size {
         "small" => (
             method_selectors.small_box,
@@ -279,7 +292,7 @@ async fn test_boxes_populated_when_resource_population_enabled(
         _ => return Err("Invalid box size".into()),
     };
     composer.add_app_call(AppCallParams {
-        common_params: CommonParams {
+        common_params: CommonTransactionParams {
             sender: sender_address.clone(),
             ..Default::default()
         },
@@ -309,18 +322,18 @@ async fn test_apps_errors_when_resource_population_disabled(
     #[case] _avm_version: u8,
     #[with(_avm_version)]
     #[future]
-    setup: SetupResult,
+    fixture: FixtureResult,
 ) -> TestResult {
-    let TestData {
+    let Fixture {
         sender_address,
         app_id,
         method_selectors,
-        fixture,
+        algorand_fixture,
         ..
-    } = setup.await?;
-    let mut composer = fixture.context()?.composer.clone();
+    } = fixture.await?;
+    let mut composer = algorand_fixture.algorand_client.new_group();
     composer.add_app_call(AppCallParams {
-        common_params: CommonParams {
+        common_params: CommonTransactionParams {
             sender: sender_address.clone(),
             static_fee: Some(2000),
             ..Default::default()
@@ -350,18 +363,18 @@ async fn test_apps_populated_when_resource_population_enabled(
     #[case] _avm_version: u8,
     #[with(_avm_version)]
     #[future]
-    setup: SetupResult,
+    fixture: FixtureResult,
 ) -> TestResult {
-    let TestData {
+    let Fixture {
         sender_address,
         app_id,
         method_selectors,
-        fixture,
+        algorand_fixture,
         ..
-    } = setup.await?;
-    let mut composer = fixture.context()?.composer.clone();
+    } = fixture.await?;
+    let mut composer = algorand_fixture.algorand_client.new_group();
     composer.add_app_call(AppCallParams {
-        common_params: CommonParams {
+        common_params: CommonTransactionParams {
             sender: sender_address.clone(),
             static_fee: Some(2000),
             ..Default::default()
@@ -392,18 +405,18 @@ async fn test_assets_errors_when_resource_population_disabled(
     #[case] _avm_version: u8,
     #[with(_avm_version)]
     #[future]
-    setup: SetupResult,
+    fixture: FixtureResult,
 ) -> TestResult {
-    let TestData {
+    let Fixture {
         sender_address,
         app_id,
         method_selectors,
-        fixture,
+        algorand_fixture,
         ..
-    } = setup.await?;
-    let mut composer = fixture.context()?.composer.clone();
+    } = fixture.await?;
+    let mut composer = algorand_fixture.algorand_client.new_group();
     composer.add_app_call(AppCallParams {
-        common_params: CommonParams {
+        common_params: CommonTransactionParams {
             sender: sender_address.clone(),
             ..Default::default()
         },
@@ -438,18 +451,18 @@ async fn test_assets_populated_when_resource_population_enabled(
     #[case] _avm_version: u8,
     #[with(_avm_version)]
     #[future]
-    setup: SetupResult,
+    fixture: FixtureResult,
 ) -> TestResult {
-    let TestData {
+    let Fixture {
         sender_address,
         app_id,
         method_selectors,
-        fixture,
+        algorand_fixture,
         ..
-    } = setup.await?;
-    let mut composer = fixture.context()?.composer.clone();
+    } = fixture.await?;
+    let mut composer = algorand_fixture.algorand_client.new_group();
     composer.add_app_call(AppCallParams {
-        common_params: CommonParams {
+        common_params: CommonTransactionParams {
             sender: sender_address.clone(),
             ..Default::default()
         },
@@ -479,30 +492,30 @@ async fn test_cross_product_assets_and_accounts_errors_when_resource_population_
     #[case] avm_version: u8,
     #[with(avm_version)]
     #[future]
-    setup: SetupResult,
+    fixture: FixtureResult,
 ) -> TestResult {
-    let TestData {
+    let Fixture {
         sender_address,
         app_id,
         method_selectors,
-        mut fixture,
+        mut algorand_fixture,
         abi_types,
         ..
-    } = setup.await?;
-    let mut composer = fixture.context()?.composer.clone();
+    } = fixture.await?;
+    let mut composer = algorand_fixture.algorand_client.new_group();
     let expected_error = if avm_version == 8 {
         "invalid Account reference"
     } else {
         "unavailable Account"
     };
-    let alice = fixture
+    let alice = algorand_fixture
         .generate_account(None)
         .await?
-        .account()?
+        .account()
         .address()
         .to_string();
     composer.add_app_call(AppCallParams {
-        common_params: CommonParams {
+        common_params: CommonTransactionParams {
             sender: sender_address.clone(),
             ..Default::default()
         },
@@ -535,20 +548,24 @@ async fn test_cross_product_assets_and_accounts_populated_when_resource_populati
     #[case] _avm_version: u8,
     #[with(_avm_version)]
     #[future]
-    setup: SetupResult,
+    fixture: FixtureResult,
 ) -> TestResult {
-    let TestData {
+    let Fixture {
         sender_address,
         app_id,
         method_selectors,
-        mut fixture,
+        mut algorand_fixture,
         abi_types,
         ..
-    } = setup.await?;
-    let mut composer = fixture.context()?.composer.clone();
-    let alice = fixture.generate_account(None).await?.account()?.address();
+    } = fixture.await?;
+    let mut composer = algorand_fixture.algorand_client.new_group();
+    let alice = algorand_fixture
+        .generate_account(None)
+        .await?
+        .account()
+        .address();
     composer.add_app_call(AppCallParams {
-        common_params: CommonParams {
+        common_params: CommonTransactionParams {
             sender: sender_address.clone(),
             ..Default::default()
         },
@@ -584,32 +601,32 @@ async fn test_cross_product_account_app_errors_when_resource_population_disabled
     #[case] avm_version: u8,
     #[with(avm_version)]
     #[future]
-    setup: SetupResult,
+    fixture: FixtureResult,
 ) -> TestResult {
-    let TestData {
+    let Fixture {
         sender_address,
         app_id,
         method_selectors,
-        mut fixture,
+        mut algorand_fixture,
         abi_types,
         ..
-    } = setup.await?;
-    let mut composer = fixture.context()?.composer.clone();
+    } = fixture.await?;
+    let mut composer = algorand_fixture.algorand_client.new_group();
     let expected_error = if avm_version == 8 {
         "invalid Account reference"
     } else {
         "unavailable Account"
     };
-    let alice = fixture
+    let alice = algorand_fixture
         .generate_account(Some(TestAccountConfig {
             initial_funds: 10_000_000,
             ..Default::default()
         }))
         .await?
-        .account()?
+        .account()
         .address();
     composer.add_app_call(AppCallParams {
-        common_params: CommonParams {
+        common_params: CommonTransactionParams {
             sender: sender_address.clone(),
             ..Default::default()
         },
@@ -644,25 +661,25 @@ async fn test_cross_product_account_app_populated_when_resource_population_enabl
     #[case] avm_version: u8,
     #[with(avm_version)]
     #[future]
-    setup: SetupResult,
+    fixture: FixtureResult,
 ) -> TestResult {
-    let TestData {
+    let Fixture {
         sender_address,
         app_id,
         external_app_id,
         method_selectors,
-        mut fixture,
+        mut algorand_fixture,
         abi_types,
         ..
-    } = setup.await?;
-    let mut composer = fixture.context()?.composer.clone();
-    let alice = fixture
+    } = fixture.await?;
+    let mut composer = algorand_fixture.algorand_client.new_group();
+    let alice = algorand_fixture
         .generate_account(Some(TestAccountConfig {
             initial_funds: 1_000_000,
             ..Default::default()
         }))
         .await?;
-    let alice_address = alice.account()?.address();
+    let alice_address = alice.account().address();
     let alice_signer = Arc::new(alice.clone());
     let (expected_account_refs, expected_app_refs) = if avm_version == 8 {
         (
@@ -674,7 +691,7 @@ async fn test_cross_product_account_app_populated_when_resource_population_enabl
     };
 
     composer.add_app_call(AppCallParams {
-        common_params: CommonParams {
+        common_params: CommonTransactionParams {
             sender: alice_address.clone(),
             signer: Some(alice_signer.clone()),
             ..Default::default()
@@ -686,7 +703,7 @@ async fn test_cross_product_account_app_populated_when_resource_population_enabl
     })?;
 
     composer.add_app_call(AppCallParams {
-        common_params: CommonParams {
+        common_params: CommonTransactionParams {
             sender: sender_address.clone(),
             ..Default::default()
         },
@@ -719,30 +736,30 @@ async fn test_cross_product_account_app_populated_when_resource_population_enabl
 async fn test_mixed_avm_version_same_account(
     #[with(8)]
     #[future]
-    setup: SetupResult,
+    fixture: FixtureResult,
 ) -> TestResult {
-    let TestData {
+    let Fixture {
         sender_address,
         app_id: avm_8_app_id,
         method_selectors,
-        mut fixture,
+        mut algorand_fixture,
         abi_types,
         ..
-    } = setup.await?;
-    let context = fixture.context()?;
-    let mut composer = context.composer.clone();
-    let avm_9_app_id = deploy_resource_population_app(context, &method_selectors, 9).await?;
-    let alice = fixture
+    } = fixture.await?;
+    let mut composer = algorand_fixture.algorand_client.new_group();
+    let avm_9_app_id =
+        deploy_resource_population_app(&algorand_fixture, &method_selectors, 9).await?;
+    let alice = algorand_fixture
         .generate_account(Some(TestAccountConfig {
             initial_funds: 1_000_000,
             ..Default::default()
         }))
         .await?
-        .account()?
+        .account()
         .address();
 
     composer.add_app_call(AppCallParams {
-        common_params: CommonParams {
+        common_params: CommonTransactionParams {
             sender: sender_address.clone(),
             ..Default::default()
         },
@@ -758,7 +775,7 @@ async fn test_mixed_avm_version_same_account(
     })?;
 
     composer.add_app_call(AppCallParams {
-        common_params: CommonParams {
+        common_params: CommonTransactionParams {
             sender: sender_address.clone(),
             ..Default::default()
         },
@@ -794,23 +811,23 @@ async fn test_mixed_avm_version_same_account(
 async fn test_mixed_avm_version_app_account(
     #[with(8)]
     #[future]
-    setup: SetupResult,
+    fixture: FixtureResult,
 ) -> TestResult {
-    let TestData {
+    let Fixture {
         sender_address,
         app_id: avm_8_app_id,
         external_app_id,
         method_selectors,
-        fixture,
+        algorand_fixture,
         abi_types,
         ..
-    } = setup.await?;
-    let context = fixture.context()?;
-    let mut composer = context.composer.clone();
-    let avm_9_app_id = deploy_resource_population_app(context, &method_selectors, 9).await?;
+    } = fixture.await?;
+    let mut composer = algorand_fixture.algorand_client.new_group();
+    let avm_9_app_id =
+        deploy_resource_population_app(&algorand_fixture, &method_selectors, 9).await?;
 
     composer.add_app_call(AppCallParams {
-        common_params: CommonParams {
+        common_params: CommonTransactionParams {
             sender: sender_address.clone(),
             static_fee: Some(2000),
             ..Default::default()
@@ -822,7 +839,7 @@ async fn test_mixed_avm_version_app_account(
     })?;
 
     composer.add_app_call(AppCallParams {
-        common_params: CommonParams {
+        common_params: CommonTransactionParams {
             sender: sender_address.clone(),
             ..Default::default()
         },
@@ -862,18 +879,18 @@ async fn test_error(
     #[case] populate_resources: Option<bool>,
     #[with(9)]
     #[future]
-    setup: SetupResult,
+    fixture: FixtureResult,
 ) -> TestResult {
-    let TestData {
+    let Fixture {
         sender_address,
         app_id,
         method_selectors,
-        fixture,
+        algorand_fixture,
         ..
-    } = setup.await?;
-    let mut composer = fixture.context()?.composer.clone();
+    } = fixture.await?;
+    let mut composer = algorand_fixture.algorand_client.new_group();
     composer.add_app_call(AppCallParams {
-        common_params: CommonParams {
+        common_params: CommonTransactionParams {
             sender: sender_address.clone(),
             ..Default::default()
         },
@@ -923,20 +940,20 @@ async fn test_error(
 async fn test_box_with_txn_arg(
     #[with(9)]
     #[future]
-    setup: SetupResult,
+    fixture: FixtureResult,
 ) -> TestResult {
-    let TestData {
+    let Fixture {
         sender_address,
         external_app_id,
         method_selectors,
-        fixture,
+        algorand_fixture,
         ..
-    } = setup.await?;
-    fund_app_account(fixture.context()?, external_app_id, 106_100).await?;
-    let mut composer = fixture.context()?.composer.clone();
+    } = fixture.await?;
+    fund_app_account(&algorand_fixture, external_app_id, 106_100).await?;
+    let mut composer = algorand_fixture.algorand_client.new_group();
 
     composer.add_payment(PaymentParams {
-        common_params: CommonParams {
+        common_params: CommonTransactionParams {
             sender: sender_address.clone(),
             ..Default::default()
         },
@@ -945,7 +962,7 @@ async fn test_box_with_txn_arg(
     })?;
 
     composer.add_app_call(AppCallParams {
-        common_params: CommonParams {
+        common_params: CommonTransactionParams {
             sender: sender_address.clone(),
             ..Default::default()
         },
@@ -978,20 +995,20 @@ async fn test_box_with_txn_arg(
 async fn test_sender_asset_holding(
     #[with(9)]
     #[future]
-    setup: SetupResult,
+    fixture: FixtureResult,
 ) -> TestResult {
-    let TestData {
+    let Fixture {
         sender_address,
         external_app_id,
         method_selectors,
-        fixture,
+        algorand_fixture,
         ..
-    } = setup.await?;
-    let mut composer = fixture.context()?.composer.clone();
-    fund_app_account(fixture.context()?, external_app_id, 200_000).await?;
+    } = fixture.await?;
+    let mut composer = algorand_fixture.algorand_client.new_group();
+    fund_app_account(&algorand_fixture, external_app_id, 200_000).await?;
 
     composer.add_app_call(AppCallParams {
-        common_params: CommonParams {
+        common_params: CommonTransactionParams {
             sender: sender_address.clone(),
             static_fee: Some(2000),
             ..Default::default()
@@ -1003,7 +1020,7 @@ async fn test_sender_asset_holding(
     })?;
 
     composer.add_app_call(AppCallParams {
-        common_params: CommonParams {
+        common_params: CommonTransactionParams {
             sender: sender_address.clone(),
             ..Default::default()
         },
@@ -1030,29 +1047,29 @@ async fn test_sender_asset_holding(
 async fn test_rekeyed_account(
     #[with(9)]
     #[future]
-    setup: SetupResult,
+    fixture: FixtureResult,
 ) -> TestResult {
-    let TestData {
+    let Fixture {
         sender_address,
         external_app_id,
         method_selectors,
-        mut fixture,
+        mut algorand_fixture,
         ..
-    } = setup.await?;
-    let mut composer = fixture.context()?.composer.clone();
-    fund_app_account(fixture.context()?, external_app_id, 200_001).await?;
-    let auth_account = fixture
+    } = fixture.await?;
+    let mut composer = algorand_fixture.algorand_client.new_group();
+    fund_app_account(&algorand_fixture, external_app_id, 200_001).await?;
+    let auth_account = algorand_fixture
         .generate_account(Some(TestAccountConfig {
             initial_funds: 1_000_000,
             ..Default::default()
         }))
         .await?;
-    let auth_address = auth_account.account()?.address();
+    let auth_address = auth_account.account().address();
     let auth_signer = Arc::new(auth_account.clone());
 
     // Rekey the account
     composer.add_payment(PaymentParams {
-        common_params: CommonParams {
+        common_params: CommonTransactionParams {
             sender: sender_address.clone(),
             rekey_to: Some(auth_address.clone()),
             ..Default::default()
@@ -1062,7 +1079,7 @@ async fn test_rekeyed_account(
     })?;
 
     composer.add_app_call(AppCallParams {
-        common_params: CommonParams {
+        common_params: CommonTransactionParams {
             sender: sender_address.clone(),
             signer: Some(auth_signer.clone()),
             static_fee: Some(2001),
@@ -1075,7 +1092,7 @@ async fn test_rekeyed_account(
     })?;
 
     composer.add_app_call(AppCallParams {
-        common_params: CommonParams {
+        common_params: CommonTransactionParams {
             sender: sender_address.clone(),
             signer: Some(auth_signer.clone()),
             ..Default::default()
@@ -1098,17 +1115,16 @@ async fn test_rekeyed_account(
     Ok(())
 }
 
-struct TestData {
+struct Fixture {
     sender_address: Address,
     app_id: u64,
     external_app_id: u64,
-    fixture: AlgorandFixture,
+    algorand_fixture: AlgorandFixture,
     method_selectors: MethodSelectors,
     abi_types: ABITypes,
 }
 
-type SetupResult = Result<TestData, Box<dyn std::error::Error + Send + Sync>>;
-type TestResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
+type FixtureResult = Result<Fixture, Box<dyn std::error::Error + Send + Sync>>;
 
 struct MethodSelectors {
     create_application: Vec<u8>,
@@ -1152,7 +1168,7 @@ const POPULATE_RESOURCES_SEND_PARAMS: Option<SendParams> = Some(SendParams {
 });
 
 async fn deploy_resource_population_app(
-    context: &AlgorandTestContext,
+    context: &AlgorandFixture,
     method_selectors: &MethodSelectors,
     version: u8,
 ) -> Result<u64, Box<dyn std::error::Error + Send + Sync>> {
@@ -1160,10 +1176,10 @@ async fn deploy_resource_population_app(
     let approval_compile_result = context.algod.teal_compile(approval_teal, None).await?;
     let clear_state_compile_result = context.algod.teal_compile(clear_state_teal, None).await?;
 
-    let mut composer = context.composer.clone();
+    let mut composer = context.algorand_client.new_group();
     composer.add_app_create(AppCreateParams {
-        common_params: CommonParams {
-            sender: context.test_account.account()?.address(),
+        common_params: CommonTransactionParams {
+            sender: context.test_account.account().address(),
             ..Default::default()
         },
         on_complete: OnApplicationComplete::NoOp,
@@ -1188,15 +1204,15 @@ async fn deploy_resource_population_app(
 }
 
 async fn bootstrap_resource_population_app(
-    context: &AlgorandTestContext,
+    context: &AlgorandFixture,
     method_selectors: &MethodSelectors,
     app_id: u64,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let mut composer = context.composer.clone();
+    let mut composer = context.algorand_client.new_group();
 
     composer.add_app_call(AppCallParams {
-        common_params: CommonParams {
-            sender: context.test_account.account()?.address(),
+        common_params: CommonTransactionParams {
+            sender: context.test_account.account().address(),
             static_fee: Some(3000),
             ..Default::default()
         },
@@ -1211,7 +1227,7 @@ async fn bootstrap_resource_population_app(
 }
 
 async fn fund_app_account(
-    context: &AlgorandTestContext,
+    context: &AlgorandFixture,
     app_id: u64,
     amount: u64,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
@@ -1227,9 +1243,9 @@ async fn get_resource_population_programs(
     version: u8,
 ) -> Result<(Vec<u8>, Vec<u8>), Box<dyn std::error::Error + Send + Sync>> {
     let app_spec_path = if version == 8 {
-        include_str!("../../contracts/resource_population/ResourcePackerv8.arc32.json")
+        resource_population::APPLICATION_V8
     } else {
-        include_str!("../../contracts/resource_population/ResourcePackerv9.arc32.json")
+        resource_population::APPLICATION_V9
     };
 
     let app_spec: ARC32AppSpec = serde_json::from_str(app_spec_path)?;

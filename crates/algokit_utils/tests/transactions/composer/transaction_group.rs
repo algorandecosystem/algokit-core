@@ -1,41 +1,24 @@
-use algokit_transact::MAX_TX_GROUP_SIZE;
 use algokit_transact::test_utils::TransactionGroupMother;
-use algokit_utils::testing::*;
-use algokit_utils::{AssetCreateParams, CommonParams, PaymentParams};
+use algokit_transact::{MAX_TX_GROUP_SIZE, test_utils::TransactionMother};
+use algokit_utils::{AssetCreateParams, CommonTransactionParams, PaymentParams};
+use rstest::*;
 
-use crate::common::init_test_logging;
+use crate::common::{AlgorandFixtureResult, TestResult, algorand_fixture};
 
+#[rstest]
 #[tokio::test]
-async fn test_payment_and_asset_create_group() {
-    init_test_logging();
+async fn test_payment_and_asset_create_group(
+    #[future] algorand_fixture: AlgorandFixtureResult,
+) -> TestResult {
+    let mut algorand_fixture = algorand_fixture.await?;
+    let sender_address = algorand_fixture.test_account.account().address();
 
-    let mut fixture = algorand_fixture().await.expect("Failed to create fixture");
-
-    fixture
-        .new_scope()
-        .await
-        .expect("Failed to create new scope");
-
-    let receiver = fixture
-        .generate_account(None)
-        .await
-        .expect("Failed to create receiver");
-
-    let receiver_addr = receiver
-        .account()
-        .expect("Failed to get receiver account")
-        .address();
-
-    let context = fixture.context().expect("Failed to get context");
-    let sender_addr = context
-        .test_account
-        .account()
-        .expect("Failed to get sender account")
-        .address();
+    let receiver = algorand_fixture.generate_account(None).await?;
+    let receiver_addr = receiver.account().address();
 
     let payment_params = PaymentParams {
-        common_params: CommonParams {
-            sender: sender_addr.clone(),
+        common_params: CommonTransactionParams {
+            sender: sender_address.clone(),
             ..Default::default()
         },
         receiver: receiver_addr,
@@ -43,8 +26,8 @@ async fn test_payment_and_asset_create_group() {
     };
 
     let asset_create_params = AssetCreateParams {
-        common_params: CommonParams {
-            sender: sender_addr.clone(),
+        common_params: CommonTransactionParams {
+            sender: sender_address.clone(),
             ..Default::default()
         },
         total: 1_000_000,
@@ -54,25 +37,17 @@ async fn test_payment_and_asset_create_group() {
         unit_name: Some("GTA".to_string()),
         url: Some("https://group-test.com".to_string()),
         metadata_hash: None,
-        manager: Some(sender_addr.clone()),
-        reserve: Some(sender_addr.clone()),
-        freeze: Some(sender_addr.clone()),
-        clawback: Some(sender_addr),
+        manager: Some(sender_address.clone()),
+        reserve: Some(sender_address.clone()),
+        freeze: Some(sender_address.clone()),
+        clawback: Some(sender_address),
     };
 
-    let mut composer = context.composer.clone();
-    composer
-        .add_payment(payment_params)
-        .expect("Failed to add payment");
+    let mut composer = algorand_fixture.algorand_client.new_group();
+    composer.add_payment(payment_params)?;
+    composer.add_asset_create(asset_create_params)?;
 
-    composer
-        .add_asset_create(asset_create_params)
-        .expect("Failed to add asset create");
-
-    let result = composer
-        .send(None)
-        .await
-        .expect("Failed to send transaction group");
+    let result = composer.send(None).await?;
 
     // Verify group properties
     assert_eq!(
@@ -86,8 +61,7 @@ async fn test_payment_and_asset_create_group() {
         "Should have 2 confirmations in the group"
     );
 
-    let group_id = result.group_id;
-    assert!(group_id.is_some(), "Group ID should be set");
+    assert!(result.group.is_some(), "Group ID should be set");
 
     // Verify payment transaction
     let payment_confirmation = &result.confirmations[0];
@@ -107,7 +81,7 @@ async fn test_payment_and_asset_create_group() {
                 "Payment amount should be 1,000,000 microALGOs"
             );
         }
-        _ => panic!("First transaction should be a payment transaction"),
+        _ => return Err("First transaction should be a payment transaction".into()),
     }
 
     // Verify asset creation transaction
@@ -148,7 +122,7 @@ async fn test_payment_and_asset_create_group() {
                 "Unit name should match"
             );
         }
-        _ => panic!("Second transaction should be an asset config transaction"),
+        _ => return Err("Second transaction should be an asset config transaction".into()),
     }
 
     // Verify that the asset was actually created
@@ -160,116 +134,90 @@ async fn test_payment_and_asset_create_group() {
         asset_confirmation.asset_id.unwrap() > 0,
         "Asset index should be greater than 0"
     );
+
+    Ok(())
 }
 
+#[rstest]
 #[tokio::test]
-async fn test_add_transactions_to_group_max_size() {
-    init_test_logging();
+async fn test_add_transactions_to_group_max_size(
+    #[future] algorand_fixture: AlgorandFixtureResult,
+) -> TestResult {
+    let mut algorand_fixture = algorand_fixture.await?;
+    let sender_address = algorand_fixture.test_account.account().address();
 
-    let mut fixture = algorand_fixture().await.expect("Failed to create fixture");
+    let receiver = algorand_fixture.generate_account(None).await?;
+    let receiver_addr = receiver.account().address();
 
-    fixture
-        .new_scope()
-        .await
-        .expect("Failed to create new scope");
-
-    let receiver = fixture
-        .generate_account(None)
-        .await
-        .expect("Failed to create receiver");
-
-    let receiver_addr = receiver
-        .account()
-        .expect("Failed to get receiver account")
-        .address();
-
-    let context = fixture.context().expect("Failed to get context");
-
-    let sender_addr = context
-        .test_account
-        .account()
-        .expect("Failed to get sender account")
-        .address();
-
-    let mut composer = context.composer.clone();
+    let mut composer = algorand_fixture.algorand_client.new_group();
 
     for i in 0..MAX_TX_GROUP_SIZE - 2 {
         let payment_params = PaymentParams {
-            common_params: CommonParams {
-                sender: sender_addr.clone(),
+            common_params: CommonTransactionParams {
+                sender: sender_address.clone(),
                 ..Default::default()
             },
             receiver: receiver_addr.clone(),
             amount: i as u64,
         };
 
-        composer
-            .add_payment(payment_params)
-            .expect("Failed to add payment");
+        composer.add_payment(payment_params)?;
     }
 
-    let new_transactions = TransactionGroupMother::group_of(2);
+    let new_transactions = TransactionGroupMother::group_of(2)
+        .iter()
+        .map(|tx| {
+            let mut tx = tx.clone();
+            tx.header_mut().sender = sender_address.clone();
+            tx
+        })
+        .collect::<Vec<_>>();
 
-    composer
-        .add_transactions(new_transactions)
-        .expect("Failed to add transactions to composer");
+    for tx in new_transactions {
+        composer.add_transaction(tx, None)?;
+    }
 
-    assert!(composer.transactions().len() == MAX_TX_GROUP_SIZE);
+    assert!(composer.build(None).await.unwrap().len() == MAX_TX_GROUP_SIZE);
+
+    Ok(())
 }
 
+#[rstest]
 #[tokio::test]
-async fn test_add_transactions_to_group_too_big() {
-    init_test_logging();
+async fn test_add_transaction_to_group_too_big(
+    #[future] algorand_fixture: AlgorandFixtureResult,
+) -> TestResult {
+    let mut algorand_fixture = algorand_fixture.await?;
+    let sender_address = algorand_fixture.test_account.account().address();
 
-    let mut fixture = algorand_fixture().await.expect("Failed to create fixture");
+    let receiver = algorand_fixture.generate_account(None).await?;
+    let receiver_addr = receiver.account().address();
 
-    fixture
-        .new_scope()
-        .await
-        .expect("Failed to create new scope");
+    let mut composer = algorand_fixture.algorand_client.new_group();
 
-    let receiver = fixture
-        .generate_account(None)
-        .await
-        .expect("Failed to create receiver");
-
-    let receiver_addr = receiver
-        .account()
-        .expect("Failed to get receiver account")
-        .address();
-
-    let context = fixture.context().expect("Failed to get context");
-
-    let sender_addr = context
-        .test_account
-        .account()
-        .expect("Failed to get sender account")
-        .address();
-
-    let mut composer = context.composer.clone();
-
-    for i in 0..MAX_TX_GROUP_SIZE - 2 {
+    for i in 0..MAX_TX_GROUP_SIZE {
         let payment_params = PaymentParams {
-            common_params: CommonParams {
-                sender: sender_addr.clone(),
+            common_params: CommonTransactionParams {
+                sender: sender_address.clone(),
                 ..Default::default()
             },
             receiver: receiver_addr.clone(),
             amount: i as u64,
         };
 
-        composer
-            .add_payment(payment_params)
-            .expect("Failed to add payment");
+        composer.add_payment(payment_params)?;
     }
 
-    let new_transactions = TransactionGroupMother::group_of(3);
+    let new_transaction = TransactionMother::simple_payment().build()?;
 
-    let result = composer.add_transactions(new_transactions);
+    let result = composer.add_transaction(new_transaction, None);
+
     assert!(
         result
             .unwrap_err()
             .to_string()
             .contains("Transaction group size exceeds the max limit of")
     );
+
+    Ok(())
 }
