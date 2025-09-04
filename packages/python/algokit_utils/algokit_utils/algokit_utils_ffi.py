@@ -472,11 +472,17 @@ def _uniffi_check_contract_api_version(lib):
 def _uniffi_check_api_checksums(lib):
     if lib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_clawback() != 59332:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_create() != 42067:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_destroy() != 61779:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_freeze() != 44087:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_opt_in() != 47319:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_opt_out() != 20451:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_reconfigure() != 62694:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_transfer() != 45589:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
@@ -663,6 +669,18 @@ _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_clawback.argtyp
     ctypes.POINTER(_UniffiRustCallStatus),
 )
 _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_clawback.restype = None
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_create.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_create.restype = None
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_destroy.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_destroy.restype = None
 _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_freeze.argtypes = (
     ctypes.c_void_p,
     _UniffiRustBuffer,
@@ -681,6 +699,12 @@ _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_opt_out.argtype
     ctypes.POINTER(_UniffiRustCallStatus),
 )
 _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_opt_out.restype = None
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_reconfigure.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_reconfigure.restype = None
 _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_transfer.argtypes = (
     ctypes.c_void_p,
     _UniffiRustBuffer,
@@ -1035,6 +1059,12 @@ _UniffiLib.ffi_algokit_utils_ffi_rust_future_complete_void.restype = None
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_clawback.argtypes = (
 )
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_clawback.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_create.argtypes = (
+)
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_create.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_destroy.argtypes = (
+)
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_destroy.restype = ctypes.c_uint16
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_freeze.argtypes = (
 )
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_freeze.restype = ctypes.c_uint16
@@ -1044,6 +1074,9 @@ _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_opt_in.re
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_opt_out.argtypes = (
 )
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_opt_out.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_reconfigure.argtypes = (
+)
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_reconfigure.restype = ctypes.c_uint16
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_transfer.argtypes = (
 )
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_transfer.restype = ctypes.c_uint16
@@ -1306,6 +1339,251 @@ class _UniffiConverterTypeAssetClawbackParams(_UniffiConverterRustBuffer):
         _UniffiConverterString.write(value.clawback_target, buf)
 
 
+class AssetCreateParams:
+    common_params: "CommonParams"
+    """
+    Common transaction parameters.
+    """
+
+    total: "int"
+    """
+    The total amount of the smallest divisible (decimal) unit to create.
+
+    For example, if creating an asset with 2 decimals and wanting a total supply of 100 units, this value should be 10000.
+    """
+
+    decimals: "typing.Optional[int]"
+    """
+    The amount of decimal places the asset should have.
+
+    If unspecified then the asset will be in whole units (i.e. `0`).
+    * If 0, the asset is not divisible;
+    * If 1, the base unit of the asset is in tenths;
+    * If 2, the base unit of the asset is in hundredths;
+    * If 3, the base unit of the asset is in thousandths;
+
+    and so on up to 19 decimal places.
+    """
+
+    default_frozen: "typing.Optional[bool]"
+    """
+    Whether the asset is frozen by default for all accounts.
+    Defaults to `false`.
+
+    If `true` then for anyone apart from the creator to hold the
+    asset it needs to be unfrozen per account using an asset freeze
+    transaction from the `freeze` account, which must be set on creation.
+    """
+
+    asset_name: "typing.Optional[str]"
+    """
+    The optional name of the asset.
+
+    Max size is 32 bytes.
+    """
+
+    unit_name: "typing.Optional[str]"
+    """
+    The optional name of the unit of this asset (e.g. ticker name).
+
+    Max size is 8 bytes.
+    """
+
+    url: "typing.Optional[str]"
+    """
+    Specifies an optional URL where more information about the asset can be retrieved (e.g. metadata).
+
+    Max size is 96 bytes.
+    """
+
+    metadata_hash: "typing.Optional[bytes]"
+    """
+    32-byte hash of some metadata that is relevant to your asset and/or asset holders.
+
+    The format of this metadata is up to the application.
+    """
+
+    manager: "typing.Optional[str]"
+    """
+    The address of the optional account that can manage the configuration of the asset and destroy it.
+
+    The configuration fields it can change are `manager`, `reserve`, `clawback`, and `freeze`.
+
+    If not set or set to the Zero address the asset becomes permanently immutable.
+    """
+
+    reserve: "typing.Optional[str]"
+    """
+    The address of the optional account that holds the reserve (uncirculated supply) units of the asset.
+
+    This address has no specific authority in the protocol itself and is informational only.
+
+    Some standards like [ARC-19](https://github.com/algorandfoundation/ARCs/blob/main/ARCs/arc-0019.md)
+    rely on this field to hold meaningful data.
+
+    It can be used in the case where you want to signal to holders of your asset that the uncirculated units
+    of the asset reside in an account that is different from the default creator account.
+
+    If not set or set to the Zero address is permanently empty.
+    """
+
+    freeze: "typing.Optional[str]"
+    """
+    The address of the optional account that can be used to freeze or unfreeze holdings of this asset for any account.
+
+    If empty, freezing is not permitted.
+
+    If not set or set to the Zero address is permanently empty.
+    """
+
+    clawback: "typing.Optional[str]"
+    """
+    The address of the optional account that can clawback holdings of this asset from any account.
+
+    **This field should be used with caution** as the clawback account has the ability to **unconditionally take assets from any account**.
+
+    If empty, clawback is not permitted.
+
+    If not set or set to the Zero address is permanently empty.
+    """
+
+    def __init__(self, *, common_params: "CommonParams", total: "int", decimals: "typing.Optional[int]", default_frozen: "typing.Optional[bool]", asset_name: "typing.Optional[str]", unit_name: "typing.Optional[str]", url: "typing.Optional[str]", metadata_hash: "typing.Optional[bytes]", manager: "typing.Optional[str]", reserve: "typing.Optional[str]", freeze: "typing.Optional[str]", clawback: "typing.Optional[str]"):
+        self.common_params = common_params
+        self.total = total
+        self.decimals = decimals
+        self.default_frozen = default_frozen
+        self.asset_name = asset_name
+        self.unit_name = unit_name
+        self.url = url
+        self.metadata_hash = metadata_hash
+        self.manager = manager
+        self.reserve = reserve
+        self.freeze = freeze
+        self.clawback = clawback
+
+    def __str__(self):
+        return "AssetCreateParams(common_params={}, total={}, decimals={}, default_frozen={}, asset_name={}, unit_name={}, url={}, metadata_hash={}, manager={}, reserve={}, freeze={}, clawback={})".format(self.common_params, self.total, self.decimals, self.default_frozen, self.asset_name, self.unit_name, self.url, self.metadata_hash, self.manager, self.reserve, self.freeze, self.clawback)
+
+    def __eq__(self, other):
+        if self.common_params != other.common_params:
+            return False
+        if self.total != other.total:
+            return False
+        if self.decimals != other.decimals:
+            return False
+        if self.default_frozen != other.default_frozen:
+            return False
+        if self.asset_name != other.asset_name:
+            return False
+        if self.unit_name != other.unit_name:
+            return False
+        if self.url != other.url:
+            return False
+        if self.metadata_hash != other.metadata_hash:
+            return False
+        if self.manager != other.manager:
+            return False
+        if self.reserve != other.reserve:
+            return False
+        if self.freeze != other.freeze:
+            return False
+        if self.clawback != other.clawback:
+            return False
+        return True
+
+class _UniffiConverterTypeAssetCreateParams(_UniffiConverterRustBuffer):
+    @staticmethod
+    def read(buf):
+        return AssetCreateParams(
+            common_params=_UniffiConverterTypeCommonParams.read(buf),
+            total=_UniffiConverterUInt64.read(buf),
+            decimals=_UniffiConverterOptionalUInt32.read(buf),
+            default_frozen=_UniffiConverterOptionalBool.read(buf),
+            asset_name=_UniffiConverterOptionalString.read(buf),
+            unit_name=_UniffiConverterOptionalString.read(buf),
+            url=_UniffiConverterOptionalString.read(buf),
+            metadata_hash=_UniffiConverterOptionalBytes.read(buf),
+            manager=_UniffiConverterOptionalString.read(buf),
+            reserve=_UniffiConverterOptionalString.read(buf),
+            freeze=_UniffiConverterOptionalString.read(buf),
+            clawback=_UniffiConverterOptionalString.read(buf),
+        )
+
+    @staticmethod
+    def check_lower(value):
+        _UniffiConverterTypeCommonParams.check_lower(value.common_params)
+        _UniffiConverterUInt64.check_lower(value.total)
+        _UniffiConverterOptionalUInt32.check_lower(value.decimals)
+        _UniffiConverterOptionalBool.check_lower(value.default_frozen)
+        _UniffiConverterOptionalString.check_lower(value.asset_name)
+        _UniffiConverterOptionalString.check_lower(value.unit_name)
+        _UniffiConverterOptionalString.check_lower(value.url)
+        _UniffiConverterOptionalBytes.check_lower(value.metadata_hash)
+        _UniffiConverterOptionalString.check_lower(value.manager)
+        _UniffiConverterOptionalString.check_lower(value.reserve)
+        _UniffiConverterOptionalString.check_lower(value.freeze)
+        _UniffiConverterOptionalString.check_lower(value.clawback)
+
+    @staticmethod
+    def write(value, buf):
+        _UniffiConverterTypeCommonParams.write(value.common_params, buf)
+        _UniffiConverterUInt64.write(value.total, buf)
+        _UniffiConverterOptionalUInt32.write(value.decimals, buf)
+        _UniffiConverterOptionalBool.write(value.default_frozen, buf)
+        _UniffiConverterOptionalString.write(value.asset_name, buf)
+        _UniffiConverterOptionalString.write(value.unit_name, buf)
+        _UniffiConverterOptionalString.write(value.url, buf)
+        _UniffiConverterOptionalBytes.write(value.metadata_hash, buf)
+        _UniffiConverterOptionalString.write(value.manager, buf)
+        _UniffiConverterOptionalString.write(value.reserve, buf)
+        _UniffiConverterOptionalString.write(value.freeze, buf)
+        _UniffiConverterOptionalString.write(value.clawback, buf)
+
+
+class AssetDestroyParams:
+    common_params: "CommonParams"
+    """
+    Common transaction parameters.
+    """
+
+    asset_id: "int"
+    """
+    ID of the existing asset to be destroyed.
+    """
+
+    def __init__(self, *, common_params: "CommonParams", asset_id: "int"):
+        self.common_params = common_params
+        self.asset_id = asset_id
+
+    def __str__(self):
+        return "AssetDestroyParams(common_params={}, asset_id={})".format(self.common_params, self.asset_id)
+
+    def __eq__(self, other):
+        if self.common_params != other.common_params:
+            return False
+        if self.asset_id != other.asset_id:
+            return False
+        return True
+
+class _UniffiConverterTypeAssetDestroyParams(_UniffiConverterRustBuffer):
+    @staticmethod
+    def read(buf):
+        return AssetDestroyParams(
+            common_params=_UniffiConverterTypeCommonParams.read(buf),
+            asset_id=_UniffiConverterUInt64.read(buf),
+        )
+
+    @staticmethod
+    def check_lower(value):
+        _UniffiConverterTypeCommonParams.check_lower(value.common_params)
+        _UniffiConverterUInt64.check_lower(value.asset_id)
+
+    @staticmethod
+    def write(value, buf):
+        _UniffiConverterTypeCommonParams.write(value.common_params, buf)
+        _UniffiConverterUInt64.write(value.asset_id, buf)
+
+
 class AssetFreezeParams:
     common_params: "CommonParams"
     """
@@ -1458,6 +1736,118 @@ class _UniffiConverterTypeAssetOptOutParams(_UniffiConverterRustBuffer):
         _UniffiConverterTypeCommonParams.write(value.common_params, buf)
         _UniffiConverterUInt64.write(value.asset_id, buf)
         _UniffiConverterOptionalString.write(value.close_remainder_to, buf)
+
+
+class AssetReconfigureParams:
+    common_params: "CommonParams"
+    """
+    Common transaction parameters.
+    """
+
+    asset_id: "int"
+    """
+    ID of the existing asset to be reconfigured.
+    """
+
+    manager: "typing.Optional[str]"
+    """
+    The address of the optional account that can manage the configuration of the asset and destroy it.
+
+    The configuration fields it can change are `manager`, `reserve`, `clawback`, and `freeze`.
+
+    If not set or set to the Zero address the asset becomes permanently immutable.
+    """
+
+    reserve: "typing.Optional[str]"
+    """
+    The address of the optional account that holds the reserve (uncirculated supply) units of the asset.
+
+    This address has no specific authority in the protocol itself and is informational only.
+
+    Some standards like [ARC-19](https://github.com/algorandfoundation/ARCs/blob/main/ARCs/arc-0019.md)
+    rely on this field to hold meaningful data.
+
+    It can be used in the case where you want to signal to holders of your asset that the uncirculated units
+    of the asset reside in an account that is different from the default creator account.
+
+    If not set or set to the Zero address is permanently empty.
+    """
+
+    freeze: "typing.Optional[str]"
+    """
+    The address of the optional account that can be used to freeze or unfreeze holdings of this asset for any account.
+
+    If empty, freezing is not permitted.
+
+    If not set or set to the Zero address is permanently empty.
+    """
+
+    clawback: "typing.Optional[str]"
+    """
+    The address of the optional account that can clawback holdings of this asset from any account.
+
+    **This field should be used with caution** as the clawback account has the ability to **unconditionally take assets from any account**.
+
+    If empty, clawback is not permitted.
+
+    If not set or set to the Zero address is permanently empty.
+    """
+
+    def __init__(self, *, common_params: "CommonParams", asset_id: "int", manager: "typing.Optional[str]", reserve: "typing.Optional[str]", freeze: "typing.Optional[str]", clawback: "typing.Optional[str]"):
+        self.common_params = common_params
+        self.asset_id = asset_id
+        self.manager = manager
+        self.reserve = reserve
+        self.freeze = freeze
+        self.clawback = clawback
+
+    def __str__(self):
+        return "AssetReconfigureParams(common_params={}, asset_id={}, manager={}, reserve={}, freeze={}, clawback={})".format(self.common_params, self.asset_id, self.manager, self.reserve, self.freeze, self.clawback)
+
+    def __eq__(self, other):
+        if self.common_params != other.common_params:
+            return False
+        if self.asset_id != other.asset_id:
+            return False
+        if self.manager != other.manager:
+            return False
+        if self.reserve != other.reserve:
+            return False
+        if self.freeze != other.freeze:
+            return False
+        if self.clawback != other.clawback:
+            return False
+        return True
+
+class _UniffiConverterTypeAssetReconfigureParams(_UniffiConverterRustBuffer):
+    @staticmethod
+    def read(buf):
+        return AssetReconfigureParams(
+            common_params=_UniffiConverterTypeCommonParams.read(buf),
+            asset_id=_UniffiConverterUInt64.read(buf),
+            manager=_UniffiConverterOptionalString.read(buf),
+            reserve=_UniffiConverterOptionalString.read(buf),
+            freeze=_UniffiConverterOptionalString.read(buf),
+            clawback=_UniffiConverterOptionalString.read(buf),
+        )
+
+    @staticmethod
+    def check_lower(value):
+        _UniffiConverterTypeCommonParams.check_lower(value.common_params)
+        _UniffiConverterUInt64.check_lower(value.asset_id)
+        _UniffiConverterOptionalString.check_lower(value.manager)
+        _UniffiConverterOptionalString.check_lower(value.reserve)
+        _UniffiConverterOptionalString.check_lower(value.freeze)
+        _UniffiConverterOptionalString.check_lower(value.clawback)
+
+    @staticmethod
+    def write(value, buf):
+        _UniffiConverterTypeCommonParams.write(value.common_params, buf)
+        _UniffiConverterUInt64.write(value.asset_id, buf)
+        _UniffiConverterOptionalString.write(value.manager, buf)
+        _UniffiConverterOptionalString.write(value.reserve, buf)
+        _UniffiConverterOptionalString.write(value.freeze, buf)
+        _UniffiConverterOptionalString.write(value.clawback, buf)
 
 
 class AssetTransferParams:
@@ -1936,6 +2326,33 @@ class _UniffiConverterTypeUtilsError(_UniffiConverterRustBuffer):
         if isinstance(value, UtilsError.UtilsError):
             buf.write_i32(1)
             _UniffiConverterString.write(value.message, buf)
+
+
+
+class _UniffiConverterOptionalUInt32(_UniffiConverterRustBuffer):
+    @classmethod
+    def check_lower(cls, value):
+        if value is not None:
+            _UniffiConverterUInt32.check_lower(value)
+
+    @classmethod
+    def write(cls, value, buf):
+        if value is None:
+            buf.write_u8(0)
+            return
+
+        buf.write_u8(1)
+        _UniffiConverterUInt32.write(value, buf)
+
+    @classmethod
+    def read(cls, buf):
+        flag = buf.read_u8()
+        if flag == 0:
+            return None
+        elif flag == 1:
+            return _UniffiConverterUInt32.read(buf)
+        else:
+            raise InternalError("Unexpected flag byte for optional type")
 
 
 
@@ -2549,11 +2966,17 @@ class _UniffiConverterTypeAlgodClient:
 class ComposerProtocol(typing.Protocol):
     def add_asset_clawback(self, params: "AssetClawbackParams"):
         raise NotImplementedError
+    def add_asset_create(self, params: "AssetCreateParams"):
+        raise NotImplementedError
+    def add_asset_destroy(self, params: "AssetDestroyParams"):
+        raise NotImplementedError
     def add_asset_freeze(self, params: "AssetFreezeParams"):
         raise NotImplementedError
     def add_asset_opt_in(self, params: "AssetOptInParams"):
         raise NotImplementedError
     def add_asset_opt_out(self, params: "AssetOptOutParams"):
+        raise NotImplementedError
+    def add_asset_reconfigure(self, params: "AssetReconfigureParams"):
         raise NotImplementedError
     def add_asset_transfer(self, params: "AssetTransferParams"):
         raise NotImplementedError
@@ -2611,6 +3034,28 @@ class Composer():
 
 
 
+    def add_asset_create(self, params: "AssetCreateParams") -> None:
+        _UniffiConverterTypeAssetCreateParams.check_lower(params)
+        
+        _uniffi_rust_call_with_error(_UniffiConverterTypeUtilsError,_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_create,self._uniffi_clone_pointer(),
+        _UniffiConverterTypeAssetCreateParams.lower(params))
+
+
+
+
+
+
+    def add_asset_destroy(self, params: "AssetDestroyParams") -> None:
+        _UniffiConverterTypeAssetDestroyParams.check_lower(params)
+        
+        _uniffi_rust_call_with_error(_UniffiConverterTypeUtilsError,_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_destroy,self._uniffi_clone_pointer(),
+        _UniffiConverterTypeAssetDestroyParams.lower(params))
+
+
+
+
+
+
     def add_asset_freeze(self, params: "AssetFreezeParams") -> None:
         _UniffiConverterTypeAssetFreezeParams.check_lower(params)
         
@@ -2638,6 +3083,17 @@ class Composer():
         
         _uniffi_rust_call_with_error(_UniffiConverterTypeUtilsError,_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_opt_out,self._uniffi_clone_pointer(),
         _UniffiConverterTypeAssetOptOutParams.lower(params))
+
+
+
+
+
+
+    def add_asset_reconfigure(self, params: "AssetReconfigureParams") -> None:
+        _UniffiConverterTypeAssetReconfigureParams.check_lower(params)
+        
+        _uniffi_rust_call_with_error(_UniffiConverterTypeUtilsError,_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_reconfigure,self._uniffi_clone_pointer(),
+        _UniffiConverterTypeAssetReconfigureParams.lower(params))
 
 
 
@@ -2888,9 +3344,12 @@ __all__ = [
     "InternalError",
     "UtilsError",
     "AssetClawbackParams",
+    "AssetCreateParams",
+    "AssetDestroyParams",
     "AssetFreezeParams",
     "AssetOptInParams",
     "AssetOptOutParams",
+    "AssetReconfigureParams",
     "AssetTransferParams",
     "CommonParams",
     "NonParticipationKeyRegistrationParams",

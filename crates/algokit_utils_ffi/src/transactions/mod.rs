@@ -1,3 +1,4 @@
+pub mod asset_config;
 pub mod asset_freeze;
 pub mod asset_transfer;
 pub mod common;

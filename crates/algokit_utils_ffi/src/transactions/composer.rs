@@ -157,6 +157,42 @@ impl Composer {
             })
     }
 
+    pub fn add_asset_create(
+        &self,
+        params: super::asset_config::AssetCreateParams,
+    ) -> Result<(), UtilsError> {
+        let mut composer = self.inner_composer.blocking_lock();
+        composer
+            .add_asset_create(params.try_into()?)
+            .map_err(|e| UtilsError::UtilsError {
+                message: e.to_string(),
+            })
+    }
+
+    pub fn add_asset_reconfigure(
+        &self,
+        params: super::asset_config::AssetReconfigureParams,
+    ) -> Result<(), UtilsError> {
+        let mut composer = self.inner_composer.blocking_lock();
+        composer
+            .add_asset_reconfigure(params.try_into()?)
+            .map_err(|e| UtilsError::UtilsError {
+                message: e.to_string(),
+            })
+    }
+
+    pub fn add_asset_destroy(
+        &self,
+        params: super::asset_config::AssetDestroyParams,
+    ) -> Result<(), UtilsError> {
+        let mut composer = self.inner_composer.blocking_lock();
+        composer
+            .add_asset_destroy(params.try_into()?)
+            .map_err(|e| UtilsError::UtilsError {
+                message: e.to_string(),
+            })
+    }
+
     pub async fn send(&self) -> Result<Vec<String>, UtilsError> {
         let mut composer = self.inner_composer.blocking_lock();
         let result = composer

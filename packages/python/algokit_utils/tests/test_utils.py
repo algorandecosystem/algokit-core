@@ -123,6 +123,38 @@ class HttpClientImpl(HttpClient):
 #   * Optional field handling (close_remainder_to)
 #   * Error propagation from Rust to Python
 
+# TODO: Add comprehensive asset config integration tests
+#
+# Asset Configuration Transaction Types to Test:
+# 1. AssetCreateParams - Create new assets with various configurations
+# 2. AssetReconfigureParams - Modify existing asset management addresses
+# 3. AssetDestroyParams - Destroy assets (only by creator when supply is back to creator)
+#
+# Suggested Integration Test Scenarios:
+# - Test asset creation variations:
+#   * Basic asset (minimal fields)
+#   * Full asset with all optional fields (name, unit_name, url, metadata_hash)
+#   * Asset with management addresses (manager, reserve, freeze, clawback)
+#   * Asset with different decimal places (0-19)
+#   * Asset with default_frozen=true
+# - Test asset reconfiguration:
+#   * Change manager address
+#   * Set addresses to zero (make immutable)
+#   * Attempt reconfiguration by non-manager (should fail)
+# - Test asset destruction:
+#   * Successful destruction when all supply returned to creator
+#   * Failed destruction when supply still distributed
+# - Test FFI boundary conversions:
+#   * String address parsing for all optional addresses
+#   * metadata_hash validation (exactly 32 bytes)
+#   * Optional field handling (None vs Some values)
+#   * Error propagation for invalid addresses and metadata
+# - Test field validation:
+#   * metadata_hash length validation
+#   * URL length limits (96 bytes)
+#   * Asset name length limits (32 bytes)
+#   * Unit name length limits (8 bytes)
+
 
 @pytest.mark.asyncio
 async def test_composer():
