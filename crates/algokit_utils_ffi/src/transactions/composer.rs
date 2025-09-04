@@ -109,6 +109,54 @@ impl Composer {
             })
     }
 
+    pub fn add_asset_transfer(
+        &self,
+        params: super::asset_transfer::AssetTransferParams,
+    ) -> Result<(), UtilsError> {
+        let mut composer = self.inner_composer.blocking_lock();
+        composer
+            .add_asset_transfer(params.try_into()?)
+            .map_err(|e| UtilsError::UtilsError {
+                message: e.to_string(),
+            })
+    }
+
+    pub fn add_asset_opt_in(
+        &self,
+        params: super::asset_transfer::AssetOptInParams,
+    ) -> Result<(), UtilsError> {
+        let mut composer = self.inner_composer.blocking_lock();
+        composer
+            .add_asset_opt_in(params.try_into()?)
+            .map_err(|e| UtilsError::UtilsError {
+                message: e.to_string(),
+            })
+    }
+
+    pub fn add_asset_opt_out(
+        &self,
+        params: super::asset_transfer::AssetOptOutParams,
+    ) -> Result<(), UtilsError> {
+        let mut composer = self.inner_composer.blocking_lock();
+        composer
+            .add_asset_opt_out(params.try_into()?)
+            .map_err(|e| UtilsError::UtilsError {
+                message: e.to_string(),
+            })
+    }
+
+    pub fn add_asset_clawback(
+        &self,
+        params: super::asset_transfer::AssetClawbackParams,
+    ) -> Result<(), UtilsError> {
+        let mut composer = self.inner_composer.blocking_lock();
+        composer
+            .add_asset_clawback(params.try_into()?)
+            .map_err(|e| UtilsError::UtilsError {
+                message: e.to_string(),
+            })
+    }
+
     pub async fn send(&self) -> Result<Vec<String>, UtilsError> {
         let mut composer = self.inner_composer.blocking_lock();
         let result = composer

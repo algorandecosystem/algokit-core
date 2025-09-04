@@ -470,7 +470,15 @@ def _uniffi_check_contract_api_version(lib):
         raise InternalError("UniFFI contract version mismatch: try cleaning and rebuilding your project")
 
 def _uniffi_check_api_checksums(lib):
+    if lib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_clawback() != 59332:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_freeze() != 44087:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_opt_in() != 47319:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_opt_out() != 20451:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_transfer() != 45589:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algokit_utils_ffi_checksum_method_composer_add_non_participation_key_registration() != 64617:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
@@ -649,12 +657,36 @@ _UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_composer_new.argtypes = (
     ctypes.POINTER(_UniffiRustCallStatus),
 )
 _UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_composer_new.restype = ctypes.c_void_p
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_clawback.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_clawback.restype = None
 _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_freeze.argtypes = (
     ctypes.c_void_p,
     _UniffiRustBuffer,
     ctypes.POINTER(_UniffiRustCallStatus),
 )
 _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_freeze.restype = None
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_opt_in.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_opt_in.restype = None
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_opt_out.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_opt_out.restype = None
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_transfer.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_transfer.restype = None
 _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_non_participation_key_registration.argtypes = (
     ctypes.c_void_p,
     _UniffiRustBuffer,
@@ -1000,9 +1032,21 @@ _UniffiLib.ffi_algokit_utils_ffi_rust_future_complete_void.argtypes = (
     ctypes.POINTER(_UniffiRustCallStatus),
 )
 _UniffiLib.ffi_algokit_utils_ffi_rust_future_complete_void.restype = None
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_clawback.argtypes = (
+)
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_clawback.restype = ctypes.c_uint16
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_freeze.argtypes = (
 )
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_freeze.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_opt_in.argtypes = (
+)
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_opt_in.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_opt_out.argtypes = (
+)
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_opt_out.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_transfer.argtypes = (
+)
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_transfer.restype = ctypes.c_uint16
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_non_participation_key_registration.argtypes = (
 )
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_non_participation_key_registration.restype = ctypes.c_uint16
@@ -1185,6 +1229,83 @@ class _UniffiConverterBytes(_UniffiConverterRustBuffer):
 
 
 
+class AssetClawbackParams:
+    common_params: "CommonParams"
+    """
+    Common transaction parameters.
+    """
+
+    asset_id: "int"
+    """
+    The ID of the asset being clawed back.
+    """
+
+    amount: "int"
+    """
+    The amount of the asset to clawback.
+    """
+
+    receiver: "str"
+    """
+    The address that will receive the clawed back asset.
+    """
+
+    clawback_target: "str"
+    """
+    The address from which assets are taken.
+    """
+
+    def __init__(self, *, common_params: "CommonParams", asset_id: "int", amount: "int", receiver: "str", clawback_target: "str"):
+        self.common_params = common_params
+        self.asset_id = asset_id
+        self.amount = amount
+        self.receiver = receiver
+        self.clawback_target = clawback_target
+
+    def __str__(self):
+        return "AssetClawbackParams(common_params={}, asset_id={}, amount={}, receiver={}, clawback_target={})".format(self.common_params, self.asset_id, self.amount, self.receiver, self.clawback_target)
+
+    def __eq__(self, other):
+        if self.common_params != other.common_params:
+            return False
+        if self.asset_id != other.asset_id:
+            return False
+        if self.amount != other.amount:
+            return False
+        if self.receiver != other.receiver:
+            return False
+        if self.clawback_target != other.clawback_target:
+            return False
+        return True
+
+class _UniffiConverterTypeAssetClawbackParams(_UniffiConverterRustBuffer):
+    @staticmethod
+    def read(buf):
+        return AssetClawbackParams(
+            common_params=_UniffiConverterTypeCommonParams.read(buf),
+            asset_id=_UniffiConverterUInt64.read(buf),
+            amount=_UniffiConverterUInt64.read(buf),
+            receiver=_UniffiConverterString.read(buf),
+            clawback_target=_UniffiConverterString.read(buf),
+        )
+
+    @staticmethod
+    def check_lower(value):
+        _UniffiConverterTypeCommonParams.check_lower(value.common_params)
+        _UniffiConverterUInt64.check_lower(value.asset_id)
+        _UniffiConverterUInt64.check_lower(value.amount)
+        _UniffiConverterString.check_lower(value.receiver)
+        _UniffiConverterString.check_lower(value.clawback_target)
+
+    @staticmethod
+    def write(value, buf):
+        _UniffiConverterTypeCommonParams.write(value.common_params, buf)
+        _UniffiConverterUInt64.write(value.asset_id, buf)
+        _UniffiConverterUInt64.write(value.amount, buf)
+        _UniffiConverterString.write(value.receiver, buf)
+        _UniffiConverterString.write(value.clawback_target, buf)
+
+
 class AssetFreezeParams:
     common_params: "CommonParams"
     """
@@ -1238,6 +1359,171 @@ class _UniffiConverterTypeAssetFreezeParams(_UniffiConverterRustBuffer):
         _UniffiConverterTypeCommonParams.write(value.common_params, buf)
         _UniffiConverterUInt64.write(value.asset_id, buf)
         _UniffiConverterString.write(value.target_address, buf)
+
+
+class AssetOptInParams:
+    common_params: "CommonParams"
+    """
+    Common transaction parameters.
+    """
+
+    asset_id: "int"
+    """
+    The ID of the asset to opt into.
+    """
+
+    def __init__(self, *, common_params: "CommonParams", asset_id: "int"):
+        self.common_params = common_params
+        self.asset_id = asset_id
+
+    def __str__(self):
+        return "AssetOptInParams(common_params={}, asset_id={})".format(self.common_params, self.asset_id)
+
+    def __eq__(self, other):
+        if self.common_params != other.common_params:
+            return False
+        if self.asset_id != other.asset_id:
+            return False
+        return True
+
+class _UniffiConverterTypeAssetOptInParams(_UniffiConverterRustBuffer):
+    @staticmethod
+    def read(buf):
+        return AssetOptInParams(
+            common_params=_UniffiConverterTypeCommonParams.read(buf),
+            asset_id=_UniffiConverterUInt64.read(buf),
+        )
+
+    @staticmethod
+    def check_lower(value):
+        _UniffiConverterTypeCommonParams.check_lower(value.common_params)
+        _UniffiConverterUInt64.check_lower(value.asset_id)
+
+    @staticmethod
+    def write(value, buf):
+        _UniffiConverterTypeCommonParams.write(value.common_params, buf)
+        _UniffiConverterUInt64.write(value.asset_id, buf)
+
+
+class AssetOptOutParams:
+    common_params: "CommonParams"
+    """
+    Common transaction parameters.
+    """
+
+    asset_id: "int"
+    """
+    The ID of the asset to opt out of.
+    """
+
+    close_remainder_to: "typing.Optional[str]"
+    """
+    The address to close the remainder to. If None, defaults to the asset creator.
+    """
+
+    def __init__(self, *, common_params: "CommonParams", asset_id: "int", close_remainder_to: "typing.Optional[str]"):
+        self.common_params = common_params
+        self.asset_id = asset_id
+        self.close_remainder_to = close_remainder_to
+
+    def __str__(self):
+        return "AssetOptOutParams(common_params={}, asset_id={}, close_remainder_to={})".format(self.common_params, self.asset_id, self.close_remainder_to)
+
+    def __eq__(self, other):
+        if self.common_params != other.common_params:
+            return False
+        if self.asset_id != other.asset_id:
+            return False
+        if self.close_remainder_to != other.close_remainder_to:
+            return False
+        return True
+
+class _UniffiConverterTypeAssetOptOutParams(_UniffiConverterRustBuffer):
+    @staticmethod
+    def read(buf):
+        return AssetOptOutParams(
+            common_params=_UniffiConverterTypeCommonParams.read(buf),
+            asset_id=_UniffiConverterUInt64.read(buf),
+            close_remainder_to=_UniffiConverterOptionalString.read(buf),
+        )
+
+    @staticmethod
+    def check_lower(value):
+        _UniffiConverterTypeCommonParams.check_lower(value.common_params)
+        _UniffiConverterUInt64.check_lower(value.asset_id)
+        _UniffiConverterOptionalString.check_lower(value.close_remainder_to)
+
+    @staticmethod
+    def write(value, buf):
+        _UniffiConverterTypeCommonParams.write(value.common_params, buf)
+        _UniffiConverterUInt64.write(value.asset_id, buf)
+        _UniffiConverterOptionalString.write(value.close_remainder_to, buf)
+
+
+class AssetTransferParams:
+    common_params: "CommonParams"
+    """
+    Common transaction parameters.
+    """
+
+    asset_id: "int"
+    """
+    The ID of the asset being transferred.
+    """
+
+    amount: "int"
+    """
+    The amount of the asset to transfer.
+    """
+
+    receiver: "str"
+    """
+    The address that will receive the asset.
+    """
+
+    def __init__(self, *, common_params: "CommonParams", asset_id: "int", amount: "int", receiver: "str"):
+        self.common_params = common_params
+        self.asset_id = asset_id
+        self.amount = amount
+        self.receiver = receiver
+
+    def __str__(self):
+        return "AssetTransferParams(common_params={}, asset_id={}, amount={}, receiver={})".format(self.common_params, self.asset_id, self.amount, self.receiver)
+
+    def __eq__(self, other):
+        if self.common_params != other.common_params:
+            return False
+        if self.asset_id != other.asset_id:
+            return False
+        if self.amount != other.amount:
+            return False
+        if self.receiver != other.receiver:
+            return False
+        return True
+
+class _UniffiConverterTypeAssetTransferParams(_UniffiConverterRustBuffer):
+    @staticmethod
+    def read(buf):
+        return AssetTransferParams(
+            common_params=_UniffiConverterTypeCommonParams.read(buf),
+            asset_id=_UniffiConverterUInt64.read(buf),
+            amount=_UniffiConverterUInt64.read(buf),
+            receiver=_UniffiConverterString.read(buf),
+        )
+
+    @staticmethod
+    def check_lower(value):
+        _UniffiConverterTypeCommonParams.check_lower(value.common_params)
+        _UniffiConverterUInt64.check_lower(value.asset_id)
+        _UniffiConverterUInt64.check_lower(value.amount)
+        _UniffiConverterString.check_lower(value.receiver)
+
+    @staticmethod
+    def write(value, buf):
+        _UniffiConverterTypeCommonParams.write(value.common_params, buf)
+        _UniffiConverterUInt64.write(value.asset_id, buf)
+        _UniffiConverterUInt64.write(value.amount, buf)
+        _UniffiConverterString.write(value.receiver, buf)
 
 
 class CommonParams:
@@ -2261,7 +2547,15 @@ class _UniffiConverterTypeAlgodClient:
     def write(cls, value: AlgodClientProtocol, buf: _UniffiRustBuffer):
         buf.write_u64(cls.lower(value))
 class ComposerProtocol(typing.Protocol):
+    def add_asset_clawback(self, params: "AssetClawbackParams"):
+        raise NotImplementedError
     def add_asset_freeze(self, params: "AssetFreezeParams"):
+        raise NotImplementedError
+    def add_asset_opt_in(self, params: "AssetOptInParams"):
+        raise NotImplementedError
+    def add_asset_opt_out(self, params: "AssetOptOutParams"):
+        raise NotImplementedError
+    def add_asset_transfer(self, params: "AssetTransferParams"):
         raise NotImplementedError
     def add_non_participation_key_registration(self, params: "NonParticipationKeyRegistrationParams"):
         raise NotImplementedError
@@ -2306,11 +2600,55 @@ class Composer():
         return inst
 
 
+    def add_asset_clawback(self, params: "AssetClawbackParams") -> None:
+        _UniffiConverterTypeAssetClawbackParams.check_lower(params)
+        
+        _uniffi_rust_call_with_error(_UniffiConverterTypeUtilsError,_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_clawback,self._uniffi_clone_pointer(),
+        _UniffiConverterTypeAssetClawbackParams.lower(params))
+
+
+
+
+
+
     def add_asset_freeze(self, params: "AssetFreezeParams") -> None:
         _UniffiConverterTypeAssetFreezeParams.check_lower(params)
         
         _uniffi_rust_call_with_error(_UniffiConverterTypeUtilsError,_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_freeze,self._uniffi_clone_pointer(),
         _UniffiConverterTypeAssetFreezeParams.lower(params))
+
+
+
+
+
+
+    def add_asset_opt_in(self, params: "AssetOptInParams") -> None:
+        _UniffiConverterTypeAssetOptInParams.check_lower(params)
+        
+        _uniffi_rust_call_with_error(_UniffiConverterTypeUtilsError,_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_opt_in,self._uniffi_clone_pointer(),
+        _UniffiConverterTypeAssetOptInParams.lower(params))
+
+
+
+
+
+
+    def add_asset_opt_out(self, params: "AssetOptOutParams") -> None:
+        _UniffiConverterTypeAssetOptOutParams.check_lower(params)
+        
+        _uniffi_rust_call_with_error(_UniffiConverterTypeUtilsError,_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_opt_out,self._uniffi_clone_pointer(),
+        _UniffiConverterTypeAssetOptOutParams.lower(params))
+
+
+
+
+
+
+    def add_asset_transfer(self, params: "AssetTransferParams") -> None:
+        _UniffiConverterTypeAssetTransferParams.check_lower(params)
+        
+        _uniffi_rust_call_with_error(_UniffiConverterTypeUtilsError,_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_transfer,self._uniffi_clone_pointer(),
+        _UniffiConverterTypeAssetTransferParams.lower(params))
 
 
 
@@ -2549,7 +2887,11 @@ def _uniffi_foreign_future_do_free(task):
 __all__ = [
     "InternalError",
     "UtilsError",
+    "AssetClawbackParams",
     "AssetFreezeParams",
+    "AssetOptInParams",
+    "AssetOptOutParams",
+    "AssetTransferParams",
     "CommonParams",
     "NonParticipationKeyRegistrationParams",
     "OfflineKeyRegistrationParams",

@@ -9,11 +9,11 @@ from algokit_utils.algokit_transact_ffi import (
 from algokit_utils import AlgodClient, TransactionSigner
 from algokit_utils.algokit_utils_ffi import (
     AssetFreezeParams,
+    AssetOptInParams,
+    AssetTransferParams,
     CommonParams,
     Composer,
     OnlineKeyRegistrationParams,
-    OfflineKeyRegistrationParams,
-    NonParticipationKeyRegistrationParams,
     PaymentParams,
     TransactionSignerGetter,
 )
@@ -97,6 +97,33 @@ class HttpClientImpl(HttpClient):
         )
 
 
+# TODO: Add comprehensive asset transfer integration tests
+#
+# Asset Transfer Transaction Types to Test:
+# 1. AssetTransferParams - Standard asset transfer between accounts
+# 2. AssetOptInParams - Account opts into receiving an asset (amount=0, receiver=sender)
+# 3. AssetOptOutParams - Account opts out of an asset (amount=0, close_remainder_to specified)
+# 4. AssetClawbackParams - Asset manager claws back assets from an account
+#
+# Suggested Integration Test Scenarios:
+# - Create test asset with proper manager/freeze/clawback addresses
+# - Test complete asset lifecycle:
+#   * Asset creation
+#   * Account opt-in (AssetOptInParams)
+#   * Asset transfer from creator to account (AssetTransferParams)
+#   * Asset clawback by manager (AssetClawbackParams)
+#   * Account opt-out with remainder (AssetOptOutParams)
+# - Test error conditions:
+#   * Transfer to non-opted-in account
+#   * Transfer more than balance
+#   * Clawback by non-manager account
+#   * Invalid asset IDs
+# - Test FFI boundary conversions:
+#   * String address parsing validation
+#   * Optional field handling (close_remainder_to)
+#   * Error propagation from Rust to Python
+
+
 @pytest.mark.asyncio
 async def test_composer():
     algod = AlgodClient(HttpClientImpl())
@@ -139,6 +166,28 @@ async def test_composer():
             vote_last=2000,
             vote_key_dilution=10000,
             state_proof_key=b"C" * 64,  # 64 bytes
+        )
+    )
+
+    # Test asset transfer functionality
+    composer.add_asset_transfer(
+        params=AssetTransferParams(
+            common_params=CommonParams(
+                sender=ADDR,
+            ),
+            asset_id=12345,
+            amount=100,
+            receiver=ADDR,
+        )
+    )
+
+    # Test asset opt-in functionality
+    composer.add_asset_opt_in(
+        params=AssetOptInParams(
+            common_params=CommonParams(
+                sender=ADDR,
+            ),
+            asset_id=67890,
         )
     )
 
