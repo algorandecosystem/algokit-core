@@ -236,52 +236,70 @@ impl AppClient {
         self.algorand.send().payment(payment, None).await
     }
 
-    // --------------------- Generic State Methods (Phase 3.2) ---------------------
-
     /// Get raw global state as HashMap<Vec<u8>, AppState>
     pub async fn get_global_state(
         &self,
-    ) -> Result<std::collections::HashMap<Vec<u8>, crate::clients::app_manager::AppState>, String>
-    {
+    ) -> Result<
+        std::collections::HashMap<Vec<u8>, crate::clients::app_manager::AppState>,
+        AppClientError,
+    > {
         self.algorand
             .app()
-            .get_global_state(self.app_id.ok_or("Missing app_id")?)
+            .get_global_state(
+                self.app_id
+                    .ok_or_else(|| AppClientError::ValidationError("Missing app_id".to_string()))?,
+            )
             .await
-            .map_err(|e| e.to_string())
+            .map_err(AppClientError::from)
     }
 
     /// Get raw local state for an address
     pub async fn get_local_state(
         &self,
         address: &str,
-    ) -> Result<std::collections::HashMap<Vec<u8>, crate::clients::app_manager::AppState>, String>
-    {
+    ) -> Result<
+        std::collections::HashMap<Vec<u8>, crate::clients::app_manager::AppState>,
+        AppClientError,
+    > {
         self.algorand
             .app()
-            .get_local_state(self.app_id.ok_or("Missing app_id")?, address)
+            .get_local_state(
+                self.app_id
+                    .ok_or_else(|| AppClientError::ValidationError("Missing app_id".to_string()))?,
+                address,
+            )
             .await
-            .map_err(|e| e.to_string())
+            .map_err(AppClientError::from)
     }
 
     /// Get all box names for the application
-    pub async fn get_box_names(&self) -> Result<Vec<crate::clients::app_manager::BoxName>, String> {
+    pub async fn get_box_names(
+        &self,
+    ) -> Result<Vec<crate::clients::app_manager::BoxName>, AppClientError> {
         self.algorand
             .app()
-            .get_box_names(self.app_id.ok_or("Missing app_id")?)
+            .get_box_names(
+                self.app_id
+                    .ok_or_else(|| AppClientError::ValidationError("Missing app_id".to_string()))?,
+            )
             .await
-            .map_err(|e| e.to_string())
+            .map_err(AppClientError::from)
     }
 
     /// Get the value of a box by raw identifier
     pub async fn get_box_value(
         &self,
         name: &crate::clients::app_manager::BoxIdentifier,
-    ) -> Result<Vec<u8>, String> {
+    ) -> Result<Vec<u8>, AppClientError> {
         self.algorand
             .app()
-            .get_box_value(self.app_id.ok_or("Missing app_id")?, name)
+            .get_box_value(
+                self.app_id
+                    .ok_or_else(|| AppClientError::ValidationError("Missing app_id".to_string()))?,
+                name,
+            )
             .await
-            .map_err(|e| e.to_string())
+            .map_err(AppClientError::from)
     }
 
     /// Get a box value decoded using an ABI type
@@ -289,24 +307,33 @@ impl AppClient {
         &self,
         name: &crate::clients::app_manager::BoxIdentifier,
         abi_type: &algokit_abi::ABIType,
-    ) -> Result<algokit_abi::ABIValue, String> {
+    ) -> Result<algokit_abi::ABIValue, AppClientError> {
         self.algorand
             .app()
-            .get_box_value_from_abi_type(self.app_id.ok_or("Missing app_id")?, name, abi_type)
+            .get_box_value_from_abi_type(
+                self.app_id
+                    .ok_or_else(|| AppClientError::ValidationError("Missing app_id".to_string()))?,
+                name,
+                abi_type,
+            )
             .await
-            .map_err(|e| e.to_string())
+            .map_err(AppClientError::from)
     }
 
     /// Get values for multiple boxes
     pub async fn get_box_values(
         &self,
         names: &[crate::clients::app_manager::BoxIdentifier],
-    ) -> Result<Vec<Vec<u8>>, String> {
+    ) -> Result<Vec<Vec<u8>>, AppClientError> {
         self.algorand
             .app()
-            .get_box_values(self.app_id.ok_or("Missing app_id")?, names)
+            .get_box_values(
+                self.app_id
+                    .ok_or_else(|| AppClientError::ValidationError("Missing app_id".to_string()))?,
+                names,
+            )
             .await
-            .map_err(|e| e.to_string())
+            .map_err(AppClientError::from)
     }
 
     /// Get multiple box values decoded using an ABI type
@@ -314,12 +341,17 @@ impl AppClient {
         &self,
         names: &[crate::clients::app_manager::BoxIdentifier],
         abi_type: &algokit_abi::ABIType,
-    ) -> Result<Vec<algokit_abi::ABIValue>, String> {
+    ) -> Result<Vec<algokit_abi::ABIValue>, AppClientError> {
         self.algorand
             .app()
-            .get_box_values_from_abi_type(self.app_id.ok_or("Missing app_id")?, names, abi_type)
+            .get_box_values_from_abi_type(
+                self.app_id
+                    .ok_or_else(|| AppClientError::ValidationError("Missing app_id".to_string()))?,
+                names,
+                abi_type,
+            )
             .await
-            .map_err(|e| e.to_string())
+            .map_err(AppClientError::from)
     }
 }
 

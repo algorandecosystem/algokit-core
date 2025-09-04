@@ -119,7 +119,7 @@ impl<'a> TransactionSender<'a> {
                 .await?;
         }
 
-        if is_delete {
+        let result = if is_delete {
             let delete_params = crate::transactions::AppDeleteMethodCallParams {
                 common_params: method_params.common_params.clone(),
                 app_id: method_params.app_id,
@@ -135,19 +135,22 @@ impl<'a> TransactionSender<'a> {
                 .send()
                 .app_delete_method_call(delete_params, None)
                 .await
-                .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
+                .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))?
         } else {
             self.client
                 .algorand
                 .send()
                 .app_call_method_call(method_params, None)
                 .await
-                .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
-        }
+                .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))?
+        };
+
+        // Returns are already ABI-decoded; expose as-is
+        Ok(result)
     }
 
     // Simulate a readonly call when debug is enabled, emitting traces if configured.
-    async fn simulate_readonly_with_tracing_for_debug(
+    pub(crate) async fn simulate_readonly_with_tracing_for_debug(
         &self,
         params: &AppClientMethodCallParams,
         is_delete: bool,
@@ -191,17 +194,15 @@ impl<'a> TransactionSender<'a> {
 
         let sim_params = crate::transactions::composer::SimulateParams {
             allow_more_logging: Some(true),
-            allow_empty_signatures: None,
-            allow_unnamed_resources: None,
-            extra_opcode_budget: None,
+            allow_empty_signatures: Some(true),
             exec_trace_config: Some(algod_client::models::SimulateTraceConfig {
                 enable: Some(true),
                 scratch_change: Some(true),
                 stack_change: Some(true),
                 state_change: Some(true),
             }),
-            simulation_round: None,
-            skip_signatures: false,
+            skip_signatures: true,
+            ..Default::default()
         };
 
         let sim = composer.simulate(Some(sim_params)).await.map_err(|e| {

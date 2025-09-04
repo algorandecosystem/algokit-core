@@ -5,6 +5,7 @@ use crate::{
         STATIC_ARRAY_REGEX, UFIXED_REGEX,
     },
     types::collections::tuple::find_bool_sequence_end,
+    types::struct_type::StructType,
 };
 use std::{
     fmt::{Display, Formatter, Result as FmtResult},
@@ -98,6 +99,8 @@ pub enum ABIType {
     StaticArray(Box<ABIType>, usize),
     /// A dynamic-length array of another ABI type.
     DynamicArray(Box<ABIType>),
+    /// A named struct type with ordered fields
+    Struct(StructType),
 }
 
 impl AsRef<ABIType> for ABIType {
@@ -125,6 +128,24 @@ impl ABIType {
             ABIType::String => self.encode_string(value),
             ABIType::Byte => self.encode_byte(value),
             ABIType::Bool => self.encode_bool(value),
+            ABIType::Struct(struct_type) => {
+                // Convert struct map -> tuple vec based on field order, encode with tuple encoder
+                let tuple_type = struct_type.to_tuple_type();
+                let tuple_values = match value {
+                    ABIValue::Struct(map) => struct_type.struct_to_tuple(map)?,
+                    // Backwards-compatible: allow tuple-style array values for struct-typed args
+                    ABIValue::Array(values) => values.clone(),
+                    _ => {
+                        return Err(ABIError::EncodingError {
+                            message: format!(
+                                "ABI value mismatch, expected struct for type {}, got {:?}",
+                                self, value
+                            ),
+                        });
+                    }
+                };
+                tuple_type.encode(&ABIValue::Array(tuple_values))
+            }
         }
     }
 
@@ -146,6 +167,22 @@ impl ABIType {
             ABIType::Tuple(_) => self.decode_tuple(bytes),
             ABIType::StaticArray(_, _size) => self.decode_static_array(bytes),
             ABIType::DynamicArray(_) => self.decode_dynamic_array(bytes),
+            ABIType::Struct(struct_type) => {
+                let tuple_type = struct_type.to_tuple_type();
+                let decoded = tuple_type.decode(bytes)?;
+                match decoded {
+                    ABIValue::Array(values) => {
+                        let map = struct_type.tuple_to_struct(values)?;
+                        Ok(ABIValue::Struct(map))
+                    }
+                    other => Err(ABIError::DecodingError {
+                        message: format!(
+                            "Expected tuple decode for struct {}, got {:?}",
+                            struct_type.name, other
+                        ),
+                    }),
+                }
+            }
         }
     }
 
@@ -153,6 +190,7 @@ impl ABIType {
         match self {
             ABIType::StaticArray(child_type, _) => child_type.is_dynamic(),
             ABIType::Tuple(child_types) => child_types.iter().any(|t| t.is_dynamic()),
+            ABIType::Struct(struct_type) => struct_type.to_tuple_type().as_ref().is_dynamic(),
             ABIType::DynamicArray(_) | ABIType::String => true,
             _ => false,
         }
@@ -190,6 +228,7 @@ impl ABIType {
                 }
                 Ok(size)
             }
+            ABIType::Struct(struct_type) => Self::get_size(&struct_type.to_tuple_type()),
             ABIType::String => Err(ABIError::DecodingError {
                 message: format!("Failed to get size, {} is a dynamic type", abi_type),
             }),
@@ -220,6 +259,9 @@ impl Display for ABIType {
             }
             ABIType::DynamicArray(child_type) => {
                 write!(f, "{}[]", child_type)
+            }
+            ABIType::Struct(struct_type) => {
+                write!(f, "{}", struct_type.to_tuple_type())
             }
         }
     }

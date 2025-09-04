@@ -942,11 +942,19 @@ async fn group_simulate_matches_send(
     let send = composer.send(None).await?;
 
     assert_eq!(simulate.transactions.len(), send.transaction_ids.len());
-    let last_idx = send.abi_returns.len().saturating_sub(1);
-    if !simulate.returns.is_empty() && send.abi_returns.get(last_idx).is_some() {
-        let sim_ret = simulate.returns.last().unwrap();
-        if let Some(Ok(Some(send_ret))) = send.abi_returns.get(last_idx) {
-            assert_eq!(sim_ret.return_value, send_ret.return_value);
+    // Compare all ABI returns in order where both sides have a value
+    let mut sim_iter = simulate.returns.iter();
+    let mut send_iter = send.abi_returns.iter();
+    loop {
+        let sim_next = sim_iter.next();
+        let send_next = send_iter.next();
+        match (sim_next, send_next) {
+            (Some(sim_ret), Some(send_ret)) => {
+                if let Ok(Some(send_val)) = send_ret {
+                    assert_eq!(sim_ret.return_value, send_val.return_value);
+                }
+            }
+            _ => break,
         }
     }
     Ok(())
