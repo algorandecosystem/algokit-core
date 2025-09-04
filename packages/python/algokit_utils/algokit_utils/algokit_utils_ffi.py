@@ -472,6 +472,12 @@ def _uniffi_check_contract_api_version(lib):
 def _uniffi_check_api_checksums(lib):
     if lib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_freeze() != 44087:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algokit_utils_ffi_checksum_method_composer_add_non_participation_key_registration() != 64617:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algokit_utils_ffi_checksum_method_composer_add_offline_key_registration() != 1325:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algokit_utils_ffi_checksum_method_composer_add_online_key_registration() != 64330:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algokit_utils_ffi_checksum_method_composer_add_payment() != 9188:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algokit_utils_ffi_checksum_method_composer_build() != 13184:
@@ -649,6 +655,24 @@ _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_freeze.argtypes
     ctypes.POINTER(_UniffiRustCallStatus),
 )
 _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_freeze.restype = None
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_non_participation_key_registration.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_non_participation_key_registration.restype = None
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_offline_key_registration.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_offline_key_registration.restype = None
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_online_key_registration.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_online_key_registration.restype = None
 _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_payment.argtypes = (
     ctypes.c_void_p,
     _UniffiRustBuffer,
@@ -979,6 +1003,15 @@ _UniffiLib.ffi_algokit_utils_ffi_rust_future_complete_void.restype = None
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_freeze.argtypes = (
 )
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_freeze.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_non_participation_key_registration.argtypes = (
+)
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_non_participation_key_registration.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_offline_key_registration.argtypes = (
+)
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_offline_key_registration.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_online_key_registration.argtypes = (
+)
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_online_key_registration.restype = ctypes.c_uint16
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_payment.argtypes = (
 )
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_payment.restype = ctypes.c_uint16
@@ -1069,6 +1102,27 @@ class _UniffiConverterUInt64(_UniffiConverterPrimitiveInt):
     @staticmethod
     def write(value, buf):
         buf.write_u64(value)
+
+class _UniffiConverterBool:
+    @classmethod
+    def check_lower(cls, value):
+        return not not value
+
+    @classmethod
+    def lower(cls, value):
+        return 1 if value else 0
+
+    @staticmethod
+    def lift(value):
+        return value != 0
+
+    @classmethod
+    def read(cls, buf):
+        return cls.lift(buf.read_u8())
+
+    @classmethod
+    def write(cls, value, buf):
+        buf.write_u8(value)
 
 class _UniffiConverterString:
     @staticmethod
@@ -1315,6 +1369,182 @@ class _UniffiConverterTypeCommonParams(_UniffiConverterRustBuffer):
         _UniffiConverterOptionalUInt64.write(value.last_valid_round, buf)
 
 
+class NonParticipationKeyRegistrationParams:
+    common_params: "CommonParams"
+    """
+    Common transaction parameters.
+    """
+
+    def __init__(self, *, common_params: "CommonParams"):
+        self.common_params = common_params
+
+    def __str__(self):
+        return "NonParticipationKeyRegistrationParams(common_params={})".format(self.common_params)
+
+    def __eq__(self, other):
+        if self.common_params != other.common_params:
+            return False
+        return True
+
+class _UniffiConverterTypeNonParticipationKeyRegistrationParams(_UniffiConverterRustBuffer):
+    @staticmethod
+    def read(buf):
+        return NonParticipationKeyRegistrationParams(
+            common_params=_UniffiConverterTypeCommonParams.read(buf),
+        )
+
+    @staticmethod
+    def check_lower(value):
+        _UniffiConverterTypeCommonParams.check_lower(value.common_params)
+
+    @staticmethod
+    def write(value, buf):
+        _UniffiConverterTypeCommonParams.write(value.common_params, buf)
+
+
+class OfflineKeyRegistrationParams:
+    common_params: "CommonParams"
+    """
+    Common transaction parameters.
+    """
+
+    non_participation: "typing.Optional[bool]"
+    """
+    Mark account as non-reward earning.
+    """
+
+    def __init__(self, *, common_params: "CommonParams", non_participation: "typing.Optional[bool]"):
+        self.common_params = common_params
+        self.non_participation = non_participation
+
+    def __str__(self):
+        return "OfflineKeyRegistrationParams(common_params={}, non_participation={})".format(self.common_params, self.non_participation)
+
+    def __eq__(self, other):
+        if self.common_params != other.common_params:
+            return False
+        if self.non_participation != other.non_participation:
+            return False
+        return True
+
+class _UniffiConverterTypeOfflineKeyRegistrationParams(_UniffiConverterRustBuffer):
+    @staticmethod
+    def read(buf):
+        return OfflineKeyRegistrationParams(
+            common_params=_UniffiConverterTypeCommonParams.read(buf),
+            non_participation=_UniffiConverterOptionalBool.read(buf),
+        )
+
+    @staticmethod
+    def check_lower(value):
+        _UniffiConverterTypeCommonParams.check_lower(value.common_params)
+        _UniffiConverterOptionalBool.check_lower(value.non_participation)
+
+    @staticmethod
+    def write(value, buf):
+        _UniffiConverterTypeCommonParams.write(value.common_params, buf)
+        _UniffiConverterOptionalBool.write(value.non_participation, buf)
+
+
+class OnlineKeyRegistrationParams:
+    common_params: "CommonParams"
+    """
+    Common transaction parameters.
+    """
+
+    vote_key: "bytes"
+    """
+    The root participation public key.
+    """
+
+    selection_key: "bytes"
+    """
+    The VRF public key.
+    """
+
+    vote_first: "int"
+    """
+    The first round that the participation key is valid.
+    """
+
+    vote_last: "int"
+    """
+    The last round that the participation key is valid.
+    """
+
+    vote_key_dilution: "int"
+    """
+    This is the dilution for the 2-level participation key.
+    """
+
+    state_proof_key: "typing.Optional[bytes]"
+    """
+    The 64 byte state proof public key commitment.
+    """
+
+    def __init__(self, *, common_params: "CommonParams", vote_key: "bytes", selection_key: "bytes", vote_first: "int", vote_last: "int", vote_key_dilution: "int", state_proof_key: "typing.Optional[bytes]"):
+        self.common_params = common_params
+        self.vote_key = vote_key
+        self.selection_key = selection_key
+        self.vote_first = vote_first
+        self.vote_last = vote_last
+        self.vote_key_dilution = vote_key_dilution
+        self.state_proof_key = state_proof_key
+
+    def __str__(self):
+        return "OnlineKeyRegistrationParams(common_params={}, vote_key={}, selection_key={}, vote_first={}, vote_last={}, vote_key_dilution={}, state_proof_key={})".format(self.common_params, self.vote_key, self.selection_key, self.vote_first, self.vote_last, self.vote_key_dilution, self.state_proof_key)
+
+    def __eq__(self, other):
+        if self.common_params != other.common_params:
+            return False
+        if self.vote_key != other.vote_key:
+            return False
+        if self.selection_key != other.selection_key:
+            return False
+        if self.vote_first != other.vote_first:
+            return False
+        if self.vote_last != other.vote_last:
+            return False
+        if self.vote_key_dilution != other.vote_key_dilution:
+            return False
+        if self.state_proof_key != other.state_proof_key:
+            return False
+        return True
+
+class _UniffiConverterTypeOnlineKeyRegistrationParams(_UniffiConverterRustBuffer):
+    @staticmethod
+    def read(buf):
+        return OnlineKeyRegistrationParams(
+            common_params=_UniffiConverterTypeCommonParams.read(buf),
+            vote_key=_UniffiConverterBytes.read(buf),
+            selection_key=_UniffiConverterBytes.read(buf),
+            vote_first=_UniffiConverterUInt64.read(buf),
+            vote_last=_UniffiConverterUInt64.read(buf),
+            vote_key_dilution=_UniffiConverterUInt64.read(buf),
+            state_proof_key=_UniffiConverterOptionalBytes.read(buf),
+        )
+
+    @staticmethod
+    def check_lower(value):
+        _UniffiConverterTypeCommonParams.check_lower(value.common_params)
+        _UniffiConverterBytes.check_lower(value.vote_key)
+        _UniffiConverterBytes.check_lower(value.selection_key)
+        _UniffiConverterUInt64.check_lower(value.vote_first)
+        _UniffiConverterUInt64.check_lower(value.vote_last)
+        _UniffiConverterUInt64.check_lower(value.vote_key_dilution)
+        _UniffiConverterOptionalBytes.check_lower(value.state_proof_key)
+
+    @staticmethod
+    def write(value, buf):
+        _UniffiConverterTypeCommonParams.write(value.common_params, buf)
+        _UniffiConverterBytes.write(value.vote_key, buf)
+        _UniffiConverterBytes.write(value.selection_key, buf)
+        _UniffiConverterUInt64.write(value.vote_first, buf)
+        _UniffiConverterUInt64.write(value.vote_last, buf)
+        _UniffiConverterUInt64.write(value.vote_key_dilution, buf)
+        _UniffiConverterOptionalBytes.write(value.state_proof_key, buf)
+
+
 class PaymentParams:
     common_params: "CommonParams"
     """
@@ -1445,6 +1675,33 @@ class _UniffiConverterOptionalUInt64(_UniffiConverterRustBuffer):
             return None
         elif flag == 1:
             return _UniffiConverterUInt64.read(buf)
+        else:
+            raise InternalError("Unexpected flag byte for optional type")
+
+
+
+class _UniffiConverterOptionalBool(_UniffiConverterRustBuffer):
+    @classmethod
+    def check_lower(cls, value):
+        if value is not None:
+            _UniffiConverterBool.check_lower(value)
+
+    @classmethod
+    def write(cls, value, buf):
+        if value is None:
+            buf.write_u8(0)
+            return
+
+        buf.write_u8(1)
+        _UniffiConverterBool.write(value, buf)
+
+    @classmethod
+    def read(cls, buf):
+        flag = buf.read_u8()
+        if flag == 0:
+            return None
+        elif flag == 1:
+            return _UniffiConverterBool.read(buf)
         else:
             raise InternalError("Unexpected flag byte for optional type")
 
@@ -2006,6 +2263,12 @@ class _UniffiConverterTypeAlgodClient:
 class ComposerProtocol(typing.Protocol):
     def add_asset_freeze(self, params: "AssetFreezeParams"):
         raise NotImplementedError
+    def add_non_participation_key_registration(self, params: "NonParticipationKeyRegistrationParams"):
+        raise NotImplementedError
+    def add_offline_key_registration(self, params: "OfflineKeyRegistrationParams"):
+        raise NotImplementedError
+    def add_online_key_registration(self, params: "OnlineKeyRegistrationParams"):
+        raise NotImplementedError
     def add_payment(self, params: "PaymentParams"):
         raise NotImplementedError
     def build(self, ):
@@ -2048,6 +2311,39 @@ class Composer():
         
         _uniffi_rust_call_with_error(_UniffiConverterTypeUtilsError,_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_freeze,self._uniffi_clone_pointer(),
         _UniffiConverterTypeAssetFreezeParams.lower(params))
+
+
+
+
+
+
+    def add_non_participation_key_registration(self, params: "NonParticipationKeyRegistrationParams") -> None:
+        _UniffiConverterTypeNonParticipationKeyRegistrationParams.check_lower(params)
+        
+        _uniffi_rust_call_with_error(_UniffiConverterTypeUtilsError,_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_non_participation_key_registration,self._uniffi_clone_pointer(),
+        _UniffiConverterTypeNonParticipationKeyRegistrationParams.lower(params))
+
+
+
+
+
+
+    def add_offline_key_registration(self, params: "OfflineKeyRegistrationParams") -> None:
+        _UniffiConverterTypeOfflineKeyRegistrationParams.check_lower(params)
+        
+        _uniffi_rust_call_with_error(_UniffiConverterTypeUtilsError,_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_offline_key_registration,self._uniffi_clone_pointer(),
+        _UniffiConverterTypeOfflineKeyRegistrationParams.lower(params))
+
+
+
+
+
+
+    def add_online_key_registration(self, params: "OnlineKeyRegistrationParams") -> None:
+        _UniffiConverterTypeOnlineKeyRegistrationParams.check_lower(params)
+        
+        _uniffi_rust_call_with_error(_UniffiConverterTypeUtilsError,_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_online_key_registration,self._uniffi_clone_pointer(),
+        _UniffiConverterTypeOnlineKeyRegistrationParams.lower(params))
 
 
 
@@ -2255,6 +2551,9 @@ __all__ = [
     "UtilsError",
     "AssetFreezeParams",
     "CommonParams",
+    "NonParticipationKeyRegistrationParams",
+    "OfflineKeyRegistrationParams",
+    "OnlineKeyRegistrationParams",
     "PaymentParams",
     "AlgodClient",
     "Composer",

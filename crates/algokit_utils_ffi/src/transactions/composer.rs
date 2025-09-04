@@ -61,10 +61,49 @@ impl Composer {
             })
     }
 
-    pub fn add_asset_freeze(&self, params: super::asset_freeze::AssetFreezeParams) -> Result<(), UtilsError> {
+    pub fn add_asset_freeze(
+        &self,
+        params: super::asset_freeze::AssetFreezeParams,
+    ) -> Result<(), UtilsError> {
         let mut composer = self.inner_composer.blocking_lock();
         composer
             .add_asset_freeze(params.try_into()?)
+            .map_err(|e| UtilsError::UtilsError {
+                message: e.to_string(),
+            })
+    }
+
+    pub fn add_online_key_registration(
+        &self,
+        params: super::key_registration::OnlineKeyRegistrationParams,
+    ) -> Result<(), UtilsError> {
+        let mut composer = self.inner_composer.blocking_lock();
+        composer
+            .add_online_key_registration(params.try_into()?)
+            .map_err(|e| UtilsError::UtilsError {
+                message: e.to_string(),
+            })
+    }
+
+    pub fn add_offline_key_registration(
+        &self,
+        params: super::key_registration::OfflineKeyRegistrationParams,
+    ) -> Result<(), UtilsError> {
+        let mut composer = self.inner_composer.blocking_lock();
+        composer
+            .add_offline_key_registration(params.try_into()?)
+            .map_err(|e| UtilsError::UtilsError {
+                message: e.to_string(),
+            })
+    }
+
+    pub fn add_non_participation_key_registration(
+        &self,
+        params: super::key_registration::NonParticipationKeyRegistrationParams,
+    ) -> Result<(), UtilsError> {
+        let mut composer = self.inner_composer.blocking_lock();
+        composer
+            .add_non_participation_key_registration(params.try_into()?)
             .map_err(|e| UtilsError::UtilsError {
                 message: e.to_string(),
             })

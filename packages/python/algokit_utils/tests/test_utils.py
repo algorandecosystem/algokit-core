@@ -11,6 +11,9 @@ from algokit_utils.algokit_utils_ffi import (
     AssetFreezeParams,
     CommonParams,
     Composer,
+    OnlineKeyRegistrationParams,
+    OfflineKeyRegistrationParams,
+    NonParticipationKeyRegistrationParams,
     PaymentParams,
     TransactionSignerGetter,
 )
@@ -121,6 +124,21 @@ async def test_composer():
             ),
             asset_id=12345,
             target_address=ADDR,
+        )
+    )
+
+    # Test key registration functionality
+    composer.add_online_key_registration(
+        params=OnlineKeyRegistrationParams(
+            common_params=CommonParams(
+                sender=ADDR,
+            ),
+            vote_key=b"A" * 32,  # 32 bytes
+            selection_key=b"B" * 32,  # 32 bytes
+            vote_first=1000,
+            vote_last=2000,
+            vote_key_dilution=10000,
+            state_proof_key=b"C" * 64,  # 64 bytes
         )
     )
 
