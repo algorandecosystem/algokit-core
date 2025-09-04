@@ -470,6 +470,8 @@ def _uniffi_check_contract_api_version(lib):
         raise InternalError("UniFFI contract version mismatch: try cleaning and rebuilding your project")
 
 def _uniffi_check_api_checksums(lib):
+    if lib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_freeze() != 44087:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algokit_utils_ffi_checksum_method_composer_add_payment() != 9188:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algokit_utils_ffi_checksum_method_composer_build() != 13184:
@@ -641,6 +643,12 @@ _UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_composer_new.argtypes = (
     ctypes.POINTER(_UniffiRustCallStatus),
 )
 _UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_composer_new.restype = ctypes.c_void_p
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_freeze.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_freeze.restype = None
 _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_payment.argtypes = (
     ctypes.c_void_p,
     _UniffiRustBuffer,
@@ -968,6 +976,9 @@ _UniffiLib.ffi_algokit_utils_ffi_rust_future_complete_void.argtypes = (
     ctypes.POINTER(_UniffiRustCallStatus),
 )
 _UniffiLib.ffi_algokit_utils_ffi_rust_future_complete_void.restype = None
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_freeze.argtypes = (
+)
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_freeze.restype = ctypes.c_uint16
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_payment.argtypes = (
 )
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_payment.restype = ctypes.c_uint16
@@ -1118,6 +1129,61 @@ class _UniffiConverterBytes(_UniffiConverterRustBuffer):
 
 
 
+
+
+class AssetFreezeParams:
+    common_params: "CommonParams"
+    """
+    Common transaction parameters.
+    """
+
+    asset_id: "int"
+    """
+    The ID of the asset being frozen.
+    """
+
+    target_address: "str"
+    """
+    The target account whose asset holdings will be frozen.
+    """
+
+    def __init__(self, *, common_params: "CommonParams", asset_id: "int", target_address: "str"):
+        self.common_params = common_params
+        self.asset_id = asset_id
+        self.target_address = target_address
+
+    def __str__(self):
+        return "AssetFreezeParams(common_params={}, asset_id={}, target_address={})".format(self.common_params, self.asset_id, self.target_address)
+
+    def __eq__(self, other):
+        if self.common_params != other.common_params:
+            return False
+        if self.asset_id != other.asset_id:
+            return False
+        if self.target_address != other.target_address:
+            return False
+        return True
+
+class _UniffiConverterTypeAssetFreezeParams(_UniffiConverterRustBuffer):
+    @staticmethod
+    def read(buf):
+        return AssetFreezeParams(
+            common_params=_UniffiConverterTypeCommonParams.read(buf),
+            asset_id=_UniffiConverterUInt64.read(buf),
+            target_address=_UniffiConverterString.read(buf),
+        )
+
+    @staticmethod
+    def check_lower(value):
+        _UniffiConverterTypeCommonParams.check_lower(value.common_params)
+        _UniffiConverterUInt64.check_lower(value.asset_id)
+        _UniffiConverterString.check_lower(value.target_address)
+
+    @staticmethod
+    def write(value, buf):
+        _UniffiConverterTypeCommonParams.write(value.common_params, buf)
+        _UniffiConverterUInt64.write(value.asset_id, buf)
+        _UniffiConverterString.write(value.target_address, buf)
 
 
 class CommonParams:
@@ -1938,6 +2004,8 @@ class _UniffiConverterTypeAlgodClient:
     def write(cls, value: AlgodClientProtocol, buf: _UniffiRustBuffer):
         buf.write_u64(cls.lower(value))
 class ComposerProtocol(typing.Protocol):
+    def add_asset_freeze(self, params: "AssetFreezeParams"):
+        raise NotImplementedError
     def add_payment(self, params: "PaymentParams"):
         raise NotImplementedError
     def build(self, ):
@@ -1973,6 +2041,17 @@ class Composer():
         inst = cls.__new__(cls)
         inst._pointer = pointer
         return inst
+
+
+    def add_asset_freeze(self, params: "AssetFreezeParams") -> None:
+        _UniffiConverterTypeAssetFreezeParams.check_lower(params)
+        
+        _uniffi_rust_call_with_error(_UniffiConverterTypeUtilsError,_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_freeze,self._uniffi_clone_pointer(),
+        _UniffiConverterTypeAssetFreezeParams.lower(params))
+
+
+
+
 
 
     def add_payment(self, params: "PaymentParams") -> None:
@@ -2174,6 +2253,7 @@ def _uniffi_foreign_future_do_free(task):
 __all__ = [
     "InternalError",
     "UtilsError",
+    "AssetFreezeParams",
     "CommonParams",
     "PaymentParams",
     "AlgodClient",

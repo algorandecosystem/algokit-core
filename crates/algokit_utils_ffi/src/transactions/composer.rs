@@ -61,6 +61,15 @@ impl Composer {
             })
     }
 
+    pub fn add_asset_freeze(&self, params: super::asset_freeze::AssetFreezeParams) -> Result<(), UtilsError> {
+        let mut composer = self.inner_composer.blocking_lock();
+        composer
+            .add_asset_freeze(params.try_into()?)
+            .map_err(|e| UtilsError::UtilsError {
+                message: e.to_string(),
+            })
+    }
+
     pub async fn send(&self) -> Result<Vec<String>, UtilsError> {
         let mut composer = self.inner_composer.blocking_lock();
         let result = composer
