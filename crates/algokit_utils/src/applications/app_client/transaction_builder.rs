@@ -102,7 +102,7 @@ impl TransactionBuilder<'_> {
         let method_params = self
             .client
             .params()
-            .method_call(&params)
+            .get_method_call_params(&params)
             .await
             .map_err(|e| ComposerError::TransactionError { message: e })?;
         let is_delete = matches!(

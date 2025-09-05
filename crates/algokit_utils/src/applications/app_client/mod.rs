@@ -207,15 +207,6 @@ impl AppClient {
         Address::from_str(sender_str).map_err(|e| format!("Invalid sender address: {}", e))
     }
 
-    fn get_optional_address(value: &Option<String>) -> Result<Option<Address>, String> {
-        match value {
-            Some(s) => Ok(Some(
-                Address::from_str(s).map_err(|e| format!("Invalid address: {}", e))?,
-            )),
-            None => Ok(None),
-        }
-    }
-
     fn get_app_address(&self) -> Result<Address, String> {
         let app_id = self.app_id.ok_or_else(|| "Missing app_id".to_string())?;
         Ok(Address::from_app_id(&app_id))
@@ -383,7 +374,7 @@ impl TransactionBuilder<'_> {
         let method_params = self
             .client
             .params()
-            .method_call(&params)
+            .get_method_call_params(&params)
             .await
             .map_err(
                 |e| crate::transactions::composer::ComposerError::TransactionError { message: e },

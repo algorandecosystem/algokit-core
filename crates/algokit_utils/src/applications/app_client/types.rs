@@ -2,7 +2,7 @@ use crate::AlgorandClient;
 use crate::clients::app_manager::TealTemplateValue;
 use crate::transactions::app_call::AppMethodCallArg;
 use algokit_abi::Arc56Contract;
-use algokit_transact::{BoxReference, OnApplicationComplete};
+use algokit_transact::BoxReference;
 use std::collections::HashMap;
 
 /// Container for source maps captured during compilation/simulation.
@@ -62,7 +62,7 @@ pub struct FundAppAccountParams {
 #[derive(Debug, Clone, Default)]
 pub struct AppClientMethodCallParams {
     pub method: String,
-    pub args: Option<Vec<AppMethodCallArg>>,
+    pub args: Vec<AppMethodCallArg>, // I think this should be Vec<AppMethodCallArg> because the user must use AppMethodCallArg.DefaultValue
     pub sender: Option<String>,
     pub rekey_to: Option<String>,
     pub note: Option<Vec<u8>>,
@@ -77,7 +77,8 @@ pub struct AppClientMethodCallParams {
     pub app_references: Option<Vec<u64>>,
     pub asset_references: Option<Vec<u64>>,
     pub box_references: Option<Vec<BoxReference>>,
-    pub on_complete: Option<OnApplicationComplete>,
+    // removed the on_complete because we overwrite it anyway later on
+    // don't feel right when the user has to specify "None" for a value which will be overwritten
 }
 
 /// Parameters for bare (non-ABI) app call operations
@@ -98,7 +99,6 @@ pub struct AppClientBareCallParams {
     pub app_references: Option<Vec<u64>>,
     pub asset_references: Option<Vec<u64>>,
     pub box_references: Option<Vec<BoxReference>>,
-    pub on_complete: Option<OnApplicationComplete>,
 }
 
 /// Enriched logic error details with source map information.
