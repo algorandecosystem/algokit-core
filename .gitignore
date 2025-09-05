@@ -16,7 +16,7 @@ wheelhouse/
 
 # AI artifacts
 CLAUDE.local.md
-.claude/settings.local.json
+.claude
 AGENTS.md
 .tasks/
 .opencode/

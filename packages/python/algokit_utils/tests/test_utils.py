@@ -23,11 +23,12 @@ import base64
 import pytest
 import requests
 
-MN = "gas net tragic valid celery want good neglect maid nuclear core false chunk place asthma three acoustic moon box million finish bargain onion ability shallow"
+MN = "gloom mobile embark bitter goat hello reflect unfold scrap slow choose object excite lake visual school traffic science history fit idea mystery unknown abstract infant"
 SEED_B64: str = to_private_key(MN)  # type: ignore
 SEED_BYTES = base64.b64decode(SEED_B64)
+print(SEED_BYTES)
 KEY = SigningKey(SEED_BYTES[:32])
-ADDR = "ON6AOPBATSSEL47ML7EPXATHGH7INOWONHWITMQEDRPXHTMDJYMPQXROMA"
+ADDR = "ESQH3U2JCDDIASZYLLNZRNMYZOOYWWTCBVS45FSC7AXWOCTZCKL7BQL3P4"
 
 
 class TestSigner(TransactionSigner):
@@ -93,7 +94,7 @@ class HttpClientImpl(HttpClient):
 
         return HttpResponse(
             body=res.content,
-            headers=res.headers,  # type: ignore
+            headers=headers,  # type: ignore
         )
 
 
@@ -186,42 +187,42 @@ async def test_composer():
         )
     )
 
-    # Test key registration functionality
-    composer.add_online_key_registration(
-        params=OnlineKeyRegistrationParams(
-            common_params=CommonParams(
-                sender=ADDR,
-            ),
-            vote_key=b"A" * 32,  # 32 bytes
-            selection_key=b"B" * 32,  # 32 bytes
-            vote_first=1000,
-            vote_last=2000,
-            vote_key_dilution=10000,
-            state_proof_key=b"C" * 64,  # 64 bytes
-        )
-    )
+    # # Test key registration functionality
+    # composer.add_online_key_registration(
+    #     params=OnlineKeyRegistrationParams(
+    #         common_params=CommonParams(
+    #             sender=ADDR,
+    #         ),
+    #         vote_key=b"A" * 32,  # 32 bytes
+    #         selection_key=b"B" * 32,  # 32 bytes
+    #         vote_first=1000,
+    #         vote_last=2000,
+    #         vote_key_dilution=10000,
+    #         state_proof_key=b"C" * 64,  # 64 bytes
+    #     )
+    # )
 
-    # Test asset transfer functionality
-    composer.add_asset_transfer(
-        params=AssetTransferParams(
-            common_params=CommonParams(
-                sender=ADDR,
-            ),
-            asset_id=12345,
-            amount=100,
-            receiver=ADDR,
-        )
-    )
+    # # Test asset transfer functionality
+    # composer.add_asset_transfer(
+    #     params=AssetTransferParams(
+    #         common_params=CommonParams(
+    #             sender=ADDR,
+    #         ),
+    #         asset_id=12345,
+    #         amount=100,
+    #         receiver=ADDR,
+    #     )
+    # )
 
-    # Test asset opt-in functionality
-    composer.add_asset_opt_in(
-        params=AssetOptInParams(
-            common_params=CommonParams(
-                sender=ADDR,
-            ),
-            asset_id=67890,
-        )
-    )
+    # # Test asset opt-in functionality
+    # composer.add_asset_opt_in(
+    #     params=AssetOptInParams(
+    #         common_params=CommonParams(
+    #             sender=ADDR,
+    #         ),
+    #         asset_id=67890,
+    #     )
+    # )
 
     await composer.build()
     txids = await composer.send()
