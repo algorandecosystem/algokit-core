@@ -27,10 +27,11 @@ pub use types::{
 
 /// A client for interacting with an Algorand smart contract application (ARC-56 focused).
 pub struct AppClient {
-    app_id: Option<u64>,
+    app_id: u64,
     app_spec: Arc56Contract,
     algorand: AlgorandClient,
     default_sender: Option<String>,
+    // TODO: default_signer is missing
     source_maps: Option<AppSourceMaps>,
     app_name: Option<String>,
 }
@@ -48,20 +49,24 @@ impl AppClient {
         }
     }
 
+    // TODO: confirm that this isn't used
     /// Create a new client from JSON parameters.
     /// Accepts a JSON string and normalizes into a typed ARC-56 contract.
-    pub fn from_json(params: types::AppClientJsonParams) -> Result<Self, AppClientError> {
-        let app_spec = Arc56Contract::from_json(params.app_spec_json)
-            .map_err(|e| AppClientError::ValidationError(e.to_string()))?;
-        Ok(Self::new(AppClientParams {
-            app_id: params.app_id,
-            app_spec,
-            algorand: params.algorand,
-            app_name: params.app_name,
-            default_sender: params.default_sender,
-            source_maps: params.source_maps,
-        }))
-    }
+    // pub fn from_json(params: types::AppClientJsonParams) -> Result<Self, AppClientError> {
+    //     let app_spec = Arc56Contract::from_json(params.app_spec_json).map_err(|e| {
+    //         AppClientError::ValidationError {
+    //             message: e.to_string(),
+    //         }
+    //     })?;
+    //     Ok(Self::new(AppClientParams {
+    //         app_id: params.app_id,
+    //         app_spec,
+    //         algorand: params.algorand,
+    //         app_name: params.app_name,
+    //         default_sender: params.default_sender,
+    //         source_maps: params.source_maps,
+    //     }))
+    // }
 
     /// Construct from the current network using app_spec.networks mapping.
     ///
@@ -78,7 +83,9 @@ impl AppClient {
             .client()
             .network()
             .await
-            .map_err(|e| AppClientError::Network(e.to_string()))?;
+            .map_err(|e| AppClientError::Network {
+                message: e.to_string(),
+            })?;
 
         let candidate_keys = Self::candidate_network_keys(&network);
         let (app_id, available_keys) = match &app_spec.networks {
@@ -95,7 +102,7 @@ impl AppClient {
         })?;
 
         Ok(Self::new(AppClientParams {
-            app_id: Some(app_id),
+            app_id,
             app_spec,
             algorand,
             app_name,
@@ -114,8 +121,9 @@ impl AppClient {
         source_maps: Option<AppSourceMaps>,
         ignore_cache: Option<bool>,
     ) -> Result<Self, AppClientError> {
-        let address = Address::from_str(creator_address)
-            .map_err(|e| AppClientError::Lookup(format!("Invalid creator address: {}", e)))?;
+        let address = Address::from_str(creator_address).map_err(|e| AppClientError::Lookup {
+            message: format!("Invalid creator address: {}", e),
+        })?;
 
         let indexer_client = algorand.client().indexer();
         let mut app_deployer = AppDeployer::new(
@@ -127,17 +135,22 @@ impl AppClient {
         let lookup = app_deployer
             .get_creator_apps_by_name(&address, ignore_cache)
             .await
-            .map_err(|e| AppClientError::Lookup(e.to_string()))?;
+            .map_err(|e| AppClientError::Lookup {
+                message: e.to_string(),
+            })?;
 
-        let app_metadata = lookup.apps.get(app_name).ok_or_else(|| {
-            AppClientError::Lookup(format!(
-                "App not found for creator {} and name {}",
-                creator_address, app_name
-            ))
-        })?;
+        let app_metadata = lookup
+            .apps
+            .get(app_name)
+            .ok_or_else(|| AppClientError::Lookup {
+                message: format!(
+                    "App not found for creator {} and name {}",
+                    creator_address, app_name
+                ),
+            })?;
 
         Ok(Self::new(AppClientParams {
-            app_id: Some(app_metadata.app_id),
+            app_id: app_metadata.app_id,
             app_spec,
             algorand,
             app_name: Some(app_name.to_string()),
@@ -172,7 +185,7 @@ impl AppClient {
         None
     }
 
-    pub fn app_id(&self) -> Option<u64> {
+    pub fn app_id(&self) -> u64 {
         self.app_id
     }
     pub fn app_spec(&self) -> &Arc56Contract {
@@ -188,9 +201,8 @@ impl AppClient {
         self.default_sender.as_ref()
     }
 
-    /// Get the application address if app_id is set.
-    pub fn app_address(&self) -> Option<Address> {
-        self.app_id.map(|id| Address::from_app_id(&id))
+    pub fn app_address(&self) -> Address {
+        Address::from_app_id(&self.app_id)
     }
 
     fn get_sender_address(&self, sender: &Option<String>) -> Result<Address, AppClientError> {
@@ -206,13 +218,6 @@ impl AppClient {
         Address::from_str(sender_str).map_err(|e| AppClientError::ValidationError {
             message: format!("Invalid sender address: {}", e),
         })
-    }
-
-    fn get_app_address(&self) -> Result<Address, AppClientError> {
-        let app_id = self.app_id.ok_or_else(|| AppClientError::ValidationError {
-            message: "Missing app_id".to_string(),
-        })?;
-        Ok(Address::from_app_id(&app_id))
     }
 
     /// Direct method: fund the application's account
@@ -233,18 +238,12 @@ impl AppClient {
     /// Get raw global state as HashMap<Vec<u8>, AppState>
     pub async fn get_global_state(
         &self,
-    ) -> Result<
-        std::collections::HashMap<Vec<u8>, crate::clients::app_manager::AppState>,
-        AppClientError,
-    > {
+    ) -> Result<HashMap<Vec<u8>, crate::clients::app_manager::AppState>, AppClientError> {
         self.algorand
             .app()
-            .get_global_state(
-                self.app_id
-                    .ok_or_else(|| AppClientError::ValidationError("Missing app_id".to_string()))?,
-            )
+            .get_global_state(self.app_id)
             .await
-            .map_err(AppClientError::from)
+            .map_err(|e| AppClientError::AppManagerError { source: e })
     }
 
     /// Get raw local state for an address
@@ -257,13 +256,9 @@ impl AppClient {
     > {
         self.algorand
             .app()
-            .get_local_state(
-                self.app_id
-                    .ok_or_else(|| AppClientError::ValidationError("Missing app_id".to_string()))?,
-                address,
-            )
+            .get_local_state(self.app_id, address)
             .await
-            .map_err(AppClientError::from)
+            .map_err(|e| AppClientError::AppManagerError { source: e })
     }
 
     /// Get all box names for the application
@@ -272,12 +267,9 @@ impl AppClient {
     ) -> Result<Vec<crate::clients::app_manager::BoxName>, AppClientError> {
         self.algorand
             .app()
-            .get_box_names(
-                self.app_id
-                    .ok_or_else(|| AppClientError::ValidationError("Missing app_id".to_string()))?,
-            )
+            .get_box_names(self.app_id)
             .await
-            .map_err(AppClientError::from)
+            .map_err(|e| AppClientError::AppManagerError { source: e })
     }
 
     /// Get the value of a box by raw identifier
@@ -287,13 +279,9 @@ impl AppClient {
     ) -> Result<Vec<u8>, AppClientError> {
         self.algorand
             .app()
-            .get_box_value(
-                self.app_id
-                    .ok_or_else(|| AppClientError::ValidationError("Missing app_id".to_string()))?,
-                name,
-            )
+            .get_box_value(self.app_id, name)
             .await
-            .map_err(AppClientError::from)
+            .map_err(|e| AppClientError::AppManagerError { source: e })
     }
 
     /// Get a box value decoded using an ABI type
@@ -304,14 +292,9 @@ impl AppClient {
     ) -> Result<algokit_abi::ABIValue, AppClientError> {
         self.algorand
             .app()
-            .get_box_value_from_abi_type(
-                self.app_id
-                    .ok_or_else(|| AppClientError::ValidationError("Missing app_id".to_string()))?,
-                name,
-                abi_type,
-            )
+            .get_box_value_from_abi_type(self.app_id, name, abi_type)
             .await
-            .map_err(AppClientError::from)
+            .map_err(|e| AppClientError::AppManagerError { source: e })
     }
 
     /// Get values for multiple boxes
@@ -321,13 +304,9 @@ impl AppClient {
     ) -> Result<Vec<Vec<u8>>, AppClientError> {
         self.algorand
             .app()
-            .get_box_values(
-                self.app_id
-                    .ok_or_else(|| AppClientError::ValidationError("Missing app_id".to_string()))?,
-                names,
-            )
+            .get_box_values(self.app_id, names)
             .await
-            .map_err(AppClientError::from)
+            .map_err(|e| AppClientError::AppManagerError { source: e })
     }
 
     /// Get multiple box values decoded using an ABI type
@@ -338,14 +317,9 @@ impl AppClient {
     ) -> Result<Vec<algokit_abi::ABIValue>, AppClientError> {
         self.algorand
             .app()
-            .get_box_values_from_abi_type(
-                self.app_id
-                    .ok_or_else(|| AppClientError::ValidationError("Missing app_id".to_string()))?,
-                names,
-                abi_type,
-            )
+            .get_box_values_from_abi_type(self.app_id, names, abi_type)
             .await
-            .map_err(AppClientError::from)
+            .map_err(|e| AppClientError::AppManagerError { source: e })
     }
 }
 

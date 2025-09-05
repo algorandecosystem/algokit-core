@@ -21,7 +21,7 @@ pub struct AppSourceMaps {
 // lifetime semantics. If you need to share the client, wrap it in Arc at the call site
 // and pass that explicitly, rather than deriving Clone on this params type.
 pub struct AppClientParams {
-    pub app_id: Option<u64>,
+    pub app_id: u64,
     pub app_spec: Arc56Contract,
     pub algorand: AlgorandClient,
     pub app_name: Option<String>,
