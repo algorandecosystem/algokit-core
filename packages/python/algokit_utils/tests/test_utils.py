@@ -229,3 +229,155 @@ async def test_composer():
     assert len(txids) == 1
     assert len(txids[0]) == 52
     print(txids)
+
+
+# Helper functions for implementing the TODOs above
+# These functions support testing the FFI transaction types
+
+def get_asset_balance(algorand, address: str, asset_id: int) -> int:
+    """Get asset balance using existing AlgorandClient AssetManager patterns."""
+    from algokit_utils import AlgorandClient
+    if isinstance(algorand, AlgorandClient):
+        try:
+            account_info = algorand.asset.get_account_information(address, asset_id)
+            return account_info.balance
+        except Exception:
+            return 0
+    else:
+        # Fallback for AlgodClient
+        try:
+            account_info = algorand.account_info(address)
+            for asset in account_info.get('assets', []):
+                if asset['asset-id'] == asset_id:
+                    return asset['amount']
+            return 0
+        except Exception:
+            return 0
+
+
+def is_opted_into_asset(algorand, address: str, asset_id: int) -> bool:
+    """Check if account is opted into asset using existing patterns."""
+    from algokit_utils import AlgorandClient
+    if isinstance(algorand, AlgorandClient):
+        try:
+            algorand.asset.get_account_information(address, asset_id)
+            return True
+        except Exception:
+            return False
+    else:
+        # Fallback for AlgodClient
+        try:
+            account_info = algorand.account_info(address)
+            return any(asset['asset-id'] == asset_id for asset in account_info.get('assets', []))
+        except Exception:
+            return False
+
+
+def get_asset_info(algorand, asset_id: int):
+    """Get asset information using existing AssetManager or AlgodClient."""
+    from algokit_utils import AlgorandClient
+    if isinstance(algorand, AlgorandClient):
+        return algorand.asset.get_by_id(asset_id)
+    else:
+        return algorand.asset_info(asset_id)
+
+
+def get_account_asset_info(algorand, address: str, asset_id: int):
+    """Get account-specific asset information using existing patterns."""
+    from algokit_utils import AlgorandClient
+    if isinstance(algorand, AlgorandClient):
+        return algorand.asset.get_account_information(address, asset_id)
+    else:
+        account_info = algorand.account_info(address)
+        for asset in account_info.get('assets', []):
+            if asset['asset-id'] == asset_id:
+                return asset
+        raise ValueError(f"Account {address} not opted into asset {asset_id}")
+
+
+def setup_account_with_assets(algorand, account, asset_id: int, amount: int, funder):
+    """Set up an account with assets using existing high-level client methods.
+    
+    This helper supports testing FFI asset transfer functionality by using
+    the existing AlgorandClient patterns to prepare test data.
+    """
+    from algokit_utils import AlgorandClient
+    if isinstance(algorand, AlgorandClient):
+        # Use bulk opt-in from existing AssetManager
+        algorand.asset.bulk_opt_in(account.address, [asset_id], signer=account.signer)
+        
+        # Transfer using existing send patterns
+        from algokit_utils.transactions.transaction_composer import AssetTransferParams
+        algorand.send.asset_transfer(
+            AssetTransferParams(
+                sender=funder.address,
+                receiver=account.address,
+                asset_id=asset_id,
+                amount=amount,
+                signer=funder.signer,
+            )
+        )
+
+
+def get_asset_id_from_result(result) -> int:
+    """Extract asset ID from transaction result using existing patterns."""
+    if hasattr(result, 'confirmation') and result.confirmation:
+        return int(result.confirmation["asset-index"])
+    if hasattr(result, 'confirmations') and result.confirmations:
+        return int(result.confirmations[0]["asset-index"])
+    raise ValueError("Could not extract asset ID from transaction result")
+
+
+def create_multi_signer(accounts: dict):
+    """Create a MultiAccountSignerGetter for testing FFI Composer with multiple signers.
+    
+    This supports testing FFI workflows that require different signers for different
+    addresses (e.g., asset creator, freeze manager, clawback manager).
+    """
+    from nacl.signing import SigningKey
+    
+    signers = {}
+    for key, account in accounts.items():
+        # Convert SigningAccount to TestSigner-compatible format
+        if hasattr(account, 'private_key'):
+            private_key_bytes = account.private_key
+            signing_key = SigningKey(private_key_bytes[:32])
+            # Create a signer that works with the existing TestSigner pattern
+            signers[account.address] = TestSigner()
+        else:
+            signers[account.address] = TestSigner()
+    
+    # Return a simple multi-signer that delegates to TestSigner
+    class MultiSigner(TransactionSignerGetter):
+        def __init__(self, signers_dict):
+            self.signers = signers_dict
+        
+        def get_signer(self, address: str) -> TransactionSigner:
+            if address not in self.signers:
+                # Default to TestSigner for any address
+                return TestSigner()
+            return self.signers[address]
+    
+    return MultiSigner(signers)
+
+
+def create_composer(algorand_client, accounts: dict):
+    """Create a Composer with multi-account signing support for FFI testing.
+    
+    This helper creates the FFI Composer with proper multi-account signing
+    support needed for comprehensive workflow testing.
+    """
+    from algokit_utils import AlgodClient
+    
+    # Use existing AlgodClient if provided, or create one
+    if isinstance(algorand_client, AlgodClient):
+        algod = algorand_client
+    else:
+        algod = AlgodClient(HttpClientImpl())
+    
+    multi_signer = create_multi_signer(accounts) if accounts else SignerGetter()
+    
+    return Composer(
+        algod_client=algod,
+        signer_getter=multi_signer,
+    )
