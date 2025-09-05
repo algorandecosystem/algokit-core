@@ -1,10 +1,9 @@
-use algokit_abi::Arc56Contract;
-use std::collections::HashMap;
-
 use crate::AlgorandClient;
 use crate::applications::AppDeployer;
 use crate::clients::network_client::NetworkDetails;
+use algokit_abi::Arc56Contract;
 use algokit_transact::Address;
+use std::collections::HashMap;
 use std::str::FromStr;
 mod abi_integration;
 mod compilation;
@@ -194,21 +193,25 @@ impl AppClient {
         self.app_id.map(|id| Address::from_app_id(&id))
     }
 
-    fn get_sender_address(&self, sender: &Option<String>) -> Result<Address, String> {
+    fn get_sender_address(&self, sender: &Option<String>) -> Result<Address, AppClientError> {
         let sender_str = sender
             .as_ref()
             .or(self.default_sender.as_ref())
-            .ok_or_else(|| {
-                format!(
+            .ok_or_else(|| AppClientError::ValidationError {
+                message: format!(
                     "No sender provided and no default sender configured for app {}",
                     self.app_name.as_deref().unwrap_or("<unknown>")
-                )
+                ),
             })?;
-        Address::from_str(sender_str).map_err(|e| format!("Invalid sender address: {}", e))
+        Address::from_str(sender_str).map_err(|e| AppClientError::ValidationError {
+            message: format!("Invalid sender address: {}", e),
+        })
     }
 
-    fn get_app_address(&self) -> Result<Address, String> {
-        let app_id = self.app_id.ok_or_else(|| "Missing app_id".to_string())?;
+    fn get_app_address(&self) -> Result<Address, AppClientError> {
+        let app_id = self.app_id.ok_or_else(|| AppClientError::ValidationError {
+            message: "Missing app_id".to_string(),
+        })?;
         Ok(Address::from_app_id(&app_id))
     }
 

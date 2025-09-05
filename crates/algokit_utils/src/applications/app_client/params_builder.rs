@@ -2,6 +2,7 @@ use super::AppClient;
 use super::types::{
     AppClientBareCallParams, AppClientMethodCallParams, CompilationParams, FundAppAccountParams,
 };
+use crate::AppClientError;
 use crate::transactions::{
     AppCallMethodCallParams, AppCallParams, AppDeleteMethodCallParams, AppDeleteParams,
     AppMethodCallArg, AppUpdateMethodCallParams, AppUpdateParams, CommonTransactionParams,
@@ -33,7 +34,7 @@ impl<'a> ParamsBuilder<'a> {
         &self,
         params: AppClientMethodCallParams,
         on_complete: Option<OnApplicationComplete>,
-    ) -> Result<AppCallMethodCallParams, String> {
+    ) -> Result<AppCallMethodCallParams, AppClientError> {
         self.get_method_call_params(&params, on_complete.unwrap_or(OnApplicationComplete::NoOp))
             .await
     }
@@ -42,7 +43,7 @@ impl<'a> ParamsBuilder<'a> {
     pub async fn opt_in(
         &self,
         params: AppClientMethodCallParams,
-    ) -> Result<AppCallMethodCallParams, String> {
+    ) -> Result<AppCallMethodCallParams, AppClientError> {
         self.get_method_call_params(&params, OnApplicationComplete::OptIn)
             .await
     }
@@ -51,7 +52,7 @@ impl<'a> ParamsBuilder<'a> {
     pub async fn close_out(
         &self,
         params: AppClientMethodCallParams,
-    ) -> Result<AppCallMethodCallParams, String> {
+    ) -> Result<AppCallMethodCallParams, AppClientError> {
         self.get_method_call_params(&params, OnApplicationComplete::CloseOut)
             .await
     }
@@ -60,7 +61,7 @@ impl<'a> ParamsBuilder<'a> {
     pub async fn delete(
         &self,
         params: AppClientMethodCallParams,
-    ) -> Result<AppDeleteMethodCallParams, String> {
+    ) -> Result<AppDeleteMethodCallParams, AppClientError> {
         let method_params = self
             .get_method_call_params(&params, OnApplicationComplete::DeleteApplication)
             .await?;
@@ -82,14 +83,11 @@ impl<'a> ParamsBuilder<'a> {
         &self,
         params: AppClientMethodCallParams,
         compilation_params: Option<CompilationParams>,
-    ) -> Result<AppUpdateMethodCallParams, String> {
+    ) -> Result<AppUpdateMethodCallParams, AppClientError> {
         // Compile programs (and populate AppManager cache/source maps)
         let compilation_params = compilation_params.unwrap_or_default();
-        let (approval_program, clear_state_program) = self
-            .client
-            .compile_with_params(&compilation_params)
-            .await
-            .map_err(|e| e.to_string())?;
+        let (approval_program, clear_state_program) =
+            self.client.compile_with_params(&compilation_params).await?;
 
         // Reuse method_call to resolve method + args + common params
         let method_params = self
@@ -139,7 +137,7 @@ impl<'a> ParamsBuilder<'a> {
         &self,
         params: &AppClientMethodCallParams,
         on_complete: OnApplicationComplete,
-    ) -> Result<AppCallMethodCallParams, String> {
+    ) -> Result<AppCallMethodCallParams, AppClientError> {
         let abi_method = self.get_abi_method(&params.method)?;
         let sender = self.client.get_sender_address(&params.sender)?.as_str();
 
@@ -199,21 +197,21 @@ impl<'a> ParamsBuilder<'a> {
         method: &ABIMethod,
         provided: &Vec<AppMethodCallArg>,
         sender: &str,
-    ) -> Result<Vec<AppMethodCallArg>, String> {
+    ) -> Result<Vec<AppMethodCallArg>, AppClientError> {
         let mut resolved: Vec<AppMethodCallArg> = Vec::with_capacity(method.args.len());
 
         // Pre-fetch ARC-56 method once if available
         let arc56_method = method
             .signature()
             .and_then(|sig| self.client.app_spec().get_arc56_method(&sig))
-            .map_err(|_| "Failed to fetch ARC56 method")?;
+            .map_err(|e| Err(AppClientError::ValidationError(e.to_string())));
 
         if method.args.len() != provided.len() {
-            return Err(format!(
+            return Err(AppClientError::ValidationError(format!(
                 "The number of provided arguments is {} while the method expects {} arguments",
                 provided.len(),
                 method.args.len()
-            ));
+            )));
         }
 
         for (index, (method_arg, provided_arg)) in method.args.iter().zip(provided).enumerate() {
@@ -310,7 +308,7 @@ impl<'a> ParamsBuilder<'a> {
                 }
                 let decode_type = if let Some(ref vt) = default.value_type {
                     ABIType::from_str(vt).map_err(|e| {
-                        AppClientError::AbiError(format!(
+                        AppClientError::ABIError(format!(
                             "Invalid default value ABI type '{}': {}",
                             vt, e
                         ))
@@ -319,7 +317,7 @@ impl<'a> ParamsBuilder<'a> {
                     abi_type.clone()
                 };
                 decode_type.decode(&raw).map_err(|e| {
-                    AppClientError::AbiError(format!("Failed to decode default literal: {}", e))
+                    AppClientError::ABIError(format!("Failed to decode default literal: {}", e))
                 })
             }
             DefaultValueSource::Global => {
@@ -408,13 +406,13 @@ impl<'a> ParamsBuilder<'a> {
                     return Ok(ABIValue::Array(arr));
                 }
                 let decode_type = ABIType::from_str(effective_type).map_err(|e| {
-                    AppClientError::AbiError(format!(
+                    AppClientError::ABIError(format!(
                         "Invalid ABI type '{}': {}",
                         effective_type, e
                     ))
                 })?;
                 decode_type.decode(&raw).map_err(|e| {
-                    AppClientError::AbiError(format!("Failed to decode box default: {}", e))
+                    AppClientError::ABIError(format!("Failed to decode box default: {}", e))
                 })
             }
         }

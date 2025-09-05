@@ -116,7 +116,7 @@ impl GlobalStateAccessor<'_> {
                 AppClientError::ValidationError(format!("Unknown global map: {}", map_name))
             })?;
         let key_type = ABIType::from_str(&map.key_type).map_err(|e| {
-            AppClientError::AbiError(format!("Invalid ABI type '{}': {}", map.key_type, e))
+            AppClientError::ABIError(format!("Invalid ABI type '{}': {}", map.key_type, e))
         })?;
         let key_bytes = key_type.encode(key).map_err(|e| {
             AppClientError::ValidationError(format!("Failed to encode map key: {}", e))
@@ -163,7 +163,7 @@ impl GlobalStateAccessor<'_> {
             Vec::new()
         };
         let key_type = ABIType::from_str(&map.key_type).map_err(|e| {
-            AppClientError::AbiError(format!("Invalid ABI type '{}': {}", map.key_type, e))
+            AppClientError::ABIError(format!("Invalid ABI type '{}': {}", map.key_type, e))
         })?;
 
         let mut result = HashMap::new();
@@ -175,7 +175,7 @@ impl GlobalStateAccessor<'_> {
             let tail = &key_raw[prefix_bytes.len()..];
             // Decode the map key tail according to ABI type, error if invalid
             let decoded_key = key_type.decode(tail).map_err(|e| {
-                AppClientError::AbiError(format!(
+                AppClientError::ABIError(format!(
                     "Failed to decode key for map '{}': {}",
                     map_name, e
                 ))
@@ -258,7 +258,7 @@ impl LocalStateAccessor<'_> {
                 AppClientError::ValidationError(format!("Unknown local map: {}", map_name))
             })?;
         let key_type = ABIType::from_str(&map.key_type).map_err(|e| {
-            AppClientError::AbiError(format!("Invalid ABI type '{}': {}", map.key_type, e))
+            AppClientError::ABIError(format!("Invalid ABI type '{}': {}", map.key_type, e))
         })?;
         let key_bytes = key_type.encode(key).map_err(|e| {
             AppClientError::ValidationError(format!("Failed to encode map key: {}", e))
@@ -305,7 +305,7 @@ impl LocalStateAccessor<'_> {
             Vec::new()
         };
         let key_type = ABIType::from_str(&map.key_type).map_err(|e| {
-            AppClientError::AbiError(format!("Invalid ABI type '{}': {}", map.key_type, e))
+            AppClientError::ABIError(format!("Invalid ABI type '{}': {}", map.key_type, e))
         })?;
 
         let mut result = HashMap::new();
@@ -316,7 +316,7 @@ impl LocalStateAccessor<'_> {
             }
             let tail = &key_raw[prefix_bytes.len()..];
             let decoded_key = key_type.decode(tail).map_err(|e| {
-                AppClientError::AbiError(format!(
+                AppClientError::ABIError(format!(
                     "Failed to decode key for map '{}': {}",
                     map_name, e
                 ))
@@ -348,7 +348,7 @@ impl BoxStateAccessor<'_> {
                 ))
             })?;
         let abi_type = ABIType::from_str(&metadata.value_type).map_err(|e| {
-            AppClientError::AbiError(format!("Invalid ABI type '{}': {}", metadata.value_type, e))
+            AppClientError::ABIError(format!("Invalid ABI type '{}': {}", metadata.value_type, e))
         })?;
         self.client
             .algorand()
@@ -380,7 +380,7 @@ impl BoxStateAccessor<'_> {
                 AppClientError::ValidationError(format!("Unknown box map: {}", map_name))
             })?;
         let key_type = ABIType::from_str(&map.key_type).map_err(|e| {
-            AppClientError::AbiError(format!("Invalid ABI type '{}': {}", map.key_type, e))
+            AppClientError::ABIError(format!("Invalid ABI type '{}': {}", map.key_type, e))
         })?;
         let key_bytes = key_type.encode(key).map_err(|e| {
             AppClientError::ValidationError(format!("Failed to encode map key: {}", e))
@@ -396,7 +396,7 @@ impl BoxStateAccessor<'_> {
         };
         full_key.extend_from_slice(&key_bytes);
         let value_type = ABIType::from_str(&map.value_type).map_err(|e| {
-            AppClientError::AbiError(format!("Invalid ABI type '{}': {}", map.value_type, e))
+            AppClientError::ABIError(format!("Invalid ABI type '{}': {}", map.value_type, e))
         })?;
         self.client
             .algorand()
@@ -437,10 +437,10 @@ impl BoxStateAccessor<'_> {
         };
 
         let key_type = ABIType::from_str(&map.key_type).map_err(|e| {
-            AppClientError::AbiError(format!("Invalid ABI type '{}': {}", map.key_type, e))
+            AppClientError::ABIError(format!("Invalid ABI type '{}': {}", map.key_type, e))
         })?;
         let value_type = ABIType::from_str(&map.value_type).map_err(|e| {
-            AppClientError::AbiError(format!("Invalid ABI type '{}': {}", map.value_type, e))
+            AppClientError::ABIError(format!("Invalid ABI type '{}': {}", map.value_type, e))
         })?;
 
         let mut result = HashMap::new();
@@ -451,7 +451,7 @@ impl BoxStateAccessor<'_> {
             }
             let tail = &box_name.name_raw[prefix_bytes.len()..];
             let decoded_key = key_type.decode(tail).map_err(|e| {
-                AppClientError::AbiError(format!(
+                AppClientError::ABIError(format!(
                     "Failed to decode key for map '{}': {}",
                     map_name, e
                 ))
@@ -524,10 +524,10 @@ pub(crate) fn decode_app_state_value(
 
             // Fallback to ABI decoding for declared ARC-4 types (includes structs)
             let abi_type = ABIType::from_str(value_type_str).map_err(|e| {
-                AppClientError::AbiError(format!("Invalid ABI type '{}': {}", value_type_str, e))
+                AppClientError::ABIError(format!("Invalid ABI type '{}': {}", value_type_str, e))
             })?;
             abi_type.decode(&raw).map_err(|e| {
-                AppClientError::AbiError(format!("Failed to decode state value: {}", e))
+                AppClientError::ABIError(format!("Failed to decode state value: {}", e))
             })
         }
     }
