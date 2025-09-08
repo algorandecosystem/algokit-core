@@ -1,4 +1,4 @@
-use crate::transactions::{SendTransactionResult, TransactionSenderError};
+use crate::transactions::SendTransactionResult;
 use crate::{AppClientError, SendAppCallResult};
 use algokit_transact::OnApplicationComplete;
 
