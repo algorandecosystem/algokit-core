@@ -1,3 +1,4 @@
+use crate::SendAppCallResult;
 use crate::transactions::{SendTransactionResult, TransactionSenderError};
 use algokit_transact::OnApplicationComplete;
 
@@ -27,7 +28,7 @@ impl<'a> TransactionSender<'a> {
         &self,
         params: AppClientMethodCallParams,
         on_complete: Option<OnApplicationComplete>,
-    ) -> Result<crate::transactions::SendAppCallResult, TransactionSenderError> {
+    ) -> Result<SendAppCallResult, TransactionSenderError> {
         let arc56_method = self
             .client
             .app_spec
@@ -53,7 +54,7 @@ impl<'a> TransactionSender<'a> {
                     message: e.to_string(),
                 })?;
 
-            let sim_params = crate::transactions::composer::SimulateParams {
+            let simulate_params = crate::transactions::composer::SimulateParams {
                 allow_more_logging: Some(true),
                 allow_empty_signatures: Some(true),
                 exec_trace_config: Some(algod_client::models::SimulateTraceConfig {
@@ -66,12 +67,32 @@ impl<'a> TransactionSender<'a> {
                 ..Default::default()
             };
 
-            let sim = composer.simulate(Some(sim_params)).await.map_err(|e| {
-                TransactionSenderError::ValidationError {
+            let simulate_results = composer
+                .simulate(Some(simulate_params))
+                .await
+                .map_err(|e| TransactionSenderError::ValidationError {
                     message: e.to_string(),
-                }
-            })?;
+                })?;
 
+            // Convert Transaction objects to transaction IDs (strings)
+            let tx_ids: Vec<String> = simulate_results
+                .transactions
+                .iter()
+                .map(|tx| tx.id().unwrap_or_default())
+                .collect();
+
+            let send_transaction_result = SendTransactionResult::new(
+                "",
+                tx_ids,
+                Some(simulate_results.transactions),
+                Some(simulate_results.confirmations),
+                simulate_results.returns,
+            )?;
+
+            Ok(SendAppCallResult {
+                common_params: send_transaction_result,
+                abi_return: simulate_results.returns.first().cloned(),
+            })
             // TODO: convert SimulateComposerResults to SendAppCallResult
         } else {
             self.client

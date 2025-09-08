@@ -1,7 +1,12 @@
+use algokit_abi::ABIValue;
+
 use super::AppClient;
+use crate::AppClientError;
+use crate::clients::app_manager::AppState;
 use crate::transactions::TransactionSenderError;
 use crate::transactions::composer::ComposerError;
 
+use std::collections::HashMap;
 use std::str::FromStr;
 
 /// Format a logic error message with details.
@@ -45,7 +50,7 @@ pub fn transform_transaction_error(
 /// Parse account reference strings to addresses.
 pub fn parse_account_refs_strs(
     account_refs: &Option<Vec<String>>,
-) -> Result<Option<Vec<algokit_transact::Address>>, String> {
+) -> Result<Option<Vec<algokit_transact::Address>>, AppClientError> {
     match account_refs {
         None => Ok(None),
         Some(refs) => {
@@ -53,10 +58,25 @@ pub fn parse_account_refs_strs(
             for s in refs {
                 result.push(
                     algokit_transact::Address::from_str(s)
-                        .map_err(|e| format!("Invalid address: {}", e))?,
+                        .map_err(|e| AppClientError::TransactError { source: e })?,
                 );
             }
             Ok(Some(result))
         }
     }
+}
+
+pub async fn get_abi_decoded_value(
+    key: &[u8],
+    state: &HashMap<Vec<u8>, AppState>,
+    abi_type_str: &str,
+    default_value_type: Option<&str>,
+) -> Result<ABIValue, AppClientError> {
+    let app_state = state
+        .get(key)
+        .ok_or_else(|| AppClientError::ValidationError {
+            message: format!("State key not found: {:?}", key),
+        })?;
+    let effective_type = default_value_type.unwrap_or(abi_type_str);
+    super::state_accessor::decode_app_state_value(effective_type, app_state)
 }

@@ -3,12 +3,15 @@ use super::types::{
     AppClientBareCallParams, AppClientMethodCallParams, CompilationParams, FundAppAccountParams,
 };
 use crate::AppClientError;
+use crate::applications::app_client::utils::get_abi_decoded_value;
 use crate::transactions::{
     AppCallMethodCallParams, AppCallParams, AppDeleteMethodCallParams, AppDeleteParams,
     AppMethodCallArg, AppUpdateMethodCallParams, AppUpdateParams, CommonTransactionParams,
     PaymentParams,
 };
-use algokit_abi::{ABIMethod, ABIMethodArgType, ABIValue, DefaultValue, DefaultValueSource};
+use algokit_abi::{
+    ABIMethod, ABIMethodArgType, ABIType, ABIValue, DefaultValue, DefaultValueSource,
+};
 use algokit_transact::{Address, OnApplicationComplete};
 use base64::Engine;
 use std::str::FromStr;
@@ -109,9 +112,12 @@ impl<'a> ParamsBuilder<'a> {
     }
 
     /// Fund the application account.
-    pub fn fund_app_account(&self, params: &FundAppAccountParams) -> Result<PaymentParams, String> {
+    pub fn fund_app_account(
+        &self,
+        params: &FundAppAccountParams,
+    ) -> Result<PaymentParams, AppClientError> {
         let sender = self.client.get_sender_address(&params.sender)?;
-        let receiver = self.client.get_app_address()?;
+        let receiver = self.client.app_address();
         let rekey_to = get_optional_address(&params.rekey_to)?;
 
         Ok(PaymentParams {
@@ -147,10 +153,7 @@ impl<'a> ParamsBuilder<'a> {
 
         Ok(AppCallMethodCallParams {
             common_params: self.build_common_params_from_method(params)?,
-            app_id: self
-                .client
-                .app_id
-                .ok_or_else(|| "Missing app_id".to_string())?,
+            app_id: self.client.app_id,
             method: abi_method,
             args: resolved_args,
             account_references: super::utils::parse_account_refs_strs(&params.account_references)?,
@@ -164,7 +167,7 @@ impl<'a> ParamsBuilder<'a> {
     fn build_common_params_from_method(
         &self,
         params: &AppClientMethodCallParams,
-    ) -> Result<CommonTransactionParams, String> {
+    ) -> Result<CommonTransactionParams, AppClientError> {
         Ok(CommonTransactionParams {
             sender: self.client.get_sender_address(&params.sender)?,
             rekey_to: get_optional_address(&params.rekey_to)?,
@@ -180,16 +183,16 @@ impl<'a> ParamsBuilder<'a> {
         })
     }
 
-    fn get_abi_method(&self, method_name_or_signature: &str) -> Result<ABIMethod, String> {
+    fn get_abi_method(&self, method_name_or_signature: &str) -> Result<ABIMethod, AppClientError> {
         let m = self
             .client
             .app_spec
             .get_arc56_method(method_name_or_signature)
-            .map_err(|e| e.to_string())?;
+            .map_err(|e| AppClientError::ABIError { source: e })?;
         self.client
             .app_spec
             .to_abi_method(m)
-            .map_err(|e| e.to_string())
+            .map_err(|e| AppClientError::ABIError { source: e })
     }
 
     async fn resolve_args_with_defaults(
@@ -204,14 +207,16 @@ impl<'a> ParamsBuilder<'a> {
         let arc56_method = method
             .signature()
             .and_then(|sig| self.client.app_spec().get_arc56_method(&sig))
-            .map_err(|e| Err(AppClientError::ValidationError(e.to_string())));
+            .map_err(|e| AppClientError::ABIError { source: e })?;
 
         if method.args.len() != provided.len() {
-            return Err(AppClientError::ValidationError(format!(
-                "The number of provided arguments is {} while the method expects {} arguments",
-                provided.len(),
-                method.args.len()
-            )));
+            return Err(AppClientError::ValidationError {
+                message: format!(
+                    "The number of provided arguments is {} while the method expects {} arguments",
+                    provided.len(),
+                    method.args.len()
+                ),
+            });
         }
 
         for (index, (method_arg, provided_arg)) in method.args.iter().zip(provided).enumerate() {
@@ -227,24 +232,25 @@ impl<'a> ParamsBuilder<'a> {
                         .args
                         .get(index)
                         .and_then(|a| a.default_value.clone())
-                        .ok_or_else(|| {
-                            format!(
+                        .ok_or_else(|| AppClientError::ParamsBuilderError {
+                            message: format!(
                                 "No default value defined for argument {} in call to method {}",
                                 method_arg_name, method.name
-                            )
+                            ),
                         })?;
                     let abi_type_string = value_type.to_string();
                     let value = self
                         .resolve_default_value_for_arg(&default_value, &abi_type_string, sender)
-                        .await
-                        .map_err(|e| e.to_string())?;
+                        .await?;
                     resolved.push(AppMethodCallArg::ABIValue(value));
                 }
                 (_, AppMethodCallArg::DefaultValue) => {
-                    return Err(format!(
-                        "Default value is not supported by argument {} in call to method {}",
-                        method_arg_name, method.name
-                    ));
+                    return Err(AppClientError::ParamsBuilderError {
+                        message: format!(
+                            "Default value is not supported by argument {} in call to method {}",
+                            method_arg_name, method.name
+                        ),
+                    });
                 }
                 // TODO: can we ignore other validations, they will be handled at encoding?
                 (_, value) => {
@@ -262,7 +268,7 @@ impl<'a> ParamsBuilder<'a> {
         default: &DefaultValue,
         abi_type: &str,
         sender: &str,
-    ) -> Result<ABIValue, String> {
+    ) -> Result<ABIValue, AppClientError> {
         match default.source {
             DefaultValueSource::Method => {
                 let method_signature = default.data.clone();
@@ -270,7 +276,7 @@ impl<'a> ParamsBuilder<'a> {
                     .client
                     .app_spec
                     .get_arc56_method(&method_signature)
-                    .map_err(|e| e.to_string())?;
+                    .map_err(|e| AppClientError::ABIError { source: e })?;
 
                 // Build params via params layer
                 let method_call_params = AppClientMethodCallParams {
@@ -280,21 +286,25 @@ impl<'a> ParamsBuilder<'a> {
                     ..Default::default()
                 };
 
-                let app_call_result = self.client.send().call(method_call_params).await?;
-                let abi_return = app_call_result
-                    .abi_return
-                    .ok_or_else(|| "Default value method call did not return a value")?;
+                let app_call_result = self
+                    .client
+                    .send()
+                    .call(method_call_params, None)
+                    .await
+                    .map_err(|e| AppClientError::TransactionSenderError { source: e })?;
+                let abi_return = app_call_result.abi_return.ok_or_else(|| {
+                    AppClientError::ParamsBuilderError {
+                        message: "Default value method call did not return a value".to_string(),
+                    }
+                })?;
                 Ok(abi_return.return_value)
             }
             // TODO: I haven't checked this logic
             DefaultValueSource::Literal => {
                 let raw = base64::engine::general_purpose::STANDARD
                     .decode(&default.data)
-                    .map_err(|e| {
-                        AppClientError::ValidationError(format!(
-                            "Failed to decode base64 literal: {}",
-                            e
-                        ))
+                    .map_err(|e| AppClientError::ParamsBuilderError {
+                        message: format!("Failed to decode base64 literal: {}", e),
                     })?;
                 if let Some(ref vt) = default.value_type {
                     if vt == algokit_abi::arc56_contract::AVM_STRING {
@@ -306,98 +316,65 @@ impl<'a> ParamsBuilder<'a> {
                         return Ok(ABIValue::Array(arr));
                     }
                 }
-                let decode_type = if let Some(ref vt) = default.value_type {
-                    ABIType::from_str(vt).map_err(|e| {
-                        AppClientError::ABIError(format!(
-                            "Invalid default value ABI type '{}': {}",
-                            vt, e
-                        ))
-                    })?
+                let decode_type = if let Some(ref value_type) = default.value_type {
+                    ABIType::from_str(value_type)
+                        .map_err(|e| AppClientError::ABIError { source: e })?
                 } else {
-                    abi_type.clone()
+                    ABIType::from_str(abi_type)
+                        .map_err(|e| AppClientError::ABIError { source: e })?
                 };
-                decode_type.decode(&raw).map_err(|e| {
-                    AppClientError::ABIError(format!("Failed to decode default literal: {}", e))
-                })
+                decode_type
+                    .decode(&raw)
+                    .map_err(|e| AppClientError::ParamsBuilderError {
+                        message: format!("Failed to decode base64 literal: {}", e),
+                    })
             }
             DefaultValueSource::Global => {
                 let key = base64::engine::general_purpose::STANDARD
                     .decode(&default.data)
-                    .map_err(|e| {
-                        AppClientError::ValidationError(format!(
-                            "Failed to decode global key: {}",
-                            e
-                        ))
+                    .map_err(|e| AppClientError::ParamsBuilderError {
+                        message: format!("Failed to decode global key: {}", e),
+                    })?;
+
+                let state = self
+                    .client
+                    .algorand
+                    .app()
+                    .get_global_state(self.client.app_id)
+                    .await
+                    .map_err(|e| AppClientError::AppManagerError { source: e })?;
+
+                get_abi_decoded_value(&key, &state, abi_type, default.value_type.as_deref()).await
+            }
+            DefaultValueSource::Local => {
+                let key = base64::engine::general_purpose::STANDARD
+                    .decode(&default.data)
+                    .map_err(|e| AppClientError::ParamsBuilderError {
+                        message: format!("Failed to decode local key: {}", e),
                     })?;
                 let state = self
                     .client
                     .algorand
                     .app()
-                    .get_global_state(self.app_id.ok_or(AppClientError::ValidationError(
-                        "Missing app_id".to_string(),
-                    ))?)
+                    .get_local_state(self.client.app_id, sender)
                     .await
-                    .map_err(|e| AppClientError::Network(e.to_string()))?;
-                self.client
-                    .get_abi_decoded_value(
-                        &key,
-                        &state,
-                        abi_type_str,
-                        default.value_type.as_deref(),
-                    )
-                    .await
-            }
-            DefaultValueSource::Local => {
-                let sender_addr = sender.ok_or_else(|| {
-                    AppClientError::ValidationError(
-                        "Sender is required to resolve local state default".to_string(),
-                    )
-                })?;
-                let key = base64::engine::general_purpose::STANDARD
-                    .decode(&default.data)
-                    .map_err(|e| {
-                        AppClientError::ValidationError(format!(
-                            "Failed to decode local key: {}",
-                            e
-                        ))
-                    })?;
-                let state = self
-                    .algorand
-                    .app()
-                    .get_local_state(
-                        self.app_id.ok_or(AppClientError::ValidationError(
-                            "Missing app_id".to_string(),
-                        ))?,
-                        sender_addr,
-                    )
-                    .await
-                    .map_err(|e| AppClientError::Network(e.to_string()))?;
-                self.get_abi_decoded_value(
-                    &key,
-                    &state,
-                    abi_type_str,
-                    default.value_type.as_deref(),
-                )
-                .await
+                    .map_err(|e| AppClientError::AppManagerError { source: e })?;
+                get_abi_decoded_value(&key, &state, abi_type, default.value_type.as_deref()).await
             }
             DefaultValueSource::Box => {
                 let box_key = base64::engine::general_purpose::STANDARD
                     .decode(&default.data)
-                    .map_err(|e| {
-                        AppClientError::ValidationError(format!("Failed to decode box key: {}", e))
+                    .map_err(|e| AppClientError::ParamsBuilderError {
+                        message: format!("Failed to decode box key: {}", e),
                     })?;
                 let raw = self
+                    .client
                     .algorand
                     .app()
-                    .get_box_value(
-                        self.app_id.ok_or(AppClientError::ValidationError(
-                            "Missing app_id".to_string(),
-                        ))?,
-                        &box_key,
-                    )
+                    .get_box_value(self.client.app_id, &box_key)
                     .await
-                    .map_err(|e| AppClientError::Network(e.to_string()))?;
-                let effective_type = default.value_type.as_deref().unwrap_or(abi_type_str);
+                    .map_err(|e| AppClientError::AppManagerError { source: e })?;
+                let effective_type = default.value_type.as_deref().unwrap_or(abi_type);
                 if effective_type == algokit_abi::arc56_contract::AVM_STRING {
                     return Ok(ABIValue::from(String::from_utf8_lossy(&raw).to_string()));
                 }
@@ -405,15 +382,11 @@ impl<'a> ParamsBuilder<'a> {
                     let arr = raw.into_iter().map(ABIValue::from_byte).collect();
                     return Ok(ABIValue::Array(arr));
                 }
-                let decode_type = ABIType::from_str(effective_type).map_err(|e| {
-                    AppClientError::ABIError(format!(
-                        "Invalid ABI type '{}': {}",
-                        effective_type, e
-                    ))
-                })?;
-                decode_type.decode(&raw).map_err(|e| {
-                    AppClientError::ABIError(format!("Failed to decode box default: {}", e))
-                })
+                let decode_type = ABIType::from_str(effective_type)
+                    .map_err(|e| AppClientError::ABIError { source: e })?;
+                decode_type
+                    .decode(&raw)
+                    .map_err(|e| AppClientError::ABIError { source: e })
             }
         }
     }
@@ -425,22 +398,28 @@ impl BareParamsBuilder<'_> {
         &self,
         params: AppClientBareCallParams,
         on_complete: Option<OnApplicationComplete>,
-    ) -> Result<AppCallParams, String> {
+    ) -> Result<AppCallParams, AppClientError> {
         self.build_bare_app_call_params(params, on_complete.unwrap_or(OnApplicationComplete::NoOp))
     }
 
     /// Call with OptIn.
-    pub fn opt_in(&self, params: AppClientBareCallParams) -> Result<AppCallParams, String> {
+    pub fn opt_in(&self, params: AppClientBareCallParams) -> Result<AppCallParams, AppClientError> {
         self.build_bare_app_call_params(params, OnApplicationComplete::OptIn)
     }
 
     /// Call with CloseOut.
-    pub fn close_out(&self, params: AppClientBareCallParams) -> Result<AppCallParams, String> {
+    pub fn close_out(
+        &self,
+        params: AppClientBareCallParams,
+    ) -> Result<AppCallParams, AppClientError> {
         self.build_bare_app_call_params(params, OnApplicationComplete::CloseOut)
     }
 
     /// Call with Delete.
-    pub fn delete(&self, params: AppClientBareCallParams) -> Result<AppDeleteParams, String> {
+    pub fn delete(
+        &self,
+        params: AppClientBareCallParams,
+    ) -> Result<AppDeleteParams, AppClientError> {
         let app_call =
             self.build_bare_app_call_params(params, OnApplicationComplete::DeleteApplication)?;
         Ok(AppDeleteParams {
@@ -455,7 +434,10 @@ impl BareParamsBuilder<'_> {
     }
 
     /// Call with ClearState.
-    pub fn clear_state(&self, params: AppClientBareCallParams) -> Result<AppCallParams, String> {
+    pub fn clear_state(
+        &self,
+        params: AppClientBareCallParams,
+    ) -> Result<AppCallParams, AppClientError> {
         self.build_bare_app_call_params(params, OnApplicationComplete::ClearState)
     }
 
@@ -464,14 +446,11 @@ impl BareParamsBuilder<'_> {
         &self,
         params: AppClientBareCallParams,
         compilation_params: Option<CompilationParams>,
-    ) -> Result<AppUpdateParams, String> {
+    ) -> Result<AppUpdateParams, AppClientError> {
         // Compile programs (and populate AppManager cache/source maps)
         let compilation_params = compilation_params.unwrap_or_default();
-        let (approval_program, clear_state_program) = self
-            .client
-            .compile_with_params(&compilation_params)
-            .await
-            .map_err(|e| e.to_string())?;
+        let (approval_program, clear_state_program) =
+            self.client.compile_with_params(&compilation_params).await?;
 
         // Resolve common/bare fields
         let app_call =
@@ -494,13 +473,10 @@ impl BareParamsBuilder<'_> {
         &self,
         params: AppClientBareCallParams,
         on_complete: OnApplicationComplete,
-    ) -> Result<AppCallParams, String> {
+    ) -> Result<AppCallParams, AppClientError> {
         Ok(AppCallParams {
             common_params: self.build_common_params_from_bare(&params)?,
-            app_id: self
-                .client
-                .app_id
-                .ok_or_else(|| "Missing app_id".to_string())?,
+            app_id: self.client.app_id,
             on_complete: on_complete,
             args: params.args,
             account_references: super::utils::parse_account_refs_strs(&params.account_references)?,
@@ -513,7 +489,7 @@ impl BareParamsBuilder<'_> {
     fn build_common_params_from_bare(
         &self,
         params: &AppClientBareCallParams,
-    ) -> Result<CommonTransactionParams, String> {
+    ) -> Result<CommonTransactionParams, AppClientError> {
         Ok(CommonTransactionParams {
             sender: self.client.get_sender_address(&params.sender)?,
             rekey_to: get_optional_address(&params.rekey_to)?,
@@ -530,11 +506,13 @@ impl BareParamsBuilder<'_> {
     }
 }
 
-fn get_optional_address(value: &Option<String>) -> Result<Option<Address>, String> {
+fn get_optional_address(value: &Option<String>) -> Result<Option<Address>, AppClientError> {
     match value {
-        Some(s) => Ok(Some(
-            Address::from_str(s).map_err(|e| format!("Invalid address: {}", e))?,
-        )),
+        Some(s) => {
+            Ok(Some(Address::from_str(s).map_err(|e| {
+                AppClientError::TransactError { source: e }
+            })?))
+        }
         None => Ok(None),
     }
 }

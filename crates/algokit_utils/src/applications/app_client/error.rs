@@ -1,6 +1,7 @@
 use crate::clients::app_manager::AppManagerError;
 use crate::transactions::TransactionSenderError;
 use algokit_abi::error::ABIError;
+use algokit_transact::AlgoKitTransactError;
 use snafu::Snafu;
 
 #[derive(Debug, Snafu)]
@@ -20,12 +21,16 @@ pub enum AppClientError {
     MethodNotFound { message: String },
     #[snafu(display("ABI error: {source}"))]
     ABIError { source: ABIError },
-    #[snafu(display("Transaction error: {source}"))]
-    TransactionError { source: TransactionSenderError },
+    #[snafu(display("Transaction sender error: {source}"))]
+    TransactionSenderError { source: TransactionSenderError },
     #[snafu(display("App manager error: {source}"))]
     AppManagerError { source: AppManagerError },
     #[snafu(display("Compilation error: {message}"))]
     CompilationError { message: String },
     #[snafu(display("Validation error: {message}"))]
     ValidationError { message: String },
+    #[snafu(display("Transact error: {source}"))]
+    TransactError { source: AlgoKitTransactError },
+    #[snafu(display("Params builder error: {message}"))]
+    ParamsBuilderError { message: String },
 }
