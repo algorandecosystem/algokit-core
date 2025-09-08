@@ -1,5 +1,4 @@
 import { BaseHttpRequest, type RequestOptions } from "./BaseHttpRequest";
-import { OpenAPI } from "./OpenAPI";
 import { request as defaultRequest } from "./request";
 
 export class FetchHttpRequest extends BaseHttpRequest {

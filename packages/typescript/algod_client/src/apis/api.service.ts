@@ -43,7 +43,7 @@ import type {
   WaitForBlock,
 } from "../models/index";
 
-export class ApiService {
+export class AlgodApi {
   constructor(public readonly httpRequest: BaseHttpRequest) {}
 
   abortCatchup(catchpoint: string, requestOptions?: ApiRequestOptions): Promise<AbortCatchup> {
@@ -67,60 +67,56 @@ export class ApiService {
 
   accountApplicationInformation(
     address: string,
-    applicationId: number,
+    applicationId: number | bigint,
     params?: { format?: "json" | "msgpack" },
     requestOptions?: ApiRequestOptions,
   ): Promise<AccountApplicationInformation> {
     const headers: Record<string, string> = {};
-    // Content negotiation:
-    // - If explicit format=json, prefer JSON
-    // - Else if server supports JSON, prefer JSON by default
-    // - Else fall back to msgpack
-    const hasExplicitJson = params?.format === "json";
-    const prefersJson = hasExplicitJson || true;
-    headers["Accept"] = prefersJson ? "application/json" : "application/msgpack";
+    // Content negotiation (aligned with Rust behavior):
+    // - Default to msgpack when available (better performance, smaller payload)
+    // - Only use JSON if explicitly requested via format=json
+    const useJson = params?.format === "json";
+    headers["Accept"] = useJson ? "application/json" : "application/msgpack";
 
     // Header parameters
 
     return this.httpRequest.request({
       method: "GET",
       url: "/v2/accounts/{address}/applications/{application-id}",
-      path: { address: address, "application-id": applicationId },
+      path: { address: address, "application-id": typeof applicationId === "bigint" ? applicationId.toString() : applicationId },
       query: { format: params?.format },
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: params?.format === "json" ? false : false,
+      expectBinary: params?.format === "json" ? false : true,
       ...(requestOptions ?? {}),
     });
   }
 
   accountAssetInformation(
     address: string,
-    assetId: number,
+    assetId: number | bigint,
     params?: { format?: "json" | "msgpack" },
     requestOptions?: ApiRequestOptions,
   ): Promise<AccountAssetInformation> {
     const headers: Record<string, string> = {};
-    // Content negotiation:
-    // - If explicit format=json, prefer JSON
-    // - Else if server supports JSON, prefer JSON by default
-    // - Else fall back to msgpack
-    const hasExplicitJson = params?.format === "json";
-    const prefersJson = hasExplicitJson || true;
-    headers["Accept"] = prefersJson ? "application/json" : "application/msgpack";
+    // Content negotiation (aligned with Rust behavior):
+    // - Default to msgpack when available (better performance, smaller payload)
+    // - Only use JSON if explicitly requested via format=json
+    const useJson = params?.format === "json";
+    headers["Accept"] = useJson ? "application/json" : "application/msgpack";
 
     // Header parameters
 
     return this.httpRequest.request({
       method: "GET",
       url: "/v2/accounts/{address}/assets/{asset-id}",
-      path: { address: address, "asset-id": assetId },
+      path: { address: address, "asset-id": typeof assetId === "bigint" ? assetId.toString() : assetId },
       query: { format: params?.format },
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: params?.format === "json" ? false : false,
+      expectBinary: params?.format === "json" ? false : true,
       ...(requestOptions ?? {}),
     });
   }
@@ -154,13 +150,11 @@ export class ApiService {
     requestOptions?: ApiRequestOptions,
   ): Promise<Account> {
     const headers: Record<string, string> = {};
-    // Content negotiation:
-    // - If explicit format=json, prefer JSON
-    // - Else if server supports JSON, prefer JSON by default
-    // - Else fall back to msgpack
-    const hasExplicitJson = params?.format === "json";
-    const prefersJson = hasExplicitJson || true;
-    headers["Accept"] = prefersJson ? "application/json" : "application/msgpack";
+    // Content negotiation (aligned with Rust behavior):
+    // - Default to msgpack when available (better performance, smaller payload)
+    // - Only use JSON if explicitly requested via format=json
+    const useJson = params?.format === "json";
+    headers["Accept"] = useJson ? "application/json" : "application/msgpack";
 
     // Header parameters
 
@@ -172,12 +166,12 @@ export class ApiService {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: params?.format === "json" ? false : false,
+      expectBinary: params?.format === "json" ? false : true,
       ...(requestOptions ?? {}),
     });
   }
 
-  addParticipationKey(params?: { body: Uint8Array }, requestOptions?: ApiRequestOptions): Promise<AddParticipationKey> {
+  addParticipationKey(params?: { body: string }, requestOptions?: ApiRequestOptions): Promise<AddParticipationKey> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
     headers["Content-Type"] = "application/msgpack";
@@ -191,13 +185,14 @@ export class ApiService {
       query: {},
       headers,
       body: params?.body,
+      // Only msgpack supported for request body
       mediaType: "application/msgpack",
       expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
-  appendKeys(participationId: string, params?: { body: Uint8Array }, requestOptions?: ApiRequestOptions): Promise<ParticipationKey> {
+  appendKeys(participationId: string, params?: { body: string }, requestOptions?: ApiRequestOptions): Promise<ParticipationKey> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
     headers["Content-Type"] = "application/msgpack";
@@ -211,6 +206,7 @@ export class ApiService {
       query: {},
       headers,
       body: params?.body,
+      // Only msgpack supported for request body
       mediaType: "application/msgpack",
       expectBinary: false,
       ...(requestOptions ?? {}),
@@ -282,7 +278,7 @@ export class ApiService {
     });
   }
 
-  getApplicationBoxByName(applicationId: number, params?: { name: string }, requestOptions?: ApiRequestOptions): Promise<Box> {
+  getApplicationBoxByName(applicationId: number | bigint, params?: { name: string }, requestOptions?: ApiRequestOptions): Promise<Box> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
 
@@ -291,7 +287,7 @@ export class ApiService {
     return this.httpRequest.request({
       method: "GET",
       url: "/v2/applications/{application-id}/box",
-      path: { "application-id": applicationId },
+      path: { "application-id": typeof applicationId === "bigint" ? applicationId.toString() : applicationId },
       query: { name: params?.name },
       headers,
       body: undefined,
@@ -302,7 +298,7 @@ export class ApiService {
   }
 
   getApplicationBoxes(
-    applicationId: number,
+    applicationId: number | bigint,
     params?: { max?: number | bigint },
     requestOptions?: ApiRequestOptions,
   ): Promise<GetApplicationBoxes> {
@@ -314,7 +310,7 @@ export class ApiService {
     return this.httpRequest.request({
       method: "GET",
       url: "/v2/applications/{application-id}/boxes",
-      path: { "application-id": applicationId },
+      path: { "application-id": typeof applicationId === "bigint" ? applicationId.toString() : applicationId },
       query: { max: typeof params?.max === "bigint" ? (params!.max as bigint).toString() : params?.max },
       headers,
       body: undefined,
@@ -324,7 +320,7 @@ export class ApiService {
     });
   }
 
-  getApplicationById(applicationId: number, requestOptions?: ApiRequestOptions): Promise<Application> {
+  getApplicationById(applicationId: number | bigint, requestOptions?: ApiRequestOptions): Promise<Application> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
 
@@ -333,7 +329,7 @@ export class ApiService {
     return this.httpRequest.request({
       method: "GET",
       url: "/v2/applications/{application-id}",
-      path: { "application-id": applicationId },
+      path: { "application-id": typeof applicationId === "bigint" ? applicationId.toString() : applicationId },
       query: {},
       headers,
       body: undefined,
@@ -343,7 +339,7 @@ export class ApiService {
     });
   }
 
-  getAssetById(assetId: number, requestOptions?: ApiRequestOptions): Promise<Asset> {
+  getAssetById(assetId: number | bigint, requestOptions?: ApiRequestOptions): Promise<Asset> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
 
@@ -352,7 +348,7 @@ export class ApiService {
     return this.httpRequest.request({
       method: "GET",
       url: "/v2/assets/{asset-id}",
-      path: { "asset-id": assetId },
+      path: { "asset-id": typeof assetId === "bigint" ? assetId.toString() : assetId },
       query: {},
       headers,
       body: undefined,
@@ -363,35 +359,33 @@ export class ApiService {
   }
 
   getBlock(
-    round: number,
+    round: number | bigint,
     params?: { headerOnly?: boolean; format?: "json" | "msgpack" },
     requestOptions?: ApiRequestOptions,
   ): Promise<GetBlock> {
     const headers: Record<string, string> = {};
-    // Content negotiation:
-    // - If explicit format=json, prefer JSON
-    // - Else if server supports JSON, prefer JSON by default
-    // - Else fall back to msgpack
-    const hasExplicitJson = params?.format === "json";
-    const prefersJson = hasExplicitJson || true;
-    headers["Accept"] = prefersJson ? "application/json" : "application/msgpack";
+    // Content negotiation (aligned with Rust behavior):
+    // - Default to msgpack when available (better performance, smaller payload)
+    // - Only use JSON if explicitly requested via format=json
+    const useJson = params?.format === "json";
+    headers["Accept"] = useJson ? "application/json" : "application/msgpack";
 
     // Header parameters
 
     return this.httpRequest.request({
       method: "GET",
       url: "/v2/blocks/{round}",
-      path: { round: round },
+      path: { round: typeof round === "bigint" ? round.toString() : round },
       query: { "header-only": params?.headerOnly, format: params?.format },
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: params?.format === "json" ? false : false,
+      expectBinary: params?.format === "json" ? false : true,
       ...(requestOptions ?? {}),
     });
   }
 
-  getBlockHash(round: number, requestOptions?: ApiRequestOptions): Promise<GetBlockHash> {
+  getBlockHash(round: number | bigint, requestOptions?: ApiRequestOptions): Promise<GetBlockHash> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
 
@@ -400,7 +394,7 @@ export class ApiService {
     return this.httpRequest.request({
       method: "GET",
       url: "/v2/blocks/{round}/hash",
-      path: { round: round },
+      path: { round: typeof round === "bigint" ? round.toString() : round },
       query: {},
       headers,
       body: undefined,
@@ -410,7 +404,7 @@ export class ApiService {
     });
   }
 
-  getBlockLogs(round: number, requestOptions?: ApiRequestOptions): Promise<GetBlockLogs> {
+  getBlockLogs(round: number | bigint, requestOptions?: ApiRequestOptions): Promise<GetBlockLogs> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
 
@@ -419,7 +413,7 @@ export class ApiService {
     return this.httpRequest.request({
       method: "GET",
       url: "/v2/blocks/{round}/logs",
-      path: { round: round },
+      path: { round: typeof round === "bigint" ? round.toString() : round },
       query: {},
       headers,
       body: undefined,
@@ -448,7 +442,7 @@ export class ApiService {
     });
   }
 
-  getBlockTxids(round: number, requestOptions?: ApiRequestOptions): Promise<GetBlockTxids> {
+  getBlockTxids(round: number | bigint, requestOptions?: ApiRequestOptions): Promise<GetBlockTxids> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
 
@@ -457,7 +451,7 @@ export class ApiService {
     return this.httpRequest.request({
       method: "GET",
       url: "/v2/blocks/{round}/txids",
-      path: { round: round },
+      path: { round: typeof round === "bigint" ? round.toString() : round },
       query: {},
       headers,
       body: undefined,
@@ -525,30 +519,28 @@ export class ApiService {
   }
 
   getLedgerStateDelta(
-    round: number,
+    round: number | bigint,
     params?: { format?: "json" | "msgpack" },
     requestOptions?: ApiRequestOptions,
   ): Promise<LedgerStateDelta> {
     const headers: Record<string, string> = {};
-    // Content negotiation:
-    // - If explicit format=json, prefer JSON
-    // - Else if server supports JSON, prefer JSON by default
-    // - Else fall back to msgpack
-    const hasExplicitJson = params?.format === "json";
-    const prefersJson = hasExplicitJson || true;
-    headers["Accept"] = prefersJson ? "application/json" : "application/msgpack";
+    // Content negotiation (aligned with Rust behavior):
+    // - Default to msgpack when available (better performance, smaller payload)
+    // - Only use JSON if explicitly requested via format=json
+    const useJson = params?.format === "json";
+    headers["Accept"] = useJson ? "application/json" : "application/msgpack";
 
     // Header parameters
 
     return this.httpRequest.request({
       method: "GET",
       url: "/v2/deltas/{round}",
-      path: { round: round },
+      path: { round: typeof round === "bigint" ? round.toString() : round },
       query: { format: params?.format },
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: params?.format === "json" ? false : false,
+      expectBinary: params?.format === "json" ? false : true,
       ...(requestOptions ?? {}),
     });
   }
@@ -559,13 +551,11 @@ export class ApiService {
     requestOptions?: ApiRequestOptions,
   ): Promise<LedgerStateDelta> {
     const headers: Record<string, string> = {};
-    // Content negotiation:
-    // - If explicit format=json, prefer JSON
-    // - Else if server supports JSON, prefer JSON by default
-    // - Else fall back to msgpack
-    const hasExplicitJson = params?.format === "json";
-    const prefersJson = hasExplicitJson || true;
-    headers["Accept"] = prefersJson ? "application/json" : "application/msgpack";
+    // Content negotiation (aligned with Rust behavior):
+    // - Default to msgpack when available (better performance, smaller payload)
+    // - Only use JSON if explicitly requested via format=json
+    const useJson = params?.format === "json";
+    headers["Accept"] = useJson ? "application/json" : "application/msgpack";
 
     // Header parameters
 
@@ -577,12 +567,12 @@ export class ApiService {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: params?.format === "json" ? false : false,
+      expectBinary: params?.format === "json" ? false : true,
       ...(requestOptions ?? {}),
     });
   }
 
-  getLightBlockHeaderProof(round: number, requestOptions?: ApiRequestOptions): Promise<LightBlockHeaderProof> {
+  getLightBlockHeaderProof(round: number | bigint, requestOptions?: ApiRequestOptions): Promise<LightBlockHeaderProof> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
 
@@ -591,7 +581,7 @@ export class ApiService {
     return this.httpRequest.request({
       method: "GET",
       url: "/v2/blocks/{round}/lightheader/proof",
-      path: { round: round },
+      path: { round: typeof round === "bigint" ? round.toString() : round },
       query: {},
       headers,
       body: undefined,
@@ -644,13 +634,11 @@ export class ApiService {
     requestOptions?: ApiRequestOptions,
   ): Promise<GetPendingTransactions> {
     const headers: Record<string, string> = {};
-    // Content negotiation:
-    // - If explicit format=json, prefer JSON
-    // - Else if server supports JSON, prefer JSON by default
-    // - Else fall back to msgpack
-    const hasExplicitJson = params?.format === "json";
-    const prefersJson = hasExplicitJson || true;
-    headers["Accept"] = prefersJson ? "application/json" : "application/msgpack";
+    // Content negotiation (aligned with Rust behavior):
+    // - Default to msgpack when available (better performance, smaller payload)
+    // - Only use JSON if explicitly requested via format=json
+    const useJson = params?.format === "json";
+    headers["Accept"] = useJson ? "application/json" : "application/msgpack";
 
     // Header parameters
 
@@ -662,7 +650,7 @@ export class ApiService {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: params?.format === "json" ? false : false,
+      expectBinary: params?.format === "json" ? false : true,
       ...(requestOptions ?? {}),
     });
   }
@@ -673,13 +661,11 @@ export class ApiService {
     requestOptions?: ApiRequestOptions,
   ): Promise<GetPendingTransactionsByAddress> {
     const headers: Record<string, string> = {};
-    // Content negotiation:
-    // - If explicit format=json, prefer JSON
-    // - Else if server supports JSON, prefer JSON by default
-    // - Else fall back to msgpack
-    const hasExplicitJson = params?.format === "json";
-    const prefersJson = hasExplicitJson || true;
-    headers["Accept"] = prefersJson ? "application/json" : "application/msgpack";
+    // Content negotiation (aligned with Rust behavior):
+    // - Default to msgpack when available (better performance, smaller payload)
+    // - Only use JSON if explicitly requested via format=json
+    const useJson = params?.format === "json";
+    headers["Accept"] = useJson ? "application/json" : "application/msgpack";
 
     // Header parameters
 
@@ -691,7 +677,7 @@ export class ApiService {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: params?.format === "json" ? false : false,
+      expectBinary: params?.format === "json" ? false : true,
       ...(requestOptions ?? {}),
     });
   }
@@ -715,7 +701,7 @@ export class ApiService {
     });
   }
 
-  getStateProof(round: number, requestOptions?: ApiRequestOptions): Promise<StateProof> {
+  getStateProof(round: number | bigint, requestOptions?: ApiRequestOptions): Promise<StateProof> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
 
@@ -724,7 +710,7 @@ export class ApiService {
     return this.httpRequest.request({
       method: "GET",
       url: "/v2/stateproofs/{round}",
-      path: { round: round },
+      path: { round: typeof round === "bigint" ? round.toString() : round },
       query: {},
       headers,
       body: undefined,
@@ -792,36 +778,34 @@ export class ApiService {
   }
 
   getTransactionGroupLedgerStateDeltasForRound(
-    round: number,
+    round: number | bigint,
     params?: { format?: "json" | "msgpack" },
     requestOptions?: ApiRequestOptions,
   ): Promise<GetTransactionGroupLedgerStateDeltasForRound> {
     const headers: Record<string, string> = {};
-    // Content negotiation:
-    // - If explicit format=json, prefer JSON
-    // - Else if server supports JSON, prefer JSON by default
-    // - Else fall back to msgpack
-    const hasExplicitJson = params?.format === "json";
-    const prefersJson = hasExplicitJson || true;
-    headers["Accept"] = prefersJson ? "application/json" : "application/msgpack";
+    // Content negotiation (aligned with Rust behavior):
+    // - Default to msgpack when available (better performance, smaller payload)
+    // - Only use JSON if explicitly requested via format=json
+    const useJson = params?.format === "json";
+    headers["Accept"] = useJson ? "application/json" : "application/msgpack";
 
     // Header parameters
 
     return this.httpRequest.request({
       method: "GET",
       url: "/v2/deltas/{round}/txn/group",
-      path: { round: round },
+      path: { round: typeof round === "bigint" ? round.toString() : round },
       query: { format: params?.format },
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: params?.format === "json" ? false : false,
+      expectBinary: params?.format === "json" ? false : true,
       ...(requestOptions ?? {}),
     });
   }
 
   getTransactionProof(
-    round: number,
+    round: number | bigint,
     txid: string,
     params?: { hashtype?: "sha512_256" | "sha256"; format?: "json" | "msgpack" },
     requestOptions?: ApiRequestOptions,
@@ -834,7 +818,7 @@ export class ApiService {
     return this.httpRequest.request({
       method: "GET",
       url: "/v2/blocks/{round}/transactions/{txid}/proof",
-      path: { round: round, txid: txid },
+      path: { round: typeof round === "bigint" ? round.toString() : round, txid: txid },
       query: { hashtype: params?.hashtype, format: params?.format },
       headers,
       body: undefined,
@@ -907,13 +891,11 @@ export class ApiService {
     requestOptions?: ApiRequestOptions,
   ): Promise<PendingTransactionResponse> {
     const headers: Record<string, string> = {};
-    // Content negotiation:
-    // - If explicit format=json, prefer JSON
-    // - Else if server supports JSON, prefer JSON by default
-    // - Else fall back to msgpack
-    const hasExplicitJson = params?.format === "json";
-    const prefersJson = hasExplicitJson || true;
-    headers["Accept"] = prefersJson ? "application/json" : "application/msgpack";
+    // Content negotiation (aligned with Rust behavior):
+    // - Default to msgpack when available (better performance, smaller payload)
+    // - Only use JSON if explicitly requested via format=json
+    const useJson = params?.format === "json";
+    headers["Accept"] = useJson ? "application/json" : "application/msgpack";
 
     // Header parameters
 
@@ -925,7 +907,7 @@ export class ApiService {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: params?.format === "json" ? false : false,
+      expectBinary: params?.format === "json" ? false : true,
       ...(requestOptions ?? {}),
     });
   }
@@ -1008,7 +990,7 @@ export class ApiService {
     });
   }
 
-  setSyncRound(round: number, requestOptions?: ApiRequestOptions): Promise<void> {
+  setSyncRound(round: number | bigint, requestOptions?: ApiRequestOptions): Promise<void> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
 
@@ -1017,7 +999,7 @@ export class ApiService {
     return this.httpRequest.request({
       method: "POST",
       url: "/v2/ledger/sync/{round}",
-      path: { round: round },
+      path: { round: typeof round === "bigint" ? round.toString() : round },
       query: {},
       headers,
       body: undefined,
@@ -1027,7 +1009,7 @@ export class ApiService {
     });
   }
 
-  shutdownNode(params?: { timeout?: number }, requestOptions?: ApiRequestOptions): Promise<ShutdownNode> {
+  shutdownNode(params?: { timeout?: number | bigint }, requestOptions?: ApiRequestOptions): Promise<ShutdownNode> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
 
@@ -1037,7 +1019,7 @@ export class ApiService {
       method: "POST",
       url: "/v2/shutdown",
       path: {},
-      query: { timeout: params?.timeout },
+      query: { timeout: typeof params?.timeout === "bigint" ? (params!.timeout as bigint).toString() : params?.timeout },
       headers,
       body: undefined,
       mediaType: undefined,
@@ -1051,14 +1033,12 @@ export class ApiService {
     requestOptions?: ApiRequestOptions,
   ): Promise<SimulateTransaction> {
     const headers: Record<string, string> = {};
-    // Content negotiation:
-    // - If explicit format=json, prefer JSON
-    // - Else if server supports JSON, prefer JSON by default
-    // - Else fall back to msgpack
-    const hasExplicitJson = params?.format === "json";
-    const prefersJson = hasExplicitJson || true;
-    headers["Accept"] = prefersJson ? "application/json" : "application/msgpack";
-    headers["Content-Type"] = "application/json";
+    // Content negotiation (aligned with Rust behavior):
+    // - Default to msgpack when available (better performance, smaller payload)
+    // - Only use JSON if explicitly requested via format=json
+    const useJson = params?.format === "json";
+    headers["Accept"] = useJson ? "application/json" : "application/msgpack";
+    headers["Content-Type"] = params?.format === "json" ? "application/json" : "application/msgpack";
 
     // Header parameters
 
@@ -1069,13 +1049,14 @@ export class ApiService {
       query: { format: params?.format },
       headers,
       body: params?.body,
-      mediaType: "application/json",
-      expectBinary: params?.format === "json" ? false : false,
+      // Dynamic mediaType based on format parameter (prefer msgpack by default)
+      mediaType: params?.format === "json" ? "application/json" : "application/msgpack",
+      expectBinary: params?.format === "json" ? false : true,
       ...(requestOptions ?? {}),
     });
   }
 
-  startCatchup(catchpoint: string, params?: { min?: number }, requestOptions?: ApiRequestOptions): Promise<StartCatchup> {
+  startCatchup(catchpoint: string, params?: { min?: number | bigint }, requestOptions?: ApiRequestOptions): Promise<StartCatchup> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
 
@@ -1085,7 +1066,7 @@ export class ApiService {
       method: "POST",
       url: "/v2/catchup/{catchpoint}",
       path: { catchpoint: catchpoint },
-      query: { min: params?.min },
+      query: { min: typeof params?.min === "bigint" ? (params!.min as bigint).toString() : params?.min },
       headers,
       body: undefined,
       mediaType: undefined,
@@ -1156,7 +1137,7 @@ export class ApiService {
   tealDryrun(params?: { body?: DryrunRequest }, requestOptions?: ApiRequestOptions): Promise<TealDryrun> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
-    headers["Content-Type"] = "application/json";
+    headers["Content-Type"] = "application/msgpack";
 
     // Header parameters
 
@@ -1167,7 +1148,8 @@ export class ApiService {
       query: {},
       headers,
       body: params?.body,
-      mediaType: "application/json",
+      // Both supported, prefer msgpack for better performance
+      mediaType: "application/msgpack",
       expectBinary: false,
       ...(requestOptions ?? {}),
     });
@@ -1211,7 +1193,7 @@ export class ApiService {
     });
   }
 
-  waitForBlock(round: number, requestOptions?: ApiRequestOptions): Promise<WaitForBlock> {
+  waitForBlock(round: number | bigint, requestOptions?: ApiRequestOptions): Promise<WaitForBlock> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
 
@@ -1220,7 +1202,7 @@ export class ApiService {
     return this.httpRequest.request({
       method: "GET",
       url: "/v2/status/wait-for-block-after/{round}",
-      path: { round: round },
+      path: { round: typeof round === "bigint" ? round.toString() : round },
       query: {},
       headers,
       body: undefined,

@@ -5,7 +5,7 @@ import type { ApplicationKvstorage } from "./index";
  */
 export type ApplicationInitialStates = {
   id: bigint;
-  "app-locals"?: ApplicationKvstorage[];
-  "app-globals"?: ApplicationKvstorage;
-  "app-boxes"?: ApplicationKvstorage;
+  appLocals?: ApplicationKvstorage[];
+  appGlobals?: ApplicationKvstorage;
+  appBoxes?: ApplicationKvstorage;
 };

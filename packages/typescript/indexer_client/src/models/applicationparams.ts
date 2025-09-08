@@ -5,11 +5,11 @@ import type { ApplicationStateSchema, TealKeyValueStore } from "./index";
  */
 export type ApplicationParams = {
   creator?: string;
-  "approval-program"?: string;
-  "clear-state-program"?: string;
-  "extra-program-pages"?: number;
-  "local-state-schema"?: ApplicationStateSchema;
-  "global-state-schema"?: ApplicationStateSchema;
-  "global-state"?: TealKeyValueStore;
-  version?: number;
+  approvalProgram?: string;
+  clearStateProgram?: string;
+  extraProgramPages?: bigint;
+  localStateSchema?: ApplicationStateSchema;
+  globalStateSchema?: ApplicationStateSchema;
+  globalState?: TealKeyValueStore;
+  version?: bigint;
 };

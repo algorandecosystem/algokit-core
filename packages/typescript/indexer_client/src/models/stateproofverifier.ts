@@ -1,1 +1,1 @@
-export type StateProofVerifier = { commitment?: string; "key-lifetime"?: bigint };
+export type StateProofVerifier = { commitment?: string; keyLifetime?: bigint };

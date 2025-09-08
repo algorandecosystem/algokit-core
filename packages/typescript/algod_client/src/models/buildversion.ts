@@ -1,1 +1,1 @@
-export type BuildVersion = { branch: string; build_number: number; channel: string; commit_hash: string; major: number; minor: number };
+export type BuildVersion = { branch: string; buildNumber: bigint; channel: string; commitHash: string; major: bigint; minor: bigint };

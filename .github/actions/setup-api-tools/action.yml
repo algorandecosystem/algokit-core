@@ -1,6 +1,12 @@
 name: 'Setup API Tools'
 description: 'Setup Rust, Bun, and Python dependencies for API tools'
 
+inputs:
+  setup_algokit:
+    description: 'Whether to install and start algokit localnet'
+    required: false
+    default: 'false'
+
 runs:
   using: 'composite'
   steps:
@@ -25,3 +31,13 @@ runs:
       working-directory: api/oas_generator
       shell: bash
       run: uv sync --extra dev
+
+    - name: Optionally install algokit
+      if: ${{ inputs.setup_algokit == 'true' }}
+      shell: bash
+      run: uv tool install algokit
+
+    - name: Optionally start localnet
+      if: ${{ inputs.setup_algokit == 'true' }}
+      shell: bash
+      run: algokit localnet start

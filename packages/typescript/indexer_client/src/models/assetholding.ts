@@ -6,9 +6,9 @@
  */
 export type AssetHolding = {
   amount: bigint;
-  "asset-id": bigint;
-  "is-frozen": boolean;
+  assetId: bigint;
+  isFrozen: boolean;
   deleted?: boolean;
-  "opted-in-at-round"?: bigint;
-  "opted-out-at-round"?: bigint;
+  optedInAtRound?: bigint;
+  optedOutAtRound?: bigint;
 };

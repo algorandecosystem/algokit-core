@@ -1,9 +1,9 @@
 /*
-  Minimal OpenAPI runtime config holder
+  Minimal client runtime config holder
 */
 export type BaseURL = string;
 
-export interface OpenAPIConfig {
+export interface ClientConfig {
   BASE: BaseURL;
   VERSION?: string;
   WITH_CREDENTIALS?: boolean;
@@ -15,8 +15,3 @@ export interface OpenAPIConfig {
   ENCODE_PATH?: (path: string) => string;
   INT_DECODING?: "safe" | "unsafe" | "mixed" | "bigint";
 }
-
-export const OpenAPI: OpenAPIConfig = {
-  BASE: "",
-  INT_DECODING: "mixed",
-};

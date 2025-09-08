@@ -6,9 +6,9 @@
  */
 export type TransactionAssetTransfer = {
   amount: bigint;
-  "asset-id": bigint;
-  "close-amount"?: bigint;
-  "close-to"?: string;
+  assetId: bigint;
+  closeAmount?: bigint;
+  closeTo?: string;
   receiver: string;
   sender?: string;
 };

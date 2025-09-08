@@ -1,13 +1,13 @@
-import { describe } from "vitest";
+import { describe } from "bun:test";
 import algosdk from "algosdk";
 
-export interface AlgodEnvConfig {
+export interface AlgodTestConfig {
   algodBaseUrl: string;
   algodApiToken?: string;
   senderMnemonic?: string;
 }
 
-export function getAlgodEnv(): AlgodEnvConfig {
+export function getAlgodEnv(): AlgodTestConfig {
   return {
     algodBaseUrl: process.env.ALGOD_BASE_URL ?? "http://localhost:4001",
     // Default token for localnet (Algorand sandbox / Algokit LocalNet)
@@ -44,6 +44,6 @@ export async function getSenderMnemonic(): Promise<string> {
   }
 }
 
-export function maybeDescribe(name: string, fn: (env: AlgodEnvConfig) => void) {
+export function maybeDescribe(name: string, fn: (env: AlgodTestConfig) => void) {
   describe(name, () => fn(getAlgodEnv()));
 }

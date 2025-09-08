@@ -9,16 +9,17 @@ Install dependencies and build:
 - bun install (or pnpm/yarn)
 - bun run build
 
-### Configure base URL and issue requests
+### Configure base URL and create a client
 
 ```ts
-import { OpenAPI, FetchHttpRequest } from './dist/index.js';
+import { FetchHttpRequest, type ClientConfig, {{ client_class_name }}, {{ service_class_name }} } from './dist/index.js';
 
-OpenAPI.BASE = 'http://localhost:4001';
+const client = new AlgodClient({
+  BASE: env.algodBaseUrl,
+  HEADERS: env.algodApiToken ? { "X-Algo-API-Token": env.algodApiToken } : undefined,
+});
 
-const client = new FetchHttpRequest(OpenAPI);
-// Example call once APIs are available in Phase 2:
-// await client.request({ method: 'GET', url: '/health' });
+// client is now ready to use
 ```
 
-To inject a custom client, implement your own HttpRequest class extending `BaseHttpRequest` and use it where needed.
+To inject a custom HTTP implementation, implement your own request class extending `BaseHttpRequest` and pass it into your own wrapper if needed.

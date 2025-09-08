@@ -71,14 +71,23 @@ class TsCodeGenerator:
         """Generate runtime files under the provided output directory."""
         output_dir = Path(output_dir)
         src_core = output_dir / "src" / "core"
+        base_name = ts_pascal_case(package_name)
+        base_core = base_name[:-6] if base_name.lower().endswith("client") else base_name
+        client_class_name = f"{base_core}Client"
+        service_class_name = f"{base_core}Api"
+
         context = {
             "package_name": package_name,
             "custom_description": custom_description,
+            "client_class_name": client_class_name,
+            "service_class_name": service_class_name,
         }
 
         files: dict[Path, str] = {}
         # Core runtime files
-        files[src_core / "OpenAPI.ts"] = self.template_engine.render_template("base/src/core/OpenAPI.ts.j2", context)
+        files[src_core / "ClientConfig.ts"] = self.template_engine.render_template(
+            "base/src/core/ClientConfig.ts.j2", context
+        )
         files[src_core / "BaseHttpRequest.ts"] = self.template_engine.render_template(
             "base/src/core/BaseHttpRequest.ts.j2", context
         )
@@ -92,6 +101,7 @@ class TsCodeGenerator:
         )
         files[src_core / "json.ts"] = self.template_engine.render_template("base/src/core/json.ts.j2", context)
         files[src_core / "msgpack.ts"] = self.template_engine.render_template("base/src/core/msgpack.ts.j2", context)
+        files[src_core / "casing.ts"] = self.template_engine.render_template("base/src/core/casing.ts.j2", context)
 
         # Index barrel (runtime-only)
         files[output_dir / "src" / "index.ts"] = self.template_engine.render_template("base/src/index.ts.j2", context)
@@ -222,8 +232,8 @@ class TsCodeGenerator:
                         param = node
                     schema = param.get("schema", {}) or {}
                     t = ts_type(schema, schemas)
-                    # BigInt params accept number | bigint
-                    if schema.get("x-algokit-bigint") is True and t == "bigint":
+                    # When a parameter resolves to bigint, accept number | bigint for ergonomics
+                    if t == "bigint":
                         t_sig = "number | bigint"
                         stringify_bigint = True
                     else:
@@ -256,23 +266,44 @@ class TsCodeGenerator:
                         }
                     )
 
-                # Request body (pick json if present, else msgpack/text)
+                # Request body handling
                 request_body_ctx: dict[str, Any] | None = None
+                request_body_supports_msgpack = False
+                request_body_supports_json = False
                 rb = op.get("requestBody")
                 if isinstance(rb, dict):
                     content = rb.get("content", {})
+
+                    # Check what content types are supported
+                    if "application/msgpack" in content:
+                        request_body_supports_msgpack = True
+                    if "application/json" in content:
+                        request_body_supports_json = True
+
+                    # Determine the type to use for TypeScript typing
+                    # Prefer JSON schema for typing even when msgpack is used at runtime
                     if "application/json" in content:
                         sch = (content["application/json"] or {}).get("schema", {})
                         request_body_ctx = {
-                            "mediaType": "application/json",
+                            "mediaType": (
+                                "application/msgpack"
+                                if request_body_supports_msgpack and not request_body_supports_json
+                                else "application/json"
+                            ),
                             "tsType": ts_type(sch, schemas),
                             "required": rb.get("required", False),
+                            "supportsMsgpack": request_body_supports_msgpack,
+                            "supportsJson": request_body_supports_json,
                         }
                     elif "application/msgpack" in content:
+                        # msgpack-only endpoint - infer type from msgpack schema if available
+                        sch = (content["application/msgpack"] or {}).get("schema", {})
                         request_body_ctx = {
                             "mediaType": "application/msgpack",
-                            "tsType": "Uint8Array",
+                            "tsType": ts_type(sch, schemas) if sch else "any",
                             "required": rb.get("required", False),
+                            "supportsMsgpack": True,
+                            "supportsJson": False,
                         }
                     elif "application/x-binary" in content or "application/octet-stream" in content:
                         # Raw binary transaction submission etc.
@@ -281,6 +312,8 @@ class TsCodeGenerator:
                             "mediaType": mt,
                             "tsType": "Uint8Array",
                             "required": rb.get("required", False),
+                            "supportsMsgpack": False,
+                            "supportsJson": False,
                         }
                     elif "text/plain" in content:
                         sch = (content["text/plain"] or {}).get("schema", {})
@@ -288,6 +321,8 @@ class TsCodeGenerator:
                             "mediaType": "text/plain",
                             "tsType": ts_type(sch, schemas),
                             "required": rb.get("required", False),
+                            "supportsMsgpack": False,
+                            "supportsJson": False,
                         }
 
                 # Responses
@@ -387,6 +422,8 @@ class TsCodeGenerator:
                     "acceptsMsgpack": returns_msgpack,
                     "returnsMsgpack": returns_msgpack,
                     "supportsJson": supports_json,
+                    "requestBodySupportsMsgpack": request_body_supports_msgpack,
+                    "requestBodySupportsJson": request_body_supports_json,
                     "hasFormatParam": has_format_param,
                     "formatVarName": format_var_name,
                     "signature": ", ".join(sig_parts),
@@ -465,21 +502,32 @@ class TsCodeGenerator:
             for t in op.get("importTypes", []):
                 import_types.add(t)
 
+        # Determine class names from package name (e.g., algod_client -> AlgodClient, AlgodApi)
+        base_name = ts_pascal_case(package_name)
+        base_core = base_name[:-6] if base_name.lower().endswith("client") else base_name
+        client_class_name = f"{base_core}Client"
+        service_class_name = f"{base_core}Api"
+
         svc_content = self.template_engine.render_template(
             "apis/service.ts.j2",
-            {"tag_name": "api", "operations": all_ops, "import_types": sorted(import_types)},
+            {
+                "tag_name": "api",
+                "operations": all_ops,
+                "import_types": sorted(import_types),
+                "service_class_name": service_class_name,
+            },
         )
         files[apis_dir / "api.service.ts"] = svc_content
 
         files[apis_dir / "index.ts"] = self.template_engine.render_template(
             "apis/index.ts.j2",
-            {},
+            {"service_class_name": service_class_name},
         )
 
         # Client (single service)
         files[Path(output_dir) / "src" / "client.ts"] = self.template_engine.render_template(
             "client.ts.j2",
-            {},
+            {"service_class_name": service_class_name, "client_class_name": client_class_name},
         )
 
         # Replace index with full barrel
@@ -488,12 +536,6 @@ class TsCodeGenerator:
             {},
         )
 
-        # Smoke tests (generated)
-        files[Path(output_dir) / "tests" / "generated" / "smoke.generated.spec.ts"] = (
-            self.template_engine.render_template(
-                "full/tests/smoke.spec.ts.j2",
-                {},
-            )
-        )
+        # Note: Generated smoke tests removed; prefer manual integration tests maintained by developers
 
         return files

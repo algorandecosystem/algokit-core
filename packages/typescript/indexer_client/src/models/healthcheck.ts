@@ -5,8 +5,8 @@ export type HealthCheck = {
   version: string;
   data?: {};
   round: bigint;
-  "is-migrating": boolean;
-  "db-available": boolean;
+  isMigrating: boolean;
+  dbAvailable: boolean;
   message: string;
   errors?: string[];
 };

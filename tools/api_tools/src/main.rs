@@ -95,14 +95,13 @@ fn run(
 }
 
 fn execute_command(command: &Commands) -> Result<()> {
-    fn clean_ts_package(rel_dir: &str) -> Result<()> {
+    fn clean_ts_package_with_preserve(rel_dir: &str, preserve: &[&str]) -> Result<()> {
         let root = get_repo_root();
         let pkg_dir = root.join(rel_dir);
         if !pkg_dir.exists() {
             return Ok(());
         }
 
-        let preserve: Vec<&str> = vec!["tests", "node_modules"];
         for entry in fs::read_dir(&pkg_dir)? {
             let entry = entry?;
             let name = entry.file_name();
@@ -120,6 +119,10 @@ fn execute_command(command: &Commands) -> Result<()> {
             }
         }
         Ok(())
+    }
+    fn clean_ts_package(rel_dir: &str) -> Result<()> {
+        let default_preserve: &[&str] = &["tests", "node_modules"];
+        clean_ts_package_with_preserve(rel_dir, default_preserve)
     }
     match command {
         Commands::TestOas => {
@@ -226,6 +229,12 @@ fn execute_command(command: &Commands) -> Result<()> {
                 Some(Path::new("packages/typescript/algod_client")),
                 None,
             )?;
+            // Install dependencies
+            run(
+                "bun install",
+                Some(Path::new("packages/typescript/algod_client")),
+                None,
+            )?;
             // Build the generated package
             run(
                 "bun run build",
@@ -245,6 +254,12 @@ fn execute_command(command: &Commands) -> Result<()> {
             // Format generated code
             run(
                 "npx --yes prettier --write .",
+                Some(Path::new("packages/typescript/indexer_client")),
+                None,
+            )?;
+            // Install dependencies
+            run(
+                "bun install",
                 Some(Path::new("packages/typescript/indexer_client")),
                 None,
             )?;
@@ -278,6 +293,17 @@ fn execute_command(command: &Commands) -> Result<()> {
             )?;
             run(
                 "npx --yes prettier --write .",
+                Some(Path::new("packages/typescript/indexer_client")),
+                None,
+            )?;
+            // Install dependencies for both packages
+            run(
+                "bun install",
+                Some(Path::new("packages/typescript/algod_client")),
+                None,
+            )?;
+            run(
+                "bun install",
                 Some(Path::new("packages/typescript/indexer_client")),
                 None,
             )?;

@@ -1,4 +1,4 @@
 /**
  * An catchpoint abort response.
  */
-export type AbortCatchup = { "catchup-message": string };
+export type AbortCatchup = { catchupMessage: string };

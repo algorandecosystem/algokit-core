@@ -1,2 +1,2 @@
 // Barrel file for services
-export { ApiService } from "./api.service";
+export { IndexerApi } from "./api.service";

@@ -1,3 +1,3 @@
 import type { StateProofSignature } from "./index";
 
-export type StateProofSigSlot = { signature?: StateProofSignature; "lower-sig-weight"?: bigint };
+export type StateProofSigSlot = { signature?: StateProofSignature; lowerSigWeight?: bigint };

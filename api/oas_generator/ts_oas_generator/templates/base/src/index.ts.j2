@@ -1,9 +1,11 @@
-export * from './core/OpenAPI';
+export * from './core/ClientConfig';
 export * from './core/BaseHttpRequest';
 export * from './core/FetchHttpRequest';
 export * from './core/ApiError';
 export * from './core/CancelablePromise';
 export * from './core/json';
+export * from './core/casing';
+export { encodeMsgPack, decodeMsgPack } from './core/msgpack';
 
 // Generated
 export * from './models';

@@ -4,8 +4,8 @@
 export type MiniAssetHolding = {
   address: string;
   amount: bigint;
-  "is-frozen": boolean;
+  isFrozen: boolean;
   deleted?: boolean;
-  "opted-in-at-round"?: bigint;
-  "opted-out-at-round"?: bigint;
+  optedInAtRound?: bigint;
+  optedOutAtRound?: bigint;
 };

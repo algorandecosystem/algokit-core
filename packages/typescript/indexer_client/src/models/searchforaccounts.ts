@@ -3,4 +3,4 @@ import type { Account } from "./index";
 /**
  * (empty)
  */
-export type SearchForAccounts = { accounts: Account[]; "current-round": number; "next-token"?: string };
+export type SearchForAccounts = { accounts: Account[]; currentRound: bigint; nextToken?: string };

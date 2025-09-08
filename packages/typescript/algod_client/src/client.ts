@@ -1,13 +1,13 @@
-import type { OpenAPIConfig } from "./core/OpenAPI";
+import type { ClientConfig } from "./core/ClientConfig";
 import { FetchHttpRequest } from "./core/FetchHttpRequest";
-import { ApiService } from "./apis/api.service";
+import { AlgodApi } from "./apis/api.service";
 
-export class Client {
+export class AlgodClient {
   public readonly request: FetchHttpRequest;
-  public readonly api: ApiService;
+  public readonly api: AlgodApi;
 
-  constructor(config: OpenAPIConfig) {
+  constructor(config: ClientConfig) {
     this.request = new FetchHttpRequest(config);
-    this.api = new ApiService(this.request);
+    this.api = new AlgodApi(this.request);
   }
 }

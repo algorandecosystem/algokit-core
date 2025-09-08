@@ -4,12 +4,12 @@ import type { SimulateRequestTransactionGroup, SimulateTraceConfig } from "./ind
  * Request type for simulation endpoint.
  */
 export type SimulateRequest = {
-  "txn-groups": SimulateRequestTransactionGroup[];
+  txnGroups: SimulateRequestTransactionGroup[];
   round?: bigint;
-  "allow-empty-signatures"?: boolean;
-  "allow-more-logging"?: boolean;
-  "allow-unnamed-resources"?: boolean;
-  "extra-opcode-budget"?: number;
-  "exec-trace-config"?: SimulateTraceConfig;
-  "fix-signers"?: boolean;
+  allowEmptySignatures?: boolean;
+  allowMoreLogging?: boolean;
+  allowUnnamedResources?: boolean;
+  extraOpcodeBudget?: bigint;
+  execTraceConfig?: SimulateTraceConfig;
+  fixSigners?: boolean;
 };

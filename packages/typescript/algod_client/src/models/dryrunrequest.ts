@@ -7,8 +7,8 @@ export type DryrunRequest = {
   txns: string[];
   accounts: Account[];
   apps: Application[];
-  "protocol-version": string;
+  protocolVersion: string;
   round: bigint;
-  "latest-timestamp": number;
+  latestTimestamp: bigint;
   sources: DryrunSource[];
 };

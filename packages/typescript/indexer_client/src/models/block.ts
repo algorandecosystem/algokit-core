@@ -8,22 +8,22 @@ import type { BlockRewards, BlockUpgradeState, BlockUpgradeVote, ParticipationUp
  */
 export type Block = {
   proposer?: string;
-  "fees-collected"?: number;
-  bonus?: number;
-  "proposer-payout"?: number;
-  "genesis-hash": string;
-  "genesis-id": string;
-  "previous-block-hash": string;
+  feesCollected?: bigint;
+  bonus?: bigint;
+  proposerPayout?: bigint;
+  genesisHash: string;
+  genesisId: string;
+  previousBlockHash: string;
   rewards?: BlockRewards;
   round: bigint;
   seed: string;
-  "state-proof-tracking"?: StateProofTracking[];
-  timestamp: number;
+  stateProofTracking?: StateProofTracking[];
+  timestamp: bigint;
   transactions?: Transaction[];
-  "transactions-root": string;
-  "transactions-root-sha256": string;
-  "txn-counter"?: number;
-  "upgrade-state"?: BlockUpgradeState;
-  "upgrade-vote"?: BlockUpgradeVote;
-  "participation-updates"?: ParticipationUpdates;
+  transactionsRoot: string;
+  transactionsRootSha256: string;
+  txnCounter?: bigint;
+  upgradeState?: BlockUpgradeState;
+  upgradeVote?: BlockUpgradeVote;
+  participationUpdates?: ParticipationUpdates;
 };

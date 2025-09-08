@@ -7,17 +7,17 @@ import type { BoxReference, OnCompletion, StateSchema } from "./index";
  * data/transactions/application.go : ApplicationCallTxnFields
  */
 export type TransactionApplication = {
-  "application-id": number;
-  "on-completion": OnCompletion;
-  "application-args"?: string[];
+  applicationId: bigint;
+  onCompletion: OnCompletion;
+  applicationArgs?: string[];
   accounts?: string[];
-  "box-references"?: BoxReference[];
-  "foreign-apps"?: number[];
-  "foreign-assets"?: number[];
-  "local-state-schema"?: StateSchema;
-  "global-state-schema"?: StateSchema;
-  "approval-program"?: string;
-  "clear-state-program"?: string;
-  "extra-program-pages"?: number;
-  "reject-version"?: number;
+  boxReferences?: BoxReference[];
+  foreignApps?: bigint[];
+  foreignAssets?: bigint[];
+  localStateSchema?: StateSchema;
+  globalStateSchema?: StateSchema;
+  approvalProgram?: string;
+  clearStateProgram?: string;
+  extraProgramPages?: bigint;
+  rejectVersion?: bigint;
 };

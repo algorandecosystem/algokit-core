@@ -3,4 +3,4 @@ import type { Asset } from "./index";
 /**
  * (empty)
  */
-export type SearchForAssets = { assets: Asset[]; "current-round": number; "next-token"?: string };
+export type SearchForAssets = { assets: Asset[]; currentRound: bigint; nextToken?: string };

@@ -5,14 +5,14 @@ import type { AccountStateDelta, DryrunState, StateDelta } from "./index";
  */
 export type DryrunTxnResult = {
   disassembly: string[];
-  "logic-sig-disassembly"?: string[];
-  "logic-sig-trace"?: DryrunState[];
-  "logic-sig-messages"?: string[];
-  "app-call-trace"?: DryrunState[];
-  "app-call-messages"?: string[];
-  "global-delta"?: StateDelta;
-  "local-deltas"?: AccountStateDelta[];
+  logicSigDisassembly?: string[];
+  logicSigTrace?: DryrunState[];
+  logicSigMessages?: string[];
+  appCallTrace?: DryrunState[];
+  appCallMessages?: string[];
+  globalDelta?: StateDelta;
+  localDeltas?: AccountStateDelta[];
   logs?: string[];
-  "budget-added"?: number;
-  "budget-consumed"?: number;
+  budgetAdded?: bigint;
+  budgetConsumed?: bigint;
 };

@@ -1,1 +1,1 @@
-export type StateProofTracking = { type?: bigint; "voters-commitment"?: string; "online-total-weight"?: number; "next-round"?: number };
+export type StateProofTracking = { type?: bigint; votersCommitment?: string; onlineTotalWeight?: bigint; nextRound?: bigint };

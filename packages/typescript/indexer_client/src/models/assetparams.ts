@@ -9,17 +9,17 @@
 export type AssetParams = {
   clawback?: string;
   creator: string;
-  decimals: number;
-  "default-frozen"?: boolean;
+  decimals: bigint;
+  defaultFrozen?: boolean;
   freeze?: string;
   manager?: string;
-  "metadata-hash"?: string;
+  metadataHash?: string;
   name?: string;
-  "name-b64"?: string;
+  nameB64?: string;
   reserve?: string;
   total: bigint;
-  "unit-name"?: string;
-  "unit-name-b64"?: string;
+  unitName?: string;
+  unitNameB64?: string;
   url?: string;
-  "url-b64"?: string;
+  urlB64?: string;
 };

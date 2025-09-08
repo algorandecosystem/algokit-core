@@ -6,8 +6,8 @@ import type { ApplicationStateSchema, TealKeyValueStore } from "./index";
 export type ApplicationLocalState = {
   id: bigint;
   deleted?: boolean;
-  "opted-in-at-round"?: bigint;
-  "closed-out-at-round"?: bigint;
+  optedInAtRound?: bigint;
+  closedOutAtRound?: bigint;
   schema: ApplicationStateSchema;
-  "key-value"?: TealKeyValueStore;
+  keyValue?: TealKeyValueStore;
 };

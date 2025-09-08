@@ -6,4 +6,4 @@ import type { IndexerStateProofMessage, StateProofFields } from "./index";
  * Definition:
  * data/transactions/stateproof.go : StateProofTxnFields
  */
-export type TransactionStateProof = { "state-proof-type"?: bigint; "state-proof"?: StateProofFields; message?: IndexerStateProofMessage };
+export type TransactionStateProof = { stateProofType?: bigint; stateProof?: StateProofFields; message?: IndexerStateProofMessage };

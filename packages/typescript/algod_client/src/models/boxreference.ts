@@ -1,4 +1,4 @@
 /**
  * References a box of an application.
  */
-export type BoxReference = { app: number; name: string };
+export type BoxReference = { app: bigint; name: string };

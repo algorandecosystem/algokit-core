@@ -1,1 +1,1 @@
-export type TransactionSignatureMultisigSubsignature = { "public-key"?: string; signature?: string };
+export type TransactionSignatureMultisigSubsignature = { publicKey?: string; signature?: string };

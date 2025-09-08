@@ -6,10 +6,4 @@ import type { HbProofFields } from "./index";
  * Definition:
  * data/transactions/heartbeat.go : HeartbeatTxnFields
  */
-export type TransactionHeartbeat = {
-  "hb-address": string;
-  "hb-proof": HbProofFields;
-  "hb-seed": string;
-  "hb-vote-id": string;
-  "hb-key-dilution": bigint;
-};
+export type TransactionHeartbeat = { hbAddress: string; hbProof: HbProofFields; hbSeed: string; hbVoteId: string; hbKeyDilution: bigint };

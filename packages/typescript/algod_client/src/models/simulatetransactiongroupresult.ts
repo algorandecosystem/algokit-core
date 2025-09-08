@@ -4,10 +4,10 @@ import type { SimulateTransactionResult, SimulateUnnamedResourcesAccessed } from
  * Simulation result for an atomic transaction group
  */
 export type SimulateTransactionGroupResult = {
-  "txn-results": SimulateTransactionResult[];
-  "failure-message"?: string;
-  "failed-at"?: number[];
-  "app-budget-added"?: number;
-  "app-budget-consumed"?: number;
-  "unnamed-resources-accessed"?: SimulateUnnamedResourcesAccessed;
+  txnResults: SimulateTransactionResult[];
+  failureMessage?: string;
+  failedAt?: bigint[];
+  appBudgetAdded?: bigint;
+  appBudgetConsumed?: bigint;
+  unnamedResourcesAccessed?: SimulateUnnamedResourcesAccessed;
 };

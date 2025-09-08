@@ -9,6 +9,6 @@ import type { TransactionSignatureMultisig } from "./index";
 export type TransactionSignatureLogicsig = {
   args?: string[];
   logic: string;
-  "multisig-signature"?: TransactionSignatureMultisig;
+  multisigSignature?: TransactionSignatureMultisig;
   signature?: string;
 };

@@ -1,18 +1,17 @@
-import { expect, it, describe } from "vitest";
-import { Client } from "../src/client";
-import { maybeDescribe } from "./helpers/env";
+import { expect, it } from "bun:test";
+import { AlgodClient } from "../src/client";
+import { maybeDescribe } from "./config";
 
 maybeDescribe("Algod transactionParams", (env) => {
   it("fetches suggested params", async () => {
-    const client = new Client({
+    const client = new AlgodClient({
       BASE: env.algodBaseUrl,
       INT_DECODING: "bigint",
       HEADERS: env.algodApiToken ? { "X-Algo-API-Token": env.algodApiToken } : undefined,
     });
     const params = await client.api.transactionParams();
-    // Basic shape checks
-    expect(params).toHaveProperty("genesis-id");
-    expect(typeof params["last-round"]).toBe("bigint");
-    expect(typeof params["min-fee"]).toBe("bigint");
+    expect(params).toHaveProperty("genesisId");
+    expect(typeof params["lastRound"]).toBe("bigint");
+    expect(typeof params["minFee"]).toBe("bigint");
   });
 });

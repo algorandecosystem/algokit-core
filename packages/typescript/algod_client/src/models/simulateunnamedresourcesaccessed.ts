@@ -8,7 +8,7 @@ export type SimulateUnnamedResourcesAccessed = {
   assets?: bigint[];
   apps?: bigint[];
   boxes?: BoxReference[];
-  "extra-box-refs"?: number;
-  "asset-holdings"?: AssetHoldingReference[];
-  "app-locals"?: ApplicationLocalReference[];
+  extraBoxRefs?: bigint;
+  assetHoldings?: AssetHoldingReference[];
+  appLocals?: ApplicationLocalReference[];
 };

@@ -3,4 +3,4 @@ import type { Account } from "./index";
 /**
  * (empty)
  */
-export type LookupAccountById = { account: Account; "current-round": number };
+export type LookupAccountById = { account: Account; currentRound: bigint };

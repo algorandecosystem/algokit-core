@@ -105,7 +105,8 @@ def _inline_object(schema: dict[str, Any], schemas: dict[str, Any] | None) -> st
     parts: list[str] = []
 
     for prop_name, prop_schema in properties.items():
-        ts_name = ts_property_name(prop_name)
+        # Generate camelCase TS property names for better DX
+        ts_name = ts_camel_case(prop_name)
         ts_t = ts_type(prop_schema, schemas)
         opt = "" if prop_name in required else "?"
         parts.append(f"{ts_name}{opt}: {ts_t};")
@@ -121,12 +122,12 @@ def _inline_object(schema: dict[str, Any], schemas: dict[str, Any] | None) -> st
     return "{" + (" ".join(parts)) + "}"
 
 
-def _map_primitive(schema_type: str, _schema_format: str | None, schema: dict[str, Any]) -> str:
-    if schema.get("x-algokit-bigint") is True and schema_type == "integer":
-        return "bigint"
-
+def _map_primitive(schema_type: str, _schema_format: str | None, _schema: dict[str, Any]) -> str:
     if schema_type == "integer":
-        return "number"
+        # Default to bigint for blockchain-sized integers; keep int32 as number
+        if _schema_format == "int32":
+            return "number"
+        return "bigint"
 
     if schema_type in ("number",):
         return "number"

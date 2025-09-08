@@ -3,7 +3,7 @@ import type { BaseHttpRequest, ApiRequestOptions } from '../core/BaseHttpRequest
 import type { {{ import_types | sort | join(', ') }} } from '../models/index';
 {% endif %}
 
-export class ApiService {
+export class {{ service_class_name }} {
   constructor(public readonly httpRequest: BaseHttpRequest) {}
 
 {% for op in operations %}
@@ -25,22 +25,29 @@ export class ApiService {
   ): Promise<{{ op.responseTsType }}> {
     const headers: Record<string, string> = {};
 {%   if op.acceptsMsgpack %}
-    // Content negotiation:
-    // - If explicit format=json, prefer JSON
-    // - Else if server supports JSON, prefer JSON by default
-    // - Else fall back to msgpack
+    // Content negotiation (aligned with Rust behavior):
+    // - Default to msgpack when available (better performance, smaller payload)
+    // - Only use JSON if explicitly requested via format=json
 {%     if op.hasFormatParam and op.formatVarName %}
-    const hasExplicitJson = params?.{{ op.formatVarName }} === 'json';
-    const prefersJson = hasExplicitJson || {{ 'true' if op.supportsJson else 'false' }};
-    headers['Accept'] = prefersJson ? 'application/json' : 'application/msgpack';
+    const useJson = params?.{{ op.formatVarName }} === 'json';
+    headers['Accept'] = useJson ? 'application/json' : 'application/msgpack';
 {%     else %}
-    headers['Accept'] = {{ "'application/json'" if op.supportsJson else "'application/msgpack'" }};
+    // Prefer msgpack when available, fallback to JSON
+    headers['Accept'] = 'application/msgpack';
 {%     endif %}
 {%   else %}
     headers['Accept'] = 'application/json';
 {%   endif %}
-{%   if op.requestBody and op.requestBody.get('mediaType') %}
+{%   if op.requestBody %}
+{%     if op.requestBodySupportsMsgpack and op.requestBodySupportsJson and op.hasFormatParam and op.formatVarName %}
+    headers['Content-Type'] = params?.{{ op.formatVarName }} === 'json' ? 'application/json' : 'application/msgpack';
+{%     elif op.requestBodySupportsMsgpack and not op.requestBodySupportsJson %}
+    headers['Content-Type'] = 'application/msgpack';
+{%     elif op.requestBodySupportsMsgpack and op.requestBodySupportsJson %}
+    headers['Content-Type'] = 'application/msgpack';
+{%     elif op.requestBody.get('mediaType') %}
     headers['Content-Type'] = '{{ op.requestBody['mediaType'] }}';
+{%     endif %}
 {%   endif %}
 
     // Header parameters
@@ -65,12 +72,27 @@ export class ApiService {
       },
       headers,
       body: {% if op.requestBody %}params?.body{% else %}undefined{% endif %},
-      mediaType: {% if op.requestBody %}'{{ op.requestBody['mediaType'] }}'{% else %}undefined{% endif %},
+{%   if op.requestBody %}
+{%     if op.requestBodySupportsMsgpack and op.requestBodySupportsJson and op.hasFormatParam and op.formatVarName %}
+      // Dynamic mediaType based on format parameter (prefer msgpack by default)
+      mediaType: params?.{{ op.formatVarName }} === 'json' ? 'application/json' : 'application/msgpack',
+{%     elif op.requestBodySupportsMsgpack and not op.requestBodySupportsJson %}
+      // Only msgpack supported for request body
+      mediaType: 'application/msgpack',
+{%     elif op.requestBodySupportsMsgpack and op.requestBodySupportsJson %}
+      // Both supported, prefer msgpack for better performance
+      mediaType: 'application/msgpack',
+{%     else %}
+      mediaType: '{{ op.requestBody['mediaType'] }}',
+{%     endif %}
+{%   else %}
+      mediaType: undefined,
+{%   endif %}
 {%   if op.returnsMsgpack %}
 {%     if op.hasFormatParam and op.formatVarName %}
-      expectBinary: params?.{{ op.formatVarName }} === 'json' ? false : {{ 'false' if op.supportsJson else 'true' }},
+      expectBinary: params?.{{ op.formatVarName }} === 'json' ? false : true,
 {%     else %}
-      expectBinary: {{ 'false' if op.supportsJson else 'true' }},
+      expectBinary: true,
 {%     endif %}
 {%   else %}
       expectBinary: false,

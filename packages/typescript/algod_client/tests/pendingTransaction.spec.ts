@@ -1,13 +1,14 @@
-import { expect, it } from "vitest";
+import { expect, it } from "bun:test";
 import algosdk from "algosdk";
-import { Client } from "../src/client";
-import { getSenderMnemonic, maybeDescribe } from "./helpers/env";
-import { waitFor } from "./helpers/wait";
+import { AlgodClient } from "../src/client";
+import { getSenderMnemonic, maybeDescribe } from "./config";
+import { PendingTransactionResponse } from "../src/models";
 
 maybeDescribe("Algod pendingTransaction", (env) => {
   it("submits a payment tx and queries pending info", async () => {
-    const client = new Client({
+    const client = new AlgodClient({
       BASE: env.algodBaseUrl,
+      INT_DECODING: "bigint",
       HEADERS: env.algodApiToken ? { "X-Algo-API-Token": env.algodApiToken } : undefined,
     });
 
@@ -17,16 +18,17 @@ maybeDescribe("Algod pendingTransaction", (env) => {
 
     // Build simple self-payment of 0 microalgos (allowed) as a noop
     const txn = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
-      from: acct.addr,
-      to: acct.addr,
+      sender: acct.addr,
+      receiver: acct.addr,
       amount: 0,
       suggestedParams: {
-        fee: Number(sp["min-fee"]),
-        firstRound: Number(sp["last-round"]),
+        minFee: Number(sp["minFee"]),
+        fee: Number(sp["minFee"]),
+        firstValid: Number(sp["lastRound"]),
         flatFee: true,
-        lastRound: Number(sp["last-round"]) + 1000,
-        genesisHash: sp["genesis-hash"] as string,
-        genesisID: sp["genesis-id"] as string,
+        lastValid: Number(sp["lastRound"]) + 1000,
+        genesisHash: algosdk.base64ToBytes(sp["genesisHash"]),
+        genesisID: sp["genesisId"] as string,
       },
     });
 
@@ -34,11 +36,18 @@ maybeDescribe("Algod pendingTransaction", (env) => {
     const sendResult = await client.api.rawTransaction({ body: signed });
     const txId = sendResult.txId as string;
 
-    const pending = await waitFor(
-      async () => client.api.pendingTransactionInformation(txId, { format: "json" }),
-      (r) => !!(r as any)["confirmed-round"] || !!(r as any)["pool-error"],
-      { timeoutMs: 45_000, intervalMs: 1_000 },
-    );
+    let pending: PendingTransactionResponse | undefined;
+    const maxAttempts = 10;
+    for (let i = 0; i < maxAttempts; i++) {
+      pending = await client.api.pendingTransactionInformation(txId, { format: "msgpack" });
+      if (pending?.confirmedRound || pending?.poolError) {
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+    if (!pending) {
+      throw new Error("Transaction confirmation timeout");
+    }
 
     // Some nodes may omit 'txid' in pending response; require txn presence
     expect(pending).toHaveProperty("txn");

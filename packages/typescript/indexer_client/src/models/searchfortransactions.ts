@@ -3,4 +3,4 @@ import type { Transaction } from "./index";
 /**
  * (empty)
  */
-export type SearchForTransactions = { "current-round": number; "next-token"?: string; transactions: Transaction[] };
+export type SearchForTransactions = { currentRound: bigint; nextToken?: string; transactions: Transaction[] };

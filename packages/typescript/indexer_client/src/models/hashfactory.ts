@@ -1,1 +1,1 @@
-export type HashFactory = { "hash-type"?: number };
+export type HashFactory = { hashType?: bigint };

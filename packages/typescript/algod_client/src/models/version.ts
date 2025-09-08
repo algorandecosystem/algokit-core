@@ -3,4 +3,4 @@ import type { BuildVersion } from "./index";
 /**
  * algod version information.
  */
-export type Version = { build: BuildVersion; genesis_hash_b64: string; genesis_id: string; versions: string[] };
+export type Version = { build: BuildVersion; genesisHashB64: string; genesisId: string; versions: string[] };

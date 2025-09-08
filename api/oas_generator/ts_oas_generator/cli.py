@@ -30,7 +30,6 @@ def parse_command_line_args(args: list[str] | None = None) -> argparse.Namespace
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  %(prog)s --runtime-only --output ./packages/algod_client --package-name algod_client
   %(prog)s ../specs/algod.oas3.json --output ./packages/algod_client --package-name algod_client
   %(prog)s ../specs/indexer.oas3.json -o ./packages/indexer_client -p indexer_client
         """,
@@ -38,15 +37,9 @@ Examples:
 
     parser.add_argument(
         "spec_file",
-        nargs="?",
         type=Path,
         help="Path to OpenAPI specification file (JSON or YAML)",
         metavar="SPEC_FILE",
-    )
-    parser.add_argument(
-        "--runtime-only",
-        action="store_true",
-        help="Generate only the base runtime files (no models/APIs); does not require a spec file",
     )
     parser.add_argument(
         "--output",
@@ -86,10 +79,7 @@ Examples:
     parsed_args = parser.parse_args(args)
 
     # Validate inputs
-    if not parsed_args.runtime_only and parsed_args.spec_file is None:
-        parser.error("SPEC_FILE is required unless --runtime-only is provided")
-
-    if parsed_args.spec_file is not None and not parsed_args.spec_file.exists():
+    if not parsed_args.spec_file.exists():
         parser.error(f"Specification file not found: {parsed_args.spec_file}")
 
     return parsed_args
@@ -141,19 +131,12 @@ def main(args: list[str] | None = None) -> int:
         with backup_and_prepare_output_dir(parsed_args.output_dir):
             generator = TsCodeGenerator(template_dir=parsed_args.template_dir)
 
-            if parsed_args.runtime_only:
-                generated_files = generator.generate_runtime(
-                    parsed_args.output_dir,
-                    parsed_args.package_name,
-                    custom_description=parsed_args.custom_description,
-                )
-            else:
-                generated_files = generator.generate_full(
-                    parsed_args.spec_file,
-                    parsed_args.output_dir,
-                    parsed_args.package_name,
-                    custom_description=parsed_args.custom_description,
-                )
+            generated_files = generator.generate_full(
+                parsed_args.spec_file,
+                parsed_args.output_dir,
+                parsed_args.package_name,
+                custom_description=parsed_args.custom_description,
+            )
 
             # Write files to disk (overwrite safely)
             write_files_to_disk(generated_files)

@@ -5,9 +5,9 @@ import type { SimulateInitialStates, SimulateTraceConfig, SimulateTransactionGro
  */
 export type SimulateTransaction = {
   version: bigint;
-  "last-round": bigint;
-  "txn-groups": SimulateTransactionGroupResult[];
-  "eval-overrides"?: SimulationEvalOverrides;
-  "exec-trace-config"?: SimulateTraceConfig;
-  "initial-states"?: SimulateInitialStates;
+  lastRound: bigint;
+  txnGroups: SimulateTransactionGroupResult[];
+  evalOverrides?: SimulationEvalOverrides;
+  execTraceConfig?: SimulateTraceConfig;
+  initialStates?: SimulateInitialStates;
 };

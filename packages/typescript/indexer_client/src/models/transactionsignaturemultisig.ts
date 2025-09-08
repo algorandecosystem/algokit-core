@@ -8,6 +8,6 @@ import type { TransactionSignatureMultisigSubsignature } from "./index";
  */
 export type TransactionSignatureMultisig = {
   subsignature?: TransactionSignatureMultisigSubsignature[];
-  threshold?: number;
-  version?: number;
+  threshold?: bigint;
+  version?: bigint;
 };

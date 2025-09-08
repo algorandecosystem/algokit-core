@@ -9,5 +9,5 @@ export type Genesis = {
   network: string;
   proto: string;
   rwd: string;
-  timestamp: number;
+  timestamp: bigint;
 };

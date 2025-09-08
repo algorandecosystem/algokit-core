@@ -81,6 +81,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-api-tools
+        with:
+          setup_algokit: 'true'
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -108,3 +110,7 @@ jobs:
       - name: Build (tsc) ${{ matrix.pkg }}
         working-directory: packages/typescript/${{ matrix.pkg }}
         run: bun run build
+
+      - name: Test (${{ matrix.pkg }})
+        working-directory: packages/typescript/${{ matrix.pkg }}
+        run: bun test

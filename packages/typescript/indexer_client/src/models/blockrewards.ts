@@ -2,10 +2,10 @@
  * Fields relating to rewards,
  */
 export type BlockRewards = {
-  "fee-sink": string;
-  "rewards-calculation-round": number;
-  "rewards-level": number;
-  "rewards-pool": string;
-  "rewards-rate": number;
-  "rewards-residue": number;
+  feeSink: string;
+  rewardsCalculationRound: bigint;
+  rewardsLevel: bigint;
+  rewardsPool: string;
+  rewardsRate: bigint;
+  rewardsResidue: bigint;
 };

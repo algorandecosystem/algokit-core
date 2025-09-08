@@ -6,10 +6,10 @@ import type { AccountParticipation } from "./index";
 export type ParticipationKey = {
   id: string;
   address: string;
-  "effective-first-valid"?: bigint;
-  "effective-last-valid"?: bigint;
-  "last-vote"?: number;
-  "last-block-proposal"?: number;
-  "last-state-proof"?: number;
+  effectiveFirstValid?: bigint;
+  effectiveLastValid?: bigint;
+  lastVote?: bigint;
+  lastBlockProposal?: bigint;
+  lastStateProof?: bigint;
   key: AccountParticipation;
 };

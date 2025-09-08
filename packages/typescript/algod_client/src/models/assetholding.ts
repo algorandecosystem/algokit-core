@@ -4,4 +4,4 @@
  * Definition:
  * data/basics/userBalance.go : AssetHolding
  */
-export type AssetHolding = { amount: bigint; "asset-id": bigint; "is-frozen": boolean };
+export type AssetHolding = { amount: bigint; assetId: bigint; isFrozen: boolean };

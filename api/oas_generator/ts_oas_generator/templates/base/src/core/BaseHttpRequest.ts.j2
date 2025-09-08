@@ -1,4 +1,4 @@
-import type { OpenAPIConfig } from './OpenAPI';
+import type { ClientConfig } from './ClientConfig';
 
 export interface RequestOptions {
   method: string;
@@ -16,6 +16,6 @@ export interface RequestOptions {
 export type ApiRequestOptions = RequestOptions;
 
 export abstract class BaseHttpRequest {
-  constructor(public readonly config: OpenAPIConfig) {}
+  constructor(public readonly config: ClientConfig) {}
   abstract request<T>(options: RequestOptions): Promise<T>;
 }
