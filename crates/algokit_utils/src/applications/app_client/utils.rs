@@ -31,8 +31,9 @@ pub fn transform_transaction_error(
     client: &AppClient,
     err: TransactionSenderError,
     is_clear: bool,
-) -> TransactionSenderError {
+) -> AppClientError {
     match &err {
+        // TODO: confirm this?
         TransactionSenderError::ComposerError {
             source: ComposerError::PoolError { message },
         } => {
@@ -41,9 +42,9 @@ pub fn transform_transaction_error(
             };
             let logic = client.expose_logic_error(&tx_err, is_clear);
             let msg = format_logic_error_message(&logic);
-            TransactionSenderError::ValidationError { message: msg }
+            AppClientError::ValidationError { message: msg }
         }
-        _ => err,
+        _ => AppClientError::TransactionSenderError { source: err },
     }
 }
 

@@ -195,6 +195,7 @@ impl<'a> ParamsBuilder<'a> {
             .map_err(|e| AppClientError::ABIError { source: e })
     }
 
+    // TODO: rethink the positioning of this method
     async fn resolve_args_with_defaults(
         &self,
         method: &ABIMethod,
@@ -227,7 +228,6 @@ impl<'a> ParamsBuilder<'a> {
             match (&method_arg.arg_type, provided_arg) {
                 // Value-type arguments
                 (ABIMethodArgType::Value(value_type), AppMethodCallArg::DefaultValue) => {
-                    // Explicit request to use ARC-56 default
                     let default_value = arc56_method
                         .args
                         .get(index)
@@ -238,9 +238,8 @@ impl<'a> ParamsBuilder<'a> {
                                 method_arg_name, method.name
                             ),
                         })?;
-                    let abi_type_string = value_type.to_string();
                     let value = self
-                        .resolve_default_value_for_arg(&default_value, &abi_type_string, sender)
+                        .resolve_default_value_for_arg(&default_value, &value_type, sender)
                         .await?;
                     resolved.push(AppMethodCallArg::ABIValue(value));
                 }
@@ -266,7 +265,7 @@ impl<'a> ParamsBuilder<'a> {
     pub async fn resolve_default_value_for_arg(
         &self,
         default: &DefaultValue,
-        abi_type: &str,
+        abi_type: &ABIType,
         sender: &str,
     ) -> Result<ABIValue, AppClientError> {
         match default.source {
@@ -286,12 +285,7 @@ impl<'a> ParamsBuilder<'a> {
                     ..Default::default()
                 };
 
-                let app_call_result = self
-                    .client
-                    .send()
-                    .call(method_call_params, None)
-                    .await
-                    .map_err(|e| AppClientError::TransactionSenderError { source: e })?;
+                let app_call_result = self.client.send().call(method_call_params, None).await?;
                 let abi_return = app_call_result.abi_return.ok_or_else(|| {
                     AppClientError::ParamsBuilderError {
                         message: "Default value method call did not return a value".to_string(),
@@ -320,8 +314,7 @@ impl<'a> ParamsBuilder<'a> {
                     ABIType::from_str(value_type)
                         .map_err(|e| AppClientError::ABIError { source: e })?
                 } else {
-                    ABIType::from_str(abi_type)
-                        .map_err(|e| AppClientError::ABIError { source: e })?
+                    abi_type.clone()
                 };
                 decode_type
                     .decode(&raw)
@@ -344,7 +337,13 @@ impl<'a> ParamsBuilder<'a> {
                     .await
                     .map_err(|e| AppClientError::AppManagerError { source: e })?;
 
-                get_abi_decoded_value(&key, &state, abi_type, default.value_type.as_deref()).await
+                get_abi_decoded_value(
+                    &key,
+                    &state,
+                    &abi_type.to_string(), // TODO: fix this
+                    default.value_type.as_deref(),
+                )
+                .await
             }
             DefaultValueSource::Local => {
                 let key = base64::engine::general_purpose::STANDARD
@@ -359,7 +358,13 @@ impl<'a> ParamsBuilder<'a> {
                     .get_local_state(self.client.app_id, sender)
                     .await
                     .map_err(|e| AppClientError::AppManagerError { source: e })?;
-                get_abi_decoded_value(&key, &state, abi_type, default.value_type.as_deref()).await
+                get_abi_decoded_value(
+                    &key,
+                    &state,
+                    &abi_type.to_string(), // TODO: fix this
+                    default.value_type.as_deref(),
+                )
+                .await
             }
             DefaultValueSource::Box => {
                 let box_key = base64::engine::general_purpose::STANDARD
@@ -374,7 +379,8 @@ impl<'a> ParamsBuilder<'a> {
                     .get_box_value(self.client.app_id, &box_key)
                     .await
                     .map_err(|e| AppClientError::AppManagerError { source: e })?;
-                let effective_type = default.value_type.as_deref().unwrap_or(abi_type);
+                let foo = &abi_type.to_string(); // TODO: fix this
+                let effective_type = default.value_type.as_deref().unwrap_or(foo);
                 if effective_type == algokit_abi::arc56_contract::AVM_STRING {
                     return Ok(ABIValue::from(String::from_utf8_lossy(&raw).to_string()));
                 }

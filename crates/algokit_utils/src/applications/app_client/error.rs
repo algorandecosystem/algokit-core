@@ -1,3 +1,4 @@
+use crate::ComposerError;
 use crate::clients::app_manager::AppManagerError;
 use crate::transactions::TransactionSenderError;
 use algokit_abi::error::ABIError;
@@ -22,7 +23,7 @@ pub enum AppClientError {
     #[snafu(display("ABI error: {source}"))]
     ABIError { source: ABIError },
     #[snafu(display("Transaction sender error: {source}"))]
-    TransactionSenderError { source: TransactionSenderError },
+    TransactionSenderError { source: TransactionSenderError }, // TODO: do we need this?
     #[snafu(display("App manager error: {source}"))]
     AppManagerError { source: AppManagerError },
     #[snafu(display("Compilation error: {message}"))]
@@ -33,4 +34,6 @@ pub enum AppClientError {
     TransactError { source: AlgoKitTransactError },
     #[snafu(display("Params builder error: {message}"))]
     ParamsBuilderError { message: String },
+    #[snafu(display("Composer error: {source}"))]
+    ComposerError { source: ComposerError },
 }
