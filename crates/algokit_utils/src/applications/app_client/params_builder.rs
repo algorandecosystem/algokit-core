@@ -3,6 +3,8 @@ use super::types::{
     AppClientBareCallParams, AppClientMethodCallParams, CompilationParams, FundAppAccountParams,
 };
 use crate::AppClientError;
+use crate::applications::app_client::utils::get_abi_decoded_value;
+use crate::clients::app_manager::AppState;
 use crate::transactions::{
     AppCallMethodCallParams, AppCallParams, AppDeleteMethodCallParams, AppDeleteParams,
     AppMethodCallArg, AppUpdateMethodCallParams, AppUpdateParams, CommonTransactionParams,
@@ -276,6 +278,9 @@ impl<'a> ParamsBuilder<'a> {
         abi_type: &ABIType,
         sender: &str,
     ) -> Result<ABIValue, AppClientError> {
+        // TODO: fix the abi_type.to_string() in this method
+        let value_type = default.value_type.clone().unwrap_or(abi_type.to_string());
+
         match default.source {
             DefaultValueSource::Method => {
                 let method_signature = default.data.clone();
@@ -302,78 +307,57 @@ impl<'a> ParamsBuilder<'a> {
                 })?;
                 Ok(abi_return.return_value)
             }
-            // TODO: I haven't checked this logic
             DefaultValueSource::Literal => {
-                let raw = base64::engine::general_purpose::STANDARD
+                let value_bytes = base64::engine::general_purpose::STANDARD
                     .decode(&default.data)
                     .map_err(|e| AppClientError::ParamsBuilderError {
                         message: format!("Failed to decode base64 literal: {}", e),
                     })?;
-                if let Some(ref vt) = default.value_type {
-                    if vt == algokit_abi::arc56_contract::AVM_STRING {
-                        let s = String::from_utf8_lossy(&raw).to_string();
-                        return Ok(ABIValue::from(s));
-                    }
-                    if vt == algokit_abi::arc56_contract::AVM_BYTES {
-                        let arr = raw.into_iter().map(ABIValue::from_byte).collect();
-                        return Ok(ABIValue::Array(arr));
-                    }
-                }
-                let decode_type = if let Some(ref value_type) = default.value_type {
-                    ABIType::from_str(value_type)
-                        .map_err(|e| AppClientError::ABIError { source: e })?
-                } else {
-                    abi_type.clone()
-                };
-                decode_type
-                    .decode(&raw)
-                    .map_err(|e| AppClientError::ParamsBuilderError {
-                        message: format!("Failed to decode base64 literal: {}", e),
-                    })
+                Ok(get_abi_decoded_value(&value_bytes, &value_type)?)
             }
             DefaultValueSource::Global => {
+                // TODO: consolidate this with Local variant
                 let key = base64::engine::general_purpose::STANDARD
                     .decode(&default.data)
                     .map_err(|e| AppClientError::ParamsBuilderError {
                         message: format!("Failed to decode global key: {}", e),
                     })?;
 
-                let state = self
-                    .client
-                    .algorand
-                    .app()
-                    .get_global_state(self.client.app_id)
-                    .await
-                    .map_err(|e| AppClientError::AppManagerError { source: e })?;
+                let state = self.client.get_global_state().await?;
+                let app_state = state.values().find(|value| match value {
+                    AppState::Uint(uint_value) => uint_value.key_raw == key,
+                    AppState::Bytes(bytes_vaklue) => bytes_vaklue.key_raw == key,
+                }).ok_or_else(|| AppClientError::ParamsBuilderError { message: format!("`Preparing default value for argument {} resulted in the failure: The key {} could not be found in global storage`",
+            "TODO: arg name", default.data) })?;
 
-                get_abi_decoded_value(
-                    &key,
-                    &state,
-                    &abi_type.to_string(), // TODO: fix this
-                    default.value_type.as_deref(),
-                )
-                .await
+                match app_state {
+                    AppState::Uint(uint_value) => Ok(ABIValue::from(uint_value.value)),
+                    AppState::Bytes(bytes_value) => {
+                        Ok(get_abi_decoded_value(&bytes_value.value_raw, &value_type)?)
+                    }
+                }
             }
             DefaultValueSource::Local => {
+                // TODO: consolidate this with Local variant
                 let key = base64::engine::general_purpose::STANDARD
                     .decode(&default.data)
                     .map_err(|e| AppClientError::ParamsBuilderError {
-                        message: format!("Failed to decode local key: {}", e),
+                        message: format!("Failed to decode global key: {}", e),
                     })?;
-                let state = self
-                    .client
-                    .algorand
-                    .app()
-                    .get_local_state(self.client.app_id, sender)
-                    .await
-                    .map_err(|e| AppClientError::AppManagerError { source: e })?;
-                get_abi_decoded_value(
-                    &key,
-                    &state,
-                    &abi_type.to_string(), // TODO: fix this
-                    default.value_type.as_deref(),
-                )
-                .await
+
+                let state = self.client.get_local_state(sender).await?;
+                let app_state = state.values().find(|value| match value {
+                    AppState::Uint(uint_value) => uint_value.key_raw == key,
+                    AppState::Bytes(bytes_vaklue) => bytes_vaklue.key_raw == key,
+                }).ok_or_else(|| AppClientError::ParamsBuilderError { message: format!("`Preparing default value for argument {} resulted in the failure: The key {} could not be found in global storage`",
+            "TODO: arg name", default.data) })?;
+
+                match app_state {
+                    AppState::Uint(uint_value) => Ok(ABIValue::from(uint_value.value)),
+                    AppState::Bytes(bytes_value) => {
+                        Ok(get_abi_decoded_value(&bytes_value.value_raw, &value_type)?)
+                    }
+                }
             }
             DefaultValueSource::Box => {
                 let box_key = base64::engine::general_purpose::STANDARD
@@ -381,27 +365,8 @@ impl<'a> ParamsBuilder<'a> {
                     .map_err(|e| AppClientError::ParamsBuilderError {
                         message: format!("Failed to decode box key: {}", e),
                     })?;
-                let raw = self
-                    .client
-                    .algorand
-                    .app()
-                    .get_box_value(self.client.app_id, &box_key)
-                    .await
-                    .map_err(|e| AppClientError::AppManagerError { source: e })?;
-                let foo = &abi_type.to_string(); // TODO: fix this
-                let effective_type = default.value_type.as_deref().unwrap_or(foo);
-                if effective_type == algokit_abi::arc56_contract::AVM_STRING {
-                    return Ok(ABIValue::from(String::from_utf8_lossy(&raw).to_string()));
-                }
-                if effective_type == algokit_abi::arc56_contract::AVM_BYTES {
-                    let arr = raw.into_iter().map(ABIValue::from_byte).collect();
-                    return Ok(ABIValue::Array(arr));
-                }
-                let decode_type = ABIType::from_str(effective_type)
-                    .map_err(|e| AppClientError::ABIError { source: e })?;
-                decode_type
-                    .decode(&raw)
-                    .map_err(|e| AppClientError::ABIError { source: e })
+                let box_value = self.client.get_box_value(&box_key).await?;
+                Ok(get_abi_decoded_value(&box_value, &value_type)?)
             }
         }
     }
