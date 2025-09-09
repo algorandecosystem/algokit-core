@@ -1,6 +1,10 @@
 import type { Asset } from "./index";
 
-/**
- * (empty)
- */
-export type LookupAssetById = { asset: Asset; currentRound: bigint };
+export type LookupAssetById = {
+  asset: Asset;
+
+  /**
+   * Round at which the results were computed.
+   */
+  currentRound: bigint;
+};

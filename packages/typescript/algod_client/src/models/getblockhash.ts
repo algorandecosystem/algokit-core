@@ -1,4 +1,6 @@
-/**
- * Hash of a block header.
- */
-export type GetBlockHash = { blockHash: string };
+export type GetBlockHash = {
+  /**
+   * Block header hash.
+   */
+  blockHash: string;
+};

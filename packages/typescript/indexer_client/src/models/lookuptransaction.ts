@@ -1,6 +1,10 @@
 import type { Transaction } from "./index";
 
-/**
- * (empty)
- */
-export type LookupTransaction = { transaction: Transaction; currentRound: bigint };
+export type LookupTransaction = {
+  transaction: Transaction;
+
+  /**
+   * Round at which the results were computed.
+   */
+  currentRound: bigint;
+};

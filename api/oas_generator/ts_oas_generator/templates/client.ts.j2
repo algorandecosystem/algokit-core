@@ -2,12 +2,11 @@ import type { ClientConfig } from './core/ClientConfig';
 import { FetchHttpRequest } from './core/FetchHttpRequest';
 import { {{ service_class_name }} } from './apis/api.service';
 
-export class {{ client_class_name }} {
+export class {{ client_class_name }} extends {{ service_class_name }} {
   public readonly request: FetchHttpRequest;
-  public readonly api: {{ service_class_name }};
 
   constructor(config: ClientConfig) {
-    this.request = new FetchHttpRequest(config);
-    this.api = new {{ service_class_name }}(this.request);
+    super(new FetchHttpRequest(config));
+    this.request = this.httpRequest as FetchHttpRequest;
   }
 }

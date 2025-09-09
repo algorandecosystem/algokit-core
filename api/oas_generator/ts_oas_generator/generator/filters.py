@@ -8,6 +8,9 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from ts_oas_generator import constants
+from ts_oas_generator.constants import MediaType, OperationKey, SchemaKey, TypeScriptType
+
 _IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
@@ -77,34 +80,42 @@ def _union(types: list[str]) -> str:
 
 
 def _intersection(types: list[str]) -> str:
-    parts = [t for t in types if t and t != "any"]
-    return " & ".join(parts) if parts else "any"
+    parts = [t for t in types if t and t != TypeScriptType.ANY]
+    return " & ".join(parts) if parts else TypeScriptType.ANY
 
 
 def _nullable(type_str: str, schema: dict[str, Any]) -> str:
     # OpenAPI 3.0 nullable flag
-    if schema.get("nullable") is True:
-        return _union([type_str, "null"])
+    if schema.get(SchemaKey.NULLABLE) is True:
+        return _union([type_str, TypeScriptType.NULL])
 
     # OpenAPI 3.1 union type with null
-    t = schema.get("type")
-    if isinstance(t, list) and "null" in t:
-        non_nulls = [x for x in t if x != "null"]
+    t = schema.get(SchemaKey.TYPE)
+    if isinstance(t, list) and TypeScriptType.NULL in t:
+        non_nulls = [x for x in t if x != TypeScriptType.NULL]
         # If there's exactly one non-null type, union with null
         if len(non_nulls) == 1:
-            return _union([ts_type({"type": non_nulls[0]}, None), "null"])
+            return _union([ts_type({SchemaKey.TYPE: non_nulls[0]}, None), TypeScriptType.NULL])
         # Else, build a union of all non-nulls + null
-        return _union([_union([ts_type({"type": n}, None) for n in non_nulls]), "null"])
+        return _union([_union([ts_type({SchemaKey.TYPE: n}, None) for n in non_nulls]), TypeScriptType.NULL])
 
     return type_str
 
 
 def _inline_object(schema: dict[str, Any], schemas: dict[str, Any] | None) -> str:
-    properties: dict[str, Any] = schema.get("properties", {}) or {}
-    required = set(schema.get("required", []) or [])
+    properties: dict[str, Any] = schema.get(SchemaKey.PROPERTIES, {}) or {}
+    required = set(schema.get(SchemaKey.REQUIRED, []) or [])
     parts: list[str] = []
 
     for prop_name, prop_schema in properties.items():
+        # Add property description as doc comment
+        description = prop_schema.get("description")
+        if description:
+            doc_comment = ts_doc_comment(description)
+            # Format docstring for inline object (indent each line)
+            indented_doc = "\n  ".join(doc_comment.split("\n"))
+            parts.append(f"\n  {indented_doc}")
+
         # Generate camelCase TS property names for better DX
         ts_name = ts_camel_case(prop_name)
         ts_t = ts_type(prop_schema, schemas)
@@ -119,39 +130,48 @@ def _inline_object(schema: dict[str, Any], schemas: dict[str, Any] | None) -> st
         elif isinstance(addl, dict):
             parts.append(f"[key: string]: {ts_type(addl, schemas)};")
 
-    return "{" + (" ".join(parts)) + "}"
+    if parts:
+        # Format with proper indentation
+        formatted_parts = []
+        for part in parts:
+            if part.startswith("\n"):
+                formatted_parts.append(part)
+            else:
+                formatted_parts.append(f"  {part}")
+        return "{\n" + "\n".join(formatted_parts) + "\n}"
+    return "{}"
 
 
 def _map_primitive(schema_type: str, _schema_format: str | None, _schema: dict[str, Any]) -> str:
     if schema_type == "integer":
         # Default to bigint for blockchain-sized integers; keep int32 as number
         if _schema_format == "int32":
-            return "number"
-        return "bigint"
+            return TypeScriptType.NUMBER
+        return TypeScriptType.BIGINT
 
     if schema_type in ("number",):
-        return "number"
+        return TypeScriptType.NUMBER
 
     if schema_type == "string":
         # bytes/base64 remain string for JSON representation
-        return "string"
+        return TypeScriptType.STRING
 
     if schema_type == "boolean":
-        return "boolean"
+        return TypeScriptType.BOOLEAN
 
-    return "any"
+    return TypeScriptType.ANY
 
 
 def ts_enum_type(schema: dict[str, Any]) -> str | None:
-    if "enum" not in schema:
+    if SchemaKey.ENUM not in schema:
         return None
 
-    if schema.get("x-algokit-bigint") is True:
+    if schema.get(constants.X_ALGOKIT_BIGINT) is True:
         # For bigint-marked enums, use bigint type directly
-        return "bigint"
+        return TypeScriptType.BIGINT
 
-    type_val = schema.get("type")
-    values = schema.get("enum", [])
+    type_val = schema.get(SchemaKey.TYPE)
+    values = schema.get(SchemaKey.ENUM, [])
 
     if type_val == "string":
         return " | ".join([f"'{v!s}'" for v in values])
@@ -163,10 +183,15 @@ def ts_enum_type(schema: dict[str, Any]) -> str | None:
     return " | ".join([f"'{v!s}'" for v in values])
 
 
-def ts_type(schema: dict[str, Any] | None, schemas: dict[str, Any] | None = None) -> str:  # noqa: PLR0911
+def ts_type(schema: dict[str, Any] | None, schemas: dict[str, Any] | None = None) -> str:  # noqa: C901, PLR0911
     """Map OpenAPI schema to a TypeScript type string."""
     if not schema:
-        return "any"
+        return TypeScriptType.ANY
+
+    # Vendor extension: x-algokit-signed-txn -> reference temporary AlgokitSignedTransaction model
+    # TODO(utils-ts): Remove this vendor extension mapping and rely on real utils SignedTransaction type
+    if isinstance(schema, dict) and schema.get(constants.X_ALGOKIT_SIGNED_TXN) is True:
+        return "AlgokitSignedTransaction"
 
     # Handle references
     if "$ref" in schema:
@@ -174,35 +199,42 @@ def ts_type(schema: dict[str, Any] | None, schemas: dict[str, Any] | None = None
         return ts_pascal_case(ref_name)
 
     # Handle composed schemas
-    if "allOf" in schema:
-        return _intersection([ts_type(s, schemas) for s in schema.get("allOf", [])])
+    if SchemaKey.ALL_OF in schema:
+        return _intersection([ts_type(s, schemas) for s in schema.get(SchemaKey.ALL_OF, [])])
 
-    if "oneOf" in schema:
-        return _union([ts_type(s, schemas) for s in schema.get("oneOf", [])])
+    if SchemaKey.ONE_OF in schema:
+        return _union([ts_type(s, schemas) for s in schema.get(SchemaKey.ONE_OF, [])])
 
-    if "anyOf" in schema:
-        return _union([ts_type(s, schemas) for s in schema.get("anyOf", [])])
+    if SchemaKey.ANY_OF in schema:
+        return _union([ts_type(s, schemas) for s in schema.get(SchemaKey.ANY_OF, [])])
 
     # Enums
     enum_t = ts_enum_type(schema)
     if enum_t:
         return enum_t
 
-    schema_type = schema.get("type")
+    schema_type = schema.get(SchemaKey.TYPE)
 
     # Handle array of items
     if schema_type == "array":
-        items_schema = schema.get("items", {})
-        items_type = ts_type(items_schema, schemas)
+        items_schema = schema.get(SchemaKey.ITEMS, {})
+        # Apply vendor extension on nested items as well
+        # TODO(utils-ts): Remove when x-algokit-signed-txn is handled by utils types
+        if isinstance(items_schema, dict) and items_schema.get(constants.X_ALGOKIT_SIGNED_TXN) is True:
+            items_type = "AlgokitSignedTransaction"
+        else:
+            items_type = ts_type(items_schema, schemas)
         return f"{items_type}[]"
 
     # Object type
-    if schema_type == "object" or (not schema_type and ("properties" in schema or "additionalProperties" in schema)):
+    if schema_type == TypeScriptType.OBJECT or (
+        not schema_type and (SchemaKey.PROPERTIES in schema or SchemaKey.ADDITIONAL_PROPERTIES in schema)
+    ):
         type_str = _inline_object(schema, schemas)
         return _nullable(type_str, schema)
 
     # Primitive types
-    type_str = _map_primitive(str(schema_type), schema.get("format"), schema)
+    type_str = _map_primitive(str(schema_type), schema.get(SchemaKey.FORMAT), schema)
     return _nullable(type_str, schema)
 
 
@@ -211,10 +243,10 @@ def ts_type(schema: dict[str, Any] | None, schemas: dict[str, Any] | None = None
 
 def has_msgpack_2xx(responses: dict[str, Any]) -> bool:
     for status, resp in (responses or {}).items():
-        if not str(status).startswith("2"):
+        if not str(status).startswith(constants.SUCCESS_STATUS_PREFIX):
             continue
-        content = (resp or {}).get("content", {})
-        if any(ct in (content or {}) for ct in ("application/msgpack", "application/x-binary")):
+        content = (resp or {}).get(OperationKey.CONTENT, {})
+        if any(ct in (content or {}) for ct in (MediaType.MSGPACK, MediaType.BINARY)):
             return True
     return False
 
@@ -222,9 +254,9 @@ def has_msgpack_2xx(responses: dict[str, Any]) -> bool:
 def response_content_types(responses: dict[str, Any]) -> list[str]:
     cts: set[str] = set()
     for status, resp in (responses or {}).items():
-        if not str(status).startswith("2"):
+        if not str(status).startswith(constants.SUCCESS_STATUS_PREFIX):
             continue
-        content = (resp or {}).get("content", {})
+        content = (resp or {}).get(OperationKey.CONTENT, {})
         for ct in content:
             cts.add(ct)
     return sorted(cts)
@@ -238,6 +270,10 @@ def collect_schema_refs(schema: dict[str, Any], current_schema_name: str | None 
         if not obj or not isinstance(obj, dict):
             return
 
+        # Include vendor extension-based synthetic references
+        if obj.get(constants.X_ALGOKIT_SIGNED_TXN) is True:
+            refs.add("AlgokitSignedTransaction")
+
         # Direct $ref
         if "$ref" in obj:
             ref_name = ts_pascal_case(_extract_ref_name(obj["$ref"]))
@@ -247,23 +283,23 @@ def collect_schema_refs(schema: dict[str, Any], current_schema_name: str | None 
             return  # Don't traverse further if this is a ref
 
         # Properties
-        if "properties" in obj and isinstance(obj["properties"], dict):
-            for prop_schema in obj["properties"].values():
+        if SchemaKey.PROPERTIES in obj and isinstance(obj[SchemaKey.PROPERTIES], dict):
+            for prop_schema in obj[SchemaKey.PROPERTIES].values():
                 _traverse(prop_schema)
 
         # Array items
-        if "items" in obj:
-            _traverse(obj["items"])
+        if SchemaKey.ITEMS in obj:
+            _traverse(obj[SchemaKey.ITEMS])
 
         # Composed schemas
-        for key in ["allOf", "oneOf", "anyOf"]:
+        for key in [SchemaKey.ALL_OF, SchemaKey.ONE_OF, SchemaKey.ANY_OF]:
             if key in obj and isinstance(obj[key], list):
                 for sub_schema in obj[key]:
                     _traverse(sub_schema)
 
         # Additional properties
-        if "additionalProperties" in obj and isinstance(obj["additionalProperties"], dict):
-            _traverse(obj["additionalProperties"])
+        if SchemaKey.ADDITIONAL_PROPERTIES in obj and isinstance(obj[SchemaKey.ADDITIONAL_PROPERTIES], dict):
+            _traverse(obj[SchemaKey.ADDITIONAL_PROPERTIES])
 
     _traverse(schema)
     return sorted(refs)

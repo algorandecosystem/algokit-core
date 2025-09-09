@@ -1,6 +1,10 @@
 import type { Application } from "./index";
 
-/**
- * (empty)
- */
-export type LookupApplicationById = { application?: Application; currentRound: bigint };
+export type LookupApplicationById = {
+  application?: Application;
+
+  /**
+   * Round at which the results were computed.
+   */
+  currentRound: bigint;
+};

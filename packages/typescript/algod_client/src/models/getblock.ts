@@ -1,4 +1,11 @@
-/**
- * Encoded block object.
- */
-export type GetBlock = { block: {}; cert?: {} };
+export type GetBlock = {
+  /**
+   * Block header data.
+   */
+  block: {};
+
+  /**
+   * Optional certificate object. This is only included when the format is set to message pack.
+   */
+  cert?: {};
+};

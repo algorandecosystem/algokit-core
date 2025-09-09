@@ -1,4 +1,6 @@
-/**
- * Teal disassembly Result
- */
-export type TealDisassemble = { result: string };
+export type TealDisassemble = {
+  /**
+   * disassembled Teal code
+   */
+  result: string;
+};

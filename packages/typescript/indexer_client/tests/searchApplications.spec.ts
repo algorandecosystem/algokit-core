@@ -10,7 +10,7 @@ maybeDescribe("Indexer searchApplications", (env) => {
       HEADERS: env.indexerApiToken ? { "X-Algo-API-Token": env.indexerApiToken } : undefined,
     });
 
-    const res = await client.api.searchForApplications({ limit: 5 });
+    const res = await client.searchForApplications({ limit: 5 });
 
     expect(res).toHaveProperty("applications");
     expect(Array.isArray(res.applications)).toBe(true);
@@ -34,12 +34,12 @@ maybeDescribe("Indexer searchApplications", (env) => {
       HEADERS: env.indexerApiToken ? { "X-Algo-API-Token": env.indexerApiToken } : undefined,
     });
 
-    const searchRes = await client.api.searchForApplications({ limit: 1 });
+    const searchRes = await client.searchForApplications({ limit: 1 });
 
     if (searchRes.applications && searchRes.applications.length > 0) {
       const appId = searchRes.applications[0].id;
 
-      const res = await client.api.searchForApplications({ applicationId: appId });
+      const res = await client.searchForApplications({ applicationId: appId });
 
       expect(res).toHaveProperty("applications");
       expect(res.applications).toHaveLength(1);
@@ -56,12 +56,12 @@ maybeDescribe("Indexer searchApplications", (env) => {
       HEADERS: env.indexerApiToken ? { "X-Algo-API-Token": env.indexerApiToken } : undefined,
     });
 
-    const firstPage = await client.api.searchForApplications({ limit: 2 });
+    const firstPage = await client.searchForApplications({ limit: 2 });
 
     expect(firstPage).toHaveProperty("applications");
 
     if (firstPage["nextToken"]) {
-      const secondPage = await client.api.searchForApplications({
+      const secondPage = await client.searchForApplications({
         limit: 2,
         next: firstPage["nextToken"] as string,
       });

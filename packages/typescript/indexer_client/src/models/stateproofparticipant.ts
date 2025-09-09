@@ -1,3 +1,10 @@
 import type { StateProofVerifier } from "./index";
 
-export type StateProofParticipant = { verifier?: StateProofVerifier; weight?: bigint };
+export type StateProofParticipant = {
+  verifier?: StateProofVerifier;
+
+  /**
+   * \[w\]
+   */
+  weight?: bigint;
+};

@@ -1,6 +1,15 @@
 import type { Asset } from "./index";
 
-/**
- * (empty)
- */
-export type SearchForAssets = { assets: Asset[]; currentRound: bigint; nextToken?: string };
+export type SearchForAssets = {
+  assets: Asset[];
+
+  /**
+   * Round at which the results were computed.
+   */
+  currentRound: bigint;
+
+  /**
+   * Used for pagination, when making another request provide this token with the next parameter.
+   */
+  nextToken?: string;
+};

@@ -13,7 +13,8 @@ import traceback
 from collections.abc import Generator
 from pathlib import Path
 
-from ts_oas_generator.generator.template_engine import TsCodeGenerator
+from ts_oas_generator import constants
+from ts_oas_generator.generator.template_engine import CodeGenerator
 from ts_oas_generator.utils.file_utils import write_files_to_disk
 
 # Exit codes for better error reporting
@@ -45,14 +46,14 @@ Examples:
         "--output",
         "-o",
         type=Path,
-        default=Path("./generated_ts"),
+        default=Path(constants.DEFAULT_OUTPUT_DIR),
         help="Output directory for generated files (default: %(default)s)",
         dest="output_dir",
     )
     parser.add_argument(
         "--package-name",
         "-p",
-        default="api_ts_client",
+        default=constants.DEFAULT_PACKAGE_NAME,
         help="Name for the generated TypeScript package (default: %(default)s)",
         dest="package_name",
     )
@@ -100,7 +101,7 @@ def backup_and_prepare_output_dir(output_dir: Path) -> Generator[None, None, Non
 
     # Create a backup of the existing directory if it exists and is non-empty
     if output_dir.exists() and any(output_dir.iterdir()):
-        backup_dir = Path(tempfile.mkdtemp(prefix="tsgen_bak_"))
+        backup_dir = Path(tempfile.mkdtemp(prefix=constants.BACKUP_DIR_PREFIX))
         shutil.copytree(output_dir, backup_dir, dirs_exist_ok=True)
 
     # Ensure directory exists
@@ -129,9 +130,9 @@ def main(args: list[str] | None = None) -> int:
 
     try:
         with backup_and_prepare_output_dir(parsed_args.output_dir):
-            generator = TsCodeGenerator(template_dir=parsed_args.template_dir)
+            generator = CodeGenerator(template_dir=parsed_args.template_dir)
 
-            generated_files = generator.generate_full(
+            generated_files = generator.generate(
                 parsed_args.spec_file,
                 parsed_args.output_dir,
                 parsed_args.package_name,

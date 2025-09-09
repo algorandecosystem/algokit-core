@@ -9,7 +9,7 @@ maybeDescribe("Algod transactionParams", (env) => {
       INT_DECODING: "bigint",
       HEADERS: env.algodApiToken ? { "X-Algo-API-Token": env.algodApiToken } : undefined,
     });
-    const params = await client.api.transactionParams();
+    const params = await client.transactionParams();
     expect(params).toHaveProperty("genesisId");
     expect(typeof params["lastRound"]).toBe("bigint");
     expect(typeof params["minFee"]).toBe("bigint");

@@ -14,7 +14,7 @@ maybeDescribe("Algod pendingTransaction", (env) => {
 
     const mnemonic = env.senderMnemonic ?? (await getSenderMnemonic());
     const acct = algosdk.mnemonicToSecretKey(mnemonic);
-    const sp = await client.api.transactionParams();
+    const sp = await client.transactionParams();
 
     // Build simple self-payment of 0 microalgos (allowed) as a noop
     const txn = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
@@ -33,13 +33,13 @@ maybeDescribe("Algod pendingTransaction", (env) => {
     });
 
     const signed = txn.signTxn(acct.sk);
-    const sendResult = await client.api.rawTransaction({ body: signed });
+    const sendResult = await client.rawTransaction({ body: signed });
     const txId = sendResult.txId as string;
 
     let pending: PendingTransactionResponse | undefined;
     const maxAttempts = 10;
     for (let i = 0; i < maxAttempts; i++) {
-      pending = await client.api.pendingTransactionInformation(txId, { format: "msgpack" });
+      pending = await client.pendingTransactionInformation(txId, { format: "msgpack" });
       if (pending?.confirmedRound || pending?.poolError) {
         break;
       }

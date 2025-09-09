@@ -1,4 +1,6 @@
-/**
- * Response containing the timestamp offset in seconds
- */
-export type GetBlockTimeStampOffset = { offset: bigint };
+export type GetBlockTimeStampOffset = {
+  /**
+   * Timestamp offset in seconds.
+   */
+  offset: bigint;
+};

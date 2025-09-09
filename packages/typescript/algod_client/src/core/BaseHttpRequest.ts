@@ -9,7 +9,6 @@ export interface RequestOptions {
   body?: any;
   mediaType?: string;
   responseHeader?: string;
-  expectBinary?: boolean;
 }
 
 // Backwards/ergonomic alias used by generated services

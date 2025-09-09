@@ -1,6 +1,11 @@
 import type { DryrunTxnResult } from "./index";
 
-/**
- * DryrunResponse contains per-txn debug information from a dryrun.
- */
-export type TealDryrun = { txns: DryrunTxnResult[]; error: string; protocolVersion: string };
+export type TealDryrun = {
+  txns: DryrunTxnResult[];
+  error: string;
+
+  /**
+   * Protocol version is the protocol version Dryrun was operated under.
+   */
+  protocolVersion: string;
+};

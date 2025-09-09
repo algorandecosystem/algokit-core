@@ -26,6 +26,9 @@ import type {
 export class IndexerApi {
   constructor(public readonly httpRequest: BaseHttpRequest) {}
 
+  /**
+   * Lookup an account's asset holdings, optionally for a specific ID.
+   */
   lookupAccountAppLocalStates(
     accountId: string,
     params?: { applicationId?: number | bigint; includeAll?: boolean; limit?: number | bigint; next?: string },
@@ -49,11 +52,13 @@ export class IndexerApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Lookup an account's asset holdings, optionally for a specific ID.
+   */
   lookupAccountAssets(
     accountId: string,
     params?: { assetId?: number | bigint; includeAll?: boolean; limit?: number | bigint; next?: string },
@@ -77,11 +82,13 @@ export class IndexerApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Lookup account information.
+   */
   lookupAccountById(
     accountId: string,
     params?: {
@@ -108,11 +115,13 @@ export class IndexerApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Lookup an account's created application parameters, optionally for a specific ID.
+   */
   lookupAccountCreatedApplications(
     accountId: string,
     params?: { applicationId?: number | bigint; includeAll?: boolean; limit?: number | bigint; next?: string },
@@ -136,11 +145,13 @@ export class IndexerApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Lookup an account's created asset parameters, optionally for a specific ID.
+   */
   lookupAccountCreatedAssets(
     accountId: string,
     params?: { assetId?: number | bigint; includeAll?: boolean; limit?: number | bigint; next?: string },
@@ -164,11 +175,13 @@ export class IndexerApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Lookup account transactions. Transactions are returned newest to oldest.
+   */
   lookupAccountTransactions(
     accountId: string,
     params?: {
@@ -223,11 +236,13 @@ export class IndexerApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Given an application ID and box name, returns base64 encoded box name and value. Box names must be in the goal app call arg form 'encoding:value'. For ints, use the form 'int:1234'. For raw bytes, encode base 64 and use 'b64' prefix as in 'b64:A=='. For printable strings, use the form 'str:hello'. For addresses, use the form 'addr:XYZ...'.
+   */
   lookupApplicationBoxByIdandName(
     applicationId: number | bigint,
     params?: { name: string },
@@ -246,11 +261,13 @@ export class IndexerApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Lookup application.
+   */
   lookupApplicationById(
     applicationId: number | bigint,
     params?: { includeAll?: boolean },
@@ -269,11 +286,13 @@ export class IndexerApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Lookup application logs.
+   */
   lookupApplicationLogsById(
     applicationId: number | bigint,
     params?: {
@@ -306,11 +325,13 @@ export class IndexerApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Lookup the list of accounts who hold this asset
+   */
   lookupAssetBalances(
     assetId: number | bigint,
     params?: {
@@ -345,11 +366,13 @@ export class IndexerApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Lookup asset information.
+   */
   lookupAssetById(
     assetId: number | bigint,
     params?: { includeAll?: boolean },
@@ -368,11 +391,13 @@ export class IndexerApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Lookup transactions for an asset. Transactions are returned oldest to newest.
+   */
   lookupAssetTransactions(
     assetId: number | bigint,
     params?: {
@@ -431,11 +456,13 @@ export class IndexerApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Lookup block.
+   */
   lookupBlock(roundNumber: number | bigint, params?: { headerOnly?: boolean }, requestOptions?: ApiRequestOptions): Promise<Block> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
@@ -450,11 +477,13 @@ export class IndexerApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Lookup a single transaction.
+   */
   lookupTransaction(txid: string, requestOptions?: ApiRequestOptions): Promise<LookupTransaction> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
@@ -469,7 +498,6 @@ export class IndexerApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
@@ -488,11 +516,13 @@ export class IndexerApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Search for accounts.
+   */
   searchForAccounts(
     params?: {
       assetId?: number | bigint;
@@ -538,11 +568,13 @@ export class IndexerApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Given an application ID, returns the box names of that application sorted lexicographically.
+   */
   searchForApplicationBoxes(
     applicationId: number | bigint,
     params?: { limit?: number | bigint; next?: string },
@@ -561,11 +593,13 @@ export class IndexerApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Search for applications
+   */
   searchForApplications(
     params?: { applicationId?: number | bigint; creator?: string; includeAll?: boolean; limit?: number | bigint; next?: string },
     requestOptions?: ApiRequestOptions,
@@ -589,11 +623,13 @@ export class IndexerApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Search for assets.
+   */
   searchForAssets(
     params?: {
       includeAll?: boolean;
@@ -627,11 +663,13 @@ export class IndexerApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Search for block headers. Block headers are returned in ascending round order. Transactions are not included in the output.
+   */
   searchForBlockHeaders(
     params?: {
       limit?: number | bigint;
@@ -669,11 +707,13 @@ export class IndexerApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Search for transactions. Transactions are returned oldest to newest unless the address parameter is used, in which case results are returned newest to oldest.
+   */
   searchForTransactions(
     params?: {
       limit?: number | bigint;
@@ -737,7 +777,6 @@ export class IndexerApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }

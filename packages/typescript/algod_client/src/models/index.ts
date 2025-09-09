@@ -66,6 +66,7 @@ export type { GetBlockHash } from "./getblockhash";
 export type { GetBlockLogs } from "./getblocklogs";
 export type { GetSupply } from "./getsupply";
 export type { AddParticipationKey } from "./addparticipationkey";
+export type { ShutdownNode } from "./shutdownnode";
 export type { GetStatus } from "./getstatus";
 export type { WaitForBlock } from "./waitforblock";
 export type { RawTransaction } from "./rawtransaction";
@@ -81,4 +82,5 @@ export type { StartCatchup } from "./startcatchup";
 export type { AbortCatchup } from "./abortcatchup";
 export type { TealDryrun } from "./tealdryrun";
 export type { GetBlockTimeStampOffset } from "./getblocktimestampoffset";
-export type { ShutdownNode } from "./shutdownnode";
+// TODO(utils-ts): Remove this export when utils-ts provides SignedTransaction types
+export type { AlgokitSignedTransaction } from "./algokitsignedtransaction";

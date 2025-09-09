@@ -18,7 +18,6 @@ export async function request<T>(
     body?: any;
     mediaType?: string;
     responseHeader?: string;
-    expectBinary?: boolean;
   },
 ): Promise<T> {
   // Replace path params before constructing URL to avoid encoded braces preventing replacement
@@ -98,6 +97,8 @@ export async function request<T>(
     const buf = new Uint8Array(await response.arrayBuffer());
     const decoded = decodeMsgPack(buf);
     const normalized = normalizeMsgPackIntegers(decoded, config.INT_DECODING ?? "bigint");
+    // Lightweight mapping: if the response contains arrays/objects with x-algokit-signed-txn shapes
+    // they will decode to DTOs and be assignable to AlgokitSignedTransaction via alias.
     return toCamelCaseKeysDeep(normalized) as T;
   }
 

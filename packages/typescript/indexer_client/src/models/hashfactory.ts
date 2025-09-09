@@ -1,1 +1,6 @@
-export type HashFactory = { hashType?: bigint };
+export type HashFactory = {
+  /**
+   * \[t\]
+   */
+  hashType?: bigint;
+};

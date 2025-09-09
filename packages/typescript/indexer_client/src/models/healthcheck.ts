@@ -2,6 +2,9 @@
  * A health check response.
  */
 export type HealthCheck = {
+  /**
+   * Current version.
+   */
   version: string;
   data?: {};
   round: bigint;

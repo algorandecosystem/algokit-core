@@ -1,4 +1,19 @@
 /**
  * Represents a TEAL value delta.
  */
-export type EvalDelta = { action: bigint; bytes?: string; uint?: bigint };
+export type EvalDelta = {
+  /**
+   * \[at\] delta action.
+   */
+  action: bigint;
+
+  /**
+   * \[bs\] bytes value.
+   */
+  bytes?: string;
+
+  /**
+   * \[ui\] uint value.
+   */
+  uint?: bigint;
+};

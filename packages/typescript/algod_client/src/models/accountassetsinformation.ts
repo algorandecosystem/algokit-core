@@ -1,6 +1,14 @@
 import type { AccountAssetHolding } from "./index";
 
-/**
- * AccountAssetsInformationResponse contains a list of assets held by an account.
- */
-export type AccountAssetsInformation = { round: bigint; nextToken?: string; assetHoldings?: AccountAssetHolding[] };
+export type AccountAssetsInformation = {
+  /**
+   * The round for which this information is relevant.
+   */
+  round: bigint;
+
+  /**
+   * Used for pagination, when making another request provide this token with the next parameter.
+   */
+  nextToken?: string;
+  assetHoldings?: AccountAssetHolding[];
+};

@@ -71,3 +71,5 @@ export type { LookupAssetTransactions } from "./lookupassettransactions";
 export type { SearchForBlockHeaders } from "./searchforblockheaders";
 export type { LookupTransaction } from "./lookuptransaction";
 export type { SearchForTransactions } from "./searchfortransactions";
+// TODO(utils-ts): Remove this export when utils-ts provides SignedTransaction types
+export type { AlgokitSignedTransaction } from "./algokitsignedtransaction";

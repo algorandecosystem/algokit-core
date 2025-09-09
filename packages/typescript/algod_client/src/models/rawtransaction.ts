@@ -1,4 +1,6 @@
-/**
- * Transaction ID of the submission.
- */
-export type RawTransaction = { txId: string };
+export type RawTransaction = {
+  /**
+   * encoding of the transaction hash.
+   */
+  txId: string;
+};

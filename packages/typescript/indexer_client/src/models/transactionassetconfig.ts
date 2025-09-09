@@ -10,4 +10,10 @@ import type { AssetParams } from "./index";
  * Definition:
  * data/transactions/asset.go : AssetConfigTxnFields
  */
-export type TransactionAssetConfig = { assetId?: bigint; params?: AssetParams };
+export type TransactionAssetConfig = {
+  /**
+   * \[xaid\] ID of the asset being configured or empty if creating.
+   */
+  assetId?: bigint;
+  params?: AssetParams;
+};

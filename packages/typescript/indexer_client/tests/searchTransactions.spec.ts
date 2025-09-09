@@ -9,7 +9,7 @@ maybeDescribe("Indexer searchTransactions", (env) => {
       INT_DECODING: "bigint",
       HEADERS: env.indexerApiToken ? { "X-Algo-API-Token": env.indexerApiToken } : undefined,
     });
-    const res = await client.api.searchForTransactions({ limit: 5 });
+    const res = await client.searchForTransactions({ limit: 5 });
     expect(res).toHaveProperty("transactions");
     expect(Array.isArray(res.transactions)).toBe(true);
   });

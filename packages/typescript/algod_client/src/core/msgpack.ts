@@ -1,4 +1,6 @@
 import { encode as msgpackEncode, decode as msgpackDecode } from "@msgpack/msgpack";
+// TODO(utils-ts): Remove temporary type import when utils-ts is integrated
+import type { AlgokitSignedTransaction } from "../models";
 import type { IntDecoding } from "./json";
 
 /**
@@ -152,6 +154,9 @@ export function normalizeMsgPackIntegers(value: any, intDecoding: IntDecoding): 
       });
   }
 }
+
+// Helpers to map SignedTransactionDto <-> AlgokitSignedTransaction if present in responses
+// No DTO helpers needed: once utils-ts is integrated, this file remains unchanged.
 
 function traverse(obj: any, fn: (v: any) => void): void {
   // eslint-disable-line @typescript-eslint/no-explicit-any

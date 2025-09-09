@@ -1,4 +1,6 @@
-/**
- * Participation ID of the submission
- */
-export type AddParticipationKey = { partId: string };
+export type AddParticipationKey = {
+  /**
+   * encoding of the participation ID.
+   */
+  partId: string;
+};

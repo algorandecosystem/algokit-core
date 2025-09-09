@@ -46,6 +46,9 @@ import type {
 export class AlgodApi {
   constructor(public readonly httpRequest: BaseHttpRequest) {}
 
+  /**
+   * Given a catchpoint, it aborts catching up to this catchpoint
+   */
   abortCatchup(catchpoint: string, requestOptions?: ApiRequestOptions): Promise<AbortCatchup> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
@@ -60,11 +63,13 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Given a specific account public key and application ID, this call returns the account's application local state and global state (AppLocalState and AppParams, if either exists). Global state will only be returned if the provided address is the application's creator.
+   */
   accountApplicationInformation(
     address: string,
     applicationId: number | bigint,
@@ -88,11 +93,13 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: params?.format === "json" ? false : true,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Given a specific account public key and asset ID, this call returns the account's asset holding and asset parameters (if either exist). Asset parameters will only be returned if the provided address is the asset's creator.
+   */
   accountAssetInformation(
     address: string,
     assetId: number | bigint,
@@ -116,11 +123,13 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: params?.format === "json" ? false : true,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Lookup an account's asset holdings.
+   */
   accountAssetsInformation(
     address: string,
     params?: { limit?: number | bigint; next?: string },
@@ -139,11 +148,13 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Given a specific account public key, this call returns the account's status, balance and spendable amounts
+   */
   accountInformation(
     address: string,
     params?: { exclude?: "all" | "none"; format?: "json" | "msgpack" },
@@ -166,7 +177,6 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: params?.format === "json" ? false : true,
       ...(requestOptions ?? {}),
     });
   }
@@ -187,11 +197,13 @@ export class AlgodApi {
       body: params?.body,
       // Only msgpack supported for request body
       mediaType: "application/msgpack",
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Given a participation ID, append state proof keys to a particular set of participation keys
+   */
   appendKeys(participationId: string, params?: { body: string }, requestOptions?: ApiRequestOptions): Promise<ParticipationKey> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
@@ -208,11 +220,13 @@ export class AlgodApi {
       body: params?.body,
       // Only msgpack supported for request body
       mediaType: "application/msgpack",
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Delete a given participation key by ID
+   */
   deleteParticipationKeyById(participationId: string, requestOptions?: ApiRequestOptions): Promise<void> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
@@ -227,7 +241,6 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
@@ -246,7 +259,6 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
@@ -273,11 +285,13 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Given an application ID and box name, it returns the round, box name, and value (each base64 encoded). Box names must be in the goal app call arg encoding form 'encoding:value'. For ints, use the form 'int:1234'. For raw bytes, use the form 'b64:A=='. For printable strings, use the form 'str:hello'. For addresses, use the form 'addr:XYZ...'.
+   */
   getApplicationBoxByName(applicationId: number | bigint, params?: { name: string }, requestOptions?: ApiRequestOptions): Promise<Box> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
@@ -292,11 +306,13 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Given an application ID, return all Box names. No particular ordering is guaranteed. Request fails when client or server-side configured limits prevent returning all Box names.
+   */
   getApplicationBoxes(
     applicationId: number | bigint,
     params?: { max?: number | bigint },
@@ -315,11 +331,13 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Given a application ID, it returns application information including creator, approval and clear programs, global and local schemas, and global state.
+   */
   getApplicationById(applicationId: number | bigint, requestOptions?: ApiRequestOptions): Promise<Application> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
@@ -334,11 +352,13 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Given a asset ID, it returns asset information including creator, name, total supply and special addresses.
+   */
   getAssetById(assetId: number | bigint, requestOptions?: ApiRequestOptions): Promise<Asset> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
@@ -353,7 +373,6 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
@@ -380,7 +399,6 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: params?.format === "json" ? false : true,
       ...(requestOptions ?? {}),
     });
   }
@@ -399,11 +417,13 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Get all of the logs from outer and inner app calls in the given round
+   */
   getBlockLogs(round: number | bigint, requestOptions?: ApiRequestOptions): Promise<GetBlockLogs> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
@@ -418,11 +438,13 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Gets the current timestamp offset.
+   */
   getBlockTimeStampOffset(requestOptions?: ApiRequestOptions): Promise<GetBlockTimeStampOffset> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
@@ -437,7 +459,6 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
@@ -456,11 +477,13 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Returns the merged (defaults + overrides) config file in json.
+   */
   getConfig(requestOptions?: ApiRequestOptions): Promise<string> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
@@ -475,11 +498,13 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Retrieves the current settings for blocking and mutex profiles
+   */
   getDebugSettingsProf(requestOptions?: ApiRequestOptions): Promise<DebugSettingsProf> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
@@ -494,11 +519,13 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Returns the entire genesis file in json.
+   */
   getGenesis(requestOptions?: ApiRequestOptions): Promise<Genesis> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
@@ -513,11 +540,13 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Get ledger deltas for a round.
+   */
   getLedgerStateDelta(
     round: number | bigint,
     params?: { format?: "json" | "msgpack" },
@@ -540,11 +569,13 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: params?.format === "json" ? false : true,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Get a ledger delta for a given transaction group.
+   */
   getLedgerStateDeltaForTransactionGroup(
     id: string,
     params?: { format?: "json" | "msgpack" },
@@ -567,7 +598,6 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: params?.format === "json" ? false : true,
       ...(requestOptions ?? {}),
     });
   }
@@ -586,11 +616,13 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Given a participation ID, return information about that participation key
+   */
   getParticipationKeyById(participationId: string, requestOptions?: ApiRequestOptions): Promise<ParticipationKey> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
@@ -605,11 +637,13 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Return a list of participation keys
+   */
   getParticipationKeys(requestOptions?: ApiRequestOptions): Promise<ParticipationKey[]> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
@@ -624,11 +658,13 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Get the list of pending transactions, sorted by priority, in decreasing order, truncated at the end at MAX. If MAX = 0, returns all pending transactions.
+   */
   getPendingTransactions(
     params?: { max?: number | bigint; format?: "json" | "msgpack" },
     requestOptions?: ApiRequestOptions,
@@ -650,11 +686,13 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: params?.format === "json" ? false : true,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Get the list of pending transactions by address, sorted by priority, in decreasing order, truncated at the end at MAX. If MAX = 0, returns all pending transactions.
+   */
   getPendingTransactionsByAddress(
     address: string,
     params?: { max?: number | bigint; format?: "json" | "msgpack" },
@@ -677,7 +715,6 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: params?.format === "json" ? false : true,
       ...(requestOptions ?? {}),
     });
   }
@@ -696,7 +733,6 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
@@ -715,7 +751,6 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
@@ -734,7 +769,6 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
@@ -753,11 +787,13 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Gets the minimum sync round for the ledger.
+   */
   getSyncRound(requestOptions?: ApiRequestOptions): Promise<GetSyncRound> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
@@ -772,11 +808,13 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Get ledger deltas for transaction groups in a given round.
+   */
   getTransactionGroupLedgerStateDeltasForRound(
     round: number | bigint,
     params?: { format?: "json" | "msgpack" },
@@ -799,7 +837,6 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: params?.format === "json" ? false : true,
       ...(requestOptions ?? {}),
     });
   }
@@ -823,11 +860,13 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Retrieves the supported API versions, binary build versions, and genesis information.
+   */
   getVersion(requestOptions?: ApiRequestOptions): Promise<Version> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
@@ -842,7 +881,6 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
@@ -861,7 +899,6 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
@@ -880,11 +917,17 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Given a transaction ID of a recently submitted transaction, it returns information about it.  There are several cases when this might succeed:
+   * - transaction committed (committed round > 0)
+   * - transaction still in the pool (committed round = 0, pool error = "")
+   * - transaction removed from pool due to error (committed round = 0, pool error != "")
+   * Or the transaction may have happened sufficiently long ago that the node no longer remembers it, and this will return an error.
+   */
   pendingTransactionInformation(
     txid: string,
     params?: { format?: "json" | "msgpack" },
@@ -907,11 +950,13 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: params?.format === "json" ? false : true,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Enables blocking and mutex profiles, and returns the old settings
+   */
   putDebugSettingsProf(requestOptions?: ApiRequestOptions): Promise<DebugSettingsProf> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
@@ -926,7 +971,6 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
@@ -946,7 +990,6 @@ export class AlgodApi {
       headers,
       body: params?.body,
       mediaType: "application/x-binary",
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
@@ -966,11 +1009,13 @@ export class AlgodApi {
       headers,
       body: params?.body,
       mediaType: "application/x-binary",
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Sets the timestamp offset (seconds) for blocks in dev mode. Providing an offset of 0 will unset this value and try to use the real clock for the timestamp.
+   */
   setBlockTimeStampOffset(offset: number | bigint, requestOptions?: ApiRequestOptions): Promise<void> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
@@ -985,11 +1030,13 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Sets the minimum sync round on the ledger.
+   */
   setSyncRound(round: number | bigint, requestOptions?: ApiRequestOptions): Promise<void> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
@@ -1004,11 +1051,13 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Special management endpoint to shutdown the node. Optionally provide a timeout parameter to indicate that the node should begin shutting down after a number of seconds.
+   */
   shutdownNode(params?: { timeout?: number | bigint }, requestOptions?: ApiRequestOptions): Promise<ShutdownNode> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
@@ -1023,7 +1072,6 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
@@ -1051,11 +1099,13 @@ export class AlgodApi {
       body: params?.body,
       // Dynamic mediaType based on format parameter (prefer msgpack by default)
       mediaType: params?.format === "json" ? "application/json" : "application/msgpack",
-      expectBinary: params?.format === "json" ? false : true,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Given a catchpoint, it starts catching up to this catchpoint
+   */
   startCatchup(catchpoint: string, params?: { min?: number | bigint }, requestOptions?: ApiRequestOptions): Promise<StartCatchup> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
@@ -1070,11 +1120,13 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Returns the entire swagger spec in json.
+   */
   swaggerJson(requestOptions?: ApiRequestOptions): Promise<string> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
@@ -1089,11 +1141,13 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Given TEAL source code in plain text, return base64 encoded program bytes and base32 SHA512_256 hash of program bytes (Address style). This endpoint is only enabled when a node's configuration file sets EnableDeveloperAPI to true.
+   */
   tealCompile(params?: { sourcemap?: boolean; body: string }, requestOptions?: ApiRequestOptions): Promise<TealCompile> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
@@ -1109,11 +1163,13 @@ export class AlgodApi {
       headers,
       body: params?.body,
       mediaType: "text/plain",
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Given the program bytes, return the TEAL source code in plain text. This endpoint is only enabled when a node's configuration file sets EnableDeveloperAPI to true.
+   */
   tealDisassemble(params?: { body: Uint8Array }, requestOptions?: ApiRequestOptions): Promise<TealDisassemble> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
@@ -1129,11 +1185,13 @@ export class AlgodApi {
       headers,
       body: params?.body,
       mediaType: "application/x-binary",
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Executes TEAL program(s) in context and returns debugging information about the execution. This endpoint is only enabled when a node's configuration file sets EnableDeveloperAPI to true.
+   */
   tealDryrun(params?: { body?: DryrunRequest }, requestOptions?: ApiRequestOptions): Promise<TealDryrun> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
@@ -1150,7 +1208,6 @@ export class AlgodApi {
       body: params?.body,
       // Both supported, prefer msgpack for better performance
       mediaType: "application/msgpack",
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
@@ -1169,11 +1226,13 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Unset the ledger sync round.
+   */
   unsetSyncRound(requestOptions?: ApiRequestOptions): Promise<void> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
@@ -1188,11 +1247,13 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }
 
+  /**
+   * Waits for a block to appear after round {round} and returns the node's status at the time. There is a 1 minute timeout, when reached the current status is returned regardless of whether or not it is the round after the given round.
+   */
   waitForBlock(round: number | bigint, requestOptions?: ApiRequestOptions): Promise<WaitForBlock> {
     const headers: Record<string, string> = {};
     headers["Accept"] = "application/json";
@@ -1207,7 +1268,6 @@ export class AlgodApi {
       headers,
       body: undefined,
       mediaType: undefined,
-      expectBinary: false,
       ...(requestOptions ?? {}),
     });
   }

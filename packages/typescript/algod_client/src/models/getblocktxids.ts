@@ -1,4 +1,6 @@
-/**
- * Top level transaction IDs in a block.
- */
-export type GetBlockTxids = { blockTxids: string[] };
+export type GetBlockTxids = {
+  /**
+   * Block transaction IDs.
+   */
+  blockTxids: string[];
+};

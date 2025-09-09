@@ -7,7 +7,18 @@ import type { TransactionSignatureMultisigSubsignature } from "./index";
  * crypto/multisig.go : MultisigSig
  */
 export type TransactionSignatureMultisig = {
+  /**
+   * \[subsig\] holds pairs of public key and signatures.
+   */
   subsignature?: TransactionSignatureMultisigSubsignature[];
+
+  /**
+   * \[thr\]
+   */
   threshold?: bigint;
+
+  /**
+   * \[v\]
+   */
   version?: bigint;
 };

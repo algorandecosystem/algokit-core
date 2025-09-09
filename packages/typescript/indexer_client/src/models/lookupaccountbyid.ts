@@ -1,6 +1,10 @@
 import type { Account } from "./index";
 
-/**
- * (empty)
- */
-export type LookupAccountById = { account: Account; currentRound: bigint };
+export type LookupAccountById = {
+  account: Account;
+
+  /**
+   * Round at which the results were computed.
+   */
+  currentRound: bigint;
+};

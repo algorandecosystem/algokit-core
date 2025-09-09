@@ -12,11 +12,11 @@ Install dependencies and build:
 ### Configure base URL and create a client
 
 ```ts
-import { FetchHttpRequest, type ClientConfig, AlgodClient, AlgodApi } from "./dist/index.js";
+import { AlgodClient } from "./dist/index.js";
 
 const client = new AlgodClient({
-  BASE: env.algodBaseUrl,
-  HEADERS: env.algodApiToken ? { "X-Algo-API-Token": env.algodApiToken } : undefined,
+  BASE: env.baseUrl,
+  HEADERS: env.apiToken ? { "X-Algo-API-Token": env.apiToken } : undefined,
 });
 
 // client is now ready to use

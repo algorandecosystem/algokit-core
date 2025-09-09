@@ -1,541 +1,678 @@
-"""
-TypeScript Template Engine for OpenAPI Client Generation (Phase 2)
-
-Generates runtime plus models/services when a spec is provided.
-"""
-
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
 from typing import Any
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from rust_oas_generator.parser.oas_parser import OASParser
+from ts_oas_generator import constants
 from ts_oas_generator.generator.filters import FILTERS, ts_camel_case, ts_pascal_case, ts_type
+from ts_oas_generator.parser.oas_parser import OASParser
 
-_HTTP_METHODS = {"get", "post", "put", "delete", "patch", "head", "options"}
-
-# Compact alias for the build context tuple to keep lines within ruff's E501 limit
-BuildContext = tuple[
-    dict[str, list[dict[str, Any]]],
-    set[str],
-    dict[str, Any],
-]
+# Type aliases for clarity
+Schema = dict[str, Any]
+Operation = dict[str, Any]
+TemplateContext = dict[str, Any]
+FileMap = dict[Path, str]
 
 
-class TsTemplateEngine:
-    """Template engine for generating TypeScript client code."""
+class ContentType(str, Enum):
+    """Supported content types."""
+
+    JSON = "application/json"
+    MSGPACK = "application/msgpack"
+    TEXT = "text/plain"
+    BINARY = "application/octet-stream"
+
+
+@dataclass
+class Parameter:
+    """Represents an API parameter."""
+
+    name: str
+    var_name: str
+    location: str
+    required: bool
+    ts_type: str
+    description: str | None = None
+    stringify_bigint: bool = False
+
+
+@dataclass
+class RequestBody:
+    """Represents a request body specification."""
+
+    media_type: str
+    ts_type: str
+    required: bool
+    supports_msgpack: bool = False
+    supports_json: bool = False
+
+
+@dataclass
+class OperationContext:
+    """Complete context for an API operation."""
+
+    operation_id: str
+    method: str
+    path: str
+    description: str | None
+    parameters: list[Parameter]
+    request_body: RequestBody | None
+    response_type: str
+    import_types: set[str]
+    # Content negotiation flags
+    returns_msgpack: bool = False
+    has_format_param: bool = False
+    format_var_name: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary for template rendering."""
+        return {
+            "operationId": self.operation_id,
+            "method": self.method,
+            "path": self.path,
+            "description": self.description,
+            "parameters": [self._param_to_dict(p) for p in self.parameters],
+            "pathParameters": [self._param_to_dict(p) for p in self.parameters if p.location == "path"],
+            "otherParameters": [self._param_to_dict(p) for p in self.parameters if p.location in {"query", "header"}],
+            "requestBody": self._request_body_to_dict(self.request_body) if self.request_body else None,
+            "responseTsType": self.response_type,
+            "returnsMsgpack": self.returns_msgpack,
+            "hasFormatParam": self.has_format_param,
+            "formatVarName": self.format_var_name,
+        }
+
+    @staticmethod
+    def _param_to_dict(param: Parameter) -> dict[str, Any]:
+        return {
+            "name": param.name,
+            "varName": param.var_name,
+            "in": param.location,
+            "required": param.required,
+            "tsType": param.ts_type,
+            "description": param.description,
+            "stringifyBigInt": param.stringify_bigint,
+        }
+
+    @staticmethod
+    def _request_body_to_dict(body: RequestBody) -> dict[str, Any]:
+        return {
+            "mediaType": body.media_type,
+            "tsType": body.ts_type,
+            "required": body.required,
+            "supportsMsgpack": body.supports_msgpack,
+            "supportsJson": body.supports_json,
+        }
+
+
+class TemplateRenderer:
+    """Handles template rendering operations."""
 
     def __init__(self, template_dir: Path | None = None) -> None:
         if template_dir is None:
-            current_dir = Path(__file__).parent
-            template_dir = current_dir.parent / "templates"
+            template_dir = Path(__file__).parent.parent / constants.DEFAULT_TEMPLATE_DIR
 
         self.template_dir = Path(template_dir)
-        self.env = Environment(
+        self.env = self._create_environment()
+
+    def _create_environment(self) -> Environment:
+        """Create and configure Jinja2 environment."""
+        env = Environment(
             loader=FileSystemLoader(str(self.template_dir)),
             autoescape=select_autoescape(["html", "xml"]),
-            trim_blocks=True,
-            lstrip_blocks=True,
+            trim_blocks=constants.TEMPLATE_TRIM_BLOCKS,
+            lstrip_blocks=constants.TEMPLATE_LSTRIP_BLOCKS,
         )
+        env.filters.update(FILTERS)
+        return env
 
-        self._register_filters()
-        self._register_globals()
-
-    def _register_filters(self) -> None:
-        self.env.filters.update(FILTERS)
-
-    def _register_globals(self) -> None:
-        self.env.globals.update({})
-
-    def render_template(self, template_name: str, context: dict[str, Any]) -> str:
+    def render(self, template_name: str, context: TemplateContext) -> str:
+        """Render a single template."""
         template = self.env.get_template(template_name)
         return template.render(**context)
 
+    def render_batch(self, template_map: dict[Path, tuple[str, TemplateContext]]) -> FileMap:
+        """Render multiple templates."""
+        return {path: self.render(template, context) for path, (template, context) in template_map.items()}
 
-class TsCodeGenerator:
-    """Generates TypeScript runtime and code from templates."""
 
-    def __init__(self, template_dir: Path | None = None) -> None:
-        self.template_engine = TsTemplateEngine(template_dir)
+class SchemaProcessor:
+    """Processes OpenAPI schemas and generates TypeScript models."""
 
-    def generate_runtime(
-        self,
-        output_dir: Path,
-        package_name: str = "api_ts_client",
-        *,
-        custom_description: str | None = None,
-    ) -> dict[Path, str]:
-        """Generate runtime files under the provided output directory."""
-        output_dir = Path(output_dir)
-        src_core = output_dir / "src" / "core"
-        base_name = ts_pascal_case(package_name)
-        base_core = base_name[:-6] if base_name.lower().endswith("client") else base_name
-        client_class_name = f"{base_core}Client"
-        service_class_name = f"{base_core}Api"
+    def __init__(self, renderer: TemplateRenderer) -> None:
+        self.renderer = renderer
 
-        context = {
-            "package_name": package_name,
-            "custom_description": custom_description,
-            "client_class_name": client_class_name,
-            "service_class_name": service_class_name,
-        }
+    def generate_models(self, output_dir: Path, schemas: Schema) -> FileMap:
+        """Generate TypeScript model files from schemas."""
+        models_dir = output_dir / constants.DirectoryName.SRC / constants.DirectoryName.MODELS
+        files: FileMap = {}
 
-        files: dict[Path, str] = {}
-        # Core runtime files
-        files[src_core / "ClientConfig.ts"] = self.template_engine.render_template(
-            "base/src/core/ClientConfig.ts.j2", context
+        # Generate individual model files
+        for name, schema in schemas.items():
+            context = self._create_model_context(name, schema, schemas)
+            content = self.renderer.render(constants.MODEL_TEMPLATE, context)
+            files[models_dir / f"{name.lower()}{constants.MODEL_FILE_EXTENSION}"] = content
+
+        # Generate comprehensive AlgokitSignedTransaction model
+        # TODO(utils-ts): Delete this temporary model once utils-ts is part of the monorepo
+        files[models_dir / f"algokitsignedtransaction{constants.MODEL_FILE_EXTENSION}"] = self.renderer.render(
+            "models/algokitsignedtransaction.ts.j2", {}
         )
-        files[src_core / "BaseHttpRequest.ts"] = self.template_engine.render_template(
-            "base/src/core/BaseHttpRequest.ts.j2", context
-        )
-        files[src_core / "FetchHttpRequest.ts"] = self.template_engine.render_template(
-            "base/src/core/FetchHttpRequest.ts.j2", context
-        )
-        files[src_core / "ApiError.ts"] = self.template_engine.render_template("base/src/core/ApiError.ts.j2", context)
-        files[src_core / "request.ts"] = self.template_engine.render_template("base/src/core/request.ts.j2", context)
-        files[src_core / "CancelablePromise.ts"] = self.template_engine.render_template(
-            "base/src/core/CancelablePromise.ts.j2", context
-        )
-        files[src_core / "json.ts"] = self.template_engine.render_template("base/src/core/json.ts.j2", context)
-        files[src_core / "msgpack.ts"] = self.template_engine.render_template("base/src/core/msgpack.ts.j2", context)
-        files[src_core / "casing.ts"] = self.template_engine.render_template("base/src/core/casing.ts.j2", context)
 
-        # Index barrel (runtime-only)
-        files[output_dir / "src" / "index.ts"] = self.template_engine.render_template("base/src/index.ts.j2", context)
-
-        # Project files
-        files[output_dir / "package.json"] = self.template_engine.render_template("base/package.json.j2", context)
-        files[output_dir / "tsconfig.json"] = self.template_engine.render_template("base/tsconfig.json.j2", context)
-        files[output_dir / "README.md"] = self.template_engine.render_template("base/README.md.j2", context)
-        files[output_dir / ".prettierignore"] = self.template_engine.render_template("base/.prettierignore.j2", context)
+        # Generate barrel export
+        files[models_dir / constants.INDEX_FILE] = self.renderer.render(
+            constants.MODELS_INDEX_TEMPLATE,
+            {"schemas": schemas, "include_temp_signed_txn": True},
+        )
 
         return files
 
-    def _build_services_context(self, spec: dict[str, Any]) -> BuildContext:  # noqa: C901, PLR0912, PLR0915
-        """Build a per-tag mapping of operations for service generation.
+    def _create_model_context(self, name: str, schema: Schema, all_schemas: Schema) -> TemplateContext:
+        """Create context for model template rendering."""
+        is_object = self._is_object_schema(schema)
+        properties = self._extract_properties(schema) if is_object else []
 
-        Returns (ops_by_tag, tags_set)
-        """
-        paths = spec.get("paths", {})
-        components = spec.get("components", {})
-        schemas = components.get("schemas", {})
-        model_names = {ts_pascal_case(name) for name in schemas}
-        builtin_types = {"Uint8Array", "void", "never", "string", "number", "bigint", "boolean"}
+        return {
+            "schema_name": name,
+            "schema": schema,
+            "schemas": all_schemas,
+            "is_object": is_object,
+            "properties": properties,
+            "has_additional_properties": schema.get(constants.SchemaKey.ADDITIONAL_PROPERTIES) is not None,
+            "additional_properties_type": schema.get(constants.SchemaKey.ADDITIONAL_PROPERTIES),
+        }
 
-        ops_by_tag: dict[str, list[dict[str, Any]]] = {}
-        tags_set: set[str] = set()
-        synthetic_models: dict[str, Any] = {}
+    @staticmethod
+    def _is_object_schema(schema: Schema) -> bool:
+        """Check if schema represents an object type."""
+        is_type_object = schema.get(constants.SchemaKey.TYPE) == constants.TypeScriptType.OBJECT
+        has_properties = constants.SchemaKey.PROPERTIES in schema
+        has_composition = any(
+            k in schema for k in [constants.SchemaKey.ALL_OF, constants.SchemaKey.ONE_OF, constants.SchemaKey.ANY_OF]
+        )
+        return (is_type_object or has_properties) and not has_composition
 
-        token_re = re.compile(r"\b[A-Z][A-Za-z0-9_]*\b")
+    @staticmethod
+    def _extract_properties(schema: Schema) -> list[dict[str, Any]]:
+        """Extract properties from an object schema."""
+        properties = []
+        required_fields = set(schema.get(constants.SchemaKey.REQUIRED, []))
 
-        def collect_model_types(type_str: str) -> set[str]:
-            found: set[str] = set()
-            for tok in token_re.findall(type_str or ""):
-                if tok in model_names and tok not in builtin_types:
-                    found.add(tok)
-            return found
+        for prop_name, prop_schema in (schema.get(constants.SchemaKey.PROPERTIES) or {}).items():
+            properties.append(
+                {
+                    "name": prop_name,
+                    "schema": prop_schema,
+                    "is_required": prop_name in required_fields,
+                }
+            )
 
+        return properties
+
+
+class OperationProcessor:
+    """Processes OpenAPI operations and generates API services."""
+
+    def __init__(self, renderer: TemplateRenderer) -> None:
+        self.renderer = renderer
+        self._model_names: set[str] = set()
+        self._synthetic_models: Schema = {}
+
+    def process_spec(self, spec: Schema) -> tuple[dict[str, list[OperationContext]], set[str], Schema]:
+        """Process entire OpenAPI spec and return operations by tag."""
+        self._initialize_model_names(spec)
+
+        operations_by_tag: dict[str, list[OperationContext]] = {}
+        tags: set[str] = set()
+
+        paths = spec.get(constants.SchemaKey.PATHS, {})
         for path, path_item in paths.items():
             if not isinstance(path_item, dict):
                 continue
-            for method, op in path_item.items():
-                if method.lower() not in _HTTP_METHODS:
-                    continue
-                if not isinstance(op, dict):
-                    continue
-                operation_id = op.get("operationId")
-                if not operation_id:
-                    # Fallback to verb + normalized path
-                    operation_id = ts_camel_case(f"{method.lower()}_{path}")
 
-                tags = op.get("tags", []) or ["default"]
-                parameters = op.get("parameters", [])
-                # Gather params from path level too
-                if isinstance(path_item.get("parameters"), list):
-                    parameters = [*path_item.get("parameters", []), *parameters]
+            operations = self._process_path_operations(path, path_item, spec)
+            for op in operations:
+                for tag in op.tags:
+                    tags.add(tag)
+                    operations_by_tag.setdefault(tag, []).append(op)
 
-                # Prepare parameters
-                param_contexts: list[dict[str, Any]] = []
-                # Track used variable names per operation to ensure uniqueness
-                used_var_names: set[str] = set()
-                reserved_words = {
-                    "abstract",
-                    "any",
-                    "as",
-                    "boolean",
-                    "break",
-                    "case",
-                    "catch",
-                    "class",
-                    "const",
-                    "continue",
-                    "debugger",
-                    "default",
-                    "delete",
-                    "do",
-                    "else",
-                    "enum",
-                    "export",
-                    "extends",
-                    "false",
-                    "finally",
-                    "for",
-                    "from",
-                    "function",
-                    "if",
-                    "implements",
-                    "import",
-                    "in",
-                    "instanceof",
-                    "interface",
-                    "let",
-                    "new",
-                    "null",
-                    "number",
-                    "package",
-                    "private",
-                    "protected",
-                    "public",
-                    "return",
-                    "static",
-                    "string",
-                    "super",
-                    "switch",
-                    "symbol",
-                    "this",
-                    "throw",
-                    "true",
-                    "try",
-                    "type",
-                    "typeof",
-                    "undefined",
-                    "var",
-                    "void",
-                    "while",
-                    "with",
-                    "yield",
-                    "await",
-                    "async",
-                    "constructor",
-                }
-                for p in parameters:
-                    param = p
-                    if "$ref" in param:
-                        # Resolve $ref
-                        ref_path = param["$ref"].split("/")[1:]
-                        node: Any = spec
-                        for part in ref_path:
-                            node = node.get(part, {})
-                        param = node
-                    schema = param.get("schema", {}) or {}
-                    t = ts_type(schema, schemas)
-                    # When a parameter resolves to bigint, accept number | bigint for ergonomics
-                    if t == "bigint":
-                        t_sig = "number | bigint"
-                        stringify_bigint = True
+        # Sort operations by ID for stability
+        for ops in operations_by_tag.values():
+            ops.sort(key=lambda o: o.operation_id)
+
+        return operations_by_tag, tags, self._synthetic_models
+
+    def generate_service(
+        self,
+        output_dir: Path,
+        operations_by_tag: dict[str, list[OperationContext]],
+        tags: set[str],
+        service_class_name: str,
+    ) -> FileMap:
+        """Generate API service files."""
+        apis_dir = output_dir / constants.DirectoryName.SRC / constants.DirectoryName.APIS
+        files: FileMap = {}
+
+        # Collect unique operations
+        all_operations = self._collect_unique_operations(operations_by_tag, tags)
+
+        # Convert to template context
+        operations_context = [op.to_dict() for op in all_operations]
+        import_types = set().union(*(op.import_types for op in all_operations))
+
+        # Generate service file
+        files[apis_dir / constants.API_SERVICE_FILE] = self.renderer.render(
+            constants.API_SERVICE_TEMPLATE,
+            {
+                "tag_name": constants.DEFAULT_API_TAG,
+                "operations": operations_context,
+                "import_types": sorted(import_types),
+                "service_class_name": service_class_name,
+            },
+        )
+
+        # Generate barrel export
+        files[apis_dir / constants.INDEX_FILE] = self.renderer.render(
+            constants.APIS_INDEX_TEMPLATE, {"service_class_name": service_class_name}
+        )
+
+        return files
+
+    def _initialize_model_names(self, spec: Schema) -> None:
+        """Initialize set of model names from spec."""
+
+        components = spec.get(constants.SchemaKey.COMPONENTS, {})
+        schemas = components.get(constants.SchemaKey.COMPONENTS_SCHEMAS, {})
+        self._model_names = {ts_pascal_case(name) for name in schemas}
+
+    def _process_path_operations(self, path: str, path_item: Schema, spec: Schema) -> list[OperationContext]:
+        """Process all operations for a given path."""
+
+        operations = []
+        path_params = path_item.get(constants.OperationKey.PARAMETERS, [])
+
+        for method, operation in path_item.items():
+            if method.lower() not in constants.HTTP_METHODS or not isinstance(operation, dict):
+                continue
+
+            # Generate operation ID if missing
+            operation_id = operation.get(constants.OperationKey.OPERATION_ID)
+            if not operation_id:
+                operation_id = ts_camel_case(f"{method.lower()}_{path}")
+
+            # Process operation
+            context = self._create_operation_context(
+                operation_id=operation_id,
+                method=method.upper(),
+                path=path,
+                operation=operation,
+                path_params=path_params,
+                spec=spec,
+            )
+
+            context.tags = operation.get(constants.OperationKey.TAGS, [constants.DEFAULT_TAG])
+            operations.append(context)
+
+        return operations
+
+    def _create_operation_context(  # noqa: PLR0913
+        self, operation_id: str, method: str, path: str, operation: Schema, path_params: list[Schema], spec: Schema
+    ) -> OperationContext:
+        """Create complete operation context."""
+        # Merge path and operation parameters
+        all_params = [*path_params, *operation.get(constants.OperationKey.PARAMETERS, [])]
+
+        # Process components
+        parameters = self._process_parameters(all_params, spec)
+        request_body = self._process_request_body(operation.get(constants.OperationKey.REQUEST_BODY), spec)
+        response_type, returns_msgpack = self._process_responses(
+            operation.get(constants.OperationKey.RESPONSES, {}), operation_id, spec
+        )
+
+        # Build context
+        context = OperationContext(
+            operation_id=operation_id,
+            method=method,
+            path=path,
+            description=operation.get(constants.OperationKey.DESCRIPTION),
+            parameters=parameters,
+            request_body=request_body,
+            response_type=response_type,
+            import_types=set(),
+            returns_msgpack=returns_msgpack,
+        )
+
+        # Compute additional properties
+        self._compute_format_param(context)
+        self._compute_import_types(context)
+
+        return context
+
+    def _process_parameters(self, params: list[Schema], spec: Schema) -> list[Parameter]:
+        """Process operation parameters."""
+
+        parameters = []
+        used_names: set[str] = set()
+        schemas = self._get_schemas(spec)
+
+        for param_def in params:
+            # Resolve $ref if present
+            param = self._resolve_ref(param_def, spec) if "$ref" in param_def else param_def
+
+            # Extract parameter details
+            raw_name = str(param.get("name"))
+            var_name = self._sanitize_variable_name(ts_camel_case(raw_name), used_names)
+            used_names.add(var_name)
+
+            schema = param.get("schema", {})
+            ts_type_str = ts_type(schema, schemas)
+
+            # Handle bigint ergonomics
+            if ts_type_str == constants.TypeScriptType.BIGINT:
+                ts_type_str = constants.TypeScriptType.NUMBER_OR_BIGINT
+                stringify_bigint = True
+            else:
+                stringify_bigint = constants.TypeScriptType.BIGINT in ts_type_str
+
+            location = param.get(constants.OperationKey.IN, constants.ParamLocation.QUERY)
+            required = param.get(constants.SchemaKey.REQUIRED, False) or location == constants.ParamLocation.PATH
+
+            parameters.append(
+                Parameter(
+                    name=raw_name,
+                    var_name=var_name,
+                    location=location,
+                    required=required,
+                    ts_type=ts_type_str,
+                    description=param.get(constants.OperationKey.DESCRIPTION),
+                    stringify_bigint=stringify_bigint,
+                )
+            )
+
+        return parameters
+
+    def _process_request_body(self, request_body: Schema | None, spec: Schema) -> RequestBody | None:
+        """Process request body specification."""
+
+        if not isinstance(request_body, dict):
+            return None
+
+        content = request_body.get("content", {})
+        schemas = self._get_schemas(spec)
+
+        # Check content type support
+        supports_msgpack = constants.MediaType.MSGPACK in content
+        supports_json = constants.MediaType.JSON in content
+        required = request_body.get(constants.SchemaKey.REQUIRED, False)
+
+        # Determine media type and TypeScript type
+        if supports_json or supports_msgpack:
+            media_type = (
+                constants.MediaType.MSGPACK if supports_msgpack and not supports_json else constants.MediaType.JSON
+            )
+            schema = content.get(media_type, {}).get("schema", {})
+            ts_type_str = ts_type(schema, schemas)
+        elif constants.MediaType.TEXT in content:
+            media_type = constants.MediaType.TEXT
+            schema = content[constants.MediaType.TEXT].get("schema", {})
+            ts_type_str = ts_type(schema, schemas)
+            supports_msgpack = supports_json = False
+        elif constants.MediaType.BINARY in content or constants.MediaType.OCTET_STREAM in content:
+            media_type = (
+                constants.MediaType.BINARY
+                if constants.MediaType.BINARY in content
+                else constants.MediaType.OCTET_STREAM
+            )
+            ts_type_str = constants.TypeScriptType.UINT8ARRAY
+            supports_msgpack = supports_json = False
+        else:
+            return None
+
+        return RequestBody(
+            media_type=media_type,
+            ts_type=ts_type_str,
+            required=required,
+            supports_msgpack=supports_msgpack,
+            supports_json=supports_json,
+        )
+
+    def _process_responses(self, responses: Schema, operation_id: str, spec: Schema) -> tuple[str, bool, bool]:
+        """Process response specifications."""
+
+        return_types: list[str] = []
+        returns_msgpack = False
+        supports_json = False
+        schemas = self._get_schemas(spec)
+
+        for status, response in responses.items():
+            if not str(status).startswith(constants.SUCCESS_STATUS_PREFIX):
+                continue
+
+            content = (response or {}).get("content", {})
+            returns_msgpack = returns_msgpack or constants.MediaType.MSGPACK in content
+
+            if json_content := content.get(constants.MediaType.JSON):
+                supports_json = True
+                schema = json_content.get("schema", {})
+
+                if schema:
+                    if self._should_synthesize_model(schema):
+                        # Create synthetic model for inline object schemas
+                        model_name = ts_pascal_case(operation_id)
+                        if model_name not in self._model_names:
+                            self._synthetic_models[model_name] = schema
+                            self._model_names.add(model_name)
+                        return_types.append(model_name)
                     else:
-                        t_sig = t
-                        stringify_bigint = "bigint" in t_sig
+                        return_types.append(ts_type(schema, schemas))
+            elif content and (schema := next(iter(content.values()), {}).get("schema")):
+                # Fallback to first content type with schema
+                return_types.append(ts_type(schema, schemas))
 
-                    raw_name = str(param.get("name"))
-                    base_var_name = ts_camel_case(raw_name)
-                    # Avoid reserved words
-                    if base_var_name in reserved_words:
-                        base_var_name = f"{base_var_name}_"
-                    var_name = base_var_name
-                    # Ensure uniqueness by suffixing with numeric counter
-                    if var_name in used_var_names:
-                        i = 2
-                        while f"{base_var_name}{i}" in used_var_names:
-                            i += 1
-                        var_name = f"{base_var_name}{i}"
-                    used_var_names.add(var_name)
+        # Determine final response type
+        if supports_json and return_types:
+            response_type = " | ".join(dict.fromkeys(return_types))  # Deduplicate
+        elif returns_msgpack:
+            response_type = constants.TypeScriptType.UINT8ARRAY
+        else:
+            response_type = constants.TypeScriptType.VOID
 
-                    param_contexts.append(
-                        {
-                            "name": raw_name,  # original name used in path/query/header keys
-                            "varName": var_name,  # sanitized TS identifier for function signature
-                            "in": param.get("in", "query"),
-                            "required": param.get("required", False) or (param.get("in") == "path"),
-                            "tsType": t_sig,
-                            "description": param.get("description"),
-                            "stringifyBigInt": stringify_bigint,
-                        }
-                    )
+        return response_type, returns_msgpack
 
-                # Request body handling
-                request_body_ctx: dict[str, Any] | None = None
-                request_body_supports_msgpack = False
-                request_body_supports_json = False
-                rb = op.get("requestBody")
-                if isinstance(rb, dict):
-                    content = rb.get("content", {})
+    def _compute_format_param(self, context: OperationContext) -> None:
+        """Detect and set format parameter for content negotiation."""
+        for param in context.parameters:
+            if param.location == constants.ParamLocation.QUERY and param.name == constants.FORMAT_PARAM_NAME:
+                context.has_format_param = True
+                context.format_var_name = param.var_name
+                break
 
-                    # Check what content types are supported
-                    if "application/msgpack" in content:
-                        request_body_supports_msgpack = True
-                    if "application/json" in content:
-                        request_body_supports_json = True
+    def _compute_import_types(self, context: OperationContext) -> None:
+        """Collect model types that need importing."""
+        token_re = re.compile(r"\b[A-Z][A-Za-z0-9_]*\b")
+        builtin_types = constants.TS_BUILTIN_TYPES
 
-                    # Determine the type to use for TypeScript typing
-                    # Prefer JSON schema for typing even when msgpack is used at runtime
-                    if "application/json" in content:
-                        sch = (content["application/json"] or {}).get("schema", {})
-                        request_body_ctx = {
-                            "mediaType": (
-                                "application/msgpack"
-                                if request_body_supports_msgpack and not request_body_supports_json
-                                else "application/json"
-                            ),
-                            "tsType": ts_type(sch, schemas),
-                            "required": rb.get("required", False),
-                            "supportsMsgpack": request_body_supports_msgpack,
-                            "supportsJson": request_body_supports_json,
-                        }
-                    elif "application/msgpack" in content:
-                        # msgpack-only endpoint - infer type from msgpack schema if available
-                        sch = (content["application/msgpack"] or {}).get("schema", {})
-                        request_body_ctx = {
-                            "mediaType": "application/msgpack",
-                            "tsType": ts_type(sch, schemas) if sch else "any",
-                            "required": rb.get("required", False),
-                            "supportsMsgpack": True,
-                            "supportsJson": False,
-                        }
-                    elif "application/x-binary" in content or "application/octet-stream" in content:
-                        # Raw binary transaction submission etc.
-                        mt = "application/x-binary" if "application/x-binary" in content else "application/octet-stream"
-                        request_body_ctx = {
-                            "mediaType": mt,
-                            "tsType": "Uint8Array",
-                            "required": rb.get("required", False),
-                            "supportsMsgpack": False,
-                            "supportsJson": False,
-                        }
-                    elif "text/plain" in content:
-                        sch = (content["text/plain"] or {}).get("schema", {})
-                        request_body_ctx = {
-                            "mediaType": "text/plain",
-                            "tsType": ts_type(sch, schemas),
-                            "required": rb.get("required", False),
-                            "supportsMsgpack": False,
-                            "supportsJson": False,
-                        }
+        def extract_types(type_str: str) -> set[str]:
+            if not type_str:
+                return set()
+            return {tok for tok in token_re.findall(type_str) if tok in self._model_names and tok not in builtin_types}
 
-                # Responses
-                responses = op.get("responses", {}) or {}
-                return_types: list[str] = []
-                returns_msgpack = False
-                supports_json = False
-                for status, resp in responses.items():
-                    if not str(status).startswith("2"):
-                        continue
-                    content = (resp or {}).get("content", {})
-                    if "application/msgpack" in content:
-                        returns_msgpack = True
-                    # Prefer JSON schema for typing
-                    if "application/json" in content:
-                        supports_json = True
-                        sch = (content["application/json"] or {}).get("schema", {})
-                        if sch:
-                            # If inline object schema without $ref, synthesize a named model from operationId
-                            if (
-                                isinstance(sch, dict)
-                                and "$ref" not in sch
-                                and (
-                                    sch.get("type") == "object" or "properties" in sch or "additionalProperties" in sch
-                                )
-                            ):
-                                model_name = ts_pascal_case(operation_id)
-                                if model_name not in model_names:
-                                    synthetic_models[model_name] = sch
-                                    model_names.add(model_name)
-                                return_types.append(model_name)
-                            else:
-                                return_types.append(ts_type(sch, schemas))
-                    elif content:
-                        # Fallback: take first content schema
-                        first_ct = next(iter(content.values()))
-                        sch = (first_ct or {}).get("schema", {})
-                        if sch:
-                            return_types.append(ts_type(sch, schemas))
+        # Collect from all type references
+        context.import_types = extract_types(context.response_type)
 
-                response_ts_type = "never"
-                if supports_json and return_types:
-                    # Prefer JSON typing when available
-                    uniq: list[str] = []
-                    for t in return_types:
-                        if t not in uniq:
-                            uniq.append(t)
-                    response_ts_type = " | ".join(uniq)
-                elif returns_msgpack:
-                    response_ts_type = "Uint8Array"
-                else:
-                    response_ts_type = "void"
+        if context.request_body:
+            context.import_types |= extract_types(context.request_body.ts_type)
 
-                # Build signature with required path params first, then params object and request options
-                path_params = [p for p in param_contexts if p.get("in") == "path"]
-                other_params = [p for p in param_contexts if p.get("in") in {"query", "header"}]
+        for param in context.parameters:
+            context.import_types |= extract_types(param.ts_type)
 
-                # detect optional format param for content negotiation
-                has_format_param = False
-                format_var_name = None
-                for qp in other_params:
-                    if qp.get("in") == "query" and qp.get("name") == "format":
-                        has_format_param = True
-                        format_var_name = qp.get("varName")
+    def _collect_unique_operations(
+        self, operations_by_tag: dict[str, list[OperationContext]], tags: set[str]
+    ) -> list[OperationContext]:
+        """Collect unique operations across all tags."""
+        seen_keys: set[tuple[str, str]] = set()
+        unique_operations = []
 
-                sig_parts: list[str] = [f"{p['varName']}: {p['tsType']}" for p in path_params]
-                # params bag and request options
-                param_sigs: list[str] = [
-                    f"{p['varName']}{'' if p['required'] else '?'}: {p['tsType']}" for p in other_params
-                ]
-                if request_body_ctx:
-                    body_required = bool((request_body_ctx or {}).get("required"))
-                    body_type = str(request_body_ctx["tsType"])
-                    body_param_sig = f"body{'' if body_required else '?'}: {body_type}"
-                    param_sigs.append(body_param_sig)
-                sig_parts.append("params?: { " + ", ".join(param_sigs) + " }")
-                sig_parts.append("requestOptions?: ApiRequestOptions")
+        for tag in sorted(tags):
+            for op in operations_by_tag.get(tag, []):
+                key = (op.method, op.path)
+                if key not in seen_keys:
+                    seen_keys.add(key)
+                    unique_operations.append(op)
 
-                # Import types from embedded types
-                import_types: set[str] = set()
-                import_types |= collect_model_types(response_ts_type)
-                if request_body_ctx:
-                    import_types |= collect_model_types(str(request_body_ctx.get("tsType") or ""))
-                # Also from parameter types (e.g., enums not needed as imports)
-                for p in param_contexts:
-                    import_types |= collect_model_types(p.get("tsType") or "")
+        return sorted(unique_operations, key=lambda o: o.operation_id)
 
-                op_ctx = {
-                    "operationId": operation_id,
-                    "method": method.upper(),
-                    "path": path,
-                    "parameters": param_contexts,
-                    "pathParameters": path_params,
-                    "otherParameters": other_params,
-                    "requestBody": request_body_ctx,
-                    "responseTsType": response_ts_type,
-                    "acceptsMsgpack": returns_msgpack,
-                    "returnsMsgpack": returns_msgpack,
-                    "supportsJson": supports_json,
-                    "requestBodySupportsMsgpack": request_body_supports_msgpack,
-                    "requestBodySupportsJson": request_body_supports_json,
-                    "hasFormatParam": has_format_param,
-                    "formatVarName": format_var_name,
-                    "signature": ", ".join(sig_parts),
-                    "importTypes": sorted(import_types),
-                }
+    @staticmethod
+    def _should_synthesize_model(schema: Schema) -> bool:
+        """Check if schema should become a synthetic model."""
+        return (
+            isinstance(schema, dict)
+            and "$ref" not in schema
+            and (schema.get("type") == "object" or "properties" in schema or "additionalProperties" in schema)
+        )
 
-                for tag in tags:
-                    tags_set.add(tag)
-                    ops_by_tag.setdefault(tag, []).append(op_ctx)
+    @staticmethod
+    def _sanitize_variable_name(base_name: str, used_names: set[str]) -> str:
+        """Ensure variable name is valid and unique."""
+        # Handle reserved words
+        if base_name in constants.TS_RESERVED_WORDS:
+            base_name = f"{base_name}_"
 
-        # Stable sort operations per tag by operationId
-        for _tag, ops in ops_by_tag.items():
-            ops.sort(key=lambda o: o.get("operationId") or "")
+        # Ensure uniqueness
+        if base_name not in used_names:
+            return base_name
 
-        return ops_by_tag, tags_set, synthetic_models
+        counter = 2
+        while f"{base_name}{counter}" in used_names:
+            counter += 1
+        return f"{base_name}{counter}"
 
-    def generate_full(
+    @staticmethod
+    def _resolve_ref(ref_obj: Schema, spec: Schema) -> Schema:
+        """Resolve a $ref pointer in the spec."""
+        ref = ref_obj.get("$ref", "")
+        parts = ref.split("/")[1:]  # Skip leading #
+
+        node = spec
+        for part in parts:
+            node = node.get(part, {})
+        return node
+
+    @staticmethod
+    def _get_schemas(spec: Schema) -> Schema:
+        """Extract schemas from spec components."""
+        components = spec.get(constants.SchemaKey.COMPONENTS, {})
+        return components.get(constants.SchemaKey.COMPONENTS_SCHEMAS, {})
+
+
+class CodeGenerator:
+    """Main code generator orchestrating the generation process."""
+
+    def __init__(self, template_dir: Path | None = None) -> None:
+        self.renderer = TemplateRenderer(template_dir)
+        self.schema_processor = SchemaProcessor(self.renderer)
+        self.operation_processor = OperationProcessor(self.renderer)
+
+    def generate(
         self,
         spec_path: Path,
         output_dir: Path,
         package_name: str,
         *,
         custom_description: str | None = None,
-    ) -> dict[Path, str]:
-        """Generate runtime + models + apis from a spec."""
+    ) -> FileMap:
+        """Generate complete TypeScript client from OpenAPI spec."""
+        # Parse specification
         parser = OASParser()
         parser.parse_file(spec_path)
+        spec = parser.spec_data or {}
 
-        files = self.generate_runtime(output_dir, package_name, custom_description=custom_description)
+        # Extract class names
+        client_class, service_class = self._extract_class_names(package_name)
 
-        spec_dict: dict[str, Any] = parser.spec_data or {}
-        components = spec_dict.get("components", {})
-        raw_schemas: dict[str, Any] = components.get("schemas", {})
+        # Generate base runtime
+        files = self._generate_runtime(output_dir, package_name, client_class, service_class, custom_description)
 
-        # Build operations and synthetic models
-        ops_by_tag, tags_set, synthetic_models = self._build_services_context(spec_dict)
+        # Process operations and schemas
+        ops_by_tag, tags, synthetic_models = self.operation_processor.process_spec(spec)
 
-        # Merge component schemas with synthetic models
-        combined_schemas: dict[str, Any] = dict(raw_schemas)
-        for m_name, m_schema in synthetic_models.items():
-            if m_name not in combined_schemas:
-                combined_schemas[m_name] = m_schema
+        # Merge schemas
+        components = spec.get(constants.SchemaKey.COMPONENTS, {})
+        base_schemas = components.get(constants.SchemaKey.COMPONENTS_SCHEMAS, {})
+        all_schemas = {**base_schemas, **synthetic_models}
 
-        # Models
-        models_dir = Path(output_dir) / "src" / "models"
-        for name, schema in combined_schemas.items():
-            content = self.template_engine.render_template(
-                "models/model.ts.j2",
-                {"schema_name": name, "schema": schema, "schemas": combined_schemas},
-            )
-            files[models_dir / f"{name.lower()}.ts"] = content
-
-        # Models barrel
-        files[models_dir / "index.ts"] = self.template_engine.render_template(
-            "models/index.ts.j2",
-            {"schemas": combined_schemas},
-        )
-
-        # Consolidated single service with all operations
-        apis_dir = Path(output_dir) / "src" / "apis"
-        all_ops: list[dict[str, Any]] = []
-        seen_keys: set[tuple[str, str]] = set()
-        for tag in sorted(tags_set):
-            for op in ops_by_tag.get(tag, []):
-                key = (str(op.get("method")), str(op.get("path")))
-                if key in seen_keys:
-                    continue
-                seen_keys.add(key)
-                all_ops.append(op)
-        # Stable sort by operationId
-        all_ops.sort(key=lambda o: o.get("operationId") or "")
-
-        # Aggregate imports
-        import_types: set[str] = set()
-        for op in all_ops:
-            for t in op.get("importTypes", []):
-                import_types.add(t)
-
-        # Determine class names from package name (e.g., algod_client -> AlgodClient, AlgodApi)
-        base_name = ts_pascal_case(package_name)
-        base_core = base_name[:-6] if base_name.lower().endswith("client") else base_name
-        client_class_name = f"{base_core}Client"
-        service_class_name = f"{base_core}Api"
-
-        svc_content = self.template_engine.render_template(
-            "apis/service.ts.j2",
-            {
-                "tag_name": "api",
-                "operations": all_ops,
-                "import_types": sorted(import_types),
-                "service_class_name": service_class_name,
-            },
-        )
-        files[apis_dir / "api.service.ts"] = svc_content
-
-        files[apis_dir / "index.ts"] = self.template_engine.render_template(
-            "apis/index.ts.j2",
-            {"service_class_name": service_class_name},
-        )
-
-        # Client (single service)
-        files[Path(output_dir) / "src" / "client.ts"] = self.template_engine.render_template(
-            "client.ts.j2",
-            {"service_class_name": service_class_name, "client_class_name": client_class_name},
-        )
-
-        # Replace index with full barrel
-        files[Path(output_dir) / "src" / "index.ts"] = self.template_engine.render_template(
-            "full/src/index.ts.j2",
-            {},
-        )
-
-        # Note: Generated smoke tests removed; prefer manual integration tests maintained by developers
+        # Generate components
+        files.update(self.schema_processor.generate_models(output_dir, all_schemas))
+        files.update(self.operation_processor.generate_service(output_dir, ops_by_tag, tags, service_class))
+        files.update(self._generate_client_files(output_dir, client_class, service_class))
 
         return files
+
+    def _generate_runtime(
+        self,
+        output_dir: Path,
+        package_name: str,
+        client_class: str,
+        service_class: str,
+        custom_description: str | None,
+    ) -> FileMap:
+        """Generate runtime support files."""
+        src_dir = output_dir / constants.DirectoryName.SRC
+        core_dir = src_dir / constants.DirectoryName.CORE
+
+        context = {
+            "package_name": package_name,
+            "custom_description": custom_description,
+            "client_class_name": client_class,
+            "service_class_name": service_class,
+        }
+
+        template_map = {
+            # Core runtime
+            core_dir / "ClientConfig.ts": ("base/src/core/ClientConfig.ts.j2", context),
+            core_dir / "BaseHttpRequest.ts": ("base/src/core/BaseHttpRequest.ts.j2", context),
+            core_dir / "FetchHttpRequest.ts": ("base/src/core/FetchHttpRequest.ts.j2", context),
+            core_dir / "ApiError.ts": ("base/src/core/ApiError.ts.j2", context),
+            core_dir / "request.ts": ("base/src/core/request.ts.j2", context),
+            core_dir / "CancelablePromise.ts": ("base/src/core/CancelablePromise.ts.j2", context),
+            core_dir / "json.ts": ("base/src/core/json.ts.j2", context),
+            core_dir / "msgpack.ts": ("base/src/core/msgpack.ts.j2", context),
+            core_dir / "casing.ts": ("base/src/core/casing.ts.j2", context),
+            # Project files
+            src_dir / "index.ts": ("base/src/index.ts.j2", context),
+            output_dir / "package.json": ("base/package.json.j2", context),
+            output_dir / "tsconfig.json": ("base/tsconfig.json.j2", context),
+            output_dir / "README.md": ("base/README.md.j2", context),
+            output_dir / ".prettierignore": ("base/.prettierignore.j2", context),
+        }
+
+        return self.renderer.render_batch(template_map)
+
+    def _generate_client_files(self, output_dir: Path, client_class: str, service_class: str) -> FileMap:
+        """Generate client wrapper files."""
+        src_dir = output_dir / constants.DirectoryName.SRC
+
+        template_map = {
+            src_dir / "client.ts": (
+                "client.ts.j2",
+                {
+                    "service_class_name": service_class,
+                    "client_class_name": client_class,
+                },
+            ),
+            src_dir / "index.ts": ("full/src/index.ts.j2", {}),
+        }
+
+        return self.renderer.render_batch(template_map)
+
+    @staticmethod
+    def _extract_class_names(package_name: str) -> tuple[str, str]:
+        """Extract client and service class names from package name."""
+
+        base_name = ts_pascal_case(package_name)
+        base_core = base_name[:-6] if base_name.lower().endswith("client") else base_name
+        return f"{base_core}Client", f"{base_core}Api"
