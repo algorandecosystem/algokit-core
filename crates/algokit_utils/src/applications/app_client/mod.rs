@@ -5,7 +5,6 @@ use algokit_abi::Arc56Contract;
 use algokit_transact::Address;
 use std::collections::HashMap;
 use std::str::FromStr;
-mod abi_integration;
 mod compilation;
 mod error;
 mod error_transformation;

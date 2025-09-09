@@ -18,6 +18,7 @@ pub enum ABIValue {
     Address(String),
     /// A struct value represented as a map of field name to value.
     Struct(HashMap<String, ABIValue>),
+    Bytes(Vec<u8>),
 }
 
 impl From<bool> for ABIValue {

@@ -36,4 +36,6 @@ pub enum AppClientError {
     ParamsBuilderError { message: String },
     #[snafu(display("Composer error: {source}"))]
     ComposerError { source: ComposerError },
+    #[snafu(display("App state error: {message}"))]
+    AppStateError { message: String },
 }
