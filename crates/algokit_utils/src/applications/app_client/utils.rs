@@ -1,13 +1,8 @@
-use algokit_abi::{ABIType, ABIValue, AVM_BYTES, AVM_STRING, AVM_UINT64};
-use base64::Engine;
-
 use super::AppClient;
 use crate::AppClientError;
-use crate::clients::app_manager::AppState;
 use crate::transactions::TransactionSenderError;
 use crate::transactions::composer::ComposerError;
-
-use std::collections::HashMap;
+use algokit_abi::{ABIType, ABIValue, AVM_BYTES, AVM_STRING, AVM_UINT64};
 use std::str::FromStr;
 
 /// Format a logic error message with details.

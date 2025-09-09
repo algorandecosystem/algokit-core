@@ -1,4 +1,6 @@
+use crate::SendTransactionResult;
 use crate::applications::AppDeployer;
+use crate::clients::app_manager::{AppState, BoxName};
 use crate::clients::network_client::NetworkDetails;
 use crate::{AlgorandClient, clients::app_manager::BoxIdentifier};
 use algokit_abi::Arc56Contract;
@@ -47,25 +49,6 @@ impl AppClient {
             app_name: params.app_name,
         }
     }
-
-    // TODO: confirm that this isn't used
-    /// Create a new client from JSON parameters.
-    /// Accepts a JSON string and normalizes into a typed ARC-56 contract.
-    // pub fn from_json(params: types::AppClientJsonParams) -> Result<Self, AppClientError> {
-    //     let app_spec = Arc56Contract::from_json(params.app_spec_json).map_err(|e| {
-    //         AppClientError::ValidationError {
-    //             message: e.to_string(),
-    //         }
-    //     })?;
-    //     Ok(Self::new(AppClientParams {
-    //         app_id: params.app_id,
-    //         app_spec,
-    //         algorand: params.algorand,
-    //         app_name: params.app_name,
-    //         default_sender: params.default_sender,
-    //         source_maps: params.source_maps,
-    //     }))
-    // }
 
     /// Construct from the current network using app_spec.networks mapping.
     ///
@@ -223,21 +206,11 @@ impl AppClient {
     pub async fn fund_app_account(
         &self,
         params: FundAppAccountParams,
-    ) -> Result<
-        crate::transactions::SendTransactionResult,
-        crate::transactions::TransactionSenderError,
-    > {
-        let payment = self.params().fund_app_account(&params).map_err(|e| {
-            crate::transactions::TransactionSenderError::ValidationError { message: e }
-        })?;
-
-        self.algorand.send().payment(payment, None).await
+    ) -> Result<SendTransactionResult, AppClientError> {
+        self.send().fund_app_account(params).await
     }
 
-    /// Get raw global state as HashMap<Vec<u8>, AppState>
-    pub async fn get_global_state(
-        &self,
-    ) -> Result<HashMap<Vec<u8>, crate::clients::app_manager::AppState>, AppClientError> {
+    pub async fn get_global_state(&self) -> Result<HashMap<Vec<u8>, AppState>, AppClientError> {
         self.algorand
             .app()
             .get_global_state(self.app_id)
@@ -245,14 +218,10 @@ impl AppClient {
             .map_err(|e| AppClientError::AppManagerError { source: e })
     }
 
-    /// Get raw local state for an address
     pub async fn get_local_state(
         &self,
         address: &str,
-    ) -> Result<
-        std::collections::HashMap<Vec<u8>, crate::clients::app_manager::AppState>,
-        AppClientError,
-    > {
+    ) -> Result<std::collections::HashMap<Vec<u8>, AppState>, AppClientError> {
         self.algorand
             .app()
             .get_local_state(self.app_id, address)
@@ -260,10 +229,8 @@ impl AppClient {
             .map_err(|e| AppClientError::AppManagerError { source: e })
     }
 
-    /// Get all box names for the application
-    pub async fn get_box_names(
-        &self,
-    ) -> Result<Vec<crate::clients::app_manager::BoxName>, AppClientError> {
+    // TODO: comments
+    pub async fn get_box_names(&self) -> Result<Vec<BoxName>, AppClientError> {
         self.algorand
             .app()
             .get_box_names(self.app_id)
@@ -271,50 +238,10 @@ impl AppClient {
             .map_err(|e| AppClientError::AppManagerError { source: e })
     }
 
-    // TODO: these methods may not be needed
-    /// Get the value of a box by raw identifier
     pub async fn get_box_value(&self, name: &BoxIdentifier) -> Result<Vec<u8>, AppClientError> {
         self.algorand
             .app()
             .get_box_value(self.app_id, name)
-            .await
-            .map_err(|e| AppClientError::AppManagerError { source: e })
-    }
-
-    /// Get a box value decoded using an ABI type
-    pub async fn get_box_value_from_abi_type(
-        &self,
-        name: &BoxIdentifier,
-        abi_type: &algokit_abi::ABIType,
-    ) -> Result<algokit_abi::ABIValue, AppClientError> {
-        self.algorand
-            .app()
-            .get_box_value_from_abi_type(self.app_id, name, abi_type)
-            .await
-            .map_err(|e| AppClientError::AppManagerError { source: e })
-    }
-
-    /// Get values for multiple boxes
-    pub async fn get_box_values(
-        &self,
-        names: &[BoxIdentifier],
-    ) -> Result<Vec<Vec<u8>>, AppClientError> {
-        self.algorand
-            .app()
-            .get_box_values(self.app_id, names)
-            .await
-            .map_err(|e| AppClientError::AppManagerError { source: e })
-    }
-
-    /// Get multiple box values decoded using an ABI type
-    pub async fn get_box_values_from_abi_type(
-        &self,
-        names: &[BoxIdentifier],
-        abi_type: &algokit_abi::ABIType,
-    ) -> Result<Vec<algokit_abi::ABIValue>, AppClientError> {
-        self.algorand
-            .app()
-            .get_box_values_from_abi_type(self.app_id, names, abi_type)
             .await
             .map_err(|e| AppClientError::AppManagerError { source: e })
     }
@@ -336,29 +263,3 @@ impl AppClient {
         StateAccessor::new(self)
     }
 }
-
-// Method call parameter building is implemented in params_builder.rs
-
-impl TransactionBuilder<'_> {
-    pub async fn call_method(
-        &self,
-        params: types::AppClientMethodCallParams,
-    ) -> Result<crate::transactions::BuiltTransactions, crate::transactions::composer::ComposerError>
-    {
-        let method_params = self
-            .client
-            .params()
-            .get_method_call_params(&params)
-            .await
-            .map_err(
-                |e| crate::transactions::composer::ComposerError::TransactionError { message: e },
-            )?;
-        self.client
-            .algorand
-            .create()
-            .app_call_method_call(method_params)
-            .await
-    }
-}
-
-impl TransactionSender<'_> {}
