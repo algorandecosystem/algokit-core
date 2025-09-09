@@ -1,6 +1,6 @@
 use algokit_http_client::DefaultHttpClient;
 use algokit_transact::{OnApplicationComplete, StateSchema};
-use algokit_utils::{AppCreateParams, ClientManager, CommonTransactionParams};
+use algokit_utils::{AppCreateParams, ClientManager};
 use indexer_client::{IndexerClient, apis::Error as IndexerError};
 use rstest::rstest;
 use std::sync::Arc;
@@ -21,10 +21,7 @@ const HELLO_WORLD_CLEAR_STATE_PROGRAM: [u8; 4] = [10, 129, 1, 67];
 async fn create_app(algorand_fixture: &AlgorandFixture) -> Option<u64> {
     let sender = algorand_fixture.test_account.account().address();
     let params = AppCreateParams {
-        common_params: CommonTransactionParams {
-            sender,
-            ..Default::default()
-        },
+        sender,
         on_complete: OnApplicationComplete::NoOp,
         approval_program: HELLO_WORLD_APPROVAL_PROGRAM.to_vec(),
         clear_state_program: HELLO_WORLD_CLEAR_STATE_PROGRAM.to_vec(),
@@ -42,9 +39,10 @@ async fn create_app(algorand_fixture: &AlgorandFixture) -> Option<u64> {
         app_references: None,
         asset_references: None,
         box_references: None,
+        ..Default::default()
     };
 
-    let mut composer = algorand_fixture.algorand_client.new_group();
+    let mut composer = algorand_fixture.algorand_client.new_group(None);
     composer.add_app_create(params).unwrap();
     let result = composer.send(None).await.unwrap();
     result.confirmations[0].app_id
@@ -59,10 +57,11 @@ async fn finds_created_application(
     let app_id = create_app(&algorand_fixture).await.unwrap();
 
     let config = ClientManager::get_config_from_environment_or_localnet();
-    let base_url = if let Some(port) = config.indexer_config.port {
-        format!("{}:{}", config.indexer_config.server, port)
+    let indexer_config = config.indexer_config.unwrap();
+    let base_url = if let Some(port) = indexer_config.port {
+        format!("{}:{}", indexer_config.server, port)
     } else {
-        config.indexer_config.server.clone()
+        indexer_config.server.clone()
     };
     let indexer_client = IndexerClient::new(Arc::new(DefaultHttpClient::new(&base_url)));
 

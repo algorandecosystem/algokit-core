@@ -2,7 +2,9 @@ use crate::clients::app_manager::AppManager;
 use crate::clients::asset_manager::AssetManager;
 use crate::clients::client_manager::ClientManager;
 use crate::clients::network_client::{AlgoConfig, AlgorandService};
-use crate::transactions::{Composer, TransactionCreator, TransactionSender};
+use crate::transactions::{
+    Composer, ComposerParams, TransactionComposerConfig, TransactionCreator, TransactionSender,
+};
 use crate::{AccountManager, ComposerError, TransactionSigner};
 use algod_client::models::TransactionParams;
 use algokit_transact::Address;
@@ -15,11 +17,18 @@ pub struct AlgorandClient {
     transaction_sender: TransactionSender,
     transaction_creator: TransactionCreator,
     account_manager: Arc<Mutex<AccountManager>>,
+    default_composer_config: Option<TransactionComposerConfig>,
+}
+
+/// A client that brokers easy access to Algorand functionality.
+pub struct AlgorandClientParams {
+    pub client_config: AlgoConfig,
+    pub composer_config: Option<TransactionComposerConfig>,
 }
 
 impl AlgorandClient {
-    pub fn new(config: &AlgoConfig) -> Self {
-        let client_manager = ClientManager::new(config);
+    pub fn new(params: &AlgorandClientParams) -> Self {
+        let client_manager = ClientManager::new(&params.client_config).unwrap();
         let algod_client = client_manager.algod();
 
         let account_manager = Arc::new(Mutex::new(AccountManager::new()));
@@ -39,7 +48,14 @@ impl AlgorandClient {
         let new_group = {
             let algod_client = algod_client.clone();
             let get_signer = get_signer.clone();
-            move || Composer::new(algod_client.clone(), Arc::new(get_signer.clone()))
+            let default_composer_config = params.composer_config.clone();
+            move |composer_config: Option<TransactionComposerConfig>| {
+                Composer::new(ComposerParams {
+                    algod_client: algod_client.clone(),
+                    signer_getter: Arc::new(get_signer.clone()),
+                    composer_config: composer_config.or_else(|| default_composer_config.clone()),
+                })
+            }
         };
 
         let algod_client_for_asset = algod_client.clone();
@@ -63,6 +79,7 @@ impl AlgorandClient {
             app_manager,
             transaction_sender,
             transaction_creator,
+            default_composer_config: params.composer_config.clone(),
         }
     }
 
@@ -97,7 +114,7 @@ impl AlgorandClient {
     }
 
     /// Create a new transaction composer for building transaction groups
-    pub fn new_group(&self) -> Composer {
+    pub fn new_group(&self, params: Option<TransactionComposerConfig>) -> Composer {
         let get_signer = {
             let account_manager = self.account_manager.clone();
             move |address| {
@@ -111,32 +128,61 @@ impl AlgorandClient {
             }
         };
 
-        Composer::new(self.client_manager.algod().clone(), Arc::new(get_signer))
-    }
-
-    pub fn default_localnet() -> Self {
-        Self::new(&AlgoConfig {
-            algod_config: ClientManager::get_default_localnet_config(AlgorandService::Algod),
-            indexer_config: ClientManager::get_default_localnet_config(AlgorandService::Indexer),
+        Composer::new(ComposerParams {
+            algod_client: self.client_manager.algod().clone(),
+            signer_getter: Arc::new(get_signer),
+            composer_config: params.or_else(|| self.default_composer_config.clone()),
         })
     }
 
-    pub fn testnet() -> Self {
-        Self::new(&AlgoConfig {
-            algod_config: ClientManager::get_algonode_config("testnet", AlgorandService::Algod),
-            indexer_config: ClientManager::get_algonode_config("testnet", AlgorandService::Indexer),
+    pub fn default_localnet(params: Option<TransactionComposerConfig>) -> Self {
+        Self::new(&AlgorandClientParams {
+            client_config: AlgoConfig {
+                algod_config: ClientManager::get_default_localnet_config(AlgorandService::Algod),
+                indexer_config: Some(ClientManager::get_default_localnet_config(
+                    AlgorandService::Indexer,
+                )),
+                kmd_config: Some(ClientManager::get_default_localnet_config(
+                    AlgorandService::Kmd,
+                )),
+            },
+            composer_config: params,
         })
     }
 
-    pub fn mainnet() -> Self {
-        Self::new(&AlgoConfig {
-            algod_config: ClientManager::get_algonode_config("mainnet", AlgorandService::Algod),
-            indexer_config: ClientManager::get_algonode_config("mainnet", AlgorandService::Indexer),
+    pub fn testnet(params: Option<TransactionComposerConfig>) -> Self {
+        Self::new(&AlgorandClientParams {
+            client_config: AlgoConfig {
+                algod_config: ClientManager::get_algonode_config("testnet", AlgorandService::Algod),
+                indexer_config: Some(ClientManager::get_algonode_config(
+                    "testnet",
+                    AlgorandService::Indexer,
+                )),
+                kmd_config: None,
+            },
+            composer_config: params,
         })
     }
 
-    pub fn from_environment() -> Self {
-        Self::new(&ClientManager::get_config_from_environment_or_localnet())
+    pub fn mainnet(params: Option<TransactionComposerConfig>) -> Self {
+        Self::new(&AlgorandClientParams {
+            client_config: AlgoConfig {
+                algod_config: ClientManager::get_algonode_config("mainnet", AlgorandService::Algod),
+                indexer_config: Some(ClientManager::get_algonode_config(
+                    "mainnet",
+                    AlgorandService::Indexer,
+                )),
+                kmd_config: None,
+            },
+            composer_config: params,
+        })
+    }
+
+    pub fn from_environment(params: Option<TransactionComposerConfig>) -> Self {
+        Self::new(&AlgorandClientParams {
+            client_config: ClientManager::get_config_from_environment_or_localnet(),
+            composer_config: params,
+        })
     }
 
     pub fn set_signer(&mut self, sender: Address, signer: Arc<dyn TransactionSigner>) {

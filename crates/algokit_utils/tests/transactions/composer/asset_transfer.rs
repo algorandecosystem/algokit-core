@@ -1,8 +1,7 @@
 use crate::common::{AlgorandFixtureResult, TestResult, algorand_fixture};
-use algokit_utils::{AssetCreateParams, CommonTransactionParams};
+use algokit_utils::AssetCreateParams;
 use algokit_utils::{AssetOptInParams, AssetTransferParams};
 use rstest::*;
-use std::sync::Arc;
 
 #[rstest]
 #[tokio::test]
@@ -12,13 +11,10 @@ async fn test_asset_transfer_transaction(
     let mut algorand_fixture = algorand_fixture.await?;
     let asset_creator_address = algorand_fixture.test_account.account().address();
 
-    let mut composer = algorand_fixture.algorand_client.new_group();
+    let mut composer = algorand_fixture.algorand_client.new_group(None);
 
     composer.add_asset_create(AssetCreateParams {
-        common_params: CommonTransactionParams {
-            sender: asset_creator_address.clone(),
-            ..Default::default()
-        },
+        sender: asset_creator_address.clone(),
         total: 10,
         decimals: Some(0),
         default_frozen: Some(false),
@@ -30,27 +26,22 @@ async fn test_asset_transfer_transaction(
         .asset_id
         .ok_or("Failed to get asset ID")?;
 
-    let mut composer = algorand_fixture.algorand_client.new_group();
+    let mut composer = algorand_fixture.algorand_client.new_group(None);
 
     let asset_receiver = algorand_fixture.generate_account(None).await?;
     let asset_receive_address = asset_receiver.account().address();
 
     composer.add_asset_opt_in(AssetOptInParams {
-        common_params: CommonTransactionParams {
-            sender: asset_receive_address.clone(),
-            signer: Some(Arc::new(asset_receiver)),
-            ..Default::default()
-        },
+        sender: asset_receive_address.clone(),
         asset_id,
+        ..Default::default()
     })?;
     composer.add_asset_transfer(AssetTransferParams {
-        common_params: CommonTransactionParams {
-            sender: asset_creator_address.clone(),
-            ..Default::default()
-        },
+        sender: asset_creator_address.clone(),
         asset_id,
         receiver: asset_receive_address.clone(),
         amount: 1,
+        ..Default::default()
     })?;
 
     let send_result = composer.send(None).await?;

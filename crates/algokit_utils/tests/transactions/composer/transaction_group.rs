@@ -1,6 +1,6 @@
 use algokit_transact::test_utils::TransactionGroupMother;
 use algokit_transact::{MAX_TX_GROUP_SIZE, test_utils::TransactionMother};
-use algokit_utils::{AssetCreateParams, CommonTransactionParams, PaymentParams};
+use algokit_utils::{AssetCreateParams, PaymentParams};
 use rstest::*;
 
 use crate::common::{AlgorandFixtureResult, TestResult, algorand_fixture};
@@ -17,19 +17,14 @@ async fn test_payment_and_asset_create_group(
     let receiver_addr = receiver.account().address();
 
     let payment_params = PaymentParams {
-        common_params: CommonTransactionParams {
-            sender: sender_address.clone(),
-            ..Default::default()
-        },
+        sender: sender_address.clone(),
         receiver: receiver_addr,
         amount: 1_000_000,
+        ..Default::default()
     };
 
     let asset_create_params = AssetCreateParams {
-        common_params: CommonTransactionParams {
-            sender: sender_address.clone(),
-            ..Default::default()
-        },
+        sender: sender_address.clone(),
         total: 1_000_000,
         decimals: Some(2),
         default_frozen: Some(false),
@@ -41,9 +36,10 @@ async fn test_payment_and_asset_create_group(
         reserve: Some(sender_address.clone()),
         freeze: Some(sender_address.clone()),
         clawback: Some(sender_address),
+        ..Default::default()
     };
 
-    let mut composer = algorand_fixture.algorand_client.new_group();
+    let mut composer = algorand_fixture.algorand_client.new_group(None);
     composer.add_payment(payment_params)?;
     composer.add_asset_create(asset_create_params)?;
 
@@ -149,16 +145,14 @@ async fn test_add_transactions_to_group_max_size(
     let receiver = algorand_fixture.generate_account(None).await?;
     let receiver_addr = receiver.account().address();
 
-    let mut composer = algorand_fixture.algorand_client.new_group();
+    let mut composer = algorand_fixture.algorand_client.new_group(None);
 
     for i in 0..MAX_TX_GROUP_SIZE - 2 {
         let payment_params = PaymentParams {
-            common_params: CommonTransactionParams {
-                sender: sender_address.clone(),
-                ..Default::default()
-            },
+            sender: sender_address.clone(),
             receiver: receiver_addr.clone(),
             amount: i as u64,
+            ..Default::default()
         };
 
         composer.add_payment(payment_params)?;
@@ -177,7 +171,7 @@ async fn test_add_transactions_to_group_max_size(
         composer.add_transaction(tx, None)?;
     }
 
-    assert!(composer.build(None).await.unwrap().len() == MAX_TX_GROUP_SIZE);
+    assert!(composer.build().await.unwrap().len() == MAX_TX_GROUP_SIZE);
 
     Ok(())
 }
@@ -193,16 +187,14 @@ async fn test_add_transaction_to_group_too_big(
     let receiver = algorand_fixture.generate_account(None).await?;
     let receiver_addr = receiver.account().address();
 
-    let mut composer = algorand_fixture.algorand_client.new_group();
+    let mut composer = algorand_fixture.algorand_client.new_group(None);
 
     for i in 0..MAX_TX_GROUP_SIZE {
         let payment_params = PaymentParams {
-            common_params: CommonTransactionParams {
-                sender: sender_address.clone(),
-                ..Default::default()
-            },
+            sender: sender_address.clone(),
             receiver: receiver_addr.clone(),
             amount: i as u64,
+            ..Default::default()
         };
 
         composer.add_payment(payment_params)?;

@@ -1,6 +1,5 @@
 use crate::common::{AlgorandFixtureResult, TestResult, algorand_fixture};
 use algokit_transact::Transaction;
-use algokit_utils::CommonTransactionParams;
 use algokit_utils::transactions::AssetOptInParams;
 use algokit_utils::transactions::{
     AssetCreateParams, AssetFreezeParams, AssetTransferParams, AssetUnfreezeParams,
@@ -39,16 +38,13 @@ async fn test_asset_freeze_unfreeze(
     let target_addr = target_account.account().address();
 
     // Create a composer for the target account that can send transactions
-    let target_composer = algorand_fixture.algorand_client.new_group();
+    let target_composer = algorand_fixture.algorand_client.new_group(None);
 
     // SETUP PHASE
 
     // Step 1: Create an asset with the asset creator account set as the freeze account
     let asset_create_params = AssetCreateParams {
-        common_params: CommonTransactionParams {
-            sender: asset_creator_addr.clone(),
-            ..Default::default()
-        },
+        sender: asset_creator_addr.clone(),
         total: 1_000_000,
         decimals: Some(0),
         default_frozen: Some(false),
@@ -60,9 +56,10 @@ async fn test_asset_freeze_unfreeze(
         reserve: None,
         freeze: Some(asset_creator_addr.clone()),
         clawback: None,
+        ..Default::default()
     };
 
-    let mut composer = algorand_fixture.algorand_client.new_group();
+    let mut composer = algorand_fixture.algorand_client.new_group(None);
     composer.add_asset_create(asset_create_params)?;
 
     let create_result = composer.send(None).await?;
@@ -72,11 +69,9 @@ async fn test_asset_freeze_unfreeze(
 
     // Step 2: Target account opts into the asset
     let asset_opt_in_params = AssetOptInParams {
-        common_params: CommonTransactionParams {
-            sender: target_addr.clone(),
-            ..Default::default()
-        },
+        sender: target_addr.clone(),
         asset_id,
+        ..Default::default()
     };
 
     let mut composer = target_composer.clone();
@@ -91,16 +86,14 @@ async fn test_asset_freeze_unfreeze(
 
     // Step 3: Send some asset units to the target account
     let asset_transfer_params = AssetTransferParams {
-        common_params: CommonTransactionParams {
-            sender: asset_creator_addr.clone(),
-            ..Default::default()
-        },
+        sender: asset_creator_addr.clone(),
         asset_id,
         amount: 1000,
         receiver: target_addr.clone(),
+        ..Default::default()
     };
 
-    let mut composer = algorand_fixture.algorand_client.new_group();
+    let mut composer = algorand_fixture.algorand_client.new_group(None);
     composer.add_asset_transfer(asset_transfer_params)?;
 
     let transfer_result = composer.send(None).await?;
@@ -114,15 +107,13 @@ async fn test_asset_freeze_unfreeze(
 
     // Step 4: Freeze the asset for the target account
     let asset_freeze_params = AssetFreezeParams {
-        common_params: CommonTransactionParams {
-            sender: asset_creator_addr.clone(),
-            ..Default::default()
-        },
+        sender: asset_creator_addr.clone(),
         asset_id,
         target_address: target_addr.clone(),
+        ..Default::default()
     };
 
-    let mut composer = algorand_fixture.algorand_client.new_group();
+    let mut composer = algorand_fixture.algorand_client.new_group(None);
     composer.add_asset_freeze(asset_freeze_params)?;
 
     let freeze_result = composer.send(None).await?;
@@ -167,13 +158,11 @@ async fn test_asset_freeze_unfreeze(
 
     // Step 7: Prove freeze works by attempting transfer (should fail)
     let attempt_transfer_params = AssetTransferParams {
-        common_params: CommonTransactionParams {
-            sender: target_addr.clone(),
-            ..Default::default()
-        },
+        sender: target_addr.clone(),
         asset_id,
         amount: 100,
         receiver: asset_creator_addr.clone(),
+        ..Default::default()
     };
 
     let mut composer = target_composer.clone();
@@ -197,15 +186,13 @@ async fn test_asset_freeze_unfreeze(
 
     // Step 8: Unfreeze the asset for the target account
     let asset_unfreeze_params = AssetUnfreezeParams {
-        common_params: CommonTransactionParams {
-            sender: asset_creator_addr.clone(),
-            ..Default::default()
-        },
+        sender: asset_creator_addr.clone(),
         asset_id,
         target_address: target_addr.clone(),
+        ..Default::default()
     };
 
-    let mut composer = algorand_fixture.algorand_client.new_group();
+    let mut composer = algorand_fixture.algorand_client.new_group(None);
     composer.add_asset_unfreeze(asset_unfreeze_params)?;
 
     let unfreeze_result = composer.send(None).await?;
@@ -252,13 +239,11 @@ async fn test_asset_freeze_unfreeze(
 
     // Step 11: Prove unfreeze works by successfully transferring the asset
     let test_transfer_params = AssetTransferParams {
-        common_params: CommonTransactionParams {
-            sender: target_addr.clone(),
-            ..Default::default()
-        },
+        sender: target_addr.clone(),
         asset_id,
         amount: 100,
         receiver: asset_creator_addr.clone(),
+        ..Default::default()
     };
 
     let mut composer = target_composer.clone();

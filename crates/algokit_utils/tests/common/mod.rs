@@ -9,6 +9,7 @@ pub mod test_account;
 
 use algokit_abi::Arc56Contract;
 use algokit_transact::Address;
+use algokit_utils::AppCreateParams;
 use algokit_utils::clients::app_manager::{
     AppManager, DeploymentMetadata, TealTemplateParams, TealTemplateValue,
 };
@@ -60,10 +61,7 @@ pub async fn deploy_arc56_contract(
         .await?;
 
     let app_create_params = AppCreateParams {
-        common_params: CommonTransactionParams {
-            sender: sender.clone(),
-            ..Default::default()
-        },
+        sender: sender.clone(),
         approval_program: approval_compile.compiled_base64_to_bytes,
         clear_state_program: clear_compile.compiled_base64_to_bytes,
         global_state_schema: Some(algokit_transact::StateSchema {
@@ -77,7 +75,7 @@ pub async fn deploy_arc56_contract(
         ..Default::default()
     };
 
-    let mut composer = fixture.algorand_client.new_group();
+    let mut composer = fixture.algorand_client.new_group(None);
     composer.add_app_create(app_create_params)?;
 
     let result = composer.send(None).await?;
