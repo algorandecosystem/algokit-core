@@ -6,6 +6,7 @@ use algokit_abi::{ABIType, ABIValue, AVM_UINT64, StorageKey, StorageMap};
 use base64::Engine;
 use num_bigint::BigUint;
 use std::collections::HashMap;
+use std::future::Future;
 use std::str::FromStr;
 
 pub struct GlobalStateAccessor<'a> {
@@ -30,11 +31,24 @@ impl<'a> StateAccessor<'a> {
         Self { client }
     }
 
-    pub fn global_state(&self) -> GlobalStateAccessor<'a> {
-        GlobalStateAccessor {
-            client: self.client,
-        }
+    pub fn global_state(
+        &self,
+    ) -> AppStateAccessor<
+        fn() -> std::pin::Pin<
+            Box<dyn Future<Output = Result<HashMap<Vec<u8>, AppState>, AppClientError>> + Send>,
+        >,
+        std::pin::Pin<
+            Box<dyn Future<Output = Result<HashMap<Vec<u8>, AppState>, AppClientError>> + Send>,
+        >,
+    > {
+        AppStateAccessor::new(
+            "global".to_string(),
+            || self.client.get_global_state(),
+            || self.client.app_spec.state.keys.global_state.clone(),
+            || self.client.app_spec.state.maps.global_state.clone(),
+        )
     }
+
     pub fn local_state(&self, address: &str) -> LocalStateAccessor<'a> {
         LocalStateAccessor {
             client: self.client,
@@ -48,35 +62,41 @@ impl<'a> StateAccessor<'a> {
     }
 }
 
-fn get_state_accessor(
-    get_state: fn() -> AppState,
-    get_storage_key: fn() -> HashMap<String, StorageKey>,
-    get_storage_map: fn() -> HashMap<String, StorageMap>,
-) {
-}
-
-pub struct FooStateAccessor<F, Fut>
+pub struct AppStateAccessor<F, Fut>
 where
     F: Fn() -> Fut,
     Fut: Future<Output = Result<HashMap<Vec<u8>, AppState>, AppClientError>>,
 {
     name: String,
-    get_state: F,
+    get_app_state: F,
     get_storage_key: fn() -> HashMap<String, StorageKey>,
     get_storage_map: fn() -> HashMap<String, StorageMap>,
 }
 
-impl<F, Fut> FooStateAccessor<F, Fut>
+impl<F, Fut> AppStateAccessor<F, Fut>
 where
     F: Fn() -> Fut,
     Fut: Future<Output = Result<HashMap<Vec<u8>, AppState>, AppClientError>>,
 {
-    pub async fn get_all(&self) -> Result<HashMap<String, Option<ABIValue>>, AppClientError> {
-        let state = (self.get_state)().await?;
+    pub fn new(
+        name: String,
+        get_app_state: F,
+        get_storage_key: fn() -> HashMap<String, StorageKey>,
+        get_storage_map: fn() -> HashMap<String, StorageMap>,
+    ) -> Self {
+        Self {
+            name,
+            get_app_state,
+            get_storage_key,
+            get_storage_map,
+        }
+    }
 
-        let mut result = HashMap::new();
+    pub async fn get_all(&self) -> Result<HashMap<String, Option<ABIValue>>, AppClientError> {
+        let state = (self.get_app_state)().await?;
         let storage_key_map = (self.get_storage_key)();
 
+        let mut result = HashMap::new();
         for (key_name, storage_key) in storage_key_map {
             let abi_value = self.decode_storage_key(&key_name, &storage_key, &state)?;
             result.insert(key_name, abi_value);
@@ -85,9 +105,9 @@ where
     }
 
     pub async fn get_value(&self, key_name: &str) -> Result<Option<ABIValue>, AppClientError> {
-        let state = (self.get_state)().await?;
-
+        let state = (self.get_app_state)().await?;
         let storage_key_map = (self.get_storage_key)();
+
         let storage_key =
             storage_key_map
                 .get(key_name)
@@ -113,22 +133,31 @@ where
 
         match value {
             None => Ok(None),
-            Some(app_state) => match &app_state {
-                AppState::Uint(uint_app_state) => {
-                    Ok(Some(ABIValue::Uint(BigUint::from(uint_app_state.value))))
-                }
-                AppState::Bytes(bytes_app_state) => Ok(Some(decode_app_state_bytes_value(
-                    &storage_key.value_type,
-                    bytes_app_state,
-                )?)),
-            },
+            Some(app_state) => Ok(Some(decode_app_state(&storage_key.key_type, app_state)?)),
         }
     }
+
     pub async fn get_map(
         &self,
         map_name: &str,
     ) -> Result<HashMap<ABIValue, ABIValue>, AppClientError> {
-        let state = (self.get_state)().await?;
+        let state = (self.get_app_state)().await?;
+        let storage_map_map = (self.get_storage_map)();
+        let storage_map =
+            storage_map_map
+                .get(map_name)
+                .ok_or_else(|| AppClientError::AppStateError {
+                    message: format!("{} state map {} not found", self.name, map_name),
+                })?;
+        return self.decode_storage_map(storage_map, &state);
+    }
+
+    pub async fn get_map_value(
+        &self,
+        map_name: &str,
+        key: ABIValue,
+    ) -> Result<Option<ABIValue>, AppClientError> {
+        let state = (self.get_app_state)().await?;
         let storage_map_map = (self.get_storage_map)();
         let storage_map =
             storage_map_map
@@ -137,6 +166,34 @@ where
                     message: format!("{} state map {} not found", self.name, map_name),
                 })?;
 
+        let prefix_bytes = if let Some(prefix_b64) = &storage_map.prefix {
+            base64::engine::general_purpose::STANDARD
+                .decode(prefix_b64)
+                .map_err(|e| AppClientError::AppStateError {
+                    message: format!("Failed to decode map prefix: {}", e),
+                })?
+        } else {
+            Vec::new()
+        };
+        let encoded_key = ABIType::from_str(&storage_map.key_type)
+            .map_err(|e| AppClientError::ABIError { source: e })?
+            .encode(&key)
+            .map_err(|e| AppClientError::ABIError { source: e })?;
+        let full_key = [prefix_bytes, encoded_key].concat();
+
+        let value = state.get(&full_key);
+
+        match value {
+            None => Ok(None),
+            Some(app_state) => Ok(Some(decode_app_state(&storage_map.value_type, app_state)?)),
+        }
+    }
+
+    fn decode_storage_map(
+        &self,
+        storage_map: &StorageMap,
+        state: &HashMap<Vec<u8>, AppState>,
+    ) -> Result<HashMap<ABIValue, ABIValue>, AppClientError> {
         let prefix_bytes = if let Some(prefix_b64) = &storage_map.prefix {
             base64::engine::general_purpose::STANDARD
                 .decode(prefix_b64)
@@ -157,26 +214,16 @@ where
             }
 
             let tail = &key[prefix_bytes.len()..];
-            let decoded_key = key_type
+            let decoded_key: ABIValue = key_type
                 .decode(tail)
                 .map_err(|e| AppClientError::ABIError { source: e })?;
 
-            let value = match &app_state {
-                AppState::Uint(uint_app_state) => {
-                    Ok(ABIValue::Uint(BigUint::from(uint_app_state.value)))
-                }
-                AppState::Bytes(bytes_app_state) => Ok(decode_app_state_bytes_value(
-                    &storage_map.value_type,
-                    bytes_app_state,
-                )?),
-            }?;
+            let value = decode_app_state(&storage_map.value_type, &app_state)?;
             result.insert(decoded_key, value);
         }
 
         Ok(result)
     }
-
-    fn decode_storage_map(&self) {}
 }
 
 impl GlobalStateAccessor<'_> {
@@ -610,7 +657,16 @@ impl BoxStateAccessor<'_> {
     }
 }
 
-pub(crate) fn decode_app_state_bytes_value(
+fn decode_app_state(value_type: &str, app_state: &AppState) -> Result<ABIValue, AppClientError> {
+    return match &app_state {
+        AppState::Uint(uint_app_state) => Ok(ABIValue::Uint(BigUint::from(uint_app_state.value))),
+        AppState::Bytes(bytes_app_state) => {
+            Ok(decode_app_state_bytes_value(&value_type, bytes_app_state)?)
+        }
+    };
+}
+
+fn decode_app_state_bytes_value(
     r#type: &str,
     value: &BytesAppState,
 ) -> Result<ABIValue, AppClientError> {
@@ -633,29 +689,4 @@ pub(crate) fn decode_app_state_bytes_value(
     abi_type
         .decode(&value.value_raw)
         .map_err(|e| AppClientError::ABIError { source: e })
-}
-
-// TODO: do we need this?
-fn abi_value_to_string(value: &ABIValue) -> String {
-    match value {
-        ABIValue::Bool(b) => b.to_string(),
-        ABIValue::Uint(u) => u.to_string(),
-        ABIValue::String(s) => s.clone(),
-        ABIValue::Byte(b) => b.to_string(),
-        ABIValue::Address(addr) => addr.clone(),
-        ABIValue::Array(arr) => {
-            let inner: Vec<String> = arr.iter().map(abi_value_to_string).collect();
-            format!("[{}]", inner.join(","))
-        }
-        ABIValue::Struct(map) => {
-            // Render deterministic order by key for stability
-            let mut keys: Vec<&String> = map.keys().collect();
-            keys.sort();
-            let inner: Vec<String> = keys
-                .into_iter()
-                .map(|k| format!("{}:{}", k, abi_value_to_string(&map[k])))
-                .collect();
-            format!("{{{}}}", inner.join(","))
-        }
-    }
 }

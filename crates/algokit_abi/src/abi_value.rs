@@ -1,8 +1,7 @@
 use num_bigint::BigUint;
-use std::collections::HashMap;
 
 /// Represents a value that can be encoded or decoded as an ABI type.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ABIValue {
     /// A boolean value.
     Bool(bool),
@@ -16,8 +15,6 @@ pub enum ABIValue {
     Array(Vec<ABIValue>),
     /// An Algorand address.
     Address(String),
-    /// A struct value represented as a map of field name to value.
-    Struct(HashMap<String, ABIValue>),
     Bytes(Vec<u8>),
 }
 
