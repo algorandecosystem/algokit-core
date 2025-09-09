@@ -1,3 +1,4 @@
+use crate::applications::app_client::utils::get_abi_decoded_value;
 use crate::clients::app_manager::{AppState, BytesAppState};
 
 use super::{AppClient, AppClientError};
@@ -122,7 +123,7 @@ impl<'a> AppStateAccessor<'a> {
             storage_key_map
                 .get(key_name)
                 .ok_or_else(|| AppClientError::AppStateError {
-                    message: format!("{} state key {} not found", self.name, key_name),
+                    message: format!("{} state key '{}' not found", self.name, key_name),
                 })?;
 
         self.decode_storage_key(key_name, storage_key, &state)
@@ -158,7 +159,7 @@ impl<'a> AppStateAccessor<'a> {
             storage_map_map
                 .get(map_name)
                 .ok_or_else(|| AppClientError::AppStateError {
-                    message: format!("{} state map {} not found", self.name, map_name),
+                    message: format!("{} state map '{}' not found", self.name, map_name),
                 })?;
         return self.decode_storage_map(storage_map, &state);
     }
@@ -174,7 +175,7 @@ impl<'a> AppStateAccessor<'a> {
             storage_map_map
                 .get(map_name)
                 .ok_or_else(|| AppClientError::AppStateError {
-                    message: format!("{} state map {} not found", self.name, map_name),
+                    message: format!("{} state map '{}' not found", self.name, map_name),
                 })?;
 
         let prefix_bytes = if let Some(prefix_b64) = &storage_map.prefix {
@@ -237,40 +238,68 @@ impl<'a> AppStateAccessor<'a> {
     }
 }
 
-// impl BoxStateAccessor<'_> {
-//     pub async fn get_value(&self, name: &str) -> Result<ABIValue, AppClientError> {
-//         let metadata = self
-//             .client
-//             .app_spec
-//             .state
-//             .keys
-//             .box_keys
-//             .get(name)
-//             .ok_or_else(|| AppClientError::ValidationError(format!("Unknown box key: {}", name)))?;
-//         let box_name = base64::engine::general_purpose::STANDARD
-//             .decode(&metadata.key)
-//             .map_err(|e| {
-//                 AppClientError::ValidationError(format!(
-//                     "Failed to decode box key '{}': {}",
-//                     name, e
-//                 ))
-//             })?;
-//         let abi_type = ABIType::from_str(&metadata.value_type).map_err(|e| {
-//             AppClientError::ABIError(format!("Invalid ABI type '{}': {}", metadata.value_type, e))
-//         })?;
-//         self.client
-//             .algorand()
-//             .app()
-//             .get_box_value_from_abi_type(
-//                 self.client.app_id().ok_or(AppClientError::ValidationError(
-//                     "Missing app_id".to_string(),
-//                 ))?,
-//                 &box_name,
-//                 &abi_type,
-//             )
-//             .await
-//             .map_err(|e| AppClientError::AppManagerError(e.to_string()))
-//     }
+impl<'a> BoxStateAccessor<'a> {
+    pub async fn get_all(&self) -> Result<HashMap<String, ABIValue>, AppClientError> {
+        let box_keys = self.client.app_spec.state.keys.box_keys;
+        let results: HashMap<String, ABIValue> = HashMap::new();
+
+        for (box_name, storage_key) in box_keys {
+            let box_name_bytes = base64::engine::general_purpose::STANDARD
+                .decode(&storage_key.key)
+                .map_err(|e| AppClientError::AppStateError {
+                    message: format!("Failed to decode box key '{}': {}", name, e),
+                })?;
+
+            // TODO: what to do when it failed to fetch the box?
+            let box_value = self.client.get_box_value(&box_name_bytes).await?;
+            let abi_value = get_abi_decoded_value(box_value, storage_key.value_type.clone())?;
+            results.insert(box_name, abi_value);
+        }
+
+        return Ok(results);
+    }
+
+    pub async fn get_value(&self, name: &str) -> Result<ABIValue, AppClientError> {
+        let storage_key = self
+            .client
+            .app_spec
+            .state
+            .keys
+            .box_keys
+            .get(name)
+            .ok_or_else(|| AppClientError::AppStateError {
+                message: format!("Box key '{}' not found", name),
+            })?;
+
+        let box_name_bytes = base64::engine::general_purpose::STANDARD
+            .decode(&storage_key.key)
+            .map_err(|e| AppClientError::AppStateError {
+                message: format!("Failed to decode box key '{}': {}", name, e),
+            })?;
+
+        // TODO: what to do when it failed to fetch the box?
+        let box_value = self.client.get_box_value(&box_name_bytes).await?;
+        return get_abi_decoded_value(box_value, storage_key.value_type.clone());
+    }
+
+    pub async fn get_map(
+        &self,
+        map_name: &str,
+    ) -> Result<HashMap<ABIValue, ABIValue>, AppClientError> {
+        let storage_map_map = self.client.app_spec.state.maps.box_maps;
+        let storage_map =
+            storage_map_map
+                .get(map_name)
+                .ok_or_else(|| AppClientError::AppStateError {
+                    message: format!("Box map '{}' not found", map_name),
+                })?;
+
+        let box_names = self.client.get_box_names();
+        let state = self.provider.get_app_state().await?;
+
+        return self.decode_storage_map(storage_map, &state);
+    }
+}
 
 //     pub async fn get_map_value(
 //         &self,

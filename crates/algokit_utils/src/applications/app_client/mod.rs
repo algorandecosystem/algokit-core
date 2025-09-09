@@ -1,6 +1,6 @@
-use crate::AlgorandClient;
 use crate::applications::AppDeployer;
 use crate::clients::network_client::NetworkDetails;
+use crate::{AlgorandClient, clients::app_manager::BoxIdentifier};
 use algokit_abi::Arc56Contract;
 use algokit_transact::Address;
 use std::collections::HashMap;
@@ -271,11 +271,9 @@ impl AppClient {
             .map_err(|e| AppClientError::AppManagerError { source: e })
     }
 
+    // TODO: these methods may not be needed
     /// Get the value of a box by raw identifier
-    pub async fn get_box_value(
-        &self,
-        name: &crate::clients::app_manager::BoxIdentifier,
-    ) -> Result<Vec<u8>, AppClientError> {
+    pub async fn get_box_value(&self, name: &BoxIdentifier) -> Result<Vec<u8>, AppClientError> {
         self.algorand
             .app()
             .get_box_value(self.app_id, name)
@@ -286,7 +284,7 @@ impl AppClient {
     /// Get a box value decoded using an ABI type
     pub async fn get_box_value_from_abi_type(
         &self,
-        name: &crate::clients::app_manager::BoxIdentifier,
+        name: &BoxIdentifier,
         abi_type: &algokit_abi::ABIType,
     ) -> Result<algokit_abi::ABIValue, AppClientError> {
         self.algorand
@@ -299,7 +297,7 @@ impl AppClient {
     /// Get values for multiple boxes
     pub async fn get_box_values(
         &self,
-        names: &[crate::clients::app_manager::BoxIdentifier],
+        names: &[BoxIdentifier],
     ) -> Result<Vec<Vec<u8>>, AppClientError> {
         self.algorand
             .app()
@@ -311,7 +309,7 @@ impl AppClient {
     /// Get multiple box values decoded using an ABI type
     pub async fn get_box_values_from_abi_type(
         &self,
-        names: &[crate::clients::app_manager::BoxIdentifier],
+        names: &[BoxIdentifier],
         abi_type: &algokit_abi::ABIType,
     ) -> Result<Vec<algokit_abi::ABIValue>, AppClientError> {
         self.algorand

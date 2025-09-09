@@ -38,4 +38,6 @@ pub enum AppClientError {
     ComposerError { source: ComposerError },
     #[snafu(display("App state error: {message}"))]
     AppStateError { message: String },
+    #[snafu(display("Decode error: {message}"))]
+    DecodeError { message: String },
 }

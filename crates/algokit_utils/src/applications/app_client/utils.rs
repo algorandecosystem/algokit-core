@@ -1,4 +1,5 @@
-use algokit_abi::ABIValue;
+use algokit_abi::{ABIType, ABIValue, AVM_BYTES, AVM_STRING, AVM_UINT64};
+use base64::Engine;
 
 use super::AppClient;
 use crate::AppClientError;
@@ -67,36 +68,32 @@ pub fn parse_account_refs_strs(
     }
 }
 
-// // TODO: do we need this?
-// pub async fn get_abi_decoded_value(
-//     key: &[u8],
-//     state: &HashMap<Vec<u8>, AppState>,
-//     abi_type_str: &str,
-//     default_value_type: Option<&str>,
-// ) -> Result<ABIValue, AppClientError> {
-//     let app_state = state
-//         .get(key)
-//         .ok_or_else(|| AppClientError::ValidationError {
-//             message: format!("State key not found: {:?}", key),
-//         })?;
-//     let effective_type = default_value_type.unwrap_or(abi_type_str);
-//     super::state_accessor::decode_app_state_value(effective_type, app_state)
-// }
-
-// pub fn get_abi_decoded_value(
-//   value: Uint8Array | number | bigint,
-//   type: string,
-//   structs: Record<string, StructField[]>,
-// ): algosdk.ABIValue | ABIStruct {
-//   if (type === 'AVMBytes' || typeof value !== 'object') return value
-//   if (type === 'AVMString') return Buffer.from(value).toString('utf-8')
-//   if (type === 'AVMUint64') return algosdk.ABIType.from('uint64').decode(value)
-//   if (structs[type]) {
-//     const tupleValue = getABITupleTypeFromABIStructDefinition(structs[type], structs).decode(value)
-//     return getABIStructFromABITuple(tupleValue, structs[type], structs)
-//   }
-
-//   const abiType = algosdk.ABIType.from(type)
-//   const decodedValue = convertAbiByteArrays(abiType.decode(value), abiType)
-//   return convertABIDecodedBigIntToNumber(decodedValue, abiType)
-// }
+pub fn get_abi_decoded_value(
+    value: Vec<u8>,
+    value_type: String,
+) -> Result<ABIValue, AppClientError> {
+    match value_type.as_str() {
+        AVM_STRING => {
+            let s = String::from_utf8(value).map_err(|| AppClientError::DecodeError {
+                message: "Failed to convert bytes to utf-8 string".to_string(),
+            })?;
+            Ok(ABIValue::from(s))
+        }
+        AVM_BYTES => Ok(ABIValue::Bytes(value)),
+        AVM_UINT64 => {
+            let uint64_abi_type =
+                ABIType::from_str("uint64").map_err(|e| AppClientError::ABIError { source: e })?;
+            Ok(uint64_abi_type
+                .decode(&value)
+                .map_err(|e| AppClientError::ABIError { source: e })?)
+        }
+        _ => {
+            // TODO: struct will be handled in another PR
+            let abi_type = ABIType::from_str(&value_type)
+                .map_err(|e| AppClientError::ABIError { source: e })?;
+            Ok(abi_type
+                .decode(&value)
+                .map_err(|e| AppClientError::ABIError { source: e })?)
+        }
+    }
+}
