@@ -10,15 +10,6 @@ use std::future::Future;
 use std::pin::Pin;
 use std::str::FromStr;
 
-pub struct GlobalStateAccessor<'a> {
-    client: &'a AppClient,
-}
-
-pub struct LocalStateAccessor<'a> {
-    client: &'a AppClient,
-    address: String,
-}
-
 pub struct BoxStateAccessor<'a> {
     client: &'a AppClient,
 }
@@ -33,27 +24,18 @@ impl<'a> StateAccessor<'a> {
     }
 
     pub fn global_state(&self) -> AppStateAccessor<'_> {
-        let client = self.client;
-        AppStateAccessor::new(
-            "global".to_string(),
-            Box::new(move || Box::pin(client.get_global_state())),
-            Box::new(move || client.app_spec.state.keys.global_state.clone()),
-            Box::new(move || client.app_spec.state.maps.global_state.clone()),
-        )
+        let provider = GlobalStateProvider {
+            client: self.client,
+        };
+        AppStateAccessor::new("global".to_string(), Box::new(provider))
     }
 
     pub fn local_state(&self, address: &str) -> AppStateAccessor<'_> {
-        let client = self.client;
-        let address = address.to_string();
-        AppStateAccessor::new(
-            "local".to_string(),
-            Box::new(move || {
-                let addr = address.clone();
-                Box::pin(async move { client.get_local_state(&addr).await })
-            }),
-            Box::new(move || client.app_spec.state.keys.local_state.clone()),
-            Box::new(move || client.app_spec.state.maps.local_state.clone()),
-        )
+        let provider = LocalStateProvider {
+            client: self.client,
+            address: address.to_string(),
+        };
+        AppStateAccessor::new("local".to_string(), Box::new(provider))
     }
 
     pub fn box_storage(&self) -> BoxStateAccessor<'a> {
@@ -63,43 +45,66 @@ impl<'a> StateAccessor<'a> {
     }
 }
 
-// TODO: simplify this
+type GetStateResult = Result<HashMap<Vec<u8>, AppState>, AppClientError>;
+
+pub trait StateProvider {
+    fn get_app_state(&self) -> Pin<Box<dyn Future<Output = GetStateResult> + '_>>;
+    fn get_storage_keys(&self) -> HashMap<String, StorageKey>;
+    fn get_storage_maps(&self) -> HashMap<String, StorageMap>;
+}
+
+struct GlobalStateProvider<'a> {
+    client: &'a AppClient,
+}
+
+impl<'a> StateProvider for GlobalStateProvider<'a> {
+    fn get_app_state(&self) -> Pin<Box<dyn Future<Output = GetStateResult> + '_>> {
+        Box::pin(self.client.get_global_state())
+    }
+
+    fn get_storage_keys(&self) -> HashMap<String, StorageKey> {
+        self.client.app_spec.state.keys.global_state.clone()
+    }
+
+    fn get_storage_maps(&self) -> HashMap<String, StorageMap> {
+        self.client.app_spec.state.maps.global_state.clone()
+    }
+}
+
+struct LocalStateProvider<'a> {
+    client: &'a AppClient,
+    address: String,
+}
+
+impl<'a> StateProvider for LocalStateProvider<'a> {
+    fn get_app_state(&self) -> Pin<Box<dyn Future<Output = GetStateResult> + '_>> {
+        let addr = self.address.clone();
+        let client = self.client;
+        Box::pin(async move { client.get_local_state(&addr).await })
+    }
+
+    fn get_storage_keys(&self) -> HashMap<String, StorageKey> {
+        self.client.app_spec.state.keys.local_state.clone()
+    }
+
+    fn get_storage_maps(&self) -> HashMap<String, StorageMap> {
+        self.client.app_spec.state.maps.local_state.clone()
+    }
+}
+
 pub struct AppStateAccessor<'a> {
     name: String,
-    get_app_state: Box<
-        dyn Fn() -> Pin<
-                Box<dyn Future<Output = Result<HashMap<Vec<u8>, AppState>, AppClientError>> + 'a>,
-            > + 'a,
-    >,
-    get_storage_key: Box<dyn Fn() -> HashMap<String, StorageKey> + 'a>,
-    get_storage_map: Box<dyn Fn() -> HashMap<String, StorageMap> + 'a>,
+    provider: Box<dyn StateProvider + 'a>,
 }
 
 impl<'a> AppStateAccessor<'a> {
-    pub fn new(
-        name: String,
-        get_app_state: Box<
-            dyn Fn() -> Pin<
-                    Box<
-                        dyn Future<Output = Result<HashMap<Vec<u8>, AppState>, AppClientError>>
-                            + 'a,
-                    >,
-                > + 'a,
-        >,
-        get_storage_key: Box<dyn Fn() -> HashMap<String, StorageKey> + 'a>,
-        get_storage_map: Box<dyn Fn() -> HashMap<String, StorageMap> + 'a>,
-    ) -> Self {
-        Self {
-            name,
-            get_app_state,
-            get_storage_key,
-            get_storage_map,
-        }
+    pub fn new(name: String, provider: Box<dyn StateProvider + 'a>) -> Self {
+        Self { name, provider }
     }
 
     pub async fn get_all(&self) -> Result<HashMap<String, Option<ABIValue>>, AppClientError> {
-        let state = (self.get_app_state)().await?;
-        let storage_key_map = (self.get_storage_key)();
+        let state = self.provider.get_app_state().await?;
+        let storage_key_map = self.provider.get_storage_keys();
 
         let mut result = HashMap::new();
         for (key_name, storage_key) in storage_key_map {
@@ -110,8 +115,8 @@ impl<'a> AppStateAccessor<'a> {
     }
 
     pub async fn get_value(&self, key_name: &str) -> Result<Option<ABIValue>, AppClientError> {
-        let state = (self.get_app_state)().await?;
-        let storage_key_map = (self.get_storage_key)();
+        let state = self.provider.get_app_state().await?;
+        let storage_key_map = self.provider.get_storage_keys();
 
         let storage_key =
             storage_key_map
@@ -147,8 +152,8 @@ impl<'a> AppStateAccessor<'a> {
         &self,
         map_name: &str,
     ) -> Result<HashMap<ABIValue, ABIValue>, AppClientError> {
-        let state = (self.get_app_state)().await?;
-        let storage_map_map = (self.get_storage_map)();
+        let state = self.provider.get_app_state().await?;
+        let storage_map_map = self.provider.get_storage_maps();
         let storage_map =
             storage_map_map
                 .get(map_name)
@@ -163,8 +168,8 @@ impl<'a> AppStateAccessor<'a> {
         map_name: &str,
         key: ABIValue,
     ) -> Result<Option<ABIValue>, AppClientError> {
-        let state = (self.get_app_state)().await?;
-        let storage_map_map = (self.get_storage_map)();
+        let state = self.provider.get_app_state().await?;
+        let storage_map_map = self.provider.get_storage_maps();
         let storage_map =
             storage_map_map
                 .get(map_name)
