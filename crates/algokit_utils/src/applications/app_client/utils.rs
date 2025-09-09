@@ -68,18 +68,15 @@ pub fn parse_account_refs_strs(
     }
 }
 
-pub fn get_abi_decoded_value(
-    value: Vec<u8>,
-    value_type: String,
-) -> Result<ABIValue, AppClientError> {
-    match value_type.as_str() {
+pub fn get_abi_decoded_value(value: &[u8], value_type: &str) -> Result<ABIValue, AppClientError> {
+    match value_type {
         AVM_STRING => {
-            let s = String::from_utf8(value).map_err(|| AppClientError::DecodeError {
+            let s = String::from_utf8(value.to_vec()).map_err(|_| AppClientError::DecodeError {
                 message: "Failed to convert bytes to utf-8 string".to_string(),
             })?;
             Ok(ABIValue::from(s))
         }
-        AVM_BYTES => Ok(ABIValue::Bytes(value)),
+        AVM_BYTES => Ok(ABIValue::Bytes(value.to_vec())),
         AVM_UINT64 => {
             let uint64_abi_type =
                 ABIType::from_str("uint64").map_err(|e| AppClientError::ABIError { source: e })?;

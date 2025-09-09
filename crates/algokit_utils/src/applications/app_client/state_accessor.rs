@@ -161,7 +161,30 @@ impl<'a> AppStateAccessor<'a> {
                 .ok_or_else(|| AppClientError::AppStateError {
                     message: format!("{} state map '{}' not found", self.name, map_name),
                 })?;
-        return self.decode_storage_map(storage_map, &state);
+        let prefix_bytes = if let Some(prefix_b64) = &storage_map.prefix {
+            base64::engine::general_purpose::STANDARD
+                .decode(prefix_b64)
+                .map_err(|e| AppClientError::AppStateError {
+                    message: format!("Failed to decode map prefix: {}", e),
+                })?
+        } else {
+            Vec::new()
+        };
+
+        let mut result = HashMap::new();
+        for (key, app_state) in state.iter() {
+            if !key.starts_with(&prefix_bytes) {
+                continue;
+            }
+
+            let tail = &key[prefix_bytes.len()..];
+            let decoded_key = get_abi_decoded_value(tail, &storage_map.key_type)?;
+
+            let decoded_value = decode_app_state(&storage_map.value_type, &app_state)?;
+            result.insert(decoded_key, decoded_value);
+        }
+
+        Ok(result)
     }
 
     pub async fn get_map_value(
@@ -200,60 +223,24 @@ impl<'a> AppStateAccessor<'a> {
             Some(app_state) => Ok(Some(decode_app_state(&storage_map.value_type, app_state)?)),
         }
     }
-
-    fn decode_storage_map(
-        &self,
-        storage_map: &StorageMap,
-        state: &HashMap<Vec<u8>, AppState>,
-    ) -> Result<HashMap<ABIValue, ABIValue>, AppClientError> {
-        let prefix_bytes = if let Some(prefix_b64) = &storage_map.prefix {
-            base64::engine::general_purpose::STANDARD
-                .decode(prefix_b64)
-                .map_err(|e| AppClientError::AppStateError {
-                    message: format!("Failed to decode map prefix: {}", e),
-                })?
-        } else {
-            Vec::new()
-        };
-
-        let key_type = ABIType::from_str(&storage_map.key_type)
-            .map_err(|e| AppClientError::ABIError { source: e })?;
-
-        let mut result = HashMap::new();
-        for (key, app_state) in state.iter() {
-            if !key.starts_with(&prefix_bytes) {
-                continue;
-            }
-
-            let tail = &key[prefix_bytes.len()..];
-            let decoded_key: ABIValue = key_type
-                .decode(tail)
-                .map_err(|e| AppClientError::ABIError { source: e })?;
-
-            let value = decode_app_state(&storage_map.value_type, &app_state)?;
-            result.insert(decoded_key, value);
-        }
-
-        Ok(result)
-    }
 }
 
 impl<'a> BoxStateAccessor<'a> {
     pub async fn get_all(&self) -> Result<HashMap<String, ABIValue>, AppClientError> {
-        let box_keys = self.client.app_spec.state.keys.box_keys;
-        let results: HashMap<String, ABIValue> = HashMap::new();
+        let box_keys = &self.client.app_spec.state.keys.box_keys;
+        let mut results: HashMap<String, ABIValue> = HashMap::new();
 
         for (box_name, storage_key) in box_keys {
             let box_name_bytes = base64::engine::general_purpose::STANDARD
                 .decode(&storage_key.key)
                 .map_err(|e| AppClientError::AppStateError {
-                    message: format!("Failed to decode box key '{}': {}", name, e),
+                    message: format!("Failed to decode box key '{}': {}", box_name, e),
                 })?;
 
             // TODO: what to do when it failed to fetch the box?
             let box_value = self.client.get_box_value(&box_name_bytes).await?;
-            let abi_value = get_abi_decoded_value(box_value, storage_key.value_type.clone())?;
-            results.insert(box_name, abi_value);
+            let abi_value = get_abi_decoded_value(&box_value, &storage_key.value_type)?;
+            results.insert(box_name.clone(), abi_value);
         }
 
         return Ok(results);
@@ -279,14 +266,14 @@ impl<'a> BoxStateAccessor<'a> {
 
         // TODO: what to do when it failed to fetch the box?
         let box_value = self.client.get_box_value(&box_name_bytes).await?;
-        return get_abi_decoded_value(box_value, storage_key.value_type.clone());
+        return get_abi_decoded_value(&box_value, &storage_key.value_type);
     }
 
     pub async fn get_map(
         &self,
         map_name: &str,
     ) -> Result<HashMap<ABIValue, ABIValue>, AppClientError> {
-        let storage_map_map = self.client.app_spec.state.maps.box_maps;
+        let storage_map_map = &self.client.app_spec.state.maps.box_maps;
         let storage_map =
             storage_map_map
                 .get(map_name)
@@ -294,10 +281,33 @@ impl<'a> BoxStateAccessor<'a> {
                     message: format!("Box map '{}' not found", map_name),
                 })?;
 
-        let box_names = self.client.get_box_names();
-        let state = self.provider.get_app_state().await?;
+        let prefix_bytes = if let Some(prefix_b64) = &storage_map.prefix {
+            base64::engine::general_purpose::STANDARD
+                .decode(prefix_b64)
+                .map_err(|e| AppClientError::AppStateError {
+                    message: format!("Failed to decode map prefix: {}", e),
+                })?
+        } else {
+            Vec::new()
+        };
 
-        return self.decode_storage_map(storage_map, &state);
+        let box_names = self.client.get_box_names().await?;
+        let box_names = box_names
+            .iter()
+            .filter(|box_name| box_name.name_raw.starts_with(&prefix_bytes))
+            .collect::<Vec<_>>();
+
+        let mut results: HashMap<ABIValue, ABIValue> = HashMap::new();
+        for box_name in box_names {
+            let tail = &box_name.name_raw[prefix_bytes.len()..];
+            let decoded_key = get_abi_decoded_value(tail, &storage_map.key_type)?;
+
+            let box_value = self.client.get_box_value(&box_name.name_raw).await?;
+            let decoded_value = get_abi_decoded_value(&box_value, &storage_map.value_type)?;
+            results.insert(decoded_key, decoded_value);
+        }
+
+        Ok(results)
     }
 }
 
