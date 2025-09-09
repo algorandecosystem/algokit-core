@@ -49,12 +49,25 @@ impl<'a> StateAccessor<'a> {
         )
     }
 
-    pub fn local_state(&self, address: &str) -> LocalStateAccessor<'a> {
-        LocalStateAccessor {
-            client: self.client,
-            address: address.to_string(),
-        }
+    pub fn local_state(
+        &self,
+        address: &str,
+    ) -> AppStateAccessor<
+        fn() -> std::pin::Pin<
+            Box<dyn Future<Output = Result<HashMap<Vec<u8>, AppState>, AppClientError>> + Send>,
+        >,
+        std::pin::Pin<
+            Box<dyn Future<Output = Result<HashMap<Vec<u8>, AppState>, AppClientError>> + Send>,
+        >,
+    > {
+        AppStateAccessor::new(
+            "local".to_string(),
+            || self.client.get_local_state(address),
+            || self.client.app_spec.state.keys.local_state.clone(),
+            || self.client.app_spec.state.maps.local_state.clone(),
+        )
     }
+
     pub fn box_storage(&self) -> BoxStateAccessor<'a> {
         BoxStateAccessor {
             client: self.client,
@@ -226,436 +239,152 @@ where
     }
 }
 
-impl GlobalStateAccessor<'_> {
-    pub async fn get_all(&self) -> Result<HashMap<String, ABIValue>, AppClientError> {
-        let state = self.client.get_global_state().await?;
-        let mut result = HashMap::new();
-        for (name, metadata) in &self.client.app_spec.state.keys.global_state {
-            // decode key and fetch value
-            let key_bytes = base64::engine::general_purpose::STANDARD
-                .decode(&metadata.key)
-                .map_err(|e| {
-                    AppClientError::ValidationError(format!(
-                        "Failed to decode global key '{}': {}",
-                        name, e
-                    ))
-                })?;
-            let app_state = state.get(&key_bytes).ok_or_else(|| {
-                AppClientError::ValidationError(format!(
-                    "Global state key '{}' not found in app state",
-                    name
-                ))
-            })?;
-            let abi_value = decode_app_state_bytes_value(&metadata.value_type, app_state)?;
-            result.insert(name.clone(), abi_value);
-        }
-        Ok(result)
-    }
+// impl BoxStateAccessor<'_> {
+//     pub async fn get_value(&self, name: &str) -> Result<ABIValue, AppClientError> {
+//         let metadata = self
+//             .client
+//             .app_spec
+//             .state
+//             .keys
+//             .box_keys
+//             .get(name)
+//             .ok_or_else(|| AppClientError::ValidationError(format!("Unknown box key: {}", name)))?;
+//         let box_name = base64::engine::general_purpose::STANDARD
+//             .decode(&metadata.key)
+//             .map_err(|e| {
+//                 AppClientError::ValidationError(format!(
+//                     "Failed to decode box key '{}': {}",
+//                     name, e
+//                 ))
+//             })?;
+//         let abi_type = ABIType::from_str(&metadata.value_type).map_err(|e| {
+//             AppClientError::ABIError(format!("Invalid ABI type '{}': {}", metadata.value_type, e))
+//         })?;
+//         self.client
+//             .algorand()
+//             .app()
+//             .get_box_value_from_abi_type(
+//                 self.client.app_id().ok_or(AppClientError::ValidationError(
+//                     "Missing app_id".to_string(),
+//                 ))?,
+//                 &box_name,
+//                 &abi_type,
+//             )
+//             .await
+//             .map_err(|e| AppClientError::AppManagerError(e.to_string()))
+//     }
 
-    pub async fn get_value(&self, name: &str) -> Result<ABIValue, AppClientError> {
-        let metadata = self
-            .client
-            .app_spec
-            .state
-            .keys
-            .global_state
-            .get(name)
-            .ok_or_else(|| {
-                AppClientError::ValidationError(format!("Unknown global state key: {}", name))
-            })?;
-        let key_bytes = base64::engine::general_purpose::STANDARD
-            .decode(&metadata.key)
-            .map_err(|e| {
-                AppClientError::ValidationError(format!(
-                    "Failed to decode global key '{}': {}",
-                    name, e
-                ))
-            })?;
-        let state = self.client.get_global_state().await?;
-        let app_state = state.get(&key_bytes).ok_or_else(|| {
-            AppClientError::ValidationError(format!(
-                "Global state key '{}' not found in app state",
-                name
-            ))
-        })?;
-        decode_app_state_bytes_value(&metadata.value_type, app_state)
-    }
+//     pub async fn get_map_value(
+//         &self,
+//         map_name: &str,
+//         key: &ABIValue,
+//     ) -> Result<ABIValue, AppClientError> {
+//         let map = self
+//             .client
+//             .app_spec
+//             .state
+//             .maps
+//             .box_maps
+//             .get(map_name)
+//             .ok_or_else(|| {
+//                 AppClientError::ValidationError(format!("Unknown box map: {}", map_name))
+//             })?;
+//         let key_type = ABIType::from_str(&map.key_type).map_err(|e| {
+//             AppClientError::ABIError(format!("Invalid ABI type '{}': {}", map.key_type, e))
+//         })?;
+//         let key_bytes = key_type.encode(key).map_err(|e| {
+//             AppClientError::ValidationError(format!("Failed to encode map key: {}", e))
+//         })?;
+//         let mut full_key = if let Some(prefix_b64) = &map.prefix {
+//             base64::engine::general_purpose::STANDARD
+//                 .decode(prefix_b64)
+//                 .map_err(|e| {
+//                     AppClientError::ValidationError(format!("Failed to decode map prefix: {}", e))
+//                 })?
+//         } else {
+//             Vec::new()
+//         };
+//         full_key.extend_from_slice(&key_bytes);
+//         let value_type = ABIType::from_str(&map.value_type).map_err(|e| {
+//             AppClientError::ABIError(format!("Invalid ABI type '{}': {}", map.value_type, e))
+//         })?;
+//         self.client
+//             .algorand()
+//             .app()
+//             .get_box_value_from_abi_type(
+//                 self.client.app_id().ok_or(AppClientError::ValidationError(
+//                     "Missing app_id".to_string(),
+//                 ))?,
+//                 &full_key,
+//                 &value_type,
+//             )
+//             .await
+//             .map_err(|e| AppClientError::AppManagerError(e.to_string()))
+//     }
 
-    pub async fn get_map_value(
-        &self,
-        map_name: &str,
-        key: &ABIValue,
-    ) -> Result<ABIValue, AppClientError> {
-        let map = self
-            .client
-            .app_spec
-            .state
-            .maps
-            .global_state
-            .get(map_name)
-            .ok_or_else(|| {
-                AppClientError::ValidationError(format!("Unknown global map: {}", map_name))
-            })?;
-        let key_type = ABIType::from_str(&map.key_type).map_err(|e| {
-            AppClientError::ABIError(format!("Invalid ABI type '{}': {}", map.key_type, e))
-        })?;
-        let key_bytes = key_type.encode(key).map_err(|e| {
-            AppClientError::ValidationError(format!("Failed to encode map key: {}", e))
-        })?;
-        let mut full_key = if let Some(prefix_b64) = &map.prefix {
-            base64::engine::general_purpose::STANDARD
-                .decode(prefix_b64)
-                .map_err(|e| {
-                    AppClientError::ValidationError(format!("Failed to decode map prefix: {}", e))
-                })?
-        } else {
-            Vec::new()
-        };
-        full_key.extend_from_slice(&key_bytes);
+//     pub async fn get_map(
+//         &self,
+//         map_name: &str,
+//     ) -> Result<HashMap<String, ABIValue>, AppClientError> {
+//         let map = self
+//             .client
+//             .app_spec
+//             .state
+//             .maps
+//             .box_maps
+//             .get(map_name)
+//             .ok_or_else(|| {
+//                 AppClientError::ValidationError(format!("Unknown box map: {}", map_name))
+//             })?;
+//         let prefix_bytes = if let Some(prefix_b64) = &map.prefix {
+//             base64::engine::general_purpose::STANDARD
+//                 .decode(prefix_b64)
+//                 .map_err(|e| {
+//                     AppClientError::ValidationError(format!("Failed to decode map prefix: {}", e))
+//                 })?
+//         } else {
+//             Vec::new()
+//         };
 
-        let state = self.client.get_global_state().await?;
-        let app_state = state.get(&full_key).ok_or_else(|| {
-            AppClientError::ValidationError(format!("Global map '{}' key not found", map_name))
-        })?;
-        decode_app_state_bytes_value(&map.value_type, app_state)
-    }
+//         let key_type = ABIType::from_str(&map.key_type).map_err(|e| {
+//             AppClientError::ABIError(format!("Invalid ABI type '{}': {}", map.key_type, e))
+//         })?;
+//         let value_type = ABIType::from_str(&map.value_type).map_err(|e| {
+//             AppClientError::ABIError(format!("Invalid ABI type '{}': {}", map.value_type, e))
+//         })?;
 
-    pub async fn get_map(
-        &self,
-        map_name: &str,
-    ) -> Result<HashMap<String, ABIValue>, AppClientError> {
-        let map = self
-            .client
-            .app_spec
-            .state
-            .maps
-            .global_state
-            .get(map_name)
-            .ok_or_else(|| {
-                AppClientError::ValidationError(format!("Unknown global map: {}", map_name))
-            })?;
-        let prefix_bytes = if let Some(prefix_b64) = &map.prefix {
-            base64::engine::general_purpose::STANDARD
-                .decode(prefix_b64)
-                .map_err(|e| {
-                    AppClientError::ValidationError(format!("Failed to decode map prefix: {}", e))
-                })?
-        } else {
-            Vec::new()
-        };
-        let key_type = ABIType::from_str(&map.key_type).map_err(|e| {
-            AppClientError::ABIError(format!("Invalid ABI type '{}': {}", map.key_type, e))
-        })?;
-
-        let mut result = HashMap::new();
-        let state = self.client.get_global_state().await?;
-        for (key_raw, app_state) in state.iter() {
-            if !key_raw.starts_with(&prefix_bytes) {
-                continue;
-            }
-            let tail = &key_raw[prefix_bytes.len()..];
-            // Decode the map key tail according to ABI type, error if invalid
-            let decoded_key = key_type.decode(tail).map_err(|e| {
-                AppClientError::ABIError(format!(
-                    "Failed to decode key for map '{}': {}",
-                    map_name, e
-                ))
-            })?;
-            let key_str = abi_value_to_string(&decoded_key);
-            let value = decode_app_state_bytes_value(&map.value_type, app_state)?;
-            result.insert(key_str, value);
-        }
-        Ok(result)
-    }
-}
-
-impl LocalStateAccessor<'_> {
-    pub async fn get_all(&self) -> Result<HashMap<String, ABIValue>, AppClientError> {
-        let state = self.client.get_local_state(&self.address).await?;
-        let mut result = HashMap::new();
-        for (name, metadata) in &self.client.app_spec.state.keys.local_state {
-            let key_bytes = base64::engine::general_purpose::STANDARD
-                .decode(&metadata.key)
-                .map_err(|e| {
-                    AppClientError::ValidationError(format!(
-                        "Failed to decode local key '{}': {}",
-                        name, e
-                    ))
-                })?;
-            let app_state = state.get(&key_bytes).ok_or_else(|| {
-                AppClientError::ValidationError(format!(
-                    "Local state key '{}' not found for address {}",
-                    name, self.address
-                ))
-            })?;
-            let abi_value = decode_app_state_bytes_value(&metadata.value_type, app_state)?;
-            result.insert(name.clone(), abi_value);
-        }
-        Ok(result)
-    }
-
-    pub async fn get_value(&self, name: &str) -> Result<ABIValue, AppClientError> {
-        let metadata = self
-            .client
-            .app_spec
-            .state
-            .keys
-            .local_state
-            .get(name)
-            .ok_or_else(|| {
-                AppClientError::ValidationError(format!("Unknown local state key: {}", name))
-            })?;
-        let key_bytes = base64::engine::general_purpose::STANDARD
-            .decode(&metadata.key)
-            .map_err(|e| {
-                AppClientError::ValidationError(format!(
-                    "Failed to decode local key '{}': {}",
-                    name, e
-                ))
-            })?;
-        let state = self.client.get_local_state(&self.address).await?;
-        let app_state = state.get(&key_bytes).ok_or_else(|| {
-            AppClientError::ValidationError(format!(
-                "Local state key '{}' not found for address {}",
-                name, self.address
-            ))
-        })?;
-        decode_app_state_bytes_value(&metadata.value_type, app_state)
-    }
-
-    pub async fn get_map_value(
-        &self,
-        map_name: &str,
-        key: &ABIValue,
-    ) -> Result<ABIValue, AppClientError> {
-        let map = self
-            .client
-            .app_spec
-            .state
-            .maps
-            .local_state
-            .get(map_name)
-            .ok_or_else(|| {
-                AppClientError::ValidationError(format!("Unknown local map: {}", map_name))
-            })?;
-        let key_type = ABIType::from_str(&map.key_type).map_err(|e| {
-            AppClientError::ABIError(format!("Invalid ABI type '{}': {}", map.key_type, e))
-        })?;
-        let key_bytes = key_type.encode(key).map_err(|e| {
-            AppClientError::ValidationError(format!("Failed to encode map key: {}", e))
-        })?;
-        let mut full_key = if let Some(prefix_b64) = &map.prefix {
-            base64::engine::general_purpose::STANDARD
-                .decode(prefix_b64)
-                .map_err(|e| {
-                    AppClientError::ValidationError(format!("Failed to decode map prefix: {}", e))
-                })?
-        } else {
-            Vec::new()
-        };
-        full_key.extend_from_slice(&key_bytes);
-
-        let state = self.client.get_local_state(&self.address).await?;
-        let app_state = state.get(&full_key).ok_or_else(|| {
-            AppClientError::ValidationError(format!("Local map '{}' key not found", map_name))
-        })?;
-        decode_app_state_bytes_value(&map.value_type, app_state)
-    }
-
-    pub async fn get_map(
-        &self,
-        map_name: &str,
-    ) -> Result<HashMap<String, ABIValue>, AppClientError> {
-        let map = self
-            .client
-            .app_spec
-            .state
-            .maps
-            .local_state
-            .get(map_name)
-            .ok_or_else(|| {
-                AppClientError::ValidationError(format!("Unknown local map: {}", map_name))
-            })?;
-        let prefix_bytes = if let Some(prefix_b64) = &map.prefix {
-            base64::engine::general_purpose::STANDARD
-                .decode(prefix_b64)
-                .map_err(|e| {
-                    AppClientError::ValidationError(format!("Failed to decode map prefix: {}", e))
-                })?
-        } else {
-            Vec::new()
-        };
-        let key_type = ABIType::from_str(&map.key_type).map_err(|e| {
-            AppClientError::ABIError(format!("Invalid ABI type '{}': {}", map.key_type, e))
-        })?;
-
-        let mut result = HashMap::new();
-        let state = self.client.get_local_state(&self.address).await?;
-        for (key_raw, app_state) in state.iter() {
-            if !key_raw.starts_with(&prefix_bytes) {
-                continue;
-            }
-            let tail = &key_raw[prefix_bytes.len()..];
-            let decoded_key = key_type.decode(tail).map_err(|e| {
-                AppClientError::ABIError(format!(
-                    "Failed to decode key for map '{}': {}",
-                    map_name, e
-                ))
-            })?;
-            let key_str = abi_value_to_string(&decoded_key);
-            let value = decode_app_state_bytes_value(&map.value_type, app_state)?;
-            result.insert(key_str, value);
-        }
-        Ok(result)
-    }
-}
-
-impl BoxStateAccessor<'_> {
-    pub async fn get_value(&self, name: &str) -> Result<ABIValue, AppClientError> {
-        let metadata = self
-            .client
-            .app_spec
-            .state
-            .keys
-            .box_keys
-            .get(name)
-            .ok_or_else(|| AppClientError::ValidationError(format!("Unknown box key: {}", name)))?;
-        let box_name = base64::engine::general_purpose::STANDARD
-            .decode(&metadata.key)
-            .map_err(|e| {
-                AppClientError::ValidationError(format!(
-                    "Failed to decode box key '{}': {}",
-                    name, e
-                ))
-            })?;
-        let abi_type = ABIType::from_str(&metadata.value_type).map_err(|e| {
-            AppClientError::ABIError(format!("Invalid ABI type '{}': {}", metadata.value_type, e))
-        })?;
-        self.client
-            .algorand()
-            .app()
-            .get_box_value_from_abi_type(
-                self.client.app_id().ok_or(AppClientError::ValidationError(
-                    "Missing app_id".to_string(),
-                ))?,
-                &box_name,
-                &abi_type,
-            )
-            .await
-            .map_err(|e| AppClientError::AppManagerError(e.to_string()))
-    }
-
-    pub async fn get_map_value(
-        &self,
-        map_name: &str,
-        key: &ABIValue,
-    ) -> Result<ABIValue, AppClientError> {
-        let map = self
-            .client
-            .app_spec
-            .state
-            .maps
-            .box_maps
-            .get(map_name)
-            .ok_or_else(|| {
-                AppClientError::ValidationError(format!("Unknown box map: {}", map_name))
-            })?;
-        let key_type = ABIType::from_str(&map.key_type).map_err(|e| {
-            AppClientError::ABIError(format!("Invalid ABI type '{}': {}", map.key_type, e))
-        })?;
-        let key_bytes = key_type.encode(key).map_err(|e| {
-            AppClientError::ValidationError(format!("Failed to encode map key: {}", e))
-        })?;
-        let mut full_key = if let Some(prefix_b64) = &map.prefix {
-            base64::engine::general_purpose::STANDARD
-                .decode(prefix_b64)
-                .map_err(|e| {
-                    AppClientError::ValidationError(format!("Failed to decode map prefix: {}", e))
-                })?
-        } else {
-            Vec::new()
-        };
-        full_key.extend_from_slice(&key_bytes);
-        let value_type = ABIType::from_str(&map.value_type).map_err(|e| {
-            AppClientError::ABIError(format!("Invalid ABI type '{}': {}", map.value_type, e))
-        })?;
-        self.client
-            .algorand()
-            .app()
-            .get_box_value_from_abi_type(
-                self.client.app_id().ok_or(AppClientError::ValidationError(
-                    "Missing app_id".to_string(),
-                ))?,
-                &full_key,
-                &value_type,
-            )
-            .await
-            .map_err(|e| AppClientError::AppManagerError(e.to_string()))
-    }
-
-    pub async fn get_map(
-        &self,
-        map_name: &str,
-    ) -> Result<HashMap<String, ABIValue>, AppClientError> {
-        let map = self
-            .client
-            .app_spec
-            .state
-            .maps
-            .box_maps
-            .get(map_name)
-            .ok_or_else(|| {
-                AppClientError::ValidationError(format!("Unknown box map: {}", map_name))
-            })?;
-        let prefix_bytes = if let Some(prefix_b64) = &map.prefix {
-            base64::engine::general_purpose::STANDARD
-                .decode(prefix_b64)
-                .map_err(|e| {
-                    AppClientError::ValidationError(format!("Failed to decode map prefix: {}", e))
-                })?
-        } else {
-            Vec::new()
-        };
-
-        let key_type = ABIType::from_str(&map.key_type).map_err(|e| {
-            AppClientError::ABIError(format!("Invalid ABI type '{}': {}", map.key_type, e))
-        })?;
-        let value_type = ABIType::from_str(&map.value_type).map_err(|e| {
-            AppClientError::ABIError(format!("Invalid ABI type '{}': {}", map.value_type, e))
-        })?;
-
-        let mut result = HashMap::new();
-        let box_names = self.client.get_box_names().await?;
-        for box_name in box_names {
-            if !box_name.name_raw.starts_with(&prefix_bytes) {
-                continue;
-            }
-            let tail = &box_name.name_raw[prefix_bytes.len()..];
-            let decoded_key = key_type.decode(tail).map_err(|e| {
-                AppClientError::ABIError(format!(
-                    "Failed to decode key for map '{}': {}",
-                    map_name, e
-                ))
-            })?;
-            let key_str = abi_value_to_string(&decoded_key);
-            let val = self
-                .client
-                .algorand()
-                .app()
-                .get_box_value_from_abi_type(
-                    self.client.app_id().ok_or(AppClientError::ValidationError(
-                        "Missing app_id".to_string(),
-                    ))?,
-                    &box_name.name_raw,
-                    &value_type,
-                )
-                .await
-                .map_err(|e| AppClientError::AppManagerError(e.to_string()))?;
-            result.insert(key_str, val);
-        }
-        Ok(result)
-    }
-}
+//         let mut result = HashMap::new();
+//         let box_names = self.client.get_box_names().await?;
+//         for box_name in box_names {
+//             if !box_name.name_raw.starts_with(&prefix_bytes) {
+//                 continue;
+//             }
+//             let tail = &box_name.name_raw[prefix_bytes.len()..];
+//             let decoded_key = key_type.decode(tail).map_err(|e| {
+//                 AppClientError::ABIError(format!(
+//                     "Failed to decode key for map '{}': {}",
+//                     map_name, e
+//                 ))
+//             })?;
+//             let key_str = abi_value_to_string(&decoded_key);
+//             let val = self
+//                 .client
+//                 .algorand()
+//                 .app()
+//                 .get_box_value_from_abi_type(
+//                     self.client.app_id().ok_or(AppClientError::ValidationError(
+//                         "Missing app_id".to_string(),
+//                     ))?,
+//                     &box_name.name_raw,
+//                     &value_type,
+//                 )
+//                 .await
+//                 .map_err(|e| AppClientError::AppManagerError(e.to_string()))?;
+//             result.insert(key_str, val);
+//         }
+//         Ok(result)
+//     }
+// }
 
 fn decode_app_state(value_type: &str, app_state: &AppState) -> Result<ABIValue, AppClientError> {
     return match &app_state {

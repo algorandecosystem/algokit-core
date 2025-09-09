@@ -3,7 +3,6 @@ use super::types::{
     AppClientBareCallParams, AppClientMethodCallParams, CompilationParams, FundAppAccountParams,
 };
 use crate::AppClientError;
-use crate::applications::app_client::utils::get_abi_decoded_value;
 use crate::transactions::{
     AppCallMethodCallParams, AppCallParams, AppDeleteMethodCallParams, AppDeleteParams,
     AppMethodCallArg, AppUpdateMethodCallParams, AppUpdateParams, CommonTransactionParams,

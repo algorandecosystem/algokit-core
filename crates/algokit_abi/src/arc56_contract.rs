@@ -1,7 +1,6 @@
 use crate::abi_type::ABIType;
 use crate::error::ABIError;
 use crate::method::{ABIMethod, ABIMethodArg, ABIMethodArgType};
-use crate::types::struct_type as abi_struct;
 use base64::{Engine as _, engine::general_purpose};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -628,8 +627,6 @@ impl Arc56Contract {
         // Resolve return type
         let returns = if method.returns.return_type == "void" {
             None
-        } else if let Some(struct_name) = &method.returns.struct_name {
-            Some(ABIType::Struct(self.build_struct_type(struct_name)?))
         } else {
             Some(ABIType::from_str(&method.returns.return_type)?)
         };
@@ -643,60 +640,7 @@ impl Arc56Contract {
     }
 
     fn resolve_method_arg_type(&self, arg: &MethodArg) -> Result<ABIMethodArgType, ABIError> {
-        if let Some(struct_name) = &arg.struct_name {
-            let struct_ty = self.build_struct_type(struct_name)?;
-            return Ok(ABIMethodArgType::Value(ABIType::Struct(struct_ty)));
-        }
         // Fallback to standard parsing for non-struct args (including refs/txns)
         ABIMethodArgType::from_str(&arg.arg_type)
-    }
-
-    fn build_struct_type(&self, struct_name: &str) -> Result<abi_struct::StructType, ABIError> {
-        let fields = self
-            .structs
-            .get(struct_name)
-            .ok_or_else(|| ABIError::ValidationError {
-                message: format!("Unknown struct '{}' in ARC-56 spec", struct_name),
-            })?;
-        Ok(self.build_struct_type_from_fields(struct_name, fields))
-    }
-
-    fn build_struct_type_from_fields(
-        &self,
-        full_name: &str,
-        fields: &[StructField],
-    ) -> abi_struct::StructType {
-        let abi_fields: Vec<abi_struct::StructField> = fields
-            .iter()
-            .map(|f| {
-                let abi_ty = self.struct_field_type_to_abi_type(full_name, &f.name, &f.field_type);
-                abi_struct::StructField::new(f.name.clone(), abi_ty)
-            })
-            .collect();
-        abi_struct::StructType::new(full_name.to_string(), abi_fields)
-    }
-
-    fn struct_field_type_to_abi_type(
-        &self,
-        parent_name: &str,
-        field_name: &str,
-        field_type: &StructFieldType,
-    ) -> ABIType {
-        match field_type {
-            StructFieldType::Value(type_name) => {
-                if let Some(nested_fields) = self.structs.get(type_name) {
-                    let nested_name = format!("{}.{}", parent_name, field_name);
-                    let nested = self.build_struct_type_from_fields(&nested_name, nested_fields);
-                    ABIType::Struct(nested)
-                } else {
-                    ABIType::from_str(type_name).unwrap_or(ABIType::String)
-                }
-            }
-            StructFieldType::Nested(nested_fields) => {
-                let nested_name = format!("{}.{}", parent_name, field_name);
-                let nested = self.build_struct_type_from_fields(&nested_name, nested_fields);
-                ABIType::Struct(nested)
-            }
-        }
     }
 }
