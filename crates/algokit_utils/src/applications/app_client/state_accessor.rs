@@ -1,4 +1,4 @@
-use crate::clients::app_manager::{AppState, AppStateValue, BytesAppState};
+use crate::clients::app_manager::{AppState, BytesAppState};
 
 use super::{AppClient, AppClientError};
 use algokit_abi::arc56_contract::{AVM_BYTES, AVM_STRING};
@@ -7,6 +7,7 @@ use base64::Engine;
 use num_bigint::BigUint;
 use std::collections::HashMap;
 use std::future::Future;
+use std::pin::Pin;
 use std::str::FromStr;
 
 pub struct GlobalStateAccessor<'a> {
@@ -31,40 +32,27 @@ impl<'a> StateAccessor<'a> {
         Self { client }
     }
 
-    pub fn global_state(
-        &self,
-    ) -> AppStateAccessor<
-        fn() -> std::pin::Pin<
-            Box<dyn Future<Output = Result<HashMap<Vec<u8>, AppState>, AppClientError>> + Send>,
-        >,
-        std::pin::Pin<
-            Box<dyn Future<Output = Result<HashMap<Vec<u8>, AppState>, AppClientError>> + Send>,
-        >,
-    > {
+    pub fn global_state(&self) -> AppStateAccessor<'_> {
+        let client = self.client;
         AppStateAccessor::new(
             "global".to_string(),
-            || self.client.get_global_state(),
-            || self.client.app_spec.state.keys.global_state.clone(),
-            || self.client.app_spec.state.maps.global_state.clone(),
+            Box::new(move || Box::pin(client.get_global_state())),
+            Box::new(move || client.app_spec.state.keys.global_state.clone()),
+            Box::new(move || client.app_spec.state.maps.global_state.clone()),
         )
     }
 
-    pub fn local_state(
-        &self,
-        address: &str,
-    ) -> AppStateAccessor<
-        fn() -> std::pin::Pin<
-            Box<dyn Future<Output = Result<HashMap<Vec<u8>, AppState>, AppClientError>> + Send>,
-        >,
-        std::pin::Pin<
-            Box<dyn Future<Output = Result<HashMap<Vec<u8>, AppState>, AppClientError>> + Send>,
-        >,
-    > {
+    pub fn local_state(&self, address: &str) -> AppStateAccessor<'_> {
+        let client = self.client;
+        let address = address.to_string();
         AppStateAccessor::new(
             "local".to_string(),
-            || self.client.get_local_state(address),
-            || self.client.app_spec.state.keys.local_state.clone(),
-            || self.client.app_spec.state.maps.local_state.clone(),
+            Box::new(move || {
+                let addr = address.clone();
+                Box::pin(async move { client.get_local_state(&addr).await })
+            }),
+            Box::new(move || client.app_spec.state.keys.local_state.clone()),
+            Box::new(move || client.app_spec.state.maps.local_state.clone()),
         )
     }
 
@@ -75,27 +63,31 @@ impl<'a> StateAccessor<'a> {
     }
 }
 
-pub struct AppStateAccessor<F, Fut>
-where
-    F: Fn() -> Fut,
-    Fut: Future<Output = Result<HashMap<Vec<u8>, AppState>, AppClientError>>,
-{
+// TODO: simplify this
+pub struct AppStateAccessor<'a> {
     name: String,
-    get_app_state: F,
-    get_storage_key: fn() -> HashMap<String, StorageKey>,
-    get_storage_map: fn() -> HashMap<String, StorageMap>,
+    get_app_state: Box<
+        dyn Fn() -> Pin<
+                Box<dyn Future<Output = Result<HashMap<Vec<u8>, AppState>, AppClientError>> + 'a>,
+            > + 'a,
+    >,
+    get_storage_key: Box<dyn Fn() -> HashMap<String, StorageKey> + 'a>,
+    get_storage_map: Box<dyn Fn() -> HashMap<String, StorageMap> + 'a>,
 }
 
-impl<F, Fut> AppStateAccessor<F, Fut>
-where
-    F: Fn() -> Fut,
-    Fut: Future<Output = Result<HashMap<Vec<u8>, AppState>, AppClientError>>,
-{
+impl<'a> AppStateAccessor<'a> {
     pub fn new(
         name: String,
-        get_app_state: F,
-        get_storage_key: fn() -> HashMap<String, StorageKey>,
-        get_storage_map: fn() -> HashMap<String, StorageMap>,
+        get_app_state: Box<
+            dyn Fn() -> Pin<
+                    Box<
+                        dyn Future<Output = Result<HashMap<Vec<u8>, AppState>, AppClientError>>
+                            + 'a,
+                    >,
+                > + 'a,
+        >,
+        get_storage_key: Box<dyn Fn() -> HashMap<String, StorageKey> + 'a>,
+        get_storage_map: Box<dyn Fn() -> HashMap<String, StorageMap> + 'a>,
     ) -> Self {
         Self {
             name,
@@ -127,7 +119,8 @@ where
                 .ok_or_else(|| AppClientError::AppStateError {
                     message: format!("{} state key {} not found", self.name, key_name),
                 })?;
-        return self.decode_storage_key(key_name, storage_key, &state);
+
+        self.decode_storage_key(key_name, storage_key, &state)
     }
 
     fn decode_storage_key(
