@@ -4,7 +4,7 @@ use crate::{
         ALGORAND_PUBLIC_KEY_BYTE_LENGTH, BITS_PER_BYTE, MAX_BIT_SIZE, MAX_PRECISION,
         STATIC_ARRAY_REGEX, UFIXED_REGEX,
     },
-    types::collections::tuple::find_bool_sequence_end,
+    types::collections::{r#struct::ABIStruct, tuple::find_bool_sequence_end},
 };
 use std::{
     fmt::{Display, Formatter, Result as FmtResult},
@@ -98,6 +98,8 @@ pub enum ABIType {
     StaticArray(Box<ABIType>, usize),
     /// A dynamic-length array of another ABI type.
     DynamicArray(Box<ABIType>),
+    /// A struct type with named fields.
+    Struct(ABIStruct),
 }
 
 impl AsRef<ABIType> for ABIType {
@@ -125,6 +127,7 @@ impl ABIType {
             ABIType::String => self.encode_string(value),
             ABIType::Byte => self.encode_byte(value),
             ABIType::Bool => self.encode_bool(value),
+            ABIType::Struct(struct_type) => struct_type.encode(value),
         }
     }
 
@@ -146,6 +149,7 @@ impl ABIType {
             ABIType::Tuple(_) => self.decode_tuple(bytes),
             ABIType::StaticArray(_, _size) => self.decode_static_array(bytes),
             ABIType::DynamicArray(_) => self.decode_dynamic_array(bytes),
+            ABIType::Struct(struct_type) => struct_type.decode(bytes),
         }
     }
 
@@ -154,6 +158,7 @@ impl ABIType {
             ABIType::StaticArray(child_type, _) => child_type.is_dynamic(),
             ABIType::Tuple(child_types) => child_types.iter().any(|t| t.is_dynamic()),
             ABIType::DynamicArray(_) | ABIType::String => true,
+            ABIType::Struct(struct_type) => struct_type.to_tuple_type().is_dynamic(),
             _ => false,
         }
     }
@@ -190,6 +195,10 @@ impl ABIType {
                 }
                 Ok(size)
             }
+            ABIType::Struct(struct_type) => {
+                let tuple_type = struct_type.to_tuple_type();
+                Self::get_size(&tuple_type)
+            }
             ABIType::String => Err(ABIError::DecodingError {
                 message: format!("Failed to get size, {} is a dynamic type", abi_type),
             }),
@@ -221,6 +230,7 @@ impl Display for ABIType {
             ABIType::DynamicArray(child_type) => {
                 write!(f, "{}[]", child_type)
             }
+            ABIType::Struct(struct_type) => write!(f, "{}", struct_type.name),
         }
     }
 }

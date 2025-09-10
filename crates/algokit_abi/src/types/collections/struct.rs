@@ -1,9 +1,12 @@
+use crate::arc56_contract::{StructField as Arc56StructField, StructFieldType};
 use crate::{ABIError, ABIType, ABIValue};
 use std::collections::HashMap;
+use std::fmt::{Display, Formatter, Result as FmtResult};
+use std::str::FromStr;
 
 /// Represents an ABI struct type with named fields
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct StructType {
+pub struct ABIStruct {
     /// The name of the struct type
     pub name: String,
     /// The fields of the struct in order
@@ -19,12 +22,64 @@ pub struct StructField {
     pub abi_type: Box<ABIType>,
 }
 
-impl StructType {
+impl ABIStruct {
     /// Create a new struct type
     pub fn new(name: impl Into<String>, fields: Vec<StructField>) -> Self {
         Self {
             name: name.into(),
             fields,
+        }
+    }
+
+    /// Create from ARC-56 structs definition with recursive resolution
+    pub fn get_abi_struct_type(
+        struct_name: &str,
+        structs: &HashMap<String, Vec<Arc56StructField>>,
+    ) -> Result<Self, ABIError> {
+        let arc56_fields = structs
+            .get(struct_name)
+            .ok_or_else(|| ABIError::ValidationError {
+                message: format!("Struct '{}' not found in ARC-56 definition", struct_name),
+            })?;
+
+        let mut fields = Vec::new();
+        for arc56_field in arc56_fields {
+            let field_type = Self::resolve_field_type(&arc56_field.field_type, structs)?;
+            fields.push(StructField::new(&arc56_field.name, field_type));
+        }
+
+        Ok(Self::new(struct_name, fields))
+    }
+
+    /// Recursively resolve field types from ARC-56 definitions
+    fn resolve_field_type(
+        field_type: &StructFieldType,
+        structs: &HashMap<String, Vec<Arc56StructField>>,
+    ) -> Result<ABIType, ABIError> {
+        match field_type {
+            StructFieldType::Value(type_str) => {
+                // Check if this is a reference to another struct
+                if structs.contains_key(type_str) {
+                    let nested_struct = Self::get_abi_struct_type(type_str, structs)?;
+                    Ok(ABIType::Struct(nested_struct))
+                } else {
+                    // Parse as regular ABI type
+                    ABIType::from_str(type_str).map_err(|e| ABIError::ValidationError {
+                        message: format!("Failed to parse field type '{}': {}", type_str, e),
+                    })
+                }
+            }
+            StructFieldType::Nested(nested_fields) => {
+                // Handle anonymous nested struct fields
+                let mut resolved_fields = Vec::new();
+                for nested_field in nested_fields {
+                    let field_type = Self::resolve_field_type(&nested_field.field_type, structs)?;
+                    resolved_fields.push(StructField::new(&nested_field.name, field_type));
+                }
+                Ok(ABIType::Tuple(
+                    resolved_fields.into_iter().map(|f| *f.abi_type).collect(),
+                ))
+            }
         }
     }
 
@@ -36,6 +91,39 @@ impl StructType {
             .map(|field| (*field.abi_type).clone())
             .collect();
         ABIType::Tuple(tuple_types)
+    }
+
+    /// Encode struct value using tuple encoding
+    pub fn encode(&self, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
+        match value {
+            ABIValue::Struct(struct_map) => {
+                let tuple_values = self.struct_to_tuple(struct_map)?;
+                let tuple_type = self.to_tuple_type();
+                tuple_type.encode(&ABIValue::Array(tuple_values))
+            }
+            _ => Err(ABIError::ValidationError {
+                message: format!("Cannot encode non-struct value as struct '{}'", self.name),
+            }),
+        }
+    }
+
+    /// Decode bytes using tuple decoding
+    pub fn decode(&self, bytes: &[u8]) -> Result<ABIValue, ABIError> {
+        let tuple_type = self.to_tuple_type();
+        let decoded_tuple = tuple_type.decode(bytes)?;
+
+        match decoded_tuple {
+            ABIValue::Array(tuple_values) => {
+                let struct_map = self.tuple_to_struct(tuple_values)?;
+                Ok(ABIValue::Struct(struct_map))
+            }
+            _ => Err(ABIError::DecodingError {
+                message: format!(
+                    "Expected array from tuple decode for struct '{}'",
+                    self.name
+                ),
+            }),
+        }
     }
 
     /// Convert a struct value (HashMap) to a tuple value (Vec) for encoding
@@ -52,8 +140,16 @@ impl StructType {
                     message: format!("Missing field '{}' in struct '{}'", field.name, self.name),
                 })?;
 
-            // If the field is itself a struct, it should already be in the correct ABIValue form
-            tuple_values.push(value.clone());
+            // Recursively handle nested structs
+            let processed_value = match (field.abi_type.as_ref(), value) {
+                (ABIType::Struct(nested_struct), ABIValue::Struct(nested_map)) => {
+                    let nested_tuple = nested_struct.struct_to_tuple(nested_map)?;
+                    ABIValue::Array(nested_tuple)
+                }
+                _ => value.clone(),
+            };
+
+            tuple_values.push(processed_value);
         }
 
         Ok(tuple_values)
@@ -78,7 +174,16 @@ impl StructType {
         let mut struct_map = HashMap::with_capacity(self.fields.len());
 
         for (field, value) in self.fields.iter().zip(tuple_values.into_iter()) {
-            struct_map.insert(field.name.clone(), value);
+            // Recursively handle nested structs
+            let processed_value = match (field.abi_type.as_ref(), &value) {
+                (ABIType::Struct(nested_struct), ABIValue::Array(nested_tuple)) => {
+                    let nested_map = nested_struct.tuple_to_struct(nested_tuple.clone())?;
+                    ABIValue::Struct(nested_map)
+                }
+                _ => value,
+            };
+
+            struct_map.insert(field.name.clone(), processed_value);
         }
 
         Ok(struct_map)
@@ -95,6 +200,12 @@ impl StructField {
     }
 }
 
+impl Display for ABIStruct {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        write!(f, "{}", self.name)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -103,7 +214,7 @@ mod tests {
 
     #[test]
     fn test_struct_to_tuple_type() {
-        let struct_type = StructType::new(
+        let struct_type = ABIStruct::new(
             "Person",
             vec![
                 StructField::new("name", ABIType::String),
@@ -126,7 +237,7 @@ mod tests {
 
     #[test]
     fn test_struct_to_tuple_conversion() {
-        let struct_type = StructType::new(
+        let struct_type = ABIStruct::new(
             "Point",
             vec![
                 StructField::new("x", ABIType::Uint(BitSize::new(32).unwrap())),
@@ -146,7 +257,7 @@ mod tests {
 
     #[test]
     fn test_tuple_to_struct_conversion() {
-        let struct_type = StructType::new(
+        let struct_type = ABIStruct::new(
             "Point",
             vec![
                 StructField::new("x", ABIType::Uint(BitSize::new(32).unwrap())),
@@ -173,7 +284,7 @@ mod tests {
 
     #[test]
     fn test_missing_field_error() {
-        let struct_type = StructType::new(
+        let struct_type = ABIStruct::new(
             "Point",
             vec![
                 StructField::new("x", ABIType::Uint(BitSize::new(32).unwrap())),
@@ -198,7 +309,7 @@ mod tests {
     #[test]
     fn test_nested_struct() {
         // Create inner struct type
-        let inner_struct = StructType::new(
+        let inner_struct = ABIStruct::new(
             "Address",
             vec![
                 StructField::new("street", ABIType::String),
@@ -207,7 +318,7 @@ mod tests {
         );
 
         // Create outer struct with nested struct
-        let outer_struct = StructType::new(
+        let outer_struct = ABIStruct::new(
             "Person",
             vec![
                 StructField::new("name", ABIType::String),
@@ -235,19 +346,14 @@ mod tests {
         assert_eq!(tuple_values.len(), 2);
         assert_eq!(tuple_values[0], ABIValue::String("Alice".to_string()));
 
-        // The nested struct should remain as a struct in the tuple
+        // The nested struct should be converted to array for tuple representation
         match &tuple_values[1] {
-            ABIValue::Struct(map) => {
-                assert_eq!(
-                    map.get("street"),
-                    Some(&ABIValue::String("123 Main St".to_string()))
-                );
-                assert_eq!(
-                    map.get("city"),
-                    Some(&ABIValue::String("Springfield".to_string()))
-                );
+            ABIValue::Array(nested_array) => {
+                assert_eq!(nested_array.len(), 2);
+                assert_eq!(nested_array[0], ABIValue::String("123 Main St".to_string()));
+                assert_eq!(nested_array[1], ABIValue::String("Springfield".to_string()));
             }
-            _ => panic!("Expected nested struct"),
+            _ => panic!("Expected nested struct to be converted to array"),
         }
     }
 }
