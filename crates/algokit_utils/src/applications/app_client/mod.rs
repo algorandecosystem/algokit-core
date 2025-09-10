@@ -212,7 +212,6 @@ impl AppClient {
         })
     }
 
-    /// Direct method: fund the application's account
     pub async fn fund_app_account(
         &self,
         params: FundAppAccountParams,

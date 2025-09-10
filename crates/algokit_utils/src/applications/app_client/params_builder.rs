@@ -111,7 +111,7 @@ impl<'a> ParamsBuilder<'a> {
         // Compile programs (and populate AppManager cache/source maps)
         let compilation_params = compilation_params.unwrap_or_default();
         let (approval_program, clear_state_program) =
-            self.client.compile_with_params(&compilation_params).await?;
+            self.client.compile(&compilation_params).await?;
 
         let abi_method = self.get_abi_method(&params.method)?;
         let sender = self.client.get_sender_address(&params.sender)?.as_str();
@@ -454,7 +454,7 @@ impl BareParamsBuilder<'_> {
         // Compile programs (and populate AppManager cache/source maps)
         let compilation_params = compilation_params.unwrap_or_default();
         let (approval_program, clear_state_program) =
-            self.client.compile_with_params(&compilation_params).await?;
+            self.client.compile(&compilation_params).await?;
 
         Ok(AppUpdateParams {
             sender: self.client.get_sender_address(&params.sender)?,

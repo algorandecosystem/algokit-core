@@ -1,18 +1,21 @@
 use super::{AppClient, AppClientError};
-use crate::clients::app_manager::DeploymentMetadata;
+use crate::{
+    Config, EventType,
+    applications::app_client::types::CompilationParams,
+    clients::app_manager::DeploymentMetadata,
+    config::{AppCompiledEventData, EventData},
+};
 
 impl AppClient {
-    pub async fn compile_with_params(
+    pub async fn compile(
         &self,
-        compilation_params: &super::types::CompilationParams,
+        compilation_params: &CompilationParams,
     ) -> Result<(Vec<u8>, Vec<u8>), AppClientError> {
-        let approval = self
-            .compile_approval_with_params(compilation_params)
-            .await?;
-        let clear = self.compile_clear_with_params(compilation_params).await?;
+        let approval = self.compile_approval(compilation_params).await?;
+        let clear = self.compile_clear(compilation_params).await?;
 
         // Emit AppCompiled event when debug flag is enabled
-        if crate::config::Config::debug() {
+        if Config::debug() {
             let app_name = self.app_name.clone();
             let approval_map = self
                 .algorand()
@@ -25,25 +28,22 @@ impl AppClient {
                 .get_compilation_result(&String::from_utf8_lossy(&clear))
                 .and_then(|c| c.source_map);
 
-            let event = crate::config::AppCompiledEventData {
+            let event = AppCompiledEventData {
                 app_name,
                 approval_source_map: approval_map,
                 clear_source_map: clear_map,
             };
-            crate::config::Config::events()
-                .emit(
-                    crate::config::EventType::AppCompiled,
-                    crate::config::EventData::AppCompiled(event),
-                )
+            Config::events()
+                .emit(EventType::AppCompiled, EventData::AppCompiled(event))
                 .await;
         }
 
         Ok((approval, clear))
     }
 
-    pub async fn compile_approval_with_params(
+    async fn compile_approval(
         &self,
-        compilation_params: &super::types::CompilationParams,
+        compilation_params: &CompilationParams,
     ) -> Result<Vec<u8>, AppClientError> {
         let source =
             self.app_spec
@@ -92,9 +92,9 @@ impl AppClient {
         Ok(teal.into_bytes())
     }
 
-    pub async fn compile_clear_with_params(
+    async fn compile_clear(
         &self,
-        compilation_params: &super::types::CompilationParams,
+        compilation_params: &CompilationParams,
     ) -> Result<Vec<u8>, AppClientError> {
         let source =
             self.app_spec
