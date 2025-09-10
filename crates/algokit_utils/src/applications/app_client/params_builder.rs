@@ -7,8 +7,7 @@ use crate::applications::app_client::utils::get_abi_decoded_value;
 use crate::clients::app_manager::AppState;
 use crate::transactions::{
     AppCallMethodCallParams, AppCallParams, AppDeleteMethodCallParams, AppDeleteParams,
-    AppMethodCallArg, AppUpdateMethodCallParams, AppUpdateParams, CommonTransactionParams,
-    PaymentParams,
+    AppMethodCallArg, AppUpdateMethodCallParams, AppUpdateParams, PaymentParams,
 };
 use algokit_abi::{
     ABIMethod, ABIMethodArgType, ABIType, ABIValue, DefaultValue, DefaultValueSource,
@@ -75,19 +74,31 @@ impl<'a> ParamsBuilder<'a> {
         &self,
         params: AppClientMethodCallParams,
     ) -> Result<AppDeleteMethodCallParams, AppClientError> {
-        let method_params = self
-            .get_method_call_params(&params, OnApplicationComplete::DeleteApplication)
+        let abi_method = self.get_abi_method(&params.method)?;
+        let sender = self.client.get_sender_address(&params.sender)?.as_str();
+        let resolved_args = self
+            .resolve_args_with_defaults(&abi_method, &params.args, &sender)
             .await?;
 
         Ok(AppDeleteMethodCallParams {
-            common_params: method_params.common_params,
-            app_id: method_params.app_id,
-            method: method_params.method,
-            args: method_params.args,
-            account_references: method_params.account_references,
-            app_references: method_params.app_references,
-            asset_references: method_params.asset_references,
-            box_references: method_params.box_references,
+            sender: self.client.get_sender_address(&params.sender)?,
+            signer: None,
+            rekey_to: get_optional_address(&params.rekey_to)?,
+            note: params.note.clone(),
+            lease: params.lease,
+            static_fee: params.static_fee,
+            extra_fee: params.extra_fee,
+            max_fee: params.max_fee,
+            validity_window: params.validity_window,
+            first_valid_round: params.first_valid_round,
+            last_valid_round: params.last_valid_round,
+            app_id: self.client.app_id,
+            method: abi_method,
+            args: resolved_args,
+            account_references: super::utils::parse_account_refs_strs(&params.account_references)?,
+            app_references: params.app_references.clone(),
+            asset_references: params.asset_references.clone(),
+            box_references: params.box_references.clone(),
         })
     }
 
@@ -102,22 +113,33 @@ impl<'a> ParamsBuilder<'a> {
         let (approval_program, clear_state_program) =
             self.client.compile_with_params(&compilation_params).await?;
 
-        // Reuse method_call to resolve method + args + common params
-        let method_params = self
-            .get_method_call_params(&params, OnApplicationComplete::UpdateApplication)
+        let abi_method = self.get_abi_method(&params.method)?;
+        let sender = self.client.get_sender_address(&params.sender)?.as_str();
+        let resolved_args = self
+            .resolve_args_with_defaults(&abi_method, &params.args, &sender)
             .await?;
 
         Ok(AppUpdateMethodCallParams {
-            common_params: method_params.common_params,
-            app_id: method_params.app_id,
+            sender: self.client.get_sender_address(&params.sender)?,
+            signer: None,
+            rekey_to: get_optional_address(&params.rekey_to)?,
+            note: params.note.clone(),
+            lease: params.lease,
+            static_fee: params.static_fee,
+            extra_fee: params.extra_fee,
+            max_fee: params.max_fee,
+            validity_window: params.validity_window,
+            first_valid_round: params.first_valid_round,
+            last_valid_round: params.last_valid_round,
+            app_id: self.client.app_id,
+            method: abi_method,
+            args: resolved_args,
+            account_references: super::utils::parse_account_refs_strs(&params.account_references)?,
+            app_references: params.app_references.clone(),
+            asset_references: params.asset_references.clone(),
+            box_references: params.box_references.clone(),
             approval_program,
             clear_state_program,
-            method: method_params.method,
-            args: method_params.args,
-            account_references: method_params.account_references,
-            app_references: method_params.app_references,
-            asset_references: method_params.asset_references,
-            box_references: method_params.box_references,
         })
     }
 
@@ -131,21 +153,19 @@ impl<'a> ParamsBuilder<'a> {
         let rekey_to = get_optional_address(&params.rekey_to)?;
 
         Ok(PaymentParams {
-            common_params: CommonTransactionParams {
-                sender,
-                rekey_to,
-                note: params.note.clone(),
-                lease: params.lease,
-                static_fee: params.static_fee,
-                extra_fee: params.extra_fee,
-                max_fee: params.max_fee,
-                validity_window: params.validity_window,
-                first_valid_round: params.first_valid_round,
-                last_valid_round: params.last_valid_round,
-                ..Default::default()
-            },
+            sender,
+            rekey_to,
+            note: params.note.clone(),
+            lease: params.lease,
+            static_fee: params.static_fee,
+            extra_fee: params.extra_fee,
+            max_fee: params.max_fee,
+            validity_window: params.validity_window,
+            first_valid_round: params.first_valid_round,
+            last_valid_round: params.last_valid_round,
             receiver,
             amount: params.amount,
+            ..Default::default()
         })
     }
 
@@ -156,30 +176,13 @@ impl<'a> ParamsBuilder<'a> {
     ) -> Result<AppCallMethodCallParams, AppClientError> {
         let abi_method = self.get_abi_method(&params.method)?;
         let sender = self.client.get_sender_address(&params.sender)?.as_str();
-
         let resolved_args = self
             .resolve_args_with_defaults(&abi_method, &params.args, &sender)
             .await?;
 
         Ok(AppCallMethodCallParams {
-            common_params: self.build_common_params_from_method(params)?,
-            app_id: self.client.app_id,
-            method: abi_method,
-            args: resolved_args,
-            account_references: super::utils::parse_account_refs_strs(&params.account_references)?,
-            app_references: params.app_references.clone(),
-            asset_references: params.asset_references.clone(),
-            box_references: params.box_references.clone(),
-            on_complete: on_complete,
-        })
-    }
-
-    fn build_common_params_from_method(
-        &self,
-        params: &AppClientMethodCallParams,
-    ) -> Result<CommonTransactionParams, AppClientError> {
-        Ok(CommonTransactionParams {
             sender: self.client.get_sender_address(&params.sender)?,
+            signer: None,
             rekey_to: get_optional_address(&params.rekey_to)?,
             note: params.note.clone(),
             lease: params.lease,
@@ -189,7 +192,14 @@ impl<'a> ParamsBuilder<'a> {
             validity_window: params.validity_window,
             first_valid_round: params.first_valid_round,
             last_valid_round: params.last_valid_round,
-            ..Default::default()
+            app_id: self.client.app_id,
+            method: abi_method,
+            args: resolved_args,
+            account_references: super::utils::parse_account_refs_strs(&params.account_references)?,
+            app_references: params.app_references.clone(),
+            asset_references: params.asset_references.clone(),
+            box_references: params.box_references.clone(),
+            on_complete: on_complete,
         })
     }
 
@@ -305,7 +315,13 @@ impl<'a> ParamsBuilder<'a> {
                         message: "Default value method call did not return a value".to_string(),
                     }
                 })?;
-                Ok(abi_return.return_value)
+
+                match abi_return.return_value {
+                    None => Err(AppClientError::ParamsBuilderError {
+                        message: "Default value method call did not return a value".to_string(),
+                    }),
+                    Some(return_value) => Ok(return_value),
+                }
             }
             DefaultValueSource::Literal => {
                 let value_bytes = base64::engine::general_purpose::STANDARD
@@ -400,16 +416,24 @@ impl BareParamsBuilder<'_> {
         &self,
         params: AppClientBareCallParams,
     ) -> Result<AppDeleteParams, AppClientError> {
-        let app_call =
-            self.build_bare_app_call_params(params, OnApplicationComplete::DeleteApplication)?;
         Ok(AppDeleteParams {
-            common_params: app_call.common_params,
-            app_id: app_call.app_id,
-            args: app_call.args,
-            account_references: app_call.account_references,
-            app_references: app_call.app_references,
-            asset_references: app_call.asset_references,
-            box_references: app_call.box_references,
+            sender: self.client.get_sender_address(&params.sender)?,
+            signer: None,
+            rekey_to: get_optional_address(&params.rekey_to)?,
+            note: params.note.clone(),
+            lease: params.lease,
+            static_fee: params.static_fee,
+            extra_fee: params.extra_fee,
+            max_fee: params.max_fee,
+            validity_window: params.validity_window,
+            first_valid_round: params.first_valid_round,
+            last_valid_round: params.last_valid_round,
+            app_id: self.client.app_id,
+            args: params.args,
+            account_references: super::utils::parse_account_refs_strs(&params.account_references)?,
+            app_references: params.app_references,
+            asset_references: params.asset_references,
+            box_references: params.box_references,
         })
     }
 
@@ -432,46 +456,9 @@ impl BareParamsBuilder<'_> {
         let (approval_program, clear_state_program) =
             self.client.compile_with_params(&compilation_params).await?;
 
-        // Resolve common/bare fields
-        let app_call =
-            self.build_bare_app_call_params(params, OnApplicationComplete::UpdateApplication)?;
-
         Ok(AppUpdateParams {
-            common_params: app_call.common_params,
-            app_id: app_call.app_id,
-            approval_program,
-            clear_state_program,
-            args: app_call.args,
-            account_references: app_call.account_references,
-            app_references: app_call.app_references,
-            asset_references: app_call.asset_references,
-            box_references: app_call.box_references,
-        })
-    }
-
-    fn build_bare_app_call_params(
-        &self,
-        params: AppClientBareCallParams,
-        on_complete: OnApplicationComplete,
-    ) -> Result<AppCallParams, AppClientError> {
-        Ok(AppCallParams {
-            common_params: self.build_common_params_from_bare(&params)?,
-            app_id: self.client.app_id,
-            on_complete: on_complete,
-            args: params.args,
-            account_references: super::utils::parse_account_refs_strs(&params.account_references)?,
-            app_references: params.app_references,
-            asset_references: params.asset_references,
-            box_references: params.box_references,
-        })
-    }
-
-    fn build_common_params_from_bare(
-        &self,
-        params: &AppClientBareCallParams,
-    ) -> Result<CommonTransactionParams, AppClientError> {
-        Ok(CommonTransactionParams {
             sender: self.client.get_sender_address(&params.sender)?,
+            signer: None,
             rekey_to: get_optional_address(&params.rekey_to)?,
             note: params.note.clone(),
             lease: params.lease,
@@ -481,7 +468,41 @@ impl BareParamsBuilder<'_> {
             validity_window: params.validity_window,
             first_valid_round: params.first_valid_round,
             last_valid_round: params.last_valid_round,
-            ..Default::default()
+            app_id: self.client.app_id,
+            args: params.args,
+            account_references: super::utils::parse_account_refs_strs(&params.account_references)?,
+            app_references: params.app_references,
+            asset_references: params.asset_references,
+            box_references: params.box_references,
+            approval_program,
+            clear_state_program,
+        })
+    }
+
+    fn build_bare_app_call_params(
+        &self,
+        params: AppClientBareCallParams,
+        on_complete: OnApplicationComplete,
+    ) -> Result<AppCallParams, AppClientError> {
+        Ok(AppCallParams {
+            sender: self.client.get_sender_address(&params.sender)?,
+            signer: None,
+            rekey_to: get_optional_address(&params.rekey_to)?,
+            note: params.note.clone(),
+            lease: params.lease,
+            static_fee: params.static_fee,
+            extra_fee: params.extra_fee,
+            max_fee: params.max_fee,
+            validity_window: params.validity_window,
+            first_valid_round: params.first_valid_round,
+            last_valid_round: params.last_valid_round,
+            app_id: self.client.app_id,
+            on_complete: on_complete,
+            args: params.args,
+            account_references: super::utils::parse_account_refs_strs(&params.account_references)?,
+            app_references: params.app_references,
+            asset_references: params.asset_references,
+            box_references: params.box_references,
         })
     }
 }

@@ -28,14 +28,14 @@ impl TransactionBuilder<'_> {
         on_complete: Option<OnApplicationComplete>,
     ) -> Result<algokit_transact::Transaction, AppClientError> {
         let params = self.client.params().call(params, on_complete).await?;
-        let built_transactions = self
+        let trasactions = self
             .client
             .algorand
             .create()
             .app_call_method_call(params)
             .map_err(|e| AppClientError::ComposerError { source: e })
             .await?;
-        Ok(built_transactions.transactions[0].clone())
+        Ok(trasactions[0].clone())
     }
 
     /// Creates an ABI method call with OptIn.
@@ -44,14 +44,14 @@ impl TransactionBuilder<'_> {
         params: AppClientMethodCallParams,
     ) -> Result<algokit_transact::Transaction, AppClientError> {
         let params = self.client.params().opt_in(params).await?;
-        let built_transactions = self
+        let trasactions = self
             .client
             .algorand
             .create()
             .app_call_method_call(params)
             .map_err(|e| AppClientError::ComposerError { source: e })
             .await?;
-        Ok(built_transactions.transactions[0].clone())
+        Ok(trasactions[0].clone())
     }
 
     /// Creates an ABI method call with CloseOut.
@@ -60,14 +60,14 @@ impl TransactionBuilder<'_> {
         params: AppClientMethodCallParams,
     ) -> Result<algokit_transact::Transaction, AppClientError> {
         let params = self.client.params().close_out(params).await?;
-        let built_transactions = self
+        let trasactions = self
             .client
             .algorand
             .create()
             .app_call_method_call(params)
             .map_err(|e| AppClientError::ComposerError { source: e })
             .await?;
-        Ok(built_transactions.transactions[0].clone())
+        Ok(trasactions[0].clone())
     }
 
     pub async fn clear_state(
@@ -75,14 +75,14 @@ impl TransactionBuilder<'_> {
         params: AppClientMethodCallParams,
     ) -> Result<algokit_transact::Transaction, AppClientError> {
         let params = self.client.params().clear_state(params).await?;
-        let built_transactions = self
+        let trasactions = self
             .client
             .algorand
             .create()
             .app_call_method_call(params)
             .map_err(|e| AppClientError::ComposerError { source: e })
             .await?;
-        Ok(built_transactions.transactions[0].clone())
+        Ok(trasactions[0].clone())
     }
 
     /// Creates an ABI method call with Delete.
@@ -91,14 +91,14 @@ impl TransactionBuilder<'_> {
         params: AppClientMethodCallParams,
     ) -> Result<algokit_transact::Transaction, AppClientError> {
         let params = self.client.params().delete(params).await?;
-        let built_transactions = self
+        let trasactions = self
             .client
             .algorand
             .create()
             .app_delete_method_call(params)
             .map_err(|e| AppClientError::ComposerError { source: e })
             .await?;
-        Ok(built_transactions.transactions[0].clone())
+        Ok(trasactions[0].clone())
     }
 
     /// Update the application with method call.
@@ -112,14 +112,14 @@ impl TransactionBuilder<'_> {
             .params()
             .update(params, compilation_params)
             .await?;
-        let built_transactions = self
+        let trasactions = self
             .client
             .algorand
             .create()
             .app_update_method_call(params)
             .map_err(|e| AppClientError::ComposerError { source: e })
             .await?;
-        Ok(built_transactions.transactions[0].clone())
+        Ok(trasactions[0].clone())
     }
 
     /// Fund the application account.

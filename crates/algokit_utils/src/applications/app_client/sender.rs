@@ -1,10 +1,11 @@
-use crate::transactions::SendTransactionResult;
-use crate::{AppClientError, SendAppCallResult};
-use algokit_transact::OnApplicationComplete;
+use crate::transactions::composer::SimulateParams;
+use crate::transactions::{SendTransactionResult, TransactionComposerConfig};
+use crate::{AppClientError, ResourcePopulation, SendAppCallResult};
+use algod_client::models::SimulateTraceConfig;
+use algokit_transact::{MAX_SIMULATE_OPCODE_BUDGET, OnApplicationComplete};
 
 use super::types::{AppClientBareCallParams, AppClientMethodCallParams, CompilationParams};
 use super::{AppClient, FundAppAccountParams};
-// use std::str::FromStr; // no longer needed after refactor
 
 pub struct TransactionSender<'a> {
     pub(crate) client: &'a AppClient,
@@ -22,8 +23,6 @@ impl<'a> TransactionSender<'a> {
         }
     }
 
-    // TODO: default to NoOp?
-    /// Call a method with NoOp.
     pub async fn call(
         &self,
         params: AppClientMethodCallParams,
@@ -40,22 +39,30 @@ impl<'a> TransactionSender<'a> {
         if method_params.on_complete == OnApplicationComplete::NoOp
             && arc56_method.readonly == Some(true)
         {
-            // TODO: copy the fee logic and MAX_SIMULATE_OPCODE_BUDGET from ts over
-            let mut composer = self.client.algorand().new_group();
+            // TODO: send params
+            let mut composer = self
+                .client
+                .algorand()
+                .new_group(Some(TransactionComposerConfig {
+                    populate_app_call_resources: ResourcePopulation::Disabled,
+                    cover_app_call_inner_transaction_fees: false,
+                }));
+
             composer
                 .add_app_call_method_call(method_params)
                 .map_err(|e| AppClientError::ComposerError { source: e });
 
-            let simulate_params = crate::transactions::composer::SimulateParams {
+            let simulate_params = SimulateParams {
                 allow_more_logging: Some(true),
                 allow_empty_signatures: Some(true),
-                exec_trace_config: Some(algod_client::models::SimulateTraceConfig {
+                exec_trace_config: Some(SimulateTraceConfig {
                     enable: Some(true),
                     scratch_change: Some(true),
                     stack_change: Some(true),
                     state_change: Some(true),
                 }),
                 skip_signatures: true,
+                extra_opcode_budget: Some(MAX_SIMULATE_OPCODE_BUDGET),
                 ..Default::default()
             };
 
@@ -146,7 +153,7 @@ impl<'a> TransactionSender<'a> {
     pub async fn update(
         &self,
         params: AppClientMethodCallParams,
-        compilation_params: Option<CompilationParams>,
+        compilation_params: Option<CompilationParams>, // TODO: consider creating MethodCallParams struct for each of these method so on_complete and compilation_params are handled better
     ) -> Result<crate::transactions::SendAppUpdateResult, AppClientError> {
         let update_params = self
             .client
