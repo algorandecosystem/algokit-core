@@ -44,6 +44,7 @@ async fn retrieve_state(#[future] algorand_fixture: AlgorandFixtureResult) -> Te
         algorand,
         app_name: None,
         default_sender: Some(sender.to_string()),
+        default_signer: None,
         source_maps: None,
         transaction_composer_config: None,
     });
@@ -296,6 +297,7 @@ async fn logic_error_exposure_with_source_maps(
         algorand,
         app_name: None,
         default_sender: Some(sender.to_string()),
+        default_signer: None,
         source_maps: None,
         transaction_composer_config: None,
     });
@@ -379,6 +381,7 @@ async fn box_methods_with_manually_encoded_abi_args(
         algorand,
         app_name: None,
         default_sender: Some(sender.to_string()),
+        default_signer: None,
         source_maps: None,
         transaction_composer_config: None,
     });
@@ -505,6 +508,7 @@ async fn construct_transaction_with_abi_encoding_including_foreign_references_no
         algorand,
         app_name: None,
         default_sender: Some(sender.to_string()),
+        default_signer: None,
         source_maps: None,
         transaction_composer_config: None,
     });
@@ -573,6 +577,7 @@ async fn abi_with_default_arg_from_local_state(
         algorand,
         app_name: None,
         default_sender: Some(sender.to_string()),
+        default_signer: None,
         source_maps: None,
         transaction_composer_config: None,
     });
@@ -734,6 +739,7 @@ async fn abi_with_default_arg_from_literal(
         algorand,
         app_name: None,
         default_sender: Some(sender.to_string()),
+        default_signer: None,
         source_maps: None,
         transaction_composer_config: None,
     });
@@ -808,6 +814,7 @@ async fn abi_with_default_arg_from_method(
         algorand,
         app_name: None,
         default_sender: Some(sender.to_string()),
+        default_signer: None,
         source_maps: None,
         transaction_composer_config: None,
     });
@@ -882,6 +889,7 @@ async fn abi_with_default_arg_from_global_state(
         algorand,
         app_name: None,
         default_sender: Some(sender.to_string()),
+        default_signer: None,
         source_maps: None,
         transaction_composer_config: None,
     });
@@ -976,6 +984,7 @@ async fn bare_call_with_box_reference_builds_and_sends(
         algorand,
         app_name: None,
         default_sender: Some(sender.to_string()),
+        default_signer: None,
         source_maps: None,
         transaction_composer_config: None,
     });
@@ -1046,6 +1055,7 @@ async fn construct_transaction_with_boxes(
         algorand,
         app_name: None,
         default_sender: Some(sender.to_string()),
+        default_signer: None,
         source_maps: None,
         transaction_composer_config: None,
     });
@@ -1114,6 +1124,7 @@ async fn construct_transaction_with_abi_encoding_including_transaction(
         algorand,
         app_name: None,
         default_sender: Some(sender.to_string()),
+        default_signer: None,
         source_maps: None,
         transaction_composer_config: None,
     });
@@ -1166,7 +1177,7 @@ async fn construct_transaction_with_abi_encoding_including_transaction(
     // ABI return should be present and decode to expected value
     let abi_ret = send_res.abi_return.as_ref().expect("abi return expected");
     let ret_val = match &abi_ret.return_value {
-        ABIValue::Uint(u) => u.clone(),
+        Some(ABIValue::Uint(u)) => u.clone(),
         _ => panic!("expected uint64 return"),
     };
     assert_eq!(ret_val, num_bigint::BigUint::from(12345u32));
@@ -1195,6 +1206,7 @@ async fn box_methods_with_arc4_returns_parametrized(
         algorand,
         app_name: None,
         default_sender: Some(sender.to_string()),
+        default_signer: None,
         source_maps: None,
         transaction_composer_config: None,
     });
@@ -1297,7 +1309,10 @@ async fn box_methods_with_arc4_returns_parametrized(
 
         // Decode via ABI type and verify
         let decoded = client
+            .algorand()
+            .app()
             .get_box_value_from_abi_type(
+                client.app_id(),
                 &box_reference,
                 &ABIType::from_str(value_type_str).unwrap(),
             )
@@ -1326,7 +1341,7 @@ async fn app_client_from_network_resolves_id(
     let mut spec_with_networks = spec.clone();
     spec_with_networks.networks = Some(std::collections::HashMap::from([(
         "localnet".to_string(),
-        arc56_contract::Network { app_id },
+        algokit_abi::arc56_contract::Network { app_id },
     )]));
 
     let client = AppClient::from_network(
@@ -1335,9 +1350,11 @@ async fn app_client_from_network_resolves_id(
         None,
         None,
         None,
+        None,
+        None,
     )
     .await
     .expect("from_network");
-    assert_eq!(client.app_id(), Some(app_id));
+    assert_eq!(client.app_id(), app_id);
     Ok(())
 }

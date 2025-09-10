@@ -1,10 +1,12 @@
 use crate::AlgorandClient;
 use crate::clients::app_manager::TealTemplateValue;
 use crate::transactions::TransactionComposerConfig;
+use crate::transactions::TransactionSigner;
 use crate::transactions::app_call::AppMethodCallArg;
 use algokit_abi::Arc56Contract;
 use algokit_transact::BoxReference;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 /// Container for source maps captured during compilation/simulation.
 #[derive(Debug, Clone, Default)]
@@ -27,6 +29,7 @@ pub struct AppClientParams {
     pub algorand: AlgorandClient,
     pub app_name: Option<String>,
     pub default_sender: Option<String>,
+    pub default_signer: Option<Arc<dyn TransactionSigner>>,
     pub source_maps: Option<AppSourceMaps>,
     pub transaction_composer_config: Option<TransactionComposerConfig>,
 }

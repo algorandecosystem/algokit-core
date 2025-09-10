@@ -1,13 +1,14 @@
 use crate::applications::AppDeployer;
 use crate::clients::app_manager::{AppState, BoxName};
 use crate::clients::network_client::NetworkDetails;
-use crate::transactions::TransactionComposerConfig;
+use crate::transactions::{TransactionComposerConfig, TransactionSigner};
 use crate::{AlgorandClient, clients::app_manager::BoxIdentifier};
 use crate::{SendParams, SendTransactionResult};
 use algokit_abi::Arc56Contract;
 use algokit_transact::Address;
 use std::collections::HashMap;
 use std::str::FromStr;
+use std::sync::Arc;
 mod compilation;
 mod error;
 mod error_transformation;
@@ -33,8 +34,7 @@ pub struct AppClient {
     app_spec: Arc56Contract,
     algorand: AlgorandClient,
     default_sender: Option<String>,
-
-    // TODO: default_signer is missing
+    default_signer: Option<Arc<dyn TransactionSigner>>,
     source_maps: Option<AppSourceMaps>,
     app_name: Option<String>,
     transaction_composer_config: Option<TransactionComposerConfig>,
@@ -48,6 +48,7 @@ impl AppClient {
             app_spec: params.app_spec,
             algorand: params.algorand,
             default_sender: params.default_sender,
+            default_signer: params.default_signer,
             source_maps: params.source_maps,
             app_name: params.app_name,
             transaction_composer_config: params.transaction_composer_config,
@@ -63,6 +64,7 @@ impl AppClient {
         algorand: AlgorandClient,
         app_name: Option<String>,
         default_sender: Option<String>,
+        default_signer: Option<Arc<dyn TransactionSigner>>,
         source_maps: Option<AppSourceMaps>,
         transaction_composer_config: Option<TransactionComposerConfig>,
     ) -> Result<Self, AppClientError> {
@@ -94,6 +96,7 @@ impl AppClient {
             algorand,
             app_name,
             default_sender,
+            default_signer,
             source_maps,
             transaction_composer_config,
         }))
@@ -106,6 +109,7 @@ impl AppClient {
         app_spec: Arc56Contract,
         algorand: AlgorandClient,
         default_sender: Option<String>,
+        default_signer: Option<Arc<dyn TransactionSigner>>,
         source_maps: Option<AppSourceMaps>,
         ignore_cache: Option<bool>,
         transaction_composer_config: Option<TransactionComposerConfig>,
@@ -147,6 +151,7 @@ impl AppClient {
             algorand,
             app_name: Some(app_name.to_string()),
             default_sender,
+            default_signer,
             source_maps,
             transaction_composer_config,
         }))
@@ -210,6 +215,22 @@ impl AppClient {
             })?;
         Address::from_str(sender_str).map_err(|e| AppClientError::ValidationError {
             message: format!("Invalid sender address: {}", e),
+        })
+    }
+
+    /// Resolve the signer for a transaction based on the sender and default configuration.
+    /// Returns the provided signer, or the default_signer if sender matches default_sender.
+    pub(crate) fn resolve_signer(
+        &self,
+        sender: Option<&str>,
+        signer: Option<Arc<dyn TransactionSigner>>,
+    ) -> Option<Arc<dyn TransactionSigner>> {
+        signer.or_else(|| {
+            let should_use_default = sender.is_none() || sender == self.default_sender.as_deref();
+
+            should_use_default
+                .then(|| self.default_signer.clone())
+                .flatten()
         })
     }
 
