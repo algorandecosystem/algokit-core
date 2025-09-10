@@ -157,12 +157,14 @@ name = "algokit_utils_ffi"
 version = "0.1.0"
 dependencies = [
  "algod_client",
+ "algokit_abi",
  "algokit_http_client",
  "algokit_transact",
  "algokit_transact_ffi",
  "algokit_utils",
  "async-trait",
  "derive_more",
+ "num-bigint",
  "snafu",
  "tokio",
  "uniffi",
