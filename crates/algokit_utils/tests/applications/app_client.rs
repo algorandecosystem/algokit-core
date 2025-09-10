@@ -3,7 +3,7 @@ use algokit_abi::Arc56Contract;
 use algokit_transact::BoxReference;
 use algokit_utils::AlgorandClient as RootAlgorandClient;
 use algokit_utils::applications::app_client::AppClientMethodCallParams;
-use algokit_utils::applications::app_client::{AppClient, AppClientJsonParams, AppClientParams};
+use algokit_utils::applications::app_client::{AppClient, AppClientParams};
 use algokit_utils::clients::app_manager::{TealTemplateParams, TealTemplateValue};
 use rstest::*;
 use std::str::FromStr;

@@ -33,6 +33,7 @@ pub struct AppClient {
     app_spec: Arc56Contract,
     algorand: AlgorandClient,
     default_sender: Option<String>,
+
     // TODO: default_signer is missing
     source_maps: Option<AppSourceMaps>,
     app_name: Option<String>,
@@ -255,11 +256,7 @@ impl AppClient {
             .await
             .map_err(|e| AppClientError::AppManagerError { source: e })
     }
-}
 
-// -------- Minimal fluent API scaffolding (to be expanded incrementally) --------
-
-impl AppClient {
     pub fn params(&self) -> ParamsBuilder<'_> {
         ParamsBuilder { client: self }
     }

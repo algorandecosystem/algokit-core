@@ -13,7 +13,6 @@ use algokit_utils::AppCreateParams;
 use algokit_utils::clients::app_manager::{
     AppManager, DeploymentMetadata, TealTemplateParams, TealTemplateValue,
 };
-use algokit_utils::{AppCreateParams, CommonTransactionParams};
 use base64::prelude::*;
 
 pub use fixture::{AlgorandFixture, AlgorandFixtureResult, algorand_fixture};

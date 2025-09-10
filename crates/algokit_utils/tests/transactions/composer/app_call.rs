@@ -828,15 +828,12 @@ async fn group_simulate_matches_send(
     } = arc56_algorand_fixture.await?;
 
     // Compose group: add(uint64,uint64)uint64 + payment + hello_world(string)string
-    let mut composer = algorand_fixture.algorand_client.new_group();
+    let mut composer = algorand_fixture.algorand_client.new_group(None);
 
     // 1) add(uint64,uint64)uint64
     let method_add = get_abi_method(&arc56_contract, "add")?;
     let add_params = AppCallMethodCallParams {
-        common_params: CommonTransactionParams {
-            sender: sender.clone(),
-            ..Default::default()
-        },
+        sender: sender.clone(),
         app_id,
         method: method_add,
         args: vec![
@@ -849,22 +846,17 @@ async fn group_simulate_matches_send(
 
     // 2) payment
     let payment = PaymentParams {
-        common_params: CommonTransactionParams {
-            sender: sender.clone(),
-            ..Default::default()
-        },
+        sender: sender.clone(),
         receiver: sender.clone(),
         amount: 10_000,
+        ..Default::default()
     };
     composer.add_payment(payment)?;
 
     // 3) hello_world(string)string
     let method_hello = get_abi_method(&arc56_contract, "hello_world")?;
     let call_params = AppCallMethodCallParams {
-        common_params: CommonTransactionParams {
-            sender: sender.clone(),
-            ..Default::default()
-        },
+        sender: sender.clone(),
         app_id,
         method: method_hello,
         args: vec![AppMethodCallArg::ABIValue(ABIValue::String(
@@ -882,21 +874,15 @@ async fn group_simulate_matches_send(
         .await?;
     let send = composer.send(None).await?;
 
-    assert_eq!(simulate.transactions.len(), send.transaction_ids.len());
+    assert_eq!(simulate.transaction_ids.len(), send.transaction_ids.len());
     // Compare all ABI returns in order where both sides have a value
-    let mut sim_iter = simulate.returns.iter();
-    let mut send_iter = send.abi_returns.iter();
-    loop {
-        let sim_next = sim_iter.next();
-        let send_next = send_iter.next();
-        match (sim_next, send_next) {
-            (Some(sim_ret), Some(send_ret)) => {
-                if let Ok(Some(send_val)) = send_ret {
-                    assert_eq!(sim_ret.return_value, send_val.return_value);
-                }
-            }
-            _ => break,
-        }
+    for (simulate_abi_return, send_abi_return) in
+        simulate.abi_returns.iter().zip(send.abi_returns.iter())
+    {
+        assert_eq!(
+            simulate_abi_return.return_value,
+            send_abi_return.return_value
+        );
     }
     Ok(())
 }
