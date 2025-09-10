@@ -309,7 +309,7 @@ impl<'a> ParamsBuilder<'a> {
                 };
 
                 let app_call_result =
-                    Box::pin(self.client.send().call(method_call_params, None)).await?;
+                    Box::pin(self.client.send().call(method_call_params, None, None)).await?;
                 let abi_return = app_call_result.abi_return.ok_or_else(|| {
                     AppClientError::ParamsBuilderError {
                         message: "Default value method call did not return a value".to_string(),

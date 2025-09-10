@@ -1,7 +1,6 @@
+use crate::transactions::SendTransactionResult;
 use crate::transactions::composer::SimulateParams;
-use crate::transactions::{SendTransactionResult, TransactionComposerConfig};
-use crate::{AppClientError, ResourcePopulation, SendAppCallResult};
-use algod_client::models::SimulateTraceConfig;
+use crate::{AppClientError, SendAppCallResult, SendParams};
 use algokit_transact::{MAX_SIMULATE_OPCODE_BUDGET, OnApplicationComplete};
 
 use super::types::{AppClientBareCallParams, AppClientMethodCallParams, CompilationParams};
@@ -27,6 +26,7 @@ impl<'a> TransactionSender<'a> {
         &self,
         params: AppClientMethodCallParams,
         on_complete: Option<OnApplicationComplete>,
+        send_params: Option<SendParams>,
     ) -> Result<SendAppCallResult, AppClientError> {
         let arc56_method = self
             .client
@@ -34,71 +34,81 @@ impl<'a> TransactionSender<'a> {
             .get_arc56_method(&params.method)
             .map_err(|e| AppClientError::ABIError { source: e })?;
 
-        let method_params = self.client.params().call(params, on_complete).await?;
+        let mut method_params = self.client.params().call(params, on_complete).await?;
 
         if method_params.on_complete == OnApplicationComplete::NoOp
             && arc56_method.readonly == Some(true)
         {
-            // TODO: send params
+            let transaction_composer_config = self.client.transaction_composer_config.clone();
+
             let mut composer = self
                 .client
                 .algorand()
-                .new_group(Some(TransactionComposerConfig {
-                    populate_app_call_resources: ResourcePopulation::Disabled,
-                    cover_app_call_inner_transaction_fees: false,
-                }));
+                .new_group(transaction_composer_config.clone());
 
-            composer
+            if transaction_composer_config
+                .clone()
+                .is_some_and(|c| c.cover_app_call_inner_transaction_fees)
+                && method_params.max_fee.is_some()
+            {
+                method_params.static_fee = method_params.max_fee;
+                method_params.extra_fee = None;
+            }
+
+            let _ = composer
                 .add_app_call_method_call(method_params)
                 .map_err(|e| AppClientError::ComposerError { source: e });
 
             let simulate_params = SimulateParams {
-                allow_more_logging: Some(true),
-                allow_empty_signatures: Some(true),
-                exec_trace_config: Some(SimulateTraceConfig {
-                    enable: Some(true),
-                    scratch_change: Some(true),
-                    stack_change: Some(true),
-                    state_change: Some(true),
-                }),
+                allow_unnamed_resources: Some(
+                    transaction_composer_config
+                        .map(|c| c.populate_app_call_resources.is_enabled())
+                        .unwrap_or(true),
+                ),
                 skip_signatures: true,
                 extra_opcode_budget: Some(MAX_SIMULATE_OPCODE_BUDGET),
                 ..Default::default()
             };
 
+            let transactions_with_signers = composer
+                .build()
+                .await
+                .map_err(|e| AppClientError::ComposerError { source: e })?;
+            let transactions = transactions_with_signers
+                .iter()
+                .map(|tx_with_signer| tx_with_signer.transaction.clone())
+                .collect();
+
             let simulate_results = composer
                 .simulate(Some(simulate_params))
                 .await
-                .map_err(|e| AppClientError::ComposerError { source: e });
+                .map_err(|e| AppClientError::ComposerError { source: e })?;
 
-            Err(AppClientError::ValidationError {
-                message: "Not implemented".to_string(),
-            })
-            // // Convert Transaction objects to transaction IDs (strings)
-            // let tx_ids: Vec<String> = simulate_results
-            //     .transactions
-            //     .iter()
-            //     .map(|tx| tx.id().unwrap_or_default())
-            //     .collect();
+            let group_id = simulate_results
+                .group
+                .map(hex::encode)
+                .unwrap_or_else(|| "".to_string());
+            let abi_returns = simulate_results.abi_returns;
+            let last_abi_return = abi_returns.last().cloned();
 
-            // let send_transaction_result = SendTransactionResult::new(
-            //     "",
-            //     tx_ids,
-            //     Some(simulate_results.transactions),
-            //     Some(simulate_results.confirmations),
-            //     simulate_results.returns,
-            // )?;
+            let send_transaction_result = SendTransactionResult::new(
+                group_id,
+                simulate_results.transaction_ids,
+                transactions,
+                simulate_results.confirmations,
+                Some(abi_returns),
+            )
+            .map_err(|e| AppClientError::TransactionResultError { source: e })?;
 
-            // Ok(SendAppCallResult {
-            //     common_params: send_transaction_result,
-            //     abi_return: simulate_results.returns.first().cloned(),
-            // })
-            // TODO: convert SimulateComposerResults to SendAppCallResult
+            let send_app_call_result =
+                SendAppCallResult::new(send_transaction_result, last_abi_return);
+
+            Ok(send_app_call_result)
         } else {
             self.client
                 .algorand
                 .send()
-                .app_call_method_call(method_params, None)
+                .app_call_method_call(method_params, send_params)
                 .await
                 .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
         }
@@ -108,13 +118,14 @@ impl<'a> TransactionSender<'a> {
     pub async fn opt_in(
         &self,
         params: AppClientMethodCallParams,
-    ) -> Result<crate::transactions::SendAppCallResult, AppClientError> {
+        send_params: Option<SendParams>,
+    ) -> Result<SendAppCallResult, AppClientError> {
         let method_params = self.client.params().opt_in(params).await?;
 
         self.client
             .algorand
             .send()
-            .app_call_method_call(method_params, None)
+            .app_call_method_call(method_params, send_params)
             .await
             .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
     }
@@ -123,13 +134,14 @@ impl<'a> TransactionSender<'a> {
     pub async fn close_out(
         &self,
         params: AppClientMethodCallParams,
-    ) -> Result<crate::transactions::SendAppCallResult, AppClientError> {
+        send_params: Option<SendParams>,
+    ) -> Result<SendAppCallResult, AppClientError> {
         let method_params = self.client.params().close_out(params).await?;
 
         self.client
             .algorand
             .send()
-            .app_call_method_call(method_params, None)
+            .app_call_method_call(method_params, send_params)
             .await
             .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
     }
@@ -138,13 +150,14 @@ impl<'a> TransactionSender<'a> {
     pub async fn delete(
         &self,
         params: AppClientMethodCallParams,
-    ) -> Result<crate::transactions::SendAppCallResult, AppClientError> {
+        send_params: Option<SendParams>,
+    ) -> Result<SendAppCallResult, AppClientError> {
         let delete_params = self.client.params().delete(params).await?;
 
         self.client
             .algorand
             .send()
-            .app_delete_method_call(delete_params, None)
+            .app_delete_method_call(delete_params, send_params)
             .await
             .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
     }
@@ -153,7 +166,8 @@ impl<'a> TransactionSender<'a> {
     pub async fn update(
         &self,
         params: AppClientMethodCallParams,
-        compilation_params: Option<CompilationParams>, // TODO: consider creating MethodCallParams struct for each of these method so on_complete and compilation_params are handled better
+        compilation_params: Option<CompilationParams>,
+        send_params: Option<SendParams>,
     ) -> Result<crate::transactions::SendAppUpdateResult, AppClientError> {
         let update_params = self
             .client
@@ -164,7 +178,7 @@ impl<'a> TransactionSender<'a> {
         self.client
             .algorand
             .send()
-            .app_update_method_call(update_params, None)
+            .app_update_method_call(update_params, send_params)
             .await
             .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
     }
@@ -173,13 +187,14 @@ impl<'a> TransactionSender<'a> {
     pub async fn fund_app_account(
         &self,
         params: FundAppAccountParams,
+        send_params: Option<SendParams>,
     ) -> Result<SendTransactionResult, AppClientError> {
         let payment = self.client.params().fund_app_account(&params)?;
 
         self.client
             .algorand
             .send()
-            .payment(payment, None)
+            .payment(payment, send_params)
             .await
             .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
     }
@@ -191,12 +206,13 @@ impl BareTransactionSender<'_> {
         &self,
         params: AppClientBareCallParams,
         on_complete: Option<OnApplicationComplete>,
+        send_params: Option<SendParams>,
     ) -> Result<SendTransactionResult, AppClientError> {
         let params = self.client.params().bare().call(params, on_complete)?;
         self.client
             .algorand
             .send()
-            .app_call(params, None)
+            .app_call(params, send_params)
             .await
             .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
     }
@@ -205,12 +221,13 @@ impl BareTransactionSender<'_> {
     pub async fn opt_in(
         &self,
         params: AppClientBareCallParams,
+        send_params: Option<SendParams>,
     ) -> Result<SendTransactionResult, AppClientError> {
         let app_call = self.client.params().bare().opt_in(params)?;
         self.client
             .algorand
             .send()
-            .app_call(app_call, None)
+            .app_call(app_call, send_params)
             .await
             .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
     }
@@ -219,12 +236,13 @@ impl BareTransactionSender<'_> {
     pub async fn close_out(
         &self,
         params: AppClientBareCallParams,
+        send_params: Option<SendParams>,
     ) -> Result<SendTransactionResult, AppClientError> {
         let app_call = self.client.params().bare().close_out(params)?;
         self.client
             .algorand
             .send()
-            .app_call(app_call, None)
+            .app_call(app_call, send_params)
             .await
             .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
     }
@@ -233,12 +251,13 @@ impl BareTransactionSender<'_> {
     pub async fn delete(
         &self,
         params: AppClientBareCallParams,
+        send_params: Option<SendParams>,
     ) -> Result<SendTransactionResult, AppClientError> {
         let delete_params = self.client.params().bare().delete(params)?;
         self.client
             .algorand
             .send()
-            .app_delete(delete_params, None)
+            .app_delete(delete_params, send_params)
             .await
             .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
     }
@@ -247,12 +266,13 @@ impl BareTransactionSender<'_> {
     pub async fn clear_state(
         &self,
         params: AppClientBareCallParams,
+        send_params: Option<SendParams>,
     ) -> Result<SendTransactionResult, AppClientError> {
         let app_call = self.client.params().bare().clear_state(params)?;
         self.client
             .algorand
             .send()
-            .app_call(app_call, None)
+            .app_call(app_call, send_params)
             .await
             .map_err(|e| super::utils::transform_transaction_error(self.client, e, true))
     }
@@ -262,6 +282,7 @@ impl BareTransactionSender<'_> {
         &self,
         params: AppClientBareCallParams,
         compilation_params: Option<CompilationParams>,
+        send_params: Option<SendParams>,
     ) -> Result<crate::transactions::SendAppUpdateResult, AppClientError> {
         let update_params = self
             .client
@@ -273,7 +294,7 @@ impl BareTransactionSender<'_> {
         self.client
             .algorand
             .send()
-            .app_update(update_params, None)
+            .app_update(update_params, send_params)
             .await
             .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
     }

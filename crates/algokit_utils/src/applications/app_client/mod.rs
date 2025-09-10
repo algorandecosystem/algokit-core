@@ -1,8 +1,9 @@
-use crate::SendTransactionResult;
 use crate::applications::AppDeployer;
 use crate::clients::app_manager::{AppState, BoxName};
 use crate::clients::network_client::NetworkDetails;
+use crate::transactions::TransactionComposerConfig;
 use crate::{AlgorandClient, clients::app_manager::BoxIdentifier};
+use crate::{SendParams, SendTransactionResult};
 use algokit_abi::Arc56Contract;
 use algokit_transact::Address;
 use std::collections::HashMap;
@@ -22,8 +23,8 @@ pub use sender::TransactionSender;
 pub use state_accessor::StateAccessor;
 pub use transaction_builder::TransactionBuilder;
 pub use types::{
-    AppClientBareCallParams, AppClientJsonParams, AppClientMethodCallParams, AppClientParams,
-    AppSourceMaps, FundAppAccountParams,
+    AppClientBareCallParams, AppClientMethodCallParams, AppClientParams, AppSourceMaps,
+    FundAppAccountParams,
 };
 
 /// A client for interacting with an Algorand smart contract application (ARC-56 focused).
@@ -35,6 +36,7 @@ pub struct AppClient {
     // TODO: default_signer is missing
     source_maps: Option<AppSourceMaps>,
     app_name: Option<String>,
+    transaction_composer_config: Option<TransactionComposerConfig>,
 }
 
 impl AppClient {
@@ -47,6 +49,7 @@ impl AppClient {
             default_sender: params.default_sender,
             source_maps: params.source_maps,
             app_name: params.app_name,
+            transaction_composer_config: params.transaction_composer_config,
         }
     }
 
@@ -60,6 +63,7 @@ impl AppClient {
         app_name: Option<String>,
         default_sender: Option<String>,
         source_maps: Option<AppSourceMaps>,
+        transaction_composer_config: Option<TransactionComposerConfig>,
     ) -> Result<Self, AppClientError> {
         let network = algorand
             .client()
@@ -90,6 +94,7 @@ impl AppClient {
             app_name,
             default_sender,
             source_maps,
+            transaction_composer_config,
         }))
     }
 
@@ -102,12 +107,16 @@ impl AppClient {
         default_sender: Option<String>,
         source_maps: Option<AppSourceMaps>,
         ignore_cache: Option<bool>,
+        transaction_composer_config: Option<TransactionComposerConfig>,
     ) -> Result<Self, AppClientError> {
         let address = Address::from_str(creator_address).map_err(|e| AppClientError::Lookup {
             message: format!("Invalid creator address: {}", e),
         })?;
 
-        let indexer_client = algorand.client().indexer();
+        let indexer_client = algorand
+            .client()
+            .indexer()
+            .map_err(|e| AppClientError::ClientManagerError { source: e })?;
         let mut app_deployer = AppDeployer::new(
             algorand.app().clone(),
             algorand.send().clone(),
@@ -138,6 +147,7 @@ impl AppClient {
             app_name: Some(app_name.to_string()),
             default_sender,
             source_maps,
+            transaction_composer_config,
         }))
     }
 
@@ -206,8 +216,9 @@ impl AppClient {
     pub async fn fund_app_account(
         &self,
         params: FundAppAccountParams,
+        send_params: Option<SendParams>,
     ) -> Result<SendTransactionResult, AppClientError> {
-        self.send().fund_app_account(params).await
+        self.send().fund_app_account(params, send_params).await
     }
 
     pub async fn get_global_state(&self) -> Result<HashMap<Vec<u8>, AppState>, AppClientError> {

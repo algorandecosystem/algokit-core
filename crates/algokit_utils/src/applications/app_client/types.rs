@@ -1,5 +1,6 @@
 use crate::AlgorandClient;
 use crate::clients::app_manager::TealTemplateValue;
+use crate::transactions::TransactionComposerConfig;
 use crate::transactions::app_call::AppMethodCallArg;
 use algokit_abi::Arc56Contract;
 use algokit_transact::BoxReference;
@@ -27,18 +28,7 @@ pub struct AppClientParams {
     pub app_name: Option<String>,
     pub default_sender: Option<String>,
     pub source_maps: Option<AppSourceMaps>,
-}
-
-/// Parameters for constructing an AppClient from a JSON app spec.
-/// The JSON must be a valid ARC-56 contract specification string.
-// See note above on not deriving Clone while this contains `AlgorandClient`.
-pub struct AppClientJsonParams<'a> {
-    pub app_id: Option<u64>,
-    pub app_spec_json: &'a str,
-    pub algorand: AlgorandClient,
-    pub app_name: Option<String>,
-    pub default_sender: Option<String>,
-    pub source_maps: Option<AppSourceMaps>,
+    pub transaction_composer_config: Option<TransactionComposerConfig>,
 }
 
 /// Parameters for funding an application's account.
@@ -62,7 +52,7 @@ pub struct FundAppAccountParams {
 #[derive(Debug, Clone, Default)]
 pub struct AppClientMethodCallParams {
     pub method: String,
-    pub args: Vec<AppMethodCallArg>, // I think this should be Vec<AppMethodCallArg> because the user must use AppMethodCallArg.DefaultValue
+    pub args: Vec<AppMethodCallArg>,
     pub sender: Option<String>,
     pub rekey_to: Option<String>,
     pub note: Option<Vec<u8>>,
@@ -77,8 +67,6 @@ pub struct AppClientMethodCallParams {
     pub app_references: Option<Vec<u64>>,
     pub asset_references: Option<Vec<u64>>,
     pub box_references: Option<Vec<BoxReference>>,
-    // removed the on_complete because we overwrite it anyway later on
-    // don't feel right when the user has to specify "None" for a value which will be overwritten
 }
 
 /// Parameters for bare (non-ABI) app call operations

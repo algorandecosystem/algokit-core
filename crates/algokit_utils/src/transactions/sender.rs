@@ -197,9 +197,9 @@ impl TransactionSender {
         mut composer: Composer,
         send_params: Option<SendParams>,
     ) -> Result<SendTransactionResult, TransactionSenderError> {
-        let built_transactions = composer.build().await?;
+        let transactions_with_signers = composer.build().await?;
 
-        let raw_transactions: Vec<algokit_transact::Transaction> = built_transactions
+        let transactions: Vec<algokit_transact::Transaction> = transactions_with_signers
             .iter()
             .map(|tx_with_signer| tx_with_signer.transaction.clone())
             .collect();
@@ -221,7 +221,7 @@ impl TransactionSender {
         let result = SendTransactionResult::new(
             group_id,
             composer_results.transaction_ids,
-            raw_transactions,
+            transactions,
             composer_results.confirmations,
             abi_returns,
         )?;

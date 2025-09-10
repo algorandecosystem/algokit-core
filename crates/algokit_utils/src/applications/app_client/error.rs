@@ -1,6 +1,7 @@
-use crate::ComposerError;
 use crate::clients::app_manager::AppManagerError;
+use crate::clients::client_manager::ClientManagerError;
 use crate::transactions::TransactionSenderError;
+use crate::{ComposerError, TransactionResultError};
 use algokit_abi::error::ABIError;
 use algokit_transact::AlgoKitTransactError;
 use snafu::Snafu;
@@ -40,4 +41,8 @@ pub enum AppClientError {
     AppStateError { message: String },
     #[snafu(display("Decode error: {message}"))]
     DecodeError { message: String },
+    #[snafu(display("Client manager error: {source}"))]
+    ClientManagerError { source: ClientManagerError },
+    #[snafu(display("Transaction result error: {source}"))]
+    TransactionResultError { source: TransactionResultError },
 }
