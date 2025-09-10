@@ -1,10 +1,13 @@
 use crate::common::{AlgorandFixtureResult, TestResult, algorand_fixture, deploy_arc56_contract};
-use algokit_abi::Arc56Contract;
+use algokit_abi::{ABIType, ABIValue, Arc56Contract};
 use algokit_transact::BoxReference;
-use algokit_utils::AlgorandClient as RootAlgorandClient;
-use algokit_utils::applications::app_client::AppClientMethodCallParams;
 use algokit_utils::applications::app_client::{AppClient, AppClientParams};
+use algokit_utils::applications::app_client::{AppClientMethodCallParams, FundAppAccountParams};
 use algokit_utils::clients::app_manager::{TealTemplateParams, TealTemplateValue};
+use algokit_utils::{
+    AlgorandClient as RootAlgorandClient, AppMethodCallArg, AppSourceMaps, PaymentParams,
+    TransactionResultError,
+};
 use rstest::*;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -52,14 +55,14 @@ async fn retrieve_state(#[future] algorand_fixture: AlgorandFixtureResult) -> Te
             AppClientMethodCallParams {
                 method: "set_global".to_string(),
                 args: vec![
-                    algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from(1u64)),
-                    algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from(2u64)),
-                    algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from("asdf")),
-                    algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::Array(vec![
-                        algokit_abi::ABIValue::from_byte(1),
-                        algokit_abi::ABIValue::from_byte(2),
-                        algokit_abi::ABIValue::from_byte(3),
-                        algokit_abi::ABIValue::from_byte(4),
+                    AppMethodCallArg::ABIValue(ABIValue::from(1u64)),
+                    AppMethodCallArg::ABIValue(ABIValue::from(2u64)),
+                    AppMethodCallArg::ABIValue(ABIValue::from("asdf")),
+                    AppMethodCallArg::ABIValue(ABIValue::Array(vec![
+                        ABIValue::from_byte(1),
+                        ABIValue::from_byte(2),
+                        ABIValue::from_byte(3),
+                        ABIValue::from_byte(4),
                     ])),
                 ],
                 sender: Some(sender.to_string()),
@@ -77,15 +80,15 @@ async fn retrieve_state(#[future] algorand_fixture: AlgorandFixtureResult) -> Te
     assert!(global_state.contains_key("bytes2"));
     assert_eq!(
         global_state.get("int1").unwrap().as_ref().unwrap(),
-        &algokit_abi::ABIValue::from(1u64)
+        &ABIValue::from(1u64)
     );
     assert_eq!(
         global_state.get("int2").unwrap().as_ref().unwrap(),
-        &algokit_abi::ABIValue::from(2u64)
+        &ABIValue::from(2u64)
     );
     assert_eq!(
         global_state.get("bytes1").unwrap().as_ref().unwrap(),
-        &algokit_abi::ABIValue::from("asdf")
+        &ABIValue::from("asdf")
     );
 
     // Local: opt-in and set; verify
@@ -120,14 +123,14 @@ async fn retrieve_state(#[future] algorand_fixture: AlgorandFixtureResult) -> Te
             AppClientMethodCallParams {
                 method: "set_local".to_string(),
                 args: vec![
-                    algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from(1u64)),
-                    algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from(2u64)),
-                    algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from("asdf")),
-                    algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::Array(vec![
-                        algokit_abi::ABIValue::from_byte(1),
-                        algokit_abi::ABIValue::from_byte(2),
-                        algokit_abi::ABIValue::from_byte(3),
-                        algokit_abi::ABIValue::from_byte(4),
+                    AppMethodCallArg::ABIValue(ABIValue::from(1u64)),
+                    AppMethodCallArg::ABIValue(ABIValue::from(2u64)),
+                    AppMethodCallArg::ABIValue(ABIValue::from("asdf")),
+                    AppMethodCallArg::ABIValue(ABIValue::Array(vec![
+                        ABIValue::from_byte(1),
+                        ABIValue::from_byte(2),
+                        ABIValue::from_byte(3),
+                        ABIValue::from_byte(4),
                     ])),
                 ],
                 sender: Some(sender.to_string()),
@@ -157,15 +160,15 @@ async fn retrieve_state(#[future] algorand_fixture: AlgorandFixtureResult) -> Te
         .await?;
     assert_eq!(
         local_state.get("local_int1").unwrap().as_ref().unwrap(),
-        &algokit_abi::ABIValue::from(1u64)
+        &ABIValue::from(1u64)
     );
     assert_eq!(
         local_state.get("local_int2").unwrap().as_ref().unwrap(),
-        &algokit_abi::ABIValue::from(2u64)
+        &ABIValue::from(2u64)
     );
     assert_eq!(
         local_state.get("local_bytes1").unwrap().as_ref().unwrap(),
-        &algokit_abi::ABIValue::from("asdf")
+        &ABIValue::from("asdf")
     );
 
     // Boxes
@@ -175,7 +178,7 @@ async fn retrieve_state(#[future] algorand_fixture: AlgorandFixtureResult) -> Te
     // Fund app account to enable box writes
     client
         .fund_app_account(
-            algokit_utils::applications::app_client::FundAppAccountParams {
+            FundAppAccountParams {
                 amount: 1_000_000,
                 sender: Some(sender.to_string()),
                 ..Default::default()
@@ -190,16 +193,10 @@ async fn retrieve_state(#[future] algorand_fixture: AlgorandFixtureResult) -> Te
             AppClientMethodCallParams {
                 method: "set_box".to_string(),
                 args: vec![
-                    algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::Array(
-                        box_name1
-                            .iter()
-                            .copied()
-                            .map(algokit_abi::ABIValue::from_byte)
-                            .collect(),
+                    AppMethodCallArg::ABIValue(ABIValue::Array(
+                        box_name1.iter().copied().map(ABIValue::from_byte).collect(),
                     )),
-                    algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from(
-                        "value1",
-                    )),
+                    AppMethodCallArg::ABIValue(ABIValue::from("value1")),
                 ],
                 sender: Some(sender.to_string()),
                 rekey_to: None,
@@ -230,16 +227,10 @@ async fn retrieve_state(#[future] algorand_fixture: AlgorandFixtureResult) -> Te
             AppClientMethodCallParams {
                 method: "set_box".to_string(),
                 args: vec![
-                    algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::Array(
-                        box_name2
-                            .iter()
-                            .copied()
-                            .map(algokit_abi::ABIValue::from_byte)
-                            .collect(),
+                    AppMethodCallArg::ABIValue(ABIValue::Array(
+                        box_name2.iter().copied().map(ABIValue::from_byte).collect(),
                     )),
-                    algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from(
-                        "value2",
-                    )),
+                    AppMethodCallArg::ABIValue(ABIValue::from("value2")),
                 ],
                 sender: Some(sender.to_string()),
                 rekey_to: None,
@@ -280,9 +271,6 @@ async fn retrieve_state(#[future] algorand_fixture: AlgorandFixtureResult) -> Te
 async fn logic_error_exposure_with_source_maps(
     #[future] algorand_fixture: AlgorandFixtureResult,
 ) -> TestResult {
-    use algokit_utils::applications::app_client::AppSourceMaps;
-    use algokit_utils::transactions::sender_results::TransactionResultError;
-
     let fixture = algorand_fixture.await?;
     let sender = fixture.test_account.account().address();
 
@@ -398,7 +386,7 @@ async fn box_methods_with_manually_encoded_abi_args(
     // Fund app account
     client
         .fund_app_account(
-            algokit_utils::applications::app_client::FundAppAccountParams {
+            FundAppAccountParams {
                 amount: 1_000_000,
                 sender: Some(sender.to_string()),
                 ..Default::default()
@@ -409,11 +397,9 @@ async fn box_methods_with_manually_encoded_abi_args(
 
     // Prepare box name and encoded value
     let box_prefix = b"box_bytes".to_vec();
-    let name_type = algokit_abi::ABIType::from_str("string").unwrap();
+    let name_type = ABIType::from_str("string").unwrap();
     let box_name = "asdf";
-    let box_name_encoded = name_type
-        .encode(&algokit_abi::ABIValue::from(box_name))
-        .unwrap();
+    let box_name_encoded = name_type.encode(&ABIValue::from(box_name)).unwrap();
     let box_identifier = {
         let mut v = box_prefix.clone();
         v.extend_from_slice(&box_name_encoded);
@@ -421,19 +407,19 @@ async fn box_methods_with_manually_encoded_abi_args(
     };
 
     // byte[] value
-    let value_type = algokit_abi::ABIType::from_str("byte[]").unwrap();
+    let value_type = ABIType::from_str("byte[]").unwrap();
     let encoded = value_type
-        .encode(&algokit_abi::ABIValue::from(vec![
-            algokit_abi::ABIValue::from_byte(116),
-            algokit_abi::ABIValue::from_byte(101),
-            algokit_abi::ABIValue::from_byte(115),
-            algokit_abi::ABIValue::from_byte(116),
-            algokit_abi::ABIValue::from_byte(95),
-            algokit_abi::ABIValue::from_byte(98),
-            algokit_abi::ABIValue::from_byte(121),
-            algokit_abi::ABIValue::from_byte(116),
-            algokit_abi::ABIValue::from_byte(101),
-            algokit_abi::ABIValue::from_byte(115),
+        .encode(&ABIValue::from(vec![
+            ABIValue::from_byte(116),
+            ABIValue::from_byte(101),
+            ABIValue::from_byte(115),
+            ABIValue::from_byte(116),
+            ABIValue::from_byte(95),
+            ABIValue::from_byte(98),
+            ABIValue::from_byte(121),
+            ABIValue::from_byte(116),
+            ABIValue::from_byte(101),
+            ABIValue::from_byte(115),
         ]))
         .unwrap();
 
@@ -443,12 +429,9 @@ async fn box_methods_with_manually_encoded_abi_args(
             AppClientMethodCallParams {
                 method: "set_box_bytes".to_string(),
                 args: vec![
-                    algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from("asdf")),
-                    algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::Array(
-                        encoded
-                            .into_iter()
-                            .map(algokit_abi::ABIValue::from_byte)
-                            .collect(),
+                    AppMethodCallArg::ABIValue(ABIValue::from("asdf")),
+                    AppMethodCallArg::ABIValue(ABIValue::Array(
+                        encoded.into_iter().map(ABIValue::from_byte).collect(),
                     )),
                 ],
                 sender: Some(sender.to_string()),
@@ -481,17 +464,17 @@ async fn box_methods_with_manually_encoded_abi_args(
         .await?;
     assert_eq!(
         retrieved,
-        algokit_abi::ABIValue::Array(vec![
-            algokit_abi::ABIValue::from_byte(116),
-            algokit_abi::ABIValue::from_byte(101),
-            algokit_abi::ABIValue::from_byte(115),
-            algokit_abi::ABIValue::from_byte(116),
-            algokit_abi::ABIValue::from_byte(95),
-            algokit_abi::ABIValue::from_byte(98),
-            algokit_abi::ABIValue::from_byte(121),
-            algokit_abi::ABIValue::from_byte(116),
-            algokit_abi::ABIValue::from_byte(101),
-            algokit_abi::ABIValue::from_byte(115),
+        ABIValue::Array(vec![
+            ABIValue::from_byte(116),
+            ABIValue::from_byte(101),
+            ABIValue::from_byte(115),
+            ABIValue::from_byte(116),
+            ABIValue::from_byte(95),
+            ABIValue::from_byte(98),
+            ABIValue::from_byte(121),
+            ABIValue::from_byte(116),
+            ABIValue::from_byte(101),
+            ABIValue::from_byte(115),
         ])
     );
 
@@ -558,7 +541,7 @@ async fn construct_transaction_with_abi_encoding_including_foreign_references_no
         .await?;
 
     let abi_ret = send_res.abi_return.as_ref().expect("abi return expected");
-    if let Some(algokit_abi::ABIValue::String(s)) = &abi_ret.return_value {
+    if let Some(ABIValue::String(s)) = &abi_ret.return_value {
         assert!(s.contains("App: 345"));
         assert!(s.contains("Asset: 567"));
     } else {
@@ -627,16 +610,14 @@ async fn abi_with_default_arg_from_local_state(
             AppClientMethodCallParams {
                 method: "set_local".to_string(),
                 args: vec![
-                    algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from(1u64)),
-                    algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from(2u64)),
-                    algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from(
-                        "bananas",
-                    )),
-                    algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::Array(vec![
-                        algokit_abi::ABIValue::from_byte(1),
-                        algokit_abi::ABIValue::from_byte(2),
-                        algokit_abi::ABIValue::from_byte(3),
-                        algokit_abi::ABIValue::from_byte(4),
+                    AppMethodCallArg::ABIValue(ABIValue::from(1u64)),
+                    AppMethodCallArg::ABIValue(ABIValue::from(2u64)),
+                    AppMethodCallArg::ABIValue(ABIValue::from("bananas")),
+                    AppMethodCallArg::ABIValue(ABIValue::Array(vec![
+                        ABIValue::from_byte(1),
+                        ABIValue::from_byte(2),
+                        ABIValue::from_byte(3),
+                        ABIValue::from_byte(4),
                     ])),
                 ],
                 sender: Some(sender.to_string()),
@@ -665,9 +646,7 @@ async fn abi_with_default_arg_from_local_state(
         .call(
             AppClientMethodCallParams {
                 method: "default_value_from_local_state".to_string(),
-                args: vec![algokit_utils::AppMethodCallArg::ABIValue(
-                    algokit_abi::ABIValue::from("defined value"),
-                )],
+                args: vec![AppMethodCallArg::ABIValue(ABIValue::from("defined value"))],
                 sender: Some(sender.to_string()),
                 rekey_to: None,
                 note: None,
@@ -689,7 +668,7 @@ async fn abi_with_default_arg_from_local_state(
         .await?;
     let defined_ret = defined.abi_return.as_ref().expect("abi return expected");
     match &defined_ret.return_value {
-        Some(algokit_abi::ABIValue::String(s)) => {
+        Some(ABIValue::String(s)) => {
             assert_eq!(s, "Local state, defined value");
         }
         _ => panic!("expected string return"),
@@ -723,7 +702,7 @@ async fn abi_with_default_arg_from_local_state(
         .await?;
 
     let abi_ret = res.abi_return.as_ref().expect("abi return expected");
-    if let Some(algokit_abi::ABIValue::String(s)) = &abi_ret.return_value {
+    if let Some(ABIValue::String(s)) = &abi_ret.return_value {
         assert_eq!(s, "Local state, bananas");
     } else {
         panic!("expected string return");
@@ -765,9 +744,7 @@ async fn abi_with_default_arg_from_literal(
         .call(
             AppClientMethodCallParams {
                 method: "default_value".to_string(),
-                args: vec![algokit_utils::AppMethodCallArg::ABIValue(
-                    algokit_abi::ABIValue::from("defined value"),
-                )],
+                args: vec![AppMethodCallArg::ABIValue(ABIValue::from("defined value"))],
                 sender: Some(sender.to_string()),
                 ..Default::default()
             },
@@ -777,7 +754,7 @@ async fn abi_with_default_arg_from_literal(
         .await?;
     let defined_ret = defined.abi_return.as_ref().expect("abi return expected");
     match &defined_ret.return_value {
-        Some(algokit_abi::ABIValue::String(s)) => {
+        Some(ABIValue::String(s)) => {
             assert_eq!(s, "defined value");
         }
         _ => panic!("expected string return"),
@@ -799,7 +776,7 @@ async fn abi_with_default_arg_from_literal(
         .await?;
     let default_ret = defaulted.abi_return.as_ref().expect("abi return expected");
     match &default_ret.return_value {
-        Some(algokit_abi::ABIValue::String(s)) => {
+        Some(ABIValue::String(s)) => {
             assert_eq!(s, "default value");
         }
         _ => panic!("expected string return"),
@@ -841,9 +818,7 @@ async fn abi_with_default_arg_from_method(
         .call(
             AppClientMethodCallParams {
                 method: "default_value_from_abi".to_string(),
-                args: vec![algokit_utils::AppMethodCallArg::ABIValue(
-                    algokit_abi::ABIValue::from("defined value"),
-                )],
+                args: vec![AppMethodCallArg::ABIValue(ABIValue::from("defined value"))],
                 sender: Some(sender.to_string()),
                 ..Default::default()
             },
@@ -853,7 +828,7 @@ async fn abi_with_default_arg_from_method(
         .await?;
     let defined_ret = defined.abi_return.as_ref().expect("abi return expected");
     match &defined_ret.return_value {
-        Some(algokit_abi::ABIValue::String(s)) => {
+        Some(ABIValue::String(s)) => {
             assert_eq!(s, "ABI, defined value");
         }
         _ => panic!("expected string return"),
@@ -875,7 +850,7 @@ async fn abi_with_default_arg_from_method(
         .await?;
     let default_ret = defaulted.abi_return.as_ref().expect("abi return expected");
     match &default_ret.return_value {
-        Some(algokit_abi::ABIValue::String(s)) => {
+        Some(ABIValue::String(s)) => {
             assert_eq!(s, "ABI, default value");
         }
         _ => panic!("expected string return"),
@@ -919,16 +894,14 @@ async fn abi_with_default_arg_from_global_state(
             AppClientMethodCallParams {
                 method: "set_global".to_string(),
                 args: vec![
-                    algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from(
-                        seeded_val,
-                    )),
-                    algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from(2u64)),
-                    algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from("asdf")),
-                    algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::Array(vec![
-                        algokit_abi::ABIValue::from_byte(1),
-                        algokit_abi::ABIValue::from_byte(2),
-                        algokit_abi::ABIValue::from_byte(3),
-                        algokit_abi::ABIValue::from_byte(4),
+                    AppMethodCallArg::ABIValue(ABIValue::from(seeded_val)),
+                    AppMethodCallArg::ABIValue(ABIValue::from(2u64)),
+                    AppMethodCallArg::ABIValue(ABIValue::from("asdf")),
+                    AppMethodCallArg::ABIValue(ABIValue::Array(vec![
+                        ABIValue::from_byte(1),
+                        ABIValue::from_byte(2),
+                        ABIValue::from_byte(3),
+                        ABIValue::from_byte(4),
                     ])),
                 ],
                 sender: Some(sender.to_string()),
@@ -945,9 +918,7 @@ async fn abi_with_default_arg_from_global_state(
         .call(
             AppClientMethodCallParams {
                 method: "default_value_from_global_state".to_string(),
-                args: vec![algokit_utils::AppMethodCallArg::ABIValue(
-                    algokit_abi::ABIValue::from(123u64),
-                )],
+                args: vec![AppMethodCallArg::ABIValue(ABIValue::from(123u64))],
                 sender: Some(sender.to_string()),
                 ..Default::default()
             },
@@ -957,7 +928,7 @@ async fn abi_with_default_arg_from_global_state(
         .await?;
     let defined_ret = defined.abi_return.as_ref().expect("abi return expected");
     match &defined_ret.return_value {
-        Some(algokit_abi::ABIValue::Uint(u)) => {
+        Some(ABIValue::Uint(u)) => {
             assert_eq!(*u, num_bigint::BigUint::from(123u64));
         }
         _ => panic!("expected uint return"),
@@ -979,7 +950,7 @@ async fn abi_with_default_arg_from_global_state(
         .await?;
     let default_ret = defaulted.abi_return.as_ref().expect("abi return expected");
     match &default_ret.return_value {
-        Some(algokit_abi::ABIValue::Uint(u)) => {
+        Some(ABIValue::Uint(u)) => {
             assert_eq!(*u, num_bigint::BigUint::from(seeded_val));
         }
         _ => panic!("expected uint return"),
@@ -1016,9 +987,7 @@ async fn bare_call_with_box_reference_builds_and_sends(
         .call(
             AppClientMethodCallParams {
                 method: "hello_world".to_string(),
-                args: vec![algokit_utils::AppMethodCallArg::ABIValue(
-                    algokit_abi::ABIValue::from("test"),
-                )],
+                args: vec![AppMethodCallArg::ABIValue(ABIValue::from("test"))],
                 sender: Some(sender.to_string()),
                 rekey_to: None,
                 note: None,
@@ -1088,9 +1057,7 @@ async fn construct_transaction_with_boxes(
         .call(
             AppClientMethodCallParams {
                 method: "hello_world".to_string(),
-                args: vec![algokit_utils::AppMethodCallArg::ABIValue(
-                    algokit_abi::ABIValue::from("test"),
-                )],
+                args: vec![AppMethodCallArg::ABIValue(ABIValue::from("test"))],
                 sender: Some(sender.to_string()),
                 rekey_to: None,
                 note: None,
@@ -1152,7 +1119,7 @@ async fn construct_transaction_with_abi_encoding_including_transaction(
     });
 
     // Prepare a payment as an ABI transaction argument
-    let payment = algokit_utils::PaymentParams {
+    let payment = PaymentParams {
         sender: sender.clone(),
         signer: None,
         rekey_to: None,
@@ -1173,7 +1140,7 @@ async fn construct_transaction_with_abi_encoding_including_transaction(
         .call(
             AppClientMethodCallParams {
                 method: "get_pay_txn_amount".to_string(),
-                args: vec![algokit_utils::AppMethodCallArg::Payment(payment)],
+                args: vec![AppMethodCallArg::Payment(payment)],
                 sender: Some(sender.to_string()),
                 rekey_to: None,
                 note: None,
@@ -1199,7 +1166,7 @@ async fn construct_transaction_with_abi_encoding_including_transaction(
     // ABI return should be present and decode to expected value
     let abi_ret = send_res.abi_return.as_ref().expect("abi return expected");
     let ret_val = match &abi_ret.return_value {
-        algokit_abi::ABIValue::Uint(u) => u.clone(),
+        ABIValue::Uint(u) => u.clone(),
         _ => panic!("expected uint64 return"),
     };
     assert_eq!(ret_val, num_bigint::BigUint::from(12345u32));
@@ -1235,7 +1202,7 @@ async fn box_methods_with_arc4_returns_parametrized(
     // Fund app account to allow box writes
     client
         .fund_app_account(
-            algokit_utils::applications::app_client::FundAppAccountParams {
+            FundAppAccountParams {
                 amount: 1_000_000,
                 sender: Some(sender.to_string()),
                 ..Default::default()
@@ -1247,34 +1214,34 @@ async fn box_methods_with_arc4_returns_parametrized(
     // Parametrized ARC-4 return cases
     let mut big = num_bigint::BigUint::from(1u64);
     big <<= 256u32;
-    let cases: Vec<(Vec<u8>, &str, &str, algokit_abi::ABIValue)> = vec![
+    let cases: Vec<(Vec<u8>, &str, &str, ABIValue)> = vec![
         (
             b"box_str".to_vec(),
             "set_box_str",
             "string",
-            algokit_abi::ABIValue::from("string"),
+            ABIValue::from("string"),
         ),
         (
             b"box_int".to_vec(),
             "set_box_int",
             "uint32",
-            algokit_abi::ABIValue::from(123u32),
+            ABIValue::from(123u32),
         ),
         (
             b"box_int512".to_vec(),
             "set_box_int512",
             "uint512",
-            algokit_abi::ABIValue::from(big),
+            ABIValue::from(big),
         ),
         (
             b"box_static".to_vec(),
             "set_box_static",
             "byte[4]",
-            algokit_abi::ABIValue::Array(vec![
-                algokit_abi::ABIValue::from_byte(1),
-                algokit_abi::ABIValue::from_byte(2),
-                algokit_abi::ABIValue::from_byte(3),
-                algokit_abi::ABIValue::from_byte(4),
+            ABIValue::Array(vec![
+                ABIValue::from_byte(1),
+                ABIValue::from_byte(2),
+                ABIValue::from_byte(3),
+                ABIValue::from_byte(4),
             ]),
         ),
         // TODO: restore struct case after app factory is merged
@@ -1282,10 +1249,8 @@ async fn box_methods_with_arc4_returns_parametrized(
 
     for (box_prefix, method_sig, value_type_str, arg_val) in cases {
         // Encode the box name using ABIType "string"
-        let name_type = algokit_abi::ABIType::from_str("string").unwrap();
-        let name_encoded = name_type
-            .encode(&algokit_abi::ABIValue::from("box1"))
-            .unwrap();
+        let name_type = ABIType::from_str("string").unwrap();
+        let name_encoded = name_type.encode(&ABIValue::from("box1")).unwrap();
         let mut box_reference = box_prefix.clone();
         box_reference.extend_from_slice(&name_encoded);
 
@@ -1296,10 +1261,8 @@ async fn box_methods_with_arc4_returns_parametrized(
                 AppClientMethodCallParams {
                     method: method_sig.to_string(),
                     args: vec![
-                        algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from(
-                            "box1",
-                        )),
-                        algokit_utils::AppMethodCallArg::ABIValue(arg_val.clone()),
+                        AppMethodCallArg::ABIValue(ABIValue::from("box1")),
+                        AppMethodCallArg::ABIValue(arg_val.clone()),
                     ],
                     sender: Some(sender.to_string()),
                     rekey_to: None,
@@ -1325,7 +1288,7 @@ async fn box_methods_with_arc4_returns_parametrized(
             .await?;
 
         // Verify raw equals ABI-encoded expected
-        let expected_raw = algokit_abi::ABIType::from_str(value_type_str)
+        let expected_raw = ABIType::from_str(value_type_str)
             .unwrap()
             .encode(&arg_val)
             .unwrap();
@@ -1336,7 +1299,7 @@ async fn box_methods_with_arc4_returns_parametrized(
         let decoded = client
             .get_box_value_from_abi_type(
                 &box_reference,
-                &algokit_abi::ABIType::from_str(value_type_str).unwrap(),
+                &ABIType::from_str(value_type_str).unwrap(),
             )
             .await?;
         assert_eq!(decoded, arg_val);
@@ -1363,7 +1326,7 @@ async fn app_client_from_network_resolves_id(
     let mut spec_with_networks = spec.clone();
     spec_with_networks.networks = Some(std::collections::HashMap::from([(
         "localnet".to_string(),
-        algokit_abi::arc56_contract::Network { app_id },
+        arc56_contract::Network { app_id },
     )]));
 
     let client = AppClient::from_network(
