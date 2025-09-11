@@ -1,7 +1,6 @@
 use crate::abi_type::ABIType;
 use crate::error::ABIError;
 use crate::method::{ABIMethod, ABIMethodArg, ABIMethodArgType};
-use crate::types::ABIStruct;
 use base64::{Engine as _, engine::general_purpose};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -629,9 +628,7 @@ impl Arc56Contract {
         let returns = if method.returns.return_type == "void" {
             None
         } else if let Some(struct_name) = &method.returns.struct_name {
-            // Handle struct return type
-            let struct_type = ABIStruct::get_abi_struct_type(struct_name, &self.structs)?;
-            Some(ABIType::Struct(struct_type))
+            Some(ABIType::from_struct(struct_name, &self.structs)?)
         } else {
             Some(ABIType::from_str(&method.returns.return_type)?)
         };
@@ -647,8 +644,8 @@ impl Arc56Contract {
     fn resolve_method_arg_type(&self, arg: &MethodArg) -> Result<ABIMethodArgType, ABIError> {
         // Check if this argument has a struct name
         if let Some(struct_name) = &arg.struct_name {
-            let struct_type = ABIStruct::get_abi_struct_type(struct_name, &self.structs)?;
-            return Ok(ABIMethodArgType::Value(ABIType::Struct(struct_type)));
+            let abi_type = ABIType::from_struct(struct_name, &self.structs)?;
+            return Ok(ABIMethodArgType::Value(abi_type));
         }
 
         // Fallback to standard parsing for non-struct args (including refs/txns)

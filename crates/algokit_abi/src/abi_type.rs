@@ -1,5 +1,5 @@
 use crate::{
-    ABIError, ABIValue,
+    ABIError, ABIValue, StructField,
     constants::{
         ALGORAND_PUBLIC_KEY_BYTE_LENGTH, BITS_PER_BYTE, MAX_BIT_SIZE, MAX_PRECISION,
         STATIC_ARRAY_REGEX, UFIXED_REGEX,
@@ -7,6 +7,7 @@ use crate::{
     types::collections::{r#struct::ABIStruct, tuple::find_bool_sequence_end},
 };
 use std::{
+    collections::HashMap,
     fmt::{Display, Formatter, Result as FmtResult},
     str::FromStr,
 };
@@ -158,7 +159,7 @@ impl ABIType {
             ABIType::StaticArray(child_type, _) => child_type.is_dynamic(),
             ABIType::Tuple(child_types) => child_types.iter().any(|t| t.is_dynamic()),
             ABIType::DynamicArray(_) | ABIType::String => true,
-            ABIType::Struct(struct_type) => struct_type.to_tuple_type().is_dynamic(),
+            ABIType::Struct(struct_type) => struct_type.to_tuple().is_dynamic(),
             _ => false,
         }
     }
@@ -196,7 +197,7 @@ impl ABIType {
                 Ok(size)
             }
             ABIType::Struct(struct_type) => {
-                let tuple_type = struct_type.to_tuple_type();
+                let tuple_type = struct_type.to_tuple();
                 Self::get_size(&tuple_type)
             }
             ABIType::String => Err(ABIError::DecodingError {
@@ -206,6 +207,14 @@ impl ABIType {
                 message: format!("Failed to get size, {} is a dynamic type", abi_type),
             }),
         }
+    }
+
+    pub fn from_struct(
+        struct_name: &str,
+        structs: &HashMap<String, Vec<StructField>>,
+    ) -> Result<Self, ABIError> {
+        let struct_type = ABIStruct::get_abi_struct_type(struct_name, structs)?;
+        Ok(Self::Struct(struct_type))
     }
 }
 
