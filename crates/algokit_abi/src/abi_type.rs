@@ -159,7 +159,7 @@ impl ABIType {
             ABIType::StaticArray(child_type, _) => child_type.is_dynamic(),
             ABIType::Tuple(child_types) => child_types.iter().any(|t| t.is_dynamic()),
             ABIType::DynamicArray(_) | ABIType::String => true,
-            ABIType::Struct(struct_type) => struct_type.to_tuple().is_dynamic(),
+            ABIType::Struct(struct_type) => struct_type.to_tuple_type().is_dynamic(),
             _ => false,
         }
     }
@@ -197,7 +197,7 @@ impl ABIType {
                 Ok(size)
             }
             ABIType::Struct(struct_type) => {
-                let tuple_type = struct_type.to_tuple();
+                let tuple_type = struct_type.to_tuple_type();
                 Self::get_size(&tuple_type)
             }
             ABIType::String => Err(ABIError::DecodingError {

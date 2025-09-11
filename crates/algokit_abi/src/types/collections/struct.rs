@@ -239,3 +239,158 @@ impl Display for ABIStruct {
         write!(f, "{}", self.name)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::abi_type::BitSize;
+    use std::collections::HashMap;
+
+    #[test]
+    fn test_struct_and_tuple_encode_decode_should_match() {
+        // Create tuple type: (uint8,(uint16,string,string[]),(bool,byte),(byte,address))
+        let tuple_type = ABIType::Tuple(vec![
+            ABIType::Uint(BitSize::new(8).unwrap()),
+            ABIType::Tuple(vec![
+                ABIType::Uint(BitSize::new(16).unwrap()),
+                ABIType::String,
+                ABIType::DynamicArray(Box::new(ABIType::String)),
+            ]),
+            ABIType::Tuple(vec![ABIType::Bool, ABIType::Byte]),
+            ABIType::Tuple(vec![ABIType::Byte, ABIType::Address]),
+        ]);
+
+        // Create nested struct type "Struct 2"
+        let struct2 = ABIStruct {
+            name: "Struct 2".to_string(),
+            fields: vec![
+                StructField {
+                    name: "Struct 2 field 1".to_string(),
+                    field_type: StructFieldType::Type(ABIType::Uint(BitSize::new(16).unwrap())),
+                },
+                StructField {
+                    name: "Struct 2 field 2".to_string(),
+                    field_type: StructFieldType::Type(ABIType::String),
+                },
+                StructField {
+                    name: "Struct 2 field 3".to_string(),
+                    field_type: StructFieldType::Type(ABIType::DynamicArray(Box::new(
+                        ABIType::String,
+                    ))),
+                },
+            ],
+        };
+
+        // Create main struct type "Struct 1"
+        let struct_type = ABIStruct {
+            name: "Struct 1".to_string(),
+            fields: vec![
+                StructField {
+                    name: "field 1".to_string(),
+                    field_type: StructFieldType::Type(ABIType::Uint(BitSize::new(8).unwrap())),
+                },
+                StructField {
+                    name: "field 2".to_string(),
+                    field_type: StructFieldType::Type(ABIType::Struct(struct2)),
+                },
+                StructField {
+                    name: "field 3".to_string(),
+                    field_type: StructFieldType::Fields(vec![
+                        StructField {
+                            name: "field 3 child 1".to_string(),
+                            field_type: StructFieldType::Type(ABIType::Bool),
+                        },
+                        StructField {
+                            name: "field 3 child 2".to_string(),
+                            field_type: StructFieldType::Type(ABIType::Byte),
+                        },
+                    ]),
+                },
+                StructField {
+                    name: "field 4".to_string(),
+                    field_type: StructFieldType::Type(ABIType::Tuple(vec![
+                        ABIType::Byte,
+                        ABIType::Address,
+                    ])),
+                },
+            ],
+        };
+
+        // Create tuple value: [123, [65432, 'hello', ['world 1', 'world 2', 'world 3']], [false, 88], [222, 'BEKKSMPBTPIGBYJGKD4XK7E7ZQJNZIHJVYFQWW3HNI32JHSH3LOGBRY3LE']]
+        let tuple_value = ABIValue::Array(vec![
+            ABIValue::Uint(123u8.into()),
+            ABIValue::Array(vec![
+                ABIValue::Uint(65432u16.into()),
+                ABIValue::String("hello".to_string()),
+                ABIValue::Array(vec![
+                    ABIValue::String("world 1".to_string()),
+                    ABIValue::String("world 2".to_string()),
+                    ABIValue::String("world 3".to_string()),
+                ]),
+            ]),
+            ABIValue::Array(vec![ABIValue::Bool(false), ABIValue::Byte(88)]),
+            ABIValue::Array(vec![
+                ABIValue::Byte(222),
+                ABIValue::Address(
+                    "BEKKSMPBTPIGBYJGKD4XK7E7ZQJNZIHJVYFQWW3HNI32JHSH3LOGBRY3LE".to_string(),
+                ),
+            ]),
+        ]);
+
+        // Create struct value
+        let mut field3_value = HashMap::new();
+        field3_value.insert("field 3 child 1".to_string(), ABIValue::Bool(false));
+        field3_value.insert("field 3 child 2".to_string(), ABIValue::Byte(88));
+
+        let mut field2_value = HashMap::new();
+        field2_value.insert(
+            "Struct 2 field 1".to_string(),
+            ABIValue::Uint(65432u16.into()),
+        );
+        field2_value.insert(
+            "Struct 2 field 2".to_string(),
+            ABIValue::String("hello".to_string()),
+        );
+        field2_value.insert(
+            "Struct 2 field 3".to_string(),
+            ABIValue::Array(vec![
+                ABIValue::String("world 1".to_string()),
+                ABIValue::String("world 2".to_string()),
+                ABIValue::String("world 3".to_string()),
+            ]),
+        );
+
+        let mut struct_value_map = HashMap::new();
+        struct_value_map.insert("field 1".to_string(), ABIValue::Uint(123u8.into()));
+        struct_value_map.insert("field 2".to_string(), ABIValue::Struct(field2_value));
+        struct_value_map.insert("field 3".to_string(), ABIValue::Struct(field3_value));
+        struct_value_map.insert(
+            "field 4".to_string(),
+            ABIValue::Array(vec![
+                ABIValue::Byte(222),
+                ABIValue::Address(
+                    "BEKKSMPBTPIGBYJGKD4XK7E7ZQJNZIHJVYFQWW3HNI32JHSH3LOGBRY3LE".to_string(),
+                ),
+            ]),
+        );
+
+        let struct_value = ABIValue::Struct(struct_value_map);
+
+        // Test encoding - tuple and struct should produce same bytes
+        let encoded_tuple = tuple_type.encode(&tuple_value).unwrap();
+        let encoded_struct = struct_type.encode(&struct_value).unwrap();
+        assert_eq!(encoded_tuple, encoded_struct);
+
+        // Test decoding tuple
+        let decoded_tuple = tuple_type.decode(&encoded_tuple).unwrap();
+        assert_eq!(decoded_tuple, tuple_value);
+
+        // Test decoding struct from tuple encoding
+        let decoded_struct = struct_type.decode(&encoded_tuple).unwrap();
+        assert_eq!(decoded_struct, struct_value);
+
+        // Verify struct to tuple type conversion matches expected tuple type
+        let converted_tuple_type = struct_type.to_tuple_type();
+        assert_eq!(converted_tuple_type, tuple_type);
+    }
+}
