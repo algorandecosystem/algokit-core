@@ -222,11 +222,11 @@ impl AppClient {
     /// Returns the provided signer, or the default_signer if sender matches default_sender.
     pub(crate) fn resolve_signer(
         &self,
-        sender: Option<&str>,
+        sender: Option<String>,
         signer: Option<Arc<dyn TransactionSigner>>,
     ) -> Option<Arc<dyn TransactionSigner>> {
         signer.or_else(|| {
-            let should_use_default = sender.is_none() || sender == self.default_sender.as_deref();
+            let should_use_default = sender.is_none() || sender == self.default_sender;
 
             should_use_default
                 .then(|| self.default_signer.clone())
