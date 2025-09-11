@@ -1,8 +1,9 @@
 use crate::abi_type::ABIType;
 use crate::error::ABIError;
-use crate::method::{ABIMethod, ABIMethodArg, ABIMethodArgType};
+use crate::method::{ABIDefaultValue, ABIMethod, ABIMethodArg, ABIMethodArgType};
 use base64::{Engine as _, engine::general_purpose};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha512_256};
 use std::collections::HashMap;
 use std::str::FromStr;
 
@@ -225,7 +226,7 @@ pub struct Actions {
 }
 
 /// Source of default value
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum DefaultValueSource {
     Box,
@@ -441,57 +442,59 @@ pub struct Method {
     pub recommendations: Option<Recommendations>,
 }
 
-impl Method {
-    /// Get the ABI signature for this method
-    pub fn get_signature(&self) -> Result<String, ABIError> {
-        self.to_abi_method()?.signature()
-    }
-
-    /// Convert to ABIMethod
-    pub fn to_abi_method(&self) -> Result<ABIMethod, ABIError> {
-        let args: Result<Vec<ABIMethodArg>, ABIError> = self
-            .args
-            .iter()
-            .map(|arg| {
-                let arg_type = ABIMethodArgType::from_str(&arg.arg_type)?;
-                Ok(ABIMethodArg::new(
-                    arg_type,
-                    arg.name.clone(),
-                    arg.desc.clone(),
-                ))
-            })
-            .collect();
-
-        let returns = if self.returns.return_type == "void" {
-            None
+impl DefaultValue {
+    // TODO: maybe use try_into
+    /// Converts a DefaultValue to ABIDefaultValue
+    pub fn to_abi_default_value(&self) -> Result<ABIDefaultValue, ABIError> {
+        let value_type = if let Some(ref type_str) = self.value_type {
+            Some(ABIType::from_str(type_str)?)
         } else {
-            Some(ABIType::from_str(&self.returns.return_type)?)
+            None
         };
 
-        Ok(ABIMethod::new(
-            self.name.clone(),
-            args?,
-            returns,
-            self.desc.clone(),
-        ))
+        Ok(ABIDefaultValue {
+            data: self.data.clone(),
+            source: self.source.clone(),
+            value_type,
+        })
     }
 }
 
-// Allow direct fallible conversion from a ARC-0056 Method reference to an ABIMethod
-impl TryFrom<&Method> for ABIMethod {
-    type Error = ABIError;
+impl Method {
+    /// Returns the method selector, which is the first 4 bytes of the SHA-512/256 hash of the method signature.
+    pub fn selector(&self) -> Result<Vec<u8>, ABIError> {
+        let signature = self.signature()?;
+        if signature.chars().any(|c| c.is_whitespace()) {
+            return Err(ABIError::ValidationError {
+                message: "Method signature cannot contain whitespace".to_string(),
+            });
+        }
 
-    fn try_from(value: &Method) -> Result<Self, Self::Error> {
-        value.to_abi_method()
+        let mut hasher = Sha512_256::new();
+        hasher.update(signature.as_bytes());
+        let hash = hasher.finalize();
+
+        Ok(hash[..4].to_vec())
     }
-}
 
-// Also support owned conversion to avoid extra clones when possible
-impl TryFrom<Method> for ABIMethod {
-    type Error = ABIError;
+    /// Returns the method signature as a string.
+    pub fn signature(&self) -> Result<String, ABIError> {
+        if self.name.is_empty() {
+            return Err(ABIError::ValidationError {
+                message: "Method name cannot be empty".to_string(),
+            });
+        }
 
-    fn try_from(value: Method) -> Result<Self, Self::Error> {
-        value.to_abi_method()
+        let args_str = self
+            .args
+            .iter()
+            .map(|arg| arg.arg_type.as_str())
+            .collect::<Vec<_>>()
+            .join(",");
+
+        let signature = format!("{}({}){}", self.name, args_str, self.returns.return_type);
+
+        Ok(signature)
     }
 }
 
@@ -591,7 +594,7 @@ impl Arc56Contract {
 
             if methods.len() > 1 {
                 let signatures: Result<Vec<String>, ABIError> =
-                    methods.iter().map(|m| m.get_signature()).collect();
+                    methods.iter().map(|m| m.signature()).collect();
                 let signatures = signatures?;
                 return Err(ABIError::ValidationError {
                     message: format!(
@@ -610,7 +613,7 @@ impl Arc56Contract {
             self.methods
                 .iter()
                 .find(|m| {
-                    m.get_signature()
+                    m.signature()
                         .is_ok_and(|sig| sig == method_name_or_signature)
                 })
                 .ok_or_else(|| ABIError::ValidationError {
@@ -622,8 +625,8 @@ impl Arc56Contract {
         }
     }
 
-    /// Build an ABIMethod from an ARC-56 Method, resolving struct types into ABIType::Struct
-    pub fn to_abi_method(&self, method: &Method) -> Result<ABIMethod, ABIError> {
+    /// Build an ABIMethod from an ARC-56 Method
+    fn to_abi_method(&self, method: &Method) -> Result<ABIMethod, ABIError> {
         // Resolve argument types
         let args: Result<Vec<ABIMethodArg>, ABIError> = method
             .args
@@ -634,6 +637,7 @@ impl Arc56Contract {
                     arg_type,
                     arg.name.clone(),
                     arg.desc.clone(),
+                    None,
                 ))
             })
             .collect();

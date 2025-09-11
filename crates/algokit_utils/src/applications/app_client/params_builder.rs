@@ -204,14 +204,9 @@ impl<'a> ParamsBuilder<'a> {
     }
 
     fn get_abi_method(&self, method_name_or_signature: &str) -> Result<ABIMethod, AppClientError> {
-        let m = self
-            .client
-            .app_spec
-            .get_arc56_method(method_name_or_signature)
-            .map_err(|e| AppClientError::ABIError { source: e })?;
         self.client
             .app_spec
-            .to_abi_method(m)
+            .find_abi_method(method_name_or_signature)
             .map_err(|e| AppClientError::ABIError { source: e })
     }
 
@@ -223,12 +218,6 @@ impl<'a> ParamsBuilder<'a> {
         sender: &str,
     ) -> Result<Vec<AppMethodCallArg>, AppClientError> {
         let mut resolved: Vec<AppMethodCallArg> = Vec::with_capacity(method.args.len());
-
-        // Pre-fetch ARC-56 method once if available
-        let arc56_method = method
-            .signature()
-            .and_then(|sig| self.client.app_spec().get_arc56_method(&sig))
-            .map_err(|e| AppClientError::ABIError { source: e })?;
 
         if method.args.len() != provided.len() {
             return Err(AppClientError::ValidationError {

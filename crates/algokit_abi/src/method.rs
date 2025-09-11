@@ -1,7 +1,7 @@
+use crate::DefaultValueSource;
 use crate::abi_type::ABIType;
 use crate::abi_value::ABIValue;
 use crate::error::ABIError;
-use sha2::{Digest, Sha512_256};
 use std::fmt::Display;
 use std::str::FromStr;
 
@@ -158,7 +158,7 @@ impl FromStr for ABIMethodArgType {
 }
 
 /// Represents a parsed ABI method, including its name, arguments, and return type.
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)] //TODO: do we need PartialEq, Eq?
 pub struct ABIMethod {
     /// The name of the method.
     pub name: String,
@@ -170,6 +170,17 @@ pub struct ABIMethod {
     pub description: Option<String>,
 }
 
+/// Default value information for ABI method arguments.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ABIDefaultValue {
+    /// Base64 encoded bytes, base64 ARC4 encoded uint64, or UTF-8 method selector
+    pub data: String,
+    /// Where the default value is coming from
+    pub source: DefaultValueSource,
+    /// How the data is encoded. This is the encoding for the data provided here, not the arg type
+    pub value_type: Option<ABIType>,
+}
+
 /// Represents an argument in an ABI method.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ABIMethodArg {
@@ -179,6 +190,8 @@ pub struct ABIMethodArg {
     pub name: Option<String>,
     /// An optional description of the argument.
     pub description: Option<String>,
+    /// An optional default value for the argument.
+    pub default_value: Option<ABIDefaultValue>,
 }
 
 impl ABIMethod {
@@ -219,63 +232,6 @@ impl ABIMethod {
             .iter()
             .filter(|arg| arg.arg_type.is_value_type())
             .count()
-    }
-
-    /// Returns the method selector, which is the first 4 bytes of the SHA-512/256 hash of the method signature.
-    pub fn selector(&self) -> Result<Vec<u8>, ABIError> {
-        let signature = self.signature()?;
-        if signature.chars().any(|c| c.is_whitespace()) {
-            return Err(ABIError::ValidationError {
-                message: "Method signature cannot contain whitespace".to_string(),
-            });
-        }
-
-        let mut hasher = Sha512_256::new();
-        hasher.update(signature.as_bytes());
-        let hash = hasher.finalize();
-
-        Ok(hash[..4].to_vec())
-    }
-
-    /// Returns the method signature as a string.
-    pub fn signature(&self) -> Result<String, ABIError> {
-        if self.name.is_empty() {
-            return Err(ABIError::ValidationError {
-                message: "Method name cannot be empty".to_string(),
-            });
-        }
-
-        let arg_types: Vec<String> = self
-            .args
-            .iter()
-            .map(|arg| match &arg.arg_type {
-                ABIMethodArgType::Value(abi_type) => abi_type.to_string(),
-                ABIMethodArgType::Transaction(tx_type) => tx_type.to_string(),
-                ABIMethodArgType::Reference(ref_type) => ref_type.to_string(),
-            })
-            .collect();
-
-        // Validate each argument type
-        for arg_type in &arg_types {
-            ABIMethodArgType::from_str(arg_type)?;
-        }
-
-        let return_type = self
-            .returns
-            .as_ref()
-            .map(|r| r.to_string())
-            .unwrap_or_else(|| VOID_RETURN_TYPE.to_string());
-
-        let args_str = arg_types.join(",");
-        let signature = format!("{}({}){}", self.name, args_str, return_type);
-
-        if signature.chars().any(|c| c.is_whitespace()) {
-            return Err(ABIError::ValidationError {
-                message: "Generated signature contains whitespace".to_string(),
-            });
-        }
-
-        Ok(signature)
     }
 }
 
@@ -323,7 +279,7 @@ impl FromStr for ABIMethod {
         for (i, arg_type) in arguments.iter().enumerate() {
             let _type = ABIMethodArgType::from_str(arg_type)?;
             let arg_name = Some(format!("arg{}", i));
-            let arg = ABIMethodArg::new(_type, arg_name, None);
+            let arg = ABIMethodArg::new(_type, arg_name, None, None);
             args.push(arg);
         }
 
@@ -347,11 +303,13 @@ impl ABIMethodArg {
         arg_type: ABIMethodArgType,
         name: Option<String>,
         description: Option<String>,
+        default_value: Option<ABIDefaultValue>,
     ) -> Self {
         Self {
             arg_type,
             name,
             description,
+            default_value,
         }
     }
 }
@@ -517,19 +475,6 @@ mod tests {
         assert!(ABIMethod::from_str(signature).is_err());
     }
 
-    // Method selector verification - critical for hash correctness
-    #[rstest]
-    #[case("add(uint64,uint64)uint64", "fe6bdf69")]
-    #[case("optIn()void", "29314d95")]
-    #[case("deposit(pay,uint64)void", "f2355b55")]
-    #[case("bootstrap(pay,pay,application)void", "895c2a3b")]
-    fn method_selector(#[case] signature: &str, #[case] expected_hex: &str) {
-        let method = ABIMethod::from_str(signature).unwrap();
-        let selector = method.selector().unwrap();
-        assert_eq!(hex::encode(&selector), expected_hex);
-        assert_eq!(selector.len(), 4);
-    }
-
     // ARC-4 tuple parsing - essential cases
     #[rstest]
     #[case("uint64,string,bool", vec!["uint64", "string", "bool"])]
@@ -549,15 +494,6 @@ mod tests {
         assert!(parse_tuple_content(input).is_err());
     }
 
-    // Signature round-trip
-    #[rstest]
-    #[case("add(uint64,uint64)uint64")]
-    #[case("optIn()void")]
-    fn signature_round_trip(#[case] signature: &str) {
-        let method = ABIMethod::from_str(signature).unwrap();
-        assert_eq!(method.signature().unwrap(), signature);
-    }
-
     // Method argument type predicates
     #[test]
     fn method_arg_type_predicates() {
@@ -568,18 +504,5 @@ mod tests {
         assert!(tx_arg.is_transaction() && !tx_arg.is_reference() && !tx_arg.is_value_type());
         assert!(!ref_arg.is_transaction() && ref_arg.is_reference() && !ref_arg.is_value_type());
         assert!(!val_arg.is_transaction() && !val_arg.is_reference() && val_arg.is_value_type());
-    }
-
-    // Edge cases
-    #[test]
-    fn empty_method_name_error() {
-        let method = ABIMethod::new("".to_string(), vec![], None, None);
-        assert!(method.signature().is_err());
-    }
-
-    #[test]
-    fn selector_length() {
-        let method = ABIMethod::new("test".to_string(), vec![], None, None);
-        assert_eq!(method.selector().unwrap().len(), 4);
     }
 }
