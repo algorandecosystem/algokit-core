@@ -55,7 +55,7 @@ struct GlobalStateProvider<'a> {
     client: &'a AppClient,
 }
 
-impl<'a> StateProvider for GlobalStateProvider<'a> {
+impl StateProvider for GlobalStateProvider<'_> {
     fn get_app_state(&self) -> Pin<Box<dyn Future<Output = GetStateResult> + '_>> {
         Box::pin(self.client.get_global_state())
     }
@@ -80,7 +80,7 @@ struct LocalStateProvider<'a> {
     address: String,
 }
 
-impl<'a> StateProvider for LocalStateProvider<'a> {
+impl StateProvider for LocalStateProvider<'_> {
     fn get_app_state(&self) -> Pin<Box<dyn Future<Output = GetStateResult> + '_>> {
         let addr = self.address.clone();
         let client = self.client;
@@ -192,7 +192,7 @@ impl<'a> AppStateAccessor<'a> {
                 .decode(tail)
                 .map_err(|e| AppClientError::ABIError { source: e })?;
 
-            let decoded_value = decode_app_state(&storage_map.value_type, &app_state)?;
+            let decoded_value = decode_app_state(&storage_map.value_type, app_state)?;
             result.insert(decoded_key, decoded_value);
         }
 
@@ -237,7 +237,7 @@ impl<'a> AppStateAccessor<'a> {
     }
 }
 
-impl<'a> BoxStateAccessor<'a> {
+impl BoxStateAccessor<'_> {
     pub async fn get_all(&self) -> Result<HashMap<String, ABIValue>, AppClientError> {
         let box_storage_keys = self
             .client
@@ -262,7 +262,7 @@ impl<'a> BoxStateAccessor<'a> {
             results.insert(box_name, abi_value);
         }
 
-        return Ok(results);
+        Ok(results)
     }
 
     pub async fn get_value(&self, name: &str) -> Result<ABIValue, AppClientError> {
@@ -287,10 +287,10 @@ impl<'a> BoxStateAccessor<'a> {
 
         // TODO: what to do when it failed to fetch the box?
         let box_value = self.client.get_box_value(&box_name_bytes).await?;
-        return storage_key
+        storage_key
             .value_type
             .decode(&box_value)
-            .map_err(|e| AppClientError::ABIError { source: e });
+            .map_err(|e| AppClientError::ABIError { source: e })
     }
 
     pub async fn get_map(
@@ -349,10 +349,10 @@ fn decode_app_state(
     value_type: &ABIType,
     app_state: &AppState,
 ) -> Result<ABIValue, AppClientError> {
-    return match &app_state {
+    match &app_state {
         AppState::Uint(uint_app_state) => Ok(ABIValue::Uint(BigUint::from(uint_app_state.value))),
         AppState::Bytes(bytes_app_state) => Ok(value_type
             .decode(&bytes_app_state.value_raw)
             .map_err(|e| AppClientError::ABIError { source: e })?),
-    };
+    }
 }

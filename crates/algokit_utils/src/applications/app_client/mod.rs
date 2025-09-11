@@ -103,6 +103,7 @@ impl AppClient {
     }
 
     /// Construct from creator address and application name via indexer lookup.
+    #[allow(clippy::too_many_arguments)]
     pub async fn from_creator_and_name(
         creator_address: &str,
         app_name: &str,

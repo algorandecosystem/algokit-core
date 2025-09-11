@@ -55,7 +55,7 @@ impl ABIType {
 
     pub(crate) fn encode_avm_uint64(&self, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
         match self {
-            ABIType::AVMUint64 => ABIType::from_str("uint64")?.encode(&value),
+            ABIType::AVMUint64 => ABIType::from_str("uint64")?.encode(value),
             _ => Err(ABIError::EncodingError {
                 message: "ABI type mismatch, expected AVMUint64".to_string(),
             }),

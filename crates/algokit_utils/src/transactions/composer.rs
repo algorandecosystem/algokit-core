@@ -160,9 +160,6 @@ pub struct SendTransactionComposerResults {
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct TransactionComposerConfig {}
-
-#[derive(Debug, Clone, Default)]
 pub struct SimulateParams {
     pub allow_more_logging: Option<bool>,
     pub allow_empty_signatures: Option<bool>,
@@ -187,19 +184,6 @@ pub struct TransactionComposerConfig {
     pub cover_app_call_inner_transaction_fees: bool,
     pub populate_app_call_resources: ResourcePopulation,
 }
-}
-#[derive(Clone)]
-pub struct ComposerParams {
-    pub algod_client: Arc<AlgodClient>,
-    pub signer_getter: SignerGetter,
-    pub composer_config: Option<TransactionComposerConfig>,
-}
-
-#[derive(Debug, Clone, Default)]
-pub struct SendParams {
-    pub max_rounds_to_wait_for_confirmation: Option<u32>,
-}
-}
 
 #[derive(Clone)]
 pub struct ComposerParams {
@@ -212,6 +196,7 @@ pub struct ComposerParams {
 pub struct SendParams {
     pub max_rounds_to_wait_for_confirmation: Option<u32>,
 }
+
 #[derive(Debug)]
 struct TransactionAnalysis {
     /// The fee difference required for this transaction

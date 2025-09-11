@@ -51,7 +51,7 @@ impl ABIStruct {
 
         Ok(Self {
             name: struct_name.to_string(),
-            fields: fields,
+            fields,
         })
     }
 
@@ -211,7 +211,7 @@ impl ABIStruct {
     ) -> Result<HashMap<String, ABIValue>, ABIError> {
         fields
             .iter()
-            .zip(values.into_iter())
+            .zip(values)
             .map(|(field, value)| {
                 let processed_value = match (&field.field_type, value) {
                     (StructFieldType::Fields(nested_fields), ABIValue::Array(nested_tuple)) => {
@@ -237,7 +237,7 @@ impl ABIStruct {
 impl Display for ABIStruct {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         let tuple_type = self.to_tuple_type();
-        write!(f, "{}", tuple_type.to_string())
+        write!(f, "{}", tuple_type)
     }
 }
 

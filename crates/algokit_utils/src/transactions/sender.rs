@@ -263,46 +263,6 @@ impl TransactionSender {
         transform_result(base_result)
     }
 
-    /// Extract ABI return from transaction result using app manager for enhanced processing.
-    ///
-    /// This method takes a transaction result and method parameter to extract and parse
-    /// ABI return values with proper type information from the app manager.
-    ///
-    /// # Arguments
-    /// * `result` - The transaction result containing potential ABI returns
-    /// * `params` - Parameters containing the method definition for ABI processing
-    ///
-    /// # Returns
-    /// * `Option<ABIReturn>` - The processed ABI return if available and valid
-    fn extract_abi_return_from_result(
-        &self,
-        result: &SendTransactionResult,
-        params: &impl HasMethod,
-    ) -> Option<ABIReturn> {
-        // Get the last ABI return from the result (most recent transaction)
-        let abi_return = result.abi_returns.as_ref()?.last()?.clone();
-
-        // Use app manager to enhance the ABI return processing
-        let method = params.method();
-
-        // If the method has a return type, validate and enhance the return
-        if method.returns.is_some() {
-            // Use app manager static method to parse the return value with proper method information
-            match AppManager::get_abi_return(&abi_return.raw_return_value, method) {
-                Some(parsed) => {
-                    // Return enhanced ABIReturn with validated parsing
-                    Some(parsed)
-                }
-                None => {
-                    // Method has no return type
-                    Some(abi_return)
-                }
-            }
-        } else {
-            // Method has no return type, return as-is
-            Some(abi_return)
-        }
-    }
     /// Extract compilation metadata for TEAL programs using app manager caching.
     fn extract_compilation_metadata(
         &self,

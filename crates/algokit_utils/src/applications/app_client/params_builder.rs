@@ -202,7 +202,7 @@ impl<'a> ParamsBuilder<'a> {
             app_references: params.app_references.clone(),
             asset_references: params.asset_references.clone(),
             box_references: params.box_references.clone(),
-            on_complete: on_complete,
+            on_complete,
         })
     }
 
@@ -248,7 +248,7 @@ impl<'a> ParamsBuilder<'a> {
                     })?;
 
                     let value = self
-                        .resolve_default_value(default_value, &value_type, sender)
+                        .resolve_default_value(default_value, value_type, sender)
                         .await
                         .map_err(|e| AppClientError::ParamsBuilderError {
                             message: format!(
@@ -506,7 +506,7 @@ impl BareParamsBuilder<'_> {
             first_valid_round: params.first_valid_round,
             last_valid_round: params.last_valid_round,
             app_id: self.client.app_id,
-            on_complete: on_complete,
+            on_complete,
             args: params.args,
             account_references: super::utils::parse_account_refs_strs(&params.account_references)?,
             app_references: params.app_references,
