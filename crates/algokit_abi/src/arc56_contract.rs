@@ -185,10 +185,15 @@ pub struct EventArg {
     pub arg_type: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub desc: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub name: Option<String>,
-    #[serde(rename = "struct", skip_serializing_if = "Option::is_none")]
-    pub struct_name: Option<String>,
+}
+
+/// Describes a single key in app storage with parsed ABI types.
+#[derive(Debug, Clone)]
+pub struct ABIStorageKey {
+    pub key: String,
+    pub key_type: ABIType,
+    pub value_type: ABIType,
+    pub desc: Option<String>,
 }
 
 /// ARC-28 events are described using an extension of the original interface.
@@ -656,5 +661,80 @@ impl Arc56Contract {
     pub fn find_abi_method(&self, method_name_or_signature: &str) -> Result<ABIMethod, ABIError> {
         let arc56_method = self.get_arc56_method(method_name_or_signature)?;
         self.to_abi_method(arc56_method)
+    }
+
+    pub fn get_global_abi_storage_key(&self, key_name: &str) -> Result<ABIStorageKey, ABIError> {
+        let storage_key = self.state.keys.global_state.get(key_name).ok_or_else(|| {
+            ABIError::ValidationError {
+                message: format!(
+                    "Global storage key '{}' not found in contract '{}'",
+                    key_name, self.name
+                ),
+            }
+        })?;
+        self.convert_storage_key(storage_key)
+    }
+
+    pub fn get_local_abi_storage_key(&self, key_name: &str) -> Result<ABIStorageKey, ABIError> {
+        let storage_key =
+            self.state
+                .keys
+                .local_state
+                .get(key_name)
+                .ok_or_else(|| ABIError::ValidationError {
+                    message: format!(
+                        "Local storage key '{}' not found in contract '{}'",
+                        key_name, self.name
+                    ),
+                })?;
+        self.convert_storage_key(storage_key)
+    }
+
+    pub fn get_global_abi_storage_keys(&self) -> Result<HashMap<String, ABIStorageKey>, ABIError> {
+        self.state
+            .keys
+            .global_state
+            .iter()
+            .map(|(name, storage_key)| {
+                let abi_storage_key = self.convert_storage_key(storage_key)?;
+                Ok((name.clone(), abi_storage_key))
+            })
+            .collect()
+    }
+
+    pub fn get_local_abi_storage_keys(&self) -> Result<HashMap<String, ABIStorageKey>, ABIError> {
+        self.state
+            .keys
+            .local_state
+            .iter()
+            .map(|(name, storage_key)| {
+                let abi_storage_key = self.convert_storage_key(storage_key)?;
+                Ok((name.clone(), abi_storage_key))
+            })
+            .collect()
+    }
+
+    fn convert_storage_key(&self, storage_key: &StorageKey) -> Result<ABIStorageKey, ABIError> {
+        let key_type = self.resolve_storage_type(&storage_key.key_type)?;
+        let value_type = self.resolve_storage_type(&storage_key.value_type)?;
+
+        Ok(ABIStorageKey {
+            key: storage_key.key.clone(),
+            key_type,
+            value_type,
+            desc: storage_key.desc.clone(),
+        })
+    }
+
+    fn resolve_storage_type(&self, type_str: &str) -> Result<ABIType, ABIError> {
+        // Check if this is a reference to a struct
+        if self.structs.contains_key(type_str) {
+            ABIType::from_struct(type_str, &self.structs)
+        } else {
+            // Parse as regular ABI type
+            ABIType::from_str(type_str).map_err(|e| ABIError::ValidationError {
+                message: format!("Failed to parse storage type '{}': {}", type_str, e),
+            })
+        }
     }
 }

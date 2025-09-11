@@ -101,6 +101,12 @@ pub enum ABIType {
     DynamicArray(Box<ABIType>),
     /// A struct type with named fields.
     Struct(ABIStruct),
+    /// Raw byteslice without the length prefix that is specified in ARC-4.
+    AVMBytes,
+    /// A utf-8 string without the length prefix that is specified in ARC-4.
+    AVMString,
+    /// A 64-bit unsigned integer.
+    AVMUint64,
 }
 
 impl AsRef<ABIType> for ABIType {
@@ -129,6 +135,9 @@ impl ABIType {
             ABIType::Byte => self.encode_byte(value),
             ABIType::Bool => self.encode_bool(value),
             ABIType::Struct(struct_type) => struct_type.encode(value),
+            ABIType::AVMBytes => self.encode_avm_bytes(value),
+            ABIType::AVMString => self.encode_avm_string(value),
+            ABIType::AVMUint64 => self.encode_avm_uint64(value),
         }
     }
 
@@ -151,6 +160,9 @@ impl ABIType {
             ABIType::StaticArray(_, _size) => self.decode_static_array(bytes),
             ABIType::DynamicArray(_) => self.decode_dynamic_array(bytes),
             ABIType::Struct(struct_type) => struct_type.decode(bytes),
+            ABIType::AVMBytes => self.decode_avm_bytes(bytes),
+            ABIType::AVMString => self.decode_avm_string(bytes),
+            ABIType::AVMUint64 => self.decode_avm_uint64(bytes),
         }
     }
 
@@ -158,7 +170,9 @@ impl ABIType {
         match self {
             ABIType::StaticArray(child_type, _) => child_type.is_dynamic(),
             ABIType::Tuple(child_types) => child_types.iter().any(|t| t.is_dynamic()),
-            ABIType::DynamicArray(_) | ABIType::String => true,
+            ABIType::DynamicArray(_) | ABIType::String | ABIType::AVMBytes | ABIType::AVMString => {
+                true
+            }
             ABIType::Struct(struct_type) => struct_type.to_tuple_type().is_dynamic(),
             _ => false,
         }
@@ -171,6 +185,7 @@ impl ABIType {
             ABIType::Address => Ok(ALGORAND_PUBLIC_KEY_BYTE_LENGTH),
             ABIType::Bool => Ok(1),
             ABIType::Byte => Ok(1),
+            ABIType::AVMUint64 => Ok(8),
             ABIType::StaticArray(child_type, size) => match child_type.as_ref() {
                 ABIType::Bool => Ok((*size).div_ceil(BITS_PER_BYTE as usize)),
                 _ => Ok(Self::get_size(child_type)? * *size),
@@ -204,6 +219,12 @@ impl ABIType {
                 message: format!("Failed to get size, {} is a dynamic type", abi_type),
             }),
             ABIType::DynamicArray(_) => Err(ABIError::DecodingError {
+                message: format!("Failed to get size, {} is a dynamic type", abi_type),
+            }),
+            ABIType::AVMBytes => Err(ABIError::DecodingError {
+                message: format!("Failed to get size, {} is a dynamic type", abi_type),
+            }),
+            ABIType::AVMString => Err(ABIError::DecodingError {
                 message: format!("Failed to get size, {} is a dynamic type", abi_type),
             }),
         }
@@ -240,6 +261,9 @@ impl Display for ABIType {
                 write!(f, "{}[]", child_type)
             }
             ABIType::Struct(struct_type) => write!(f, "{}", struct_type.name),
+            ABIType::AVMBytes => write!(f, "AVMBytes"),
+            ABIType::AVMString => write!(f, "AVMString"),
+            ABIType::AVMUint64 => write!(f, "AVMUint64"),
         }
     }
 }
@@ -340,6 +364,9 @@ impl FromStr for ABIType {
             "bool" => Ok(ABIType::Bool),
             "address" => Ok(ABIType::Address),
             "string" => Ok(ABIType::String),
+            "AVMBytes" => Ok(ABIType::AVMBytes),
+            "AVMString" => Ok(ABIType::AVMString),
+            "AVMUint64" => Ok(ABIType::AVMUint64),
             _ => Err(ABIError::ValidationError {
                 message: format!("Cannot convert string '{}' to an ABI type", s),
             }),

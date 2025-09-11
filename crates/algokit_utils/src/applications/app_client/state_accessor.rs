@@ -1,9 +1,7 @@
-use crate::applications::app_client::utils::get_abi_decoded_value;
-use crate::clients::app_manager::{AppState, BytesAppState};
-
 use super::{AppClient, AppClientError};
-use algokit_abi::arc56_contract::{AVM_BYTES, AVM_STRING};
-use algokit_abi::{ABIType, ABIValue, AVM_UINT64, StorageKey, StorageMap};
+use crate::clients::app_manager::AppState;
+use algokit_abi::arc56_contract::ABIStorageKey;
+use algokit_abi::{ABIType, ABIValue, StorageMap};
 use base64::Engine;
 use num_bigint::BigUint;
 use std::collections::HashMap;
@@ -50,7 +48,7 @@ type GetStateResult = Result<HashMap<Vec<u8>, AppState>, AppClientError>;
 
 pub trait StateProvider {
     fn get_app_state(&self) -> Pin<Box<dyn Future<Output = GetStateResult> + '_>>;
-    fn get_storage_keys(&self) -> HashMap<String, StorageKey>;
+    fn get_storage_keys(&self) -> Result<HashMap<String, ABIStorageKey>, AppClientError>;
     fn get_storage_maps(&self) -> HashMap<String, StorageMap>;
 }
 
@@ -63,8 +61,11 @@ impl<'a> StateProvider for GlobalStateProvider<'a> {
         Box::pin(self.client.get_global_state())
     }
 
-    fn get_storage_keys(&self) -> HashMap<String, StorageKey> {
-        self.client.app_spec.state.keys.global_state.clone()
+    fn get_storage_keys(&self) -> Result<HashMap<String, ABIStorageKey>, AppClientError> {
+        self.client
+            .app_spec
+            .get_global_abi_storage_keys()
+            .map_err(|e| AppClientError::ABIError { source: e })
     }
 
     fn get_storage_maps(&self) -> HashMap<String, StorageMap> {
@@ -84,8 +85,11 @@ impl<'a> StateProvider for LocalStateProvider<'a> {
         Box::pin(async move { client.get_local_state(&addr).await })
     }
 
-    fn get_storage_keys(&self) -> HashMap<String, StorageKey> {
-        self.client.app_spec.state.keys.local_state.clone()
+    fn get_storage_keys(&self) -> Result<HashMap<String, ABIStorageKey>, AppClientError> {
+        self.client
+            .app_spec
+            .get_local_abi_storage_keys()
+            .map_err(|e| AppClientError::ABIError { source: e })
     }
 
     fn get_storage_maps(&self) -> HashMap<String, StorageMap> {
@@ -105,7 +109,7 @@ impl<'a> AppStateAccessor<'a> {
 
     pub async fn get_all(&self) -> Result<HashMap<String, Option<ABIValue>>, AppClientError> {
         let state = self.provider.get_app_state().await?;
-        let storage_key_map = self.provider.get_storage_keys();
+        let storage_key_map = self.provider.get_storage_keys()?;
 
         let mut result = HashMap::new();
         for (key_name, storage_key) in storage_key_map {
@@ -117,7 +121,7 @@ impl<'a> AppStateAccessor<'a> {
 
     pub async fn get_value(&self, key_name: &str) -> Result<Option<ABIValue>, AppClientError> {
         let state = self.provider.get_app_state().await?;
-        let storage_key_map = self.provider.get_storage_keys();
+        let storage_key_map = self.provider.get_storage_keys()?;
 
         let storage_key =
             storage_key_map
@@ -132,7 +136,7 @@ impl<'a> AppStateAccessor<'a> {
     fn decode_storage_key(
         &self,
         key_name: &str,
-        storage_key: &StorageKey,
+        storage_key: &ABIStorageKey,
         state: &HashMap<Vec<u8>, AppState>,
     ) -> Result<Option<ABIValue>, AppClientError> {
         let key_bytes = base64::engine::general_purpose::STANDARD
@@ -145,7 +149,7 @@ impl<'a> AppStateAccessor<'a> {
 
         match value {
             None => Ok(None),
-            Some(app_state) => Ok(Some(decode_app_state(&storage_key.key_type, app_state)?)),
+            Some(app_state) => Ok(Some(decode_app_state(&storage_key.value_type, app_state)?)),
         }
     }
 
@@ -178,9 +182,15 @@ impl<'a> AppStateAccessor<'a> {
             }
 
             let tail = &key[prefix_bytes.len()..];
-            let decoded_key = get_abi_decoded_value(tail, &storage_map.key_type)?;
+            let key_type = ABIType::from_str(&storage_map.key_type)
+                .map_err(|e| AppClientError::ABIError { source: e })?;
+            let decoded_key = key_type
+                .decode(tail)
+                .map_err(|e| AppClientError::ABIError { source: e })?;
 
-            let decoded_value = decode_app_state(&storage_map.value_type, &app_state)?;
+            let value_type = ABIType::from_str(&storage_map.value_type)
+                .map_err(|e| AppClientError::ABIError { source: e })?;
+            let decoded_value = decode_app_state(&value_type, &app_state)?;
             result.insert(decoded_key, decoded_value);
         }
 
@@ -220,7 +230,11 @@ impl<'a> AppStateAccessor<'a> {
 
         match value {
             None => Ok(None),
-            Some(app_state) => Ok(Some(decode_app_state(&storage_map.value_type, app_state)?)),
+            Some(app_state) => {
+                let value_type = ABIType::from_str(&storage_map.value_type)
+                    .map_err(|e| AppClientError::ABIError { source: e })?;
+                Ok(Some(decode_app_state(&value_type, app_state)?))
+            }
         }
     }
 }
@@ -239,7 +253,11 @@ impl<'a> BoxStateAccessor<'a> {
 
             // TODO: what to do when it failed to fetch the box?
             let box_value = self.client.get_box_value(&box_name_bytes).await?;
-            let abi_value = get_abi_decoded_value(&box_value, &storage_key.value_type)?;
+            let value_type = ABIType::from_str(&storage_key.value_type)
+                .map_err(|e| AppClientError::ABIError { source: e })?;
+            let abi_value = value_type
+                .decode(&box_value)
+                .map_err(|e| AppClientError::ABIError { source: e })?;
             results.insert(box_name.clone(), abi_value);
         }
 
@@ -266,7 +284,11 @@ impl<'a> BoxStateAccessor<'a> {
 
         // TODO: what to do when it failed to fetch the box?
         let box_value = self.client.get_box_value(&box_name_bytes).await?;
-        return get_abi_decoded_value(&box_value, &storage_key.value_type);
+        let value_type = ABIType::from_str(&storage_key.value_type)
+            .map_err(|e| AppClientError::ABIError { source: e })?;
+        return value_type
+            .decode(&box_value)
+            .map_err(|e| AppClientError::ABIError { source: e });
     }
 
     pub async fn get_map(
@@ -300,10 +322,18 @@ impl<'a> BoxStateAccessor<'a> {
         let mut results: HashMap<ABIValue, ABIValue> = HashMap::new();
         for box_name in box_names {
             let tail = &box_name.name_raw[prefix_bytes.len()..];
-            let decoded_key = get_abi_decoded_value(tail, &storage_map.key_type)?;
+            let key_type = ABIType::from_str(&storage_map.key_type)
+                .map_err(|e| AppClientError::ABIError { source: e })?;
+            let decoded_key = key_type
+                .decode(tail)
+                .map_err(|e| AppClientError::ABIError { source: e })?;
 
             let box_value = self.client.get_box_value(&box_name.name_raw).await?;
-            let decoded_value = get_abi_decoded_value(&box_value, &storage_map.value_type)?;
+            let value_type = ABIType::from_str(&storage_map.value_type)
+                .map_err(|e| AppClientError::ABIError { source: e })?;
+            let decoded_value = value_type
+                .decode(&box_value)
+                .map_err(|e| AppClientError::ABIError { source: e })?;
             results.insert(decoded_key, decoded_value);
         }
 
@@ -311,148 +341,14 @@ impl<'a> BoxStateAccessor<'a> {
     }
 }
 
-//     pub async fn get_map_value(
-//         &self,
-//         map_name: &str,
-//         key: &ABIValue,
-//     ) -> Result<ABIValue, AppClientError> {
-//         let map = self
-//             .client
-//             .app_spec
-//             .state
-//             .maps
-//             .box_maps
-//             .get(map_name)
-//             .ok_or_else(|| {
-//                 AppClientError::ValidationError(format!("Unknown box map: {}", map_name))
-//             })?;
-//         let key_type = ABIType::from_str(&map.key_type).map_err(|e| {
-//             AppClientError::ABIError(format!("Invalid ABI type '{}': {}", map.key_type, e))
-//         })?;
-//         let key_bytes = key_type.encode(key).map_err(|e| {
-//             AppClientError::ValidationError(format!("Failed to encode map key: {}", e))
-//         })?;
-//         let mut full_key = if let Some(prefix_b64) = &map.prefix {
-//             base64::engine::general_purpose::STANDARD
-//                 .decode(prefix_b64)
-//                 .map_err(|e| {
-//                     AppClientError::ValidationError(format!("Failed to decode map prefix: {}", e))
-//                 })?
-//         } else {
-//             Vec::new()
-//         };
-//         full_key.extend_from_slice(&key_bytes);
-//         let value_type = ABIType::from_str(&map.value_type).map_err(|e| {
-//             AppClientError::ABIError(format!("Invalid ABI type '{}': {}", map.value_type, e))
-//         })?;
-//         self.client
-//             .algorand()
-//             .app()
-//             .get_box_value_from_abi_type(
-//                 self.client.app_id().ok_or(AppClientError::ValidationError(
-//                     "Missing app_id".to_string(),
-//                 ))?,
-//                 &full_key,
-//                 &value_type,
-//             )
-//             .await
-//             .map_err(|e| AppClientError::AppManagerError(e.to_string()))
-//     }
-
-//     pub async fn get_map(
-//         &self,
-//         map_name: &str,
-//     ) -> Result<HashMap<String, ABIValue>, AppClientError> {
-//         let map = self
-//             .client
-//             .app_spec
-//             .state
-//             .maps
-//             .box_maps
-//             .get(map_name)
-//             .ok_or_else(|| {
-//                 AppClientError::ValidationError(format!("Unknown box map: {}", map_name))
-//             })?;
-//         let prefix_bytes = if let Some(prefix_b64) = &map.prefix {
-//             base64::engine::general_purpose::STANDARD
-//                 .decode(prefix_b64)
-//                 .map_err(|e| {
-//                     AppClientError::ValidationError(format!("Failed to decode map prefix: {}", e))
-//                 })?
-//         } else {
-//             Vec::new()
-//         };
-
-//         let key_type = ABIType::from_str(&map.key_type).map_err(|e| {
-//             AppClientError::ABIError(format!("Invalid ABI type '{}': {}", map.key_type, e))
-//         })?;
-//         let value_type = ABIType::from_str(&map.value_type).map_err(|e| {
-//             AppClientError::ABIError(format!("Invalid ABI type '{}': {}", map.value_type, e))
-//         })?;
-
-//         let mut result = HashMap::new();
-//         let box_names = self.client.get_box_names().await?;
-//         for box_name in box_names {
-//             if !box_name.name_raw.starts_with(&prefix_bytes) {
-//                 continue;
-//             }
-//             let tail = &box_name.name_raw[prefix_bytes.len()..];
-//             let decoded_key = key_type.decode(tail).map_err(|e| {
-//                 AppClientError::ABIError(format!(
-//                     "Failed to decode key for map '{}': {}",
-//                     map_name, e
-//                 ))
-//             })?;
-//             let key_str = abi_value_to_string(&decoded_key);
-//             let val = self
-//                 .client
-//                 .algorand()
-//                 .app()
-//                 .get_box_value_from_abi_type(
-//                     self.client.app_id().ok_or(AppClientError::ValidationError(
-//                         "Missing app_id".to_string(),
-//                     ))?,
-//                     &box_name.name_raw,
-//                     &value_type,
-//                 )
-//                 .await
-//                 .map_err(|e| AppClientError::AppManagerError(e.to_string()))?;
-//             result.insert(key_str, val);
-//         }
-//         Ok(result)
-//     }
-// }
-
-fn decode_app_state(value_type: &str, app_state: &AppState) -> Result<ABIValue, AppClientError> {
+fn decode_app_state(
+    value_type: &ABIType,
+    app_state: &AppState,
+) -> Result<ABIValue, AppClientError> {
     return match &app_state {
         AppState::Uint(uint_app_state) => Ok(ABIValue::Uint(BigUint::from(uint_app_state.value))),
-        AppState::Bytes(bytes_app_state) => {
-            Ok(decode_app_state_bytes_value(&value_type, bytes_app_state)?)
-        }
+        AppState::Bytes(bytes_app_state) => Ok(value_type
+            .decode(&bytes_app_state.value_raw)
+            .map_err(|e| AppClientError::ABIError { source: e })?),
     };
-}
-
-fn decode_app_state_bytes_value(
-    r#type: &str,
-    value: &BytesAppState,
-) -> Result<ABIValue, AppClientError> {
-    if r#type == AVM_STRING {
-        return Ok(ABIValue::from(value.value.clone()));
-    }
-    if r#type == AVM_BYTES {
-        return Ok(ABIValue::Bytes(value.value_raw.clone()));
-    }
-    if r#type == AVM_UINT64 {
-        return Ok(ABIType::from_str("uint64")
-            .map_err(|e| AppClientError::ABIError { source: e })?
-            .decode(&value.value_raw)
-            .map_err(|e| AppClientError::ABIError { source: e })?);
-    }
-
-    // TODO: structs will be handled in another PR
-    let abi_type = ABIType::from_str(r#type).map_err(|e| AppClientError::ABIError { source: e })?;
-
-    abi_type
-        .decode(&value.value_raw)
-        .map_err(|e| AppClientError::ABIError { source: e })
 }

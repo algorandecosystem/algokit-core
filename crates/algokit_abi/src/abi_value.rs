@@ -1,5 +1,6 @@
 use num_bigint::BigUint;
 use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
 
 /// Represents a value that can be encoded or decoded as an ABI type.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -108,6 +109,48 @@ impl ABIValue {
     /// Create an ABIValue::Struct from a HashMap
     pub fn from_struct(value: HashMap<String, ABIValue>) -> Self {
         ABIValue::Struct(value)
+    }
+}
+
+impl Hash for ABIValue {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        match self {
+            ABIValue::Bool(b) => {
+                0u8.hash(state);
+                b.hash(state);
+            }
+            ABIValue::Uint(u) => {
+                1u8.hash(state);
+                u.to_bytes_be().hash(state);
+            }
+            ABIValue::String(s) => {
+                2u8.hash(state);
+                s.hash(state);
+            }
+            ABIValue::Byte(b) => {
+                3u8.hash(state);
+                b.hash(state);
+            }
+            ABIValue::Array(arr) => {
+                4u8.hash(state);
+                arr.hash(state);
+            }
+            ABIValue::Address(addr) => {
+                5u8.hash(state);
+                addr.hash(state);
+            }
+            ABIValue::Bytes(bytes) => {
+                6u8.hash(state);
+                bytes.hash(state);
+            }
+            ABIValue::Struct(map) => {
+                7u8.hash(state);
+                // For HashMap, we need to hash in a consistent order
+                let mut pairs: Vec<_> = map.iter().collect();
+                pairs.sort_by_key(|(k, _)| *k);
+                pairs.hash(state);
+            }
+        }
     }
 }
 
