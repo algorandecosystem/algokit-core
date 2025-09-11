@@ -1,12 +1,11 @@
 use crate::DefaultValueSource;
 use crate::abi_type::ABIType;
 use crate::abi_value::ABIValue;
+use crate::constants::VOID_RETURN_TYPE;
 use crate::error::ABIError;
+use sha2::{Digest, Sha512_256};
 use std::fmt::Display;
 use std::str::FromStr;
-
-/// Constant for void return type in method signatures.
-const VOID_RETURN_TYPE: &str = "void";
 
 /// Represents a transaction type that can be used as an ABI method argument.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -168,6 +167,65 @@ pub struct ABIMethod {
     pub returns: Option<ABIType>,
     /// An optional description of the method.
     pub description: Option<String>,
+}
+
+impl ABIMethod {
+    /// Returns the method selector, which is the first 4 bytes of the SHA-512/256 hash of the method signature.
+    pub fn selector(&self) -> Result<Vec<u8>, ABIError> {
+        let signature = self.signature()?;
+        if signature.chars().any(|c| c.is_whitespace()) {
+            return Err(ABIError::ValidationError {
+                message: "Method signature cannot contain whitespace".to_string(),
+            });
+        }
+
+        let mut hasher = Sha512_256::new();
+        hasher.update(signature.as_bytes());
+        let hash = hasher.finalize();
+
+        Ok(hash[..4].to_vec())
+    }
+
+    /// Returns the method signature as a string.
+    pub fn signature(&self) -> Result<String, ABIError> {
+        if self.name.is_empty() {
+            return Err(ABIError::ValidationError {
+                message: "Method name cannot be empty".to_string(),
+            });
+        }
+
+        let arg_types: Vec<String> = self
+            .args
+            .iter()
+            .map(|arg| match &arg.arg_type {
+                ABIMethodArgType::Value(abi_type) => abi_type.to_string(),
+                ABIMethodArgType::Transaction(tx_type) => tx_type.to_string(),
+                ABIMethodArgType::Reference(ref_type) => ref_type.to_string(),
+            })
+            .collect();
+
+        // Validate each argument type
+        for arg_type in &arg_types {
+            ABIMethodArgType::from_str(arg_type)?;
+        }
+
+        let return_type = self
+            .returns
+            .as_ref()
+            .map(|r| r.to_string())
+            .unwrap_or_else(|| VOID_RETURN_TYPE.to_string());
+
+        let args_str = arg_types.join(",");
+        let signature = format!("{}({}){}", self.name, args_str, return_type);
+
+        if signature.chars().any(|c| c.is_whitespace()) {
+            return Err(ABIError::ValidationError {
+                message: "Generated signature contains whitespace".to_string(),
+            });
+        }
+
+        Ok(signature)
+    }
 }
 
 /// Default value information for ABI method arguments.

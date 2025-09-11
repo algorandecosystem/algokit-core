@@ -1259,14 +1259,9 @@ fn get_abi_method(
     arc56_contract: &Arc56Contract,
     name: &str,
 ) -> Result<ABIMethod, Box<dyn std::error::Error + Send + Sync>> {
-    let method = arc56_contract
-        .methods
-        .iter()
-        .find(|m| m.name == name)
-        .ok_or_else(|| format!("Failed to find {} method", name))?
-        .try_into()
-        .map_err(|e| format!("Failed to convert ARC56 method to ABI method: {}", e))?;
-    Ok(method)
+    Ok(arc56_contract
+        .find_abi_method(name)
+        .map_err(|e| format!("Failed to convert ARC56 method to ABI method: {}", e))?)
 }
 
 fn get_abi_return(

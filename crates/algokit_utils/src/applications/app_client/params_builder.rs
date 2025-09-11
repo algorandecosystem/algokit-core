@@ -14,6 +14,11 @@ use algokit_transact::{Address, OnApplicationComplete};
 use base64::Engine;
 use std::str::FromStr;
 
+enum StateSource<'a> {
+    Global,
+    Local(&'a str),
+}
+
 pub struct ParamsBuilder<'a> {
     pub(crate) client: &'a AppClient,
 }
@@ -271,6 +276,55 @@ impl<'a> ParamsBuilder<'a> {
         Ok(resolved)
     }
 
+    async fn resolve_state_value(
+        &self,
+        default: &ABIDefaultValue,
+        value_type: &ABIType,
+        source: StateSource<'_>,
+    ) -> Result<ABIValue, AppClientError> {
+        let key = base64::engine::general_purpose::STANDARD
+            .decode(&default.data)
+            .map_err(|e| AppClientError::ParamsBuilderError {
+                message: format!(
+                    "Failed to decode {} key: {}",
+                    match source {
+                        StateSource::Global => "global",
+                        StateSource::Local(_) => "local",
+                    },
+                    e
+                ),
+            })?;
+
+        let state = match source {
+            StateSource::Global => self.client.get_global_state().await?,
+            StateSource::Local(sender) => self.client.get_local_state(sender).await?,
+        };
+
+        let app_state = state
+            .values()
+            .find(|value| match value {
+                AppState::Uint(uint_value) => uint_value.key_raw == key,
+                AppState::Bytes(bytes_value) => bytes_value.key_raw == key,
+            })
+            .ok_or_else(|| AppClientError::ParamsBuilderError {
+                message: format!(
+                    "The key {} could not be found in {} storage",
+                    default.data,
+                    match source {
+                        StateSource::Global => "global",
+                        StateSource::Local(_) => "local",
+                    }
+                ),
+            })?;
+
+        match app_state {
+            AppState::Uint(uint_value) => Ok(ABIValue::from(uint_value.value)),
+            AppState::Bytes(bytes_value) => Ok(value_type
+                .decode(&bytes_value.value_raw)
+                .map_err(|e| AppClientError::ABIError { source: e })?),
+        }
+    }
+
     pub async fn resolve_default_value(
         &self,
         default: &ABIDefaultValue,
@@ -321,65 +375,12 @@ impl<'a> ParamsBuilder<'a> {
                     .map_err(|e| AppClientError::ABIError { source: e })?)
             }
             DefaultValueSource::Global => {
-                let key = base64::engine::general_purpose::STANDARD
-                    .decode(&default.data)
-                    .map_err(|e| AppClientError::ParamsBuilderError {
-                        message: format!("Failed to decode global key: {}", e),
-                    })?;
-
-                let state = self.client.get_global_state().await?;
-                let app_state = state
-                    .values()
-                    .find(|value| match value {
-                        AppState::Uint(uint_value) => uint_value.key_raw == key,
-                        AppState::Bytes(bytes_vaklue) => bytes_vaklue.key_raw == key,
-                    })
-                    .ok_or_else(|| AppClientError::ParamsBuilderError {
-                        message: format!(
-                            "`The key {} could not be found in global storage`",
-                            default.data
-                        ),
-                    })?;
-
-                match app_state {
-                    AppState::Uint(uint_value) => Ok(ABIValue::from(uint_value.value)),
-                    AppState::Bytes(bytes_value) => {
-                        Ok(value_type
-                            .decode(&bytes_value.value_raw)
-                            .map_err(|e| AppClientError::ABIError { source: e })?)
-                    }
-                }
+                self.resolve_state_value(default, &value_type, StateSource::Global)
+                    .await
             }
             DefaultValueSource::Local => {
-                // TODO: consolidate this with Local variant
-                let key = base64::engine::general_purpose::STANDARD
-                    .decode(&default.data)
-                    .map_err(|e| AppClientError::ParamsBuilderError {
-                        message: format!("Failed to decode local key: {}", e),
-                    })?;
-
-                let state = self.client.get_local_state(sender).await?;
-                let app_state = state
-                    .values()
-                    .find(|value| match value {
-                        AppState::Uint(uint_value) => uint_value.key_raw == key,
-                        AppState::Bytes(bytes_vaklue) => bytes_vaklue.key_raw == key,
-                    })
-                    .ok_or_else(|| AppClientError::ParamsBuilderError {
-                        message: format!(
-                            "`The key {} could not be found in local storage`",
-                            default.data
-                        ),
-                    })?;
-
-                match app_state {
-                    AppState::Uint(uint_value) => Ok(ABIValue::from(uint_value.value)),
-                    AppState::Bytes(bytes_value) => {
-                        Ok(value_type
-                            .decode(&bytes_value.value_raw)
-                            .map_err(|e| AppClientError::ABIError { source: e })?)
-                    }
-                }
+                self.resolve_state_value(default, &value_type, StateSource::Local(sender))
+                    .await
             }
             DefaultValueSource::Box => {
                 let box_key = base64::engine::general_purpose::STANDARD

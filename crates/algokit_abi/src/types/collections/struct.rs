@@ -236,7 +236,8 @@ impl ABIStruct {
 
 impl Display for ABIStruct {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        write!(f, "{}", self.name)
+        let tuple_type = self.to_tuple_type();
+        write!(f, "{}", tuple_type.to_string())
     }
 }
 

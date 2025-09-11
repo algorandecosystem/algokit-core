@@ -1,9 +1,9 @@
 use crate::abi_type::ABIType;
+use crate::constants::VOID_RETURN_TYPE;
 use crate::error::ABIError;
 use crate::method::{ABIDefaultValue, ABIMethod, ABIMethodArg, ABIMethodArgType};
 use base64::{Engine as _, engine::general_purpose};
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha512_256};
 use std::collections::HashMap;
 use std::str::FromStr;
 
@@ -443,30 +443,7 @@ pub struct Method {
 }
 
 impl Method {
-    /// Returns the method selector, which is the first 4 bytes of the SHA-512/256 hash of the method signature.
-    pub fn selector(&self) -> Result<Vec<u8>, ABIError> {
-        let signature = self.signature()?;
-        if signature.chars().any(|c| c.is_whitespace()) {
-            return Err(ABIError::ValidationError {
-                message: "Method signature cannot contain whitespace".to_string(),
-            });
-        }
-
-        let mut hasher = Sha512_256::new();
-        hasher.update(signature.as_bytes());
-        let hash = hasher.finalize();
-
-        Ok(hash[..4].to_vec())
-    }
-
-    /// Returns the method signature as a string.
     pub fn signature(&self) -> Result<String, ABIError> {
-        if self.name.is_empty() {
-            return Err(ABIError::ValidationError {
-                message: "Method name cannot be empty".to_string(),
-            });
-        }
-
         let args_str = self
             .args
             .iter()
@@ -627,7 +604,7 @@ impl Arc56Contract {
             .collect();
 
         // Resolve return type
-        let returns = if method.returns.return_type == "void" {
+        let returns = if method.returns.return_type == VOID_RETURN_TYPE {
             None
         } else if let Some(struct_name) = &method.returns.struct_name {
             Some(ABIType::from_struct(struct_name, &self.structs)?)

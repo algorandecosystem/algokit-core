@@ -260,7 +260,7 @@ impl Display for ABIType {
             ABIType::DynamicArray(child_type) => {
                 write!(f, "{}[]", child_type)
             }
-            ABIType::Struct(struct_type) => write!(f, "{}", struct_type.name),
+            ABIType::Struct(struct_type) => write!(f, "{}", struct_type), // TODO: test this to make sure the method selector is correct
             ABIType::AVMBytes => write!(f, "AVMBytes"),
             ABIType::AVMString => write!(f, "AVMString"),
             ABIType::AVMUint64 => write!(f, "AVMUint64"),
