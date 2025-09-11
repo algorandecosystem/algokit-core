@@ -442,24 +442,6 @@ pub struct Method {
     pub recommendations: Option<Recommendations>,
 }
 
-impl DefaultValue {
-    // TODO: maybe use try_into
-    /// Converts a DefaultValue to ABIDefaultValue
-    pub fn to_abi_default_value(&self) -> Result<ABIDefaultValue, ABIError> {
-        let value_type = if let Some(ref type_str) = self.value_type {
-            Some(ABIType::from_str(type_str)?)
-        } else {
-            None
-        };
-
-        Ok(ABIDefaultValue {
-            data: self.data.clone(),
-            source: self.source.clone(),
-            value_type,
-        })
-    }
-}
-
 impl Method {
     /// Returns the method selector, which is the first 4 bytes of the SHA-512/256 hash of the method signature.
     pub fn selector(&self) -> Result<Vec<u8>, ABIError> {
@@ -633,11 +615,13 @@ impl Arc56Contract {
             .iter()
             .map(|arg| {
                 let arg_type = self.resolve_method_arg_type(arg)?;
+                let default_value = self.resolve_default_value(&arg.default_value)?;
+
                 Ok(ABIMethodArg::new(
                     arg_type,
                     arg.name.clone(),
                     arg.desc.clone(),
-                    None,
+                    default_value,
                 ))
             })
             .collect();
@@ -660,14 +644,40 @@ impl Arc56Contract {
     }
 
     fn resolve_method_arg_type(&self, arg: &MethodArg) -> Result<ABIMethodArgType, ABIError> {
-        // Check if this argument has a struct name
         if let Some(struct_name) = &arg.struct_name {
             let abi_type = ABIType::from_struct(struct_name, &self.structs)?;
             return Ok(ABIMethodArgType::Value(abi_type));
         }
 
-        // Fallback to standard parsing for non-struct args (including refs/txns)
         ABIMethodArgType::from_str(&arg.arg_type)
+    }
+
+    fn resolve_default_value(
+        &self,
+        default_value: &Option<DefaultValue>,
+    ) -> Result<Option<ABIDefaultValue>, ABIError> {
+        let resolved_default_value = if let Some(default_value) = default_value {
+            let resolved_value_type = if let Some(ref value_type) = default_value.value_type {
+                let abi_type = if self.structs.contains_key(value_type) {
+                    ABIType::from_struct(value_type, &self.structs)
+                } else {
+                    ABIType::from_str(value_type)
+                }?;
+                Some(abi_type)
+            } else {
+                None
+            };
+
+            Some(ABIDefaultValue {
+                data: default_value.data.clone(),
+                source: default_value.source.clone(),
+                value_type: resolved_value_type,
+            })
+        } else {
+            None
+        };
+
+        Ok(resolved_default_value)
     }
 
     /// Get a method by name or signature and convert to ABIMethod

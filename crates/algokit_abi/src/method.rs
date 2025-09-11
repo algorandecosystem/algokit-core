@@ -382,7 +382,6 @@ fn split_arguments_by_comma(args_str: &str) -> Result<Vec<String>, ABIError> {
 mod tests {
     use super::*;
     use crate::abi_type::parse_tuple_content;
-    use hex;
     use rstest::rstest;
 
     // Transaction type parsing with round-trip validation

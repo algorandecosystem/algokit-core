@@ -2,7 +2,6 @@ use super::AppClient;
 use crate::AppClientError;
 use crate::transactions::TransactionSenderError;
 use crate::transactions::composer::ComposerError;
-use algokit_abi::{ABIType, ABIValue, AVM_BYTES, AVM_STRING, AVM_UINT64};
 use std::str::FromStr;
 
 /// Format a logic error message with details.
@@ -59,33 +58,6 @@ pub fn parse_account_refs_strs(
                 );
             }
             Ok(Some(result))
-        }
-    }
-}
-
-pub fn get_abi_decoded_value(value: &[u8], value_type: &str) -> Result<ABIValue, AppClientError> {
-    match value_type {
-        AVM_STRING => {
-            let s = String::from_utf8(value.to_vec()).map_err(|_| AppClientError::DecodeError {
-                message: "Failed to convert bytes to utf-8 string".to_string(),
-            })?;
-            Ok(ABIValue::from(s))
-        }
-        AVM_BYTES => Ok(ABIValue::Bytes(value.to_vec())),
-        AVM_UINT64 => {
-            let uint64_abi_type =
-                ABIType::from_str("uint64").map_err(|e| AppClientError::ABIError { source: e })?;
-            Ok(uint64_abi_type
-                .decode(&value)
-                .map_err(|e| AppClientError::ABIError { source: e })?)
-        }
-        _ => {
-            // TODO: struct will be handled in another PR
-            let abi_type = ABIType::from_str(&value_type)
-                .map_err(|e| AppClientError::ABIError { source: e })?;
-            Ok(abi_type
-                .decode(&value)
-                .map_err(|e| AppClientError::ABIError { source: e })?)
         }
     }
 }

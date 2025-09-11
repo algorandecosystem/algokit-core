@@ -3,15 +3,13 @@ use super::types::{
     AppClientBareCallParams, AppClientMethodCallParams, CompilationParams, FundAppAccountParams,
 };
 use crate::AppClientError;
-use crate::applications::app_client::utils::get_abi_decoded_value;
 use crate::clients::app_manager::AppState;
 use crate::transactions::{
     AppCallMethodCallParams, AppCallParams, AppDeleteMethodCallParams, AppDeleteParams,
     AppMethodCallArg, AppUpdateMethodCallParams, AppUpdateParams, PaymentParams,
 };
-use algokit_abi::{
-    ABIMethod, ABIMethodArgType, ABIType, ABIValue, DefaultValue, DefaultValueSource,
-};
+use algokit_abi::method::ABIDefaultValue;
+use algokit_abi::{ABIMethod, ABIMethodArgType, ABIType, ABIValue, DefaultValueSource};
 use algokit_transact::{Address, OnApplicationComplete};
 use base64::Engine;
 use std::str::FromStr;
@@ -77,7 +75,7 @@ impl<'a> ParamsBuilder<'a> {
         let abi_method = self.get_abi_method(&params.method)?;
         let sender = self.client.get_sender_address(&params.sender)?.as_str();
         let resolved_args = self
-            .resolve_args_with_defaults(&abi_method, &params.args, &sender)
+            .resolve_args(&abi_method, &params.args, &sender)
             .await?;
 
         Ok(AppDeleteMethodCallParams {
@@ -116,7 +114,7 @@ impl<'a> ParamsBuilder<'a> {
         let abi_method = self.get_abi_method(&params.method)?;
         let sender = self.client.get_sender_address(&params.sender)?.as_str();
         let resolved_args = self
-            .resolve_args_with_defaults(&abi_method, &params.args, &sender)
+            .resolve_args(&abi_method, &params.args, &sender)
             .await?;
 
         Ok(AppUpdateMethodCallParams {
@@ -177,7 +175,7 @@ impl<'a> ParamsBuilder<'a> {
         let abi_method = self.get_abi_method(&params.method)?;
         let sender = self.client.get_sender_address(&params.sender)?.as_str();
         let resolved_args = self
-            .resolve_args_with_defaults(&abi_method, &params.args, &sender)
+            .resolve_args(&abi_method, &params.args, &sender)
             .await?;
 
         Ok(AppCallMethodCallParams {
@@ -210,8 +208,7 @@ impl<'a> ParamsBuilder<'a> {
             .map_err(|e| AppClientError::ABIError { source: e })
     }
 
-    // TODO: rethink the positioning of this method
-    async fn resolve_args_with_defaults(
+    async fn resolve_args(
         &self,
         method: &ABIMethod,
         provided: &Vec<AppMethodCallArg>,
@@ -235,21 +232,25 @@ impl<'a> ParamsBuilder<'a> {
                 .clone()
                 .unwrap_or_else(|| format!("arg{}", index + 1));
             match (&method_arg.arg_type, provided_arg) {
-                // Value-type arguments
                 (ABIMethodArgType::Value(value_type), AppMethodCallArg::DefaultValue) => {
-                    let default_value = arc56_method
-                        .args
-                        .get(index)
-                        .and_then(|a| a.default_value.clone())
-                        .ok_or_else(|| AppClientError::ParamsBuilderError {
+                    let default_value = method_arg.default_value.as_ref().ok_or_else(|| {
+                        AppClientError::ParamsBuilderError {
                             message: format!(
                                 "No default value defined for argument {} in call to method {}",
                                 method_arg_name, method.name
                             ),
-                        })?;
+                        }
+                    })?;
+
                     let value = self
-                        .resolve_default_value_for_arg(&default_value, &value_type, sender)
-                        .await?;
+                        .resolve_default_value(default_value, &value_type, sender)
+                        .await
+                        .map_err(|e| AppClientError::ParamsBuilderError {
+                            message: format!(
+                                "Failed to resolve default value for arg {}: {:?}",
+                                method_arg_name, e
+                            ),
+                        })?;
                     resolved.push(AppMethodCallArg::ABIValue(value));
                 }
                 (_, AppMethodCallArg::DefaultValue) => {
@@ -270,15 +271,13 @@ impl<'a> ParamsBuilder<'a> {
         Ok(resolved)
     }
 
-    /// Resolve a single ARC-56 default value entry to an ABIValue for a value-type arg
-    pub async fn resolve_default_value_for_arg(
+    pub async fn resolve_default_value(
         &self,
-        default: &DefaultValue,
-        abi_type: &ABIType,
+        default: &ABIDefaultValue,
+        value_type: &ABIType,
         sender: &str,
     ) -> Result<ABIValue, AppClientError> {
-        // TODO: fix the abi_type.to_string() in this method
-        let value_type = default.value_type.clone().unwrap_or(abi_type.to_string());
+        let value_type = default.value_type.clone().unwrap_or(value_type.clone());
 
         match default.source {
             DefaultValueSource::Method => {
@@ -289,7 +288,6 @@ impl<'a> ParamsBuilder<'a> {
                     .get_arc56_method(&method_signature)
                     .map_err(|e| AppClientError::ABIError { source: e })?;
 
-                // Build params via params layer
                 let method_call_params = AppClientMethodCallParams {
                     method: method_signature.clone(),
                     args: vec![AppMethodCallArg::DefaultValue; arc56_method.args.len()],
@@ -301,13 +299,13 @@ impl<'a> ParamsBuilder<'a> {
                     Box::pin(self.client.send().call(method_call_params, None, None)).await?;
                 let abi_return = app_call_result.abi_return.ok_or_else(|| {
                     AppClientError::ParamsBuilderError {
-                        message: "Default value method call did not return a value".to_string(),
+                        message: "Method call did not return a value".to_string(),
                     }
                 })?;
 
                 match abi_return.return_value {
                     None => Err(AppClientError::ParamsBuilderError {
-                        message: "Default value method call did not return a value".to_string(),
+                        message: "Method call did not return a value".to_string(),
                     }),
                     Some(return_value) => Ok(return_value),
                 }
@@ -318,10 +316,11 @@ impl<'a> ParamsBuilder<'a> {
                     .map_err(|e| AppClientError::ParamsBuilderError {
                         message: format!("Failed to decode base64 literal: {}", e),
                     })?;
-                Ok(get_abi_decoded_value(&value_bytes, &value_type)?)
+                Ok(value_type
+                    .decode(&value_bytes)
+                    .map_err(|e| AppClientError::ABIError { source: e })?)
             }
             DefaultValueSource::Global => {
-                // TODO: consolidate this with Local variant
                 let key = base64::engine::general_purpose::STANDARD
                     .decode(&default.data)
                     .map_err(|e| AppClientError::ParamsBuilderError {
@@ -329,16 +328,25 @@ impl<'a> ParamsBuilder<'a> {
                     })?;
 
                 let state = self.client.get_global_state().await?;
-                let app_state = state.values().find(|value| match value {
-                    AppState::Uint(uint_value) => uint_value.key_raw == key,
-                    AppState::Bytes(bytes_vaklue) => bytes_vaklue.key_raw == key,
-                }).ok_or_else(|| AppClientError::ParamsBuilderError { message: format!("`Preparing default value for argument {} resulted in the failure: The key {} could not be found in global storage`",
-            "TODO: arg name", default.data) })?;
+                let app_state = state
+                    .values()
+                    .find(|value| match value {
+                        AppState::Uint(uint_value) => uint_value.key_raw == key,
+                        AppState::Bytes(bytes_vaklue) => bytes_vaklue.key_raw == key,
+                    })
+                    .ok_or_else(|| AppClientError::ParamsBuilderError {
+                        message: format!(
+                            "`The key {} could not be found in global storage`",
+                            default.data
+                        ),
+                    })?;
 
                 match app_state {
                     AppState::Uint(uint_value) => Ok(ABIValue::from(uint_value.value)),
                     AppState::Bytes(bytes_value) => {
-                        Ok(get_abi_decoded_value(&bytes_value.value_raw, &value_type)?)
+                        Ok(value_type
+                            .decode(&bytes_value.value_raw)
+                            .map_err(|e| AppClientError::ABIError { source: e })?)
                     }
                 }
             }
@@ -347,20 +355,29 @@ impl<'a> ParamsBuilder<'a> {
                 let key = base64::engine::general_purpose::STANDARD
                     .decode(&default.data)
                     .map_err(|e| AppClientError::ParamsBuilderError {
-                        message: format!("Failed to decode global key: {}", e),
+                        message: format!("Failed to decode local key: {}", e),
                     })?;
 
                 let state = self.client.get_local_state(sender).await?;
-                let app_state = state.values().find(|value| match value {
-                    AppState::Uint(uint_value) => uint_value.key_raw == key,
-                    AppState::Bytes(bytes_vaklue) => bytes_vaklue.key_raw == key,
-                }).ok_or_else(|| AppClientError::ParamsBuilderError { message: format!("`Preparing default value for argument {} resulted in the failure: The key {} could not be found in global storage`",
-            "TODO: arg name", default.data) })?;
+                let app_state = state
+                    .values()
+                    .find(|value| match value {
+                        AppState::Uint(uint_value) => uint_value.key_raw == key,
+                        AppState::Bytes(bytes_vaklue) => bytes_vaklue.key_raw == key,
+                    })
+                    .ok_or_else(|| AppClientError::ParamsBuilderError {
+                        message: format!(
+                            "`The key {} could not be found in local storage`",
+                            default.data
+                        ),
+                    })?;
 
                 match app_state {
                     AppState::Uint(uint_value) => Ok(ABIValue::from(uint_value.value)),
                     AppState::Bytes(bytes_value) => {
-                        Ok(get_abi_decoded_value(&bytes_value.value_raw, &value_type)?)
+                        Ok(value_type
+                            .decode(&bytes_value.value_raw)
+                            .map_err(|e| AppClientError::ABIError { source: e })?)
                     }
                 }
             }
@@ -371,7 +388,9 @@ impl<'a> ParamsBuilder<'a> {
                         message: format!("Failed to decode box key: {}", e),
                     })?;
                 let box_value = self.client.get_box_value(&box_key).await?;
-                Ok(get_abi_decoded_value(&box_value, &value_type)?)
+                Ok(value_type
+                    .decode(&box_value)
+                    .map_err(|e| AppClientError::ABIError { source: e })?)
             }
         }
     }
