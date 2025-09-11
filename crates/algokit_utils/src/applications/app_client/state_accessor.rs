@@ -1,7 +1,7 @@
 use super::{AppClient, AppClientError};
 use crate::clients::app_manager::AppState;
-use algokit_abi::arc56_contract::ABIStorageKey;
-use algokit_abi::{ABIType, ABIValue, StorageMap};
+use algokit_abi::arc56_contract::{ABIStorageKey, ABIStorageMap};
+use algokit_abi::{ABIType, ABIValue};
 use base64::Engine;
 use num_bigint::BigUint;
 use std::collections::HashMap;
@@ -49,7 +49,7 @@ type GetStateResult = Result<HashMap<Vec<u8>, AppState>, AppClientError>;
 pub trait StateProvider {
     fn get_app_state(&self) -> Pin<Box<dyn Future<Output = GetStateResult> + '_>>;
     fn get_storage_keys(&self) -> Result<HashMap<String, ABIStorageKey>, AppClientError>;
-    fn get_storage_maps(&self) -> HashMap<String, StorageMap>;
+    fn get_storage_maps(&self) -> Result<HashMap<String, ABIStorageMap>, AppClientError>;
 }
 
 struct GlobalStateProvider<'a> {
@@ -68,8 +68,11 @@ impl<'a> StateProvider for GlobalStateProvider<'a> {
             .map_err(|e| AppClientError::ABIError { source: e })
     }
 
-    fn get_storage_maps(&self) -> HashMap<String, StorageMap> {
-        self.client.app_spec.state.maps.global_state.clone()
+    fn get_storage_maps(&self) -> Result<HashMap<String, ABIStorageMap>, AppClientError> {
+        self.client
+            .app_spec
+            .get_global_abi_storage_maps()
+            .map_err(|e| AppClientError::ABIError { source: e })
     }
 }
 
@@ -92,8 +95,11 @@ impl<'a> StateProvider for LocalStateProvider<'a> {
             .map_err(|e| AppClientError::ABIError { source: e })
     }
 
-    fn get_storage_maps(&self) -> HashMap<String, StorageMap> {
-        self.client.app_spec.state.maps.local_state.clone()
+    fn get_storage_maps(&self) -> Result<HashMap<String, ABIStorageMap>, AppClientError> {
+        self.client
+            .app_spec
+            .get_local_abi_storage_maps()
+            .map_err(|e| AppClientError::ABIError { source: e })
     }
 }
 
@@ -158,7 +164,7 @@ impl<'a> AppStateAccessor<'a> {
         map_name: &str,
     ) -> Result<HashMap<ABIValue, ABIValue>, AppClientError> {
         let state = self.provider.get_app_state().await?;
-        let storage_map_map = self.provider.get_storage_maps();
+        let storage_map_map = self.provider.get_storage_maps()?;
         let storage_map =
             storage_map_map
                 .get(map_name)
@@ -182,15 +188,12 @@ impl<'a> AppStateAccessor<'a> {
             }
 
             let tail = &key[prefix_bytes.len()..];
-            let key_type = ABIType::from_str(&storage_map.key_type)
-                .map_err(|e| AppClientError::ABIError { source: e })?;
-            let decoded_key = key_type
+            let decoded_key = storage_map
+                .key_type
                 .decode(tail)
                 .map_err(|e| AppClientError::ABIError { source: e })?;
 
-            let value_type = ABIType::from_str(&storage_map.value_type)
-                .map_err(|e| AppClientError::ABIError { source: e })?;
-            let decoded_value = decode_app_state(&value_type, &app_state)?;
+            let decoded_value = decode_app_state(&storage_map.value_type, &app_state)?;
             result.insert(decoded_key, decoded_value);
         }
 
@@ -203,7 +206,7 @@ impl<'a> AppStateAccessor<'a> {
         key: ABIValue,
     ) -> Result<Option<ABIValue>, AppClientError> {
         let state = self.provider.get_app_state().await?;
-        let storage_map_map = self.provider.get_storage_maps();
+        let storage_map_map = self.provider.get_storage_maps()?;
         let storage_map =
             storage_map_map
                 .get(map_name)
@@ -220,8 +223,8 @@ impl<'a> AppStateAccessor<'a> {
         } else {
             Vec::new()
         };
-        let encoded_key = ABIType::from_str(&storage_map.key_type)
-            .map_err(|e| AppClientError::ABIError { source: e })?
+        let encoded_key = storage_map
+            .key_type
             .encode(&key)
             .map_err(|e| AppClientError::ABIError { source: e })?;
         let full_key = [prefix_bytes, encoded_key].concat();
@@ -230,11 +233,7 @@ impl<'a> AppStateAccessor<'a> {
 
         match value {
             None => Ok(None),
-            Some(app_state) => {
-                let value_type = ABIType::from_str(&storage_map.value_type)
-                    .map_err(|e| AppClientError::ABIError { source: e })?;
-                Ok(Some(decode_app_state(&value_type, app_state)?))
-            }
+            Some(app_state) => Ok(Some(decode_app_state(&storage_map.value_type, app_state)?)),
         }
     }
 }
@@ -295,7 +294,11 @@ impl<'a> BoxStateAccessor<'a> {
         &self,
         map_name: &str,
     ) -> Result<HashMap<ABIValue, ABIValue>, AppClientError> {
-        let storage_map_map = &self.client.app_spec.state.maps.box_maps;
+        let storage_map_map = self
+            .client
+            .app_spec
+            .get_box_abi_storage_maps()
+            .map_err(|e| AppClientError::ABIError { source: e })?;
         let storage_map =
             storage_map_map
                 .get(map_name)
@@ -322,16 +325,14 @@ impl<'a> BoxStateAccessor<'a> {
         let mut results: HashMap<ABIValue, ABIValue> = HashMap::new();
         for box_name in box_names {
             let tail = &box_name.name_raw[prefix_bytes.len()..];
-            let key_type = ABIType::from_str(&storage_map.key_type)
-                .map_err(|e| AppClientError::ABIError { source: e })?;
-            let decoded_key = key_type
+            let decoded_key = storage_map
+                .key_type
                 .decode(tail)
                 .map_err(|e| AppClientError::ABIError { source: e })?;
 
             let box_value = self.client.get_box_value(&box_name.name_raw).await?;
-            let value_type = ABIType::from_str(&storage_map.value_type)
-                .map_err(|e| AppClientError::ABIError { source: e })?;
-            let decoded_value = value_type
+            let decoded_value = storage_map
+                .value_type
                 .decode(&box_value)
                 .map_err(|e| AppClientError::ABIError { source: e })?;
             results.insert(decoded_key, decoded_value);

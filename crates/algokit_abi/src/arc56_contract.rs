@@ -196,6 +196,15 @@ pub struct ABIStorageKey {
     pub desc: Option<String>,
 }
 
+/// Describes a storage map with parsed ABI types.
+#[derive(Debug, Clone)]
+pub struct ABIStorageMap {
+    pub key_type: ABIType,
+    pub value_type: ABIType,
+    pub desc: Option<String>,
+    pub prefix: Option<String>,
+}
+
 /// ARC-28 events are described using an extension of the original interface.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Event {
@@ -724,6 +733,54 @@ impl Arc56Contract {
             value_type,
             desc: storage_key.desc.clone(),
         })
+    }
+
+    fn convert_storage_map(&self, storage_map: &StorageMap) -> Result<ABIStorageMap, ABIError> {
+        let key_type = self.resolve_storage_type(&storage_map.key_type)?;
+        let value_type = self.resolve_storage_type(&storage_map.value_type)?;
+
+        Ok(ABIStorageMap {
+            key_type,
+            value_type,
+            desc: storage_map.desc.clone(),
+            prefix: storage_map.prefix.clone(),
+        })
+    }
+
+    pub fn get_global_abi_storage_maps(&self) -> Result<HashMap<String, ABIStorageMap>, ABIError> {
+        self.state
+            .maps
+            .global_state
+            .iter()
+            .map(|(name, storage_map)| {
+                let abi_storage_map = self.convert_storage_map(storage_map)?;
+                Ok((name.clone(), abi_storage_map))
+            })
+            .collect()
+    }
+
+    pub fn get_local_abi_storage_maps(&self) -> Result<HashMap<String, ABIStorageMap>, ABIError> {
+        self.state
+            .maps
+            .local_state
+            .iter()
+            .map(|(name, storage_map)| {
+                let abi_storage_map = self.convert_storage_map(storage_map)?;
+                Ok((name.clone(), abi_storage_map))
+            })
+            .collect()
+    }
+
+    pub fn get_box_abi_storage_maps(&self) -> Result<HashMap<String, ABIStorageMap>, ABIError> {
+        self.state
+            .maps
+            .box_maps
+            .iter()
+            .map(|(name, storage_map)| {
+                let abi_storage_map = self.convert_storage_map(storage_map)?;
+                Ok((name.clone(), abi_storage_map))
+            })
+            .collect()
     }
 
     fn resolve_storage_type(&self, type_str: &str) -> Result<ABIType, ABIError> {
