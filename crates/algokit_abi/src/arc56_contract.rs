@@ -186,6 +186,10 @@ pub struct EventArg {
     pub arg_type: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub desc: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(rename = "struct", skip_serializing_if = "Option::is_none")]
+    pub struct_name: Option<String>,
 }
 
 /// Describes a single key in app storage with parsed ABI types.

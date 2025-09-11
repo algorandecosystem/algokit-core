@@ -685,7 +685,7 @@ async fn abi_with_default_arg_from_local_state(
         .call(
             AppClientMethodCallParams {
                 method: "default_value_from_local_state".to_string(),
-                args: vec![], // missing arg to trigger default resolver
+                args: vec![AppMethodCallArg::DefaultValue],
                 sender: Some(sender.to_string()),
                 rekey_to: None,
                 note: None,
@@ -708,7 +708,7 @@ async fn abi_with_default_arg_from_local_state(
 
     let abi_ret = res.abi_return.as_ref().expect("abi return expected");
     if let Some(ABIValue::String(s)) = &abi_ret.return_value {
-        assert_eq!(s, "Local state, bananas");
+        assert_eq!(s, "Local state, bananas"); // TODO: confirm this, the current logic doesn't automatically convert base64 to utf8
     } else {
         panic!("expected string return");
     }
@@ -772,7 +772,7 @@ async fn abi_with_default_arg_from_literal(
         .call(
             AppClientMethodCallParams {
                 method: "default_value".to_string(),
-                args: vec![],
+                args: vec![AppMethodCallArg::DefaultValue],
                 sender: Some(sender.to_string()),
                 ..Default::default()
             },
@@ -847,7 +847,7 @@ async fn abi_with_default_arg_from_method(
         .call(
             AppClientMethodCallParams {
                 method: "default_value_from_abi".to_string(),
-                args: vec![],
+                args: vec![AppMethodCallArg::DefaultValue],
                 sender: Some(sender.to_string()),
                 ..Default::default()
             },
@@ -948,7 +948,7 @@ async fn abi_with_default_arg_from_global_state(
         .call(
             AppClientMethodCallParams {
                 method: "default_value_from_global_state".to_string(),
-                args: vec![],
+                args: vec![AppMethodCallArg::DefaultValue],
                 sender: Some(sender.to_string()),
                 ..Default::default()
             },
