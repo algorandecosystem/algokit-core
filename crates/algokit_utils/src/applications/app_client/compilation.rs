@@ -1,18 +1,21 @@
 use super::{AppClient, AppClientError};
-use crate::clients::app_manager::DeploymentMetadata;
+use crate::{
+    Config, EventType,
+    applications::app_client::types::CompilationParams,
+    clients::app_manager::DeploymentMetadata,
+    config::{AppCompiledEventData, EventData},
+};
 
 impl AppClient {
-    pub async fn compile_with_params(
+    pub async fn compile(
         &self,
-        compilation_params: &super::types::CompilationParams,
+        compilation_params: &CompilationParams,
     ) -> Result<(Vec<u8>, Vec<u8>), AppClientError> {
-        let approval = self
-            .compile_approval_with_params(compilation_params)
-            .await?;
-        let clear = self.compile_clear_with_params(compilation_params).await?;
+        let approval = self.compile_approval(compilation_params).await?;
+        let clear = self.compile_clear(compilation_params).await?;
 
         // Emit AppCompiled event when debug flag is enabled
-        if crate::config::Config::debug() {
+        if Config::debug() {
             let app_name = self.app_name.clone();
             let approval_map = self
                 .algorand()
@@ -25,40 +28,46 @@ impl AppClient {
                 .get_compilation_result(&String::from_utf8_lossy(&clear))
                 .and_then(|c| c.source_map);
 
-            let event = crate::config::AppCompiledEventData {
+            let event = AppCompiledEventData {
                 app_name,
                 approval_source_map: approval_map,
                 clear_source_map: clear_map,
             };
-            crate::config::Config::events()
-                .emit(
-                    crate::config::EventType::AppCompiled,
-                    crate::config::EventData::AppCompiled(event),
-                )
+            Config::events()
+                .emit(EventType::AppCompiled, EventData::AppCompiled(event))
                 .await;
         }
 
         Ok((approval, clear))
     }
 
-    pub async fn compile_approval_with_params(
+    async fn compile_approval(
         &self,
-        compilation_params: &super::types::CompilationParams,
+        compilation_params: &CompilationParams,
     ) -> Result<Vec<u8>, AppClientError> {
-        let source = self.app_spec.source.as_ref().ok_or_else(|| {
-            AppClientError::CompilationError("Missing source in app spec".to_string())
-        })?;
+        let source =
+            self.app_spec
+                .source
+                .as_ref()
+                .ok_or_else(|| AppClientError::CompilationError {
+                    message: "Missing source in app spec".to_string(),
+                })?;
 
         // 1) Decode TEAL from ARC-56 source
-        let mut teal = source
-            .get_decoded_approval()
-            .map_err(|e| AppClientError::CompilationError(e.to_string()))?;
+        let mut teal =
+            source
+                .get_decoded_approval()
+                .map_err(|e| AppClientError::CompilationError {
+                    message: e.to_string(),
+                })?;
 
         // 2) Apply template variables if provided
         if let Some(params) = &compilation_params.deploy_time_params {
             teal =
                 crate::clients::app_manager::AppManager::replace_template_variables(&teal, params)
-                    .map_err(|e| AppClientError::CompilationError(e.to_string()))?;
+                    .map_err(|e| AppClientError::CompilationError {
+                        message: e.to_string(),
+                    })?;
         }
 
         // 3) Apply deploy-time controls
@@ -68,7 +77,7 @@ impl AppClient {
                 deletable: compilation_params.deletable,
             };
             teal = crate::clients::app_manager::AppManager::replace_teal_template_deploy_time_control_params(&teal, &metadata)
-                .map_err(|e| AppClientError::CompilationError(e.to_string()))?;
+                .map_err(|e| AppClientError::CompilationError { message: e.to_string()})?;
         }
 
         // 4) Compile to populate AppManager cache and source maps
@@ -77,30 +86,39 @@ impl AppClient {
             .app()
             .compile_teal(&teal)
             .await
-            .map_err(|e| AppClientError::AppManagerError(e.to_string()))?;
+            .map_err(|e| AppClientError::AppManagerError { source: e })?;
 
         // Return TEAL source bytes (TransactionSender will pull compiled bytes from cache)
         Ok(teal.into_bytes())
     }
 
-    pub async fn compile_clear_with_params(
+    async fn compile_clear(
         &self,
-        compilation_params: &super::types::CompilationParams,
+        compilation_params: &CompilationParams,
     ) -> Result<Vec<u8>, AppClientError> {
-        let source = self.app_spec.source.as_ref().ok_or_else(|| {
-            AppClientError::CompilationError("Missing source in app spec".to_string())
-        })?;
+        let source =
+            self.app_spec
+                .source
+                .as_ref()
+                .ok_or_else(|| AppClientError::CompilationError {
+                    message: "Missing source in app spec".to_string(),
+                })?;
 
         // 1) Decode TEAL from ARC-56 source
-        let mut teal = source
-            .get_decoded_clear()
-            .map_err(|e| AppClientError::CompilationError(e.to_string()))?;
+        let mut teal =
+            source
+                .get_decoded_clear()
+                .map_err(|e| AppClientError::CompilationError {
+                    message: e.to_string(),
+                })?;
 
         // 2) Apply template variables if provided
         if let Some(params) = &compilation_params.deploy_time_params {
             teal =
                 crate::clients::app_manager::AppManager::replace_template_variables(&teal, params)
-                    .map_err(|e| AppClientError::CompilationError(e.to_string()))?;
+                    .map_err(|e| AppClientError::CompilationError {
+                        message: e.to_string(),
+                    })?;
         }
 
         // 3) NOTE: Deploy-time controls don't apply to clear program; skip
@@ -111,7 +129,7 @@ impl AppClient {
             .app()
             .compile_teal(&teal)
             .await
-            .map_err(|e| AppClientError::AppManagerError(e.to_string()))?;
+            .map_err(|e| AppClientError::AppManagerError { source: e })?;
 
         Ok(teal.into_bytes())
     }

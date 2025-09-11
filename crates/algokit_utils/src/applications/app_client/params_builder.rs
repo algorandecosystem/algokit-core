@@ -1,16 +1,23 @@
-use algokit_abi::ABIMethod;
-use algokit_transact::OnApplicationComplete;
-
-use crate::transactions::{
-    AppCallMethodCallParams, AppCallParams, AppDeleteMethodCallParams, AppDeleteParams,
-    AppMethodCallArg, AppUpdateMethodCallParams, AppUpdateParams, CommonTransactionParams,
-    PaymentParams,
-};
-
 use super::AppClient;
 use super::types::{
     AppClientBareCallParams, AppClientMethodCallParams, CompilationParams, FundAppAccountParams,
 };
+use crate::AppClientError;
+use crate::clients::app_manager::AppState;
+use crate::transactions::{
+    AppCallMethodCallParams, AppCallParams, AppDeleteMethodCallParams, AppDeleteParams,
+    AppMethodCallArg, AppUpdateMethodCallParams, AppUpdateParams, PaymentParams,
+};
+use algokit_abi::method::ABIDefaultValue;
+use algokit_abi::{ABIMethod, ABIMethodArgType, ABIType, ABIValue, DefaultValueSource};
+use algokit_transact::{Address, OnApplicationComplete};
+use base64::Engine;
+use std::str::FromStr;
+
+enum StateSource<'a> {
+    Global,
+    Local(&'a str),
+}
 
 pub struct ParamsBuilder<'a> {
     pub(crate) client: &'a AppClient,
@@ -32,8 +39,9 @@ impl<'a> ParamsBuilder<'a> {
     pub async fn call(
         &self,
         params: AppClientMethodCallParams,
-    ) -> Result<AppCallMethodCallParams, String> {
-        self.method_call_with_on_complete(params, OnApplicationComplete::NoOp)
+        on_complete: Option<OnApplicationComplete>,
+    ) -> Result<AppCallMethodCallParams, AppClientError> {
+        self.get_method_call_params(&params, on_complete.unwrap_or(OnApplicationComplete::NoOp))
             .await
     }
 
@@ -41,8 +49,8 @@ impl<'a> ParamsBuilder<'a> {
     pub async fn opt_in(
         &self,
         params: AppClientMethodCallParams,
-    ) -> Result<AppCallMethodCallParams, String> {
-        self.method_call_with_on_complete(params, OnApplicationComplete::OptIn)
+    ) -> Result<AppCallMethodCallParams, AppClientError> {
+        self.get_method_call_params(&params, OnApplicationComplete::OptIn)
             .await
     }
 
@@ -50,8 +58,17 @@ impl<'a> ParamsBuilder<'a> {
     pub async fn close_out(
         &self,
         params: AppClientMethodCallParams,
-    ) -> Result<AppCallMethodCallParams, String> {
-        self.method_call_with_on_complete(params, OnApplicationComplete::CloseOut)
+    ) -> Result<AppCallMethodCallParams, AppClientError> {
+        self.get_method_call_params(&params, OnApplicationComplete::CloseOut)
+            .await
+    }
+
+    /// Call a method with ClearState.
+    pub async fn clear_state(
+        &self,
+        params: AppClientMethodCallParams,
+    ) -> Result<AppCallMethodCallParams, AppClientError> {
+        self.get_method_call_params(&params, OnApplicationComplete::ClearState)
             .await
     }
 
@@ -59,20 +76,32 @@ impl<'a> ParamsBuilder<'a> {
     pub async fn delete(
         &self,
         params: AppClientMethodCallParams,
-    ) -> Result<AppDeleteMethodCallParams, String> {
-        let method_params = self
-            .method_call_with_on_complete(params, OnApplicationComplete::DeleteApplication)
+    ) -> Result<AppDeleteMethodCallParams, AppClientError> {
+        let abi_method = self.get_abi_method(&params.method)?;
+        let sender = self.client.get_sender_address(&params.sender)?.as_str();
+        let resolved_args = self
+            .resolve_args(&abi_method, &params.args, &sender)
             .await?;
 
         Ok(AppDeleteMethodCallParams {
-            common_params: method_params.common_params,
-            app_id: method_params.app_id,
-            method: method_params.method,
-            args: method_params.args,
-            account_references: method_params.account_references,
-            app_references: method_params.app_references,
-            asset_references: method_params.asset_references,
-            box_references: method_params.box_references,
+            sender: self.client.get_sender_address(&params.sender)?,
+            signer: self.client.resolve_signer(params.sender, None),
+            rekey_to: get_optional_address(&params.rekey_to)?,
+            note: params.note.clone(),
+            lease: params.lease,
+            static_fee: params.static_fee,
+            extra_fee: params.extra_fee,
+            max_fee: params.max_fee,
+            validity_window: params.validity_window,
+            first_valid_round: params.first_valid_round,
+            last_valid_round: params.last_valid_round,
+            app_id: self.client.app_id,
+            method: abi_method,
+            args: resolved_args,
+            account_references: super::utils::parse_account_refs_strs(&params.account_references)?,
+            app_references: params.app_references.clone(),
+            asset_references: params.asset_references.clone(),
+            box_references: params.box_references.clone(),
         })
     }
 
@@ -81,144 +110,22 @@ impl<'a> ParamsBuilder<'a> {
         &self,
         params: AppClientMethodCallParams,
         compilation_params: Option<CompilationParams>,
-    ) -> Result<AppUpdateMethodCallParams, String> {
+    ) -> Result<AppUpdateMethodCallParams, AppClientError> {
         // Compile programs (and populate AppManager cache/source maps)
-        let cp = compilation_params.unwrap_or_default();
-        let (approval_program, clear_state_program) = self
-            .client
-            .compile_with_params(&cp)
-            .await
-            .map_err(|e| e.to_string())?;
+        let compilation_params = compilation_params.unwrap_or_default();
+        let (approval_program, clear_state_program) =
+            self.client.compile(&compilation_params).await?;
 
-        // Reuse method_call to resolve method + args + common params
-        let method_params = self.method_call(&params).await?;
-
-        Ok(AppUpdateMethodCallParams {
-            common_params: method_params.common_params,
-            app_id: method_params.app_id,
-            approval_program,
-            clear_state_program,
-            method: method_params.method,
-            args: method_params.args,
-            account_references: method_params.account_references,
-            app_references: method_params.app_references,
-            asset_references: method_params.asset_references,
-            box_references: method_params.box_references,
-        })
-    }
-
-    /// Fund the application account.
-    pub fn fund_app_account(&self, params: &FundAppAccountParams) -> Result<PaymentParams, String> {
-        let sender = self.client.get_sender_address(&params.sender)?;
-        let receiver = self.client.get_app_address()?;
-        let rekey_to = AppClient::get_optional_address(&params.rekey_to)?;
-
-        Ok(PaymentParams {
-            common_params: CommonTransactionParams {
-                sender,
-                rekey_to,
-                note: params.note.clone(),
-                lease: params.lease,
-                static_fee: params.static_fee,
-                extra_fee: params.extra_fee,
-                max_fee: params.max_fee,
-                validity_window: params.validity_window,
-                first_valid_round: params.first_valid_round,
-                last_valid_round: params.last_valid_round,
-                ..Default::default()
-            },
-            receiver,
-            amount: params.amount,
-        })
-    }
-
-    async fn method_call_with_on_complete(
-        &self,
-        mut params: AppClientMethodCallParams,
-        on_complete: OnApplicationComplete,
-    ) -> Result<AppCallMethodCallParams, String> {
-        params.on_complete = Some(on_complete);
-        self.method_call(&params).await
-    }
-
-    pub async fn method_call(
-        &self,
-        params: &AppClientMethodCallParams,
-    ) -> Result<AppCallMethodCallParams, String> {
-        let abimethod = self.to_abimethod(&params.method)?;
-        let provided_len = params.args.as_ref().map(|v| v.len()).unwrap_or(0);
-        let expected = abimethod.args.len();
-        if provided_len > expected {
-            return Err(format!(
-                "Unexpected arg at position {}. {} only expects {} args",
-                expected + 1,
-                abimethod.name,
-                expected
-            ));
-        }
-
+        let abi_method = self.get_abi_method(&params.method)?;
+        let sender = self.client.get_sender_address(&params.sender)?.as_str();
         let resolved_args = self
-            .resolve_args_with_defaults(&abimethod, &params.args, params.sender.as_deref())
+            .resolve_args(&abi_method, &params.args, &sender)
             .await?;
 
-        Ok(AppCallMethodCallParams {
-            common_params: self.build_common_params_from_method(params)?,
-            app_id: self
-                .client
-                .app_id
-                .ok_or_else(|| "Missing app_id".to_string())?,
-            method: abimethod,
-            args: resolved_args,
-            account_references: super::utils::parse_account_refs_strs(&params.account_references)?,
-            app_references: params.app_references.clone(),
-            asset_references: params.asset_references.clone(),
-            box_references: params.box_references.clone(),
-            on_complete: params.on_complete.unwrap_or(OnApplicationComplete::NoOp),
-        })
-    }
-
-    /// Build method call params without performing default resolution.
-    /// Provided arguments are used as-is, only basic validation is applied.
-    pub fn method_call_no_defaults(
-        &self,
-        params: &AppClientMethodCallParams,
-    ) -> Result<AppCallMethodCallParams, String> {
-        let abimethod = self.to_abimethod(&params.method)?;
-        let provided_args = params.args.clone().unwrap_or_default();
-        let provided_len = provided_args.len();
-        let expected = abimethod.args.len();
-        if provided_len > expected {
-            return Err(format!(
-                "Unexpected arg at position {}. {} only expects {} args",
-                expected + 1,
-                abimethod.name,
-                expected
-            ));
-        }
-
-        Ok(AppCallMethodCallParams {
-            common_params: self.build_common_params_from_method(params)?,
-            app_id: self
-                .client
-                .app_id
-                .ok_or_else(|| "Missing app_id".to_string())?,
-            method: abimethod,
-            args: provided_args,
-            account_references: super::utils::parse_account_refs_strs(&params.account_references)?,
-            app_references: params.app_references.clone(),
-            asset_references: params.asset_references.clone(),
-            box_references: params.box_references.clone(),
-            on_complete: params.on_complete.unwrap_or(OnApplicationComplete::NoOp),
-        })
-    }
-
-    fn build_common_params_from_method(
-        &self,
-        params: &AppClientMethodCallParams,
-    ) -> Result<CommonTransactionParams, String> {
-        Ok(CommonTransactionParams {
+        Ok(AppUpdateMethodCallParams {
             sender: self.client.get_sender_address(&params.sender)?,
-            rekey_to: AppClient::get_optional_address(&params.rekey_to)?,
+            signer: self.client.resolve_signer(params.sender, None),
+            rekey_to: get_optional_address(&params.rekey_to)?,
             note: params.note.clone(),
             lease: params.lease,
             static_fee: params.static_fee,
@@ -227,242 +134,310 @@ impl<'a> ParamsBuilder<'a> {
             validity_window: params.validity_window,
             first_valid_round: params.first_valid_round,
             last_valid_round: params.last_valid_round,
+            app_id: self.client.app_id,
+            method: abi_method,
+            args: resolved_args,
+            account_references: super::utils::parse_account_refs_strs(&params.account_references)?,
+            app_references: params.app_references.clone(),
+            asset_references: params.asset_references.clone(),
+            box_references: params.box_references.clone(),
+            approval_program,
+            clear_state_program,
+        })
+    }
+
+    /// Fund the application account.
+    pub fn fund_app_account(
+        &self,
+        params: &FundAppAccountParams,
+    ) -> Result<PaymentParams, AppClientError> {
+        let sender = self.client.get_sender_address(&params.sender)?;
+        let receiver = self.client.app_address();
+        let rekey_to = get_optional_address(&params.rekey_to)?;
+
+        Ok(PaymentParams {
+            sender,
+            rekey_to,
+            note: params.note.clone(),
+            lease: params.lease,
+            static_fee: params.static_fee,
+            extra_fee: params.extra_fee,
+            max_fee: params.max_fee,
+            validity_window: params.validity_window,
+            first_valid_round: params.first_valid_round,
+            last_valid_round: params.last_valid_round,
+            receiver,
+            amount: params.amount,
             ..Default::default()
         })
     }
 
-    fn to_abimethod(&self, method_name_or_sig: &str) -> Result<ABIMethod, String> {
-        let m = self
-            .client
-            .app_spec
-            .get_arc56_method(method_name_or_sig)
-            .map_err(|e| e.to_string())?;
-        self.client
-            .app_spec
-            .to_abi_method(m)
-            .map_err(|e| e.to_string())
+    async fn get_method_call_params(
+        &self,
+        params: &AppClientMethodCallParams,
+        on_complete: OnApplicationComplete,
+    ) -> Result<AppCallMethodCallParams, AppClientError> {
+        let abi_method = self.get_abi_method(&params.method)?;
+        let sender = self.client.get_sender_address(&params.sender)?.as_str();
+        let resolved_args = self
+            .resolve_args(&abi_method, &params.args, &sender)
+            .await?;
+
+        Ok(AppCallMethodCallParams {
+            sender: self.client.get_sender_address(&params.sender)?,
+            signer: self.client.resolve_signer(params.sender.clone(), None),
+            rekey_to: get_optional_address(&params.rekey_to)?,
+            note: params.note.clone(),
+            lease: params.lease,
+            static_fee: params.static_fee,
+            extra_fee: params.extra_fee,
+            max_fee: params.max_fee,
+            validity_window: params.validity_window,
+            first_valid_round: params.first_valid_round,
+            last_valid_round: params.last_valid_round,
+            app_id: self.client.app_id,
+            method: abi_method,
+            args: resolved_args,
+            account_references: super::utils::parse_account_refs_strs(&params.account_references)?,
+            app_references: params.app_references.clone(),
+            asset_references: params.asset_references.clone(),
+            box_references: params.box_references.clone(),
+            on_complete: on_complete,
+        })
     }
 
-    async fn resolve_args_with_defaults(
+    fn get_abi_method(&self, method_name_or_signature: &str) -> Result<ABIMethod, AppClientError> {
+        self.client
+            .app_spec
+            .find_abi_method(method_name_or_signature)
+            .map_err(|e| AppClientError::ABIError { source: e })
+    }
+
+    async fn resolve_args(
         &self,
         method: &ABIMethod,
-        provided: &Option<Vec<AppMethodCallArg>>,
-        sender: Option<&str>,
-    ) -> Result<Vec<AppMethodCallArg>, String> {
-        use algokit_abi::ABIMethodArgType;
+        provided: &Vec<AppMethodCallArg>,
+        sender: &str,
+    ) -> Result<Vec<AppMethodCallArg>, AppClientError> {
         let mut resolved: Vec<AppMethodCallArg> = Vec::with_capacity(method.args.len());
 
-        // Pre-fetch ARC-56 method once if available
-        let arc56_method = method
-            .signature()
-            .ok()
-            .and_then(|sig| self.client.app_spec().get_arc56_method(&sig).ok());
+        if method.args.len() != provided.len() {
+            return Err(AppClientError::ValidationError {
+                message: format!(
+                    "The number of provided arguments is {} while the method expects {} arguments",
+                    provided.len(),
+                    method.args.len()
+                ),
+            });
+        }
 
-        for (i, m_arg) in method.args.iter().enumerate() {
-            let provided_arg = provided.as_ref().and_then(|v| v.get(i)).cloned();
-
-            match (&m_arg.arg_type, provided_arg) {
-                // Value-type arguments
-                (ABIMethodArgType::Value(value_type), Some(AppMethodCallArg::ABIValue(v))) => {
-                    // Provided concrete ABI value
-                    // (we don't type-check here; encoder will validate)
-                    let _ = value_type; // silence unused variable warning if any
-                    resolved.push(AppMethodCallArg::ABIValue(v));
-                }
-                (ABIMethodArgType::Value(value_type), Some(AppMethodCallArg::DefaultValue)) => {
-                    // Explicit request to use ARC-56 default
-                    let def = arc56_method
-                        .as_ref()
-                        .and_then(|m| m.args.get(i))
-                        .and_then(|a| a.default_value.clone())
-                        .ok_or_else(|| {
-                            format!(
+        for (index, (method_arg, provided_arg)) in method.args.iter().zip(provided).enumerate() {
+            let method_arg_name = method_arg
+                .name
+                .clone()
+                .unwrap_or_else(|| format!("arg{}", index + 1));
+            match (&method_arg.arg_type, provided_arg) {
+                (ABIMethodArgType::Value(value_type), AppMethodCallArg::DefaultValue) => {
+                    let default_value = method_arg.default_value.as_ref().ok_or_else(|| {
+                        AppClientError::ParamsBuilderError {
+                            message: format!(
                                 "No default value defined for argument {} in call to method {}",
-                                m_arg
-                                    .name
-                                    .clone()
-                                    .unwrap_or_else(|| format!("arg{}", i + 1)),
-                                method.name
-                            )
-                        })?;
-                    let abi_type_string = value_type.to_string();
+                                method_arg_name, method.name
+                            ),
+                        }
+                    })?;
+
                     let value = self
-                        .client
-                        .resolve_default_value_for_arg(&def, &abi_type_string, sender)
+                        .resolve_default_value(default_value, &value_type, sender)
                         .await
-                        .map_err(|e| e.to_string())?;
+                        .map_err(|e| AppClientError::ParamsBuilderError {
+                            message: format!(
+                                "Failed to resolve default value for arg {}: {:?}",
+                                method_arg_name, e
+                            ),
+                        })?;
                     resolved.push(AppMethodCallArg::ABIValue(value));
                 }
-                (ABIMethodArgType::Value(_), Some(other)) => {
-                    return Err(format!(
-                        "Invalid argument type for value argument {} in call to method {}: {:?}",
-                        m_arg
-                            .name
-                            .clone()
-                            .unwrap_or_else(|| format!("arg{}", i + 1)),
-                        method.name,
-                        other
-                    ));
+                (_, AppMethodCallArg::DefaultValue) => {
+                    return Err(AppClientError::ParamsBuilderError {
+                        message: format!(
+                            "Default value is not supported by argument {} in call to method {}",
+                            method_arg_name, method.name
+                        ),
+                    });
                 }
-                (ABIMethodArgType::Value(value_type), None) => {
-                    // No provided value; try default, else error
-                    if let Some(def) = arc56_method
-                        .as_ref()
-                        .and_then(|m| m.args.get(i))
-                        .and_then(|a| a.default_value.clone())
-                    {
-                        let abi_type_string = value_type.to_string();
-                        let value = self
-                            .client
-                            .resolve_default_value_for_arg(&def, &abi_type_string, sender)
-                            .await
-                            .map_err(|e| e.to_string())?;
-                        resolved.push(AppMethodCallArg::ABIValue(value));
-                    } else {
-                        return Err(format!(
-                            "No value provided for required argument {} in call to method {}",
-                            m_arg
-                                .name
-                                .clone()
-                                .unwrap_or_else(|| format!("arg{}", i + 1)),
-                            method.name
-                        ));
-                    }
-                }
-
-                // Reference-type arguments must be provided explicitly as ABIReference
-                (ABIMethodArgType::Reference(_), Some(AppMethodCallArg::ABIReference(r))) => {
-                    resolved.push(AppMethodCallArg::ABIReference(r));
-                }
-                (ABIMethodArgType::Reference(_), Some(AppMethodCallArg::DefaultValue)) => {
-                    return Err(format!(
-                        "DefaultValue sentinel not supported for reference argument {} in call to method {}",
-                        m_arg
-                            .name
-                            .clone()
-                            .unwrap_or_else(|| format!("arg{}", i + 1)),
-                        method.name
-                    ));
-                }
-                (ABIMethodArgType::Reference(_), Some(other)) => {
-                    return Err(format!(
-                        "Invalid argument type for reference argument {} in call to method {}: {:?}",
-                        m_arg
-                            .name
-                            .clone()
-                            .unwrap_or_else(|| format!("arg{}", i + 1)),
-                        method.name,
-                        other
-                    ));
-                }
-                (ABIMethodArgType::Reference(_), None) => {
-                    return Err(format!(
-                        "No value provided for required reference argument {} in call to method {}",
-                        m_arg
-                            .name
-                            .clone()
-                            .unwrap_or_else(|| format!("arg{}", i + 1)),
-                        method.name
-                    ));
-                }
-
-                // Transaction-type arguments: allow omission or DefaultValue -> placeholder
-                (ABIMethodArgType::Transaction(_), Some(AppMethodCallArg::DefaultValue)) => {
-                    resolved.push(AppMethodCallArg::TransactionPlaceholder);
-                }
-                (ABIMethodArgType::Transaction(_), Some(arg)) => {
-                    // Any transaction-bearing variant or explicit placeholder is accepted
-                    resolved.push(arg);
-                }
-                (ABIMethodArgType::Transaction(_), None) => {
-                    resolved.push(AppMethodCallArg::TransactionPlaceholder);
+                // TODO: can we ignore other validations, they will be handled at encoding?
+                (_, value) => {
+                    resolved.push(value.clone());
                 }
             }
         }
 
         Ok(resolved)
     }
+
+    async fn resolve_state_value(
+        &self,
+        default: &ABIDefaultValue,
+        value_type: &ABIType,
+        source: StateSource<'_>,
+    ) -> Result<ABIValue, AppClientError> {
+        let key = base64::engine::general_purpose::STANDARD
+            .decode(&default.data)
+            .map_err(|e| AppClientError::ParamsBuilderError {
+                message: format!(
+                    "Failed to decode {} key: {}",
+                    match source {
+                        StateSource::Global => "global",
+                        StateSource::Local(_) => "local",
+                    },
+                    e
+                ),
+            })?;
+
+        let state = match source {
+            StateSource::Global => self.client.get_global_state().await?,
+            StateSource::Local(sender) => self.client.get_local_state(sender).await?,
+        };
+
+        let app_state = state
+            .values()
+            .find(|value| match value {
+                AppState::Uint(uint_value) => uint_value.key_raw == key,
+                AppState::Bytes(bytes_value) => bytes_value.key_raw == key,
+            })
+            .ok_or_else(|| AppClientError::ParamsBuilderError {
+                message: format!(
+                    "The key {} could not be found in {} storage",
+                    default.data,
+                    match source {
+                        StateSource::Global => "global",
+                        StateSource::Local(_) => "local",
+                    }
+                ),
+            })?;
+
+        match app_state {
+            AppState::Uint(uint_value) => Ok(ABIValue::from(uint_value.value)),
+            AppState::Bytes(bytes_value) => Ok(value_type
+                .decode(&bytes_value.value_raw)
+                .map_err(|e| AppClientError::ABIError { source: e })?),
+        }
+    }
+
+    pub async fn resolve_default_value(
+        &self,
+        default: &ABIDefaultValue,
+        value_type: &ABIType,
+        sender: &str,
+    ) -> Result<ABIValue, AppClientError> {
+        let value_type = default.value_type.clone().unwrap_or(value_type.clone());
+
+        match default.source {
+            DefaultValueSource::Method => {
+                let method_signature = default.data.clone();
+                let arc56_method = self
+                    .client
+                    .app_spec
+                    .get_arc56_method(&method_signature)
+                    .map_err(|e| AppClientError::ABIError { source: e })?;
+
+                let method_call_params = AppClientMethodCallParams {
+                    method: method_signature.clone(),
+                    args: vec![AppMethodCallArg::DefaultValue; arc56_method.args.len()],
+                    sender: Some(sender.to_string()),
+                    ..Default::default()
+                };
+
+                let app_call_result =
+                    Box::pin(self.client.send().call(method_call_params, None, None)).await?;
+                let abi_return = app_call_result.abi_return.ok_or_else(|| {
+                    AppClientError::ParamsBuilderError {
+                        message: "Method call did not return a value".to_string(),
+                    }
+                })?;
+
+                match abi_return.return_value {
+                    None => Err(AppClientError::ParamsBuilderError {
+                        message: "Method call did not return a value".to_string(),
+                    }),
+                    Some(return_value) => Ok(return_value),
+                }
+            }
+            DefaultValueSource::Literal => {
+                let value_bytes = base64::engine::general_purpose::STANDARD
+                    .decode(&default.data)
+                    .map_err(|e| AppClientError::ParamsBuilderError {
+                        message: format!("Failed to decode base64 literal: {}", e),
+                    })?;
+                Ok(value_type
+                    .decode(&value_bytes)
+                    .map_err(|e| AppClientError::ABIError { source: e })?)
+            }
+            DefaultValueSource::Global => {
+                self.resolve_state_value(default, &value_type, StateSource::Global)
+                    .await
+            }
+            DefaultValueSource::Local => {
+                self.resolve_state_value(default, &value_type, StateSource::Local(sender))
+                    .await
+            }
+            DefaultValueSource::Box => {
+                let box_key = base64::engine::general_purpose::STANDARD
+                    .decode(&default.data)
+                    .map_err(|e| AppClientError::ParamsBuilderError {
+                        message: format!("Failed to decode box key: {}", e),
+                    })?;
+                let box_value = self.client.get_box_value(&box_key).await?;
+                Ok(value_type
+                    .decode(&box_value)
+                    .map_err(|e| AppClientError::ABIError { source: e })?)
+            }
+        }
+    }
 }
 
 impl BareParamsBuilder<'_> {
     /// Call with NoOp.
-    pub fn call(&self, params: AppClientBareCallParams) -> Result<AppCallParams, String> {
-        self.build_bare_app_call_params(params, OnApplicationComplete::NoOp)
+    pub fn call(
+        &self,
+        params: AppClientBareCallParams,
+        on_complete: Option<OnApplicationComplete>,
+    ) -> Result<AppCallParams, AppClientError> {
+        self.build_bare_app_call_params(params, on_complete.unwrap_or(OnApplicationComplete::NoOp))
     }
 
     /// Call with OptIn.
-    pub fn opt_in(&self, params: AppClientBareCallParams) -> Result<AppCallParams, String> {
+    pub fn opt_in(&self, params: AppClientBareCallParams) -> Result<AppCallParams, AppClientError> {
         self.build_bare_app_call_params(params, OnApplicationComplete::OptIn)
     }
 
     /// Call with CloseOut.
-    pub fn close_out(&self, params: AppClientBareCallParams) -> Result<AppCallParams, String> {
+    pub fn close_out(
+        &self,
+        params: AppClientBareCallParams,
+    ) -> Result<AppCallParams, AppClientError> {
         self.build_bare_app_call_params(params, OnApplicationComplete::CloseOut)
     }
 
     /// Call with Delete.
-    pub fn delete(&self, params: AppClientBareCallParams) -> Result<AppDeleteParams, String> {
-        let app_call =
-            self.build_bare_app_call_params(params, OnApplicationComplete::DeleteApplication)?;
+    pub fn delete(
+        &self,
+        params: AppClientBareCallParams,
+    ) -> Result<AppDeleteParams, AppClientError> {
         Ok(AppDeleteParams {
-            common_params: app_call.common_params,
-            app_id: app_call.app_id,
-            args: app_call.args,
-            account_references: app_call.account_references,
-            app_references: app_call.app_references,
-            asset_references: app_call.asset_references,
-            box_references: app_call.box_references,
-        })
-    }
-
-    /// Call with ClearState.
-    pub fn clear_state(&self, params: AppClientBareCallParams) -> Result<AppCallParams, String> {
-        self.build_bare_app_call_params(params, OnApplicationComplete::ClearState)
-    }
-
-    /// Update with bare call.
-    pub async fn update(
-        &self,
-        params: AppClientBareCallParams,
-        compilation_params: Option<CompilationParams>,
-    ) -> Result<AppUpdateParams, String> {
-        // Compile programs (and populate AppManager cache/source maps)
-        let cp = compilation_params.unwrap_or_default();
-        let (approval_program, clear_state_program) = self
-            .client
-            .compile_with_params(&cp)
-            .await
-            .map_err(|e| e.to_string())?;
-
-        // Resolve common/bare fields
-        let app_call =
-            self.build_bare_app_call_params(params, OnApplicationComplete::UpdateApplication)?;
-
-        Ok(AppUpdateParams {
-            common_params: app_call.common_params,
-            app_id: app_call.app_id,
-            approval_program,
-            clear_state_program,
-            args: app_call.args,
-            account_references: app_call.account_references,
-            app_references: app_call.app_references,
-            asset_references: app_call.asset_references,
-            box_references: app_call.box_references,
-        })
-    }
-
-    fn build_bare_app_call_params(
-        &self,
-        params: AppClientBareCallParams,
-        default_on_complete: OnApplicationComplete,
-    ) -> Result<AppCallParams, String> {
-        Ok(AppCallParams {
-            common_params: self.build_common_params_from_bare(&params)?,
-            app_id: self
-                .client
-                .app_id
-                .ok_or_else(|| "Missing app_id".to_string())?,
-            on_complete: params.on_complete.unwrap_or(default_on_complete),
+            sender: self.client.get_sender_address(&params.sender)?,
+            signer: self.client.resolve_signer(params.sender, None),
+            rekey_to: get_optional_address(&params.rekey_to)?,
+            note: params.note.clone(),
+            lease: params.lease,
+            static_fee: params.static_fee,
+            extra_fee: params.extra_fee,
+            max_fee: params.max_fee,
+            validity_window: params.validity_window,
+            first_valid_round: params.first_valid_round,
+            last_valid_round: params.last_valid_round,
+            app_id: self.client.app_id,
             args: params.args,
             account_references: super::utils::parse_account_refs_strs(&params.account_references)?,
             app_references: params.app_references,
@@ -471,13 +446,29 @@ impl BareParamsBuilder<'_> {
         })
     }
 
-    fn build_common_params_from_bare(
+    /// Call with ClearState.
+    pub fn clear_state(
         &self,
-        params: &AppClientBareCallParams,
-    ) -> Result<CommonTransactionParams, String> {
-        Ok(CommonTransactionParams {
+        params: AppClientBareCallParams,
+    ) -> Result<AppCallParams, AppClientError> {
+        self.build_bare_app_call_params(params, OnApplicationComplete::ClearState)
+    }
+
+    /// Update with bare call.
+    pub async fn update(
+        &self,
+        params: AppClientBareCallParams,
+        compilation_params: Option<CompilationParams>,
+    ) -> Result<AppUpdateParams, AppClientError> {
+        // Compile programs (and populate AppManager cache/source maps)
+        let compilation_params = compilation_params.unwrap_or_default();
+        let (approval_program, clear_state_program) =
+            self.client.compile(&compilation_params).await?;
+
+        Ok(AppUpdateParams {
             sender: self.client.get_sender_address(&params.sender)?,
-            rekey_to: AppClient::get_optional_address(&params.rekey_to)?,
+            signer: self.client.resolve_signer(params.sender, None),
+            rekey_to: get_optional_address(&params.rekey_to)?,
             note: params.note.clone(),
             lease: params.lease,
             static_fee: params.static_fee,
@@ -486,7 +477,52 @@ impl BareParamsBuilder<'_> {
             validity_window: params.validity_window,
             first_valid_round: params.first_valid_round,
             last_valid_round: params.last_valid_round,
-            ..Default::default()
+            app_id: self.client.app_id,
+            args: params.args,
+            account_references: super::utils::parse_account_refs_strs(&params.account_references)?,
+            app_references: params.app_references,
+            asset_references: params.asset_references,
+            box_references: params.box_references,
+            approval_program,
+            clear_state_program,
         })
+    }
+
+    fn build_bare_app_call_params(
+        &self,
+        params: AppClientBareCallParams,
+        on_complete: OnApplicationComplete,
+    ) -> Result<AppCallParams, AppClientError> {
+        Ok(AppCallParams {
+            sender: self.client.get_sender_address(&params.sender)?,
+            signer: self.client.resolve_signer(params.sender, None),
+            rekey_to: get_optional_address(&params.rekey_to)?,
+            note: params.note.clone(),
+            lease: params.lease,
+            static_fee: params.static_fee,
+            extra_fee: params.extra_fee,
+            max_fee: params.max_fee,
+            validity_window: params.validity_window,
+            first_valid_round: params.first_valid_round,
+            last_valid_round: params.last_valid_round,
+            app_id: self.client.app_id,
+            on_complete: on_complete,
+            args: params.args,
+            account_references: super::utils::parse_account_refs_strs(&params.account_references)?,
+            app_references: params.app_references,
+            asset_references: params.asset_references,
+            box_references: params.box_references,
+        })
+    }
+}
+
+fn get_optional_address(value: &Option<String>) -> Result<Option<Address>, AppClientError> {
+    match value {
+        Some(s) => {
+            Ok(Some(Address::from_str(s).map_err(|e| {
+                AppClientError::TransactError { source: e }
+            })?))
+        }
+        None => Ok(None),
     }
 }

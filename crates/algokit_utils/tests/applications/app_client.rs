@@ -1,10 +1,13 @@
 use crate::common::{AlgorandFixtureResult, TestResult, algorand_fixture, deploy_arc56_contract};
-use algokit_abi::Arc56Contract;
+use algokit_abi::{ABIType, ABIValue, Arc56Contract};
 use algokit_transact::BoxReference;
-use algokit_utils::AlgorandClient as RootAlgorandClient;
-use algokit_utils::applications::app_client::AppClientMethodCallParams;
-use algokit_utils::applications::app_client::{AppClient, AppClientJsonParams, AppClientParams};
+use algokit_utils::applications::app_client::{AppClient, AppClientParams};
+use algokit_utils::applications::app_client::{AppClientMethodCallParams, FundAppAccountParams};
 use algokit_utils::clients::app_manager::{TealTemplateParams, TealTemplateValue};
+use algokit_utils::{
+    AlgorandClient as RootAlgorandClient, AppMethodCallArg, AppSourceMaps, PaymentParams,
+    TransactionResultError,
+};
 use rstest::*;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -12,23 +15,6 @@ use std::sync::Arc;
 fn get_testing_app_spec() -> Arc56Contract {
     let json = algokit_test_artifacts::testing_app::APPLICATION_ARC56;
     Arc56Contract::from_json(json).expect("valid arc56")
-}
-
-#[test]
-fn app_client_from_network_works() {
-    let algorand = RootAlgorandClient::default_localnet();
-    // JSON constructor
-    let json = algokit_test_artifacts::state_management_demo::APPLICATION_ARC56;
-    let client = AppClient::from_json(AppClientJsonParams {
-        app_id: None,
-        app_spec_json: json,
-        algorand,
-        app_name: None,
-        default_sender: None,
-        source_maps: None,
-    })
-    .expect("app client from json");
-    assert!(!client.app_spec().methods.is_empty());
 }
 
 fn get_sandbox_spec() -> Arc56Contract {
@@ -50,36 +36,42 @@ async fn retrieve_state(#[future] algorand_fixture: AlgorandFixtureResult) -> Te
     let app_id =
         deploy_arc56_contract(&fixture, &sender, &get_testing_app_spec(), Some(tmpl), None).await?;
 
-    let mut algorand = RootAlgorandClient::default_localnet();
+    let mut algorand = RootAlgorandClient::default_localnet(None);
     algorand.set_signer(sender.clone(), Arc::new(fixture.test_account.clone()));
     let client = AppClient::new(AppClientParams {
-        app_id: Some(app_id),
+        app_id,
         app_spec: get_testing_app_spec(),
         algorand,
         app_name: None,
         default_sender: Some(sender.to_string()),
+        default_signer: None,
         source_maps: None,
+        transaction_composer_config: None,
     });
 
     // Global state: set and verify
     client
         .send()
-        .call(AppClientMethodCallParams {
-            method: "set_global".to_string(),
-            args: Some(vec![
-                algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from(1u64)),
-                algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from(2u64)),
-                algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from("asdf")),
-                algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::Array(vec![
-                    algokit_abi::ABIValue::from_byte(1),
-                    algokit_abi::ABIValue::from_byte(2),
-                    algokit_abi::ABIValue::from_byte(3),
-                    algokit_abi::ABIValue::from_byte(4),
-                ])),
-            ]),
-            sender: Some(sender.to_string()),
-            ..Default::default()
-        })
+        .call(
+            AppClientMethodCallParams {
+                method: "set_global".to_string(),
+                args: vec![
+                    AppMethodCallArg::ABIValue(ABIValue::from(1u64)),
+                    AppMethodCallArg::ABIValue(ABIValue::from(2u64)),
+                    AppMethodCallArg::ABIValue(ABIValue::from("asdf")),
+                    AppMethodCallArg::ABIValue(ABIValue::Array(vec![
+                        ABIValue::from_byte(1),
+                        ABIValue::from_byte(2),
+                        ABIValue::from_byte(3),
+                        ABIValue::from_byte(4),
+                    ])),
+                ],
+                sender: Some(sender.to_string()),
+                ..Default::default()
+            },
+            None,
+            None,
+        )
         .await?;
 
     let global_state = client.state().global_state().get_all().await?;
@@ -88,73 +80,78 @@ async fn retrieve_state(#[future] algorand_fixture: AlgorandFixtureResult) -> Te
     assert!(global_state.contains_key("bytes1"));
     assert!(global_state.contains_key("bytes2"));
     assert_eq!(
-        global_state.get("int1").unwrap(),
-        &algokit_abi::ABIValue::from(1u64)
+        global_state.get("int1").unwrap().as_ref().unwrap(),
+        &ABIValue::from(1u64)
     );
     assert_eq!(
-        global_state.get("int2").unwrap(),
-        &algokit_abi::ABIValue::from(2u64)
+        global_state.get("int2").unwrap().as_ref().unwrap(),
+        &ABIValue::from(2u64)
     );
     assert_eq!(
-        global_state.get("bytes1").unwrap(),
-        &algokit_abi::ABIValue::from("asdf")
+        global_state.get("bytes1").unwrap().as_ref().unwrap(),
+        &ABIValue::from("asdf")
     );
 
     // Local: opt-in and set; verify
     client
         .send()
-        .opt_in(AppClientMethodCallParams {
-            method: "opt_in".to_string(),
-            args: None,
-            sender: Some(sender.to_string()),
-            rekey_to: None,
-            note: None,
-            lease: None,
-            static_fee: None,
-            extra_fee: None,
-            max_fee: None,
-            validity_window: None,
-            first_valid_round: None,
-            last_valid_round: None,
-            account_references: None,
-            app_references: None,
-            asset_references: None,
-            box_references: None,
-            on_complete: None,
-        })
+        .opt_in(
+            AppClientMethodCallParams {
+                method: "opt_in".to_string(),
+                args: vec![],
+                sender: Some(sender.to_string()),
+                rekey_to: None,
+                note: None,
+                lease: None,
+                static_fee: None,
+                extra_fee: None,
+                max_fee: None,
+                validity_window: None,
+                first_valid_round: None,
+                last_valid_round: None,
+                account_references: None,
+                app_references: None,
+                asset_references: None,
+                box_references: None,
+            },
+            None,
+        )
         .await?;
 
     client
         .send()
-        .call(AppClientMethodCallParams {
-            method: "set_local".to_string(),
-            args: Some(vec![
-                algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from(1u64)),
-                algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from(2u64)),
-                algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from("asdf")),
-                algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::Array(vec![
-                    algokit_abi::ABIValue::from_byte(1),
-                    algokit_abi::ABIValue::from_byte(2),
-                    algokit_abi::ABIValue::from_byte(3),
-                    algokit_abi::ABIValue::from_byte(4),
-                ])),
-            ]),
-            sender: Some(sender.to_string()),
-            rekey_to: None,
-            note: None,
-            lease: None,
-            static_fee: None,
-            extra_fee: None,
-            max_fee: None,
-            validity_window: None,
-            first_valid_round: None,
-            last_valid_round: None,
-            account_references: None,
-            app_references: None,
-            asset_references: None,
-            box_references: None,
-            on_complete: None,
-        })
+        .call(
+            AppClientMethodCallParams {
+                method: "set_local".to_string(),
+                args: vec![
+                    AppMethodCallArg::ABIValue(ABIValue::from(1u64)),
+                    AppMethodCallArg::ABIValue(ABIValue::from(2u64)),
+                    AppMethodCallArg::ABIValue(ABIValue::from("asdf")),
+                    AppMethodCallArg::ABIValue(ABIValue::Array(vec![
+                        ABIValue::from_byte(1),
+                        ABIValue::from_byte(2),
+                        ABIValue::from_byte(3),
+                        ABIValue::from_byte(4),
+                    ])),
+                ],
+                sender: Some(sender.to_string()),
+                rekey_to: None,
+                note: None,
+                lease: None,
+                static_fee: None,
+                extra_fee: None,
+                max_fee: None,
+                validity_window: None,
+                first_valid_round: None,
+                last_valid_round: None,
+                account_references: None,
+                app_references: None,
+                asset_references: None,
+                box_references: None,
+            },
+            None,
+            None,
+        )
         .await?;
 
     let local_state = client
@@ -163,16 +160,16 @@ async fn retrieve_state(#[future] algorand_fixture: AlgorandFixtureResult) -> Te
         .get_all()
         .await?;
     assert_eq!(
-        local_state.get("local_int1").unwrap(),
-        &algokit_abi::ABIValue::from(1u64)
+        local_state.get("local_int1").unwrap().as_ref().unwrap(),
+        &ABIValue::from(1u64)
     );
     assert_eq!(
-        local_state.get("local_int2").unwrap(),
-        &algokit_abi::ABIValue::from(2u64)
+        local_state.get("local_int2").unwrap().as_ref().unwrap(),
+        &ABIValue::from(2u64)
     );
     assert_eq!(
-        local_state.get("local_bytes1").unwrap(),
-        &algokit_abi::ABIValue::from("asdf")
+        local_state.get("local_bytes1").unwrap().as_ref().unwrap(),
+        &ABIValue::from("asdf")
     );
 
     // Boxes
@@ -182,82 +179,81 @@ async fn retrieve_state(#[future] algorand_fixture: AlgorandFixtureResult) -> Te
     // Fund app account to enable box writes
     client
         .fund_app_account(
-            algokit_utils::applications::app_client::FundAppAccountParams {
+            FundAppAccountParams {
                 amount: 1_000_000,
                 sender: Some(sender.to_string()),
                 ..Default::default()
             },
+            None,
         )
         .await?;
 
     client
         .send()
-        .call(AppClientMethodCallParams {
-            method: "set_box".to_string(),
-            args: Some(vec![
-                algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::Array(
-                    box_name1
-                        .iter()
-                        .copied()
-                        .map(algokit_abi::ABIValue::from_byte)
-                        .collect(),
-                )),
-                algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from("value1")),
-            ]),
-            sender: Some(sender.to_string()),
-            rekey_to: None,
-            note: None,
-            lease: None,
-            static_fee: None,
-            extra_fee: None,
-            max_fee: None,
-            validity_window: None,
-            first_valid_round: None,
-            last_valid_round: None,
-            account_references: None,
-            app_references: None,
-            asset_references: None,
-            box_references: Some(vec![BoxReference {
-                app_id: 0,
-                name: box_name1.clone(),
-            }]),
-            on_complete: None,
-        })
+        .call(
+            AppClientMethodCallParams {
+                method: "set_box".to_string(),
+                args: vec![
+                    AppMethodCallArg::ABIValue(ABIValue::Array(
+                        box_name1.iter().copied().map(ABIValue::from_byte).collect(),
+                    )),
+                    AppMethodCallArg::ABIValue(ABIValue::from("value1")),
+                ],
+                sender: Some(sender.to_string()),
+                rekey_to: None,
+                note: None,
+                lease: None,
+                static_fee: None,
+                extra_fee: None,
+                max_fee: None,
+                validity_window: None,
+                first_valid_round: None,
+                last_valid_round: None,
+                account_references: None,
+                app_references: None,
+                asset_references: None,
+                box_references: Some(vec![BoxReference {
+                    app_id: 0,
+                    name: box_name1.clone(),
+                }]),
+            },
+            None,
+            None,
+        )
         .await?;
 
     client
         .send()
-        .call(AppClientMethodCallParams {
-            method: "set_box".to_string(),
-            args: Some(vec![
-                algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::Array(
-                    box_name2
-                        .iter()
-                        .copied()
-                        .map(algokit_abi::ABIValue::from_byte)
-                        .collect(),
-                )),
-                algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from("value2")),
-            ]),
-            sender: Some(sender.to_string()),
-            rekey_to: None,
-            note: None,
-            lease: None,
-            static_fee: None,
-            extra_fee: None,
-            max_fee: None,
-            validity_window: None,
-            first_valid_round: None,
-            last_valid_round: None,
-            account_references: None,
-            app_references: None,
-            asset_references: None,
-            box_references: Some(vec![BoxReference {
-                app_id: 0,
-                name: box_name2.clone(),
-            }]),
-            on_complete: None,
-        })
+        .call(
+            AppClientMethodCallParams {
+                method: "set_box".to_string(),
+                args: vec![
+                    AppMethodCallArg::ABIValue(ABIValue::Array(
+                        box_name2.iter().copied().map(ABIValue::from_byte).collect(),
+                    )),
+                    AppMethodCallArg::ABIValue(ABIValue::from("value2")),
+                ],
+                sender: Some(sender.to_string()),
+                rekey_to: None,
+                note: None,
+                lease: None,
+                static_fee: None,
+                extra_fee: None,
+                max_fee: None,
+                validity_window: None,
+                first_valid_round: None,
+                last_valid_round: None,
+                account_references: None,
+                app_references: None,
+                asset_references: None,
+                box_references: Some(vec![BoxReference {
+                    app_id: 0,
+                    name: box_name2.clone(),
+                }]),
+            },
+            None,
+            None,
+        )
         .await?;
 
     let box_names = client.get_box_names().await?;
@@ -276,9 +272,6 @@ async fn retrieve_state(#[future] algorand_fixture: AlgorandFixtureResult) -> Te
 async fn logic_error_exposure_with_source_maps(
     #[future] algorand_fixture: AlgorandFixtureResult,
 ) -> TestResult {
-    use algokit_utils::applications::app_client::AppSourceMaps;
-    use algokit_utils::transactions::sender_results::TransactionResultError;
-
     let fixture = algorand_fixture.await?;
     let sender = fixture.test_account.account().address();
 
@@ -296,15 +289,17 @@ async fn logic_error_exposure_with_source_maps(
     )
     .await?;
 
-    let mut algorand = RootAlgorandClient::default_localnet();
+    let mut algorand = RootAlgorandClient::default_localnet(None);
     algorand.set_signer(sender.clone(), Arc::new(fixture.test_account.clone()));
     let mut client = AppClient::new(AppClientParams {
-        app_id: Some(app_id),
+        app_id,
         app_spec: get_testing_app_spec(),
         algorand,
         app_name: None,
         default_sender: Some(sender.to_string()),
+        default_signer: None,
         source_maps: None,
+        transaction_composer_config: None,
     });
 
     // Compile TEAL to get source maps and import
@@ -326,25 +321,28 @@ async fn logic_error_exposure_with_source_maps(
     // Trigger logic error
     let err = client
         .send()
-        .call(AppClientMethodCallParams {
-            method: "error".to_string(),
-            args: None,
-            sender: Some(sender.to_string()),
-            rekey_to: None,
-            note: None,
-            lease: None,
-            static_fee: None,
-            extra_fee: None,
-            max_fee: None,
-            validity_window: None,
-            first_valid_round: None,
-            last_valid_round: None,
-            account_references: None,
-            app_references: None,
-            asset_references: None,
-            box_references: None,
-            on_complete: None,
-        })
+        .call(
+            AppClientMethodCallParams {
+                method: "error".to_string(),
+                args: vec![],
+                sender: Some(sender.to_string()),
+                rekey_to: None,
+                note: None,
+                lease: None,
+                static_fee: None,
+                extra_fee: None,
+                max_fee: None,
+                validity_window: None,
+                first_valid_round: None,
+                last_valid_round: None,
+                account_references: None,
+                app_references: None,
+                asset_references: None,
+                box_references: None,
+            },
+            None,
+            None,
+        )
         .await
         .expect_err("expected error");
 
@@ -375,35 +373,36 @@ async fn box_methods_with_manually_encoded_abi_args(
     let spec = Arc56Contract::from_json(json).expect("valid arc56");
     let app_id = deploy_arc56_contract(&fixture, &sender, &spec, None, None).await?;
 
-    let mut algorand = RootAlgorandClient::default_localnet();
+    let mut algorand = RootAlgorandClient::default_localnet(None);
     algorand.set_signer(sender.clone(), Arc::new(fixture.test_account.clone()));
     let client = AppClient::new(AppClientParams {
-        app_id: Some(app_id),
+        app_id,
         app_spec: spec,
         algorand,
         app_name: None,
         default_sender: Some(sender.to_string()),
+        default_signer: None,
         source_maps: None,
+        transaction_composer_config: None,
     });
 
     // Fund app account
     client
         .fund_app_account(
-            algokit_utils::applications::app_client::FundAppAccountParams {
+            FundAppAccountParams {
                 amount: 1_000_000,
                 sender: Some(sender.to_string()),
                 ..Default::default()
             },
+            None,
         )
         .await?;
 
     // Prepare box name and encoded value
     let box_prefix = b"box_bytes".to_vec();
-    let name_type = algokit_abi::ABIType::from_str("string").unwrap();
+    let name_type = ABIType::from_str("string").unwrap();
     let box_name = "asdf";
-    let box_name_encoded = name_type
-        .encode(&algokit_abi::ABIValue::from(box_name))
-        .unwrap();
+    let box_name_encoded = name_type.encode(&ABIValue::from(box_name)).unwrap();
     let box_identifier = {
         let mut v = box_prefix.clone();
         v.extend_from_slice(&box_name_encoded);
@@ -411,72 +410,74 @@ async fn box_methods_with_manually_encoded_abi_args(
     };
 
     // byte[] value
-    let value_type = algokit_abi::ABIType::from_str("byte[]").unwrap();
+    let value_type = ABIType::from_str("byte[]").unwrap();
     let encoded = value_type
-        .encode(&algokit_abi::ABIValue::from(vec![
-            algokit_abi::ABIValue::from_byte(116),
-            algokit_abi::ABIValue::from_byte(101),
-            algokit_abi::ABIValue::from_byte(115),
-            algokit_abi::ABIValue::from_byte(116),
-            algokit_abi::ABIValue::from_byte(95),
-            algokit_abi::ABIValue::from_byte(98),
-            algokit_abi::ABIValue::from_byte(121),
-            algokit_abi::ABIValue::from_byte(116),
-            algokit_abi::ABIValue::from_byte(101),
-            algokit_abi::ABIValue::from_byte(115),
+        .encode(&ABIValue::from(vec![
+            ABIValue::from_byte(116),
+            ABIValue::from_byte(101),
+            ABIValue::from_byte(115),
+            ABIValue::from_byte(116),
+            ABIValue::from_byte(95),
+            ABIValue::from_byte(98),
+            ABIValue::from_byte(121),
+            ABIValue::from_byte(116),
+            ABIValue::from_byte(101),
+            ABIValue::from_byte(115),
         ]))
         .unwrap();
 
     client
         .send()
-        .call(AppClientMethodCallParams {
-            method: "set_box_bytes".to_string(),
-            args: Some(vec![
-                algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from("asdf")),
-                algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::Array(
-                    encoded
-                        .into_iter()
-                        .map(algokit_abi::ABIValue::from_byte)
-                        .collect(),
-                )),
-            ]),
-            sender: Some(sender.to_string()),
-            rekey_to: None,
-            note: None,
-            lease: None,
-            static_fee: None,
-            extra_fee: None,
-            max_fee: None,
-            validity_window: None,
-            first_valid_round: None,
-            last_valid_round: None,
-            account_references: None,
-            app_references: None,
-            asset_references: None,
-            box_references: Some(vec![BoxReference {
-                app_id: 0,
-                name: box_identifier.clone(),
-            }]),
-            on_complete: None,
-        })
+        .call(
+            AppClientMethodCallParams {
+                method: "set_box_bytes".to_string(),
+                args: vec![
+                    AppMethodCallArg::ABIValue(ABIValue::from("asdf")),
+                    AppMethodCallArg::ABIValue(ABIValue::Array(
+                        encoded.into_iter().map(ABIValue::from_byte).collect(),
+                    )),
+                ],
+                sender: Some(sender.to_string()),
+                rekey_to: None,
+                note: None,
+                lease: None,
+                static_fee: None,
+                extra_fee: None,
+                max_fee: None,
+                validity_window: None,
+                first_valid_round: None,
+                last_valid_round: None,
+                account_references: None,
+                app_references: None,
+                asset_references: None,
+                box_references: Some(vec![BoxReference {
+                    app_id: 0,
+                    name: box_identifier.clone(),
+                }]),
+            },
+            None,
+            None,
+        )
         .await?;
 
     let retrieved = client
-        .get_box_value_from_abi_type(&box_identifier, &value_type)
+        .algorand()
+        .app()
+        .get_box_value_from_abi_type(client.app_id(), &box_identifier, &value_type)
         .await?;
     assert_eq!(
         retrieved,
-        algokit_abi::ABIValue::Array(vec![
-            algokit_abi::ABIValue::from_byte(116),
-            algokit_abi::ABIValue::from_byte(101),
-            algokit_abi::ABIValue::from_byte(115),
-            algokit_abi::ABIValue::from_byte(116),
-            algokit_abi::ABIValue::from_byte(95),
-            algokit_abi::ABIValue::from_byte(98),
-            algokit_abi::ABIValue::from_byte(121),
-            algokit_abi::ABIValue::from_byte(116),
-            algokit_abi::ABIValue::from_byte(101),
-            algokit_abi::ABIValue::from_byte(115),
+        ABIValue::Array(vec![
+            ABIValue::from_byte(116),
+            ABIValue::from_byte(101),
+            ABIValue::from_byte(115),
+            ABIValue::from_byte(116),
+            ABIValue::from_byte(95),
+            ABIValue::from_byte(98),
+            ABIValue::from_byte(121),
+            ABIValue::from_byte(116),
+            ABIValue::from_byte(101),
+            ABIValue::from_byte(115),
         ])
     );
 
@@ -498,16 +499,18 @@ async fn construct_transaction_with_abi_encoding_including_foreign_references_no
     let app_id =
         deploy_arc56_contract(&fixture, &sender, &get_testing_app_spec(), Some(tmpl), None).await?;
 
-    let mut algorand = RootAlgorandClient::default_localnet();
+    let mut algorand = RootAlgorandClient::default_localnet(None);
     algorand.set_signer(sender.clone(), Arc::new(fixture.test_account.clone()));
 
     let client = AppClient::new(AppClientParams {
-        app_id: Some(app_id),
+        app_id,
         app_spec: get_testing_app_spec(),
         algorand,
         app_name: None,
         default_sender: Some(sender.to_string()),
+        default_signer: None,
         source_maps: None,
+        transaction_composer_config: None,
     });
 
     // Create a secondary account for account_references
@@ -517,29 +520,32 @@ async fn construct_transaction_with_abi_encoding_including_foreign_references_no
 
     let send_res = client
         .send()
-        .call(AppClientMethodCallParams {
-            method: "call_abi_foreign_refs".to_string(),
-            args: None,
-            sender: Some(sender.to_string()),
-            rekey_to: None,
-            note: None,
-            lease: None,
-            static_fee: None,
-            extra_fee: None,
-            max_fee: None,
-            validity_window: None,
-            first_valid_round: None,
-            last_valid_round: None,
-            account_references: Some(vec![new_addr.to_string()]),
-            app_references: Some(vec![345]),
-            asset_references: Some(vec![567]),
-            box_references: None,
-            on_complete: None,
-        })
+        .call(
+            AppClientMethodCallParams {
+                method: "call_abi_foreign_refs".to_string(),
+                args: vec![],
+                sender: Some(sender.to_string()),
+                rekey_to: None,
+                note: None,
+                lease: None,
+                static_fee: None,
+                extra_fee: None,
+                max_fee: None,
+                validity_window: None,
+                first_valid_round: None,
+                last_valid_round: None,
+                account_references: Some(vec![new_addr.to_string()]),
+                app_references: Some(vec![345]),
+                asset_references: Some(vec![567]),
+                box_references: None,
+            },
+            None,
+            None,
+        )
         .await?;
 
     let abi_ret = send_res.abi_return.as_ref().expect("abi return expected");
-    if let algokit_abi::ABIValue::String(s) = &abi_ret.return_value {
+    if let Some(ABIValue::String(s)) = &abi_ret.return_value {
         assert!(s.contains("App: 345"));
         assert!(s.contains("Asset: 567"));
     } else {
@@ -562,104 +568,112 @@ async fn abi_with_default_arg_from_local_state(
     let app_id =
         deploy_arc56_contract(&fixture, &sender, &get_testing_app_spec(), Some(tmpl), None).await?;
 
-    let mut algorand = RootAlgorandClient::default_localnet();
+    let mut algorand = RootAlgorandClient::default_localnet(None);
     algorand.set_signer(sender.clone(), Arc::new(fixture.test_account.clone()));
 
     let client = AppClient::new(AppClientParams {
-        app_id: Some(app_id),
+        app_id,
         app_spec: get_testing_app_spec(),
         algorand,
         app_name: None,
         default_sender: Some(sender.to_string()),
+        default_signer: None,
         source_maps: None,
+        transaction_composer_config: None,
     });
 
     // Opt-in and set local state
 
     client
         .send()
-        .opt_in(AppClientMethodCallParams {
-            method: "opt_in".to_string(),
-            args: None,
-            sender: Some(sender.to_string()),
-            rekey_to: None,
-            note: None,
-            lease: None,
-            static_fee: None,
-            extra_fee: None,
-            max_fee: None,
-            validity_window: None,
-            first_valid_round: None,
-            last_valid_round: None,
-            account_references: None,
-            app_references: None,
-            asset_references: None,
-            box_references: None,
-            on_complete: None,
-        })
+        .opt_in(
+            AppClientMethodCallParams {
+                method: "opt_in".to_string(),
+                args: vec![],
+                sender: Some(sender.to_string()),
+                rekey_to: None,
+                note: None,
+                lease: None,
+                static_fee: None,
+                extra_fee: None,
+                max_fee: None,
+                validity_window: None,
+                first_valid_round: None,
+                last_valid_round: None,
+                account_references: None,
+                app_references: None,
+                asset_references: None,
+                box_references: None,
+            },
+            None,
+        )
         .await?;
 
     client
         .send()
-        .call(AppClientMethodCallParams {
-            method: "set_local".to_string(),
-            args: Some(vec![
-                algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from(1u64)),
-                algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from(2u64)),
-                algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from("bananas")),
-                algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::Array(vec![
-                    algokit_abi::ABIValue::from_byte(1),
-                    algokit_abi::ABIValue::from_byte(2),
-                    algokit_abi::ABIValue::from_byte(3),
-                    algokit_abi::ABIValue::from_byte(4),
-                ])),
-            ]),
-            sender: Some(sender.to_string()),
-            rekey_to: None,
-            note: None,
-            lease: None,
-            static_fee: None,
-            extra_fee: None,
-            max_fee: None,
-            validity_window: None,
-            first_valid_round: None,
-            last_valid_round: None,
-            account_references: None,
-            app_references: None,
-            asset_references: None,
-            box_references: None,
-            on_complete: None,
-        })
+        .call(
+            AppClientMethodCallParams {
+                method: "set_local".to_string(),
+                args: vec![
+                    AppMethodCallArg::ABIValue(ABIValue::from(1u64)),
+                    AppMethodCallArg::ABIValue(ABIValue::from(2u64)),
+                    AppMethodCallArg::ABIValue(ABIValue::from("bananas")),
+                    AppMethodCallArg::ABIValue(ABIValue::Array(vec![
+                        ABIValue::from_byte(1),
+                        ABIValue::from_byte(2),
+                        ABIValue::from_byte(3),
+                        ABIValue::from_byte(4),
+                    ])),
+                ],
+                sender: Some(sender.to_string()),
+                rekey_to: None,
+                note: None,
+                lease: None,
+                static_fee: None,
+                extra_fee: None,
+                max_fee: None,
+                validity_window: None,
+                first_valid_round: None,
+                last_valid_round: None,
+                account_references: None,
+                app_references: None,
+                asset_references: None,
+                box_references: None,
+            },
+            None,
+            None,
+        )
         .await?;
 
     // Call with explicit value first; expect echo prefix + defined value
     let defined = client
         .send()
-        .call(AppClientMethodCallParams {
-            method: "default_value_from_local_state".to_string(),
-            args: Some(vec![algokit_utils::AppMethodCallArg::ABIValue(
-                algokit_abi::ABIValue::from("defined value"),
-            )]),
-            sender: Some(sender.to_string()),
-            rekey_to: None,
-            note: None,
-            lease: None,
-            static_fee: None,
-            extra_fee: None,
-            max_fee: None,
-            validity_window: None,
-            first_valid_round: None,
-            last_valid_round: None,
-            account_references: None,
-            app_references: None,
-            asset_references: None,
-            box_references: None,
-            on_complete: None,
-        })
+        .call(
+            AppClientMethodCallParams {
+                method: "default_value_from_local_state".to_string(),
+                args: vec![AppMethodCallArg::ABIValue(ABIValue::from("defined value"))],
+                sender: Some(sender.to_string()),
+                rekey_to: None,
+                note: None,
+                lease: None,
+                static_fee: None,
+                extra_fee: None,
+                max_fee: None,
+                validity_window: None,
+                first_valid_round: None,
+                last_valid_round: None,
+                account_references: None,
+                app_references: None,
+                asset_references: None,
+                box_references: None,
+            },
+            None,
+            None,
+        )
         .await?;
     let defined_ret = defined.abi_return.as_ref().expect("abi return expected");
     match &defined_ret.return_value {
-        algokit_abi::ABIValue::String(s) => {
+        Some(ABIValue::String(s)) => {
             assert_eq!(s, "Local state, defined value");
         }
         _ => panic!("expected string return"),
@@ -668,30 +682,33 @@ async fn abi_with_default_arg_from_local_state(
     // Call method without providing arg; expect default from local state ("bananas")
     let res = client
         .send()
-        .call(AppClientMethodCallParams {
-            method: "default_value_from_local_state".to_string(),
-            args: None, // missing arg to trigger default resolver
-            sender: Some(sender.to_string()),
-            rekey_to: None,
-            note: None,
-            lease: None,
-            static_fee: None,
-            extra_fee: None,
-            max_fee: None,
-            validity_window: None,
-            first_valid_round: None,
-            last_valid_round: None,
-            account_references: None,
-            app_references: None,
-            asset_references: None,
-            box_references: None,
-            on_complete: None,
-        })
+        .call(
+            AppClientMethodCallParams {
+                method: "default_value_from_local_state".to_string(),
+                args: vec![AppMethodCallArg::DefaultValue],
+                sender: Some(sender.to_string()),
+                rekey_to: None,
+                note: None,
+                lease: None,
+                static_fee: None,
+                extra_fee: None,
+                max_fee: None,
+                validity_window: None,
+                first_valid_round: None,
+                last_valid_round: None,
+                account_references: None,
+                app_references: None,
+                asset_references: None,
+                box_references: None,
+            },
+            None,
+            None,
+        )
         .await?;
 
     let abi_ret = res.abi_return.as_ref().expect("abi return expected");
-    if let algokit_abi::ABIValue::String(s) = &abi_ret.return_value {
-        assert_eq!(s, "Local state, bananas");
+    if let Some(ABIValue::String(s)) = &abi_ret.return_value {
+        assert_eq!(s, "Local state, bananas"); // TODO: confirm this, the current logic doesn't automatically convert base64 to utf8
     } else {
         panic!("expected string return");
     }
@@ -714,32 +731,36 @@ async fn abi_with_default_arg_from_literal(
     let app_id =
         deploy_arc56_contract(&fixture, &sender, &get_testing_app_spec(), Some(tmpl), None).await?;
 
-    let mut algorand = RootAlgorandClient::default_localnet();
+    let mut algorand = RootAlgorandClient::default_localnet(None);
     algorand.set_signer(sender.clone(), Arc::new(fixture.test_account.clone()));
     let client = AppClient::new(AppClientParams {
-        app_id: Some(app_id),
+        app_id,
         app_spec: get_testing_app_spec(),
         algorand,
         app_name: None,
         default_sender: Some(sender.to_string()),
+        default_signer: None,
         source_maps: None,
+        transaction_composer_config: None,
     });
 
     // Call with explicit value
     let defined = client
         .send()
-        .call(AppClientMethodCallParams {
-            method: "default_value".to_string(),
-            args: Some(vec![algokit_utils::AppMethodCallArg::ABIValue(
-                algokit_abi::ABIValue::from("defined value"),
-            )]),
-            sender: Some(sender.to_string()),
-            ..Default::default()
-        })
+        .call(
+            AppClientMethodCallParams {
+                method: "default_value".to_string(),
+                args: vec![AppMethodCallArg::ABIValue(ABIValue::from("defined value"))],
+                sender: Some(sender.to_string()),
+                ..Default::default()
+            },
+            None,
+            None,
+        )
         .await?;
     let defined_ret = defined.abi_return.as_ref().expect("abi return expected");
     match &defined_ret.return_value {
-        algokit_abi::ABIValue::String(s) => {
+        Some(ABIValue::String(s)) => {
             assert_eq!(s, "defined value");
         }
         _ => panic!("expected string return"),
@@ -748,16 +769,20 @@ async fn abi_with_default_arg_from_literal(
     // Call with default (no arg)
     let defaulted = client
         .send()
-        .call(AppClientMethodCallParams {
-            method: "default_value".to_string(),
-            args: None,
-            sender: Some(sender.to_string()),
-            ..Default::default()
-        })
+        .call(
+            AppClientMethodCallParams {
+                method: "default_value".to_string(),
+                args: vec![AppMethodCallArg::DefaultValue],
+                sender: Some(sender.to_string()),
+                ..Default::default()
+            },
+            None,
+            None,
+        )
         .await?;
     let default_ret = defaulted.abi_return.as_ref().expect("abi return expected");
     match &default_ret.return_value {
-        algokit_abi::ABIValue::String(s) => {
+        Some(ABIValue::String(s)) => {
             assert_eq!(s, "default value");
         }
         _ => panic!("expected string return"),
@@ -781,32 +806,36 @@ async fn abi_with_default_arg_from_method(
     let app_id =
         deploy_arc56_contract(&fixture, &sender, &get_testing_app_spec(), Some(tmpl), None).await?;
 
-    let mut algorand = RootAlgorandClient::default_localnet();
+    let mut algorand = RootAlgorandClient::default_localnet(None);
     algorand.set_signer(sender.clone(), Arc::new(fixture.test_account.clone()));
     let client = AppClient::new(AppClientParams {
-        app_id: Some(app_id),
+        app_id,
         app_spec: get_testing_app_spec(),
         algorand,
         app_name: None,
         default_sender: Some(sender.to_string()),
+        default_signer: None,
         source_maps: None,
+        transaction_composer_config: None,
     });
 
     // Call with explicit value
     let defined = client
         .send()
-        .call(AppClientMethodCallParams {
-            method: "default_value_from_abi".to_string(),
-            args: Some(vec![algokit_utils::AppMethodCallArg::ABIValue(
-                algokit_abi::ABIValue::from("defined value"),
-            )]),
-            sender: Some(sender.to_string()),
-            ..Default::default()
-        })
+        .call(
+            AppClientMethodCallParams {
+                method: "default_value_from_abi".to_string(),
+                args: vec![AppMethodCallArg::ABIValue(ABIValue::from("defined value"))],
+                sender: Some(sender.to_string()),
+                ..Default::default()
+            },
+            None,
+            None,
+        )
         .await?;
     let defined_ret = defined.abi_return.as_ref().expect("abi return expected");
     match &defined_ret.return_value {
-        algokit_abi::ABIValue::String(s) => {
+        Some(ABIValue::String(s)) => {
             assert_eq!(s, "ABI, defined value");
         }
         _ => panic!("expected string return"),
@@ -815,16 +844,20 @@ async fn abi_with_default_arg_from_method(
     // Call with default (no arg)
     let defaulted = client
         .send()
-        .call(AppClientMethodCallParams {
-            method: "default_value_from_abi".to_string(),
-            args: None,
-            sender: Some(sender.to_string()),
-            ..Default::default()
-        })
+        .call(
+            AppClientMethodCallParams {
+                method: "default_value_from_abi".to_string(),
+                args: vec![AppMethodCallArg::DefaultValue],
+                sender: Some(sender.to_string()),
+                ..Default::default()
+            },
+            None,
+            None,
+        )
         .await?;
     let default_ret = defaulted.abi_return.as_ref().expect("abi return expected");
     match &default_ret.return_value {
-        algokit_abi::ABIValue::String(s) => {
+        Some(ABIValue::String(s)) => {
             assert_eq!(s, "ABI, default value");
         }
         _ => panic!("expected string return"),
@@ -848,54 +881,62 @@ async fn abi_with_default_arg_from_global_state(
     let app_id =
         deploy_arc56_contract(&fixture, &sender, &get_testing_app_spec(), Some(tmpl), None).await?;
 
-    let mut algorand = RootAlgorandClient::default_localnet();
+    let mut algorand = RootAlgorandClient::default_localnet(None);
     algorand.set_signer(sender.clone(), Arc::new(fixture.test_account.clone()));
     let client = AppClient::new(AppClientParams {
-        app_id: Some(app_id),
+        app_id,
         app_spec: get_testing_app_spec(),
         algorand,
         app_name: None,
         default_sender: Some(sender.to_string()),
+        default_signer: None,
         source_maps: None,
+        transaction_composer_config: None,
     });
 
     // Seed global state (int1) via set_global
     let seeded_val: u64 = 456;
     client
         .send()
-        .call(AppClientMethodCallParams {
-            method: "set_global".to_string(),
-            args: Some(vec![
-                algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from(seeded_val)),
-                algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from(2u64)),
-                algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from("asdf")),
-                algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::Array(vec![
-                    algokit_abi::ABIValue::from_byte(1),
-                    algokit_abi::ABIValue::from_byte(2),
-                    algokit_abi::ABIValue::from_byte(3),
-                    algokit_abi::ABIValue::from_byte(4),
-                ])),
-            ]),
-            sender: Some(sender.to_string()),
-            ..Default::default()
-        })
+        .call(
+            AppClientMethodCallParams {
+                method: "set_global".to_string(),
+                args: vec![
+                    AppMethodCallArg::ABIValue(ABIValue::from(seeded_val)),
+                    AppMethodCallArg::ABIValue(ABIValue::from(2u64)),
+                    AppMethodCallArg::ABIValue(ABIValue::from("asdf")),
+                    AppMethodCallArg::ABIValue(ABIValue::Array(vec![
+                        ABIValue::from_byte(1),
+                        ABIValue::from_byte(2),
+                        ABIValue::from_byte(3),
+                        ABIValue::from_byte(4),
+                    ])),
+                ],
+                sender: Some(sender.to_string()),
+                ..Default::default()
+            },
+            None,
+            None,
+        )
         .await?;
 
     // Call with explicit value
     let defined = client
         .send()
-        .call(AppClientMethodCallParams {
-            method: "default_value_from_global_state".to_string(),
-            args: Some(vec![algokit_utils::AppMethodCallArg::ABIValue(
-                algokit_abi::ABIValue::from(123u64),
-            )]),
-            sender: Some(sender.to_string()),
-            ..Default::default()
-        })
+        .call(
+            AppClientMethodCallParams {
+                method: "default_value_from_global_state".to_string(),
+                args: vec![AppMethodCallArg::ABIValue(ABIValue::from(123u64))],
+                sender: Some(sender.to_string()),
+                ..Default::default()
+            },
+            None,
+            None,
+        )
         .await?;
     let defined_ret = defined.abi_return.as_ref().expect("abi return expected");
     match &defined_ret.return_value {
-        algokit_abi::ABIValue::Uint(u) => {
+        Some(ABIValue::Uint(u)) => {
             assert_eq!(*u, num_bigint::BigUint::from(123u64));
         }
         _ => panic!("expected uint return"),
@@ -904,16 +945,20 @@ async fn abi_with_default_arg_from_global_state(
     // Call with default (no arg) -> should read seeded global state
     let defaulted = client
         .send()
-        .call(AppClientMethodCallParams {
-            method: "default_value_from_global_state".to_string(),
-            args: None,
-            sender: Some(sender.to_string()),
-            ..Default::default()
-        })
+        .call(
+            AppClientMethodCallParams {
+                method: "default_value_from_global_state".to_string(),
+                args: vec![AppMethodCallArg::DefaultValue],
+                sender: Some(sender.to_string()),
+                ..Default::default()
+            },
+            None,
+            None,
+        )
         .await?;
     let default_ret = defaulted.abi_return.as_ref().expect("abi return expected");
     match &default_ret.return_value {
-        algokit_abi::ABIValue::Uint(u) => {
+        Some(ABIValue::Uint(u)) => {
             assert_eq!(*u, num_bigint::BigUint::from(seeded_val));
         }
         _ => panic!("expected uint return"),
@@ -930,46 +975,49 @@ async fn bare_call_with_box_reference_builds_and_sends(
 
     let app_id = deploy_arc56_contract(&fixture, &sender, &get_sandbox_spec(), None, None).await?;
 
-    let mut algorand = RootAlgorandClient::default_localnet();
+    let mut algorand = RootAlgorandClient::default_localnet(None);
     algorand.set_signer(sender.clone(), Arc::new(fixture.test_account.clone()));
 
     let client = AppClient::new(AppClientParams {
-        app_id: Some(app_id),
+        app_id,
         app_spec: get_sandbox_spec(),
         algorand,
         app_name: None,
         default_sender: Some(sender.to_string()),
+        default_signer: None,
         source_maps: None,
+        transaction_composer_config: None,
     });
 
     // Use method call (sandbox does not allow bare NoOp)
 
     let result = client
         .send()
-        .call(AppClientMethodCallParams {
-            method: "hello_world".to_string(),
-            args: Some(vec![algokit_utils::AppMethodCallArg::ABIValue(
-                algokit_abi::ABIValue::from("test"),
-            )]),
-            sender: Some(sender.to_string()),
-            rekey_to: None,
-            note: None,
-            lease: None,
-            static_fee: None,
-            extra_fee: None,
-            max_fee: None,
-            validity_window: None,
-            first_valid_round: None,
-            last_valid_round: None,
-            account_references: None,
-            app_references: None,
-            asset_references: None,
-            box_references: Some(vec![BoxReference {
-                app_id: 0,
-                name: b"1".to_vec(),
-            }]),
-            on_complete: None,
-        })
+        .call(
+            AppClientMethodCallParams {
+                method: "hello_world".to_string(),
+                args: vec![AppMethodCallArg::ABIValue(ABIValue::from("test"))],
+                sender: Some(sender.to_string()),
+                rekey_to: None,
+                note: None,
+                lease: None,
+                static_fee: None,
+                extra_fee: None,
+                max_fee: None,
+                validity_window: None,
+                first_valid_round: None,
+                last_valid_round: None,
+                account_references: None,
+                app_references: None,
+                asset_references: None,
+                box_references: Some(vec![BoxReference {
+                    app_id: 0,
+                    name: b"1".to_vec(),
+                }]),
+            },
+            None,
+            None,
+        )
         .await?;
 
     match &result.common_params.transaction {
@@ -998,46 +1046,48 @@ async fn construct_transaction_with_boxes(
     let sender = fixture.test_account.account().address();
     let app_id = deploy_arc56_contract(&fixture, &sender, &get_sandbox_spec(), None, None).await?;
 
-    let mut algorand = RootAlgorandClient::default_localnet();
+    let mut algorand = RootAlgorandClient::default_localnet(None);
     algorand.set_signer(sender.clone(), Arc::new(fixture.test_account.clone()));
 
     let client = AppClient::new(AppClientParams {
-        app_id: Some(app_id),
+        app_id,
         app_spec: get_sandbox_spec(),
         algorand,
         app_name: None,
         default_sender: Some(sender.to_string()),
+        default_signer: None,
         source_maps: None,
+        transaction_composer_config: None,
     });
 
     // Build transaction with a box reference
 
     let built = client
         .create_transaction()
-        .call(AppClientMethodCallParams {
-            method: "hello_world".to_string(),
-            args: Some(vec![algokit_utils::AppMethodCallArg::ABIValue(
-                algokit_abi::ABIValue::from("test"),
-            )]),
-            sender: Some(sender.to_string()),
-            rekey_to: None,
-            note: None,
-            lease: None,
-            static_fee: None,
-            extra_fee: None,
-            max_fee: None,
-            validity_window: None,
-            first_valid_round: None,
-            last_valid_round: None,
-            account_references: None,
-            app_references: None,
-            asset_references: None,
-            box_references: Some(vec![BoxReference {
-                app_id: 0,
-                name: b"1".to_vec(),
-            }]),
-            on_complete: None,
-        })
+        .call(
+            AppClientMethodCallParams {
+                method: "hello_world".to_string(),
+                args: vec![AppMethodCallArg::ABIValue(ABIValue::from("test"))],
+                sender: Some(sender.to_string()),
+                rekey_to: None,
+                note: None,
+                lease: None,
+                static_fee: None,
+                extra_fee: None,
+                max_fee: None,
+                validity_window: None,
+                first_valid_round: None,
+                last_valid_round: None,
+                account_references: None,
+                app_references: None,
+                asset_references: None,
+                box_references: Some(vec![BoxReference {
+                    app_id: 0,
+                    name: b"1".to_vec(),
+                }]),
+            },
+            None,
+        )
         .await?;
     match built {
         algokit_transact::Transaction::AppCall(fields) => {
@@ -1066,48 +1116,60 @@ async fn construct_transaction_with_abi_encoding_including_transaction(
     let spec = get_sandbox_spec();
     let app_id = deploy_arc56_contract(&fixture, &sender, &spec, None, None).await?;
 
-    let mut algorand = RootAlgorandClient::default_localnet();
+    let mut algorand = RootAlgorandClient::default_localnet(None);
     algorand.set_signer(sender.clone(), Arc::new(fixture.test_account.clone()));
     let client = AppClient::new(AppClientParams {
-        app_id: Some(app_id),
+        app_id,
         app_spec: spec,
         algorand,
         app_name: None,
         default_sender: Some(sender.to_string()),
+        default_signer: None,
         source_maps: None,
+        transaction_composer_config: None,
     });
 
     // Prepare a payment as an ABI transaction argument
-    let payment = algokit_utils::PaymentParams {
-        common_params: algokit_utils::CommonTransactionParams {
-            sender: sender.clone(),
-            ..Default::default()
-        },
+    let payment = PaymentParams {
+        sender: sender.clone(),
+        signer: None,
+        rekey_to: None,
+        note: None,
+        lease: None,
+        static_fee: None,
+        extra_fee: None,
+        max_fee: None,
+        validity_window: None,
+        first_valid_round: None,
+        last_valid_round: None,
         receiver: sender.clone(),
         amount: 12345,
     };
 
     let send_res = client
         .send()
-        .call(AppClientMethodCallParams {
-            method: "get_pay_txn_amount".to_string(),
-            args: Some(vec![algokit_utils::AppMethodCallArg::Payment(payment)]),
-            sender: Some(sender.to_string()),
-            rekey_to: None,
-            note: None,
-            lease: None,
-            static_fee: None,
-            extra_fee: None,
-            max_fee: None,
-            validity_window: None,
-            first_valid_round: None,
-            last_valid_round: None,
-            account_references: None,
-            app_references: None,
-            asset_references: None,
-            box_references: None,
-            on_complete: None,
-        })
+        .call(
+            AppClientMethodCallParams {
+                method: "get_pay_txn_amount".to_string(),
+                args: vec![AppMethodCallArg::Payment(payment)],
+                sender: Some(sender.to_string()),
+                rekey_to: None,
+                note: None,
+                lease: None,
+                static_fee: None,
+                extra_fee: None,
+                max_fee: None,
+                validity_window: None,
+                first_valid_round: None,
+                last_valid_round: None,
+                account_references: None,
+                app_references: None,
+                asset_references: None,
+                box_references: None,
+            },
+            None,
+            None,
+        )
         .await?;
 
     // Expect a group of 2 transactions: payment + app call
@@ -1115,7 +1177,7 @@ async fn construct_transaction_with_abi_encoding_including_transaction(
     // ABI return should be present and decode to expected value
     let abi_ret = send_res.abi_return.as_ref().expect("abi return expected");
     let ret_val = match &abi_ret.return_value {
-        algokit_abi::ABIValue::Uint(u) => u.clone(),
+        Some(ABIValue::Uint(u)) => u.clone(),
         _ => panic!("expected uint64 return"),
     };
     assert_eq!(ret_val, num_bigint::BigUint::from(12345u32));
@@ -1136,59 +1198,62 @@ async fn box_methods_with_arc4_returns_parametrized(
             .expect("valid arc56");
     let app_id = deploy_arc56_contract(&fixture, &sender, &spec, None, None).await?;
 
-    let mut algorand = RootAlgorandClient::default_localnet();
+    let mut algorand = RootAlgorandClient::default_localnet(None);
     algorand.set_signer(sender.clone(), Arc::new(fixture.test_account.clone()));
     let client = AppClient::new(AppClientParams {
-        app_id: Some(app_id),
+        app_id,
         app_spec: spec,
         algorand,
         app_name: None,
         default_sender: Some(sender.to_string()),
+        default_signer: None,
         source_maps: None,
+        transaction_composer_config: None,
     });
 
     // Fund app account to allow box writes
     client
         .fund_app_account(
-            algokit_utils::applications::app_client::FundAppAccountParams {
+            FundAppAccountParams {
                 amount: 1_000_000,
                 sender: Some(sender.to_string()),
                 ..Default::default()
             },
+            None,
         )
         .await?;
 
     // Parametrized ARC-4 return cases
     let mut big = num_bigint::BigUint::from(1u64);
     big <<= 256u32;
-    let cases: Vec<(Vec<u8>, &str, &str, algokit_abi::ABIValue)> = vec![
+    let cases: Vec<(Vec<u8>, &str, &str, ABIValue)> = vec![
         (
             b"box_str".to_vec(),
             "set_box_str",
             "string",
-            algokit_abi::ABIValue::from("string"),
+            ABIValue::from("string"),
         ),
         (
             b"box_int".to_vec(),
             "set_box_int",
             "uint32",
-            algokit_abi::ABIValue::from(123u32),
+            ABIValue::from(123u32),
         ),
         (
             b"box_int512".to_vec(),
             "set_box_int512",
             "uint512",
-            algokit_abi::ABIValue::from(big),
+            ABIValue::from(big),
         ),
         (
             b"box_static".to_vec(),
             "set_box_static",
             "byte[4]",
-            algokit_abi::ABIValue::Array(vec![
-                algokit_abi::ABIValue::from_byte(1),
-                algokit_abi::ABIValue::from_byte(2),
-                algokit_abi::ABIValue::from_byte(3),
-                algokit_abi::ABIValue::from_byte(4),
+            ABIValue::Array(vec![
+                ABIValue::from_byte(1),
+                ABIValue::from_byte(2),
+                ABIValue::from_byte(3),
+                ABIValue::from_byte(4),
             ]),
         ),
         // TODO: restore struct case after app factory is merged
@@ -1196,45 +1261,46 @@ async fn box_methods_with_arc4_returns_parametrized(
 
     for (box_prefix, method_sig, value_type_str, arg_val) in cases {
         // Encode the box name using ABIType "string"
-        let name_type = algokit_abi::ABIType::from_str("string").unwrap();
-        let name_encoded = name_type
-            .encode(&algokit_abi::ABIValue::from("box1"))
-            .unwrap();
+        let name_type = ABIType::from_str("string").unwrap();
+        let name_encoded = name_type.encode(&ABIValue::from("box1")).unwrap();
         let mut box_reference = box_prefix.clone();
         box_reference.extend_from_slice(&name_encoded);
 
         // Send method call
         client
             .send()
-            .call(AppClientMethodCallParams {
-                method: method_sig.to_string(),
-                args: Some(vec![
-                    algokit_utils::AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from("box1")),
-                    algokit_utils::AppMethodCallArg::ABIValue(arg_val.clone()),
-                ]),
-                sender: Some(sender.to_string()),
-                rekey_to: None,
-                note: None,
-                lease: None,
-                static_fee: None,
-                extra_fee: None,
-                max_fee: None,
-                validity_window: None,
-                first_valid_round: None,
-                last_valid_round: None,
-                account_references: None,
-                app_references: None,
-                asset_references: None,
-                box_references: Some(vec![BoxReference {
-                    app_id: 0,
-                    name: box_reference.clone(),
-                }]),
-                on_complete: None,
-            })
+            .call(
+                AppClientMethodCallParams {
+                    method: method_sig.to_string(),
+                    args: vec![
+                        AppMethodCallArg::ABIValue(ABIValue::from("box1")),
+                        AppMethodCallArg::ABIValue(arg_val.clone()),
+                    ],
+                    sender: Some(sender.to_string()),
+                    rekey_to: None,
+                    note: None,
+                    lease: None,
+                    static_fee: None,
+                    extra_fee: None,
+                    max_fee: None,
+                    validity_window: None,
+                    first_valid_round: None,
+                    last_valid_round: None,
+                    account_references: None,
+                    app_references: None,
+                    asset_references: None,
+                    box_references: Some(vec![BoxReference {
+                        app_id: 0,
+                        name: box_reference.clone(),
+                    }]),
+                },
+                None,
+                None,
+            )
             .await?;
 
         // Verify raw equals ABI-encoded expected
-        let expected_raw = algokit_abi::ABIType::from_str(value_type_str)
+        let expected_raw = ABIType::from_str(value_type_str)
             .unwrap()
             .encode(&arg_val)
             .unwrap();
@@ -1243,9 +1309,12 @@ async fn box_methods_with_arc4_returns_parametrized(
 
         // Decode via ABI type and verify
         let decoded = client
+            .algorand()
+            .app()
             .get_box_value_from_abi_type(
+                client.app_id(),
                 &box_reference,
-                &algokit_abi::ABIType::from_str(value_type_str).unwrap(),
+                &ABIType::from_str(value_type_str).unwrap(),
             )
             .await?;
         assert_eq!(decoded, arg_val);
@@ -1277,13 +1346,15 @@ async fn app_client_from_network_resolves_id(
 
     let client = AppClient::from_network(
         spec_with_networks,
-        RootAlgorandClient::default_localnet(),
+        RootAlgorandClient::default_localnet(None),
+        None,
+        None,
         None,
         None,
         None,
     )
     .await
     .expect("from_network");
-    assert_eq!(client.app_id(), Some(app_id));
+    assert_eq!(client.app_id(), app_id);
     Ok(())
 }

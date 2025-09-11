@@ -20,7 +20,7 @@ use crate::{
     transactions::TransactionComposerConfig,
 };
 use algod_client::apis::AlgodApiError;
-use algokit_abi::{ABIMethod, ABIReturn};
+use algokit_abi::ABIMethod;
 use algokit_transact::Address;
 use snafu::Snafu;
 
@@ -197,9 +197,9 @@ impl TransactionSender {
         mut composer: Composer,
         send_params: Option<SendParams>,
     ) -> Result<SendTransactionResult, TransactionSenderError> {
-        let built_transactions = composer.build().await?;
+        let transactions_with_signers = composer.build().await?;
 
-        let raw_transactions: Vec<algokit_transact::Transaction> = built_transactions
+        let transactions: Vec<algokit_transact::Transaction> = transactions_with_signers
             .iter()
             .map(|tx_with_signer| tx_with_signer.transaction.clone())
             .collect();
@@ -221,7 +221,7 @@ impl TransactionSender {
         let result = SendTransactionResult::new(
             group_id,
             composer_results.transaction_ids,
-            raw_transactions,
+            transactions,
             composer_results.confirmations,
             abi_returns,
         )?;
@@ -303,7 +303,6 @@ impl TransactionSender {
             Some(abi_return)
         }
     }
-
     /// Extract compilation metadata for TEAL programs using app manager caching.
     fn extract_compilation_metadata(
         &self,
@@ -581,13 +580,15 @@ impl TransactionSender {
         params: AppCallMethodCallParams,
         send_params: Option<SendParams>,
     ) -> Result<SendAppCallResult, TransactionSenderError> {
-        let params_clone = params.clone();
         self.send_single_transaction_with_result(
             send_params,
             |composer| composer.add_app_call_method_call(params),
             |base_result| {
-                // Extract ABI return using helper method for enhanced processing
-                let abi_return = self.extract_abi_return_from_result(&base_result, &params_clone);
+                let abi_return = base_result
+                    .abi_returns
+                    .as_ref()
+                    .and_then(|returns| returns.last())
+                    .cloned();
                 Ok(SendAppCallResult::new(base_result, abi_return))
             },
         )
@@ -602,14 +603,16 @@ impl TransactionSender {
     ) -> Result<SendAppCreateResult, TransactionSenderError> {
         // Extract compilation metadata using helper method
         let (compiled_approval, compiled_clear) = self.extract_compilation_metadata(&params);
-        let params_clone = params.clone();
 
         self.send_single_transaction_with_result(
             send_params,
             |composer| composer.add_app_create_method_call(params),
             |base_result| {
-                // Extract ABI return using helper method for enhanced processing
-                let abi_return = self.extract_abi_return_from_result(&base_result, &params_clone);
+                let abi_return = base_result
+                    .abi_returns
+                    .as_ref()
+                    .and_then(|returns| returns.last())
+                    .cloned();
 
                 // Convert CompiledTeal to Vec<u8> for the result
                 let approval_bytes = compiled_approval.map(|ct| ct.compiled_base64_to_bytes);
@@ -630,15 +633,16 @@ impl TransactionSender {
     ) -> Result<SendAppUpdateResult, TransactionSenderError> {
         // Extract compilation metadata using helper method
         let (compiled_approval, compiled_clear) = self.extract_compilation_metadata(&params);
-        let params_clone = params.clone();
 
         self.send_single_transaction_with_result(
             send_params,
             |composer| composer.add_app_update_method_call(params),
             |base_result| {
-                // Extract ABI return using helper method for enhanced processing
-                let abi_return = self.extract_abi_return_from_result(&base_result, &params_clone);
-
+                let abi_return = base_result
+                    .abi_returns
+                    .as_ref()
+                    .and_then(|returns| returns.last())
+                    .cloned();
                 // Convert CompiledTeal to Vec<u8> for the result
                 let approval_bytes = compiled_approval.map(|ct| ct.compiled_base64_to_bytes);
                 let clear_bytes = compiled_clear.map(|ct| ct.compiled_base64_to_bytes);
@@ -660,13 +664,15 @@ impl TransactionSender {
         params: AppDeleteMethodCallParams,
         send_params: Option<SendParams>,
     ) -> Result<SendAppCallResult, TransactionSenderError> {
-        let params_clone = params.clone();
         self.send_single_transaction_with_result(
             send_params,
             |composer| composer.add_app_delete_method_call(params),
             |base_result| {
-                // Extract ABI return using helper method for enhanced processing
-                let abi_return = self.extract_abi_return_from_result(&base_result, &params_clone);
+                let abi_return = base_result
+                    .abi_returns
+                    .as_ref()
+                    .and_then(|returns| returns.last())
+                    .cloned();
                 Ok(SendAppCallResult::new(base_result, abi_return))
             },
         )

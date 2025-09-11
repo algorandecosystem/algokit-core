@@ -1,7 +1,7 @@
 use crate::abi_type::ABIType;
+use crate::constants::VOID_RETURN_TYPE;
 use crate::error::ABIError;
-use crate::method::{ABIMethod, ABIMethodArg, ABIMethodArgType};
-use crate::types::struct_type as abi_struct;
+use crate::method::{ABIDefaultValue, ABIMethod, ABIMethodArg, ABIMethodArgType};
 use base64::{Engine as _, engine::general_purpose};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -192,6 +192,24 @@ pub struct EventArg {
     pub struct_name: Option<String>,
 }
 
+/// Describes a single key in app storage with parsed ABI types.
+#[derive(Debug, Clone)]
+pub struct ABIStorageKey {
+    pub key: String,
+    pub key_type: ABIType,
+    pub value_type: ABIType,
+    pub desc: Option<String>,
+}
+
+/// Describes a storage map with parsed ABI types.
+#[derive(Debug, Clone)]
+pub struct ABIStorageMap {
+    pub key_type: ABIType,
+    pub value_type: ABIType,
+    pub desc: Option<String>,
+    pub prefix: Option<String>,
+}
+
 /// ARC-28 events are described using an extension of the original interface.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Event {
@@ -212,7 +230,7 @@ pub struct Actions {
 }
 
 /// Source of default value
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum DefaultValueSource {
     Box,
@@ -429,56 +447,17 @@ pub struct Method {
 }
 
 impl Method {
-    /// Get the ABI signature for this method
-    pub fn get_signature(&self) -> Result<String, ABIError> {
-        self.to_abi_method()?.signature()
-    }
-
-    /// Convert to ABIMethod
-    pub fn to_abi_method(&self) -> Result<ABIMethod, ABIError> {
-        let args: Result<Vec<ABIMethodArg>, ABIError> = self
+    pub fn signature(&self) -> Result<String, ABIError> {
+        let args_str = self
             .args
             .iter()
-            .map(|arg| {
-                let arg_type = ABIMethodArgType::from_str(&arg.arg_type)?;
-                Ok(ABIMethodArg::new(
-                    arg_type,
-                    arg.name.clone(),
-                    arg.desc.clone(),
-                ))
-            })
-            .collect();
+            .map(|arg| arg.arg_type.as_str())
+            .collect::<Vec<_>>()
+            .join(",");
 
-        let returns = if self.returns.return_type == "void" {
-            None
-        } else {
-            Some(ABIType::from_str(&self.returns.return_type)?)
-        };
+        let signature = format!("{}({}){}", self.name, args_str, self.returns.return_type);
 
-        Ok(ABIMethod::new(
-            self.name.clone(),
-            args?,
-            returns,
-            self.desc.clone(),
-        ))
-    }
-}
-
-// Allow direct fallible conversion from a ARC-0056 Method reference to an ABIMethod
-impl TryFrom<&Method> for ABIMethod {
-    type Error = ABIError;
-
-    fn try_from(value: &Method) -> Result<Self, Self::Error> {
-        value.to_abi_method()
-    }
-}
-
-// Also support owned conversion to avoid extra clones when possible
-impl TryFrom<Method> for ABIMethod {
-    type Error = ABIError;
-
-    fn try_from(value: Method) -> Result<Self, Self::Error> {
-        value.to_abi_method()
+        Ok(signature)
     }
 }
 
@@ -578,7 +557,7 @@ impl Arc56Contract {
 
             if methods.len() > 1 {
                 let signatures: Result<Vec<String>, ABIError> =
-                    methods.iter().map(|m| m.get_signature()).collect();
+                    methods.iter().map(|m| m.signature()).collect();
                 let signatures = signatures?;
                 return Err(ABIError::ValidationError {
                     message: format!(
@@ -597,7 +576,7 @@ impl Arc56Contract {
             self.methods
                 .iter()
                 .find(|m| {
-                    m.get_signature()
+                    m.signature()
                         .is_ok_and(|sig| sig == method_name_or_signature)
                 })
                 .ok_or_else(|| ABIError::ValidationError {
@@ -609,27 +588,30 @@ impl Arc56Contract {
         }
     }
 
-    /// Build an ABIMethod from an ARC-56 Method, resolving struct types into ABIType::Struct
-    pub fn to_abi_method(&self, method: &Method) -> Result<ABIMethod, ABIError> {
+    /// Build an ABIMethod from an ARC-56 Method
+    fn to_abi_method(&self, method: &Method) -> Result<ABIMethod, ABIError> {
         // Resolve argument types
         let args: Result<Vec<ABIMethodArg>, ABIError> = method
             .args
             .iter()
             .map(|arg| {
                 let arg_type = self.resolve_method_arg_type(arg)?;
+                let default_value = self.resolve_default_value(&arg.default_value)?;
+
                 Ok(ABIMethodArg::new(
                     arg_type,
                     arg.name.clone(),
                     arg.desc.clone(),
+                    default_value,
                 ))
             })
             .collect();
 
         // Resolve return type
-        let returns = if method.returns.return_type == "void" {
+        let returns = if method.returns.return_type == VOID_RETURN_TYPE {
             None
         } else if let Some(struct_name) = &method.returns.struct_name {
-            Some(ABIType::Struct(self.build_struct_type(struct_name)?))
+            Some(ABIType::from_struct(struct_name, &self.structs)?)
         } else {
             Some(ABIType::from_str(&method.returns.return_type)?)
         };
@@ -644,59 +626,177 @@ impl Arc56Contract {
 
     fn resolve_method_arg_type(&self, arg: &MethodArg) -> Result<ABIMethodArgType, ABIError> {
         if let Some(struct_name) = &arg.struct_name {
-            let struct_ty = self.build_struct_type(struct_name)?;
-            return Ok(ABIMethodArgType::Value(ABIType::Struct(struct_ty)));
+            let abi_type = ABIType::from_struct(struct_name, &self.structs)?;
+            return Ok(ABIMethodArgType::Value(abi_type));
         }
-        // Fallback to standard parsing for non-struct args (including refs/txns)
+
         ABIMethodArgType::from_str(&arg.arg_type)
     }
 
-    fn build_struct_type(&self, struct_name: &str) -> Result<abi_struct::StructType, ABIError> {
-        let fields = self
-            .structs
-            .get(struct_name)
-            .ok_or_else(|| ABIError::ValidationError {
-                message: format!("Unknown struct '{}' in ARC-56 spec", struct_name),
-            })?;
-        Ok(self.build_struct_type_from_fields(struct_name, fields))
-    }
-
-    fn build_struct_type_from_fields(
+    fn resolve_default_value(
         &self,
-        full_name: &str,
-        fields: &[StructField],
-    ) -> abi_struct::StructType {
-        let abi_fields: Vec<abi_struct::StructField> = fields
-            .iter()
-            .map(|f| {
-                let abi_ty = self.struct_field_type_to_abi_type(full_name, &f.name, &f.field_type);
-                abi_struct::StructField::new(f.name.clone(), abi_ty)
-            })
-            .collect();
-        abi_struct::StructType::new(full_name.to_string(), abi_fields)
-    }
-
-    fn struct_field_type_to_abi_type(
-        &self,
-        parent_name: &str,
-        field_name: &str,
-        field_type: &StructFieldType,
-    ) -> ABIType {
-        match field_type {
-            StructFieldType::Value(type_name) => {
-                if let Some(nested_fields) = self.structs.get(type_name) {
-                    let nested_name = format!("{}.{}", parent_name, field_name);
-                    let nested = self.build_struct_type_from_fields(&nested_name, nested_fields);
-                    ABIType::Struct(nested)
+        default_value: &Option<DefaultValue>,
+    ) -> Result<Option<ABIDefaultValue>, ABIError> {
+        let resolved_default_value = if let Some(default_value) = default_value {
+            let resolved_value_type = if let Some(ref value_type) = default_value.value_type {
+                let abi_type = if self.structs.contains_key(value_type) {
+                    ABIType::from_struct(value_type, &self.structs)
                 } else {
-                    ABIType::from_str(type_name).unwrap_or(ABIType::String)
-                }
+                    ABIType::from_str(value_type)
+                }?;
+                Some(abi_type)
+            } else {
+                None
+            };
+
+            Some(ABIDefaultValue {
+                data: default_value.data.clone(),
+                source: default_value.source.clone(),
+                value_type: resolved_value_type,
+            })
+        } else {
+            None
+        };
+
+        Ok(resolved_default_value)
+    }
+
+    /// Get a method by name or signature and convert to ABIMethod
+    pub fn find_abi_method(&self, method_name_or_signature: &str) -> Result<ABIMethod, ABIError> {
+        let arc56_method = self.get_arc56_method(method_name_or_signature)?;
+        self.to_abi_method(arc56_method)
+    }
+
+    pub fn get_global_abi_storage_key(&self, key_name: &str) -> Result<ABIStorageKey, ABIError> {
+        let storage_key = self.state.keys.global_state.get(key_name).ok_or_else(|| {
+            ABIError::ValidationError {
+                message: format!(
+                    "Global storage key '{}' not found in contract '{}'",
+                    key_name, self.name
+                ),
             }
-            StructFieldType::Nested(nested_fields) => {
-                let nested_name = format!("{}.{}", parent_name, field_name);
-                let nested = self.build_struct_type_from_fields(&nested_name, nested_fields);
-                ABIType::Struct(nested)
-            }
+        })?;
+        self.convert_storage_key(storage_key)
+    }
+
+    pub fn get_local_abi_storage_key(&self, key_name: &str) -> Result<ABIStorageKey, ABIError> {
+        let storage_key =
+            self.state
+                .keys
+                .local_state
+                .get(key_name)
+                .ok_or_else(|| ABIError::ValidationError {
+                    message: format!(
+                        "Local storage key '{}' not found in contract '{}'",
+                        key_name, self.name
+                    ),
+                })?;
+        self.convert_storage_key(storage_key)
+    }
+
+    pub fn get_global_abi_storage_keys(&self) -> Result<HashMap<String, ABIStorageKey>, ABIError> {
+        self.state
+            .keys
+            .global_state
+            .iter()
+            .map(|(name, storage_key)| {
+                let abi_storage_key = self.convert_storage_key(storage_key)?;
+                Ok((name.clone(), abi_storage_key))
+            })
+            .collect()
+    }
+
+    pub fn get_local_abi_storage_keys(&self) -> Result<HashMap<String, ABIStorageKey>, ABIError> {
+        self.state
+            .keys
+            .local_state
+            .iter()
+            .map(|(name, storage_key)| {
+                let abi_storage_key = self.convert_storage_key(storage_key)?;
+                Ok((name.clone(), abi_storage_key))
+            })
+            .collect()
+    }
+
+    pub fn get_box_abi_storage_keys(&self) -> Result<HashMap<String, ABIStorageKey>, ABIError> {
+        self.state
+            .keys
+            .box_keys
+            .iter()
+            .map(|(name, storage_key)| {
+                let abi_storage_key = self.convert_storage_key(storage_key)?;
+                Ok((name.clone(), abi_storage_key))
+            })
+            .collect()
+    }
+
+    fn convert_storage_key(&self, storage_key: &StorageKey) -> Result<ABIStorageKey, ABIError> {
+        let key_type = self.resolve_storage_type(&storage_key.key_type)?;
+        let value_type = self.resolve_storage_type(&storage_key.value_type)?;
+
+        Ok(ABIStorageKey {
+            key: storage_key.key.clone(),
+            key_type,
+            value_type,
+            desc: storage_key.desc.clone(),
+        })
+    }
+
+    fn convert_storage_map(&self, storage_map: &StorageMap) -> Result<ABIStorageMap, ABIError> {
+        let key_type = self.resolve_storage_type(&storage_map.key_type)?;
+        let value_type = self.resolve_storage_type(&storage_map.value_type)?;
+
+        Ok(ABIStorageMap {
+            key_type,
+            value_type,
+            desc: storage_map.desc.clone(),
+            prefix: storage_map.prefix.clone(),
+        })
+    }
+
+    pub fn get_global_abi_storage_maps(&self) -> Result<HashMap<String, ABIStorageMap>, ABIError> {
+        self.state
+            .maps
+            .global_state
+            .iter()
+            .map(|(name, storage_map)| {
+                let abi_storage_map = self.convert_storage_map(storage_map)?;
+                Ok((name.clone(), abi_storage_map))
+            })
+            .collect()
+    }
+
+    pub fn get_local_abi_storage_maps(&self) -> Result<HashMap<String, ABIStorageMap>, ABIError> {
+        self.state
+            .maps
+            .local_state
+            .iter()
+            .map(|(name, storage_map)| {
+                let abi_storage_map = self.convert_storage_map(storage_map)?;
+                Ok((name.clone(), abi_storage_map))
+            })
+            .collect()
+    }
+
+    pub fn get_box_abi_storage_maps(&self) -> Result<HashMap<String, ABIStorageMap>, ABIError> {
+        self.state
+            .maps
+            .box_maps
+            .iter()
+            .map(|(name, storage_map)| {
+                let abi_storage_map = self.convert_storage_map(storage_map)?;
+                Ok((name.clone(), abi_storage_map))
+            })
+            .collect()
+    }
+
+    fn resolve_storage_type(&self, type_str: &str) -> Result<ABIType, ABIError> {
+        if self.structs.contains_key(type_str) {
+            ABIType::from_struct(type_str, &self.structs)
+        } else {
+            ABIType::from_str(type_str).map_err(|e| ABIError::ValidationError {
+                message: format!("Failed to parse storage type '{}': {}", type_str, e),
+            })
         }
     }
 }

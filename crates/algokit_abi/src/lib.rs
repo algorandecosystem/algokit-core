@@ -12,7 +12,6 @@ pub use abi_type::ABIType;
 pub use abi_value::ABIValue;
 pub use arc56_contract::*;
 pub use error::ABIError;
-pub use types::struct_type::{StructField as ABIStructField, StructType as ABIStructType};
 
 pub use method::{
     ABIMethod, ABIMethodArg, ABIMethodArgType, ABIReferenceType, ABIReferenceValue, ABIReturn,

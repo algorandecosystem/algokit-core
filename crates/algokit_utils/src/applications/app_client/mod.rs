@@ -1,12 +1,14 @@
-use algokit_abi::Arc56Contract;
-use std::collections::HashMap;
-
-use crate::AlgorandClient;
 use crate::applications::AppDeployer;
+use crate::clients::app_manager::{AppState, BoxName};
 use crate::clients::network_client::NetworkDetails;
+use crate::transactions::{TransactionComposerConfig, TransactionSigner};
+use crate::{AlgorandClient, clients::app_manager::BoxIdentifier};
+use crate::{SendParams, SendTransactionResult};
+use algokit_abi::Arc56Contract;
 use algokit_transact::Address;
+use std::collections::HashMap;
 use std::str::FromStr;
-mod abi_integration;
+use std::sync::Arc;
 mod compilation;
 mod error;
 mod error_transformation;
@@ -22,18 +24,20 @@ pub use sender::TransactionSender;
 pub use state_accessor::StateAccessor;
 pub use transaction_builder::TransactionBuilder;
 pub use types::{
-    AppClientBareCallParams, AppClientJsonParams, AppClientMethodCallParams, AppClientParams,
-    AppSourceMaps, FundAppAccountParams,
+    AppClientBareCallParams, AppClientMethodCallParams, AppClientParams, AppSourceMaps,
+    FundAppAccountParams,
 };
 
 /// A client for interacting with an Algorand smart contract application (ARC-56 focused).
 pub struct AppClient {
-    app_id: Option<u64>,
+    app_id: u64,
     app_spec: Arc56Contract,
     algorand: AlgorandClient,
     default_sender: Option<String>,
+    default_signer: Option<Arc<dyn TransactionSigner>>,
     source_maps: Option<AppSourceMaps>,
     app_name: Option<String>,
+    transaction_composer_config: Option<TransactionComposerConfig>,
 }
 
 impl AppClient {
@@ -44,24 +48,11 @@ impl AppClient {
             app_spec: params.app_spec,
             algorand: params.algorand,
             default_sender: params.default_sender,
+            default_signer: params.default_signer,
             source_maps: params.source_maps,
             app_name: params.app_name,
+            transaction_composer_config: params.transaction_composer_config,
         }
-    }
-
-    /// Create a new client from JSON parameters.
-    /// Accepts a JSON string and normalizes into a typed ARC-56 contract.
-    pub fn from_json(params: types::AppClientJsonParams) -> Result<Self, AppClientError> {
-        let app_spec = Arc56Contract::from_json(params.app_spec_json)
-            .map_err(|e| AppClientError::ValidationError(e.to_string()))?;
-        Ok(Self::new(AppClientParams {
-            app_id: params.app_id,
-            app_spec,
-            algorand: params.algorand,
-            app_name: params.app_name,
-            default_sender: params.default_sender,
-            source_maps: params.source_maps,
-        }))
     }
 
     /// Construct from the current network using app_spec.networks mapping.
@@ -73,13 +64,17 @@ impl AppClient {
         algorand: AlgorandClient,
         app_name: Option<String>,
         default_sender: Option<String>,
+        default_signer: Option<Arc<dyn TransactionSigner>>,
         source_maps: Option<AppSourceMaps>,
+        transaction_composer_config: Option<TransactionComposerConfig>,
     ) -> Result<Self, AppClientError> {
         let network = algorand
             .client()
             .network()
             .await
-            .map_err(|e| AppClientError::Network(e.to_string()))?;
+            .map_err(|e| AppClientError::Network {
+                message: e.to_string(),
+            })?;
 
         let candidate_keys = Self::candidate_network_keys(&network);
         let (app_id, available_keys) = match &app_spec.networks {
@@ -96,12 +91,14 @@ impl AppClient {
         })?;
 
         Ok(Self::new(AppClientParams {
-            app_id: Some(app_id),
+            app_id,
             app_spec,
             algorand,
             app_name,
             default_sender,
+            default_signer,
             source_maps,
+            transaction_composer_config,
         }))
     }
 
@@ -112,13 +109,19 @@ impl AppClient {
         app_spec: Arc56Contract,
         algorand: AlgorandClient,
         default_sender: Option<String>,
+        default_signer: Option<Arc<dyn TransactionSigner>>,
         source_maps: Option<AppSourceMaps>,
         ignore_cache: Option<bool>,
+        transaction_composer_config: Option<TransactionComposerConfig>,
     ) -> Result<Self, AppClientError> {
-        let address = Address::from_str(creator_address)
-            .map_err(|e| AppClientError::Lookup(format!("Invalid creator address: {}", e)))?;
+        let address = Address::from_str(creator_address).map_err(|e| AppClientError::Lookup {
+            message: format!("Invalid creator address: {}", e),
+        })?;
 
-        let indexer_client = algorand.client().indexer();
+        let indexer_client = algorand
+            .client()
+            .indexer()
+            .map_err(|e| AppClientError::ClientManagerError { source: e })?;
         let mut app_deployer = AppDeployer::new(
             algorand.app().clone(),
             algorand.send().clone(),
@@ -128,22 +131,29 @@ impl AppClient {
         let lookup = app_deployer
             .get_creator_apps_by_name(&address, ignore_cache)
             .await
-            .map_err(|e| AppClientError::Lookup(e.to_string()))?;
+            .map_err(|e| AppClientError::Lookup {
+                message: e.to_string(),
+            })?;
 
-        let app_metadata = lookup.apps.get(app_name).ok_or_else(|| {
-            AppClientError::Lookup(format!(
-                "App not found for creator {} and name {}",
-                creator_address, app_name
-            ))
-        })?;
+        let app_metadata = lookup
+            .apps
+            .get(app_name)
+            .ok_or_else(|| AppClientError::Lookup {
+                message: format!(
+                    "App not found for creator {} and name {}",
+                    creator_address, app_name
+                ),
+            })?;
 
         Ok(Self::new(AppClientParams {
-            app_id: Some(app_metadata.app_id),
+            app_id: app_metadata.app_id,
             app_spec,
             algorand,
             app_name: Some(app_name.to_string()),
             default_sender,
+            default_signer,
             source_maps,
+            transaction_composer_config,
         }))
     }
 
@@ -173,7 +183,7 @@ impl AppClient {
         None
     }
 
-    pub fn app_id(&self) -> Option<u64> {
+    pub fn app_id(&self) -> u64 {
         self.app_id
     }
     pub fn app_spec(&self) -> &Arc56Contract {
@@ -189,175 +199,85 @@ impl AppClient {
         self.default_sender.as_ref()
     }
 
-    /// Get the application address if app_id is set.
-    pub fn app_address(&self) -> Option<Address> {
-        self.app_id.map(|id| Address::from_app_id(&id))
+    pub fn app_address(&self) -> Address {
+        Address::from_app_id(&self.app_id)
     }
 
-    fn get_sender_address(&self, sender: &Option<String>) -> Result<Address, String> {
+    fn get_sender_address(&self, sender: &Option<String>) -> Result<Address, AppClientError> {
         let sender_str = sender
             .as_ref()
             .or(self.default_sender.as_ref())
-            .ok_or_else(|| {
-                format!(
+            .ok_or_else(|| AppClientError::ValidationError {
+                message: format!(
                     "No sender provided and no default sender configured for app {}",
                     self.app_name.as_deref().unwrap_or("<unknown>")
-                )
+                ),
             })?;
-        Address::from_str(sender_str).map_err(|e| format!("Invalid sender address: {}", e))
+        Address::from_str(sender_str).map_err(|e| AppClientError::ValidationError {
+            message: format!("Invalid sender address: {}", e),
+        })
     }
 
-    fn get_optional_address(value: &Option<String>) -> Result<Option<Address>, String> {
-        match value {
-            Some(s) => Ok(Some(
-                Address::from_str(s).map_err(|e| format!("Invalid address: {}", e))?,
-            )),
-            None => Ok(None),
-        }
+    /// Resolve the signer for a transaction based on the sender and default configuration.
+    /// Returns the provided signer, or the default_signer if sender matches default_sender.
+    pub(crate) fn resolve_signer(
+        &self,
+        sender: Option<String>,
+        signer: Option<Arc<dyn TransactionSigner>>,
+    ) -> Option<Arc<dyn TransactionSigner>> {
+        signer.or_else(|| {
+            let should_use_default = sender.is_none() || sender == self.default_sender;
+
+            should_use_default
+                .then(|| self.default_signer.clone())
+                .flatten()
+        })
     }
 
-    fn get_app_address(&self) -> Result<Address, String> {
-        let app_id = self.app_id.ok_or_else(|| "Missing app_id".to_string())?;
-        Ok(Address::from_app_id(&app_id))
-    }
-
-    /// Direct method: fund the application's account
     pub async fn fund_app_account(
         &self,
         params: FundAppAccountParams,
-    ) -> Result<
-        crate::transactions::SendTransactionResult,
-        crate::transactions::TransactionSenderError,
-    > {
-        let payment = self.params().fund_app_account(&params).map_err(|e| {
-            crate::transactions::TransactionSenderError::ValidationError { message: e }
-        })?;
-
-        self.algorand.send().payment(payment, None).await
+        send_params: Option<SendParams>,
+    ) -> Result<SendTransactionResult, AppClientError> {
+        self.send().fund_app_account(params, send_params).await
     }
 
-    /// Get raw global state as HashMap<Vec<u8>, AppState>
-    pub async fn get_global_state(
-        &self,
-    ) -> Result<
-        std::collections::HashMap<Vec<u8>, crate::clients::app_manager::AppState>,
-        AppClientError,
-    > {
+    pub async fn get_global_state(&self) -> Result<HashMap<Vec<u8>, AppState>, AppClientError> {
         self.algorand
             .app()
-            .get_global_state(
-                self.app_id
-                    .ok_or_else(|| AppClientError::ValidationError("Missing app_id".to_string()))?,
-            )
+            .get_global_state(self.app_id)
             .await
-            .map_err(AppClientError::from)
+            .map_err(|e| AppClientError::AppManagerError { source: e })
     }
 
-    /// Get raw local state for an address
     pub async fn get_local_state(
         &self,
         address: &str,
-    ) -> Result<
-        std::collections::HashMap<Vec<u8>, crate::clients::app_manager::AppState>,
-        AppClientError,
-    > {
+    ) -> Result<std::collections::HashMap<Vec<u8>, AppState>, AppClientError> {
         self.algorand
             .app()
-            .get_local_state(
-                self.app_id
-                    .ok_or_else(|| AppClientError::ValidationError("Missing app_id".to_string()))?,
-                address,
-            )
+            .get_local_state(self.app_id, address)
             .await
-            .map_err(AppClientError::from)
+            .map_err(|e| AppClientError::AppManagerError { source: e })
     }
 
-    /// Get all box names for the application
-    pub async fn get_box_names(
-        &self,
-    ) -> Result<Vec<crate::clients::app_manager::BoxName>, AppClientError> {
+    // TODO: comments
+    pub async fn get_box_names(&self) -> Result<Vec<BoxName>, AppClientError> {
         self.algorand
             .app()
-            .get_box_names(
-                self.app_id
-                    .ok_or_else(|| AppClientError::ValidationError("Missing app_id".to_string()))?,
-            )
+            .get_box_names(self.app_id)
             .await
-            .map_err(AppClientError::from)
+            .map_err(|e| AppClientError::AppManagerError { source: e })
     }
 
-    /// Get the value of a box by raw identifier
-    pub async fn get_box_value(
-        &self,
-        name: &crate::clients::app_manager::BoxIdentifier,
-    ) -> Result<Vec<u8>, AppClientError> {
+    pub async fn get_box_value(&self, name: &BoxIdentifier) -> Result<Vec<u8>, AppClientError> {
         self.algorand
             .app()
-            .get_box_value(
-                self.app_id
-                    .ok_or_else(|| AppClientError::ValidationError("Missing app_id".to_string()))?,
-                name,
-            )
+            .get_box_value(self.app_id, name)
             .await
-            .map_err(AppClientError::from)
+            .map_err(|e| AppClientError::AppManagerError { source: e })
     }
 
-    /// Get a box value decoded using an ABI type
-    pub async fn get_box_value_from_abi_type(
-        &self,
-        name: &crate::clients::app_manager::BoxIdentifier,
-        abi_type: &algokit_abi::ABIType,
-    ) -> Result<algokit_abi::ABIValue, AppClientError> {
-        self.algorand
-            .app()
-            .get_box_value_from_abi_type(
-                self.app_id
-                    .ok_or_else(|| AppClientError::ValidationError("Missing app_id".to_string()))?,
-                name,
-                abi_type,
-            )
-            .await
-            .map_err(AppClientError::from)
-    }
-
-    /// Get values for multiple boxes
-    pub async fn get_box_values(
-        &self,
-        names: &[crate::clients::app_manager::BoxIdentifier],
-    ) -> Result<Vec<Vec<u8>>, AppClientError> {
-        self.algorand
-            .app()
-            .get_box_values(
-                self.app_id
-                    .ok_or_else(|| AppClientError::ValidationError("Missing app_id".to_string()))?,
-                names,
-            )
-            .await
-            .map_err(AppClientError::from)
-    }
-
-    /// Get multiple box values decoded using an ABI type
-    pub async fn get_box_values_from_abi_type(
-        &self,
-        names: &[crate::clients::app_manager::BoxIdentifier],
-        abi_type: &algokit_abi::ABIType,
-    ) -> Result<Vec<algokit_abi::ABIValue>, AppClientError> {
-        self.algorand
-            .app()
-            .get_box_values_from_abi_type(
-                self.app_id
-                    .ok_or_else(|| AppClientError::ValidationError("Missing app_id".to_string()))?,
-                names,
-                abi_type,
-            )
-            .await
-            .map_err(AppClientError::from)
-    }
-}
-
-// -------- Minimal fluent API scaffolding (to be expanded incrementally) --------
-
-impl AppClient {
     pub fn params(&self) -> ParamsBuilder<'_> {
         ParamsBuilder { client: self }
     }
@@ -371,29 +291,3 @@ impl AppClient {
         StateAccessor::new(self)
     }
 }
-
-// Method call parameter building is implemented in params_builder.rs
-
-impl TransactionBuilder<'_> {
-    pub async fn call_method(
-        &self,
-        params: types::AppClientMethodCallParams,
-    ) -> Result<crate::transactions::BuiltTransactions, crate::transactions::composer::ComposerError>
-    {
-        let method_params = self
-            .client
-            .params()
-            .method_call(&params)
-            .await
-            .map_err(
-                |e| crate::transactions::composer::ComposerError::TransactionError { message: e },
-            )?;
-        self.client
-            .algorand
-            .create()
-            .app_call_method_call(method_params)
-            .await
-    }
-}
-
-impl TransactionSender<'_> {}

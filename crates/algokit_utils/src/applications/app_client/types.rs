@@ -1,9 +1,12 @@
 use crate::AlgorandClient;
 use crate::clients::app_manager::TealTemplateValue;
+use crate::transactions::TransactionComposerConfig;
+use crate::transactions::TransactionSigner;
 use crate::transactions::app_call::AppMethodCallArg;
 use algokit_abi::Arc56Contract;
-use algokit_transact::{BoxReference, OnApplicationComplete};
+use algokit_transact::BoxReference;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 /// Container for source maps captured during compilation/simulation.
 #[derive(Debug, Clone, Default)]
@@ -21,24 +24,14 @@ pub struct AppSourceMaps {
 // lifetime semantics. If you need to share the client, wrap it in Arc at the call site
 // and pass that explicitly, rather than deriving Clone on this params type.
 pub struct AppClientParams {
-    pub app_id: Option<u64>,
+    pub app_id: u64,
     pub app_spec: Arc56Contract,
     pub algorand: AlgorandClient,
     pub app_name: Option<String>,
     pub default_sender: Option<String>,
+    pub default_signer: Option<Arc<dyn TransactionSigner>>,
     pub source_maps: Option<AppSourceMaps>,
-}
-
-/// Parameters for constructing an AppClient from a JSON app spec.
-/// The JSON must be a valid ARC-56 contract specification string.
-// See note above on not deriving Clone while this contains `AlgorandClient`.
-pub struct AppClientJsonParams<'a> {
-    pub app_id: Option<u64>,
-    pub app_spec_json: &'a str,
-    pub algorand: AlgorandClient,
-    pub app_name: Option<String>,
-    pub default_sender: Option<String>,
-    pub source_maps: Option<AppSourceMaps>,
+    pub transaction_composer_config: Option<TransactionComposerConfig>,
 }
 
 /// Parameters for funding an application's account.
@@ -62,7 +55,7 @@ pub struct FundAppAccountParams {
 #[derive(Debug, Clone, Default)]
 pub struct AppClientMethodCallParams {
     pub method: String,
-    pub args: Option<Vec<AppMethodCallArg>>,
+    pub args: Vec<AppMethodCallArg>,
     pub sender: Option<String>,
     pub rekey_to: Option<String>,
     pub note: Option<Vec<u8>>,
@@ -77,7 +70,6 @@ pub struct AppClientMethodCallParams {
     pub app_references: Option<Vec<u64>>,
     pub asset_references: Option<Vec<u64>>,
     pub box_references: Option<Vec<BoxReference>>,
-    pub on_complete: Option<OnApplicationComplete>,
 }
 
 /// Parameters for bare (non-ABI) app call operations
@@ -98,7 +90,6 @@ pub struct AppClientBareCallParams {
     pub app_references: Option<Vec<u64>>,
     pub asset_references: Option<Vec<u64>>,
     pub box_references: Option<Vec<BoxReference>>,
-    pub on_complete: Option<OnApplicationComplete>,
 }
 
 /// Enriched logic error details with source map information.

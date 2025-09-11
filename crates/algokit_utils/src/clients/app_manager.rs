@@ -31,22 +31,29 @@ pub struct CompiledTeal {
     pub compiled: String,
     pub compiled_hash: String,
     pub compiled_base64_to_bytes: Vec<u8>,
-    pub source_map: Option<serde_json::Value>,
+    pub source_map: Option<serde_json::Value>, // TODO: review this, relying on serde doesn't seem right
 }
 
 #[derive(Debug, Clone)]
-pub struct AppState {
+pub enum AppState {
+    Uint(UintAppState),
+    Bytes(BytesAppState),
+}
+
+#[derive(Debug, Clone)]
+pub struct UintAppState {
     pub key_raw: Vec<u8>,
     pub key_base64: String,
-    pub value_raw: Option<Vec<u8>>,
-    pub value_base64: Option<String>,
-    pub value: AppStateValue,
+    pub value: u64,
 }
 
 #[derive(Debug, Clone)]
-pub enum AppStateValue {
-    Uint(u64),
-    Bytes(String),
+pub struct BytesAppState {
+    pub key_raw: Vec<u8>,
+    pub key_base64: String,
+    pub value_raw: Vec<u8>,
+    pub value_base64: String,
+    pub value: String,
 }
 
 #[derive(Debug, Clone)]
@@ -412,20 +419,26 @@ impl AppManager {
                     })?;
 
             // TODO(stabilization): Consider r#type pattern consistency across API vs ABI types (PR #229 comment)
-            let (value_raw, value_base64, value) = match state_val.value.r#type {
+            let app_state = match state_val.value.r#type {
                 1 => {
                     // Bytes - now already decoded from base64 by serde
                     let value_raw = state_val.value.bytes.clone();
                     let value_base64 = Base64.encode(&value_raw);
                     let value_str = String::from_utf8(value_raw.clone())
                         .unwrap_or_else(|_| hex::encode(&value_raw));
-                    (
-                        Some(value_raw),
-                        Some(value_base64),
-                        AppStateValue::Bytes(value_str),
-                    )
+                    AppState::Bytes(BytesAppState {
+                        key_raw: key_raw.clone(),
+                        key_base64: Base64.encode(&key_raw),
+                        value_raw,
+                        value_base64,
+                        value: value_str,
+                    })
                 }
-                2 => (None, None, AppStateValue::Uint(state_val.value.uint)),
+                2 => AppState::Uint(UintAppState {
+                    key_raw: key_raw.clone(),
+                    key_base64: Base64.encode(&key_raw),
+                    value: state_val.value.uint,
+                }),
                 _ => {
                     return Err(AppManagerError::DecodingError {
                         message: format!("Unknown state data type: {}", state_val.value.r#type),
@@ -433,16 +446,7 @@ impl AppManager {
                 }
             };
 
-            state_values.insert(
-                key_raw.clone(),
-                AppState {
-                    key_raw: key_raw.clone(),
-                    key_base64: Base64.encode(&key_raw),
-                    value_raw,
-                    value_base64,
-                    value,
-                },
-            );
+            state_values.insert(key_raw.clone(), app_state);
         }
 
         Ok(state_values)

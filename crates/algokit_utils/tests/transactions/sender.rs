@@ -168,12 +168,7 @@ async fn test_abi_method_returns_enhanced_processing(
     )
     .await?;
 
-    let method = arc56_contract
-        .methods
-        .iter()
-        .find(|m| m.name == "hello_world")
-        .expect("Failed to find hello_world method")
-        .try_into()?;
+    let method = arc56_contract.find_abi_method("hello_world")?;
 
     let params = AppCallMethodCallParams {
         sender: sender_address,

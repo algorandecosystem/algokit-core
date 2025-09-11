@@ -37,6 +37,7 @@ pub struct ClientManager {
     cached_network_details: RwLock<Option<Arc<NetworkDetails>>>,
 }
 
+// TODO: method to get the app client and app factory
 impl ClientManager {
     pub fn new(config: &AlgoConfig) -> Result<Self, ClientManagerError> {
         Ok(Self {

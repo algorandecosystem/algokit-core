@@ -1,7 +1,7 @@
 use super::AppClient;
+use crate::AppClientError;
 use crate::transactions::TransactionSenderError;
 use crate::transactions::composer::ComposerError;
-
 use std::str::FromStr;
 
 /// Format a logic error message with details.
@@ -26,8 +26,9 @@ pub fn transform_transaction_error(
     client: &AppClient,
     err: TransactionSenderError,
     is_clear: bool,
-) -> TransactionSenderError {
+) -> AppClientError {
     match &err {
+        // TODO: confirm this?
         TransactionSenderError::ComposerError {
             source: ComposerError::PoolError { message },
         } => {
@@ -36,16 +37,16 @@ pub fn transform_transaction_error(
             };
             let logic = client.expose_logic_error(&tx_err, is_clear);
             let msg = format_logic_error_message(&logic);
-            TransactionSenderError::ValidationError { message: msg }
+            AppClientError::ValidationError { message: msg }
         }
-        _ => err,
+        _ => AppClientError::TransactionSenderError { source: err },
     }
 }
 
 /// Parse account reference strings to addresses.
 pub fn parse_account_refs_strs(
     account_refs: &Option<Vec<String>>,
-) -> Result<Option<Vec<algokit_transact::Address>>, String> {
+) -> Result<Option<Vec<algokit_transact::Address>>, AppClientError> {
     match account_refs {
         None => Ok(None),
         Some(refs) => {
@@ -53,7 +54,7 @@ pub fn parse_account_refs_strs(
             for s in refs {
                 result.push(
                     algokit_transact::Address::from_str(s)
-                        .map_err(|e| format!("Invalid address: {}", e))?,
+                        .map_err(|e| AppClientError::TransactError { source: e })?,
                 );
             }
             Ok(Some(result))
