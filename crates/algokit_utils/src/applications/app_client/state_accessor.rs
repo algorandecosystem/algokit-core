@@ -7,7 +7,6 @@ use num_bigint::BigUint;
 use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
-use std::str::FromStr;
 
 pub struct BoxStateAccessor<'a> {
     client: &'a AppClient,
@@ -240,10 +239,14 @@ impl<'a> AppStateAccessor<'a> {
 
 impl<'a> BoxStateAccessor<'a> {
     pub async fn get_all(&self) -> Result<HashMap<String, ABIValue>, AppClientError> {
-        let box_keys = &self.client.app_spec.state.keys.box_keys;
+        let box_storage_keys = self
+            .client
+            .app_spec
+            .get_box_abi_storage_keys()
+            .map_err(|e| AppClientError::ABIError { source: e })?;
         let mut results: HashMap<String, ABIValue> = HashMap::new();
 
-        for (box_name, storage_key) in box_keys {
+        for (box_name, storage_key) in box_storage_keys {
             let box_name_bytes = base64::engine::general_purpose::STANDARD
                 .decode(&storage_key.key)
                 .map_err(|e| AppClientError::AppStateError {
@@ -252,28 +255,29 @@ impl<'a> BoxStateAccessor<'a> {
 
             // TODO: what to do when it failed to fetch the box?
             let box_value = self.client.get_box_value(&box_name_bytes).await?;
-            let value_type = ABIType::from_str(&storage_key.value_type)
-                .map_err(|e| AppClientError::ABIError { source: e })?;
-            let abi_value = value_type
+            let abi_value = storage_key
+                .value_type
                 .decode(&box_value)
                 .map_err(|e| AppClientError::ABIError { source: e })?;
-            results.insert(box_name.clone(), abi_value);
+            results.insert(box_name, abi_value);
         }
 
         return Ok(results);
     }
 
     pub async fn get_value(&self, name: &str) -> Result<ABIValue, AppClientError> {
-        let storage_key = self
+        let box_storage_keys = self
             .client
             .app_spec
-            .state
-            .keys
-            .box_keys
-            .get(name)
-            .ok_or_else(|| AppClientError::AppStateError {
-                message: format!("Box key '{}' not found", name),
-            })?;
+            .get_box_abi_storage_keys()
+            .map_err(|e| AppClientError::ABIError { source: e })?;
+
+        let storage_key =
+            box_storage_keys
+                .get(name)
+                .ok_or_else(|| AppClientError::AppStateError {
+                    message: format!("Box key '{}' not found", name),
+                })?;
 
         let box_name_bytes = base64::engine::general_purpose::STANDARD
             .decode(&storage_key.key)
@@ -283,9 +287,8 @@ impl<'a> BoxStateAccessor<'a> {
 
         // TODO: what to do when it failed to fetch the box?
         let box_value = self.client.get_box_value(&box_name_bytes).await?;
-        let value_type = ABIType::from_str(&storage_key.value_type)
-            .map_err(|e| AppClientError::ABIError { source: e })?;
-        return value_type
+        return storage_key
+            .value_type
             .decode(&box_value)
             .map_err(|e| AppClientError::ABIError { source: e });
     }

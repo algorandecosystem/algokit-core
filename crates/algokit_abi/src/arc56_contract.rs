@@ -723,6 +723,18 @@ impl Arc56Contract {
             .collect()
     }
 
+    pub fn get_box_abi_storage_keys(&self) -> Result<HashMap<String, ABIStorageKey>, ABIError> {
+        self.state
+            .keys
+            .box_keys
+            .iter()
+            .map(|(name, storage_key)| {
+                let abi_storage_key = self.convert_storage_key(storage_key)?;
+                Ok((name.clone(), abi_storage_key))
+            })
+            .collect()
+    }
+
     fn convert_storage_key(&self, storage_key: &StorageKey) -> Result<ABIStorageKey, ABIError> {
         let key_type = self.resolve_storage_type(&storage_key.key_type)?;
         let value_type = self.resolve_storage_type(&storage_key.value_type)?;
@@ -784,11 +796,9 @@ impl Arc56Contract {
     }
 
     fn resolve_storage_type(&self, type_str: &str) -> Result<ABIType, ABIError> {
-        // Check if this is a reference to a struct
         if self.structs.contains_key(type_str) {
             ABIType::from_struct(type_str, &self.structs)
         } else {
-            // Parse as regular ABI type
             ABIType::from_str(type_str).map_err(|e| ABIError::ValidationError {
                 message: format!("Failed to parse storage type '{}': {}", type_str, e),
             })
