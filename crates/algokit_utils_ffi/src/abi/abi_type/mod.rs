@@ -49,15 +49,11 @@ impl RustToFfiABIType for RustABIType {
     }
 }
 
+// NOTE: Exported traits cannot have default implementations, so we must implement in each ABIType
+// See https://github.com/mozilla/uniffi-rs/pull/2598
 #[uniffi::export]
 pub trait ABIType: Send + Sync + FfiToRustABIType {
-    fn decoode(&self, data: &[u8]) -> ABIValue {
-        let rust_abi_type = self.to_rust_abi_type();
-        ABIValue::from(rust_abi_type.decode(data).unwrap())
-    }
+    fn decoode(&self, data: &[u8]) -> ABIValue;
 
-    fn encode(&self, value: ABIValue) -> Vec<u8> {
-        let rust_abi_type = self.to_rust_abi_type();
-        rust_abi_type.encode(&value.into()).unwrap()
-    }
+    fn encode(&self, value: ABIValue) -> Vec<u8>;
 }

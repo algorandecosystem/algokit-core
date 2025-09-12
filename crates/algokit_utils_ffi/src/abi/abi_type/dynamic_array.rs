@@ -2,6 +2,8 @@ use std::sync::Arc;
 
 use algokit_abi::ABIType as RustABIType;
 
+use crate::abi::abi_value::ABIValue;
+
 use super::{ABIType, FfiToRustABIType, RustToFfiABIType};
 
 #[derive(uniffi::Object, Clone)]
@@ -29,8 +31,34 @@ impl From<RustABIType> for ABIDynamicArray {
 
 impl FfiToRustABIType for ABIDynamicArray {
     fn to_rust_abi_type(&self) -> RustABIType {
-        (*self).clone().into()
+        eprintln!("DEBUGPRINT[43]: dynamic_array.rs:34 (before let cloned = self.clone();)");
+        let cloned = self.clone();
+        eprintln!("DEBUGPRINT[44]: dynamic_array.rs:35 (after let cloned = self.clone();)");
+
+        eprintln!("DEBUGPRINT[46]: dynamic_array.rs:38 (before cloned.into())");
+        let res = cloned.into();
+        eprintln!("DEBUGPRINT[47]: dynamic_array.rs:39 (after cloned.into())");
+        res
     }
 }
 
-impl ABIType for ABIDynamicArray {}
+#[uniffi::export]
+impl ABIType for ABIDynamicArray {
+    fn decoode(&self, data: &[u8]) -> ABIValue {
+        let rust_abi_type = self.to_rust_abi_type();
+        ABIValue::from(rust_abi_type.decode(data).unwrap())
+    }
+
+    fn encode(&self, value: ABIValue) -> Vec<u8> {
+        let rust_abi_type = self.to_rust_abi_type();
+        rust_abi_type.encode(&value.into()).unwrap()
+    }
+}
+
+#[uniffi::export]
+impl ABIDynamicArray {
+    #[uniffi::constructor]
+    pub fn new(element_type: Arc<dyn ABIType>) -> Self {
+        ABIDynamicArray { element_type }
+    }
+}

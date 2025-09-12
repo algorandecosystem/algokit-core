@@ -4,10 +4,13 @@ from algokit_utils.algokit_http_client import HttpClient, HttpMethod, HttpRespon
 from algokit_utils.algokit_transact_ffi import SignedTransaction, Transaction, encode_transaction
 from algokit_utils import AlgodClient, TransactionSigner
 from algokit_utils.algokit_utils_ffi import (
+    AbiBool,
+    AbiDynamicArray,
     CommonParams,
     Composer,
     PaymentParams,
     TransactionSignerGetter,
+    AbiValue
 )
 from algosdk.mnemonic import to_private_key
 from nacl.signing import SigningKey
@@ -102,3 +105,18 @@ async def test_composer():
     assert(len(txids) == 1)
     assert(len(txids[0]) == 52)
     print(txids)
+
+def test_abi_bool():
+    abi_bool = AbiBool()
+
+    encoded = abi_bool.encode(AbiValue(bool=True))
+
+    assert encoded == b'\x80'
+
+def test_abi_bool_array():
+    abi_arr = AbiDynamicArray(element_type=AbiBool())
+
+    arr = AbiValue(array=[AbiValue(bool=True)])
+    encoded = abi_arr.encode(arr)
+
+    assert encoded == b'\x000180'

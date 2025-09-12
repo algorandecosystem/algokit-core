@@ -1,3 +1,5 @@
+use crate::abi::abi_value::ABIValue;
+
 use super::{ABIType, FfiToRustABIType};
 use algokit_abi::ABIType as RustABIType;
 
@@ -22,8 +24,19 @@ impl From<RustABIType> for ABIByte {
 
 impl FfiToRustABIType for ABIByte {
     fn to_rust_abi_type(&self) -> RustABIType {
-        (*self).clone().into()
+        self.clone().into()
     }
 }
 
-impl ABIType for ABIByte {}
+#[uniffi::export]
+impl ABIType for ABIByte {
+    fn decoode(&self, data: &[u8]) -> ABIValue {
+        let rust_abi_type = self.to_rust_abi_type();
+        ABIValue::from(rust_abi_type.decode(data).unwrap())
+    }
+
+    fn encode(&self, value: ABIValue) -> Vec<u8> {
+        let rust_abi_type = self.to_rust_abi_type();
+        rust_abi_type.encode(&value.into()).unwrap()
+    }
+}
