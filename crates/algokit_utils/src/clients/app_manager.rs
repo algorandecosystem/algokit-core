@@ -403,6 +403,42 @@ impl AppManager {
         (0, box_id.clone())
     }
 
+    /// Helper function to ensure bytes are decoded from base64 if needed.
+    /// When using `Bytes` deserializer with JSON, base64 strings are not decoded
+    /// but kept as ASCII bytes of the base64 string. This function detects and fixes that.
+    fn ensure_decoded_bytes(bytes: &[u8]) -> Vec<u8> {
+        // Check if bytes could be a base64 string
+        if let Ok(s) = std::str::from_utf8(bytes) {
+            // Base64 strings have specific characteristics:
+            // - Length is multiple of 4 (with padding) or would be after padding
+            // - Contains base64 chars
+            // - Successfully decodes to different bytes than the original
+            if !s.is_empty()
+                && s.chars()
+                    .all(|c| c.is_ascii_alphanumeric() || c == '+' || c == '/' || c == '=')
+            {
+                // Additional check: base64 strings typically have = padding or specific length
+                let looks_like_base64 = s.contains('=')
+                    || s.contains('+')
+                    || s.contains('/')
+                    || (s.len() % 4 == 0 && s.len() >= 8); // Reasonable minimum for base64
+
+                if looks_like_base64 {
+                    // Try to decode as base64
+                    if let Ok(decoded) = Base64.decode(s) {
+                        // Only return decoded if it's actually different
+                        // (prevents treating plain text as base64)
+                        if decoded != bytes {
+                            return decoded;
+                        }
+                    }
+                }
+            }
+        }
+        // Already raw bytes or not valid base64
+        bytes.to_vec()
+    }
+
     /// Decode application state from raw format.
     /// Keys are decoded from base64 to Vec<u8> for binary data support, matching TypeScript UInt8Array typing.
     pub fn decode_app_state(
@@ -421,8 +457,8 @@ impl AppManager {
             // TODO(stabilization): Consider r#type pattern consistency across API vs ABI types (PR #229 comment)
             let app_state = match state_val.value.r#type {
                 1 => {
-                    // Bytes - now already decoded from base64 by serde
-                    let value_raw = state_val.value.bytes.clone();
+                    // Handle both cases: raw bytes (from msgpack) or base64 string bytes (from JSON with Bytes deserializer)
+                    let value_raw = Self::ensure_decoded_bytes(&state_val.value.bytes);
                     let value_base64 = Base64.encode(&value_raw);
                     let value_str = String::from_utf8(value_raw.clone())
                         .unwrap_or_else(|_| hex::encode(&value_raw));

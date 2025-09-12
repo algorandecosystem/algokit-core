@@ -343,6 +343,52 @@ impl BoxStateAccessor<'_> {
 
         Ok(results)
     }
+
+    pub async fn get_map_value(
+        &self,
+        map_name: &str,
+        key: &ABIValue,
+    ) -> Result<Option<ABIValue>, AppClientError> {
+        let storage_map_map = self
+            .client
+            .app_spec
+            .get_box_abi_storage_maps()
+            .map_err(|e| AppClientError::ABIError { source: e })?;
+        let storage_map =
+            storage_map_map
+                .get(map_name)
+                .ok_or_else(|| AppClientError::AppStateError {
+                    message: format!("Box map '{}' not found", map_name),
+                })?;
+
+        let prefix_bytes = if let Some(prefix_b64) = &storage_map.prefix {
+            base64::engine::general_purpose::STANDARD
+                .decode(prefix_b64)
+                .map_err(|e| AppClientError::AppStateError {
+                    message: format!("Failed to decode map prefix: {}", e),
+                })?
+        } else {
+            Vec::new()
+        };
+
+        let encoded_key = storage_map
+            .key_type
+            .encode(key)
+            .map_err(|e| AppClientError::ABIError { source: e })?;
+        let full_key = [prefix_bytes, encoded_key].concat();
+
+        let box_value = match self.client.get_box_value(&full_key).await {
+            Ok(val) => val,
+            Err(AppClientError::AppStateError { .. }) => return Ok(None),
+            Err(e) => return Err(e),
+        };
+
+        let decoded = storage_map
+            .value_type
+            .decode(&box_value)
+            .map_err(|e| AppClientError::ABIError { source: e })?;
+        Ok(Some(decoded))
+    }
 }
 
 fn decode_app_state(

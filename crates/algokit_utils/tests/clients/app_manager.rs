@@ -427,7 +427,7 @@ fn test_app_state_keys_as_vec_u8() {
     let binary_state_val = TealKeyValue {
         key: binary_key_base64,
         value: TealValue {
-            r#type: 2,
+            r#type: 2, // Uint type
             bytes: Vec::new(),
             uint: 123,
         },
@@ -440,11 +440,12 @@ fn test_app_state_keys_as_vec_u8() {
     assert!(binary_result.contains_key(&binary_key));
     let binary_app_state = &binary_result[&binary_key];
     match binary_app_state {
-        AppState::Uint(_) => {
-            panic!("Expected AppState::Bytes");
+        AppState::Uint(uint_app_state) => {
+            assert_eq!(uint_app_state.key_raw, binary_key);
+            assert_eq!(uint_app_state.value, 123);
         }
-        AppState::Bytes(bytes_app_state) => {
-            assert_eq!(bytes_app_state.key_raw, binary_key);
+        AppState::Bytes(_) => {
+            panic!("Expected AppState::Uint");
         }
     }
 

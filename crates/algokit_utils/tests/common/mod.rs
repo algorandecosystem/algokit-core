@@ -30,6 +30,7 @@ pub async fn deploy_arc56_contract(
     arc56_contract: &Arc56Contract,
     template_params: Option<TealTemplateParams>,
     deploy_metadata: Option<DeploymentMetadata>,
+    args: Option<Vec<Vec<u8>>>,
 ) -> Result<u64, Box<dyn std::error::Error + Send + Sync>> {
     let teal_source = arc56_contract
         .source
@@ -61,6 +62,7 @@ pub async fn deploy_arc56_contract(
 
     let app_create_params = AppCreateParams {
         sender: sender.clone(),
+        args: args,
         approval_program: approval_compile.compiled_base64_to_bytes,
         clear_state_program: clear_compile.compiled_base64_to_bytes,
         global_state_schema: Some(algokit_transact::StateSchema {

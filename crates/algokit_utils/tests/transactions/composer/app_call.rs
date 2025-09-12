@@ -910,6 +910,7 @@ async fn arc56_algorand_fixture(
         &arc56_contract,
         None,
         None,
+        None,
     )
     .await?;
 

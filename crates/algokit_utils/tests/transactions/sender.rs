@@ -165,6 +165,7 @@ async fn test_abi_method_returns_enhanced_processing(
         &arc56_contract,
         None,
         None,
+        None,
     )
     .await?;
 

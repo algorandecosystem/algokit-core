@@ -4,11 +4,25 @@ use crate::clients::network_client::NetworkDetails;
 use crate::transactions::{TransactionComposerConfig, TransactionSigner};
 use crate::{AlgorandClient, clients::app_manager::BoxIdentifier};
 use crate::{SendParams, SendTransactionResult};
-use algokit_abi::Arc56Contract;
+use algokit_abi::{ABIType, ABIValue, Arc56Contract};
 use algokit_transact::Address;
 use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
+
+/// A box value decoded according to an ABI type
+#[derive(Debug, Clone)]
+pub struct BoxABIValue {
+    pub name: BoxName,
+    pub value: ABIValue,
+}
+
+/// A box name and its raw value
+#[derive(Debug, Clone)]
+pub struct BoxValue {
+    pub name: BoxName,
+    pub value: Vec<u8>,
+}
 mod compilation;
 mod error;
 mod error_transformation;
@@ -27,6 +41,8 @@ pub use types::{
     AppClientBareCallParams, AppClientMethodCallParams, AppClientParams, AppSourceMaps,
     FundAppAccountParams,
 };
+
+type BoxNameFilter = Box<dyn Fn(&BoxName) -> bool>;
 
 /// A client for interacting with an Algorand smart contract application (ARC-56 focused).
 pub struct AppClient {
@@ -271,12 +287,68 @@ impl AppClient {
             .map_err(|e| AppClientError::AppManagerError { source: e })
     }
 
+    /// Get all box values (names and contents) for the application.
+    pub async fn get_box_values(&self) -> Result<Vec<BoxValue>, AppClientError> {
+        let names = self.get_box_names().await?;
+        let mut values = Vec::new();
+        for name in names {
+            let value = self.get_box_value(&name.name_raw).await?;
+            values.push(BoxValue { name, value });
+        }
+        Ok(values)
+    }
+
     pub async fn get_box_value(&self, name: &BoxIdentifier) -> Result<Vec<u8>, AppClientError> {
         self.algorand
             .app()
             .get_box_value(self.app_id, name)
             .await
             .map_err(|e| AppClientError::AppManagerError { source: e })
+    }
+
+    /// Get a single box value decoded according to an ABI type.
+    pub async fn get_box_value_from_abi_type(
+        &self,
+        name: &BoxIdentifier,
+        abi_type: &ABIType,
+    ) -> Result<ABIValue, AppClientError> {
+        self.algorand
+            .app()
+            .get_box_value_from_abi_type(self.app_id, name, abi_type)
+            .await
+            .map_err(|e| AppClientError::AppManagerError { source: e })
+    }
+
+    /// Get multiple box values decoded according to an ABI type.
+    pub async fn get_box_values_from_abi_type(
+        &self,
+        abi_type: &ABIType,
+        filter_func: Option<BoxNameFilter>,
+    ) -> Result<Vec<BoxABIValue>, AppClientError> {
+        let names = self.get_box_names().await?;
+        let filtered_names = if let Some(filter) = filter_func {
+            names.into_iter().filter(|name| filter(name)).collect()
+        } else {
+            names
+        };
+
+        let box_names: Vec<BoxIdentifier> = filtered_names
+            .iter()
+            .map(|name| name.name_raw.clone())
+            .collect();
+
+        let values = self
+            .algorand
+            .app()
+            .get_box_values_from_abi_type(self.app_id, &box_names, abi_type)
+            .await
+            .map_err(|e| AppClientError::AppManagerError { source: e })?;
+
+        Ok(filtered_names
+            .into_iter()
+            .zip(values.into_iter())
+            .map(|(name, value)| BoxABIValue { name, value })
+            .collect())
     }
 
     pub fn params(&self) -> ParamsBuilder<'_> {

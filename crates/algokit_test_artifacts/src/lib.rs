@@ -192,3 +192,10 @@ pub mod resource_population {
     pub const APPLICATION_V9: &str =
         include_str!("../contracts/resource_population/ResourcePackerv9.arc32.json");
 }
+
+pub mod box_map_test {
+    /// Box map testing contract (ARC56)
+    ///
+    /// Contract for testing box map operations and complex data handling.
+    pub const APPLICATION_ARC56: &str = include_str!("../contracts/boxmap/application.arc56.json");
+}

@@ -286,6 +286,8 @@ async fn logic_error_exposure_with_source_maps(
         &get_testing_app_spec(),
         Some(tmpl.clone()),
         None,
+        None,
+        None,
     )
     .await?;
 
