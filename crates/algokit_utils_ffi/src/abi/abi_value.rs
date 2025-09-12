@@ -32,6 +32,25 @@ impl ABIValue {
         }
     }
 
+    #[uniffi::constructor]
+    pub fn from_bytes(bytes: Vec<u8>, abi_type: String) -> Result<Self, UtilsError> {
+        let rust_abi_type =
+            RustABIType::from_str(&abi_type).map_err(|e| UtilsError::UtilsError {
+                message: format!("Failed to parse ABI type: {}", e),
+            })?;
+        let abi_value = rust_abi_type
+            .decode(&bytes)
+            .map_err(|e| UtilsError::UtilsError {
+                message: format!("Failed to decode bytes: {}", e),
+            })?;
+
+        Ok(ABIValue {
+            bytes,
+            abi_type_str: abi_type,
+            abi_value,
+        })
+    }
+
     // TODO: support > u64
     #[uniffi::constructor]
     pub fn uint(value: u64, width: u16) -> Self {

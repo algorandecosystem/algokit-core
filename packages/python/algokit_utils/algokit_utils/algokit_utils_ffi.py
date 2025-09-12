@@ -496,6 +496,8 @@ def _uniffi_check_api_checksums(lib):
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algokit_utils_ffi_checksum_constructor_abivalue_byte() != 47270:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algokit_utils_ffi_checksum_constructor_abivalue_from_bytes() != 61901:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algokit_utils_ffi_checksum_constructor_abivalue_static_array() != 4559:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algokit_utils_ffi_checksum_constructor_abivalue_string() != 16860:
@@ -661,6 +663,12 @@ _UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_abivalue_byte.argtypes = (
     ctypes.POINTER(_UniffiRustCallStatus),
 )
 _UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_abivalue_byte.restype = ctypes.c_void_p
+_UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_abivalue_from_bytes.argtypes = (
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_abivalue_from_bytes.restype = ctypes.c_void_p
 _UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_abivalue_static_array.argtypes = (
     _UniffiRustBuffer,
     ctypes.c_uint64,
@@ -1091,6 +1099,9 @@ _UniffiLib.uniffi_algokit_utils_ffi_checksum_constructor_abivalue_bool.restype =
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_constructor_abivalue_byte.argtypes = (
 )
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_constructor_abivalue_byte.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_constructor_abivalue_from_bytes.argtypes = (
+)
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_constructor_abivalue_from_bytes.restype = ctypes.c_uint16
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_constructor_abivalue_static_array.argtypes = (
 )
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_constructor_abivalue_static_array.restype = ctypes.c_uint16
@@ -2135,6 +2146,18 @@ class AbiValue():
         # Call the (fallible) function before creating any half-baked object instances.
         pointer = _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_abivalue_byte,
         _UniffiConverterUInt8.lower(value))
+        return cls._make_instance_(pointer)
+
+    @classmethod
+    def from_bytes(cls, bytes: "bytes",abi_type: "str"):
+        _UniffiConverterBytes.check_lower(bytes)
+        
+        _UniffiConverterString.check_lower(abi_type)
+        
+        # Call the (fallible) function before creating any half-baked object instances.
+        pointer = _uniffi_rust_call_with_error(_UniffiConverterTypeUtilsError,_UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_abivalue_from_bytes,
+        _UniffiConverterBytes.lower(bytes),
+        _UniffiConverterString.lower(abi_type))
         return cls._make_instance_(pointer)
 
     @classmethod
