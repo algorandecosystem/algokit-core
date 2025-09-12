@@ -474,6 +474,8 @@ def _uniffi_check_api_checksums(lib):
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algokit_utils_ffi_checksum_method_abivalue_encoded_bytes() != 58212:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algokit_utils_ffi_checksum_method_abivalue_get_bool() != 17399:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algokit_utils_ffi_checksum_method_composer_add_payment() != 9188:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algokit_utils_ffi_checksum_method_composer_build() != 13184:
@@ -687,6 +689,11 @@ _UniffiLib.uniffi_algokit_utils_ffi_fn_method_abivalue_encoded_bytes.argtypes = 
     ctypes.POINTER(_UniffiRustCallStatus),
 )
 _UniffiLib.uniffi_algokit_utils_ffi_fn_method_abivalue_encoded_bytes.restype = _UniffiRustBuffer
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abivalue_get_bool.argtypes = (
+    ctypes.c_void_p,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abivalue_get_bool.restype = ctypes.c_int8
 _UniffiLib.uniffi_algokit_utils_ffi_fn_clone_algodclient.argtypes = (
     ctypes.c_void_p,
     ctypes.POINTER(_UniffiRustCallStatus),
@@ -1051,6 +1058,9 @@ _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abivalue_abi_type.restype = 
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abivalue_encoded_bytes.argtypes = (
 )
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abivalue_encoded_bytes.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abivalue_get_bool.argtypes = (
+)
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abivalue_get_bool.restype = ctypes.c_uint16
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_payment.argtypes = (
 )
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_payment.restype = ctypes.c_uint16
@@ -2062,6 +2072,8 @@ class AbiValueProtocol(typing.Protocol):
         raise NotImplementedError
     def encoded_bytes(self, ):
         raise NotImplementedError
+    def get_bool(self, ):
+        raise NotImplementedError
 # AbiValue is a Rust-only trait - it's a wrapper around a Rust implementation.
 class AbiValue():
     _pointer: ctypes.c_void_p
@@ -2175,6 +2187,15 @@ class AbiValue():
     def encoded_bytes(self, ) -> "bytes":
         return _UniffiConverterBytes.lift(
             _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abivalue_encoded_bytes,self._uniffi_clone_pointer(),)
+        )
+
+
+
+
+
+    def get_bool(self, ) -> "bool":
+        return _UniffiConverterBool.lift(
+            _uniffi_rust_call_with_error(_UniffiConverterTypeUtilsError,_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abivalue_get_bool,self._uniffi_clone_pointer(),)
         )
 
 
