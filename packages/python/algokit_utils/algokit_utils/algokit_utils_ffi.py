@@ -470,45 +470,9 @@ def _uniffi_check_contract_api_version(lib):
         raise InternalError("UniFFI contract version mismatch: try cleaning and rebuilding your project")
 
 def _uniffi_check_api_checksums(lib):
-    if lib.uniffi_algokit_utils_ffi_checksum_method_abiaddress_decoode() != 34376:
+    if lib.uniffi_algokit_utils_ffi_checksum_method_abivalue_abi_type() != 34484:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_algokit_utils_ffi_checksum_method_abiaddress_encode() != 59232:
-        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_algokit_utils_ffi_checksum_method_abibool_decoode() != 38603:
-        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_algokit_utils_ffi_checksum_method_abibool_encode() != 16678:
-        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_algokit_utils_ffi_checksum_method_abibyte_decoode() != 32099:
-        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_algokit_utils_ffi_checksum_method_abibyte_encode() != 12291:
-        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_algokit_utils_ffi_checksum_method_abidynamicarray_decoode() != 16138:
-        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_algokit_utils_ffi_checksum_method_abidynamicarray_encode() != 46079:
-        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_algokit_utils_ffi_checksum_method_abistaticarray_decoode() != 21678:
-        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_algokit_utils_ffi_checksum_method_abistaticarray_encode() != 9120:
-        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_algokit_utils_ffi_checksum_method_abistring_decoode() != 47792:
-        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_algokit_utils_ffi_checksum_method_abistring_encode() != 16320:
-        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_algokit_utils_ffi_checksum_method_abituple_decoode() != 63345:
-        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_algokit_utils_ffi_checksum_method_abituple_encode() != 14782:
-        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_algokit_utils_ffi_checksum_method_abitype_decoode() != 47905:
-        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_algokit_utils_ffi_checksum_method_abitype_encode() != 58200:
-        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_algokit_utils_ffi_checksum_method_abiufixed_decoode() != 63352:
-        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_algokit_utils_ffi_checksum_method_abiufixed_encode() != 58504:
-        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_algokit_utils_ffi_checksum_method_abiuint_decoode() != 59974:
-        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_algokit_utils_ffi_checksum_method_abiuint_encode() != 31704:
+    if lib.uniffi_algokit_utils_ffi_checksum_method_abivalue_encoded_bytes() != 58212:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algokit_utils_ffi_checksum_method_composer_add_payment() != 9188:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
@@ -522,9 +486,19 @@ def _uniffi_check_api_checksums(lib):
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algokit_utils_ffi_checksum_method_transactionsignergetter_get_signer() != 50234:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_algokit_utils_ffi_checksum_constructor_abibool_new() != 43112:
+    if lib.uniffi_algokit_utils_ffi_checksum_constructor_abivalue_address() != 33806:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_algokit_utils_ffi_checksum_constructor_abidynamicarray_new() != 3717:
+    if lib.uniffi_algokit_utils_ffi_checksum_constructor_abivalue_array() != 56482:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algokit_utils_ffi_checksum_constructor_abivalue_bool() != 48288:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algokit_utils_ffi_checksum_constructor_abivalue_byte() != 47270:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algokit_utils_ffi_checksum_constructor_abivalue_static_array() != 4559:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algokit_utils_ffi_checksum_constructor_abivalue_string() != 16860:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algokit_utils_ffi_checksum_constructor_abivalue_uint() != 33113:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algokit_utils_ffi_checksum_constructor_algodclient_new() != 702:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
@@ -636,12 +610,6 @@ class _UniffiForeignFutureStructVoid(ctypes.Structure):
     ]
 _UNIFFI_FOREIGN_FUTURE_COMPLETE_VOID = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiForeignFutureStructVoid,
 )
-_UNIFFI_CALLBACK_INTERFACE_ABI_TYPE_METHOD0 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,ctypes.POINTER(_UniffiRustBuffer),
-    ctypes.POINTER(_UniffiRustCallStatus),
-)
-_UNIFFI_CALLBACK_INTERFACE_ABI_TYPE_METHOD1 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,ctypes.POINTER(_UniffiRustBuffer),
-    ctypes.POINTER(_UniffiRustCallStatus),
-)
 _UNIFFI_CALLBACK_INTERFACE_TRANSACTION_SIGNER_METHOD0 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
 )
 _UNIFFI_CALLBACK_INTERFACE_TRANSACTION_SIGNER_METHOD1 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBufferTransaction,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
@@ -649,12 +617,6 @@ _UNIFFI_CALLBACK_INTERFACE_TRANSACTION_SIGNER_METHOD1 = ctypes.CFUNCTYPE(None,ct
 _UNIFFI_CALLBACK_INTERFACE_TRANSACTION_SIGNER_GETTER_METHOD0 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,ctypes.POINTER(_UniffiRustBuffer),
     ctypes.POINTER(_UniffiRustCallStatus),
 )
-class _UniffiVTableCallbackInterfaceAbiType(ctypes.Structure):
-    _fields_ = [
-        ("decoode", _UNIFFI_CALLBACK_INTERFACE_ABI_TYPE_METHOD0),
-        ("encode", _UNIFFI_CALLBACK_INTERFACE_ABI_TYPE_METHOD1),
-        ("uniffi_free", _UNIFFI_CALLBACK_INTERFACE_FREE),
-    ]
 class _UniffiVTableCallbackInterfaceTransactionSigner(ctypes.Structure):
     _fields_ = [
         ("sign_transactions", _UNIFFI_CALLBACK_INTERFACE_TRANSACTION_SIGNER_METHOD0),
@@ -666,235 +628,65 @@ class _UniffiVTableCallbackInterfaceTransactionSignerGetter(ctypes.Structure):
         ("get_signer", _UNIFFI_CALLBACK_INTERFACE_TRANSACTION_SIGNER_GETTER_METHOD0),
         ("uniffi_free", _UNIFFI_CALLBACK_INTERFACE_FREE),
     ]
-_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_abiaddress.argtypes = (
+_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_abivalue.argtypes = (
     ctypes.c_void_p,
     ctypes.POINTER(_UniffiRustCallStatus),
 )
-_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_abiaddress.restype = ctypes.c_void_p
-_UniffiLib.uniffi_algokit_utils_ffi_fn_free_abiaddress.argtypes = (
+_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_abivalue.restype = ctypes.c_void_p
+_UniffiLib.uniffi_algokit_utils_ffi_fn_free_abivalue.argtypes = (
     ctypes.c_void_p,
     ctypes.POINTER(_UniffiRustCallStatus),
 )
-_UniffiLib.uniffi_algokit_utils_ffi_fn_free_abiaddress.restype = None
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abiaddress_decoode.argtypes = (
-    ctypes.c_void_p,
+_UniffiLib.uniffi_algokit_utils_ffi_fn_free_abivalue.restype = None
+_UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_abivalue_address.argtypes = (
     _UniffiRustBuffer,
     ctypes.POINTER(_UniffiRustCallStatus),
 )
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abiaddress_decoode.restype = _UniffiRustBuffer
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abiaddress_encode.argtypes = (
-    ctypes.c_void_p,
+_UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_abivalue_address.restype = ctypes.c_void_p
+_UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_abivalue_array.argtypes = (
+    _UniffiRustBuffer,
     _UniffiRustBuffer,
     ctypes.POINTER(_UniffiRustCallStatus),
 )
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abiaddress_encode.restype = _UniffiRustBuffer
-_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_abibool.argtypes = (
-    ctypes.c_void_p,
+_UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_abivalue_array.restype = ctypes.c_void_p
+_UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_abivalue_bool.argtypes = (
+    ctypes.c_int8,
     ctypes.POINTER(_UniffiRustCallStatus),
 )
-_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_abibool.restype = ctypes.c_void_p
-_UniffiLib.uniffi_algokit_utils_ffi_fn_free_abibool.argtypes = (
-    ctypes.c_void_p,
+_UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_abivalue_bool.restype = ctypes.c_void_p
+_UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_abivalue_byte.argtypes = (
+    ctypes.c_uint8,
     ctypes.POINTER(_UniffiRustCallStatus),
 )
-_UniffiLib.uniffi_algokit_utils_ffi_fn_free_abibool.restype = None
-_UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_abibool_new.argtypes = (
-    ctypes.POINTER(_UniffiRustCallStatus),
-)
-_UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_abibool_new.restype = ctypes.c_void_p
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abibool_decoode.argtypes = (
-    ctypes.c_void_p,
+_UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_abivalue_byte.restype = ctypes.c_void_p
+_UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_abivalue_static_array.argtypes = (
+    _UniffiRustBuffer,
+    ctypes.c_uint64,
     _UniffiRustBuffer,
     ctypes.POINTER(_UniffiRustCallStatus),
 )
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abibool_decoode.restype = _UniffiRustBuffer
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abibool_encode.argtypes = (
-    ctypes.c_void_p,
+_UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_abivalue_static_array.restype = ctypes.c_void_p
+_UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_abivalue_string.argtypes = (
     _UniffiRustBuffer,
     ctypes.POINTER(_UniffiRustCallStatus),
 )
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abibool_encode.restype = _UniffiRustBuffer
-_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_abibyte.argtypes = (
+_UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_abivalue_string.restype = ctypes.c_void_p
+_UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_abivalue_uint.argtypes = (
+    ctypes.c_uint64,
+    ctypes.c_uint16,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_abivalue_uint.restype = ctypes.c_void_p
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abivalue_abi_type.argtypes = (
     ctypes.c_void_p,
     ctypes.POINTER(_UniffiRustCallStatus),
 )
-_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_abibyte.restype = ctypes.c_void_p
-_UniffiLib.uniffi_algokit_utils_ffi_fn_free_abibyte.argtypes = (
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abivalue_abi_type.restype = _UniffiRustBuffer
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abivalue_encoded_bytes.argtypes = (
     ctypes.c_void_p,
     ctypes.POINTER(_UniffiRustCallStatus),
 )
-_UniffiLib.uniffi_algokit_utils_ffi_fn_free_abibyte.restype = None
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abibyte_decoode.argtypes = (
-    ctypes.c_void_p,
-    _UniffiRustBuffer,
-    ctypes.POINTER(_UniffiRustCallStatus),
-)
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abibyte_decoode.restype = _UniffiRustBuffer
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abibyte_encode.argtypes = (
-    ctypes.c_void_p,
-    _UniffiRustBuffer,
-    ctypes.POINTER(_UniffiRustCallStatus),
-)
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abibyte_encode.restype = _UniffiRustBuffer
-_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_abidynamicarray.argtypes = (
-    ctypes.c_void_p,
-    ctypes.POINTER(_UniffiRustCallStatus),
-)
-_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_abidynamicarray.restype = ctypes.c_void_p
-_UniffiLib.uniffi_algokit_utils_ffi_fn_free_abidynamicarray.argtypes = (
-    ctypes.c_void_p,
-    ctypes.POINTER(_UniffiRustCallStatus),
-)
-_UniffiLib.uniffi_algokit_utils_ffi_fn_free_abidynamicarray.restype = None
-_UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_abidynamicarray_new.argtypes = (
-    ctypes.c_void_p,
-    ctypes.POINTER(_UniffiRustCallStatus),
-)
-_UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_abidynamicarray_new.restype = ctypes.c_void_p
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abidynamicarray_decoode.argtypes = (
-    ctypes.c_void_p,
-    _UniffiRustBuffer,
-    ctypes.POINTER(_UniffiRustCallStatus),
-)
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abidynamicarray_decoode.restype = _UniffiRustBuffer
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abidynamicarray_encode.argtypes = (
-    ctypes.c_void_p,
-    _UniffiRustBuffer,
-    ctypes.POINTER(_UniffiRustCallStatus),
-)
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abidynamicarray_encode.restype = _UniffiRustBuffer
-_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_abistaticarray.argtypes = (
-    ctypes.c_void_p,
-    ctypes.POINTER(_UniffiRustCallStatus),
-)
-_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_abistaticarray.restype = ctypes.c_void_p
-_UniffiLib.uniffi_algokit_utils_ffi_fn_free_abistaticarray.argtypes = (
-    ctypes.c_void_p,
-    ctypes.POINTER(_UniffiRustCallStatus),
-)
-_UniffiLib.uniffi_algokit_utils_ffi_fn_free_abistaticarray.restype = None
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abistaticarray_decoode.argtypes = (
-    ctypes.c_void_p,
-    _UniffiRustBuffer,
-    ctypes.POINTER(_UniffiRustCallStatus),
-)
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abistaticarray_decoode.restype = _UniffiRustBuffer
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abistaticarray_encode.argtypes = (
-    ctypes.c_void_p,
-    _UniffiRustBuffer,
-    ctypes.POINTER(_UniffiRustCallStatus),
-)
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abistaticarray_encode.restype = _UniffiRustBuffer
-_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_abistring.argtypes = (
-    ctypes.c_void_p,
-    ctypes.POINTER(_UniffiRustCallStatus),
-)
-_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_abistring.restype = ctypes.c_void_p
-_UniffiLib.uniffi_algokit_utils_ffi_fn_free_abistring.argtypes = (
-    ctypes.c_void_p,
-    ctypes.POINTER(_UniffiRustCallStatus),
-)
-_UniffiLib.uniffi_algokit_utils_ffi_fn_free_abistring.restype = None
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abistring_decoode.argtypes = (
-    ctypes.c_void_p,
-    _UniffiRustBuffer,
-    ctypes.POINTER(_UniffiRustCallStatus),
-)
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abistring_decoode.restype = _UniffiRustBuffer
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abistring_encode.argtypes = (
-    ctypes.c_void_p,
-    _UniffiRustBuffer,
-    ctypes.POINTER(_UniffiRustCallStatus),
-)
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abistring_encode.restype = _UniffiRustBuffer
-_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_abituple.argtypes = (
-    ctypes.c_void_p,
-    ctypes.POINTER(_UniffiRustCallStatus),
-)
-_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_abituple.restype = ctypes.c_void_p
-_UniffiLib.uniffi_algokit_utils_ffi_fn_free_abituple.argtypes = (
-    ctypes.c_void_p,
-    ctypes.POINTER(_UniffiRustCallStatus),
-)
-_UniffiLib.uniffi_algokit_utils_ffi_fn_free_abituple.restype = None
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abituple_decoode.argtypes = (
-    ctypes.c_void_p,
-    _UniffiRustBuffer,
-    ctypes.POINTER(_UniffiRustCallStatus),
-)
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abituple_decoode.restype = _UniffiRustBuffer
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abituple_encode.argtypes = (
-    ctypes.c_void_p,
-    _UniffiRustBuffer,
-    ctypes.POINTER(_UniffiRustCallStatus),
-)
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abituple_encode.restype = _UniffiRustBuffer
-_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_abitype.argtypes = (
-    ctypes.c_void_p,
-    ctypes.POINTER(_UniffiRustCallStatus),
-)
-_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_abitype.restype = ctypes.c_void_p
-_UniffiLib.uniffi_algokit_utils_ffi_fn_free_abitype.argtypes = (
-    ctypes.c_void_p,
-    ctypes.POINTER(_UniffiRustCallStatus),
-)
-_UniffiLib.uniffi_algokit_utils_ffi_fn_free_abitype.restype = None
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abitype_decoode.argtypes = (
-    ctypes.c_void_p,
-    _UniffiRustBuffer,
-    ctypes.POINTER(_UniffiRustCallStatus),
-)
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abitype_decoode.restype = _UniffiRustBuffer
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abitype_encode.argtypes = (
-    ctypes.c_void_p,
-    _UniffiRustBuffer,
-    ctypes.POINTER(_UniffiRustCallStatus),
-)
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abitype_encode.restype = _UniffiRustBuffer
-_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_abiufixed.argtypes = (
-    ctypes.c_void_p,
-    ctypes.POINTER(_UniffiRustCallStatus),
-)
-_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_abiufixed.restype = ctypes.c_void_p
-_UniffiLib.uniffi_algokit_utils_ffi_fn_free_abiufixed.argtypes = (
-    ctypes.c_void_p,
-    ctypes.POINTER(_UniffiRustCallStatus),
-)
-_UniffiLib.uniffi_algokit_utils_ffi_fn_free_abiufixed.restype = None
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abiufixed_decoode.argtypes = (
-    ctypes.c_void_p,
-    _UniffiRustBuffer,
-    ctypes.POINTER(_UniffiRustCallStatus),
-)
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abiufixed_decoode.restype = _UniffiRustBuffer
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abiufixed_encode.argtypes = (
-    ctypes.c_void_p,
-    _UniffiRustBuffer,
-    ctypes.POINTER(_UniffiRustCallStatus),
-)
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abiufixed_encode.restype = _UniffiRustBuffer
-_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_abiuint.argtypes = (
-    ctypes.c_void_p,
-    ctypes.POINTER(_UniffiRustCallStatus),
-)
-_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_abiuint.restype = ctypes.c_void_p
-_UniffiLib.uniffi_algokit_utils_ffi_fn_free_abiuint.argtypes = (
-    ctypes.c_void_p,
-    ctypes.POINTER(_UniffiRustCallStatus),
-)
-_UniffiLib.uniffi_algokit_utils_ffi_fn_free_abiuint.restype = None
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abiuint_decoode.argtypes = (
-    ctypes.c_void_p,
-    _UniffiRustBuffer,
-    ctypes.POINTER(_UniffiRustCallStatus),
-)
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abiuint_decoode.restype = _UniffiRustBuffer
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abiuint_encode.argtypes = (
-    ctypes.c_void_p,
-    _UniffiRustBuffer,
-    ctypes.POINTER(_UniffiRustCallStatus),
-)
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abiuint_encode.restype = _UniffiRustBuffer
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abivalue_encoded_bytes.restype = _UniffiRustBuffer
 _UniffiLib.uniffi_algokit_utils_ffi_fn_clone_algodclient.argtypes = (
     ctypes.c_void_p,
     ctypes.POINTER(_UniffiRustCallStatus),
@@ -1253,66 +1045,12 @@ _UniffiLib.ffi_algokit_utils_ffi_rust_future_complete_void.argtypes = (
     ctypes.POINTER(_UniffiRustCallStatus),
 )
 _UniffiLib.ffi_algokit_utils_ffi_rust_future_complete_void.restype = None
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abiaddress_decoode.argtypes = (
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abivalue_abi_type.argtypes = (
 )
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abiaddress_decoode.restype = ctypes.c_uint16
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abiaddress_encode.argtypes = (
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abivalue_abi_type.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abivalue_encoded_bytes.argtypes = (
 )
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abiaddress_encode.restype = ctypes.c_uint16
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abibool_decoode.argtypes = (
-)
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abibool_decoode.restype = ctypes.c_uint16
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abibool_encode.argtypes = (
-)
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abibool_encode.restype = ctypes.c_uint16
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abibyte_decoode.argtypes = (
-)
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abibyte_decoode.restype = ctypes.c_uint16
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abibyte_encode.argtypes = (
-)
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abibyte_encode.restype = ctypes.c_uint16
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abidynamicarray_decoode.argtypes = (
-)
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abidynamicarray_decoode.restype = ctypes.c_uint16
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abidynamicarray_encode.argtypes = (
-)
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abidynamicarray_encode.restype = ctypes.c_uint16
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abistaticarray_decoode.argtypes = (
-)
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abistaticarray_decoode.restype = ctypes.c_uint16
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abistaticarray_encode.argtypes = (
-)
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abistaticarray_encode.restype = ctypes.c_uint16
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abistring_decoode.argtypes = (
-)
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abistring_decoode.restype = ctypes.c_uint16
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abistring_encode.argtypes = (
-)
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abistring_encode.restype = ctypes.c_uint16
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abituple_decoode.argtypes = (
-)
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abituple_decoode.restype = ctypes.c_uint16
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abituple_encode.argtypes = (
-)
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abituple_encode.restype = ctypes.c_uint16
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abitype_decoode.argtypes = (
-)
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abitype_decoode.restype = ctypes.c_uint16
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abitype_encode.argtypes = (
-)
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abitype_encode.restype = ctypes.c_uint16
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abiufixed_decoode.argtypes = (
-)
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abiufixed_decoode.restype = ctypes.c_uint16
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abiufixed_encode.argtypes = (
-)
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abiufixed_encode.restype = ctypes.c_uint16
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abiuint_decoode.argtypes = (
-)
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abiuint_decoode.restype = ctypes.c_uint16
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abiuint_encode.argtypes = (
-)
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abiuint_encode.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_abivalue_encoded_bytes.restype = ctypes.c_uint16
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_payment.argtypes = (
 )
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_payment.restype = ctypes.c_uint16
@@ -1331,12 +1069,27 @@ _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_transactionsigner_sign_trans
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_transactionsignergetter_get_signer.argtypes = (
 )
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_transactionsignergetter_get_signer.restype = ctypes.c_uint16
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_constructor_abibool_new.argtypes = (
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_constructor_abivalue_address.argtypes = (
 )
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_constructor_abibool_new.restype = ctypes.c_uint16
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_constructor_abidynamicarray_new.argtypes = (
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_constructor_abivalue_address.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_constructor_abivalue_array.argtypes = (
 )
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_constructor_abidynamicarray_new.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_constructor_abivalue_array.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_constructor_abivalue_bool.argtypes = (
+)
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_constructor_abivalue_bool.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_constructor_abivalue_byte.argtypes = (
+)
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_constructor_abivalue_byte.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_constructor_abivalue_static_array.argtypes = (
+)
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_constructor_abivalue_static_array.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_constructor_abivalue_string.argtypes = (
+)
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_constructor_abivalue_string.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_constructor_abivalue_uint.argtypes = (
+)
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_constructor_abivalue_uint.restype = ctypes.c_uint16
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_constructor_algodclient_new.argtypes = (
 )
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_constructor_algodclient_new.restype = ctypes.c_uint16
@@ -1396,6 +1149,19 @@ class _UniffiConverterUInt8(_UniffiConverterPrimitiveInt):
     @staticmethod
     def write(value, buf):
         buf.write_u8(value)
+
+class _UniffiConverterUInt16(_UniffiConverterPrimitiveInt):
+    CLASS_NAME = "u16"
+    VALUE_MIN = 0
+    VALUE_MAX = 2**16
+
+    @staticmethod
+    def read(buf):
+        return buf.read_u16()
+
+    @staticmethod
+    def write(value, buf):
+        buf.write_u16(value)
 
 class _UniffiConverterUInt32(_UniffiConverterPrimitiveInt):
     CLASS_NAME = "u32"
@@ -1505,116 +1271,6 @@ class _UniffiConverterBytes(_UniffiConverterRustBuffer):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class AbiValue:
-    bool: "typing.Optional[bool]"
-    uint: "typing.Optional[int]"
-    big_uint: "typing.Optional[bytes]"
-    string: "typing.Optional[str]"
-    byte: "typing.Optional[int]"
-    array: "typing.Optional[typing.List[AbiValue]]"
-    address: "typing.Optional[str]"
-    def __init__(self, *, bool: "typing.Optional[bool]" = _DEFAULT, uint: "typing.Optional[int]" = _DEFAULT, big_uint: "typing.Optional[bytes]" = _DEFAULT, string: "typing.Optional[str]" = _DEFAULT, byte: "typing.Optional[int]" = _DEFAULT, array: "typing.Optional[typing.List[AbiValue]]" = _DEFAULT, address: "typing.Optional[str]" = _DEFAULT):
-        if bool is _DEFAULT:
-            self.bool = None
-        else:
-            self.bool = bool
-        if uint is _DEFAULT:
-            self.uint = None
-        else:
-            self.uint = uint
-        if big_uint is _DEFAULT:
-            self.big_uint = None
-        else:
-            self.big_uint = big_uint
-        if string is _DEFAULT:
-            self.string = None
-        else:
-            self.string = string
-        if byte is _DEFAULT:
-            self.byte = None
-        else:
-            self.byte = byte
-        if array is _DEFAULT:
-            self.array = None
-        else:
-            self.array = array
-        if address is _DEFAULT:
-            self.address = None
-        else:
-            self.address = address
-
-    def __str__(self):
-        return "AbiValue(bool={}, uint={}, big_uint={}, string={}, byte={}, array={}, address={})".format(self.bool, self.uint, self.big_uint, self.string, self.byte, self.array, self.address)
-
-    def __eq__(self, other):
-        if self.bool != other.bool:
-            return False
-        if self.uint != other.uint:
-            return False
-        if self.big_uint != other.big_uint:
-            return False
-        if self.string != other.string:
-            return False
-        if self.byte != other.byte:
-            return False
-        if self.array != other.array:
-            return False
-        if self.address != other.address:
-            return False
-        return True
-
-class _UniffiConverterTypeAbiValue(_UniffiConverterRustBuffer):
-    @staticmethod
-    def read(buf):
-        return AbiValue(
-            bool=_UniffiConverterOptionalBool.read(buf),
-            uint=_UniffiConverterOptionalUInt64.read(buf),
-            big_uint=_UniffiConverterOptionalBytes.read(buf),
-            string=_UniffiConverterOptionalString.read(buf),
-            byte=_UniffiConverterOptionalUInt8.read(buf),
-            array=_UniffiConverterOptionalSequenceTypeAbiValue.read(buf),
-            address=_UniffiConverterOptionalString.read(buf),
-        )
-
-    @staticmethod
-    def check_lower(value):
-        _UniffiConverterOptionalBool.check_lower(value.bool)
-        _UniffiConverterOptionalUInt64.check_lower(value.uint)
-        _UniffiConverterOptionalBytes.check_lower(value.big_uint)
-        _UniffiConverterOptionalString.check_lower(value.string)
-        _UniffiConverterOptionalUInt8.check_lower(value.byte)
-        _UniffiConverterOptionalSequenceTypeAbiValue.check_lower(value.array)
-        _UniffiConverterOptionalString.check_lower(value.address)
-
-    @staticmethod
-    def write(value, buf):
-        _UniffiConverterOptionalBool.write(value.bool, buf)
-        _UniffiConverterOptionalUInt64.write(value.uint, buf)
-        _UniffiConverterOptionalBytes.write(value.big_uint, buf)
-        _UniffiConverterOptionalString.write(value.string, buf)
-        _UniffiConverterOptionalUInt8.write(value.byte, buf)
-        _UniffiConverterOptionalSequenceTypeAbiValue.write(value.array, buf)
-        _UniffiConverterOptionalString.write(value.address, buf)
 
 
 class CommonParams:
@@ -1854,33 +1510,6 @@ class _UniffiConverterTypeUtilsError(_UniffiConverterRustBuffer):
 
 
 
-class _UniffiConverterOptionalUInt8(_UniffiConverterRustBuffer):
-    @classmethod
-    def check_lower(cls, value):
-        if value is not None:
-            _UniffiConverterUInt8.check_lower(value)
-
-    @classmethod
-    def write(cls, value, buf):
-        if value is None:
-            buf.write_u8(0)
-            return
-
-        buf.write_u8(1)
-        _UniffiConverterUInt8.write(value, buf)
-
-    @classmethod
-    def read(cls, buf):
-        flag = buf.read_u8()
-        if flag == 0:
-            return None
-        elif flag == 1:
-            return _UniffiConverterUInt8.read(buf)
-        else:
-            raise InternalError("Unexpected flag byte for optional type")
-
-
-
 class _UniffiConverterOptionalUInt64(_UniffiConverterRustBuffer):
     @classmethod
     def check_lower(cls, value):
@@ -1903,33 +1532,6 @@ class _UniffiConverterOptionalUInt64(_UniffiConverterRustBuffer):
             return None
         elif flag == 1:
             return _UniffiConverterUInt64.read(buf)
-        else:
-            raise InternalError("Unexpected flag byte for optional type")
-
-
-
-class _UniffiConverterOptionalBool(_UniffiConverterRustBuffer):
-    @classmethod
-    def check_lower(cls, value):
-        if value is not None:
-            _UniffiConverterBool.check_lower(value)
-
-    @classmethod
-    def write(cls, value, buf):
-        if value is None:
-            buf.write_u8(0)
-            return
-
-        buf.write_u8(1)
-        _UniffiConverterBool.write(value, buf)
-
-    @classmethod
-    def read(cls, buf):
-        flag = buf.read_u8()
-        if flag == 0:
-            return None
-        elif flag == 1:
-            return _UniffiConverterBool.read(buf)
         else:
             raise InternalError("Unexpected flag byte for optional type")
 
@@ -2016,33 +1618,6 @@ class _UniffiConverterOptionalTypeTransactionSigner(_UniffiConverterRustBuffer):
 
 
 
-class _UniffiConverterOptionalSequenceTypeAbiValue(_UniffiConverterRustBuffer):
-    @classmethod
-    def check_lower(cls, value):
-        if value is not None:
-            _UniffiConverterSequenceTypeAbiValue.check_lower(value)
-
-    @classmethod
-    def write(cls, value, buf):
-        if value is None:
-            buf.write_u8(0)
-            return
-
-        buf.write_u8(1)
-        _UniffiConverterSequenceTypeAbiValue.write(value, buf)
-
-    @classmethod
-    def read(cls, buf):
-        flag = buf.read_u8()
-        if flag == 0:
-            return None
-        elif flag == 1:
-            return _UniffiConverterSequenceTypeAbiValue.read(buf)
-        else:
-            raise InternalError("Unexpected flag byte for optional type")
-
-
-
 class _UniffiConverterSequenceUInt32(_UniffiConverterRustBuffer):
     @classmethod
     def check_lower(cls, value):
@@ -2089,6 +1664,31 @@ class _UniffiConverterSequenceString(_UniffiConverterRustBuffer):
 
         return [
             _UniffiConverterString.read(buf) for i in range(count)
+        ]
+
+
+
+class _UniffiConverterSequenceTypeAbiValue(_UniffiConverterRustBuffer):
+    @classmethod
+    def check_lower(cls, value):
+        for item in value:
+            _UniffiConverterTypeAbiValue.check_lower(item)
+
+    @classmethod
+    def write(cls, value, buf):
+        items = len(value)
+        buf.write_i32(items)
+        for item in value:
+            _UniffiConverterTypeAbiValue.write(item, buf)
+
+    @classmethod
+    def read(cls, buf):
+        count = buf.read_i32()
+        if count < 0:
+            raise InternalError("Unexpected negative sequence length")
+
+        return [
+            _UniffiConverterTypeAbiValue.read(buf) for i in range(count)
         ]
 
 
@@ -2141,115 +1741,7 @@ class _UniffiConverterSequenceTypeTransaction(_UniffiConverterRustBuffer):
             _UniffiConverterTypeTransaction.read(buf) for i in range(count)
         ]
 
-
-
-class _UniffiConverterSequenceTypeAbiValue(_UniffiConverterRustBuffer):
-    @classmethod
-    def check_lower(cls, value):
-        for item in value:
-            _UniffiConverterTypeAbiValue.check_lower(item)
-
-    @classmethod
-    def write(cls, value, buf):
-        items = len(value)
-        buf.write_i32(items)
-        for item in value:
-            _UniffiConverterTypeAbiValue.write(item, buf)
-
-    @classmethod
-    def read(cls, buf):
-        count = buf.read_i32()
-        if count < 0:
-            raise InternalError("Unexpected negative sequence length")
-
-        return [
-            _UniffiConverterTypeAbiValue.read(buf) for i in range(count)
-        ]
-
 # objects.
-class AbiTypeProtocol(typing.Protocol):
-    def decoode(self, data: "bytes"):
-        raise NotImplementedError
-    def encode(self, value: "AbiValue"):
-        raise NotImplementedError
-# AbiType is a Rust-only trait - it's a wrapper around a Rust implementation.
-class AbiType():
-    _pointer: ctypes.c_void_p
-    
-    def __init__(self, *args, **kwargs):
-        raise ValueError("This class has no default constructor")
-
-    def __del__(self):
-        # In case of partial initialization of instances.
-        pointer = getattr(self, "_pointer", None)
-        if pointer is not None:
-            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_free_abitype, pointer)
-
-    def _uniffi_clone_pointer(self):
-        return _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_abitype, self._pointer)
-
-    # Used by alternative constructors or any methods which return this type.
-    @classmethod
-    def _make_instance_(cls, pointer):
-        # Lightly yucky way to bypass the usual __init__ logic
-        # and just create a new instance with the required pointer.
-        inst = cls.__new__(cls)
-        inst._pointer = pointer
-        return inst
-
-
-    def decoode(self, data: "bytes") -> "AbiValue":
-        _UniffiConverterBytes.check_lower(data)
-        
-        return _UniffiConverterTypeAbiValue.lift(
-            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abitype_decoode,self._uniffi_clone_pointer(),
-        _UniffiConverterBytes.lower(data))
-        )
-
-
-
-
-
-    def encode(self, value: "AbiValue") -> "bytes":
-        _UniffiConverterTypeAbiValue.check_lower(value)
-        
-        return _UniffiConverterBytes.lift(
-            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abitype_encode,self._uniffi_clone_pointer(),
-        _UniffiConverterTypeAbiValue.lower(value))
-        )
-
-
-
-
-
-
-class _UniffiConverterTypeAbiType:
-
-    @staticmethod
-    def lift(value: int):
-        return AbiType._make_instance_(value)
-
-    @staticmethod
-    def check_lower(value: AbiType):
-        if not isinstance(value, AbiType):
-            raise TypeError("Expected AbiType instance, {} found".format(type(value).__name__))
-
-    @staticmethod
-    def lower(value: AbiTypeProtocol):
-        if not isinstance(value, AbiType):
-            raise TypeError("Expected AbiType instance, {} found".format(type(value).__name__))
-        return value._uniffi_clone_pointer()
-
-    @classmethod
-    def read(cls, buf: _UniffiRustBuffer):
-        ptr = buf.read_u64()
-        if ptr == 0:
-            raise InternalError("Raw pointer value was null")
-        return cls.lift(ptr)
-
-    @classmethod
-    def write(cls, value: AbiTypeProtocol, buf: _UniffiRustBuffer):
-        buf.write_u64(cls.lower(value))
 class TransactionSignerProtocol(typing.Protocol):
     def sign_transactions(self, transactions: "typing.List[Transaction]",indices: "typing.List[int]"):
         raise NotImplementedError
@@ -2565,13 +2057,13 @@ class _UniffiConverterTypeTransactionSignerGetter:
     @classmethod
     def write(cls, value: TransactionSignerGetterProtocol, buf: _UniffiRustBuffer):
         buf.write_u64(cls.lower(value))
-class AbiAddressProtocol(typing.Protocol):
-    def decoode(self, data: "bytes"):
+class AbiValueProtocol(typing.Protocol):
+    def abi_type(self, ):
         raise NotImplementedError
-    def encode(self, value: "AbiValue"):
+    def encoded_bytes(self, ):
         raise NotImplementedError
-# AbiAddress is a Rust-only trait - it's a wrapper around a Rust implementation.
-class AbiAddress(AbiType,):
+# AbiValue is a Rust-only trait - it's a wrapper around a Rust implementation.
+class AbiValue():
     _pointer: ctypes.c_void_p
     
     def __init__(self, *args, **kwargs):
@@ -2581,10 +2073,10 @@ class AbiAddress(AbiType,):
         # In case of partial initialization of instances.
         pointer = getattr(self, "_pointer", None)
         if pointer is not None:
-            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_free_abiaddress, pointer)
+            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_free_abivalue, pointer)
 
     def _uniffi_clone_pointer(self):
-        return _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_abiaddress, self._pointer)
+        return _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_abivalue, self._pointer)
 
     # Used by alternative constructors or any methods which return this type.
     @classmethod
@@ -2594,26 +2086,95 @@ class AbiAddress(AbiType,):
         inst = cls.__new__(cls)
         inst._pointer = pointer
         return inst
-
-
-    def decoode(self, data: "bytes") -> "AbiValue":
-        _UniffiConverterBytes.check_lower(data)
+    @classmethod
+    def address(cls, value: "str"):
+        _UniffiConverterString.check_lower(value)
         
-        return _UniffiConverterTypeAbiValue.lift(
-            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abiaddress_decoode,self._uniffi_clone_pointer(),
-        _UniffiConverterBytes.lower(data))
+        # Call the (fallible) function before creating any half-baked object instances.
+        pointer = _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_abivalue_address,
+        _UniffiConverterString.lower(value))
+        return cls._make_instance_(pointer)
+
+    @classmethod
+    def array(cls, element_type: "str",values: "typing.List[AbiValue]"):
+        _UniffiConverterString.check_lower(element_type)
+        
+        _UniffiConverterSequenceTypeAbiValue.check_lower(values)
+        
+        # Call the (fallible) function before creating any half-baked object instances.
+        pointer = _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_abivalue_array,
+        _UniffiConverterString.lower(element_type),
+        _UniffiConverterSequenceTypeAbiValue.lower(values))
+        return cls._make_instance_(pointer)
+
+    @classmethod
+    def bool(cls, value: "bool"):
+        _UniffiConverterBool.check_lower(value)
+        
+        # Call the (fallible) function before creating any half-baked object instances.
+        pointer = _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_abivalue_bool,
+        _UniffiConverterBool.lower(value))
+        return cls._make_instance_(pointer)
+
+    @classmethod
+    def byte(cls, value: "int"):
+        _UniffiConverterUInt8.check_lower(value)
+        
+        # Call the (fallible) function before creating any half-baked object instances.
+        pointer = _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_abivalue_byte,
+        _UniffiConverterUInt8.lower(value))
+        return cls._make_instance_(pointer)
+
+    @classmethod
+    def static_array(cls, element_type: "str",size: "int",values: "typing.List[AbiValue]"):
+        _UniffiConverterString.check_lower(element_type)
+        
+        _UniffiConverterUInt64.check_lower(size)
+        
+        _UniffiConverterSequenceTypeAbiValue.check_lower(values)
+        
+        # Call the (fallible) function before creating any half-baked object instances.
+        pointer = _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_abivalue_static_array,
+        _UniffiConverterString.lower(element_type),
+        _UniffiConverterUInt64.lower(size),
+        _UniffiConverterSequenceTypeAbiValue.lower(values))
+        return cls._make_instance_(pointer)
+
+    @classmethod
+    def string(cls, value: "str"):
+        _UniffiConverterString.check_lower(value)
+        
+        # Call the (fallible) function before creating any half-baked object instances.
+        pointer = _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_abivalue_string,
+        _UniffiConverterString.lower(value))
+        return cls._make_instance_(pointer)
+
+    @classmethod
+    def uint(cls, value: "int",width: "int"):
+        _UniffiConverterUInt64.check_lower(value)
+        
+        _UniffiConverterUInt16.check_lower(width)
+        
+        # Call the (fallible) function before creating any half-baked object instances.
+        pointer = _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_abivalue_uint,
+        _UniffiConverterUInt64.lower(value),
+        _UniffiConverterUInt16.lower(width))
+        return cls._make_instance_(pointer)
+
+
+
+    def abi_type(self, ) -> "str":
+        return _UniffiConverterString.lift(
+            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abivalue_abi_type,self._uniffi_clone_pointer(),)
         )
 
 
 
 
 
-    def encode(self, value: "AbiValue") -> "bytes":
-        _UniffiConverterTypeAbiValue.check_lower(value)
-        
+    def encoded_bytes(self, ) -> "bytes":
         return _UniffiConverterBytes.lift(
-            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abiaddress_encode,self._uniffi_clone_pointer(),
-        _UniffiConverterTypeAbiValue.lower(value))
+            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abivalue_encoded_bytes,self._uniffi_clone_pointer(),)
         )
 
 
@@ -2621,21 +2182,21 @@ class AbiAddress(AbiType,):
 
 
 
-class _UniffiConverterTypeAbiAddress:
+class _UniffiConverterTypeAbiValue:
 
     @staticmethod
     def lift(value: int):
-        return AbiAddress._make_instance_(value)
+        return AbiValue._make_instance_(value)
 
     @staticmethod
-    def check_lower(value: AbiAddress):
-        if not isinstance(value, AbiAddress):
-            raise TypeError("Expected AbiAddress instance, {} found".format(type(value).__name__))
+    def check_lower(value: AbiValue):
+        if not isinstance(value, AbiValue):
+            raise TypeError("Expected AbiValue instance, {} found".format(type(value).__name__))
 
     @staticmethod
-    def lower(value: AbiAddressProtocol):
-        if not isinstance(value, AbiAddress):
-            raise TypeError("Expected AbiAddress instance, {} found".format(type(value).__name__))
+    def lower(value: AbiValueProtocol):
+        if not isinstance(value, AbiValue):
+            raise TypeError("Expected AbiValue instance, {} found".format(type(value).__name__))
         return value._uniffi_clone_pointer()
 
     @classmethod
@@ -2646,672 +2207,7 @@ class _UniffiConverterTypeAbiAddress:
         return cls.lift(ptr)
 
     @classmethod
-    def write(cls, value: AbiAddressProtocol, buf: _UniffiRustBuffer):
-        buf.write_u64(cls.lower(value))
-class AbiBoolProtocol(typing.Protocol):
-    def decoode(self, data: "bytes"):
-        raise NotImplementedError
-    def encode(self, value: "AbiValue"):
-        raise NotImplementedError
-# AbiBool is a Rust-only trait - it's a wrapper around a Rust implementation.
-class AbiBool(AbiType,):
-    _pointer: ctypes.c_void_p
-    def __init__(self, ):
-        self._pointer = _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_abibool_new,)
-
-    def __del__(self):
-        # In case of partial initialization of instances.
-        pointer = getattr(self, "_pointer", None)
-        if pointer is not None:
-            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_free_abibool, pointer)
-
-    def _uniffi_clone_pointer(self):
-        return _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_abibool, self._pointer)
-
-    # Used by alternative constructors or any methods which return this type.
-    @classmethod
-    def _make_instance_(cls, pointer):
-        # Lightly yucky way to bypass the usual __init__ logic
-        # and just create a new instance with the required pointer.
-        inst = cls.__new__(cls)
-        inst._pointer = pointer
-        return inst
-
-
-    def decoode(self, data: "bytes") -> "AbiValue":
-        _UniffiConverterBytes.check_lower(data)
-        
-        return _UniffiConverterTypeAbiValue.lift(
-            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abibool_decoode,self._uniffi_clone_pointer(),
-        _UniffiConverterBytes.lower(data))
-        )
-
-
-
-
-
-    def encode(self, value: "AbiValue") -> "bytes":
-        _UniffiConverterTypeAbiValue.check_lower(value)
-        
-        return _UniffiConverterBytes.lift(
-            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abibool_encode,self._uniffi_clone_pointer(),
-        _UniffiConverterTypeAbiValue.lower(value))
-        )
-
-
-
-
-
-
-class _UniffiConverterTypeAbiBool:
-
-    @staticmethod
-    def lift(value: int):
-        return AbiBool._make_instance_(value)
-
-    @staticmethod
-    def check_lower(value: AbiBool):
-        if not isinstance(value, AbiBool):
-            raise TypeError("Expected AbiBool instance, {} found".format(type(value).__name__))
-
-    @staticmethod
-    def lower(value: AbiBoolProtocol):
-        if not isinstance(value, AbiBool):
-            raise TypeError("Expected AbiBool instance, {} found".format(type(value).__name__))
-        return value._uniffi_clone_pointer()
-
-    @classmethod
-    def read(cls, buf: _UniffiRustBuffer):
-        ptr = buf.read_u64()
-        if ptr == 0:
-            raise InternalError("Raw pointer value was null")
-        return cls.lift(ptr)
-
-    @classmethod
-    def write(cls, value: AbiBoolProtocol, buf: _UniffiRustBuffer):
-        buf.write_u64(cls.lower(value))
-class AbiByteProtocol(typing.Protocol):
-    def decoode(self, data: "bytes"):
-        raise NotImplementedError
-    def encode(self, value: "AbiValue"):
-        raise NotImplementedError
-# AbiByte is a Rust-only trait - it's a wrapper around a Rust implementation.
-class AbiByte(AbiType,):
-    _pointer: ctypes.c_void_p
-    
-    def __init__(self, *args, **kwargs):
-        raise ValueError("This class has no default constructor")
-
-    def __del__(self):
-        # In case of partial initialization of instances.
-        pointer = getattr(self, "_pointer", None)
-        if pointer is not None:
-            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_free_abibyte, pointer)
-
-    def _uniffi_clone_pointer(self):
-        return _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_abibyte, self._pointer)
-
-    # Used by alternative constructors or any methods which return this type.
-    @classmethod
-    def _make_instance_(cls, pointer):
-        # Lightly yucky way to bypass the usual __init__ logic
-        # and just create a new instance with the required pointer.
-        inst = cls.__new__(cls)
-        inst._pointer = pointer
-        return inst
-
-
-    def decoode(self, data: "bytes") -> "AbiValue":
-        _UniffiConverterBytes.check_lower(data)
-        
-        return _UniffiConverterTypeAbiValue.lift(
-            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abibyte_decoode,self._uniffi_clone_pointer(),
-        _UniffiConverterBytes.lower(data))
-        )
-
-
-
-
-
-    def encode(self, value: "AbiValue") -> "bytes":
-        _UniffiConverterTypeAbiValue.check_lower(value)
-        
-        return _UniffiConverterBytes.lift(
-            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abibyte_encode,self._uniffi_clone_pointer(),
-        _UniffiConverterTypeAbiValue.lower(value))
-        )
-
-
-
-
-
-
-class _UniffiConverterTypeAbiByte:
-
-    @staticmethod
-    def lift(value: int):
-        return AbiByte._make_instance_(value)
-
-    @staticmethod
-    def check_lower(value: AbiByte):
-        if not isinstance(value, AbiByte):
-            raise TypeError("Expected AbiByte instance, {} found".format(type(value).__name__))
-
-    @staticmethod
-    def lower(value: AbiByteProtocol):
-        if not isinstance(value, AbiByte):
-            raise TypeError("Expected AbiByte instance, {} found".format(type(value).__name__))
-        return value._uniffi_clone_pointer()
-
-    @classmethod
-    def read(cls, buf: _UniffiRustBuffer):
-        ptr = buf.read_u64()
-        if ptr == 0:
-            raise InternalError("Raw pointer value was null")
-        return cls.lift(ptr)
-
-    @classmethod
-    def write(cls, value: AbiByteProtocol, buf: _UniffiRustBuffer):
-        buf.write_u64(cls.lower(value))
-class AbiDynamicArrayProtocol(typing.Protocol):
-    def decoode(self, data: "bytes"):
-        raise NotImplementedError
-    def encode(self, value: "AbiValue"):
-        raise NotImplementedError
-# AbiDynamicArray is a Rust-only trait - it's a wrapper around a Rust implementation.
-class AbiDynamicArray(AbiType,):
-    _pointer: ctypes.c_void_p
-    def __init__(self, element_type: "AbiType"):
-        _UniffiConverterTypeAbiType.check_lower(element_type)
-        
-        self._pointer = _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_abidynamicarray_new,
-        _UniffiConverterTypeAbiType.lower(element_type))
-
-    def __del__(self):
-        # In case of partial initialization of instances.
-        pointer = getattr(self, "_pointer", None)
-        if pointer is not None:
-            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_free_abidynamicarray, pointer)
-
-    def _uniffi_clone_pointer(self):
-        return _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_abidynamicarray, self._pointer)
-
-    # Used by alternative constructors or any methods which return this type.
-    @classmethod
-    def _make_instance_(cls, pointer):
-        # Lightly yucky way to bypass the usual __init__ logic
-        # and just create a new instance with the required pointer.
-        inst = cls.__new__(cls)
-        inst._pointer = pointer
-        return inst
-
-
-    def decoode(self, data: "bytes") -> "AbiValue":
-        _UniffiConverterBytes.check_lower(data)
-        
-        return _UniffiConverterTypeAbiValue.lift(
-            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abidynamicarray_decoode,self._uniffi_clone_pointer(),
-        _UniffiConverterBytes.lower(data))
-        )
-
-
-
-
-
-    def encode(self, value: "AbiValue") -> "bytes":
-        _UniffiConverterTypeAbiValue.check_lower(value)
-        
-        return _UniffiConverterBytes.lift(
-            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abidynamicarray_encode,self._uniffi_clone_pointer(),
-        _UniffiConverterTypeAbiValue.lower(value))
-        )
-
-
-
-
-
-
-class _UniffiConverterTypeAbiDynamicArray:
-
-    @staticmethod
-    def lift(value: int):
-        return AbiDynamicArray._make_instance_(value)
-
-    @staticmethod
-    def check_lower(value: AbiDynamicArray):
-        if not isinstance(value, AbiDynamicArray):
-            raise TypeError("Expected AbiDynamicArray instance, {} found".format(type(value).__name__))
-
-    @staticmethod
-    def lower(value: AbiDynamicArrayProtocol):
-        if not isinstance(value, AbiDynamicArray):
-            raise TypeError("Expected AbiDynamicArray instance, {} found".format(type(value).__name__))
-        return value._uniffi_clone_pointer()
-
-    @classmethod
-    def read(cls, buf: _UniffiRustBuffer):
-        ptr = buf.read_u64()
-        if ptr == 0:
-            raise InternalError("Raw pointer value was null")
-        return cls.lift(ptr)
-
-    @classmethod
-    def write(cls, value: AbiDynamicArrayProtocol, buf: _UniffiRustBuffer):
-        buf.write_u64(cls.lower(value))
-class AbiStaticArrayProtocol(typing.Protocol):
-    def decoode(self, data: "bytes"):
-        raise NotImplementedError
-    def encode(self, value: "AbiValue"):
-        raise NotImplementedError
-# AbiStaticArray is a Rust-only trait - it's a wrapper around a Rust implementation.
-class AbiStaticArray(AbiType,):
-    _pointer: ctypes.c_void_p
-    
-    def __init__(self, *args, **kwargs):
-        raise ValueError("This class has no default constructor")
-
-    def __del__(self):
-        # In case of partial initialization of instances.
-        pointer = getattr(self, "_pointer", None)
-        if pointer is not None:
-            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_free_abistaticarray, pointer)
-
-    def _uniffi_clone_pointer(self):
-        return _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_abistaticarray, self._pointer)
-
-    # Used by alternative constructors or any methods which return this type.
-    @classmethod
-    def _make_instance_(cls, pointer):
-        # Lightly yucky way to bypass the usual __init__ logic
-        # and just create a new instance with the required pointer.
-        inst = cls.__new__(cls)
-        inst._pointer = pointer
-        return inst
-
-
-    def decoode(self, data: "bytes") -> "AbiValue":
-        _UniffiConverterBytes.check_lower(data)
-        
-        return _UniffiConverterTypeAbiValue.lift(
-            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abistaticarray_decoode,self._uniffi_clone_pointer(),
-        _UniffiConverterBytes.lower(data))
-        )
-
-
-
-
-
-    def encode(self, value: "AbiValue") -> "bytes":
-        _UniffiConverterTypeAbiValue.check_lower(value)
-        
-        return _UniffiConverterBytes.lift(
-            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abistaticarray_encode,self._uniffi_clone_pointer(),
-        _UniffiConverterTypeAbiValue.lower(value))
-        )
-
-
-
-
-
-
-class _UniffiConverterTypeAbiStaticArray:
-
-    @staticmethod
-    def lift(value: int):
-        return AbiStaticArray._make_instance_(value)
-
-    @staticmethod
-    def check_lower(value: AbiStaticArray):
-        if not isinstance(value, AbiStaticArray):
-            raise TypeError("Expected AbiStaticArray instance, {} found".format(type(value).__name__))
-
-    @staticmethod
-    def lower(value: AbiStaticArrayProtocol):
-        if not isinstance(value, AbiStaticArray):
-            raise TypeError("Expected AbiStaticArray instance, {} found".format(type(value).__name__))
-        return value._uniffi_clone_pointer()
-
-    @classmethod
-    def read(cls, buf: _UniffiRustBuffer):
-        ptr = buf.read_u64()
-        if ptr == 0:
-            raise InternalError("Raw pointer value was null")
-        return cls.lift(ptr)
-
-    @classmethod
-    def write(cls, value: AbiStaticArrayProtocol, buf: _UniffiRustBuffer):
-        buf.write_u64(cls.lower(value))
-class AbiStringProtocol(typing.Protocol):
-    def decoode(self, data: "bytes"):
-        raise NotImplementedError
-    def encode(self, value: "AbiValue"):
-        raise NotImplementedError
-# AbiString is a Rust-only trait - it's a wrapper around a Rust implementation.
-class AbiString(AbiType,):
-    _pointer: ctypes.c_void_p
-    
-    def __init__(self, *args, **kwargs):
-        raise ValueError("This class has no default constructor")
-
-    def __del__(self):
-        # In case of partial initialization of instances.
-        pointer = getattr(self, "_pointer", None)
-        if pointer is not None:
-            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_free_abistring, pointer)
-
-    def _uniffi_clone_pointer(self):
-        return _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_abistring, self._pointer)
-
-    # Used by alternative constructors or any methods which return this type.
-    @classmethod
-    def _make_instance_(cls, pointer):
-        # Lightly yucky way to bypass the usual __init__ logic
-        # and just create a new instance with the required pointer.
-        inst = cls.__new__(cls)
-        inst._pointer = pointer
-        return inst
-
-
-    def decoode(self, data: "bytes") -> "AbiValue":
-        _UniffiConverterBytes.check_lower(data)
-        
-        return _UniffiConverterTypeAbiValue.lift(
-            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abistring_decoode,self._uniffi_clone_pointer(),
-        _UniffiConverterBytes.lower(data))
-        )
-
-
-
-
-
-    def encode(self, value: "AbiValue") -> "bytes":
-        _UniffiConverterTypeAbiValue.check_lower(value)
-        
-        return _UniffiConverterBytes.lift(
-            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abistring_encode,self._uniffi_clone_pointer(),
-        _UniffiConverterTypeAbiValue.lower(value))
-        )
-
-
-
-
-
-
-class _UniffiConverterTypeAbiString:
-
-    @staticmethod
-    def lift(value: int):
-        return AbiString._make_instance_(value)
-
-    @staticmethod
-    def check_lower(value: AbiString):
-        if not isinstance(value, AbiString):
-            raise TypeError("Expected AbiString instance, {} found".format(type(value).__name__))
-
-    @staticmethod
-    def lower(value: AbiStringProtocol):
-        if not isinstance(value, AbiString):
-            raise TypeError("Expected AbiString instance, {} found".format(type(value).__name__))
-        return value._uniffi_clone_pointer()
-
-    @classmethod
-    def read(cls, buf: _UniffiRustBuffer):
-        ptr = buf.read_u64()
-        if ptr == 0:
-            raise InternalError("Raw pointer value was null")
-        return cls.lift(ptr)
-
-    @classmethod
-    def write(cls, value: AbiStringProtocol, buf: _UniffiRustBuffer):
-        buf.write_u64(cls.lower(value))
-class AbiTupleProtocol(typing.Protocol):
-    def decoode(self, data: "bytes"):
-        raise NotImplementedError
-    def encode(self, value: "AbiValue"):
-        raise NotImplementedError
-# AbiTuple is a Rust-only trait - it's a wrapper around a Rust implementation.
-class AbiTuple(AbiType,):
-    _pointer: ctypes.c_void_p
-    
-    def __init__(self, *args, **kwargs):
-        raise ValueError("This class has no default constructor")
-
-    def __del__(self):
-        # In case of partial initialization of instances.
-        pointer = getattr(self, "_pointer", None)
-        if pointer is not None:
-            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_free_abituple, pointer)
-
-    def _uniffi_clone_pointer(self):
-        return _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_abituple, self._pointer)
-
-    # Used by alternative constructors or any methods which return this type.
-    @classmethod
-    def _make_instance_(cls, pointer):
-        # Lightly yucky way to bypass the usual __init__ logic
-        # and just create a new instance with the required pointer.
-        inst = cls.__new__(cls)
-        inst._pointer = pointer
-        return inst
-
-
-    def decoode(self, data: "bytes") -> "AbiValue":
-        _UniffiConverterBytes.check_lower(data)
-        
-        return _UniffiConverterTypeAbiValue.lift(
-            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abituple_decoode,self._uniffi_clone_pointer(),
-        _UniffiConverterBytes.lower(data))
-        )
-
-
-
-
-
-    def encode(self, value: "AbiValue") -> "bytes":
-        _UniffiConverterTypeAbiValue.check_lower(value)
-        
-        return _UniffiConverterBytes.lift(
-            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abituple_encode,self._uniffi_clone_pointer(),
-        _UniffiConverterTypeAbiValue.lower(value))
-        )
-
-
-
-
-
-
-class _UniffiConverterTypeAbiTuple:
-
-    @staticmethod
-    def lift(value: int):
-        return AbiTuple._make_instance_(value)
-
-    @staticmethod
-    def check_lower(value: AbiTuple):
-        if not isinstance(value, AbiTuple):
-            raise TypeError("Expected AbiTuple instance, {} found".format(type(value).__name__))
-
-    @staticmethod
-    def lower(value: AbiTupleProtocol):
-        if not isinstance(value, AbiTuple):
-            raise TypeError("Expected AbiTuple instance, {} found".format(type(value).__name__))
-        return value._uniffi_clone_pointer()
-
-    @classmethod
-    def read(cls, buf: _UniffiRustBuffer):
-        ptr = buf.read_u64()
-        if ptr == 0:
-            raise InternalError("Raw pointer value was null")
-        return cls.lift(ptr)
-
-    @classmethod
-    def write(cls, value: AbiTupleProtocol, buf: _UniffiRustBuffer):
-        buf.write_u64(cls.lower(value))
-class AbiUfixedProtocol(typing.Protocol):
-    def decoode(self, data: "bytes"):
-        raise NotImplementedError
-    def encode(self, value: "AbiValue"):
-        raise NotImplementedError
-# AbiUfixed is a Rust-only trait - it's a wrapper around a Rust implementation.
-class AbiUfixed(AbiType,):
-    _pointer: ctypes.c_void_p
-    
-    def __init__(self, *args, **kwargs):
-        raise ValueError("This class has no default constructor")
-
-    def __del__(self):
-        # In case of partial initialization of instances.
-        pointer = getattr(self, "_pointer", None)
-        if pointer is not None:
-            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_free_abiufixed, pointer)
-
-    def _uniffi_clone_pointer(self):
-        return _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_abiufixed, self._pointer)
-
-    # Used by alternative constructors or any methods which return this type.
-    @classmethod
-    def _make_instance_(cls, pointer):
-        # Lightly yucky way to bypass the usual __init__ logic
-        # and just create a new instance with the required pointer.
-        inst = cls.__new__(cls)
-        inst._pointer = pointer
-        return inst
-
-
-    def decoode(self, data: "bytes") -> "AbiValue":
-        _UniffiConverterBytes.check_lower(data)
-        
-        return _UniffiConverterTypeAbiValue.lift(
-            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abiufixed_decoode,self._uniffi_clone_pointer(),
-        _UniffiConverterBytes.lower(data))
-        )
-
-
-
-
-
-    def encode(self, value: "AbiValue") -> "bytes":
-        _UniffiConverterTypeAbiValue.check_lower(value)
-        
-        return _UniffiConverterBytes.lift(
-            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abiufixed_encode,self._uniffi_clone_pointer(),
-        _UniffiConverterTypeAbiValue.lower(value))
-        )
-
-
-
-
-
-
-class _UniffiConverterTypeAbiUfixed:
-
-    @staticmethod
-    def lift(value: int):
-        return AbiUfixed._make_instance_(value)
-
-    @staticmethod
-    def check_lower(value: AbiUfixed):
-        if not isinstance(value, AbiUfixed):
-            raise TypeError("Expected AbiUfixed instance, {} found".format(type(value).__name__))
-
-    @staticmethod
-    def lower(value: AbiUfixedProtocol):
-        if not isinstance(value, AbiUfixed):
-            raise TypeError("Expected AbiUfixed instance, {} found".format(type(value).__name__))
-        return value._uniffi_clone_pointer()
-
-    @classmethod
-    def read(cls, buf: _UniffiRustBuffer):
-        ptr = buf.read_u64()
-        if ptr == 0:
-            raise InternalError("Raw pointer value was null")
-        return cls.lift(ptr)
-
-    @classmethod
-    def write(cls, value: AbiUfixedProtocol, buf: _UniffiRustBuffer):
-        buf.write_u64(cls.lower(value))
-class AbiUintProtocol(typing.Protocol):
-    def decoode(self, data: "bytes"):
-        raise NotImplementedError
-    def encode(self, value: "AbiValue"):
-        raise NotImplementedError
-# AbiUint is a Rust-only trait - it's a wrapper around a Rust implementation.
-class AbiUint(AbiType,):
-    _pointer: ctypes.c_void_p
-    
-    def __init__(self, *args, **kwargs):
-        raise ValueError("This class has no default constructor")
-
-    def __del__(self):
-        # In case of partial initialization of instances.
-        pointer = getattr(self, "_pointer", None)
-        if pointer is not None:
-            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_free_abiuint, pointer)
-
-    def _uniffi_clone_pointer(self):
-        return _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_abiuint, self._pointer)
-
-    # Used by alternative constructors or any methods which return this type.
-    @classmethod
-    def _make_instance_(cls, pointer):
-        # Lightly yucky way to bypass the usual __init__ logic
-        # and just create a new instance with the required pointer.
-        inst = cls.__new__(cls)
-        inst._pointer = pointer
-        return inst
-
-
-    def decoode(self, data: "bytes") -> "AbiValue":
-        _UniffiConverterBytes.check_lower(data)
-        
-        return _UniffiConverterTypeAbiValue.lift(
-            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abiuint_decoode,self._uniffi_clone_pointer(),
-        _UniffiConverterBytes.lower(data))
-        )
-
-
-
-
-
-    def encode(self, value: "AbiValue") -> "bytes":
-        _UniffiConverterTypeAbiValue.check_lower(value)
-        
-        return _UniffiConverterBytes.lift(
-            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_method_abiuint_encode,self._uniffi_clone_pointer(),
-        _UniffiConverterTypeAbiValue.lower(value))
-        )
-
-
-
-
-
-
-class _UniffiConverterTypeAbiUint:
-
-    @staticmethod
-    def lift(value: int):
-        return AbiUint._make_instance_(value)
-
-    @staticmethod
-    def check_lower(value: AbiUint):
-        if not isinstance(value, AbiUint):
-            raise TypeError("Expected AbiUint instance, {} found".format(type(value).__name__))
-
-    @staticmethod
-    def lower(value: AbiUintProtocol):
-        if not isinstance(value, AbiUint):
-            raise TypeError("Expected AbiUint instance, {} found".format(type(value).__name__))
-        return value._uniffi_clone_pointer()
-
-    @classmethod
-    def read(cls, buf: _UniffiRustBuffer):
-        ptr = buf.read_u64()
-        if ptr == 0:
-            raise InternalError("Raw pointer value was null")
-        return cls.lift(ptr)
-
-    @classmethod
-    def write(cls, value: AbiUintProtocol, buf: _UniffiRustBuffer):
+    def write(cls, value: AbiValueProtocol, buf: _UniffiRustBuffer):
         buf.write_u64(cls.lower(value))
 class AlgodClientProtocol(typing.Protocol):
     pass
@@ -3608,19 +2504,9 @@ def _uniffi_foreign_future_do_free(task):
 __all__ = [
     "InternalError",
     "UtilsError",
-    "AbiValue",
     "CommonParams",
     "PaymentParams",
-    "AbiAddress",
-    "AbiBool",
-    "AbiByte",
-    "AbiDynamicArray",
-    "AbiStaticArray",
-    "AbiString",
-    "AbiTuple",
-    "AbiType",
-    "AbiUfixed",
-    "AbiUint",
+    "AbiValue",
     "AlgodClient",
     "Composer",
     "TransactionSigner",

@@ -1,163 +1,105 @@
-use algokit_abi::ABIValue as RustABIValue;
-use num_bigint::BigUint;
+use std::{str::FromStr, sync::Arc};
 
-// #[derive(uniffi::Enum)]
-// pub enum ABIValue {
-//     Bool(bool),
-//     Uint(u64),
-//     BigUint(Vec<u8>),
-//     String(String),
-//     Byte(u8),
-//     Array(Vec<ABIValue>),
-// }
-//
+use algokit_abi::ABIType as RustABIType;
 
-#[derive(uniffi::Record)]
+#[derive(uniffi::Object, Debug, Clone, PartialEq)]
 pub struct ABIValue {
-    #[uniffi(default = None)]
-    bool: Option<bool>,
-    #[uniffi(default = None)]
-    uint: Option<u64>,
-    #[uniffi(default = None)]
-    big_uint: Option<Vec<u8>>,
-    #[uniffi(default = None)]
-    string: Option<String>,
-    #[uniffi(default = None)]
-    byte: Option<u8>,
-    #[uniffi(default = None)]
-    array: Option<Vec<ABIValue>>,
-    #[uniffi(default = None)]
-    address: Option<String>,
+    bytes: Vec<u8>,
+    abi_type: String,
 }
 
-impl From<ABIValue> for RustABIValue {
-    fn from(value: ABIValue) -> Self {
-        let is_some_count = [
-            value.bool.is_some(),
-            value.uint.is_some(),
-            value.big_uint.is_some(),
-            value.string.is_some(),
-            value.byte.is_some(),
-            value.array.is_some(),
-            value.address.is_some(),
-        ]
-        .iter()
-        .filter_map(|&b| if b { Some(()) } else { None })
-        .count();
-
-        if is_some_count == 0 {
-            panic!("No fields set in ABIValue");
-        }
-
-        if is_some_count > 1 {
-            panic!("Multiple fields set in ABIValue");
-        }
-
-        // check that only one field is set
-        if let Some(b) = value.bool {
-            return RustABIValue::Bool(b);
-        }
-
-        if let Some(u) = value.uint {
-            return RustABIValue::Uint(u.into());
-        }
-
-        if let Some(bu) = value.big_uint {
-            return RustABIValue::Uint(BigUint::from_bytes_be(&bu));
-        }
-
-        if let Some(s) = value.string {
-            return RustABIValue::String(s);
-        }
-
-        if let Some(b) = value.byte {
-            return RustABIValue::Byte(b);
-        }
-
-        if let Some(a) = value.array {
-            return RustABIValue::Array(a.into_iter().map(|v| v.into()).collect());
-        }
-
-        if let Some(addr) = value.address {
-            return RustABIValue::Address(addr.parse().unwrap());
-        }
-
-        unreachable!()
+#[uniffi::export]
+impl ABIValue {
+    pub fn encoded_bytes(&self) -> Vec<u8> {
+        self.bytes.clone()
     }
-}
 
-impl From<RustABIValue> for ABIValue {
-    fn from(value: RustABIValue) -> Self {
-        match value {
-            RustABIValue::Bool(b) => ABIValue {
-                bool: Some(b),
-                uint: None,
-                big_uint: None,
-                string: None,
-                byte: None,
-                array: None,
-                address: None,
-            },
-            RustABIValue::Uint(u) => {
-                let digits = u.to_u64_digits();
-                if digits.len() == 1 {
-                    ABIValue {
-                        bool: None,
-                        uint: Some(*digits.first().unwrap_or(&0u64)),
-                        big_uint: None,
-                        string: None,
-                        byte: None,
-                        array: None,
-                        address: None,
-                    }
-                } else {
-                    ABIValue {
-                        bool: None,
-                        uint: None,
-                        big_uint: Some(u.to_bytes_be()),
-                        string: None,
-                        byte: None,
-                        array: None,
-                        address: None,
-                    }
-                }
-            }
-            RustABIValue::String(s) => ABIValue {
-                bool: None,
-                uint: None,
-                big_uint: None,
-                string: Some(s),
-                byte: None,
-                array: None,
-                address: None,
-            },
-            RustABIValue::Byte(b) => ABIValue {
-                bool: None,
-                uint: None,
-                big_uint: None,
-                string: None,
-                byte: Some(b),
-                array: None,
-                address: None,
-            },
-            RustABIValue::Array(a) => ABIValue {
-                bool: None,
-                uint: None,
-                big_uint: None,
-                string: None,
-                byte: None,
-                array: Some(a.into_iter().map(|v| v.into()).collect()),
-                address: None,
-            },
-            RustABIValue::Address(addr) => ABIValue {
-                bool: None,
-                uint: None,
-                big_uint: None,
-                string: None,
-                byte: None,
-                array: None,
-                address: Some(addr.to_string()),
-            },
-        }
+    pub fn abi_type(&self) -> String {
+        self.abi_type.clone()
+    }
+
+    // TODO: support > u64
+    #[uniffi::constructor]
+    pub fn uint(value: u64, width: u16) -> Self {
+        let abi_type = format!("uint{}", width);
+        let rust_abi_type = RustABIType::from_str(&abi_type).unwrap();
+        let bytes = rust_abi_type
+            .encode(&algokit_abi::ABIValue::Uint(value.into()))
+            .unwrap();
+        ABIValue { bytes, abi_type }
+    }
+
+    #[uniffi::constructor]
+    pub fn bool(value: bool) -> Self {
+        let abi_type = "bool".to_string();
+        let rust_abi_type = RustABIType::from_str(&abi_type).unwrap();
+        let bytes = rust_abi_type
+            .encode(&algokit_abi::ABIValue::Bool(value))
+            .unwrap();
+        ABIValue { bytes, abi_type }
+    }
+
+    #[uniffi::constructor]
+    pub fn string(value: String) -> Self {
+        let abi_type = "string".to_string();
+        let rust_abi_type = RustABIType::from_str(&abi_type).unwrap();
+        let bytes = rust_abi_type
+            .encode(&algokit_abi::ABIValue::String(value))
+            .unwrap();
+        ABIValue { bytes, abi_type }
+    }
+
+    #[uniffi::constructor]
+    pub fn byte(value: u8) -> Self {
+        let abi_type = "byte".to_string();
+        let rust_abi_type = RustABIType::from_str(&abi_type).unwrap();
+        let bytes = rust_abi_type
+            .encode(&algokit_abi::ABIValue::Byte(value))
+            .unwrap();
+        ABIValue { bytes, abi_type }
+    }
+
+    #[uniffi::constructor]
+    pub fn address(value: String) -> Self {
+        let abi_type = "address".to_string();
+        let rust_abi_type = RustABIType::from_str(&abi_type).unwrap();
+        let bytes = rust_abi_type
+            .encode(&algokit_abi::ABIValue::Address(value))
+            .unwrap();
+        ABIValue { bytes, abi_type }
+    }
+
+    #[uniffi::constructor]
+    pub fn array(element_type: String, values: Vec<Arc<ABIValue>>) -> Self {
+        let abi_type = format!("{}[]", element_type);
+        let rust_abi_type = RustABIType::from_str(&abi_type).unwrap();
+        let rust_values: Vec<algokit_abi::ABIValue> = values
+            .into_iter()
+            .map(|v| {
+                let rust_abi_type = RustABIType::from_str(&element_type).unwrap();
+                rust_abi_type.decode(&v.encoded_bytes()).unwrap()
+            })
+            .collect();
+        let bytes = rust_abi_type
+            .encode(&algokit_abi::ABIValue::Array(rust_values))
+            .unwrap();
+        ABIValue { bytes, abi_type }
+    }
+
+    #[uniffi::constructor]
+    pub fn static_array(element_type: String, size: u64, values: Vec<Arc<ABIValue>>) -> Self {
+        let abi_type = format!("{}[{}]", element_type, size);
+        let rust_abi_type = RustABIType::from_str(&abi_type).unwrap();
+        let rust_values: Vec<algokit_abi::ABIValue> = values
+            .into_iter()
+            .map(|v| {
+                let rust_abi_type = RustABIType::from_str(&element_type).unwrap();
+                rust_abi_type.decode(&v.encoded_bytes()).unwrap()
+            })
+            .collect();
+        let bytes = rust_abi_type
+            .encode(&algokit_abi::ABIValue::Array(rust_values))
+            .unwrap();
+        ABIValue { bytes, abi_type }
     }
 }
