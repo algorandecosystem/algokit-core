@@ -5,6 +5,7 @@ use crate::transactions::TransactionSigner;
 use crate::transactions::app_call::AppMethodCallArg;
 use algokit_abi::Arc56Contract;
 use algokit_transact::BoxReference;
+use derive_more::Debug;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -39,6 +40,8 @@ pub struct AppClientParams {
 pub struct FundAppAccountParams {
     pub amount: u64,
     pub sender: Option<String>,
+    #[debug(skip)]
+    pub signer: Option<std::sync::Arc<dyn TransactionSigner>>,
     pub rekey_to: Option<String>,
     pub note: Option<Vec<u8>>,
     pub lease: Option<[u8; 32]>,
@@ -57,6 +60,8 @@ pub struct AppClientMethodCallParams {
     pub method: String,
     pub args: Vec<AppMethodCallArg>,
     pub sender: Option<String>,
+    #[debug(skip)]
+    pub signer: Option<std::sync::Arc<dyn TransactionSigner>>,
     pub rekey_to: Option<String>,
     pub note: Option<Vec<u8>>,
     pub lease: Option<[u8; 32]>,
@@ -77,6 +82,8 @@ pub struct AppClientMethodCallParams {
 pub struct AppClientBareCallParams {
     pub args: Option<Vec<Vec<u8>>>,
     pub sender: Option<String>,
+    #[debug(skip)]
+    pub signer: Option<std::sync::Arc<dyn TransactionSigner>>,
     pub rekey_to: Option<String>,
     pub note: Option<Vec<u8>>,
     pub lease: Option<[u8; 32]>,

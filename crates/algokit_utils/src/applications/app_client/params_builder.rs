@@ -85,7 +85,7 @@ impl<'a> ParamsBuilder<'a> {
 
         Ok(AppDeleteMethodCallParams {
             sender: self.client.get_sender_address(&params.sender)?,
-            signer: self.client.resolve_signer(params.sender, None),
+            signer: self.client.resolve_signer(params.sender.clone(), params.signer.clone()),
             rekey_to: get_optional_address(&params.rekey_to)?,
             note: params.note.clone(),
             lease: params.lease,
@@ -124,7 +124,7 @@ impl<'a> ParamsBuilder<'a> {
 
         Ok(AppUpdateMethodCallParams {
             sender: self.client.get_sender_address(&params.sender)?,
-            signer: self.client.resolve_signer(params.sender, None),
+            signer: self.client.resolve_signer(params.sender.clone(), params.signer.clone()),
             rekey_to: get_optional_address(&params.rekey_to)?,
             note: params.note.clone(),
             lease: params.lease,
@@ -157,6 +157,7 @@ impl<'a> ParamsBuilder<'a> {
 
         Ok(PaymentParams {
             sender,
+            signer: self.client.resolve_signer(params.sender.clone(), params.signer.clone()),
             rekey_to,
             note: params.note.clone(),
             lease: params.lease,
@@ -185,7 +186,7 @@ impl<'a> ParamsBuilder<'a> {
 
         Ok(AppCallMethodCallParams {
             sender: self.client.get_sender_address(&params.sender)?,
-            signer: self.client.resolve_signer(params.sender.clone(), None),
+            signer: self.client.resolve_signer(params.sender.clone(), params.signer.clone()),
             rekey_to: get_optional_address(&params.rekey_to)?,
             note: params.note.clone(),
             lease: params.lease,
@@ -427,7 +428,7 @@ impl BareParamsBuilder<'_> {
     ) -> Result<AppDeleteParams, AppClientError> {
         Ok(AppDeleteParams {
             sender: self.client.get_sender_address(&params.sender)?,
-            signer: self.client.resolve_signer(params.sender, None),
+            signer: self.client.resolve_signer(params.sender.clone(), params.signer.clone()),
             rekey_to: get_optional_address(&params.rekey_to)?,
             note: params.note.clone(),
             lease: params.lease,
@@ -467,7 +468,7 @@ impl BareParamsBuilder<'_> {
 
         Ok(AppUpdateParams {
             sender: self.client.get_sender_address(&params.sender)?,
-            signer: self.client.resolve_signer(params.sender, None),
+            signer: self.client.resolve_signer(params.sender.clone(), params.signer.clone()),
             rekey_to: get_optional_address(&params.rekey_to)?,
             note: params.note.clone(),
             lease: params.lease,
@@ -495,7 +496,7 @@ impl BareParamsBuilder<'_> {
     ) -> Result<AppCallParams, AppClientError> {
         Ok(AppCallParams {
             sender: self.client.get_sender_address(&params.sender)?,
-            signer: self.client.resolve_signer(params.sender, None),
+            signer: self.client.resolve_signer(params.sender.clone(), params.signer.clone()),
             rekey_to: get_optional_address(&params.rekey_to)?,
             note: params.note.clone(),
             lease: params.lease,
