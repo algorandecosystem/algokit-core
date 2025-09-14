@@ -101,6 +101,75 @@ impl Default for ResourcePopulation {
     }
 }
 
+trait HasTxnSigner {
+    fn signer_mut(&mut self) -> &mut Option<Arc<dyn TransactionSigner>>;
+}
+
+fn set_default_signer_if_missing(
+    params: &mut impl HasTxnSigner,
+    method_signer: &Option<Arc<dyn TransactionSigner>>,
+) {
+    if params.signer_mut().is_none() {
+        *params.signer_mut() = method_signer.clone();
+    }
+}
+
+impl HasTxnSigner for PaymentParams {
+    fn signer_mut(&mut self) -> &mut Option<Arc<dyn TransactionSigner>> {
+        &mut self.signer
+    }
+}
+impl HasTxnSigner for AccountCloseParams {
+    fn signer_mut(&mut self) -> &mut Option<Arc<dyn TransactionSigner>> {
+        &mut self.signer
+    }
+}
+impl HasTxnSigner for AssetTransferParams {
+    fn signer_mut(&mut self) -> &mut Option<Arc<dyn TransactionSigner>> {
+        &mut self.signer
+    }
+}
+impl HasTxnSigner for AssetOptInParams {
+    fn signer_mut(&mut self) -> &mut Option<Arc<dyn TransactionSigner>> {
+        &mut self.signer
+    }
+}
+impl HasTxnSigner for AssetOptOutParams {
+    fn signer_mut(&mut self) -> &mut Option<Arc<dyn TransactionSigner>> {
+        &mut self.signer
+    }
+}
+impl HasTxnSigner for AssetClawbackParams {
+    fn signer_mut(&mut self) -> &mut Option<Arc<dyn TransactionSigner>> {
+        &mut self.signer
+    }
+}
+impl HasTxnSigner for AssetCreateParams {
+    fn signer_mut(&mut self) -> &mut Option<Arc<dyn TransactionSigner>> {
+        &mut self.signer
+    }
+}
+impl HasTxnSigner for AssetConfigParams {
+    fn signer_mut(&mut self) -> &mut Option<Arc<dyn TransactionSigner>> {
+        &mut self.signer
+    }
+}
+impl HasTxnSigner for AssetDestroyParams {
+    fn signer_mut(&mut self) -> &mut Option<Arc<dyn TransactionSigner>> {
+        &mut self.signer
+    }
+}
+impl HasTxnSigner for AssetFreezeParams {
+    fn signer_mut(&mut self) -> &mut Option<Arc<dyn TransactionSigner>> {
+        &mut self.signer
+    }
+}
+impl HasTxnSigner for AssetUnfreezeParams {
+    fn signer_mut(&mut self) -> &mut Option<Arc<dyn TransactionSigner>> {
+        &mut self.signer
+    }
+}
+
 /// Types of resources that can be populated at the group level
 #[derive(Debug, Clone)]
 enum GroupResourceToPopulate {
@@ -532,14 +601,24 @@ impl Composer {
 
     fn extract_composer_transactions_from_app_method_call_params(
         method_call_args: &[AppMethodCallArg],
+        method_signer: Option<std::sync::Arc<dyn TransactionSigner>>,
     ) -> Vec<ComposerTransaction> {
         let mut composer_transactions: Vec<ComposerTransaction> = vec![];
 
         for arg in method_call_args.iter() {
             match arg {
                 AppMethodCallArg::Transaction(transaction) => {
-                    composer_transactions
-                        .push(ComposerTransaction::Transaction(transaction.clone()));
+                    if let Some(ref signer) = method_signer {
+                        composer_transactions.push(ComposerTransaction::TransactionWithSigner(
+                            TransactionWithSigner {
+                                transaction: transaction.clone(),
+                                signer: signer.clone(),
+                            },
+                        ));
+                    } else {
+                        composer_transactions
+                            .push(ComposerTransaction::Transaction(transaction.clone()));
+                    }
                 }
                 AppMethodCallArg::TransactionWithSigner(transaction) => {
                     composer_transactions.push(ComposerTransaction::TransactionWithSigner(
@@ -547,37 +626,59 @@ impl Composer {
                     ));
                 }
                 AppMethodCallArg::Payment(params) => {
-                    composer_transactions.push(ComposerTransaction::Payment(params.clone()));
+                    let mut p = params.clone();
+                    set_default_signer_if_missing(&mut p, &method_signer);
+                    composer_transactions.push(ComposerTransaction::Payment(p));
                 }
                 AppMethodCallArg::AccountClose(params) => {
-                    composer_transactions.push(ComposerTransaction::AccountClose(params.clone()));
+                    let mut p = params.clone();
+                    set_default_signer_if_missing(&mut p, &method_signer);
+                    composer_transactions.push(ComposerTransaction::AccountClose(p));
                 }
                 AppMethodCallArg::AssetTransfer(params) => {
-                    composer_transactions.push(ComposerTransaction::AssetTransfer(params.clone()));
+                    let mut p = params.clone();
+                    set_default_signer_if_missing(&mut p, &method_signer);
+                    composer_transactions.push(ComposerTransaction::AssetTransfer(p));
                 }
                 AppMethodCallArg::AssetOptIn(params) => {
-                    composer_transactions.push(ComposerTransaction::AssetOptIn(params.clone()));
+                    let mut p = params.clone();
+                    set_default_signer_if_missing(&mut p, &method_signer);
+                    composer_transactions.push(ComposerTransaction::AssetOptIn(p));
                 }
                 AppMethodCallArg::AssetOptOut(params) => {
-                    composer_transactions.push(ComposerTransaction::AssetOptOut(params.clone()));
+                    let mut p = params.clone();
+                    set_default_signer_if_missing(&mut p, &method_signer);
+                    composer_transactions.push(ComposerTransaction::AssetOptOut(p));
                 }
                 AppMethodCallArg::AssetClawback(params) => {
-                    composer_transactions.push(ComposerTransaction::AssetClawback(params.clone()));
+                    let mut p = params.clone();
+                    set_default_signer_if_missing(&mut p, &method_signer);
+                    composer_transactions.push(ComposerTransaction::AssetClawback(p));
                 }
                 AppMethodCallArg::AssetCreate(params) => {
-                    composer_transactions.push(ComposerTransaction::AssetCreate(params.clone()));
+                    let mut p = params.clone();
+                    set_default_signer_if_missing(&mut p, &method_signer);
+                    composer_transactions.push(ComposerTransaction::AssetCreate(p));
                 }
                 AppMethodCallArg::AssetConfig(params) => {
-                    composer_transactions.push(ComposerTransaction::AssetConfig(params.clone()));
+                    let mut p = params.clone();
+                    set_default_signer_if_missing(&mut p, &method_signer);
+                    composer_transactions.push(ComposerTransaction::AssetConfig(p));
                 }
                 AppMethodCallArg::AssetDestroy(params) => {
-                    composer_transactions.push(ComposerTransaction::AssetDestroy(params.clone()));
+                    let mut p = params.clone();
+                    set_default_signer_if_missing(&mut p, &method_signer);
+                    composer_transactions.push(ComposerTransaction::AssetDestroy(p));
                 }
                 AppMethodCallArg::AssetFreeze(params) => {
-                    composer_transactions.push(ComposerTransaction::AssetFreeze(params.clone()));
+                    let mut p = params.clone();
+                    set_default_signer_if_missing(&mut p, &method_signer);
+                    composer_transactions.push(ComposerTransaction::AssetFreeze(p));
                 }
                 AppMethodCallArg::AssetUnfreeze(params) => {
-                    composer_transactions.push(ComposerTransaction::AssetUnfreeze(params.clone()));
+                    let mut p = params.clone();
+                    set_default_signer_if_missing(&mut p, &method_signer);
+                    composer_transactions.push(ComposerTransaction::AssetUnfreeze(p));
                 }
                 AppMethodCallArg::AppCall(params) => {
                     composer_transactions.push(ComposerTransaction::AppCall(params.clone()));
@@ -595,6 +696,7 @@ impl Composer {
                     let nested_composer_transactions =
                         Self::extract_composer_transactions_from_app_method_call_params(
                             &params.args,
+                            params.signer.clone(),
                         );
                     composer_transactions.extend(nested_composer_transactions);
 
@@ -605,6 +707,7 @@ impl Composer {
                     let nested_composer_transactions =
                         Self::extract_composer_transactions_from_app_method_call_params(
                             &params.args,
+                            params.signer.clone(),
                         );
                     composer_transactions.extend(nested_composer_transactions);
 
@@ -615,6 +718,7 @@ impl Composer {
                     let nested_composer_transactions =
                         Self::extract_composer_transactions_from_app_method_call_params(
                             &params.args,
+                            params.signer.clone(),
                         );
                     composer_transactions.extend(nested_composer_transactions);
 
@@ -625,6 +729,7 @@ impl Composer {
                     let nested_composer_transactions =
                         Self::extract_composer_transactions_from_app_method_call_params(
                             &params.args,
+                            params.signer.clone(),
                         );
                     composer_transactions.extend(nested_composer_transactions);
 
@@ -642,9 +747,10 @@ impl Composer {
         &mut self,
         args: &[AppMethodCallArg],
         transaction: ComposerTransaction,
+        method_signer: Option<std::sync::Arc<dyn TransactionSigner>>,
     ) -> Result<(), ComposerError> {
         let mut composer_transactions =
-            Self::extract_composer_transactions_from_app_method_call_params(args);
+            Self::extract_composer_transactions_from_app_method_call_params(args, method_signer);
         composer_transactions.push(transaction);
 
         if self.transactions.len() + composer_transactions.len() > MAX_TX_GROUP_SIZE {
@@ -665,6 +771,7 @@ impl Composer {
         self.add_app_method_call_internal(
             &params.args,
             ComposerTransaction::AppCallMethodCall((&params).into()),
+            params.signer.clone(),
         )
     }
 
@@ -675,6 +782,7 @@ impl Composer {
         self.add_app_method_call_internal(
             &params.args,
             ComposerTransaction::AppCreateMethodCall((&params).into()),
+            params.signer.clone(),
         )
     }
 
@@ -685,6 +793,7 @@ impl Composer {
         self.add_app_method_call_internal(
             &params.args,
             ComposerTransaction::AppUpdateMethodCall((&params).into()),
+            params.signer.clone(),
         )
     }
 
@@ -695,6 +804,7 @@ impl Composer {
         self.add_app_method_call_internal(
             &params.args,
             ComposerTransaction::AppDeleteMethodCall((&params).into()),
+            params.signer.clone(),
         )
     }
 
@@ -1880,11 +1990,18 @@ impl Composer {
             .enumerate()
             .map(|(group_index, txn)| {
                 let ctxn = &self.transactions[group_index];
-                let signer = if let Some(transaction_signer) = ctxn.signer() {
-                    transaction_signer
-                } else {
-                    let sender_address = txn.header().sender.clone();
-                    (self.signer_getter)(sender_address.clone())?
+                let signer = match ctxn {
+                    ComposerTransaction::TransactionWithSigner(tx_with_signer) => {
+                        tx_with_signer.signer.clone()
+                    }
+                    _ => {
+                        if let Some(transaction_signer) = ctxn.signer() {
+                            transaction_signer
+                        } else {
+                            let sender_address = txn.header().sender.clone();
+                            (self.signer_getter)(sender_address.clone())?
+                        }
+                    }
                 };
                 Ok(TransactionWithSigner {
                     transaction: txn,
