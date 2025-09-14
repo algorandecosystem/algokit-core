@@ -1,15 +1,8 @@
-//! AppClient state access tests.
-//!
-//! - Global state: retrieve and ABI-decode key/value entries
-//! - Local state: retrieve and ABI-decode per-account entries
-//! - Box storage: list names, read values, and decode via explicit ABI types
-//! - Box maps: access ARC-56 typed maps (get_map, get_map_value)
-//!
-//! Focuses on read-only state APIs (no deploy/update): decoding, box name handling,
-//! and typed map access.r
+// AppClient state access tests: global/local state, boxes, and box maps
+
 use crate::common::{AlgorandFixtureResult, TestResult, algorand_fixture, deploy_arc56_contract};
 use algokit_abi::{ABIType, ABIValue, Arc56Contract};
-use algokit_transact::{BoxReference, Transaction};
+use algokit_transact::BoxReference;
 use algokit_utils::applications::app_client::{AppClient, AppClientParams};
 use algokit_utils::applications::app_client::{AppClientMethodCallParams, FundAppAccountParams};
 use algokit_utils::clients::app_manager::{
@@ -439,7 +432,7 @@ async fn test_box_maps(#[future] algorand_fixture: AlgorandFixtureResult) -> Tes
         &get_boxmap_app_spec(),
         None,
         None,
-        Some(vec![vec![184u8, 68u8, 123u8, 54u8]]), // "createApplication" argument
+        Some(vec![vec![184u8, 68u8, 123u8, 54u8]]),
     )
     .await?;
 
@@ -472,7 +465,7 @@ async fn test_box_maps(#[future] algorand_fixture: AlgorandFixtureResult) -> Tes
         )
         .await?;
 
-    let result = app_client
+    let _result = app_client
         .send()
         .call(
             AppClientMethodCallParams {

@@ -10,9 +10,3 @@ use algokit_utils::applications::app_client::{AppClient, AppClientParams};
 use algokit_utils::{AlgorandClient as RootAlgorandClient, AppMethodCallArg};
 use rstest::*;
 use std::sync::Arc;
-
-// TODO: Implement tests based on Python/TypeScript references:
-// - test_app_client_with_sourcemaps
-// - test_export_import_sourcemaps
-// - test_app_client_puya (Python only)
-// - test_create_app_with_constructor_deploy_time_params

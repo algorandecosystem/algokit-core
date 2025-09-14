@@ -16,13 +16,3 @@ use algokit_utils::applications::app_client::{AppClient, AppClientParams};
 use algokit_utils::{AlgorandClient as RootAlgorandClient, AppMethodCallArg};
 use rstest::*;
 use std::sync::Arc;
-
-// TODO: Implement tests based on Python/TypeScript references:
-// - test_create_app
-// - test_create_app_with_abi
-// - test_update_app_with_abi
-// - test_delete_app_with_abi
-// - test_bare_create_abi_delete
-// - test_construct_transaction_with_boxes
-// - test_construct_transaction_with_abi_encoding_including_transaction
-// - test_construct_transaction_with_abi_encoding_including_foreign_references_not_in_signature
