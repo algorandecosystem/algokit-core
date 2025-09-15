@@ -13,6 +13,7 @@ use algokit_utils::AppCreateParams;
 use algokit_utils::clients::app_manager::{
     AppManager, DeploymentMetadata, TealTemplateParams, TealTemplateValue,
 };
+use algokit_utils::config::{AppCompiledEventData, Config, EventData, EventType};
 use base64::prelude::*;
 
 pub use fixture::{AlgorandFixture, AlgorandFixtureResult, algorand_fixture};
@@ -59,6 +60,18 @@ pub async fn deploy_arc56_contract(
             deploy_metadata.as_ref(),
         )
         .await?;
+
+    // If debug is enabled, emit an AppCompiled event similar to AppClient::compile
+    if Config::debug() {
+        let event = AppCompiledEventData {
+            app_name: Some(arc56_contract.name.clone()),
+            approval_source_map: approval_compile.source_map.clone(),
+            clear_source_map: clear_compile.source_map.clone(),
+        };
+        Config::events()
+            .emit(EventType::AppCompiled, EventData::AppCompiled(event))
+            .await;
+    }
 
     let app_create_params = AppCreateParams {
         sender: sender.clone(),

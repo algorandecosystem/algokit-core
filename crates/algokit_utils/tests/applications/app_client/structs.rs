@@ -1,79 +1,183 @@
-// Tests for Struct Handling Features
-// This module tests AppClient's ability to work with ABI structs,
-// including encoding, decoding, and nested struct handling.
-
 use crate::common::{AlgorandFixtureResult, TestResult, algorand_fixture, deploy_arc56_contract};
-use algokit_abi::{ABIType, ABIValue, Arc56Contract};
-use algokit_utils::applications::app_client::{AppClient, AppClientParams};
+use algokit_abi::{ABIValue, Arc56Contract};
+use algokit_utils::applications::app_client::{
+    AppClient, AppClientMethodCallParams, AppClientParams,
+};
 use algokit_utils::{AlgorandClient as RootAlgorandClient, AppMethodCallArg};
 use rstest::*;
+use std::collections::HashMap;
 use std::sync::Arc;
 
-// Test encoding and decoding of ABI structs as method arguments
-// Verifies that struct values are properly encoded when passed to methods
-// and decoded when returned from methods
-#[ignore = "Requires ABI struct support implementation"]
+fn get_nested_struct_spec() -> Arc56Contract {
+    let json = algokit_test_artifacts::nested_struct_storage::APPLICATION_ARC56;
+    Arc56Contract::from_json(json).expect("valid arc56")
+}
+
 #[rstest]
 #[tokio::test]
-async fn test_abi_struct_encoding_decoding(
-    algorand_fixture: AlgorandFixtureResult,
+async fn test_nested_structs_described_by_structure(
+    #[future] algorand_fixture: AlgorandFixtureResult,
 ) -> TestResult {
-    // TODO: Based on Python test_send_struct_abi_arg_nested:
-    // - Create AppClient with a method that accepts a struct
-    // - Pass a struct as an argument using ABIValue::Struct
-    // - Verify the struct is properly encoded and sent
-    // - Check the return value decodes the struct correctly
+    let fixture = algorand_fixture.await?;
+    let sender = fixture.test_account.account().address();
+
+    let spec = get_nested_struct_spec();
+    let app_id = deploy_arc56_contract(&fixture, &sender, &spec, None, None, None).await?;
+
+    let mut algorand = RootAlgorandClient::default_localnet(None);
+    algorand.set_signer(sender.clone(), Arc::new(fixture.test_account.clone()));
+    let app_client = AppClient::new(AppClientParams {
+        app_id,
+        app_spec: spec,
+        algorand,
+        app_name: None,
+        default_sender: Some(sender.to_string()),
+        default_signer: None,
+        source_maps: None,
+        transaction_composer_config: None,
+    });
+
+    app_client
+        .send()
+        .call(
+            AppClientMethodCallParams {
+                method: "setValue".to_string(),
+                args: vec![
+                    AppMethodCallArg::ABIValue(ABIValue::from(1u64)),
+                    AppMethodCallArg::ABIValue(ABIValue::from("hello")),
+                ],
+                sender: Some(sender.to_string()),
+                ..Default::default()
+            },
+            None,
+            None,
+        )
+        .await?;
+
+    let result = app_client
+        .send()
+        .call(
+            AppClientMethodCallParams {
+                method: "getValue".to_string(),
+                args: vec![AppMethodCallArg::ABIValue(ABIValue::from(1u64))],
+                sender: Some(sender.to_string()),
+                ..Default::default()
+            },
+            None,
+            None,
+        )
+        .await?;
+
+    let abi_ret = result.abi_return.expect("abi return");
+    let value = abi_ret.return_value.expect("decoded value");
+    match value {
+        ABIValue::Struct(ref outer) => {
+            let x = match outer.get("x").expect("x") {
+                ABIValue::Struct(m) => m,
+                _ => panic!("x should be a struct"),
+            };
+            match x.get("a").expect("a") {
+                ABIValue::String(s) => assert_eq!(s, "hello"),
+                _ => panic!("a should be string"),
+            }
+        }
+        _ => panic!("expected struct return"),
+    }
+
     Ok(())
 }
 
-// Test handling of deeply nested struct types
-// Verifies that complex nested structures (structs containing other structs)
-// are properly handled by the AppClient
-#[ignore = "Requires nested struct support implementation"]
 #[rstest]
 #[tokio::test]
-async fn test_nested_struct_handling(
-    algorand_fixture: AlgorandFixtureResult,
+async fn test_nested_structs_referenced_by_name(
+    #[future] algorand_fixture: AlgorandFixtureResult,
 ) -> TestResult {
-    // TODO: Based on TypeScript test_send_abi_args_to_app_from_app_client:
-    // - Create AppClient with methods that use nested structs
-    // - Test structs containing other structs
-    // - Test structs containing arrays of structs
-    // - Verify deep nesting levels work correctly
-    Ok(())
-}
+    let fixture = algorand_fixture.await?;
+    let sender = fixture.test_account.account().address();
 
-// Test automatic struct type resolution from ARC-56 spec
-// Verifies that struct types defined in the ARC-56 spec are
-// automatically resolved when used as method parameters
-#[ignore = "Requires ARC-56 struct type resolution"]
-#[rstest]
-#[tokio::test]
-async fn test_struct_type_resolution_from_spec(
-    algorand_fixture: AlgorandFixtureResult,
-) -> TestResult {
-    // TODO: Based on Python test_send_struct_abi_arg_from_tuple:
-    // - Load ARC-56 spec with struct definitions
-    // - Call methods using struct names from the spec
-    // - Verify structs are resolved from spec definitions
-    // - Test both named and anonymous struct types
-    Ok(())
-}
+    let mut spec = get_nested_struct_spec();
+    spec.structs = HashMap::from([
+        (
+            "Struct1".to_string(),
+            vec![algokit_abi::arc56_contract::StructField {
+                name: "a".to_string(),
+                field_type: algokit_abi::arc56_contract::StructFieldType::Value(
+                    "string".to_string(),
+                ),
+            }],
+        ),
+        (
+            "Struct2".to_string(),
+            vec![algokit_abi::arc56_contract::StructField {
+                name: "x".to_string(),
+                field_type: algokit_abi::arc56_contract::StructFieldType::Value(
+                    "Struct1".to_string(),
+                ),
+            }],
+        ),
+    ]);
 
-// Test struct validation and error handling
-// Verifies that invalid struct data is properly rejected
-// and meaningful error messages are provided
-#[ignore = "Requires struct validation implementation"]
-#[rstest]
-#[tokio::test]
-async fn test_struct_validation_errors(
-    algorand_fixture: AlgorandFixtureResult,
-) -> TestResult {
-    // TODO: Test error cases:
-    // - Missing required struct fields
-    // - Extra fields not in struct definition
-    // - Wrong field types
-    // - Invalid nested struct data
-    // - Verify error messages are descriptive
+    let app_id = deploy_arc56_contract(&fixture, &sender, &spec, None, None, None).await?;
+
+    let mut algorand = RootAlgorandClient::default_localnet(None);
+    algorand.set_signer(sender.clone(), Arc::new(fixture.test_account.clone()));
+    let app_client = AppClient::new(AppClientParams {
+        app_id,
+        app_spec: spec,
+        algorand,
+        app_name: None,
+        default_sender: Some(sender.to_string()),
+        default_signer: None,
+        source_maps: None,
+        transaction_composer_config: None,
+    });
+
+    app_client
+        .send()
+        .call(
+            AppClientMethodCallParams {
+                method: "setValue".to_string(),
+                args: vec![
+                    AppMethodCallArg::ABIValue(ABIValue::from(1u64)),
+                    AppMethodCallArg::ABIValue(ABIValue::from("hello")),
+                ],
+                sender: Some(sender.to_string()),
+                ..Default::default()
+            },
+            None,
+            None,
+        )
+        .await?;
+
+    let result = app_client
+        .send()
+        .call(
+            AppClientMethodCallParams {
+                method: "getValue".to_string(),
+                args: vec![AppMethodCallArg::ABIValue(ABIValue::from(1u64))],
+                sender: Some(sender.to_string()),
+                ..Default::default()
+            },
+            None,
+            None,
+        )
+        .await?;
+
+    let abi_ret = result.abi_return.expect("abi return");
+    let value = abi_ret.return_value.expect("decoded value");
+    match value {
+        ABIValue::Struct(ref outer) => {
+            let x = match outer.get("x").expect("x") {
+                ABIValue::Struct(m) => m,
+                _ => panic!("x should be a struct"),
+            };
+            match x.get("a").expect("a") {
+                ABIValue::String(s) => assert_eq!(s, "hello"),
+                _ => panic!("a should be string"),
+            }
+        }
+        _ => panic!("expected struct return"),
+    }
+
     Ok(())
 }

@@ -47,3 +47,4 @@ tokio-test = "^0.4"
 algokit_test_artifacts = { path = "../algokit_test_artifacts" }
 env_logger = "0.11"
 rstest = { workspace = true }
+insta = { version = "1.43", features = ["json", "redactions"] }
