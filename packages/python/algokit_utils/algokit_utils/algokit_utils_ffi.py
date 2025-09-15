@@ -470,6 +470,18 @@ def _uniffi_check_contract_api_version(lib):
         raise InternalError("UniFFI contract version mismatch: try cleaning and rebuilding your project")
 
 def _uniffi_check_api_checksums(lib):
+    if lib.uniffi_algokit_utils_ffi_checksum_func_run_asset_freeze_test_suite() != 6358:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algokit_utils_ffi_checksum_func_test_frozen_asset_transfer_simple() != 46066:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algokit_utils_ffi_checksum_method_assetfreezetestadapter_adapter_name() != 52805:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algokit_utils_ffi_checksum_method_assetfreezetestadapter_setup_frozen_asset() != 7200:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algokit_utils_ffi_checksum_method_assetfreezetestadapter_try_transfer_frozen() != 3110:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algokit_utils_ffi_checksum_method_assetfreezetestadapter_is_frozen() != 21820:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_clawback() != 59332:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_create() != 42067:
@@ -614,6 +626,18 @@ class _UniffiForeignFutureStructVoid(ctypes.Structure):
     ]
 _UNIFFI_FOREIGN_FUTURE_COMPLETE_VOID = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiForeignFutureStructVoid,
 )
+_UNIFFI_CALLBACK_INTERFACE_ASSET_FREEZE_TEST_ADAPTER_METHOD0 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,ctypes.POINTER(_UniffiRustBuffer),
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UNIFFI_CALLBACK_INTERFACE_ASSET_FREEZE_TEST_ADAPTER_METHOD1 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,_UniffiRustBuffer,ctypes.c_uint64,ctypes.c_void_p,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UNIFFI_CALLBACK_INTERFACE_ASSET_FREEZE_TEST_ADAPTER_METHOD2 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,_UniffiRustBuffer,ctypes.c_uint64,ctypes.c_uint64,ctypes.c_void_p,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UNIFFI_CALLBACK_INTERFACE_ASSET_FREEZE_TEST_ADAPTER_METHOD3 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,ctypes.c_uint64,ctypes.POINTER(ctypes.c_int8),
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
 _UNIFFI_CALLBACK_INTERFACE_TRANSACTION_SIGNER_METHOD0 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
 )
 _UNIFFI_CALLBACK_INTERFACE_TRANSACTION_SIGNER_METHOD1 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBufferTransaction,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
@@ -621,6 +645,14 @@ _UNIFFI_CALLBACK_INTERFACE_TRANSACTION_SIGNER_METHOD1 = ctypes.CFUNCTYPE(None,ct
 _UNIFFI_CALLBACK_INTERFACE_TRANSACTION_SIGNER_GETTER_METHOD0 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,ctypes.POINTER(_UniffiRustBuffer),
     ctypes.POINTER(_UniffiRustCallStatus),
 )
+class _UniffiVTableCallbackInterfaceAssetFreezeTestAdapter(ctypes.Structure):
+    _fields_ = [
+        ("adapter_name", _UNIFFI_CALLBACK_INTERFACE_ASSET_FREEZE_TEST_ADAPTER_METHOD0),
+        ("setup_frozen_asset", _UNIFFI_CALLBACK_INTERFACE_ASSET_FREEZE_TEST_ADAPTER_METHOD1),
+        ("try_transfer_frozen", _UNIFFI_CALLBACK_INTERFACE_ASSET_FREEZE_TEST_ADAPTER_METHOD2),
+        ("is_frozen", _UNIFFI_CALLBACK_INTERFACE_ASSET_FREEZE_TEST_ADAPTER_METHOD3),
+        ("uniffi_free", _UNIFFI_CALLBACK_INTERFACE_FREE),
+    ]
 class _UniffiVTableCallbackInterfaceTransactionSigner(ctypes.Structure):
     _fields_ = [
         ("sign_transactions", _UNIFFI_CALLBACK_INTERFACE_TRANSACTION_SIGNER_METHOD0),
@@ -647,6 +679,49 @@ _UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_algodclient_new.argtypes = (
     ctypes.POINTER(_UniffiRustCallStatus),
 )
 _UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_algodclient_new.restype = ctypes.c_void_p
+_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_assetfreezetestadapter.argtypes = (
+    ctypes.c_void_p,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_assetfreezetestadapter.restype = ctypes.c_void_p
+_UniffiLib.uniffi_algokit_utils_ffi_fn_free_assetfreezetestadapter.argtypes = (
+    ctypes.c_void_p,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_algokit_utils_ffi_fn_free_assetfreezetestadapter.restype = None
+_UniffiLib.uniffi_algokit_utils_ffi_fn_init_callback_vtable_assetfreezetestadapter.argtypes = (
+    ctypes.POINTER(_UniffiVTableCallbackInterfaceAssetFreezeTestAdapter),
+)
+_UniffiLib.uniffi_algokit_utils_ffi_fn_init_callback_vtable_assetfreezetestadapter.restype = None
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_assetfreezetestadapter_adapter_name.argtypes = (
+    ctypes.c_void_p,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_assetfreezetestadapter_adapter_name.restype = _UniffiRustBuffer
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_assetfreezetestadapter_setup_frozen_asset.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+    ctypes.c_uint64,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_assetfreezetestadapter_setup_frozen_asset.restype = None
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_assetfreezetestadapter_try_transfer_frozen.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+    ctypes.c_uint64,
+    ctypes.c_uint64,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_assetfreezetestadapter_try_transfer_frozen.restype = None
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_assetfreezetestadapter_is_frozen.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    ctypes.c_uint64,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_assetfreezetestadapter_is_frozen.restype = ctypes.c_int8
 _UniffiLib.uniffi_algokit_utils_ffi_fn_clone_composer.argtypes = (
     ctypes.c_void_p,
     ctypes.POINTER(_UniffiRustCallStatus),
@@ -788,6 +863,24 @@ _UniffiLib.uniffi_algokit_utils_ffi_fn_method_transactionsignergetter_get_signer
     ctypes.POINTER(_UniffiRustCallStatus),
 )
 _UniffiLib.uniffi_algokit_utils_ffi_fn_method_transactionsignergetter_get_signer.restype = _UniffiRustBuffer
+_UniffiLib.uniffi_algokit_utils_ffi_fn_func_run_asset_freeze_test_suite.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+    ctypes.c_uint64,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_algokit_utils_ffi_fn_func_run_asset_freeze_test_suite.restype = _UniffiRustBuffer
+_UniffiLib.uniffi_algokit_utils_ffi_fn_func_test_frozen_asset_transfer_simple.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+    ctypes.c_uint64,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_algokit_utils_ffi_fn_func_test_frozen_asset_transfer_simple.restype = _UniffiRustBuffer
 _UniffiLib.ffi_algokit_utils_ffi_rustbuffer_alloc.argtypes = (
     ctypes.c_uint64,
     ctypes.POINTER(_UniffiRustCallStatus),
@@ -1056,6 +1149,24 @@ _UniffiLib.ffi_algokit_utils_ffi_rust_future_complete_void.argtypes = (
     ctypes.POINTER(_UniffiRustCallStatus),
 )
 _UniffiLib.ffi_algokit_utils_ffi_rust_future_complete_void.restype = None
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_func_run_asset_freeze_test_suite.argtypes = (
+)
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_func_run_asset_freeze_test_suite.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_func_test_frozen_asset_transfer_simple.argtypes = (
+)
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_func_test_frozen_asset_transfer_simple.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_assetfreezetestadapter_adapter_name.argtypes = (
+)
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_assetfreezetestadapter_adapter_name.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_assetfreezetestadapter_setup_frozen_asset.argtypes = (
+)
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_assetfreezetestadapter_setup_frozen_asset.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_assetfreezetestadapter_try_transfer_frozen.argtypes = (
+)
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_assetfreezetestadapter_try_transfer_frozen.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_assetfreezetestadapter_is_frozen.argtypes = (
+)
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_assetfreezetestadapter_is_frozen.restype = ctypes.c_uint16
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_clawback.argtypes = (
 )
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_add_asset_clawback.restype = ctypes.c_uint16
@@ -1252,6 +1363,8 @@ class _UniffiConverterBytes(_UniffiConverterRustBuffer):
     def write(value, buf):
         buf.write_i32(len(value))
         buf.write(value)
+
+
 
 
 
@@ -2278,6 +2391,103 @@ class _UniffiConverterTypePaymentParams(_UniffiConverterRustBuffer):
         _UniffiConverterUInt64.write(value.amount, buf)
 
 
+class TestResult:
+    """
+    Common test result types
+    """
+
+    passed: "bool"
+    name: "str"
+    message: "str"
+    error: "typing.Optional[str]"
+    def __init__(self, *, passed: "bool", name: "str", message: "str", error: "typing.Optional[str]"):
+        self.passed = passed
+        self.name = name
+        self.message = message
+        self.error = error
+
+    def __str__(self):
+        return "TestResult(passed={}, name={}, message={}, error={})".format(self.passed, self.name, self.message, self.error)
+
+    def __eq__(self, other):
+        if self.passed != other.passed:
+            return False
+        if self.name != other.name:
+            return False
+        if self.message != other.message:
+            return False
+        if self.error != other.error:
+            return False
+        return True
+
+class _UniffiConverterTypeTestResult(_UniffiConverterRustBuffer):
+    @staticmethod
+    def read(buf):
+        return TestResult(
+            passed=_UniffiConverterBool.read(buf),
+            name=_UniffiConverterString.read(buf),
+            message=_UniffiConverterString.read(buf),
+            error=_UniffiConverterOptionalString.read(buf),
+        )
+
+    @staticmethod
+    def check_lower(value):
+        _UniffiConverterBool.check_lower(value.passed)
+        _UniffiConverterString.check_lower(value.name)
+        _UniffiConverterString.check_lower(value.message)
+        _UniffiConverterOptionalString.check_lower(value.error)
+
+    @staticmethod
+    def write(value, buf):
+        _UniffiConverterBool.write(value.passed, buf)
+        _UniffiConverterString.write(value.name, buf)
+        _UniffiConverterString.write(value.message, buf)
+        _UniffiConverterOptionalString.write(value.error, buf)
+
+
+class TestSuiteResult:
+    name: "str"
+    results: "typing.List[TestResult]"
+    all_passed: "bool"
+    def __init__(self, *, name: "str", results: "typing.List[TestResult]", all_passed: "bool"):
+        self.name = name
+        self.results = results
+        self.all_passed = all_passed
+
+    def __str__(self):
+        return "TestSuiteResult(name={}, results={}, all_passed={})".format(self.name, self.results, self.all_passed)
+
+    def __eq__(self, other):
+        if self.name != other.name:
+            return False
+        if self.results != other.results:
+            return False
+        if self.all_passed != other.all_passed:
+            return False
+        return True
+
+class _UniffiConverterTypeTestSuiteResult(_UniffiConverterRustBuffer):
+    @staticmethod
+    def read(buf):
+        return TestSuiteResult(
+            name=_UniffiConverterString.read(buf),
+            results=_UniffiConverterSequenceTypeTestResult.read(buf),
+            all_passed=_UniffiConverterBool.read(buf),
+        )
+
+    @staticmethod
+    def check_lower(value):
+        _UniffiConverterString.check_lower(value.name)
+        _UniffiConverterSequenceTypeTestResult.check_lower(value.results)
+        _UniffiConverterBool.check_lower(value.all_passed)
+
+    @staticmethod
+    def write(value, buf):
+        _UniffiConverterString.write(value.name, buf)
+        _UniffiConverterSequenceTypeTestResult.write(value.results, buf)
+        _UniffiConverterBool.write(value.all_passed, buf)
+
+
 # UtilsError
 # We want to define each variant as a nested class that's also a subclass,
 # which is tricky in Python.  To accomplish this we're going to create each
@@ -2589,7 +2799,346 @@ class _UniffiConverterSequenceTypeTransaction(_UniffiConverterRustBuffer):
             _UniffiConverterTypeTransaction.read(buf) for i in range(count)
         ]
 
+
+
+class _UniffiConverterSequenceTypeTestResult(_UniffiConverterRustBuffer):
+    @classmethod
+    def check_lower(cls, value):
+        for item in value:
+            _UniffiConverterTypeTestResult.check_lower(item)
+
+    @classmethod
+    def write(cls, value, buf):
+        items = len(value)
+        buf.write_i32(items)
+        for item in value:
+            _UniffiConverterTypeTestResult.write(item, buf)
+
+    @classmethod
+    def read(cls, buf):
+        count = buf.read_i32()
+        if count < 0:
+            raise InternalError("Unexpected negative sequence length")
+
+        return [
+            _UniffiConverterTypeTestResult.read(buf) for i in range(count)
+        ]
+
 # objects.
+class AssetFreezeTestAdapterProtocol(typing.Protocol):
+    """
+    Asset freeze specific test adapter
+    """
+
+    def adapter_name(self, ):
+        """
+        Get a descriptive name for this adapter (useful for logging)
+        """
+
+        raise NotImplementedError
+    def setup_frozen_asset(self, freeze_manager: "str",target: "str",asset_id: "int"):
+        """
+        Setup: Create a composer and freeze an asset
+        """
+
+        raise NotImplementedError
+    def try_transfer_frozen(self, _from: "str",to: "str",asset_id: "int",amount: "int"):
+        """
+        Test: Try to transfer frozen asset (should fail)
+        """
+
+        raise NotImplementedError
+    def is_frozen(self, address: "str",asset_id: "int"):
+        """
+        Verify: Check if asset is frozen
+        """
+
+        raise NotImplementedError
+# AssetFreezeTestAdapter is a foreign trait so treated like a callback interface, where the
+# primary use-case is the trait being implemented locally.
+# It is a base-class local implementations might subclass.
+
+
+class AssetFreezeTestAdapter():
+    """
+    Asset freeze specific test adapter
+    """
+
+    def adapter_name(self, ):
+        """
+        Get a descriptive name for this adapter (useful for logging)
+        """
+
+        raise NotImplementedError
+    def setup_frozen_asset(self, freeze_manager: "str",target: "str",asset_id: "int"):
+        """
+        Setup: Create a composer and freeze an asset
+        """
+
+        raise NotImplementedError
+    def try_transfer_frozen(self, _from: "str",to: "str",asset_id: "int",amount: "int"):
+        """
+        Test: Try to transfer frozen asset (should fail)
+        """
+
+        raise NotImplementedError
+    def is_frozen(self, address: "str",asset_id: "int"):
+        """
+        Verify: Check if asset is frozen
+        """
+
+        raise NotImplementedError
+# `AssetFreezeTestAdapterImpl` is the implementation for a Rust implemented version.
+class AssetFreezeTestAdapterImpl():
+    """
+    Asset freeze specific test adapter
+    """
+
+    _pointer: ctypes.c_void_p
+    
+    def __init__(self, *args, **kwargs):
+        raise ValueError("This class has no default constructor")
+
+    def __del__(self):
+        # In case of partial initialization of instances.
+        pointer = getattr(self, "_pointer", None)
+        if pointer is not None:
+            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_free_assetfreezetestadapter, pointer)
+
+    def _uniffi_clone_pointer(self):
+        return _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_assetfreezetestadapter, self._pointer)
+
+    # Used by alternative constructors or any methods which return this type.
+    @classmethod
+    def _make_instance_(cls, pointer):
+        # Lightly yucky way to bypass the usual __init__ logic
+        # and just create a new instance with the required pointer.
+        inst = cls.__new__(cls)
+        inst._pointer = pointer
+        return inst
+
+
+    def adapter_name(self, ) -> "str":
+        """
+        Get a descriptive name for this adapter (useful for logging)
+        """
+
+        return _UniffiConverterString.lift(
+            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_method_assetfreezetestadapter_adapter_name,self._uniffi_clone_pointer(),)
+        )
+
+
+
+
+
+    def setup_frozen_asset(self, freeze_manager: "str",target: "str",asset_id: "int") -> None:
+        """
+        Setup: Create a composer and freeze an asset
+        """
+
+        _UniffiConverterString.check_lower(freeze_manager)
+        
+        _UniffiConverterString.check_lower(target)
+        
+        _UniffiConverterUInt64.check_lower(asset_id)
+        
+        _uniffi_rust_call_with_error(_UniffiConverterTypeUtilsError,_UniffiLib.uniffi_algokit_utils_ffi_fn_method_assetfreezetestadapter_setup_frozen_asset,self._uniffi_clone_pointer(),
+        _UniffiConverterString.lower(freeze_manager),
+        _UniffiConverterString.lower(target),
+        _UniffiConverterUInt64.lower(asset_id))
+
+
+
+
+
+
+    def try_transfer_frozen(self, _from: "str",to: "str",asset_id: "int",amount: "int") -> None:
+        """
+        Test: Try to transfer frozen asset (should fail)
+        """
+
+        _UniffiConverterString.check_lower(_from)
+        
+        _UniffiConverterString.check_lower(to)
+        
+        _UniffiConverterUInt64.check_lower(asset_id)
+        
+        _UniffiConverterUInt64.check_lower(amount)
+        
+        _uniffi_rust_call_with_error(_UniffiConverterTypeUtilsError,_UniffiLib.uniffi_algokit_utils_ffi_fn_method_assetfreezetestadapter_try_transfer_frozen,self._uniffi_clone_pointer(),
+        _UniffiConverterString.lower(_from),
+        _UniffiConverterString.lower(to),
+        _UniffiConverterUInt64.lower(asset_id),
+        _UniffiConverterUInt64.lower(amount))
+
+
+
+
+
+
+    def is_frozen(self, address: "str",asset_id: "int") -> "bool":
+        """
+        Verify: Check if asset is frozen
+        """
+
+        _UniffiConverterString.check_lower(address)
+        
+        _UniffiConverterUInt64.check_lower(asset_id)
+        
+        return _UniffiConverterBool.lift(
+            _uniffi_rust_call_with_error(_UniffiConverterTypeUtilsError,_UniffiLib.uniffi_algokit_utils_ffi_fn_method_assetfreezetestadapter_is_frozen,self._uniffi_clone_pointer(),
+        _UniffiConverterString.lower(address),
+        _UniffiConverterUInt64.lower(asset_id))
+        )
+
+
+
+
+
+# Put all the bits inside a class to keep the top-level namespace clean
+class _UniffiTraitImplAssetFreezeTestAdapter:
+    # For each method, generate a callback function to pass to Rust
+
+    @_UNIFFI_CALLBACK_INTERFACE_ASSET_FREEZE_TEST_ADAPTER_METHOD0
+    def adapter_name(
+            uniffi_handle,
+            uniffi_out_return,
+            uniffi_call_status_ptr,
+        ):
+        uniffi_obj = _UniffiConverterTypeAssetFreezeTestAdapter._handle_map.get(uniffi_handle)
+        def make_call():
+            args = ()
+            method = uniffi_obj.adapter_name
+            return method(*args)
+
+        
+        def write_return_value(v):
+            uniffi_out_return[0] = _UniffiConverterString.lower(v)
+        _uniffi_trait_interface_call(
+                uniffi_call_status_ptr.contents,
+                make_call,
+                write_return_value,
+        )
+
+    @_UNIFFI_CALLBACK_INTERFACE_ASSET_FREEZE_TEST_ADAPTER_METHOD1
+    def setup_frozen_asset(
+            uniffi_handle,
+            freeze_manager,
+            target,
+            asset_id,
+            uniffi_out_return,
+            uniffi_call_status_ptr,
+        ):
+        uniffi_obj = _UniffiConverterTypeAssetFreezeTestAdapter._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterString.lift(freeze_manager), _UniffiConverterString.lift(target), _UniffiConverterUInt64.lift(asset_id), )
+            method = uniffi_obj.setup_frozen_asset
+            return method(*args)
+
+        
+        write_return_value = lambda v: None
+        _uniffi_trait_interface_call_with_error(
+                uniffi_call_status_ptr.contents,
+                make_call,
+                write_return_value,
+                UtilsError,
+                _UniffiConverterTypeUtilsError.lower,
+        )
+
+    @_UNIFFI_CALLBACK_INTERFACE_ASSET_FREEZE_TEST_ADAPTER_METHOD2
+    def try_transfer_frozen(
+            uniffi_handle,
+            _from,
+            to,
+            asset_id,
+            amount,
+            uniffi_out_return,
+            uniffi_call_status_ptr,
+        ):
+        uniffi_obj = _UniffiConverterTypeAssetFreezeTestAdapter._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterString.lift(_from), _UniffiConverterString.lift(to), _UniffiConverterUInt64.lift(asset_id), _UniffiConverterUInt64.lift(amount), )
+            method = uniffi_obj.try_transfer_frozen
+            return method(*args)
+
+        
+        write_return_value = lambda v: None
+        _uniffi_trait_interface_call_with_error(
+                uniffi_call_status_ptr.contents,
+                make_call,
+                write_return_value,
+                UtilsError,
+                _UniffiConverterTypeUtilsError.lower,
+        )
+
+    @_UNIFFI_CALLBACK_INTERFACE_ASSET_FREEZE_TEST_ADAPTER_METHOD3
+    def is_frozen(
+            uniffi_handle,
+            address,
+            asset_id,
+            uniffi_out_return,
+            uniffi_call_status_ptr,
+        ):
+        uniffi_obj = _UniffiConverterTypeAssetFreezeTestAdapter._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterString.lift(address), _UniffiConverterUInt64.lift(asset_id), )
+            method = uniffi_obj.is_frozen
+            return method(*args)
+
+        
+        def write_return_value(v):
+            uniffi_out_return[0] = _UniffiConverterBool.lower(v)
+        _uniffi_trait_interface_call_with_error(
+                uniffi_call_status_ptr.contents,
+                make_call,
+                write_return_value,
+                UtilsError,
+                _UniffiConverterTypeUtilsError.lower,
+        )
+
+    @_UNIFFI_CALLBACK_INTERFACE_FREE
+    def _uniffi_free(uniffi_handle):
+        _UniffiConverterTypeAssetFreezeTestAdapter._handle_map.remove(uniffi_handle)
+
+    # Generate the FFI VTable.  This has a field for each callback interface method.
+    _uniffi_vtable = _UniffiVTableCallbackInterfaceAssetFreezeTestAdapter(
+        adapter_name,
+        setup_frozen_asset,
+        try_transfer_frozen,
+        is_frozen,
+        _uniffi_free
+    )
+    # Send Rust a pointer to the VTable.  Note: this means we need to keep the struct alive forever,
+    # or else bad things will happen when Rust tries to access it.
+    _UniffiLib.uniffi_algokit_utils_ffi_fn_init_callback_vtable_assetfreezetestadapter(ctypes.byref(_uniffi_vtable))
+
+
+
+class _UniffiConverterTypeAssetFreezeTestAdapter:
+    _handle_map = _UniffiHandleMap()
+
+    @staticmethod
+    def lift(value: int):
+        return AssetFreezeTestAdapterImpl._make_instance_(value)
+
+    @staticmethod
+    def check_lower(value: AssetFreezeTestAdapter):
+        pass
+
+    @staticmethod
+    def lower(value: AssetFreezeTestAdapterProtocol):
+        return _UniffiConverterTypeAssetFreezeTestAdapter._handle_map.insert(value)
+
+    @classmethod
+    def read(cls, buf: _UniffiRustBuffer):
+        ptr = buf.read_u64()
+        if ptr == 0:
+            raise InternalError("Raw pointer value was null")
+        return cls.lift(ptr)
+
+    @classmethod
+    def write(cls, value: AssetFreezeTestAdapterProtocol, buf: _UniffiRustBuffer):
+        buf.write_u64(cls.lower(value))
 class TransactionSignerProtocol(typing.Protocol):
     def sign_transactions(self, transactions: "typing.List[Transaction]",indices: "typing.List[int]"):
         raise NotImplementedError
@@ -3340,6 +3889,52 @@ def _uniffi_foreign_future_do_free(task):
     if not task.done():
         task.cancel()
 
+def run_asset_freeze_test_suite(adapter: "AssetFreezeTestAdapter",freeze_manager: "str",alice: "str",bob: "str",asset_id: "int") -> "TestSuiteResult":
+    """
+    Comprehensive test suite runner - extensible pattern
+    """
+
+    _UniffiConverterTypeAssetFreezeTestAdapter.check_lower(adapter)
+    
+    _UniffiConverterString.check_lower(freeze_manager)
+    
+    _UniffiConverterString.check_lower(alice)
+    
+    _UniffiConverterString.check_lower(bob)
+    
+    _UniffiConverterUInt64.check_lower(asset_id)
+    
+    return _UniffiConverterTypeTestSuiteResult.lift(_uniffi_rust_call_with_error(_UniffiConverterTypeUtilsError,_UniffiLib.uniffi_algokit_utils_ffi_fn_func_run_asset_freeze_test_suite,
+        _UniffiConverterTypeAssetFreezeTestAdapter.lower(adapter),
+        _UniffiConverterString.lower(freeze_manager),
+        _UniffiConverterString.lower(alice),
+        _UniffiConverterString.lower(bob),
+        _UniffiConverterUInt64.lower(asset_id)))
+
+
+def test_frozen_asset_transfer_simple(adapter: "AssetFreezeTestAdapter",freeze_manager: "str",alice: "str",bob: "str",asset_id: "int") -> "TestResult":
+    """
+    Convenience function for single test (backward compatibility)
+    """
+
+    _UniffiConverterTypeAssetFreezeTestAdapter.check_lower(adapter)
+    
+    _UniffiConverterString.check_lower(freeze_manager)
+    
+    _UniffiConverterString.check_lower(alice)
+    
+    _UniffiConverterString.check_lower(bob)
+    
+    _UniffiConverterUInt64.check_lower(asset_id)
+    
+    return _UniffiConverterTypeTestResult.lift(_uniffi_rust_call_with_error(_UniffiConverterTypeUtilsError,_UniffiLib.uniffi_algokit_utils_ffi_fn_func_test_frozen_asset_transfer_simple,
+        _UniffiConverterTypeAssetFreezeTestAdapter.lower(adapter),
+        _UniffiConverterString.lower(freeze_manager),
+        _UniffiConverterString.lower(alice),
+        _UniffiConverterString.lower(bob),
+        _UniffiConverterUInt64.lower(asset_id)))
+
+
 __all__ = [
     "InternalError",
     "UtilsError",
@@ -3356,7 +3951,12 @@ __all__ = [
     "OfflineKeyRegistrationParams",
     "OnlineKeyRegistrationParams",
     "PaymentParams",
+    "TestResult",
+    "TestSuiteResult",
+    "run_asset_freeze_test_suite",
+    "test_frozen_asset_transfer_simple",
     "AlgodClient",
+    "AssetFreezeTestAdapter",
     "Composer",
     "TransactionSigner",
     "TransactionSignerGetter",
