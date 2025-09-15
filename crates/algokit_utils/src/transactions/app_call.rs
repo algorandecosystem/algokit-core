@@ -1163,6 +1163,14 @@ pub fn build_app_update_method_call(
         header.clone(),
         params,
         |header, account_refs, app_refs, asset_refs, encoded_args| {
+            // Calculate extra program pages if not explicitly provided
+            let total_len = params.approval_program.len() + params.clear_state_program.len();
+            let extra_pages = if total_len > 2048 {
+                // ceil(total_len / 2048) - 1
+                Some(((total_len as u32 + 2047) / 2048) - 1)
+            } else {
+                Some(0)
+            };
             Transaction::AppCall(algokit_transact::AppCallTransactionFields {
                 header,
                 app_id: params.app_id,
@@ -1171,7 +1179,7 @@ pub fn build_app_update_method_call(
                 clear_state_program: Some(params.clear_state_program.clone()),
                 global_state_schema: None,
                 local_state_schema: None,
-                extra_program_pages: None,
+                extra_program_pages: extra_pages,
                 args: Some(encoded_args),
                 account_references: Some(account_refs),
                 app_references: Some(app_refs),

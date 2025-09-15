@@ -1,3 +1,4 @@
+use crate::applications::AppDeployer;
 use crate::clients::app_manager::AppManager;
 use crate::clients::asset_manager::AssetManager;
 use crate::clients::client_manager::ClientManager;
@@ -71,6 +72,12 @@ impl AlgorandClient {
 
         // Create closure for TransactionCreator
         let transaction_creator = TransactionCreator::new(new_group.clone());
+
+        let app_deployer = AppDeployer::new(
+            app_manager.clone(),
+            transaction_sender.clone(),
+            Some(client_manager.indexer()),
+        );
 
         Self {
             client_manager,
@@ -190,5 +197,10 @@ impl AlgorandClient {
             .lock()
             .unwrap()
             .set_signer(sender, signer);
+    }
+
+    /// Get a clone of the persistent AppDeployer (shares cache across clones)
+    pub fn app_deployer(&self) -> AppDeployer {
+        self.app_deployer.clone()
     }
 }
