@@ -44,15 +44,10 @@ impl AppClient {
     }
 
     fn extract_transaction_id(error_str: &str) -> Option<String> {
-        // Look for transaction ID pattern in error message
-        if let Some(idx) = error_str.find("transaction ") {
-            let start = idx + "transaction ".len();
-            let remaining = &error_str[start..];
-            if let Some(end) = remaining.find(' ') {
-                return Some(remaining[..end].to_string());
-            }
-        }
-        None
+        let re = regex::Regex::new(r"transaction ([A-Z2-7]{52})").unwrap();
+        re.captures(error_str)
+            .and_then(|caps| caps.get(1))
+            .map(|m| m.as_str().to_string())
     }
 
     fn apply_source_map_for_message(

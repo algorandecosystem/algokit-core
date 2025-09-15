@@ -1,24 +1,13 @@
-// Tests for Compilation & Source Maps Features
-// - TEAL Compilation: Compile TEAL templates with parameters
-// - Source Map Management: Import/export source maps for debugging
-// - Deploy-time Controls: Handle updatable/deletable flags
-// - Template Substitution: Replace deploy-time parameters
+// Tests for Compilation features
 
 use crate::common::{AlgorandFixtureResult, TestResult, algorand_fixture, deploy_arc56_contract};
 use algokit_abi::{ABIValue, Arc56Contract};
-use algokit_utils::applications::app_client::{
-    AppClient, AppClientMethodCallParams, AppClientParams,
-};
-use algokit_utils::clients::app_manager::{TealTemplateParams, TealTemplateValue};
+use algokit_utils::applications::app_client::{AppClient, AppClientParams};
+use algokit_utils::clients::app_manager::TealTemplateValue;
 use algokit_utils::config::{AppCompiledEventData, EventData, EventType};
 use algokit_utils::{AlgorandClient as RootAlgorandClient, AppMethodCallArg};
 use rstest::*;
 use std::sync::Arc;
-
-fn get_template_variables_spec() -> Arc56Contract {
-    let json = algokit_test_artifacts::template_variables::APPLICATION_ARC56;
-    Arc56Contract::from_json(json).expect("valid arc56")
-}
 
 fn get_testing_app_spec() -> Arc56Contract {
     let json = algokit_test_artifacts::testing_app::APPLICATION_ARC56;
@@ -35,24 +24,16 @@ async fn compile_applies_template_params_and_emits_event(
     algokit_utils::config::Config::configure(Some(true), None);
     let mut events = algokit_utils::config::Config::events().subscribe();
 
-    let mut tmpl: algokit_utils::clients::app_manager::TealTemplateParams = Default::default();
-    tmpl.insert(
-        "VALUE".to_string(),
-        algokit_utils::clients::app_manager::TealTemplateValue::Int(1),
-    );
-    tmpl.insert(
-        "UPDATABLE".to_string(),
-        algokit_utils::clients::app_manager::TealTemplateValue::Int(0),
-    );
-    tmpl.insert(
-        "DELETABLE".to_string(),
-        algokit_utils::clients::app_manager::TealTemplateValue::Int(0),
-    );
     let app_id = deploy_arc56_contract(
         &fixture,
         &sender,
         &get_testing_app_spec(),
-        Some(tmpl),
+        Some(
+            [("VALUE", 1), ("UPDATABLE", 0), ("DELETABLE", 0)]
+                .into_iter()
+                .map(|(k, v)| (k.to_string(), TealTemplateValue::Int(v)))
+                .collect(),
+        ),
         None,
         None,
     )

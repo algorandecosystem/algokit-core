@@ -1,12 +1,4 @@
 // Tests for Transaction Sending Features
-// - Send Transactions: Submit and wait for transaction confirmation
-// - Read-only Calls: Simulate calls without fees for query operations
-// - Error Handling: Transform and expose logic errors with source maps
-// - Result Processing: Process and decode return values
-// - Group Transactions: Send grouped/atomic transactions
-// - Custom Signers: Use custom transaction signers
-// - Rekey Support: Handle rekey operations
-// - Fund App Account: Send payment to app account
 
 use crate::common::{AlgorandFixtureResult, TestResult, algorand_fixture, deploy_arc56_contract};
 use algokit_abi::{ABIValue, Arc56Contract};
@@ -90,6 +82,112 @@ async fn test_create_then_call_app(
     match abi_return.return_value {
         Some(ABIValue::String(s)) => assert_eq!(s, "Hello, test"),
         _ => panic!("Expected string ABI return"),
+    }
+
+    Ok(())
+}
+
+#[rstest]
+#[tokio::test]
+async fn test_construct_transaction_with_abi_encoding_including_transaction(
+    #[future] algorand_fixture: AlgorandFixtureResult,
+) -> TestResult {
+    let mut fixture = algorand_fixture.await?;
+    let sender = fixture.test_account.account().address();
+
+    let mut tmpl: algokit_utils::clients::app_manager::TealTemplateParams = Default::default();
+    tmpl.insert(
+        "VALUE".to_string(),
+        algokit_utils::clients::app_manager::TealTemplateValue::Int(1),
+    );
+    tmpl.insert(
+        "UPDATABLE".to_string(),
+        algokit_utils::clients::app_manager::TealTemplateValue::Int(0),
+    );
+    tmpl.insert(
+        "DELETABLE".to_string(),
+        algokit_utils::clients::app_manager::TealTemplateValue::Int(0),
+    );
+    let app_id = deploy_arc56_contract(
+        &fixture,
+        &sender,
+        &get_testing_app_spec(),
+        Some(tmpl),
+        None,
+        None,
+    )
+    .await?;
+
+    let funded_account = fixture.generate_account(None).await?;
+    let funded_addr = funded_account.account().address();
+
+    let mut rng = rand::thread_rng();
+    let amount: u64 = rng.gen_range(1..=10000);
+
+    // Create a payment transaction with random amount
+    let payment_txn = fixture
+        .algorand_client
+        .create()
+        .payment(PaymentParams {
+            sender: funded_addr.clone(),
+            receiver: funded_addr.clone(),
+            amount,
+            ..Default::default()
+        })
+        .await?;
+
+    let client = AppClient::new(AppClientParams {
+        app_id,
+        app_spec: get_testing_app_spec(),
+        algorand: fixture.algorand_client,
+        app_name: None,
+        default_sender: Some(funded_addr.to_string()),
+        default_signer: None,
+        source_maps: None,
+        transaction_composer_config: None,
+    });
+
+    let result = client
+        .send()
+        .call(
+            AppClientMethodCallParams {
+                method: "call_abi_txn".to_string(),
+                args: vec![
+                    AppMethodCallArg::Transaction(payment_txn),
+                    AppMethodCallArg::ABIValue(ABIValue::from("test")),
+                ],
+                sender: Some(funded_addr.to_string()),
+                signer: Some(Arc::new(funded_account.clone())),
+                ..Default::default()
+            },
+            None,
+            None,
+        )
+        .await?;
+
+    // Expect a group of 2 transactions: payment + app call
+    assert_eq!(result.common_params.transactions.len(), 2);
+
+    // ABI return should be present and match expected string
+    let abi_return = result.abi_return.as_ref().expect("Expected ABI return");
+    let expected_return = format!("Sent {}. {}", amount, "test");
+    match &abi_return.return_value {
+        Some(ABIValue::String(s)) => assert_eq!(s, &expected_return),
+        _ => panic!("Expected string ABI return"),
+    }
+
+    // Also validate decoding via AppManager using the raw return bytes and method spec
+    let method = get_testing_app_spec()
+        .find_abi_method("call_abi_txn")
+        .expect("ABI method");
+    let decoded = algokit_utils::clients::app_manager::AppManager::get_abi_return(
+        &abi_return.raw_return_value,
+        &method,
+    )
+    .expect("Decoded ABI return");
+    match decoded.return_value {
+        Some(ABIValue::String(s)) => assert_eq!(s, expected_return),
+        _ => panic!("Expected string ABI return from AppManager decoding"),
     }
 
     Ok(())
@@ -234,17 +332,9 @@ async fn test_call_app_with_rekey(#[future] algorand_fixture: AlgorandFixtureRes
             PaymentParams {
                 sender: sender.clone(),
                 signer: Some(Arc::new(rekey_to_account.clone())),
-                rekey_to: None,
-                note: None,
-                lease: None,
-                static_fee: None,
-                extra_fee: None,
-                max_fee: None,
-                validity_window: None,
-                first_valid_round: None,
-                last_valid_round: None,
                 receiver: sender.clone(),
                 amount: 0,
+                ..Default::default()
             },
             None,
         )
@@ -294,16 +384,6 @@ async fn test_group_simulate_matches_send(
 
     let app_call1_params = AppCallMethodCallParams {
         sender: sender.clone(),
-        signer: None,
-        rekey_to: None,
-        note: None,
-        lease: None,
-        static_fee: None,
-        extra_fee: None,
-        max_fee: None,
-        validity_window: None,
-        first_valid_round: None,
-        last_valid_round: None,
         app_id,
         method: set_global_method,
         args: vec![
@@ -317,49 +397,24 @@ async fn test_group_simulate_matches_send(
                 ABIValue::from_byte(4),
             ])),
         ],
-        account_references: None,
-        app_references: None,
-        asset_references: None,
-        box_references: None,
         on_complete: algokit_transact::OnApplicationComplete::NoOp,
+        ..Default::default()
     };
 
     let payment_params = PaymentParams {
         sender: sender.clone(),
-        signer: None,
-        rekey_to: None,
-        note: None,
-        lease: None,
-        static_fee: None,
-        extra_fee: None,
-        max_fee: None,
-        validity_window: None,
-        first_valid_round: None,
-        last_valid_round: None,
         receiver: sender.clone(),
         amount: 10_000,
+        ..Default::default()
     };
 
     let app_call2_params = AppCallMethodCallParams {
         sender: sender.clone(),
-        signer: None,
-        rekey_to: None,
-        note: None,
-        lease: None,
-        static_fee: None,
-        extra_fee: None,
-        max_fee: None,
-        validity_window: None,
-        first_valid_round: None,
-        last_valid_round: None,
         app_id,
         method: call_abi_method,
         args: vec![AppMethodCallArg::ABIValue(ABIValue::from("test"))],
-        account_references: None,
-        app_references: None,
-        asset_references: None,
-        box_references: None,
         on_complete: algokit_transact::OnApplicationComplete::NoOp,
+        ..Default::default()
     };
 
     let mut simulate_composer = algorand.new_group(None);
@@ -551,18 +606,9 @@ async fn test_sign_transaction_in_group_with_different_signer_if_provided(
         .create()
         .payment(PaymentParams {
             sender: new_addr.clone(),
-            signer: None,
-            rekey_to: None,
-            note: None,
-            lease: None,
-            static_fee: None,
-            extra_fee: None,
-            max_fee: None,
-            validity_window: None,
-            first_valid_round: None,
-            last_valid_round: None,
             receiver: new_addr.clone(),
             amount: 2_000,
+            ..Default::default()
         })
         .await?;
 

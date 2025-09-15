@@ -31,6 +31,11 @@ pub enum AppClientError {
     CompilationError { message: String },
     #[snafu(display("Validation error: {message}"))]
     ValidationError { message: String },
+    #[snafu(display("{logic_error_str}"))]
+    LogicError {
+        logic_error_str: String,
+        logic: Box<super::types::LogicError>,
+    },
     #[snafu(display("Transact error: {source}"))]
     TransactError { source: AlgoKitTransactError },
     #[snafu(display("Params builder error: {message}"))]

@@ -1,9 +1,12 @@
+// Tests for Structs features
+
 use crate::common::{AlgorandFixtureResult, TestResult, algorand_fixture, deploy_arc56_contract};
 use algokit_abi::{ABIValue, Arc56Contract};
 use algokit_utils::applications::app_client::{
     AppClient, AppClientMethodCallParams, AppClientParams,
 };
-use algokit_utils::{AlgorandClient as RootAlgorandClient, AppMethodCallArg};
+use algokit_utils::transactions::TransactionComposerConfig;
+use algokit_utils::{AlgorandClient as RootAlgorandClient, AppMethodCallArg, ResourcePopulation};
 use rstest::*;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -11,6 +14,10 @@ use std::sync::Arc;
 fn get_nested_struct_spec() -> Arc56Contract {
     let json = algokit_test_artifacts::nested_struct_storage::APPLICATION_ARC56;
     Arc56Contract::from_json(json).expect("valid arc56")
+}
+
+fn get_nested_struct_create_application_args() -> Vec<Vec<u8>> {
+    vec![vec![184u8, 68u8, 123u8, 54u8]]
 }
 
 #[rstest]
@@ -22,7 +29,15 @@ async fn test_nested_structs_described_by_structure(
     let sender = fixture.test_account.account().address();
 
     let spec = get_nested_struct_spec();
-    let app_id = deploy_arc56_contract(&fixture, &sender, &spec, None, None, None).await?;
+    let app_id = deploy_arc56_contract(
+        &fixture,
+        &sender,
+        &spec,
+        None,
+        None,
+        Some(get_nested_struct_create_application_args()),
+    )
+    .await?;
 
     let mut algorand = RootAlgorandClient::default_localnet(None);
     algorand.set_signer(sender.clone(), Arc::new(fixture.test_account.clone()));
@@ -34,7 +49,12 @@ async fn test_nested_structs_described_by_structure(
         default_sender: Some(sender.to_string()),
         default_signer: None,
         source_maps: None,
-        transaction_composer_config: None,
+        transaction_composer_config: Some(TransactionComposerConfig {
+            populate_app_call_resources: ResourcePopulation::Enabled {
+                use_access_list: false,
+            },
+            ..Default::default()
+        }),
     });
 
     app_client
@@ -117,7 +137,15 @@ async fn test_nested_structs_referenced_by_name(
         ),
     ]);
 
-    let app_id = deploy_arc56_contract(&fixture, &sender, &spec, None, None, None).await?;
+    let app_id = deploy_arc56_contract(
+        &fixture,
+        &sender,
+        &spec,
+        None,
+        None,
+        Some(get_nested_struct_create_application_args()),
+    )
+    .await?;
 
     let mut algorand = RootAlgorandClient::default_localnet(None);
     algorand.set_signer(sender.clone(), Arc::new(fixture.test_account.clone()));

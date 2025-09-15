@@ -1,9 +1,4 @@
 // Tests for Parameter Creation Features
-// - Method Call Params: Create ABI method call parameters
-// - Bare Call Params: Create raw/bare application call parameters
-// - Default Value Resolution: Resolve default values from literals, methods, state, or boxes
-// - Struct Handling: Convert ARC-56 structs to ABI tuples
-// - Fund App Account Params: Create payment parameters for funding
 
 use crate::common::{AlgorandFixtureResult, TestResult, algorand_fixture, deploy_arc56_contract};
 use algokit_abi::{ABIValue, Arc56Contract};

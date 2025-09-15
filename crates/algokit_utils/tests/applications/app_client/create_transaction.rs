@@ -1,14 +1,4 @@
 // Tests for Transaction Creation Features
-// - Create Transactions: Build unsigned transactions for all call types
-// - Method Calls: Create ABI method-based transactions
-// - Bare Calls: Create raw application transactions
-// - Batch/Atomic: Support for atomic transaction composition
-// - Create App: Create application transactions
-// - Update App: Update application transactions
-// - Delete App: Delete application transactions
-// - Transaction with Boxes: Handle box references
-// - Transaction with ABI Args: Handle ABI arguments
-// - Foreign References: Handle foreign app/asset references
 
 use crate::common::{AlgorandFixtureResult, TestResult, algorand_fixture, deploy_arc56_contract};
 use algokit_abi::{ABIValue, Arc56Contract};
@@ -16,6 +6,7 @@ use algokit_transact::BoxReference;
 use algokit_utils::applications::app_client::{
     AppClient, AppClientMethodCallParams, AppClientParams,
 };
+use algokit_utils::clients::app_manager::TealTemplateValue;
 use algokit_utils::{AlgorandClient as RootAlgorandClient, AppMethodCallArg};
 use rstest::*;
 use std::sync::Arc;
@@ -33,8 +24,20 @@ async fn create_txn_with_box_references(
     let fixture = algorand_fixture.await?;
     let sender = fixture.test_account.account().address();
 
-    let app_id =
-        deploy_arc56_contract(&fixture, &sender, &get_testing_app_spec(), None, None, None).await?;
+    let app_id = deploy_arc56_contract(
+        &fixture,
+        &sender,
+        &get_testing_app_spec(),
+        Some(
+            [("VALUE", 1), ("UPDATABLE", 0), ("DELETABLE", 0)]
+                .into_iter()
+                .map(|(k, v)| (k.to_string(), TealTemplateValue::Int(v)))
+                .collect(),
+        ),
+        None,
+        None,
+    )
+    .await?;
 
     let mut algorand = RootAlgorandClient::default_localnet(None);
     algorand.set_signer(sender.clone(), Arc::new(fixture.test_account.clone()));

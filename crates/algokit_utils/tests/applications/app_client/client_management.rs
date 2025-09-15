@@ -1,6 +1,4 @@
-// Tests for Client Management Features (user-facing focus)
-// - Network Resolution: Resolve app by network from ARC-56 spec
-// - Creator Resolution: Find app by creator address and name (via indexer)
+// Tests for Client Management Features
 
 use crate::common::{AlgorandFixtureResult, TestResult, algorand_fixture, deploy_arc56_contract};
 use algokit_abi::{ABIValue, Arc56Contract};

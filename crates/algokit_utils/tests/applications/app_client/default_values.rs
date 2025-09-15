@@ -1,8 +1,4 @@
 // Tests for Default Value Resolution
-// - Literal values: Default resolved from base64-encoded constant
-// - Method call: Default resolved by calling another ABI method
-// - Global state: Default resolved from app global state
-// - Local state: Default resolved from app local state for sender
 
 use crate::common::{AlgorandFixtureResult, TestResult, algorand_fixture, deploy_arc56_contract};
 use algokit_abi::{ABIValue, Arc56Contract};
