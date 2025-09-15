@@ -1,5 +1,3 @@
-// Tests for Transaction Creation Features
-
 use crate::common::{AlgorandFixtureResult, TestResult, algorand_fixture, deploy_arc56_contract};
 use algokit_abi::{ABIValue, Arc56Contract};
 use algokit_transact::BoxReference;

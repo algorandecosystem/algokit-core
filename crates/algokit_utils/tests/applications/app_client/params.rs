@@ -1,5 +1,3 @@
-// Tests for Parameter Creation Features
-
 use crate::common::{AlgorandFixtureResult, TestResult, algorand_fixture, deploy_arc56_contract};
 use algokit_abi::{ABIValue, Arc56Contract};
 use algokit_transact::BoxReference;
@@ -28,15 +26,16 @@ async fn params_build_method_call_and_defaults(
     let fixture = algorand_fixture.await?;
     let sender = fixture.test_account.account().address();
 
-    let mut tmpl: TealTemplateParams = Default::default();
-    tmpl.insert("VALUE".to_string(), TealTemplateValue::Int(0));
-    tmpl.insert("UPDATABLE".to_string(), TealTemplateValue::Int(0));
-    tmpl.insert("DELETABLE".to_string(), TealTemplateValue::Int(0));
     let app_id = deploy_arc56_contract(
         &fixture,
         &sender,
         &get_testing_app_spec(),
-        Some(tmpl),
+        Some(
+            [("VALUE", 0), ("UPDATABLE", 0), ("DELETABLE", 0)]
+                .into_iter()
+                .map(|(k, v)| (k.to_string(), TealTemplateValue::Int(v)))
+                .collect(),
+        ),
         None,
         None,
     )
@@ -142,15 +141,16 @@ async fn params_build_includes_foreign_references_from_args(
     let fixture = algorand_fixture.await?;
     let sender = fixture.test_account.account().address();
 
-    let mut tmpl: TealTemplateParams = Default::default();
-    tmpl.insert("VALUE".to_string(), TealTemplateValue::Int(0));
-    tmpl.insert("UPDATABLE".to_string(), TealTemplateValue::Int(0));
-    tmpl.insert("DELETABLE".to_string(), TealTemplateValue::Int(0));
     let app_id = deploy_arc56_contract(
         &fixture,
         &sender,
         &get_testing_app_spec(),
-        Some(tmpl),
+        Some(
+            [("VALUE", 0), ("UPDATABLE", 0), ("DELETABLE", 0)]
+                .into_iter()
+                .map(|(k, v)| (k.to_string(), TealTemplateValue::Int(v)))
+                .collect(),
+        ),
         None,
         None,
     )

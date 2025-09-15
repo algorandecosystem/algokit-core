@@ -1,5 +1,3 @@
-// Tests for Source Maps and Error Handling Features
-
 use crate::common::{AlgorandFixtureResult, TestResult, algorand_fixture, deploy_arc56_contract};
 use algokit_abi::Arc56Contract;
 use algokit_utils::AlgorandClient;

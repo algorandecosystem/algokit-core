@@ -1,5 +1,3 @@
-// Tests for Compilation features
-
 use crate::common::{AlgorandFixtureResult, TestResult, algorand_fixture, deploy_arc56_contract};
 use algokit_abi::{ABIValue, Arc56Contract};
 use algokit_utils::applications::app_client::{AppClient, AppClientParams};
