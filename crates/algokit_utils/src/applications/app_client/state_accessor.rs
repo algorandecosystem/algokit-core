@@ -2,22 +2,21 @@ use super::{AppClient, AppClientError};
 use crate::clients::app_manager::AppState;
 use algokit_abi::arc56_contract::{ABIStorageKey, ABIStorageMap};
 use algokit_abi::{ABIType, ABIValue};
+use async_trait::async_trait;
 use base64::Engine;
 use num_bigint::BigUint;
 use std::collections::HashMap;
-use std::future::Future;
-use std::pin::Pin;
 
-pub struct BoxStateAccessor<'a> {
-    client: &'a AppClient,
+pub struct BoxStateAccessor<'app_client> {
+    client: &'app_client AppClient,
 }
 
-pub struct StateAccessor<'a> {
-    pub(crate) client: &'a AppClient,
+pub struct StateAccessor<'app_client> {
+    pub(crate) client: &'app_client AppClient,
 }
 
-impl<'a> StateAccessor<'a> {
-    pub fn new(client: &'a AppClient) -> Self {
+impl<'app_client> StateAccessor<'app_client> {
+    pub fn new(client: &'app_client AppClient) -> Self {
         Self { client }
     }
 
@@ -36,7 +35,7 @@ impl<'a> StateAccessor<'a> {
         AppStateAccessor::new("local".to_string(), Box::new(provider))
     }
 
-    pub fn box_storage(&self) -> BoxStateAccessor<'a> {
+    pub fn box_storage(&self) -> BoxStateAccessor<'app_client> {
         BoxStateAccessor {
             client: self.client,
         }
@@ -45,19 +44,21 @@ impl<'a> StateAccessor<'a> {
 
 type GetStateResult = Result<HashMap<Vec<u8>, AppState>, AppClientError>;
 
+#[async_trait(?Send)]
 pub trait StateProvider {
-    fn get_app_state(&self) -> Pin<Box<dyn Future<Output = GetStateResult> + '_>>;
+    async fn get_app_state(&self) -> GetStateResult;
     fn get_storage_keys(&self) -> Result<HashMap<String, ABIStorageKey>, AppClientError>;
     fn get_storage_maps(&self) -> Result<HashMap<String, ABIStorageMap>, AppClientError>;
 }
 
-struct GlobalStateProvider<'a> {
-    client: &'a AppClient,
+struct GlobalStateProvider<'app_client> {
+    client: &'app_client AppClient,
 }
 
+#[async_trait(?Send)]
 impl StateProvider for GlobalStateProvider<'_> {
-    fn get_app_state(&self) -> Pin<Box<dyn Future<Output = GetStateResult> + '_>> {
-        Box::pin(self.client.get_global_state())
+    async fn get_app_state(&self) -> GetStateResult {
+        self.client.get_global_state().await
     }
 
     fn get_storage_keys(&self) -> Result<HashMap<String, ABIStorageKey>, AppClientError> {
@@ -75,16 +76,15 @@ impl StateProvider for GlobalStateProvider<'_> {
     }
 }
 
-struct LocalStateProvider<'a> {
-    client: &'a AppClient,
+struct LocalStateProvider<'app_client> {
+    client: &'app_client AppClient,
     address: String,
 }
 
+#[async_trait(?Send)]
 impl StateProvider for LocalStateProvider<'_> {
-    fn get_app_state(&self) -> Pin<Box<dyn Future<Output = GetStateResult> + '_>> {
-        let addr = self.address.clone();
-        let client = self.client;
-        Box::pin(async move { client.get_local_state(&addr).await })
+    async fn get_app_state(&self) -> GetStateResult {
+        self.client.get_local_state(&self.address).await
     }
 
     fn get_storage_keys(&self) -> Result<HashMap<String, ABIStorageKey>, AppClientError> {
@@ -102,13 +102,13 @@ impl StateProvider for LocalStateProvider<'_> {
     }
 }
 
-pub struct AppStateAccessor<'a> {
+pub struct AppStateAccessor<'provider> {
     name: String,
-    provider: Box<dyn StateProvider + 'a>,
+    provider: Box<dyn StateProvider + 'provider>,
 }
 
-impl<'a> AppStateAccessor<'a> {
-    pub fn new(name: String, provider: Box<dyn StateProvider + 'a>) -> Self {
+impl<'provider> AppStateAccessor<'provider> {
+    pub fn new(name: String, provider: Box<dyn StateProvider + 'provider>) -> Self {
         Self { name, provider }
     }
 

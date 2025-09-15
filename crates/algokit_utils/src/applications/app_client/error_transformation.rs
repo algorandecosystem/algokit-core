@@ -110,6 +110,11 @@ impl AppClient {
         best_line
     }
 
+    /// Extracts and formats a code snippet from source code around a specific line with context.
+    ///
+    /// Given a JSON object containing source code, extracts a window of lines centered around
+    /// `center_line` with `context` lines above and below. Returns formatted lines with
+    /// line numbers for error display purposes.
     fn truncate_listing(map: &JsonValue, center_line: u64, context: usize) -> Vec<String> {
         let mut lines: Vec<String> = Vec::new();
         if let Some(source) = map.get("source").and_then(|s| s.as_str()) {

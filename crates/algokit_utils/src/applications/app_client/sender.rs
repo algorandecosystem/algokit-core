@@ -6,17 +6,17 @@ use algokit_transact::{MAX_SIMULATE_OPCODE_BUDGET, OnApplicationComplete};
 use super::types::{AppClientBareCallParams, AppClientMethodCallParams, CompilationParams};
 use super::{AppClient, FundAppAccountParams};
 
-pub struct TransactionSender<'a> {
-    pub(crate) client: &'a AppClient,
+pub struct TransactionSender<'app_client> {
+    pub(crate) client: &'app_client AppClient,
 }
 
-pub struct BareTransactionSender<'a> {
-    pub(crate) client: &'a AppClient,
+pub struct BareTransactionSender<'app_client> {
+    pub(crate) client: &'app_client AppClient,
 }
 
-impl<'a> TransactionSender<'a> {
+impl<'app_client> TransactionSender<'app_client> {
     /// Get the bare transaction sender.
-    pub fn bare(&self) -> BareTransactionSender<'a> {
+    pub fn bare(&self) -> BareTransactionSender<'app_client> {
         BareTransactionSender {
             client: self.client,
         }

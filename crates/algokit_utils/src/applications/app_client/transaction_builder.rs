@@ -5,12 +5,12 @@ use futures::TryFutureExt;
 use super::types::{AppClientBareCallParams, AppClientMethodCallParams, CompilationParams};
 use super::{AppClient, FundAppAccountParams};
 
-pub struct TransactionBuilder<'a> {
-    pub(crate) client: &'a AppClient,
+pub struct TransactionBuilder<'app_client> {
+    pub(crate) client: &'app_client AppClient,
 }
 
-pub struct BareTransactionBuilder<'a> {
-    pub(crate) client: &'a AppClient,
+pub struct BareTransactionBuilder<'app_client> {
+    pub(crate) client: &'app_client AppClient,
 }
 
 impl TransactionBuilder<'_> {

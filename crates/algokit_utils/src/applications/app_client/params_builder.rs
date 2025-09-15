@@ -14,22 +14,22 @@ use algokit_transact::{Address, OnApplicationComplete};
 use base64::Engine;
 use std::str::FromStr;
 
-enum StateSource<'a> {
+enum StateSource<'app_client> {
     Global,
-    Local(&'a str),
+    Local(&'app_client str),
 }
 
-pub struct ParamsBuilder<'a> {
-    pub(crate) client: &'a AppClient,
+pub struct ParamsBuilder<'app_client> {
+    pub(crate) client: &'app_client AppClient,
 }
 
-pub struct BareParamsBuilder<'a> {
-    pub(crate) client: &'a AppClient,
+pub struct BareParamsBuilder<'app_client> {
+    pub(crate) client: &'app_client AppClient,
 }
 
-impl<'a> ParamsBuilder<'a> {
+impl<'app_client> ParamsBuilder<'app_client> {
     /// Get the bare call params builder.
-    pub fn bare(&self) -> BareParamsBuilder<'a> {
+    pub fn bare(&self) -> BareParamsBuilder<'app_client> {
         BareParamsBuilder {
             client: self.client,
         }
