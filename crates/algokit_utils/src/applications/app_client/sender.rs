@@ -31,7 +31,7 @@ impl<'app_client> TransactionSender<'app_client> {
         let arc56_method = self
             .client
             .app_spec
-            .get_arc56_method(&params.method)
+            .get_method(&params.method)
             .map_err(|e| AppClientError::ABIError { source: e })?;
 
         let mut method_params = self.client.params().call(params, on_complete).await?;

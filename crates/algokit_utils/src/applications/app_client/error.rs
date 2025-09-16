@@ -24,7 +24,7 @@ pub enum AppClientError {
     #[snafu(display("ABI error: {source}"))]
     ABIError { source: ABIError },
     #[snafu(display("Transaction sender error: {source}"))]
-    TransactionSenderError { source: TransactionSenderError }, // TODO: do we need this?
+    TransactionSenderError { source: TransactionSenderError },
     #[snafu(display("App manager error: {source}"))]
     AppManagerError { source: AppManagerError },
     #[snafu(display("Compilation error: {message}"))]

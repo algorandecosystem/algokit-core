@@ -1,7 +1,9 @@
 use crate::common::{AlgorandFixtureResult, TestResult, algorand_fixture, deploy_arc56_contract};
 use algokit_abi::{ABIValue, Arc56Contract};
 use algokit_transact::BoxReference;
-use algokit_utils::applications::app_client::{AppClient, AppClientParams};
+use algokit_utils::applications::app_client::{
+    AppClient, AppClientBareCallParams, AppClientParams,
+};
 use algokit_utils::applications::app_client::{AppClientMethodCallParams, FundAppAccountParams};
 use algokit_utils::clients::app_manager::{TealTemplateParams, TealTemplateValue};
 use algokit_utils::{AlgorandClient as RootAlgorandClient, AppMethodCallArg, PaymentParams};
@@ -221,7 +223,7 @@ async fn params_build_bare_and_fund_payment(
     });
 
     let bare = client.params().bare().call(
-        algokit_utils::applications::app_client::AppClientBareCallParams {
+        AppClientBareCallParams {
             args: None,
             sender: Some(sender.to_string()),
             box_references: Some(vec![BoxReference {

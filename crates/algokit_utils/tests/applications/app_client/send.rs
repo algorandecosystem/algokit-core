@@ -1,14 +1,15 @@
 use crate::common::{AlgorandFixtureResult, TestResult, algorand_fixture, deploy_arc56_contract};
+use TealTemplateValue;
 use algokit_abi::{ABIValue, Arc56Contract};
 use algokit_transact::{BoxReference, SignedTransaction, Transaction};
 use algokit_utils::applications::app_client::{
     AppClient, AppClientMethodCallParams, AppClientParams,
 };
-use algokit_utils::clients::app_manager::TealTemplateValue;
+use algokit_utils::clients::app_manager::TealTemplateParams;
 use algokit_utils::transactions::app_call::AppCallMethodCallParams;
 use algokit_utils::transactions::composer::SimulateParams;
 use algokit_utils::transactions::{PaymentParams, TransactionSigner, TransactionWithSigner};
-use algokit_utils::{AlgorandClient as RootAlgorandClient, AppMethodCallArg};
+use algokit_utils::{AlgorandClient as RootAlgorandClient, AppManager, AppMethodCallArg};
 use async_trait::async_trait;
 use rand::Rng;
 use rstest::*;
@@ -32,19 +33,10 @@ async fn test_create_then_call_app(
     let fixture = algorand_fixture.await?;
     let sender = fixture.test_account.account().address();
 
-    let mut tmpl: algokit_utils::clients::app_manager::TealTemplateParams = Default::default();
-    tmpl.insert(
-        "VALUE".to_string(),
-        algokit_utils::clients::app_manager::TealTemplateValue::Int(1),
-    );
-    tmpl.insert(
-        "UPDATABLE".to_string(),
-        algokit_utils::clients::app_manager::TealTemplateValue::Int(0),
-    );
-    tmpl.insert(
-        "DELETABLE".to_string(),
-        algokit_utils::clients::app_manager::TealTemplateValue::Int(0),
-    );
+    let mut tmpl: TealTemplateParams = Default::default();
+    tmpl.insert("VALUE".to_string(), TealTemplateValue::Int(1));
+    tmpl.insert("UPDATABLE".to_string(), TealTemplateValue::Int(0));
+    tmpl.insert("DELETABLE".to_string(), TealTemplateValue::Int(0));
     let app_id = deploy_arc56_contract(
         &fixture,
         &sender,
@@ -172,11 +164,8 @@ async fn test_construct_transaction_with_abi_encoding_including_transaction(
     let method = get_testing_app_spec()
         .find_abi_method("call_abi_txn")
         .expect("ABI method");
-    let decoded = algokit_utils::clients::app_manager::AppManager::get_abi_return(
-        &abi_return.raw_return_value,
-        &method,
-    )
-    .expect("Decoded ABI return");
+    let decoded = AppManager::get_abi_return(&abi_return.raw_return_value, &method)
+        .expect("Decoded ABI return");
     match decoded.return_value {
         Some(ABIValue::String(s)) => assert_eq!(s, expected_return),
         _ => panic!("Expected string ABI return from AppManager decoding"),
@@ -193,19 +182,10 @@ async fn test_call_app_with_too_many_args(
     let fixture = algorand_fixture.await?;
     let sender = fixture.test_account.account().address();
 
-    let mut tmpl: algokit_utils::clients::app_manager::TealTemplateParams = Default::default();
-    tmpl.insert(
-        "VALUE".to_string(),
-        algokit_utils::clients::app_manager::TealTemplateValue::Int(1),
-    );
-    tmpl.insert(
-        "UPDATABLE".to_string(),
-        algokit_utils::clients::app_manager::TealTemplateValue::Int(0),
-    );
-    tmpl.insert(
-        "DELETABLE".to_string(),
-        algokit_utils::clients::app_manager::TealTemplateValue::Int(0),
-    );
+    let mut tmpl: TealTemplateParams = Default::default();
+    tmpl.insert("VALUE".to_string(), TealTemplateValue::Int(1));
+    tmpl.insert("UPDATABLE".to_string(), TealTemplateValue::Int(0));
+    tmpl.insert("DELETABLE".to_string(), TealTemplateValue::Int(0));
     let app_id = deploy_arc56_contract(
         &fixture,
         &sender,
@@ -541,19 +521,10 @@ async fn test_sign_transaction_in_group_with_different_signer_if_provided(
     let mut fixture = algorand_fixture.await?;
     let sender = fixture.test_account.account().address();
 
-    let mut tmpl: algokit_utils::clients::app_manager::TealTemplateParams = Default::default();
-    tmpl.insert(
-        "VALUE".to_string(),
-        algokit_utils::clients::app_manager::TealTemplateValue::Int(1),
-    );
-    tmpl.insert(
-        "UPDATABLE".to_string(),
-        algokit_utils::clients::app_manager::TealTemplateValue::Int(0),
-    );
-    tmpl.insert(
-        "DELETABLE".to_string(),
-        algokit_utils::clients::app_manager::TealTemplateValue::Int(0),
-    );
+    let mut tmpl: TealTemplateParams = Default::default();
+    tmpl.insert("VALUE".to_string(), TealTemplateValue::Int(1));
+    tmpl.insert("UPDATABLE".to_string(), TealTemplateValue::Int(0));
+    tmpl.insert("DELETABLE".to_string(), TealTemplateValue::Int(0));
     let app_id = deploy_arc56_contract(
         &fixture,
         &sender,
