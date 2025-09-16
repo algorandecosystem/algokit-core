@@ -8,7 +8,7 @@ use snafu::Snafu;
 
 #[derive(Debug, Snafu)]
 pub enum AppClientError {
-    #[snafu(display( // TODO: test this message
+    #[snafu(display(
         "No app ID found for network {network_names:?}. Available keys in spec: {available:?}"
     ))]
     AppIdNotFound {
@@ -31,9 +31,9 @@ pub enum AppClientError {
     CompilationError { message: String },
     #[snafu(display("Validation error: {message}"))]
     ValidationError { message: String },
-    #[snafu(display("{logic_error_str}"))]
+    #[snafu(display("{message}"))]
     LogicError {
-        logic_error_str: String,
+        message: String,
         logic: Box<super::types::LogicError>,
     },
     #[snafu(display("Transact error: {source}"))]

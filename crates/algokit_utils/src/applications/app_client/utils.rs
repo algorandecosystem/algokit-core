@@ -20,7 +20,7 @@ pub fn transform_transaction_error(
         };
         let logic = client.expose_logic_error(&tx_err, is_clear_state_program);
         return AppClientError::LogicError {
-            logic_error_str: logic.logic_error_str.clone(),
+            message: logic.message.clone(),
             logic: Box::new(logic),
         };
     }

@@ -87,7 +87,7 @@ async fn compile_applies_template_params_and_emits_event(
             _ => return Err("unexpected event data".into()),
         }
     } else {
-        return Err("expected AppCompiled event".into())
+        return Err("expected AppCompiled event".into());
     }
 
     Ok(())

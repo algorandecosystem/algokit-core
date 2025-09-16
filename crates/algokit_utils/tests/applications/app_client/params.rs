@@ -1,10 +1,8 @@
-use crate::common::TestResult;
 use crate::applications::app_client::common::{sandbox_app_fixture, testing_app_fixture};
+use crate::common::TestResult;
 use algokit_abi::ABIValue;
 use algokit_transact::BoxReference;
-use algokit_utils::applications::app_client::{
-    AppClientBareCallParams,
-};
+use algokit_utils::applications::app_client::AppClientBareCallParams;
 use algokit_utils::applications::app_client::{AppClientMethodCallParams, FundAppAccountParams};
 use algokit_utils::{AppMethodCallArg, PaymentParams};
 use rstest::*;

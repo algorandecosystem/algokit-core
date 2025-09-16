@@ -102,7 +102,7 @@ pub struct AppClientBareCallParams {
 /// Enriched logic error details with source map information.
 #[derive(Debug, Clone, Default)]
 pub struct LogicError {
-    pub logic_error_str: String,
+    pub message: String,
     pub program: Option<Vec<u8>>,
     pub source_map: Option<serde_json::Value>,
     pub transaction_id: Option<String>,
