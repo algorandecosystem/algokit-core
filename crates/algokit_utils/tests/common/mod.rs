@@ -17,7 +17,22 @@ use algokit_utils::config::{AppCompiledEventData, Config, EventData, EventType};
 use base64::prelude::*;
 
 pub use app_fixture::{
-    AppFixture, AppFixtureOptions, AppFixtureResult, build_app_fixture, default_teal_params,
+    AppFixture,
+    AppFixtureOptions,
+    AppFixtureResult,
+    boxmap_app_fixture,
+    boxmap_spec,
+    build_app_fixture,
+    default_teal_params,
+    hello_world_app_fixture,
+    hello_world_spec,
+    sandbox_app_fixture,
+    sandbox_spec,
+    testing_app_fixture,
+    testing_app_puya_fixture,
+    testing_app_puya_spec,
+    // Re-export specs and fixtures for convenience
+    testing_app_spec,
 };
 pub use fixture::{AlgorandFixture, AlgorandFixtureResult, algorand_fixture};
 pub use indexer_helpers::{
@@ -63,18 +78,6 @@ pub async fn deploy_arc56_contract(
             deploy_metadata.as_ref(),
         )
         .await?;
-
-    // If debug is enabled, emit an AppCompiled event similar to AppClient::compile
-    if Config::debug() {
-        let event = AppCompiledEventData {
-            app_name: Some(arc56_contract.name.clone()),
-            approval_source_map: approval_compile.source_map.clone(),
-            clear_source_map: clear_compile.source_map.clone(),
-        };
-        Config::events()
-            .emit(EventType::AppCompiled, EventData::AppCompiled(event))
-            .await;
-    }
 
     let app_create_params = AppCreateParams {
         sender: sender.clone(),

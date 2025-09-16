@@ -1,5 +1,5 @@
-use crate::applications::app_client::common::testing_app_fixture;
 use crate::common::TestResult;
+use crate::common::app_fixture::testing_app_fixture;
 use algokit_abi::ABIValue;
 use algokit_utils::AppMethodCallArg;
 use algokit_utils::applications::app_client::AppClientMethodCallParams;

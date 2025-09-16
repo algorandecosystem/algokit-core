@@ -35,7 +35,7 @@ impl<'app_client> ParamsBuilder<'app_client> {
         }
     }
 
-    /// Call a method with NoOp.
+    /// Build parameters for an ABI method call with the specified on-complete action.
     pub async fn call(
         &self,
         params: AppClientMethodCallParams,
@@ -45,7 +45,7 @@ impl<'app_client> ParamsBuilder<'app_client> {
             .await
     }
 
-    /// Call a method with OptIn.
+    /// Build parameters for an ABI method call with OptIn on-complete action.
     pub async fn opt_in(
         &self,
         params: AppClientMethodCallParams,
@@ -54,7 +54,7 @@ impl<'app_client> ParamsBuilder<'app_client> {
             .await
     }
 
-    /// Call a method with CloseOut.
+    /// Build parameters for an ABI method call with CloseOut on-complete action.
     pub async fn close_out(
         &self,
         params: AppClientMethodCallParams,
@@ -63,7 +63,7 @@ impl<'app_client> ParamsBuilder<'app_client> {
             .await
     }
 
-    /// Call a method with ClearState.
+    /// Build parameters for an ABI method call with ClearState on-complete action.
     pub async fn clear_state(
         &self,
         params: AppClientMethodCallParams,
@@ -72,7 +72,7 @@ impl<'app_client> ParamsBuilder<'app_client> {
             .await
     }
 
-    /// Call a method with Delete.
+    /// Build parameters for an ABI method call with Delete on-complete action.
     pub async fn delete(
         &self,
         params: AppClientMethodCallParams,
@@ -100,14 +100,16 @@ impl<'app_client> ParamsBuilder<'app_client> {
             app_id: self.client.app_id,
             method: abi_method,
             args: resolved_args,
-            account_references: super::utils::parse_account_refs_strs(&params.account_references)?,
+            account_references: super::utils::parse_account_refs_to_addresses(
+                &params.account_references,
+            )?,
             app_references: params.app_references.clone(),
             asset_references: params.asset_references.clone(),
             box_references: params.box_references.clone(),
         })
     }
 
-    /// Update the application with a method call.
+    /// Build parameters for updating the application using an ABI method call.
     pub async fn update(
         &self,
         params: AppClientMethodCallParams,
@@ -141,7 +143,9 @@ impl<'app_client> ParamsBuilder<'app_client> {
             app_id: self.client.app_id,
             method: abi_method,
             args: resolved_args,
-            account_references: super::utils::parse_account_refs_strs(&params.account_references)?,
+            account_references: super::utils::parse_account_refs_to_addresses(
+                &params.account_references,
+            )?,
             app_references: params.app_references.clone(),
             asset_references: params.asset_references.clone(),
             box_references: params.box_references.clone(),
@@ -150,7 +154,7 @@ impl<'app_client> ParamsBuilder<'app_client> {
         })
     }
 
-    /// Fund the application account.
+    /// Build parameters for funding the application's account.
     pub fn fund_app_account(
         &self,
         params: &FundAppAccountParams,
@@ -206,7 +210,9 @@ impl<'app_client> ParamsBuilder<'app_client> {
             app_id: self.client.app_id,
             method: abi_method,
             args: resolved_args,
-            account_references: super::utils::parse_account_refs_strs(&params.account_references)?,
+            account_references: super::utils::parse_account_refs_to_addresses(
+                &params.account_references,
+            )?,
             app_references: params.app_references.clone(),
             asset_references: params.asset_references.clone(),
             box_references: params.box_references.clone(),
@@ -274,7 +280,9 @@ impl<'app_client> ParamsBuilder<'app_client> {
                         ),
                     });
                 }
-                // TODO: can we ignore other validations, they will be handled at encoding?
+                // Intentionally defer type compatibility and structural validation to ABI
+                // encoding/composer (consistent with TS/Py). Here we only enforce arg count and
+                // default value handling; encoding will surface any mismatches.
                 (_, value) => {
                     resolved.push(value.clone());
                 }
@@ -333,6 +341,7 @@ impl<'app_client> ParamsBuilder<'app_client> {
         }
     }
 
+    /// Resolve a default value from various sources (method call, literal, state, or box).
     pub async fn resolve_default_value(
         &self,
         default: &ABIDefaultValue,
@@ -406,7 +415,7 @@ impl<'app_client> ParamsBuilder<'app_client> {
 }
 
 impl BareParamsBuilder<'_> {
-    /// Call with NoOp.
+    /// Build parameters for a bare application call with the specified on-complete action.
     pub fn call(
         &self,
         params: AppClientBareCallParams,
@@ -415,12 +424,12 @@ impl BareParamsBuilder<'_> {
         self.build_bare_app_call_params(params, on_complete.unwrap_or(OnApplicationComplete::NoOp))
     }
 
-    /// Call with OptIn.
+    /// Build parameters for a bare application call with OptIn on-complete action.
     pub fn opt_in(&self, params: AppClientBareCallParams) -> Result<AppCallParams, AppClientError> {
         self.build_bare_app_call_params(params, OnApplicationComplete::OptIn)
     }
 
-    /// Call with CloseOut.
+    /// Build parameters for a bare application call with CloseOut on-complete action.
     pub fn close_out(
         &self,
         params: AppClientBareCallParams,
@@ -428,7 +437,7 @@ impl BareParamsBuilder<'_> {
         self.build_bare_app_call_params(params, OnApplicationComplete::CloseOut)
     }
 
-    /// Call with Delete.
+    /// Build parameters for a bare application call with Delete on-complete action.
     pub fn delete(
         &self,
         params: AppClientBareCallParams,
@@ -449,14 +458,16 @@ impl BareParamsBuilder<'_> {
             last_valid_round: params.last_valid_round,
             app_id: self.client.app_id,
             args: params.args,
-            account_references: super::utils::parse_account_refs_strs(&params.account_references)?,
+            account_references: super::utils::parse_account_refs_to_addresses(
+                &params.account_references,
+            )?,
             app_references: params.app_references,
             asset_references: params.asset_references,
             box_references: params.box_references,
         })
     }
 
-    /// Call with ClearState.
+    /// Build parameters for a bare application call with ClearState on-complete action.
     pub fn clear_state(
         &self,
         params: AppClientBareCallParams,
@@ -464,7 +475,7 @@ impl BareParamsBuilder<'_> {
         self.build_bare_app_call_params(params, OnApplicationComplete::ClearState)
     }
 
-    /// Update with bare call.
+    /// Build parameters for updating the application using a bare application call.
     pub async fn update(
         &self,
         params: AppClientBareCallParams,
@@ -491,7 +502,9 @@ impl BareParamsBuilder<'_> {
             last_valid_round: params.last_valid_round,
             app_id: self.client.app_id,
             args: params.args,
-            account_references: super::utils::parse_account_refs_strs(&params.account_references)?,
+            account_references: super::utils::parse_account_refs_to_addresses(
+                &params.account_references,
+            )?,
             app_references: params.app_references,
             asset_references: params.asset_references,
             box_references: params.box_references,
@@ -522,7 +535,9 @@ impl BareParamsBuilder<'_> {
             app_id: self.client.app_id,
             on_complete,
             args: params.args,
-            account_references: super::utils::parse_account_refs_strs(&params.account_references)?,
+            account_references: super::utils::parse_account_refs_to_addresses(
+                &params.account_references,
+            )?,
             app_references: params.app_references,
             asset_references: params.asset_references,
             box_references: params.box_references,

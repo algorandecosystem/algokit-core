@@ -1,7 +1,7 @@
-use crate::applications::app_client::common::{
+use crate::common::TestResult;
+use crate::common::app_fixture::{
     boxmap_app_fixture, testing_app_fixture, testing_app_puya_fixture,
 };
-use crate::common::TestResult;
 use algokit_abi::{ABIType, ABIValue};
 use algokit_transact::BoxReference;
 // client params not needed with fixtures
@@ -537,10 +537,7 @@ async fn box_methods_with_arc4_returns_parametrized(
             b"".to_vec(),
             "set_struct",
             "(string,uint64)",
-            algokit_abi::ABIValue::Array(vec![
-                algokit_abi::ABIValue::from("box1"),
-                algokit_abi::ABIValue::from(123u64),
-            ]),
+            ABIValue::Array(vec![ABIValue::from("box1"), ABIValue::from(123u64)]),
         ),
     ];
 
@@ -551,9 +548,9 @@ async fn box_methods_with_arc4_returns_parametrized(
         box_reference.extend_from_slice(&name_encoded);
 
         let method_arg_val = if method_sig == "set_struct" {
-            algokit_abi::ABIValue::Struct(HashMap::from([
-                ("name".to_string(), algokit_abi::ABIValue::from("box1")),
-                ("id".to_string(), algokit_abi::ABIValue::from(123u64)),
+            ABIValue::Struct(HashMap::from([
+                ("name".to_string(), ABIValue::from("box1")),
+                ("id".to_string(), ABIValue::from(123u64)),
             ]))
         } else {
             arg_val.clone()
@@ -595,19 +592,17 @@ async fn box_methods_with_arc4_returns_parametrized(
             .await?;
         assert_eq!(decoded, arg_val);
 
-        if method_sig == "set_struct" {
-            let struct_box_name = box_reference.clone();
-            let values = client
-                .get_box_values_from_abi_type(
-                    &ABIType::from_str(value_type_str).unwrap(),
-                    Some(Box::new(move |name: &BoxName| {
-                        name.name_raw == struct_box_name
-                    })),
-                )
-                .await?;
-            assert_eq!(values.len(), 1);
-            assert_eq!(values[0].value, decoded);
-        }
+        let box_name_for_filter = box_reference.clone();
+        let values = client
+            .get_box_values_from_abi_type(
+                &ABIType::from_str(value_type_str).unwrap(),
+                Some(Box::new(move |name: &BoxName| {
+                    name.name_raw == box_name_for_filter
+                })),
+            )
+            .await?;
+        assert_eq!(values.len(), 1);
+        assert_eq!(values[0].value, decoded);
     }
 
     Ok(())

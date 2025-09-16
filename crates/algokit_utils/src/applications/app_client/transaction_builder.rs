@@ -21,7 +21,7 @@ impl TransactionBuilder<'_> {
         }
     }
 
-    /// Creates an ABI method call with NoOp.
+    /// Create an unsigned ABI method call transaction with the specified on-complete action.
     pub async fn call(
         &self,
         params: AppClientMethodCallParams,
@@ -38,7 +38,7 @@ impl TransactionBuilder<'_> {
         Ok(trasactions[0].clone())
     }
 
-    /// Creates an ABI method call with OptIn.
+    /// Create an unsigned ABI method call transaction with OptIn on-complete action.
     pub async fn opt_in(
         &self,
         params: AppClientMethodCallParams,
@@ -54,7 +54,7 @@ impl TransactionBuilder<'_> {
         Ok(trasactions[0].clone())
     }
 
-    /// Creates an ABI method call with CloseOut.
+    /// Create an unsigned ABI method call transaction with CloseOut on-complete action.
     pub async fn close_out(
         &self,
         params: AppClientMethodCallParams,
@@ -70,6 +70,7 @@ impl TransactionBuilder<'_> {
         Ok(trasactions[0].clone())
     }
 
+    /// Create an unsigned ABI method call transaction with ClearState on-complete action.
     pub async fn clear_state(
         &self,
         params: AppClientMethodCallParams,
@@ -85,7 +86,7 @@ impl TransactionBuilder<'_> {
         Ok(trasactions[0].clone())
     }
 
-    /// Creates an ABI method call with Delete.
+    /// Create an unsigned ABI method call transaction with Delete on-complete action.
     pub async fn delete(
         &self,
         params: AppClientMethodCallParams,
@@ -101,7 +102,7 @@ impl TransactionBuilder<'_> {
         Ok(trasactions[0].clone())
     }
 
-    /// Update the application with method call.
+    /// Create an unsigned application update transaction using an ABI method call.
     pub async fn update(
         &self,
         params: AppClientMethodCallParams,
@@ -122,7 +123,7 @@ impl TransactionBuilder<'_> {
         Ok(trasactions[0].clone())
     }
 
-    /// Fund the application account.
+    /// Create an unsigned payment transaction to fund the application's account.
     pub async fn fund_app_account(
         &self,
         params: FundAppAccountParams,
@@ -138,7 +139,7 @@ impl TransactionBuilder<'_> {
 }
 
 impl BareTransactionBuilder<'_> {
-    /// Call with NoOp.
+    /// Create an unsigned bare application call transaction with the specified on-complete action.
     pub async fn call(
         &self,
         params: AppClientBareCallParams,
@@ -153,7 +154,7 @@ impl BareTransactionBuilder<'_> {
             .await
     }
 
-    /// Call with OptIn.
+    /// Create an unsigned bare application call transaction with OptIn on-complete action.
     pub async fn opt_in(
         &self,
         params: AppClientBareCallParams,
@@ -167,7 +168,7 @@ impl BareTransactionBuilder<'_> {
             .await
     }
 
-    /// Call with CloseOut.
+    /// Create an unsigned bare application call transaction with CloseOut on-complete action.
     pub async fn close_out(
         &self,
         params: AppClientBareCallParams,
@@ -181,7 +182,7 @@ impl BareTransactionBuilder<'_> {
             .await
     }
 
-    /// Call with Delete.
+    /// Create an unsigned bare application call transaction with Delete on-complete action.
     pub async fn delete(
         &self,
         params: AppClientBareCallParams,
@@ -195,7 +196,7 @@ impl BareTransactionBuilder<'_> {
             .await
     }
 
-    /// Call with ClearState.
+    /// Create an unsigned bare application call transaction with ClearState on-complete action.
     pub async fn clear_state(
         &self,
         params: AppClientBareCallParams,
@@ -209,7 +210,7 @@ impl BareTransactionBuilder<'_> {
             .await
     }
 
-    /// Update with bare call.
+    /// Create an unsigned application update transaction using a bare application call.
     pub async fn update(
         &self,
         params: AppClientBareCallParams,

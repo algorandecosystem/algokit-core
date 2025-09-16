@@ -7,6 +7,7 @@ use crate::{
 };
 
 impl AppClient {
+    /// Compile the application's approval and clear programs with optional template parameters.
     pub async fn compile(
         &self,
         compilation_params: &CompilationParams,

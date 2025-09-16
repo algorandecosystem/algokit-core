@@ -1,13 +1,14 @@
 use super::AppClient;
+use super::error_transformation::extract_logic_error_data;
 use crate::AppClientError;
 use crate::transactions::TransactionSenderError;
 use std::str::FromStr;
 
 fn contains_logic_error(s: &str) -> bool {
-    s.contains("logic eval error") && s.contains("pc=")
+    extract_logic_error_data(s).is_some()
 }
 
-/// Transform a transaction error with logic error enhancement.
+/// Transform transaction errors to include enhanced logic error details when applicable.
 pub fn transform_transaction_error(
     client: &AppClient,
     err: TransactionSenderError,
@@ -15,6 +16,13 @@ pub fn transform_transaction_error(
 ) -> AppClientError {
     let err_str = err.to_string();
     if contains_logic_error(&err_str) {
+        // Only transform errors that are for this app (when app_id is known)
+        if client.app_id() != 0 {
+            let app_tag = format!("app={}", client.app_id());
+            if !err_str.contains(&app_tag) {
+                return AppClientError::TransactionSenderError { source: err };
+            }
+        }
         let tx_err = crate::transactions::TransactionResultError::ParsingError {
             message: err_str.clone(),
         };
@@ -28,8 +36,8 @@ pub fn transform_transaction_error(
     AppClientError::TransactionSenderError { source: err }
 }
 
-/// Parse account reference strings to addresses.
-pub fn parse_account_refs_strs(
+/// Parse optional account reference strings into Address objects.
+pub fn parse_account_refs_to_addresses(
     account_refs: &Option<Vec<String>>,
 ) -> Result<Option<Vec<algokit_transact::Address>>, AppClientError> {
     match account_refs {

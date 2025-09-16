@@ -4,6 +4,7 @@ use crate::common::{
 use algokit_abi::Arc56Contract;
 use algokit_transact::Address;
 use algokit_utils::AlgorandClient;
+use algokit_utils::ResourcePopulation;
 use algokit_utils::applications::app_client::{AppClient, AppClientParams};
 use algokit_utils::clients::app_manager::{
     DeploymentMetadata, TealTemplateParams, TealTemplateValue,
@@ -29,6 +30,7 @@ pub struct AppFixtureOptions {
     pub args: Option<Vec<Vec<u8>>>,
     pub transaction_composer_config: Option<TransactionComposerConfig>,
     pub default_sender_override: Option<String>,
+    pub app_name: Option<String>,
 }
 
 pub async fn build_app_fixture(
@@ -54,7 +56,7 @@ pub async fn build_app_fixture(
         app_id,
         app_spec: spec.clone(),
         algorand,
-        app_name: None,
+        app_name: opts.app_name.clone(),
         default_sender: Some(
             opts.default_sender_override
                 .unwrap_or_else(|| sender.to_string()),
@@ -73,8 +75,6 @@ pub async fn build_app_fixture(
     })
 }
 
-// Intentionally no generic rstest fixture here; prefer build_app_fixture and spec-specific wrappers.
-
 pub fn default_teal_params(value: u64, updatable: bool, deletable: bool) -> TealTemplateParams {
     let mut t = TealTemplateParams::default();
     t.insert("VALUE".to_string(), TealTemplateValue::Int(value));
@@ -87,4 +87,101 @@ pub fn default_teal_params(value: u64, updatable: bool, deletable: bool) -> Teal
         TealTemplateValue::Int(if deletable { 1 } else { 0 }),
     );
     t
+}
+
+// ARC56 contract specs for test apps
+pub fn testing_app_spec() -> Arc56Contract {
+    Arc56Contract::from_json(algokit_test_artifacts::testing_app::APPLICATION_ARC56).unwrap()
+}
+
+pub fn sandbox_spec() -> Arc56Contract {
+    Arc56Contract::from_json(algokit_test_artifacts::sandbox::APPLICATION_ARC56).unwrap()
+}
+
+pub fn hello_world_spec() -> Arc56Contract {
+    Arc56Contract::from_json(algokit_test_artifacts::hello_world::APPLICATION_ARC56).unwrap()
+}
+
+pub fn boxmap_spec() -> Arc56Contract {
+    Arc56Contract::from_json(algokit_test_artifacts::box_map_test::APPLICATION_ARC56).unwrap()
+}
+
+pub fn testing_app_puya_spec() -> Arc56Contract {
+    Arc56Contract::from_json(algokit_test_artifacts::testing_app_puya::APPLICATION_ARC56).unwrap()
+}
+
+// Common fixtures for app_client tests
+#[fixture]
+pub async fn testing_app_fixture(
+    #[future] algorand_fixture: AlgorandFixtureResult,
+) -> AppFixtureResult {
+    let f = algorand_fixture.await?;
+    let spec = testing_app_spec();
+    build_app_fixture(
+        f,
+        spec,
+        AppFixtureOptions {
+            template_params: Some(default_teal_params(0, false, false)),
+            ..Default::default()
+        },
+    )
+    .await
+}
+
+#[fixture]
+pub async fn sandbox_app_fixture(
+    #[future] algorand_fixture: AlgorandFixtureResult,
+) -> AppFixtureResult {
+    let f = algorand_fixture.await?;
+    let spec = sandbox_spec();
+    build_app_fixture(
+        f,
+        spec,
+        AppFixtureOptions {
+            template_params: Some(default_teal_params(0, false, false)),
+            ..Default::default()
+        },
+    )
+    .await
+}
+
+#[fixture]
+pub async fn hello_world_app_fixture(
+    #[future] algorand_fixture: AlgorandFixtureResult,
+) -> AppFixtureResult {
+    let f = algorand_fixture.await?;
+    let spec = hello_world_spec();
+    build_app_fixture(f, spec, AppFixtureOptions::default()).await
+}
+
+#[fixture]
+pub async fn boxmap_app_fixture(
+    #[future] algorand_fixture: AlgorandFixtureResult,
+) -> AppFixtureResult {
+    let f = algorand_fixture.await?;
+    let spec = boxmap_spec();
+    build_app_fixture(
+        f,
+        spec,
+        AppFixtureOptions {
+            args: Some(vec![vec![184u8, 68u8, 123u8, 54u8]]),
+            transaction_composer_config: Some(TransactionComposerConfig {
+                populate_app_call_resources: ResourcePopulation::Enabled {
+                    use_access_list: false,
+                },
+                ..Default::default()
+            }),
+            ..Default::default()
+        },
+    )
+    .await
+}
+
+#[fixture]
+pub async fn testing_app_puya_fixture(
+    #[future] algorand_fixture: AlgorandFixtureResult,
+) -> AppFixtureResult {
+    let f = algorand_fixture.await?;
+    let spec = testing_app_puya_spec();
+    build_app_fixture(f, spec, AppFixtureOptions::default()).await
 }

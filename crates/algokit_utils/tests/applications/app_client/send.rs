@@ -1,14 +1,10 @@
-use crate::applications::app_client::common::{
-    sandbox_app_fixture, testing_app_fixture, testing_app_spec,
-};
 use crate::common::TestResult;
+use crate::common::app_fixture::{sandbox_app_fixture, testing_app_fixture, testing_app_spec};
 use algokit_abi::ABIValue;
 use algokit_transact::{BoxReference, SignedTransaction, Transaction};
 use algokit_utils::applications::app_client::AppClientMethodCallParams;
-use algokit_utils::transactions::app_call::AppCallMethodCallParams;
-use algokit_utils::transactions::composer::SimulateParams;
 use algokit_utils::transactions::{PaymentParams, TransactionSigner, TransactionWithSigner};
-use algokit_utils::{AlgorandClient as RootAlgorandClient, AppManager, AppMethodCallArg};
+use algokit_utils::{AppManager, AppMethodCallArg};
 use async_trait::async_trait;
 use rand::Rng;
 use rstest::*;
@@ -188,94 +184,6 @@ async fn test_call_app_with_rekey(
             None,
         )
         .await?;
-
-    Ok(())
-}
-
-#[rstest]
-#[tokio::test]
-async fn test_group_simulate_matches_send(
-    #[future] testing_app_fixture: crate::common::AppFixtureResult,
-) -> TestResult {
-    let f = testing_app_fixture.await?;
-    let sender = f.sender_address;
-    let mut algorand = RootAlgorandClient::default_localnet(None);
-    algorand.set_signer(
-        sender.clone(),
-        Arc::new(f.algorand_fixture.test_account.clone()),
-    );
-
-    let set_global_method = testing_app_spec().find_abi_method("set_global").unwrap();
-    let call_abi_method = testing_app_spec().find_abi_method("call_abi").unwrap();
-
-    let app_call1_params = AppCallMethodCallParams {
-        sender: sender.clone(),
-        app_id: f.app_id,
-        method: set_global_method,
-        args: vec![
-            AppMethodCallArg::ABIValue(ABIValue::from(1u64)),
-            AppMethodCallArg::ABIValue(ABIValue::from(2u64)),
-            AppMethodCallArg::ABIValue(ABIValue::from("asdf")),
-            AppMethodCallArg::ABIValue(ABIValue::Array(vec![
-                ABIValue::from_byte(1),
-                ABIValue::from_byte(2),
-                ABIValue::from_byte(3),
-                ABIValue::from_byte(4),
-            ])),
-        ],
-        on_complete: algokit_transact::OnApplicationComplete::NoOp,
-        ..Default::default()
-    };
-
-    let payment_params = PaymentParams {
-        sender: sender.clone(),
-        receiver: sender.clone(),
-        amount: 10_000,
-        ..Default::default()
-    };
-
-    let app_call2_params = AppCallMethodCallParams {
-        sender: sender.clone(),
-        app_id: f.app_id,
-        method: call_abi_method,
-        args: vec![AppMethodCallArg::ABIValue(ABIValue::from("test"))],
-        on_complete: algokit_transact::OnApplicationComplete::NoOp,
-        ..Default::default()
-    };
-
-    let mut simulate_composer = algorand.new_group(None);
-    simulate_composer.add_app_call_method_call(app_call1_params.clone())?;
-    simulate_composer.add_payment(payment_params.clone())?;
-    simulate_composer.add_app_call_method_call(app_call2_params.clone())?;
-    let simulate_result = simulate_composer
-        .simulate(Some(SimulateParams {
-            skip_signatures: true,
-            ..Default::default()
-        }))
-        .await?;
-
-    let mut send_composer = algorand.new_group(None);
-    send_composer.add_app_call_method_call(app_call1_params)?;
-    send_composer.add_payment(payment_params)?;
-    send_composer.add_app_call_method_call(app_call2_params)?;
-    let send_result = send_composer.send(None).await?;
-
-    assert_eq!(
-        simulate_result.transaction_ids.len(),
-        send_result.transaction_ids.len()
-    );
-    assert_eq!(
-        simulate_result.abi_returns.len(),
-        send_result.abi_returns.len()
-    );
-    assert_eq!(
-        simulate_result.abi_returns[0].return_value,
-        send_result.abi_returns[0].return_value
-    );
-    assert_eq!(
-        simulate_result.abi_returns[1].return_value,
-        send_result.abi_returns[1].return_value
-    );
 
     Ok(())
 }

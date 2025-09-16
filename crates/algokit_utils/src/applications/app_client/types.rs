@@ -110,6 +110,44 @@ pub struct LogicError {
     pub line_no: Option<u64>,
     pub lines: Option<Vec<String>>,
     pub traces: Option<Vec<serde_json::Value>>,
+    /// Original logic error string if parsed
+    pub logic_error_str: Option<String>,
+}
+
+impl std::fmt::Display for LogicError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let tx = self.transaction_id.as_deref().unwrap_or("N/A");
+        let pc = self
+            .pc
+            .map(|p| p.to_string())
+            .unwrap_or_else(|| "N/A".to_string());
+        let mut base = format!("Txn {} had error '{}' at PC {}", tx, self.message, pc);
+        if let Some(line) = self.line_no {
+            base.push_str(&format!(" and Source Line {}", line));
+        }
+        writeln!(f, "{}", base)?;
+        if let Some(trace) = self.annotated_trace() {
+            write!(f, "{}", trace)?;
+        }
+        Ok(())
+    }
+}
+
+impl LogicError {
+    /// Build a simple annotated snippet string from stored lines and line number.
+    pub fn annotated_trace(&self) -> Option<String> {
+        let lines = self.lines.as_ref()?;
+        let line_no = self.line_no? as usize;
+        let mut out = String::new();
+        for entry in lines {
+            out.push_str(entry);
+            if entry.starts_with(&format!("{:>4} |", line_no)) {
+                out.push_str("\t<--- Error");
+            }
+            out.push('\n');
+        }
+        if out.is_empty() { None } else { Some(out) }
+    }
 }
 
 /// Compilation configuration for update/compile flows

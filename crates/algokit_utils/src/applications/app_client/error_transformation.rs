@@ -2,7 +2,42 @@ use super::types::LogicError;
 use super::{AppClient, AppSourceMaps};
 use crate::transactions::TransactionResultError;
 use algokit_abi::arc56_contract::PcOffsetMethod;
+use lazy_static::lazy_static;
+use regex::Regex;
 use serde_json::Value as JsonValue;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct LogicErrorData {
+    pub transaction_id: String,
+    pub message: String,
+    pub pc: u64,
+}
+
+lazy_static! {
+    static ref LOGIC_ERROR_RE: Regex = Regex::new(
+        r".*transaction (?P<transaction_id>[A-Z2-7]{52}): logic eval error: (?P<message>.*)\. Details: .*pc=(?P<pc>[0-9]+).*"
+    )
+    .unwrap();
+    static ref INNER_LOGIC_ERROR_RE: Regex =
+        Regex::new(r"inner tx (\d+) failed:.*?pc=([0-9]+)").unwrap();
+}
+
+pub(crate) fn extract_logic_error_data(error_str: &str) -> Option<LogicErrorData> {
+    let caps = LOGIC_ERROR_RE.captures(error_str)?;
+    let pc = if let Some(inner) = INNER_LOGIC_ERROR_RE.captures(error_str) {
+        inner
+            .get(2)
+            .and_then(|m| m.as_str().parse::<u64>().ok())
+            .unwrap_or_else(|| caps["pc"].parse::<u64>().unwrap_or(0))
+    } else {
+        caps["pc"].parse::<u64>().unwrap_or(0)
+    };
+    Some(LogicErrorData {
+        transaction_id: caps["transaction_id"].to_string(),
+        message: caps["message"].to_string(),
+        pc,
+    })
+}
 
 impl AppClient {
     /// Import compiled source maps for approval and clear programs.
@@ -24,6 +59,7 @@ impl AppClient {
         is_clear_state_program: bool,
     ) -> LogicError {
         let err_str = format!("{}", error);
+        let parsed_logic_error_data = extract_logic_error_data(&err_str);
         let (mut line_no_opt, mut listing) =
             self.apply_source_map_for_message(&err_str, is_clear_state_program);
         let source_map = self.get_source_map(is_clear_state_program).cloned();
@@ -43,11 +79,18 @@ impl AppClient {
                 Some(listing.clone())
             },
             traces: None,
+            logic_error_str: Some(err_str.clone()),
         };
 
-        let (tx_id_msg, msg_msg, pc_msg) = Self::parse_logic_error_message(&err_str);
-        let tx_id = logic.transaction_id.clone().or(tx_id_msg);
-        let parsed_pc = logic.pc.or(pc_msg);
+        let (tx_id, parsed_pc, msg_msg) = if let Some(p) = parsed_logic_error_data {
+            (
+                Some(p.transaction_id.clone()),
+                Some(p.pc),
+                Some(p.message.clone()),
+            )
+        } else {
+            (logic.transaction_id.clone(), logic.pc, None)
+        };
 
         let mut arc56_error_message: Option<String> = None;
         let mut arc56_line_no: Option<u64> = None;
@@ -60,12 +103,18 @@ impl AppClient {
                 &si_model.approval
             };
 
-            let arc56_pc = parsed_pc.unwrap_or(0);
+            let mut arc56_pc = parsed_pc.unwrap_or(0);
 
             if matches!(
                 program_source_info.pc_offset_method,
                 PcOffsetMethod::Cblocks
-            ) {}
+            ) {
+                // Apply CBLOCKS offset only if compiled program bytes are available via cache
+                if let Some(bytes) = self.get_program_bytes(is_clear_state_program) {
+                    let offset = Self::get_constant_block_offset(&bytes);
+                    arc56_pc = arc56_pc.saturating_sub(offset as u64);
+                }
+            }
 
             if arc56_pc > 0 {
                 if let Some(source_info) = program_source_info
@@ -90,7 +139,7 @@ impl AppClient {
             {
                 if let Some(teal_src) = self.decode_teal(is_clear_state_program) {
                     let center = arc56_line_no.unwrap();
-                    arc56_listing = Self::truncate_teal_source(&teal_src, center, 3);
+                    arc56_listing = Self::annotated_teal_snippet(&teal_src, center, 3);
                 }
             }
         }
@@ -152,8 +201,8 @@ impl AppClient {
             if let Some(idx) = token.find('=') {
                 let (k, v) = token.split_at(idx);
                 if k.ends_with("pc") {
-                    if let Ok(parsed) = v.trim_start_matches('=').parse::<u64>() {
-                        return Some(parsed);
+                    if let Ok(parsed_logic_error_data) = v.trim_start_matches('=').parse::<u64>() {
+                        return Some(parsed_logic_error_data);
                     }
                 }
             }
@@ -233,6 +282,95 @@ impl AppClient {
         lines
     }
 
+    /// Like truncate_teal_source but adds a subtle error marker on the center line.
+    fn annotated_teal_snippet(source: &str, center_line: u64, context: usize) -> Vec<String> {
+        let mut lines = Self::truncate_teal_source(source, center_line, context);
+        // Try to mark the line that equals center_line if present
+        let needle = format!("{:>4} |", center_line);
+        let mut marked = false;
+        for entry in &mut lines {
+            if entry.starts_with(&needle) {
+                *entry = format!("{}\t<-- Error", entry);
+                marked = true;
+                break;
+            }
+        }
+        // Fallback: mark middle line if exact match not found
+        if !marked && !lines.is_empty() {
+            let mid = lines.len() / 2;
+            lines[mid] = format!("{}\t<-- Error", lines[mid]);
+        }
+        lines
+    }
+
+    /// Calculate the offset after initial constant blocks in a TEAL program (CBLOCKS).
+    fn get_constant_block_offset(program: &[u8]) -> usize {
+        const BYTE_CBLOCK: u8 = 38; // bytecblock
+        const INT_CBLOCK: u8 = 32; // intcblock
+        if program.is_empty() {
+            return 0;
+        }
+        let mut i = 1; // skip version byte
+        let len = program.len();
+        let mut bytec_off: Option<usize> = None;
+        let mut intc_off: Option<usize> = None;
+
+        while i < len {
+            let op = program[i];
+            i += 1;
+            if op != BYTE_CBLOCK && op != INT_CBLOCK {
+                break;
+            }
+            if i >= len {
+                break;
+            }
+            let values_remaining = program[i] as usize;
+            i += 1;
+            for _ in 0..values_remaining {
+                if op == BYTE_CBLOCK {
+                    if i >= len {
+                        break;
+                    }
+                    let elem_len = program[i] as usize;
+                    i += 1 + elem_len.min(len.saturating_sub(i));
+                } else {
+                    while i < len {
+                        let b = program[i];
+                        i += 1;
+                        if (b & 0x80) == 0 {
+                            break;
+                        }
+                    }
+                }
+            }
+            let off = i;
+            if op == BYTE_CBLOCK {
+                bytec_off = Some(off)
+            } else {
+                intc_off = Some(off)
+            }
+
+            if i >= len {
+                break;
+            }
+            let next = program[i];
+            if next != BYTE_CBLOCK && next != INT_CBLOCK {
+                break;
+            }
+        }
+        bytec_off.or(intc_off).unwrap_or(0)
+    }
+
+    /// Try to get compiled program bytes for the app from the compilation cache.
+    /// This avoids async calls; returns None if not available.
+    fn get_program_bytes(&self, is_clear_state_program: bool) -> Option<Vec<u8>> {
+        let teal_src = self.decode_teal(is_clear_state_program)?;
+        self.algorand()
+            .app()
+            .get_compilation_result(&teal_src)
+            .map(|c| c.compiled_base64_to_bytes)
+    }
+
     /// Decode base64 TEAL source from the app spec.
     fn decode_teal(&self, is_clear_state_program: bool) -> Option<String> {
         let src = self.app_spec().source.as_ref()?;
@@ -245,23 +383,9 @@ impl AppClient {
 
     /// Extract app id from an error string.
     fn extract_app_id(error_str: &str) -> Option<String> {
-        let re = regex::Regex::new(r"(?<=app=)\d+").ok()?;
-        re.find(error_str).map(|m| m.as_str().to_string())
-    }
-
-    /// Parse tx id, message, and pc from a standard logic error string.
-    fn parse_logic_error_message(error_str: &str) -> (Option<String>, Option<String>, Option<u64>) {
-        let re = regex::Regex::new(
-            r"transaction ([A-Z0-9]+): logic eval error: (.*)\. Details: .*pc=([0-9]+).*",
-        );
-        if let Ok(re) = re {
-            if let Some(caps) = re.captures(error_str) {
-                let tx = caps.get(1).map(|m| m.as_str().to_string());
-                let msg = caps.get(2).map(|m| m.as_str().to_string());
-                let pc = caps.get(3).and_then(|m| m.as_str().parse::<u64>().ok());
-                return (tx, msg, pc);
-            }
-        }
-        (None, None, None)
+        let re = regex::Regex::new(r"app=(\d+)").ok()?;
+        re.captures(error_str)
+            .and_then(|caps| caps.get(1))
+            .map(|m| m.as_str().to_string())
     }
 }

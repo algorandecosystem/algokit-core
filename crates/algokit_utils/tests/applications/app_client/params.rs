@@ -1,5 +1,5 @@
-use crate::applications::app_client::common::{sandbox_app_fixture, testing_app_fixture};
 use crate::common::TestResult;
+use crate::common::app_fixture::{sandbox_app_fixture, testing_app_fixture};
 use algokit_abi::ABIValue;
 use algokit_transact::BoxReference;
 use algokit_utils::applications::app_client::AppClientBareCallParams;
@@ -91,6 +91,10 @@ async fn params_build_method_call_and_defaults(
 
     assert_eq!(built.method.name, "default_value_from_local_state");
     assert_eq!(built.args.len(), 1);
+    match &built.args[0] {
+        AppMethodCallArg::ABIValue(ABIValue::String(s)) => assert_eq!(s, "bananas"),
+        _ => return Err("expected string arg resolved from local state".into()),
+    }
 
     Ok(())
 }
