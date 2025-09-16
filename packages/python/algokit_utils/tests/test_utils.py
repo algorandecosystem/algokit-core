@@ -2,7 +2,7 @@ from typing import override
 import typing
 from algokit_utils.algokit_http_client import HttpClient, HttpMethod, HttpResponse
 from algokit_utils.algokit_transact_ffi import SignedTransaction, Transaction, encode_transaction
-from algokit_utils import AlgodClient, TransactionSigner
+from algokit_utils import ABIBool, AlgodClient, TransactionSigner
 from algokit_utils.algokit_utils_ffi import (
     CommonParams,
     Composer,
@@ -111,8 +111,8 @@ def test_abi_bool():
     assert abi_bool.encoded_bytes() == b'\x80'
     assert abi_bool.get_bool() == True
 
-    decoded_bool: AbiValue = abi.from_bytes(b'\x80', "bool") # type: ignore
+    decoded_bool: AbiValue = abi.from_bytes(b'\x80', ABIBool()) # type: ignore
     assert decoded_bool.get_bool() == True
 
 def test_abi_bool_array():
-    assert abi.array(element_type="bool", values=[abi.bool(True)]).encoded_bytes() == b'\x00\x01\x80'
+    assert abi.array(element_type=ABIBool(), values=[abi.bool(True)]).encoded_bytes() == b'\x00\x01\x80'

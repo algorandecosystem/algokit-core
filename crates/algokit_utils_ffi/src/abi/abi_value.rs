@@ -5,6 +5,8 @@ use algokit_abi::ABIValue as RustABIValue;
 
 use crate::transactions::common::UtilsError;
 
+use super::abi_type::ABIType;
+
 #[derive(uniffi::Object, Debug, Clone, PartialEq)]
 pub struct ABIValue {
     bytes: Vec<u8>,
@@ -33,9 +35,9 @@ impl ABIValue {
     }
 
     #[uniffi::constructor]
-    pub fn from_bytes(bytes: Vec<u8>, abi_type: String) -> Result<Self, UtilsError> {
+    pub fn from_bytes(bytes: Vec<u8>, abi_type: Arc<dyn ABIType>) -> Result<Self, UtilsError> {
         let rust_abi_type =
-            RustABIType::from_str(&abi_type).map_err(|e| UtilsError::UtilsError {
+            RustABIType::from_str(&abi_type.to_string()).map_err(|e| UtilsError::UtilsError {
                 message: format!("Failed to parse ABI type: {}", e),
             })?;
         let abi_value = rust_abi_type
@@ -46,7 +48,7 @@ impl ABIValue {
 
         Ok(ABIValue {
             bytes,
-            abi_type_str: abi_type,
+            abi_type_str: abi_type.to_string(),
             abi_value,
         })
     }
@@ -122,8 +124,8 @@ impl ABIValue {
     }
 
     #[uniffi::constructor]
-    pub fn array(element_type: String, values: Vec<Arc<ABIValue>>) -> Self {
-        let abi_type_str = format!("{}[]", element_type);
+    pub fn array(element_type: Arc<dyn ABIType>, values: Vec<Arc<ABIValue>>) -> Self {
+        let abi_type_str = format!("{}[]", element_type.to_string());
         let rust_abi_type = RustABIType::from_str(&abi_type_str).unwrap();
         let abi_value = RustABIValue::Array(
             values
@@ -141,8 +143,12 @@ impl ABIValue {
     }
 
     #[uniffi::constructor]
-    pub fn static_array(element_type: String, size: u64, values: Vec<Arc<ABIValue>>) -> Self {
-        let abi_type_str = format!("{}[{}]", element_type, size);
+    pub fn static_array(
+        element_type: Arc<dyn ABIType>,
+        size: u64,
+        values: Vec<Arc<ABIValue>>,
+    ) -> Self {
+        let abi_type_str = format!("{}[{}]", element_type.to_string(), size);
         let rust_abi_type = RustABIType::from_str(&abi_type_str).unwrap();
         let abi_value = RustABIValue::Array(
             values
