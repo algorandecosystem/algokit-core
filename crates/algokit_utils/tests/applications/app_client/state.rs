@@ -1,64 +1,27 @@
-use crate::common::{AlgorandFixtureResult, TestResult, algorand_fixture, deploy_arc56_contract};
-use algokit_abi::{ABIType, ABIValue, Arc56Contract};
-use algokit_transact::BoxReference;
-use algokit_utils::applications::app_client::{AppClient, AppClientParams};
-use algokit_utils::applications::app_client::{AppClientMethodCallParams, FundAppAccountParams};
-use algokit_utils::clients::app_manager::{
-    AppState, BoxName, TealTemplateParams, TealTemplateValue,
+use crate::applications::app_client::common::{
+    boxmap_app_fixture, testing_app_fixture, testing_app_puya_fixture,
 };
-use algokit_utils::transactions::TransactionComposerConfig;
-use algokit_utils::{AlgorandClient as RootAlgorandClient, AppMethodCallArg, ResourcePopulation};
+use crate::common::TestResult;
+use algokit_abi::{ABIType, ABIValue};
+use algokit_transact::BoxReference;
+// client params not needed with fixtures
+use algokit_utils::AppMethodCallArg;
+use algokit_utils::applications::app_client::{AppClientMethodCallParams, FundAppAccountParams};
+use algokit_utils::clients::app_manager::{AppState, BoxName};
 use base64::{Engine, engine::general_purpose::STANDARD as Base64};
 use num_bigint::BigUint;
 use rstest::*;
 use std::collections::HashMap;
 use std::str::FromStr;
-use std::sync::Arc;
-
-fn get_testing_app_spec() -> Arc56Contract {
-    let json = algokit_test_artifacts::testing_app::APPLICATION_ARC56;
-    Arc56Contract::from_json(json).expect("valid arc56")
-}
-
-fn get_boxmap_app_spec() -> Arc56Contract {
-    let json: &str = algokit_test_artifacts::box_map_test::APPLICATION_ARC56;
-    Arc56Contract::from_json(json).expect("valid arc56")
-}
 
 #[rstest]
 #[tokio::test]
 async fn test_global_state_retrieval(
-    #[future] algorand_fixture: AlgorandFixtureResult,
+    #[future] testing_app_fixture: crate::common::AppFixtureResult,
 ) -> TestResult {
-    let fixture = algorand_fixture.await?;
-    let sender = fixture.test_account.account().address();
-
-    let mut tmpl: TealTemplateParams = Default::default();
-    tmpl.insert("VALUE".to_string(), TealTemplateValue::Int(0));
-    tmpl.insert("UPDATABLE".to_string(), TealTemplateValue::Int(0));
-    tmpl.insert("DELETABLE".to_string(), TealTemplateValue::Int(0));
-    let app_id = deploy_arc56_contract(
-        &fixture,
-        &sender,
-        &get_testing_app_spec(),
-        Some(tmpl),
-        None,
-        None,
-    )
-    .await?;
-
-    let mut algorand = RootAlgorandClient::default_localnet(None);
-    algorand.set_signer(sender.clone(), Arc::new(fixture.test_account.clone()));
-    let client = AppClient::new(AppClientParams {
-        app_id,
-        app_spec: get_testing_app_spec(),
-        algorand,
-        app_name: None,
-        default_sender: Some(sender.to_string()),
-        default_signer: None,
-        source_maps: None,
-        transaction_composer_config: None,
-    });
+    let f = testing_app_fixture.await?;
+    let sender = f.sender_address;
+    let client = f.client;
 
     client
         .send()
@@ -128,37 +91,11 @@ async fn test_global_state_retrieval(
 #[rstest]
 #[tokio::test]
 async fn test_local_state_retrieval(
-    #[future] algorand_fixture: AlgorandFixtureResult,
+    #[future] testing_app_fixture: crate::common::AppFixtureResult,
 ) -> TestResult {
-    let fixture = algorand_fixture.await?;
-    let sender = fixture.test_account.account().address();
-
-    let mut tmpl: TealTemplateParams = Default::default();
-    tmpl.insert("VALUE".to_string(), TealTemplateValue::Int(0));
-    tmpl.insert("UPDATABLE".to_string(), TealTemplateValue::Int(0));
-    tmpl.insert("DELETABLE".to_string(), TealTemplateValue::Int(0));
-    let app_id = deploy_arc56_contract(
-        &fixture,
-        &sender,
-        &get_testing_app_spec(),
-        Some(tmpl),
-        None,
-        None,
-    )
-    .await?;
-
-    let mut algorand = RootAlgorandClient::default_localnet(None);
-    algorand.set_signer(sender.clone(), Arc::new(fixture.test_account.clone()));
-    let client = AppClient::new(AppClientParams {
-        app_id,
-        app_spec: get_testing_app_spec(),
-        algorand,
-        app_name: None,
-        default_sender: Some(sender.to_string()),
-        default_signer: None,
-        source_maps: None,
-        transaction_composer_config: None,
-    });
+    let f = testing_app_fixture.await?;
+    let sender = f.sender_address;
+    let client = f.client;
 
     client
         .send()
@@ -243,37 +180,12 @@ async fn test_local_state_retrieval(
 
 #[rstest]
 #[tokio::test]
-async fn test_box_retrieval(#[future] algorand_fixture: AlgorandFixtureResult) -> TestResult {
-    let fixture = algorand_fixture.await?;
-    let sender = fixture.test_account.account().address();
-
-    let app_id = deploy_arc56_contract(
-        &fixture,
-        &sender,
-        &get_testing_app_spec(),
-        Some(
-            [("VALUE", 0), ("UPDATABLE", 0), ("DELETABLE", 0)]
-                .into_iter()
-                .map(|(k, v)| (k.to_string(), TealTemplateValue::Int(v)))
-                .collect(),
-        ),
-        None,
-        None,
-    )
-    .await?;
-
-    let mut algorand = RootAlgorandClient::default_localnet(None);
-    algorand.set_signer(sender.clone(), Arc::new(fixture.test_account.clone()));
-    let client = AppClient::new(AppClientParams {
-        app_id,
-        app_spec: get_testing_app_spec(),
-        algorand,
-        app_name: None,
-        default_sender: Some(sender.to_string()),
-        default_signer: None,
-        source_maps: None,
-        transaction_composer_config: None,
-    });
+async fn test_box_retrieval(
+    #[future] testing_app_fixture: crate::common::AppFixtureResult,
+) -> TestResult {
+    let f = testing_app_fixture.await?;
+    let sender = f.sender_address;
+    let client = f.client;
 
     let box_name1: Vec<u8> = vec![0, 0, 0, 1];
     let box_name2: Vec<u8> = vec![0, 0, 0, 2];
@@ -424,36 +336,12 @@ async fn test_box_retrieval(#[future] algorand_fixture: AlgorandFixtureResult) -
 
 #[rstest]
 #[tokio::test]
-async fn test_box_maps(#[future] algorand_fixture: AlgorandFixtureResult) -> TestResult {
-    let fixture = algorand_fixture.await?;
-    let sender = fixture.test_account.account().address();
-    let app_id = deploy_arc56_contract(
-        &fixture,
-        &sender,
-        &get_boxmap_app_spec(),
-        None,
-        None,
-        Some(vec![vec![184u8, 68u8, 123u8, 54u8]]),
-    )
-    .await?;
-
-    let mut algorand = RootAlgorandClient::default_localnet(None);
-    algorand.set_signer(sender.clone(), Arc::new(fixture.test_account.clone()));
-    let app_client = AppClient::new(AppClientParams {
-        app_id,
-        app_spec: get_boxmap_app_spec(),
-        algorand,
-        app_name: None,
-        default_sender: Some(sender.to_string()),
-        default_signer: None,
-        source_maps: None,
-        transaction_composer_config: Some(TransactionComposerConfig {
-            populate_app_call_resources: ResourcePopulation::Enabled {
-                use_access_list: false,
-            },
-            ..Default::default()
-        }),
-    });
+async fn test_box_maps(
+    #[future] boxmap_app_fixture: crate::common::AppFixtureResult,
+) -> TestResult {
+    let f = boxmap_app_fixture.await?;
+    let sender = f.sender_address;
+    let app_client = f.client;
 
     app_client
         .fund_app_account(
@@ -503,27 +391,11 @@ async fn test_box_maps(#[future] algorand_fixture: AlgorandFixtureResult) -> Tes
 #[rstest]
 #[tokio::test]
 async fn box_methods_with_manually_encoded_abi_args(
-    #[future] algorand_fixture: AlgorandFixtureResult,
+    #[future] testing_app_puya_fixture: crate::common::AppFixtureResult,
 ) -> TestResult {
-    let fixture = algorand_fixture.await?;
-    let sender = fixture.test_account.account().address();
-
-    let json = algokit_test_artifacts::testing_app_puya::APPLICATION_ARC56;
-    let spec = Arc56Contract::from_json(json).expect("valid arc56");
-    let app_id = deploy_arc56_contract(&fixture, &sender, &spec, None, None, None).await?;
-
-    let mut algorand = RootAlgorandClient::default_localnet(None);
-    algorand.set_signer(sender.clone(), Arc::new(fixture.test_account.clone()));
-    let client = AppClient::new(AppClientParams {
-        app_id,
-        app_spec: spec,
-        algorand,
-        app_name: None,
-        default_sender: Some(sender.to_string()),
-        default_signer: None,
-        source_maps: None,
-        transaction_composer_config: None,
-    });
+    let f = testing_app_puya_fixture.await?;
+    let sender = f.sender_address;
+    let client = f.client;
 
     client
         .fund_app_account(
@@ -612,28 +484,11 @@ async fn box_methods_with_manually_encoded_abi_args(
 #[rstest]
 #[tokio::test]
 async fn box_methods_with_arc4_returns_parametrized(
-    #[future] algorand_fixture: AlgorandFixtureResult,
+    #[future] testing_app_puya_fixture: crate::common::AppFixtureResult,
 ) -> TestResult {
-    let fixture = algorand_fixture.await?;
-    let sender = fixture.test_account.account().address();
-
-    let spec =
-        Arc56Contract::from_json(algokit_test_artifacts::testing_app_puya::APPLICATION_ARC56)
-            .expect("valid arc56");
-    let app_id = deploy_arc56_contract(&fixture, &sender, &spec, None, None, None).await?;
-
-    let mut algorand = RootAlgorandClient::default_localnet(None);
-    algorand.set_signer(sender.clone(), Arc::new(fixture.test_account.clone()));
-    let client = AppClient::new(AppClientParams {
-        app_id,
-        app_spec: spec,
-        algorand,
-        app_name: None,
-        default_sender: Some(sender.to_string()),
-        default_signer: None,
-        source_maps: None,
-        transaction_composer_config: None,
-    });
+    let f = testing_app_puya_fixture.await?;
+    let sender = f.sender_address;
+    let client = f.client;
 
     client
         .fund_app_account(

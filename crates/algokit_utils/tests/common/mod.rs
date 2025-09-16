@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
+pub mod app_fixture;
 pub mod fixture;
 pub mod indexer_helpers;
 pub mod local_net_dispenser;
@@ -8,7 +9,6 @@ pub mod mnemonic;
 pub mod test_account;
 
 use algokit_abi::Arc56Contract;
-use algokit_transact::Address;
 use algokit_utils::AppCreateParams;
 use algokit_utils::clients::app_manager::{
     AppManager, DeploymentMetadata, TealTemplateParams, TealTemplateValue,
@@ -16,6 +16,9 @@ use algokit_utils::clients::app_manager::{
 use algokit_utils::config::{AppCompiledEventData, Config, EventData, EventType};
 use base64::prelude::*;
 
+pub use app_fixture::{
+    AppFixture, AppFixtureOptions, AppFixtureResult, build_app_fixture, default_teal_params,
+};
 pub use fixture::{AlgorandFixture, AlgorandFixtureResult, algorand_fixture};
 pub use indexer_helpers::{
     IndexerWaitConfig, IndexerWaitError, wait_for_indexer, wait_for_indexer_transaction,
@@ -27,7 +30,7 @@ pub type TestResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
 
 pub async fn deploy_arc56_contract(
     fixture: &AlgorandFixture,
-    sender: &Address,
+    sender: &algokit_transact::Address,
     arc56_contract: &Arc56Contract,
     template_params: Option<TealTemplateParams>,
     deploy_metadata: Option<DeploymentMetadata>,

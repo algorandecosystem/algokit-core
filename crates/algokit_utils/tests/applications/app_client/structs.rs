@@ -1,8 +1,6 @@
 use crate::common::{AlgorandFixtureResult, TestResult, algorand_fixture, deploy_arc56_contract};
 use algokit_abi::{ABIValue, Arc56Contract};
-use algokit_utils::applications::app_client::{
-    AppClient, AppClientMethodCallParams, AppClientParams,
-};
+use algokit_utils::applications::app_client::AppClientMethodCallParams;
 use algokit_utils::transactions::TransactionComposerConfig;
 use algokit_utils::{AlgorandClient as RootAlgorandClient, AppMethodCallArg, ResourcePopulation};
 use rstest::*;
@@ -39,21 +37,23 @@ async fn test_nested_structs_described_by_structure(
 
     let mut algorand = RootAlgorandClient::default_localnet(None);
     algorand.set_signer(sender.clone(), Arc::new(fixture.test_account.clone()));
-    let app_client = AppClient::new(AppClientParams {
-        app_id,
-        app_spec: spec,
-        algorand,
-        app_name: None,
-        default_sender: Some(sender.to_string()),
-        default_signer: None,
-        source_maps: None,
-        transaction_composer_config: Some(TransactionComposerConfig {
-            populate_app_call_resources: ResourcePopulation::Enabled {
-                use_access_list: false,
-            },
-            ..Default::default()
-        }),
-    });
+    let app_client = algokit_utils::applications::app_client::AppClient::new(
+        algokit_utils::applications::app_client::AppClientParams {
+            app_id,
+            app_spec: spec,
+            algorand,
+            app_name: None,
+            default_sender: Some(sender.to_string()),
+            default_signer: None,
+            source_maps: None,
+            transaction_composer_config: Some(TransactionComposerConfig {
+                populate_app_call_resources: ResourcePopulation::Enabled {
+                    use_access_list: false,
+                },
+                ..Default::default()
+            }),
+        },
+    );
 
     app_client
         .send()
@@ -147,16 +147,18 @@ async fn test_nested_structs_referenced_by_name(
 
     let mut algorand = RootAlgorandClient::default_localnet(None);
     algorand.set_signer(sender.clone(), Arc::new(fixture.test_account.clone()));
-    let app_client = AppClient::new(AppClientParams {
-        app_id,
-        app_spec: spec,
-        algorand,
-        app_name: None,
-        default_sender: Some(sender.to_string()),
-        default_signer: None,
-        source_maps: None,
-        transaction_composer_config: None,
-    });
+    let app_client = algokit_utils::applications::app_client::AppClient::new(
+        algokit_utils::applications::app_client::AppClientParams {
+            app_id,
+            app_spec: spec,
+            algorand,
+            app_name: None,
+            default_sender: Some(sender.to_string()),
+            default_signer: None,
+            source_maps: None,
+            transaction_composer_config: None,
+        },
+    );
 
     app_client
         .send()

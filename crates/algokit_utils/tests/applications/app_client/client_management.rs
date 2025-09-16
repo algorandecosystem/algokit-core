@@ -2,7 +2,7 @@ use crate::common::{AlgorandFixtureResult, TestResult, algorand_fixture, deploy_
 use algokit_abi::{ABIValue, Arc56Contract};
 use algokit_transact::{OnApplicationComplete, StateSchema};
 use algokit_utils::applications::app_client::AppClient;
-use algokit_utils::clients::app_manager::{AppManager, TealTemplateParams};
+use algokit_utils::clients::app_manager::AppManager;
 use algokit_utils::{AlgorandClient as RootAlgorandClient, AppCreateParams, AppMethodCallArg};
 use rstest::*;
 use std::collections::HashMap;

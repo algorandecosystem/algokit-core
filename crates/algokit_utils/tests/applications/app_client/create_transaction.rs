@@ -1,54 +1,19 @@
-use crate::common::{AlgorandFixtureResult, TestResult, algorand_fixture, deploy_arc56_contract};
-use algokit_abi::{ABIValue, Arc56Contract};
+use crate::applications::app_client::common::testing_app_fixture;
+use crate::common::TestResult;
+use algokit_abi::ABIValue;
 use algokit_transact::BoxReference;
-use algokit_utils::applications::app_client::{
-    AppClient, AppClientMethodCallParams, AppClientParams,
-};
-use algokit_utils::clients::app_manager::TealTemplateValue;
-use algokit_utils::{AlgorandClient as RootAlgorandClient, AppMethodCallArg};
+use algokit_utils::applications::app_client::AppClientMethodCallParams;
+use algokit_utils::AppMethodCallArg;
 use rstest::*;
-use std::sync::Arc;
-
-fn get_testing_app_spec() -> Arc56Contract {
-    let json = algokit_test_artifacts::testing_app::APPLICATION_ARC56;
-    Arc56Contract::from_json(json).expect("valid arc56")
-}
 
 #[rstest]
 #[tokio::test]
 async fn create_txn_with_box_references(
-    #[future] algorand_fixture: AlgorandFixtureResult,
+    #[future] testing_app_fixture: crate::common::AppFixtureResult,
 ) -> TestResult {
-    let fixture = algorand_fixture.await?;
-    let sender = fixture.test_account.account().address();
-
-    let app_id = deploy_arc56_contract(
-        &fixture,
-        &sender,
-        &get_testing_app_spec(),
-        Some(
-            [("VALUE", 1), ("UPDATABLE", 0), ("DELETABLE", 0)]
-                .into_iter()
-                .map(|(k, v)| (k.to_string(), TealTemplateValue::Int(v)))
-                .collect(),
-        ),
-        None,
-        None,
-    )
-    .await?;
-
-    let mut algorand = RootAlgorandClient::default_localnet(None);
-    algorand.set_signer(sender.clone(), Arc::new(fixture.test_account.clone()));
-    let client = AppClient::new(AppClientParams {
-        app_id,
-        app_spec: get_testing_app_spec(),
-        algorand,
-        app_name: None,
-        default_sender: Some(sender.to_string()),
-        default_signer: None,
-        source_maps: None,
-        transaction_composer_config: None,
-    });
+    let f = testing_app_fixture.await?;
+    let sender = f.sender_address;
+    let client = f.client;
 
     let tx = client
         .create_transaction()
