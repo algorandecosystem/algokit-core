@@ -1,11 +1,11 @@
 use crate::common::{AlgorandFixtureResult, TestResult, algorand_fixture, deploy_arc56_contract};
-use TealTemplateValue;
 use algokit_abi::{ABIValue, Arc56Contract};
 use algokit_transact::{BoxReference, SignedTransaction, Transaction};
 use algokit_utils::applications::app_client::{
     AppClient, AppClientMethodCallParams, AppClientParams,
 };
 use algokit_utils::clients::app_manager::TealTemplateParams;
+use algokit_utils::clients::app_manager::TealTemplateValue;
 use algokit_utils::transactions::app_call::AppCallMethodCallParams;
 use algokit_utils::transactions::composer::SimulateParams;
 use algokit_utils::transactions::{PaymentParams, TransactionSigner, TransactionWithSigner};
@@ -77,7 +77,7 @@ async fn test_create_then_call_app(
     let abi_return = result.abi_return.expect("Expected ABI return");
     match abi_return.return_value {
         Some(ABIValue::String(s)) => assert_eq!(s, "Hello, test"),
-        _ => panic!("Expected string ABI return"),
+        _ => return Err("Expected string ABI return".into()),
     }
 
     Ok(())
@@ -158,7 +158,7 @@ async fn test_construct_transaction_with_abi_encoding_including_transaction(
     let expected_return = format!("Sent {}. {}", amount, "test");
     match &abi_return.return_value {
         Some(ABIValue::String(s)) => assert_eq!(s, &expected_return),
-        _ => panic!("Expected string ABI return"),
+        _ => return Err("Expected string ABI return".into()),
     }
 
     let method = get_testing_app_spec()
@@ -168,7 +168,7 @@ async fn test_construct_transaction_with_abi_encoding_including_transaction(
         .expect("Decoded ABI return");
     match decoded.return_value {
         Some(ABIValue::String(s)) => assert_eq!(s, expected_return),
-        _ => panic!("Expected string ABI return from AppManager decoding"),
+        _ => return Err("Expected string ABI return from AppManager decoding".into()),
     }
 
     Ok(())
@@ -637,7 +637,7 @@ async fn bare_call_with_box_reference_builds_and_sends(
                 }]
             );
         }
-        _ => panic!("expected app call"),
+        _ => return Err("expected app call".into()),
     }
 
     Ok(())

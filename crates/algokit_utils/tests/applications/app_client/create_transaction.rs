@@ -73,7 +73,7 @@ async fn create_txn_with_box_references(
         assert_eq!(boxes[0].app_id, 0);
         assert_eq!(boxes[0].name, b"1".to_vec());
     } else {
-        panic!("expected app call txn")
+        return Err("expected app call txn".into());
     }
 
     Ok(())

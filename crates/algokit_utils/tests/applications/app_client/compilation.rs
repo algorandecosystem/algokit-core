@@ -67,7 +67,7 @@ async fn compile_applies_template_params_and_emits_event(
     let abi_return = result.abi_return.expect("Expected ABI return");
     match abi_return.return_value {
         Some(ABIValue::String(s)) => assert_eq!(s, "Hello, test"),
-        _ => panic!("Expected string ABI return"),
+        _ => return Err("Expected string ABI return".into()),
     }
 
     if let Ok((event_type, data)) =
@@ -84,10 +84,10 @@ async fn compile_applies_template_params_and_emits_event(
                 assert!(approval_source_map.is_some());
                 assert!(clear_source_map.is_some());
             }
-            _ => panic!("unexpected event data"),
+            _ => return Err("unexpected event data".into()),
         }
     } else {
-        panic!("expected AppCompiled event")
+        return Err("expected AppCompiled event".into())
     }
 
     Ok(())

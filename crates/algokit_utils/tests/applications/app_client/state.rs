@@ -100,26 +100,26 @@ async fn test_global_state_retrieval(
 
     match global_state.get("int1".as_bytes()).unwrap() {
         AppState::Uint(state) => assert_eq!(state.value, 1),
-        _ => panic!("Expected uint state"),
+        _ => return Err("Expected uint state".into()),
     }
 
     match global_state.get("int2".as_bytes()).unwrap() {
         AppState::Uint(state) => assert_eq!(state.value, 2),
-        _ => panic!("Expected uint state"),
+        _ => return Err("Expected uint state".into()),
     }
 
     match global_state.get("bytes1".as_bytes()).unwrap() {
         AppState::Bytes(state) => {
             assert_eq!(String::from_utf8(state.value_raw.clone()).unwrap(), "asdf");
         }
-        _ => panic!("Expected bytes state"),
+        _ => return Err("Expected bytes state".into()),
     }
 
     match global_state.get("bytes2".as_bytes()).unwrap() {
         AppState::Bytes(state) => {
             assert_eq!(state.value_raw, vec![1, 2, 3, 4]);
         }
-        _ => panic!("Expected bytes state"),
+        _ => return Err("Expected bytes state".into()),
     }
 
     Ok(())
@@ -216,26 +216,26 @@ async fn test_local_state_retrieval(
 
     match local_state.get("local_int1".as_bytes()).unwrap() {
         AppState::Uint(state) => assert_eq!(state.value, 1),
-        _ => panic!("Expected uint state"),
+        _ => return Err("Expected uint state".into()),
     }
 
     match local_state.get("local_int2".as_bytes()).unwrap() {
         AppState::Uint(state) => assert_eq!(state.value, 2),
-        _ => panic!("Expected uint state"),
+        _ => return Err("Expected uint state".into()),
     }
 
     match local_state.get("local_bytes1".as_bytes()).unwrap() {
         AppState::Bytes(state) => {
             assert_eq!(String::from_utf8(state.value_raw.clone()).unwrap(), "asdf");
         }
-        _ => panic!("Expected bytes state"),
+        _ => return Err("Expected bytes state".into()),
     }
 
     match local_state.get("local_bytes2".as_bytes()).unwrap() {
         AppState::Bytes(state) => {
             assert_eq!(state.value_raw, vec![1, 2, 3, 4]);
         }
-        _ => panic!("Expected bytes state"),
+        _ => return Err("Expected bytes state".into()),
     }
 
     Ok(())
@@ -410,13 +410,13 @@ async fn test_box_retrieval(#[future] algorand_fixture: AlgorandFixtureResult) -
     if let ABIValue::String(decoded_str) = &boxes_abi[0].value {
         assert_eq!(decoded_str, expected_value_decoded);
     } else {
-        panic!("Expected string ABIValue");
+        return Err("Expected string ABIValue".into());
     }
 
     if let ABIValue::String(decoded_str) = &box1_abi_value {
         assert_eq!(decoded_str, expected_value_decoded);
     } else {
-        panic!("Expected string ABIValue");
+        return Err("Expected string ABIValue".into());
     }
 
     Ok(())

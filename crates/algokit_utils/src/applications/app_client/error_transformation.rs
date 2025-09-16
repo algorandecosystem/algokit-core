@@ -15,10 +15,15 @@ impl AppClient {
 
 impl AppClient {
     /// Create an enhanced LogicError from a transaction error, applying source maps if available.
-    pub fn expose_logic_error(&self, error: &TransactionResultError, is_clear: bool) -> LogicError {
+    pub fn expose_logic_error(
+        &self,
+        error: &TransactionResultError,
+        is_clear_state_program: bool,
+    ) -> LogicError {
         let err_str = format!("{}", error);
-        let (line_no_opt, listing) = self.apply_source_map_for_message(&err_str, is_clear);
-        let source_map = self.get_source_map(is_clear).cloned();
+        let (line_no_opt, listing) =
+            self.apply_source_map_for_message(&err_str, is_clear_state_program);
+        let source_map = self.get_source_map(is_clear_state_program).cloned();
         let transaction_id = Self::extract_transaction_id(&err_str);
 
         let logic = LogicError {
@@ -53,11 +58,11 @@ impl AppClient {
     fn apply_source_map_for_message(
         &self,
         error_str: &str,
-        is_clear: bool,
+        is_clear_state_program: bool,
     ) -> (Option<u64>, Vec<String>) {
         let pc_opt = Self::extract_pc(error_str);
         if let Some(pc) = pc_opt {
-            if let Some((line_no, listing)) = self.apply_source_map(pc, is_clear) {
+            if let Some((line_no, listing)) = self.apply_source_map(pc, is_clear_state_program) {
                 return (Some(line_no), listing);
             }
         }
@@ -78,16 +83,20 @@ impl AppClient {
         None
     }
 
-    fn apply_source_map(&self, pc: u64, is_clear: bool) -> Option<(u64, Vec<String>)> {
-        let map = self.get_source_map(is_clear)?;
+    fn apply_source_map(
+        &self,
+        pc: u64,
+        is_clear_state_program: bool,
+    ) -> Option<(u64, Vec<String>)> {
+        let map = self.get_source_map(is_clear_state_program)?;
         let line_no = Self::map_pc_to_line(map, pc)?;
         let listing = Self::truncate_listing(map, line_no, 3);
         Some((line_no, listing))
     }
 
-    fn get_source_map(&self, is_clear: bool) -> Option<&JsonValue> {
+    fn get_source_map(&self, is_clear_state_program: bool) -> Option<&JsonValue> {
         let maps = self.source_maps.as_ref()?;
-        if is_clear {
+        if is_clear_state_program {
             maps.clear_source_map.as_ref()
         } else {
             maps.approval_source_map.as_ref()

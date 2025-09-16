@@ -82,7 +82,7 @@ async fn test_default_value_from_literal(
         .expect("Expected ABI return value");
     match defined_ret {
         ABIValue::String(s) => assert_eq!(s, "defined value"),
-        _ => panic!("Expected string return"),
+        _ => return Err("Expected string return".into()),
     }
 
     let defaulted = client
@@ -104,7 +104,7 @@ async fn test_default_value_from_literal(
         .expect("Expected ABI return value");
     match default_ret {
         ABIValue::String(s) => assert_eq!(s, "default value"),
-        _ => panic!("Expected string return"),
+        _ => return Err("Expected string return".into()),
     }
 
     Ok(())
@@ -139,7 +139,7 @@ async fn test_default_value_from_method(
         .expect("Expected ABI return value");
     match defined_ret {
         ABIValue::String(s) => assert_eq!(s, "ABI, defined value"),
-        _ => panic!("Expected string return"),
+        _ => return Err("Expected string return".into()),
     }
 
     let defaulted = client
@@ -161,7 +161,7 @@ async fn test_default_value_from_method(
         .expect("Expected ABI return value");
     match default_ret {
         ABIValue::String(s) => assert_eq!(s, "ABI, default value"),
-        _ => panic!("Expected string return"),
+        _ => return Err("Expected string return".into()),
     }
 
     Ok(())
@@ -220,7 +220,7 @@ async fn test_default_value_from_global_state(
         .expect("Expected ABI return value");
     match defined_ret {
         ABIValue::Uint(v) => assert_eq!(v, BigUint::from(123u64)),
-        _ => panic!("Expected uint return"),
+        _ => return Err("Expected uint return".into()),
     }
 
     let defaulted = client
@@ -242,7 +242,7 @@ async fn test_default_value_from_global_state(
         .expect("Expected ABI return value");
     match default_ret {
         ABIValue::Uint(v) => assert_eq!(v, BigUint::from(456u64)),
-        _ => panic!("Expected uint return"),
+        _ => return Err("Expected uint return".into()),
     }
 
     Ok(())
@@ -314,7 +314,7 @@ async fn test_default_value_from_local_state(
         .expect("Expected ABI return value");
     match defined_ret {
         ABIValue::String(s) => assert_eq!(s, "Local state, defined value"),
-        _ => panic!("Expected string return"),
+        _ => return Err("Expected string return".into()),
     }
 
     let defaulted = client
@@ -336,7 +336,7 @@ async fn test_default_value_from_local_state(
         .expect("Expected ABI return value");
     match default_ret {
         ABIValue::String(s) => assert_eq!(s, "Local state, banana"),
-        _ => panic!("Expected string return"),
+        _ => return Err("Expected string return".into()),
     }
 
     Ok(())

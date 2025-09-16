@@ -92,14 +92,14 @@ async fn test_nested_structs_described_by_structure(
         ABIValue::Struct(ref outer) => {
             let x = match outer.get("x").expect("x") {
                 ABIValue::Struct(m) => m,
-                _ => panic!("x should be a struct"),
+                _ => return Err("x should be a struct".into()),
             };
             match x.get("a").expect("a") {
                 ABIValue::String(s) => assert_eq!(s, "hello"),
-                _ => panic!("a should be string"),
+                _ => return Err("a should be string".into()),
             }
         }
-        _ => panic!("expected struct return"),
+        _ => return Err("expected struct return".into()),
     }
 
     Ok(())
@@ -195,14 +195,14 @@ async fn test_nested_structs_referenced_by_name(
         ABIValue::Struct(ref outer) => {
             let x = match outer.get("x").expect("x") {
                 ABIValue::Struct(m) => m,
-                _ => panic!("x should be a struct"),
+                _ => return Err("x should be a struct".into()),
             };
             match x.get("a").expect("a") {
                 ABIValue::String(s) => assert_eq!(s, "hello"),
-                _ => panic!("a should be string"),
+                _ => return Err("a should be string".into()),
             }
         }
-        _ => panic!("expected struct return"),
+        _ => return Err("expected struct return".into()),
     }
 
     Ok(())

@@ -11,14 +11,14 @@ fn contains_logic_error(s: &str) -> bool {
 pub fn transform_transaction_error(
     client: &AppClient,
     err: TransactionSenderError,
-    is_clear: bool,
+    is_clear_state_program: bool,
 ) -> AppClientError {
     let err_str = err.to_string();
     if contains_logic_error(&err_str) {
         let tx_err = crate::transactions::TransactionResultError::ParsingError {
             message: err_str.clone(),
         };
-        let logic = client.expose_logic_error(&tx_err, is_clear);
+        let logic = client.expose_logic_error(&tx_err, is_clear_state_program);
         return AppClientError::LogicError {
             logic_error_str: logic.logic_error_str.clone(),
             logic: Box::new(logic),

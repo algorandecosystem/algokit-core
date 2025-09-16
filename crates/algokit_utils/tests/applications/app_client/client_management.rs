@@ -140,7 +140,7 @@ async fn from_creator_and_name_resolves_and_can_call(
     let abi_ret = res.abi_return.as_ref().expect("abi return");
     match &abi_ret.return_value {
         Some(ABIValue::String(s)) => assert_eq!(s, "Hello, test"),
-        _ => panic!("expected string return"),
+        _ => return Err("expected string return".into()),
     }
 
     Ok(())
