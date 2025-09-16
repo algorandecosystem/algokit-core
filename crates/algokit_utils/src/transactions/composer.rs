@@ -674,59 +674,23 @@ impl Composer {
                                     signer: signer.clone(),
                                 });
                         }
-                        Some(ComposerTransaction::Payment(p)) => {
-                            if p.signer.is_none() {
-                                p.signer = Some(signer.clone());
-                            }
-                        }
-                        Some(ComposerTransaction::AccountClose(p)) => {
-                            if p.signer.is_none() {
-                                p.signer = Some(signer.clone());
-                            }
-                        }
-                        Some(ComposerTransaction::AssetTransfer(p)) => {
-                            if p.signer.is_none() {
-                                p.signer = Some(signer.clone());
-                            }
-                        }
-                        Some(ComposerTransaction::AssetOptIn(p)) => {
-                            if p.signer.is_none() {
-                                p.signer = Some(signer.clone());
-                            }
-                        }
-                        Some(ComposerTransaction::AssetOptOut(p)) => {
-                            if p.signer.is_none() {
-                                p.signer = Some(signer.clone());
-                            }
-                        }
-                        Some(ComposerTransaction::AssetClawback(p)) => {
-                            if p.signer.is_none() {
-                                p.signer = Some(signer.clone());
-                            }
-                        }
-                        Some(ComposerTransaction::AssetCreate(p)) => {
-                            if p.signer.is_none() {
-                                p.signer = Some(signer.clone());
-                            }
-                        }
-                        Some(ComposerTransaction::AssetConfig(p)) => {
-                            if p.signer.is_none() {
-                                p.signer = Some(signer.clone());
-                            }
-                        }
-                        Some(ComposerTransaction::AssetDestroy(p)) => {
-                            if p.signer.is_none() {
-                                p.signer = Some(signer.clone());
-                            }
-                        }
-                        Some(ComposerTransaction::AssetFreeze(p)) => {
-                            if p.signer.is_none() {
-                                p.signer = Some(signer.clone());
-                            }
-                        }
-                        Some(ComposerTransaction::AssetUnfreeze(p)) => {
-                            if p.signer.is_none() {
-                                p.signer = Some(signer.clone());
+                        Some(other) => {
+                            let signer_slot = match other {
+                                ComposerTransaction::Payment(p) => Some(&mut p.signer),
+                                ComposerTransaction::AccountClose(p) => Some(&mut p.signer),
+                                ComposerTransaction::AssetTransfer(p) => Some(&mut p.signer),
+                                ComposerTransaction::AssetOptIn(p) => Some(&mut p.signer),
+                                ComposerTransaction::AssetOptOut(p) => Some(&mut p.signer),
+                                ComposerTransaction::AssetClawback(p) => Some(&mut p.signer),
+                                ComposerTransaction::AssetCreate(p) => Some(&mut p.signer),
+                                ComposerTransaction::AssetConfig(p) => Some(&mut p.signer),
+                                ComposerTransaction::AssetDestroy(p) => Some(&mut p.signer),
+                                ComposerTransaction::AssetFreeze(p) => Some(&mut p.signer),
+                                ComposerTransaction::AssetUnfreeze(p) => Some(&mut p.signer),
+                                _ => None,
+                            };
+                            if let Some(slot) = signer_slot {
+                                slot.get_or_insert_with(|| signer.clone());
                             }
                         }
                         _ => {}
