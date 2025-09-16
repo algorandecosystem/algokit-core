@@ -62,12 +62,8 @@ async fn from_creator_and_name_resolves_and_can_call(
     let clear_teal = src.get_decoded_clear().expect("clear");
 
     let app_manager: &AppManager = fixture.algorand_client.app();
-    let compiled_approval = app_manager
-        .compile_teal_template(&approval_teal, None::<&TealTemplateParams>, None)
-        .await?;
-    let compiled_clear = app_manager
-        .compile_teal_template(&clear_teal, None::<&TealTemplateParams>, None)
-        .await?;
+    let compiled_approval = app_manager.compile_teal(&approval_teal).await?;
+    let compiled_clear = app_manager.compile_teal(&clear_teal).await?;
 
     let app_name = "MY_APP".to_string();
     let deploy_note = format!(

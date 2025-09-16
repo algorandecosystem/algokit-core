@@ -8,7 +8,7 @@ use crate::transactions::{
     AppCallMethodCallParams, AppCallParams, AppDeleteMethodCallParams, AppDeleteParams,
     AppMethodCallArg, AppUpdateMethodCallParams, AppUpdateParams, PaymentParams,
 };
-use algokit_abi::method::ABIDefaultValue;
+use algokit_abi::abi_method::ABIDefaultValue;
 use algokit_abi::{ABIMethod, ABIMethodArgType, ABIType, ABIValue, DefaultValueSource};
 use algokit_transact::{Address, OnApplicationComplete};
 use base64::Engine;
@@ -347,7 +347,7 @@ impl<'app_client> ParamsBuilder<'app_client> {
                 let arc56_method = self
                     .client
                     .app_spec
-                    .get_arc56_method(&method_signature)
+                    .get_method(&method_signature)
                     .map_err(|e| AppClientError::ABIError { source: e })?;
 
                 let method_call_params = AppClientMethodCallParams {

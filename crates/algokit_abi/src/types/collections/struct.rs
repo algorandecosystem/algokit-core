@@ -86,7 +86,7 @@ impl ABIStruct {
         }
     }
 
-    pub fn to_tuple_type(&self) -> ABIType {
+    pub(crate) fn to_tuple_type(&self) -> ABIType {
         Self::fields_to_tuple_type(&self.fields)
     }
 
@@ -103,7 +103,7 @@ impl ABIStruct {
     }
 
     /// Encode struct value using tuple encoding
-    pub fn encode(&self, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
+    pub(crate) fn encode(&self, value: &ABIValue) -> Result<Vec<u8>, ABIError> {
         match value {
             ABIValue::Struct(value) => {
                 let tuple_values = self.value_to_tuple_values(value)?;
@@ -117,7 +117,7 @@ impl ABIStruct {
     }
 
     /// Decode bytes using tuple decoding
-    pub fn decode(&self, bytes: &[u8]) -> Result<ABIValue, ABIError> {
+    pub(crate) fn decode(&self, bytes: &[u8]) -> Result<ABIValue, ABIError> {
         let tuple_type = self.to_tuple_type();
         let decoded_tuple = tuple_type.decode(bytes)?;
 
@@ -136,7 +136,7 @@ impl ABIStruct {
     }
 
     /// Convert a struct value (HashMap) to a tuple value (Vec) for encoding
-    pub fn value_to_tuple_values(
+    fn value_to_tuple_values(
         &self,
         value: &HashMap<String, ABIValue>,
     ) -> Result<Vec<ABIValue>, ABIError> {
@@ -187,7 +187,7 @@ impl ABIStruct {
             .collect()
     }
 
-    pub fn get_value_from_tuple_values(
+    fn get_value_from_tuple_values(
         &self,
         tuple_values: Vec<ABIValue>,
     ) -> Result<HashMap<String, ABIValue>, ABIError> {

@@ -601,7 +601,7 @@ impl Composer {
 
     fn extract_composer_transactions_from_app_method_call_params(
         method_call_args: &[AppMethodCallArg],
-        method_signer: Option<std::sync::Arc<dyn TransactionSigner>>,
+        method_signer: Option<Arc<dyn TransactionSigner>>,
     ) -> Vec<ComposerTransaction> {
         let mut composer_transactions: Vec<ComposerTransaction> = vec![];
 
@@ -2249,11 +2249,8 @@ impl Composer {
 
         self.build().await?;
 
-        let transactions_with_signers = self
-            .built_group
-            .as_ref()
-            .filter(|&txs| !txs.is_empty())
-            .ok_or(ComposerError::StateError {
+        let transactions_with_signers =
+            self.built_group.as_ref().ok_or(ComposerError::StateError {
                 message: "No transactions available".to_string(),
             })?;
 

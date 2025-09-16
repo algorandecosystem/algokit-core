@@ -157,7 +157,7 @@ impl FromStr for ABIMethodArgType {
 }
 
 /// Represents a parsed ABI method, including its name, arguments, and return type.
-#[derive(Debug, Default, Clone, PartialEq, Eq)] //TODO: do we need PartialEq, Eq?
+#[derive(Debug, Default, Clone)]
 pub struct ABIMethod {
     /// The name of the method.
     pub name: String,
