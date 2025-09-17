@@ -24,6 +24,13 @@ impl AlgodClient {
     }
 }
 
+// NOTE: This struct is a temporary placeholder until we have a proper algod_api_ffi crate with the fully typed response
+#[derive(uniffi::Record)]
+pub struct TempSendResponse {
+    pub transaction_ids: Vec<String>,
+    pub app_ids: Vec<Option<u64>>,
+}
+
 #[derive(uniffi::Object)]
 pub struct Composer {
     inner_composer: Mutex<RustComposer>,
@@ -61,7 +68,7 @@ impl Composer {
             })
     }
 
-    pub async fn send(&self) -> Result<Vec<String>, UtilsError> {
+    pub async fn send(&self) -> Result<TempSendResponse, UtilsError> {
         let mut composer = self.inner_composer.blocking_lock();
         let result = composer
             .send(None)
@@ -69,7 +76,10 @@ impl Composer {
             .map_err(|e| UtilsError::UtilsError {
                 message: e.to_string(),
             })?;
-        Ok(result.transaction_ids)
+        Ok(TempSendResponse {
+            transaction_ids: result.transaction_ids,
+            app_ids: result.confirmations.iter().map(|c| c.app_id).collect(),
+        })
     }
 
     pub async fn build(&self) -> Result<(), UtilsError> {

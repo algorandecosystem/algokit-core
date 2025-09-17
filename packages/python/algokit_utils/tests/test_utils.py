@@ -4,6 +4,7 @@ from algokit_utils.algokit_http_client import HttpClient, HttpMethod, HttpRespon
 from algokit_utils.algokit_transact_ffi import OnApplicationComplete, SignedTransaction, Transaction, encode_transaction
 from algokit_utils import ABIBool, AlgodClient, TransactionSigner
 from algokit_utils.algokit_utils_ffi import (
+    AppCallParams,
     AppCreateParams,
     CommonParams,
     Composer,
@@ -100,10 +101,10 @@ async def test_composer():
     )
 
     await composer.build()
-    txids = await composer.send()
-    assert(len(txids) == 1)
-    assert(len(txids[0]) == 52)
-    print(txids)
+    response = await composer.send()
+    assert(len(response.transaction_ids) == 1)
+    assert(len(response.transaction_ids[0]) == 52)
+    print(response.transaction_ids)
 
 abi = AbiValue
 
@@ -126,7 +127,7 @@ def test_abi_bool_array():
 INT_1_PROG = bytes.fromhex('0b810143')
 
 @pytest.mark.asyncio
-async def test_app_create():
+async def test_app_create_and_call():
     algod = AlgodClient(HttpClientImpl())
 
 
@@ -147,6 +148,31 @@ async def test_app_create():
     )
 
     await create_composer.build()
-    txids = await create_composer.send()
-    assert(len(txids) == 1)
-    assert(len(txids[0]) == 52)
+    response = await create_composer.send()
+    assert(len(response.transaction_ids) == 1)
+    assert(len(response.transaction_ids[0]) == 52)
+
+    app_id = response.app_ids[0]
+    assert app_id
+
+    call_composer = Composer(
+        algod_client=algod,
+        signer_getter=SignerGetter(),
+    )
+
+    call_composer.add_app_call(
+        params=AppCallParams(
+            common_params=CommonParams(
+                sender=ADDR,
+            ),
+            app_id=app_id,
+            on_complete=OnApplicationComplete.NO_OP,
+        )
+    )
+
+    await call_composer.build()
+    response = await call_composer.send()
+    assert(len(response.transaction_ids) == 1)
+    assert(len(response.transaction_ids[0]) == 52)
+
+
