@@ -115,4 +115,9 @@ def test_abi_bool():
     assert decoded_bool.get_bool() == True
 
 def test_abi_bool_array():
-    assert abi.array(element_type=ABIBool(), values=[abi.bool(True)]).encoded_bytes() == b'\x00\x01\x80'
+    assert abi.array(
+        element_type=ABIBool(),
+        values=[
+            abi.bool(True) # type: ignore
+        ]
+    ).encoded_bytes() == b'\x00\x01\x80'
