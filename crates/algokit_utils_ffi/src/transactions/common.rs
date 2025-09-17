@@ -97,11 +97,7 @@ impl TransactionSigner for FfiTransactionSignerFromRust {
                 message: e.to_string(),
             })?;
 
-        let ffi_signed_txns: Result<Vec<SignedTransaction>, _> =
-            signed_txns.into_iter().map(|st| st.try_into()).collect();
-        ffi_signed_txns.map_err(|e| UtilsError::UtilsError {
-            message: format!("Failed to convert signed transactions: {}", e),
-        })
+        Ok(signed_txns.into_iter().map(|st| st.into()).collect())
     }
 }
 
