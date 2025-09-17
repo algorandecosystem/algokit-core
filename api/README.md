@@ -1,66 +1,142 @@
 # Algorand API Tools
 
-This package contains tools for working with the Algorand API specifications and generating HTTP client libraries.
+This package contains tools for working with the Algorand API specifications and generating Rust HTTP client libraries using a custom Jinja2-based generator.
 
 ## Prerequisites
 
-- [Bun](https://bun.sh/) - JavaScript runtime and package manager
-- [OpenJDK](https://adoptium.net/) - Java Development Kit
+- [Python 3.12+](https://www.python.org/) - Required for the custom OAS generator
+- [uv](https://docs.astral.sh/uv/) - Python package manager
+- [Rust](https://rustup.rs/) - Required for compiling generated clients and running API tools
+- [Bun](https://bun.sh/) - JavaScript runtime (only for convert-openapi script)
 
 ## Setup
 
 ```bash
-# Install dependencies
+# Install Python dependencies for the OAS generator
+cd api/oas_generator
+uv install
+
+# Install JavaScript dependencies (only needed for convert-openapi)
+cd ../
 bun install
 ```
 
 ## Available Scripts
 
-> NOTE: These scripts must be run inside the `./api` directory.
+> NOTE: These scripts can be run from the repository root using `cargo api <command>`.
 
 ### Convert OpenAPI 2.0 to OpenAPI 3.0
 
-Converts the Algod OpenAPI 2.0 spec to OpenAPI 3.0:
+Converts both Algod and Indexer OpenAPI 2.0 specs to OpenAPI 3.0:
 
 ```bash
-bun run convert-openapi
+cargo api convert-openapi
 ```
 
-The converted spec will be available at `specs/algod.oas3.json`.
-
-### Generate API Clients
-
-Generates TypeScript and Python API clients based on the OpenAPI spec:
+Convert individual specifications:
 
 ```bash
-bun run generate:{algod_api}:{py|ts}
+# Convert only algod spec
+cargo api convert-algod
+
+# Convert only indexer spec  
+cargo api convert-indexer
 ```
 
-The generated API clients will be available in the `./packages/` directory:
+The converted specs will be available at:
+- `specs/algod.oas3.json`
+- `specs/indexer.oas3.json`
 
-- `./packages/typescript/algod_api/` - algod TypeScript client
-- `./packages/python/algod_api/` - algod Python client
+### Generate Rust API Clients
 
-## OpenAPI Specs for algorand apis
+Generate both Rust API clients using the custom Jinja2-based generator:
 
-## Algod
+```bash
+cargo api generate-all
+```
 
-The `algod.oas2.json` is taken directly from [go-algorand](https://github.com/algorand/go-algorand/blob/master/daemon/algod/api/algod.oas2.json). The script under [scripts/convert-openapi.ts](scripts/convert-openapi.ts) is used to convert the spec to OpenAPI 3.0 via [swagger converter](https://converter.swagger.io/) endpoint. The current approach is to manually edit and tweak the algod.oas2.json fixing known issues on a spec from go-algorand, then use the openapi-generator-cli to generate clients on the v3 spec. OpenAPI v3 is preferred for client generation as it offers enhanced schema features, better component reusability, and improved type definitions compared to v2. Additionally, most modern code generators like openapi-generator-cli provide better support and more accurate code generation when working with v3 specifications.
+Generate individual clients:
 
-## OpenAPI Generator Configuration
+```bash
+# Generate algod client only
+cargo api generate-algod
 
-The client generation is configured with the following options:
+# Generate indexer client only
+cargo api generate-indexer
+```
 
-### TypeScript Client
+The generated Rust clients will be available at:
+- `../crates/algod_client/`
+- `../crates/indexer_client/`
 
-- Package name: `@algorandfoundation/algokit-algod-api`
-- ES6 support: true
-- Manually refined tsconfig setup to build cjs, esm clients along with browser support.
-- Custom tests defined in `oas_templates/typescript/custom-tests/` that implement tests for initial batch of transaction endpoints. More endpoint tests are to be added in the future.
+### Development Scripts
 
-### Python Client
+```bash
+# Test the OAS generator
+cargo api test-oas
 
-- Package name: `algokit_algod_api`.
-- Ignoring various unneeded supporting files like tox.ini, git_push.sh, etc.
-- Various improvements to make auto generated code compatible with poetry and more modern python conventions and practices.
-- Custom tests defined in `oas_templates/python/custom-tests/` that implement tests for initial batch of transaction endpoints. More endpoint tests are to be added in the future.
+# Format the OAS generator code
+cargo api format-oas
+
+# Lint and type-check the OAS generator
+cargo api lint-oas
+
+# Format generated Rust code
+cargo api format-algod
+cargo api format-indexer
+```
+
+## Custom Rust OAS Generator
+
+The project uses a custom Jinja2-based generator located in `oas_generator/` that creates optimized Rust API clients from OpenAPI 3.x specifications.
+
+### Features
+
+- **Complete Rust Client Generation**: APIs, models, and configuration
+- **Msgpack Support**: Automatic detection and handling of binary encoding
+- **Signed Transactions**: Algorand-specific vendor extension support (`x-algokit-signed-txn`)
+- **Type Safety**: Comprehensive OpenAPI to Rust type mapping
+- **Template-based**: Customizable Jinja2 templates for code generation
+
+### Generated Structure
+
+The generator creates complete Rust crates with the following structure:
+
+```
+crates/{algod_client,indexer_client}/
+├── Cargo.toml
+├── README.md
+└── src/
+    ├── lib.rs
+    ├── apis/
+    │   ├── mod.rs
+    │   ├── client.rs
+    │   └── {endpoint}.rs
+    └── models/
+        ├── mod.rs
+        └── {model}.rs
+```
+
+## OpenAPI Specs for Algorand APIs
+
+### Algod
+
+The `algod.oas2.json` is taken directly from [go-algorand](https://github.com/algorand/go-algorand/blob/master/daemon/algod/api/algod.oas2.json). To convert the spec to OpenAPI 3.0, use `cargo api convert-algod` which runs the TypeScript script [scripts/convert-openapi.ts](scripts/convert-openapi.ts) via [swagger converter](https://converter.swagger.io/) endpoint.
+
+### Indexer
+
+The `indexer.oas2.json` is taken directly from [indexer](https://github.com/algorand/indexer/blob/master/api/indexer.oas2.json). To convert the spec to OpenAPI 3.0, use `cargo api convert-indexer` which runs the same TypeScript conversion script.
+
+The current approach is to manually edit and tweak the OAS2 specs fixing known issues from the source repositories, then use the custom Rust OAS generator to generate clients from the v3 specs. OpenAPI v3 is preferred for client generation as it offers enhanced schema features, better component reusability, and improved type definitions compared to v2.
+
+## Generator Configuration
+
+The custom Rust generator is configured with:
+
+- **Package names**: `algod_client`, `indexer_client`
+- **Msgpack detection**: Automatic handling of binary-encoded fields
+- **Algorand extensions**: Support for signed transaction via a vendor extension
+- **Type safety**: Complete OpenAPI to Rust type mapping
+- **Error handling**: Comprehensive error types and response handling
+
+For detailed information about the generator architecture and customization options, see [`oas_generator/ARCHITECTURE.md`](oas_generator/ARCHITECTURE.md).

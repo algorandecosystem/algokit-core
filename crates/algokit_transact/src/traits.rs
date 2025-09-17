@@ -3,9 +3,9 @@
 //! This module provides traits for standardized MessagePack encoding/decoding of
 //! Algorand data structures and for calculating transaction identifiers.
 
+use crate::Transaction;
 use crate::error::AlgoKitTransactError;
 use crate::utils::sort_msgpack_value;
-use crate::Transaction;
 use crate::{constants::HASH_BYTES_LENGTH, utils::hash};
 use serde::{Deserialize, Serialize};
 
@@ -62,19 +62,19 @@ pub trait AlgorandMsgpack: Serialize + for<'de> Deserialize<'de> {
     /// deserialization fails.
     fn decode(bytes: &[u8]) -> Result<Self, AlgoKitTransactError> {
         if bytes.is_empty() {
-            return Err(AlgoKitTransactError::InputError(
-                "attempted to decode 0 bytes".to_string(),
-            ));
+            return Err(AlgoKitTransactError::InputError {
+                message: "attempted to decode 0 bytes".to_string(),
+            });
         }
 
         // If there is a PREFIX defined, bytes is longer than the prefix, and the bytes start
         // with the prefix, decode the bytes without the prefix
-        if Self::PREFIX.len() > 0
+        if !Self::PREFIX.is_empty()
             && bytes.len() > Self::PREFIX.len()
             && &bytes[..Self::PREFIX.len()] == Self::PREFIX
         {
             let without_prefix = &bytes[Self::PREFIX.len()..];
-            Ok(rmp_serde::from_slice(&without_prefix)?)
+            Ok(rmp_serde::from_slice(without_prefix)?)
         } else {
             Ok(rmp_serde::from_slice(bytes)?)
         }
@@ -147,4 +147,15 @@ pub trait Transactions: Sized {
     /// # Returns
     /// A result containing the transactions with group assign or an error if grouping fails.
     fn assign_group(self) -> Result<Vec<Transaction>, AlgoKitTransactError>;
+}
+
+pub trait Validate {
+    fn validate(&self) -> Result<(), Vec<String>> {
+        Ok(())
+    }
+}
+
+/// Trait for checking if a type will be empty when serialized to MsgPack.
+pub trait MsgPackEmpty {
+    fn is_empty(&self) -> bool;
 }

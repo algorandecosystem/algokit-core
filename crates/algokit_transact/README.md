@@ -11,8 +11,8 @@ See [algokit_transact_ffi](../algokit_transact_ffi/) for foreign interfaces.
 - [x] Payment transactions
 - [x] Asset transfer transactions
 - [ ] Asset freeze transactions
-- [ ] Asset configuration transactions
-- [ ] Application call transactions
+- [x] Asset configuration transactions
+- [x] App call transactions
 - [ ] Key registration transactions
 - [ ] State proof transactions
 - [ ] Heartbeat transactions

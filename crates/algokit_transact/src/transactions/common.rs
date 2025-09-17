@@ -3,7 +3,7 @@
 //! This module provides the fundamental transaction types and headers used
 //! across different transaction types.
 
-use crate::address::Address;
+use crate::Address;
 use crate::constants::Byte32;
 use crate::utils::{
     is_empty_bytes32_opt, is_empty_string_opt, is_empty_vec_opt, is_zero, is_zero_addr,
@@ -11,7 +11,7 @@ use crate::utils::{
 };
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
-use serde_with::{serde_as, skip_serializing_none, Bytes};
+use serde_with::{Bytes, serde_as, skip_serializing_none};
 
 /// Common header fields shared by all transaction types.
 ///
@@ -114,3 +114,51 @@ pub struct TransactionHeader {
     #[builder(default)]
     pub group: Option<Byte32>,
 }
+
+/// Validation errors for asset configuration transactions.
+#[derive(Debug, Clone, PartialEq)]
+pub enum TransactionValidationError {
+    RequiredField(String),
+    FieldTooLong {
+        field: String,
+        actual: usize,
+        max: usize,
+        unit: String,
+    },
+    ImmutableField(String),
+    ZeroValueField(String),
+    ArbitraryConstraint(String),
+}
+
+impl std::fmt::Display for TransactionValidationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TransactionValidationError::RequiredField(field) => {
+                write!(f, "{} is required", field)
+            }
+            TransactionValidationError::FieldTooLong {
+                field,
+                actual,
+                max,
+                unit,
+            } => {
+                write!(
+                    f,
+                    "{} cannot exceed {} {}, got {}",
+                    field, max, unit, actual
+                )
+            }
+            TransactionValidationError::ImmutableField(field) => {
+                write!(f, "{} is immutable and cannot be changed", field)
+            }
+            TransactionValidationError::ZeroValueField(field) => {
+                write!(f, "{} must not be 0", field)
+            }
+            TransactionValidationError::ArbitraryConstraint(constraint) => {
+                write!(f, "{}", constraint)
+            }
+        }
+    }
+}
+
+impl std::error::Error for TransactionValidationError {}

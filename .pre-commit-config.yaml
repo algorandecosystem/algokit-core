@@ -1,0 +1,61 @@
+repos:
+  - repo: local
+    hooks:
+      - id: cargo-fmt
+        name: cargo-fmt
+        description: "Run 'cargo fmt --check' to check Rust formatting"
+        entry: cargo fmt
+        language: system
+        types: [rust]
+        args: [--check]
+        require_serial: true
+        pass_filenames: false
+      - id: cargo-clippy
+        name: cargo-clippy
+        description: "Run 'cargo clippy' for Rust linting with warnings as errors"
+        entry: cargo clippy
+        language: system
+        types: [rust]
+        args: [--, -D, warnings]
+        require_serial: true
+        pass_filenames: false
+      - id: cargo-check
+        name: cargo-check
+        description: "Run 'cargo check' to verify compilation"
+        entry: cargo check
+        language: system
+        types: [rust]
+        require_serial: true
+        pass_filenames: false
+      - id: cargo-test
+        name: cargo-test
+        description: "Run 'cargo test' to execute all tests"
+        entry: cargo test
+        language: system
+        types: [rust]
+        require_serial: true
+        pass_filenames: false
+      - id: api-format
+        name: api-format
+        description: "Format API OAS generator Python code"
+        entry: cargo api format-oas
+        language: system
+        files: ^api/
+        require_serial: true
+        pass_filenames: false
+      - id: api-lint
+        name: api-lint
+        description: "Run linting and type-checking for API OAS generator"
+        entry: cargo api lint-oas
+        language: system
+        files: ^api/
+        require_serial: true
+        pass_filenames: false
+      - id: api-test
+        name: api-test
+        description: "Run tests for API OAS generator"
+        entry: cargo api test-oas
+        language: system
+        files: ^api/
+        require_serial: true
+        pass_filenames: false

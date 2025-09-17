@@ -8,6 +8,9 @@ import {
   getTransactionId,
   getTransactionIdRaw,
   SignedTransaction,
+  newMultisigSignature,
+  applyMultisigSubsignature,
+  mergeMultisignatures
 } from "..";
 import { expect } from "bun:test";
 import * as ed from "@noble/ed25519";
@@ -82,4 +85,23 @@ export const assertAssignFee = (label: string, testData: TransactionTestData) =>
   const txnWithFee3 = assignFee(testData.transaction, { feePerByte, minFee: 1000n });
   const txnSize = estimateTransactionSize(testData.transaction);
   expect(txnWithFee3.fee, label).toEqual(txnSize * feePerByte);
+};
+
+export const assertMultisigExample = async (label: string, testData: TransactionTestData) => {
+  const singleSig = await ed.signAsync(encodeTransaction(testData.transaction), testData.signingPrivateKey);
+
+  const unsignedMultisigSignature = newMultisigSignature(
+    1, 2, testData.multisigAddresses
+  );
+  const multisigSignature0 = applyMultisigSubsignature(unsignedMultisigSignature, testData.multisigAddresses[0], singleSig);
+  const multisigSignature1 = applyMultisigSubsignature(unsignedMultisigSignature, testData.multisigAddresses[1], singleSig);
+  const multisigSignature = mergeMultisignatures(multisigSignature0, multisigSignature1);
+
+  const signedTxn: SignedTransaction = {
+    transaction: testData.transaction,
+    multisignature: multisigSignature,
+  };
+  const encodedSignedTxn = encodeSignedTransaction(signedTxn);
+
+  expect(encodedSignedTxn, label).toEqual(testData.multisigSignedBytes);
 };

@@ -2,9 +2,10 @@
 //!
 //! This module provides functionality for creating and managing asset transfer transactions.
 
-use crate::address::Address;
-use crate::transactions::common::TransactionHeader;
+use crate::traits::Validate;
+use crate::transactions::common::{TransactionHeader, TransactionValidationError};
 use crate::utils::{is_zero, is_zero_addr, is_zero_addr_opt};
+use crate::{Address, Transaction};
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, skip_serializing_none};
@@ -73,4 +74,167 @@ pub struct AssetTransferTransactionFields {
     #[serde(default)]
     #[builder(default)]
     pub close_remainder_to: Option<Address>,
+}
+
+impl AssetTransferTransactionBuilder {
+    pub fn build(&self) -> Result<Transaction, AssetTransferTransactionBuilderError> {
+        let d = self.build_fields()?;
+        d.validate().map_err(|errors| {
+            AssetTransferTransactionBuilderError::ValidationError(format!(
+                "Asset transfer validation failed: {}",
+                errors.join("\n")
+            ))
+        })?;
+        Ok(Transaction::AssetTransfer(d))
+    }
+}
+
+impl Validate for AssetTransferTransactionFields {
+    fn validate(&self) -> Result<(), Vec<String>> {
+        let mut errors = Vec::new();
+
+        if self.asset_id == 0 {
+            errors.push(TransactionValidationError::ZeroValueField(
+                "Asset ID".to_string(),
+            ));
+        }
+
+        match errors.is_empty() {
+            true => Ok(()),
+            false => Err(errors.into_iter().map(|e| e.to_string()).collect()),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_utils::{
+        AccountMother, TestDataMother, TransactionHeaderMother, TransactionMother,
+        check_multisigned_transaction_encoding, check_signed_transaction_encoding,
+        check_transaction_encoding, check_transaction_id,
+    };
+
+    #[test]
+    fn test_validate_asset_transfer_zero_asset_id() {
+        let asset_transfer = AssetTransferTransactionFields {
+            header: TransactionHeaderMother::example().build().unwrap(),
+            asset_id: 0, // Invalid asset ID
+            amount: 1000,
+            receiver: AccountMother::neil().address(),
+            asset_sender: None,
+            close_remainder_to: None,
+        };
+
+        let result = asset_transfer.validate();
+        assert!(result.is_err());
+        let errors = result.unwrap_err();
+        assert_eq!(errors.len(), 1);
+        assert_eq!(errors[0], "Asset ID must not be 0");
+    }
+
+    #[test]
+    fn test_validate_valid_asset_transfer() {
+        let asset_transfer = AssetTransferTransactionFields {
+            header: TransactionHeaderMother::example().build().unwrap(),
+            asset_id: 123, // Valid asset ID
+            amount: 1000,
+            receiver: AccountMother::neil().address(),
+            asset_sender: None,
+            close_remainder_to: None,
+        };
+
+        let result = asset_transfer.validate();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_build_with_invalid_asset_id() {
+        let result = AssetTransferTransactionBuilder::default()
+            .header(TransactionHeaderMother::example().build().unwrap())
+            .asset_id(0) // Invalid asset ID
+            .amount(1000)
+            .receiver(AccountMother::neil().address())
+            .build();
+
+        assert!(result.is_err());
+        let error_message = result.unwrap_err().to_string();
+        assert!(error_message.contains("Asset transfer validation failed"));
+        assert!(error_message.contains("Asset ID must not be 0"));
+    }
+
+    #[test]
+    fn test_build_with_valid_asset_id() {
+        let result = AssetTransferTransactionBuilder::default()
+            .header(TransactionHeaderMother::example().build().unwrap())
+            .asset_id(123) // Valid asset ID
+            .amount(1000)
+            .receiver(AccountMother::neil().address())
+            .build();
+
+        assert!(result.is_ok());
+    }
+    #[test]
+    fn test_simple_asset_transfer_snapshot() {
+        let data = TestDataMother::simple_asset_transfer();
+        assert_eq!(
+            data.id,
+            String::from("VAHP4FRJH4GRV6ID2BZRK5VYID376EV3VE6T2TKKDFJBBDOXWCCA")
+        );
+    }
+
+    #[test]
+    fn test_opt_in_asset_transfer_snapshot() {
+        let data = TestDataMother::opt_in_asset_transfer();
+        assert_eq!(
+            data.id,
+            String::from("JIDBHDPLBASULQZFI4EY5FJWR6VQRMPPFSGYBKE2XKW65N3UQJXA")
+        );
+    }
+
+    #[test]
+    fn test_asset_transfer_transaction_encoding() {
+        let asset_transfer_tx = TransactionMother::simple_asset_transfer().build().unwrap();
+
+        check_transaction_id(
+            &asset_transfer_tx,
+            "VAHP4FRJH4GRV6ID2BZRK5VYID376EV3VE6T2TKKDFJBBDOXWCCA",
+        );
+        check_transaction_encoding(&asset_transfer_tx, 186);
+        check_multisigned_transaction_encoding(&asset_transfer_tx, 423);
+    }
+
+    #[test]
+    fn test_asset_opt_in_transaction_encoding() {
+        let asset_opt_in_tx = TransactionMother::opt_in_asset_transfer().build().unwrap();
+
+        check_transaction_id(
+            &asset_opt_in_tx,
+            "JIDBHDPLBASULQZFI4EY5FJWR6VQRMPPFSGYBKE2XKW65N3UQJXA",
+        );
+        check_transaction_encoding(&asset_opt_in_tx, 178);
+        check_multisigned_transaction_encoding(&asset_opt_in_tx, 415);
+    }
+
+    #[test]
+    fn test_asset_transfer_signed_transaction_encoding() {
+        let asset_transfer_tx = TransactionMother::simple_asset_transfer().build().unwrap();
+        check_signed_transaction_encoding(&asset_transfer_tx, 259, None);
+        check_signed_transaction_encoding(
+            &asset_transfer_tx,
+            298,
+            Some(AccountMother::account().clone()),
+        );
+    }
+
+    #[test]
+    fn test_asset_opt_in_signed_transaction_encoding() {
+        let asset_opt_in_tx = TransactionMother::opt_in_asset_transfer().build().unwrap();
+        check_signed_transaction_encoding(&asset_opt_in_tx, 251, None);
+        check_signed_transaction_encoding(
+            &asset_opt_in_tx,
+            290,
+            Some(AccountMother::account().clone()),
+        );
+    }
 }

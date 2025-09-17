@@ -3,12 +3,14 @@ from pathlib import Path
 import json
 from typing import Any
 from algokit_transact import (
-    Address,
     PaymentTransactionFields,
     TransactionType,
     Transaction,
     AssetTransferTransactionFields,
-    ApplicationCallTransactionFields,
+    AssetConfigTransactionFields,
+    AssetFreezeTransactionFields,
+    AppCallTransactionFields,
+    KeyRegistrationTransactionFields,
     OnApplicationComplete,
     StateSchema,
 )
@@ -23,27 +25,33 @@ class TransactionTestData:
     unsigned_bytes: bytes
     signed_bytes: bytes
     signing_private_key: SigningKey
-    rekeyed_sender_auth_address: Address
+    rekeyed_sender_auth_address: str
     rekeyed_sender_signed_bytes: bytes
+    multisig_addresses: tuple[str, str]
+    multisig_signed_bytes: bytes
 
 
 @dataclass
 class TestData:
     simple_payment: TransactionTestData
     opt_in_asset_transfer: TransactionTestData
-    application_call: TransactionTestData
-    application_create: TransactionTestData
-    application_update: TransactionTestData
-    application_delete: TransactionTestData
+    asset_create: TransactionTestData
+    asset_destroy: TransactionTestData
+    asset_config: TransactionTestData
+    asset_freeze: TransactionTestData
+    asset_unfreeze: TransactionTestData
+    app_call: TransactionTestData
+    app_create: TransactionTestData
+    app_update: TransactionTestData
+    app_delete: TransactionTestData
+    online_key_registration: TransactionTestData
+    offline_key_registration: TransactionTestData
+    non_participation_key_registration: TransactionTestData
 
 
 def convert_values(obj: Any) -> Any:
     """Recursively convert values in the data structure to appropriate types"""
     if isinstance(obj, dict):
-        # Convert Address objects
-        if "address" in obj and "pub_key" in obj:
-            return Address(address=obj["address"], pub_key=bytes(obj["pub_key"]))
-
         # Convert StateSchema objects
         if "num_uints" in obj and "num_byte_slices" in obj and len(obj) == 2:
             return StateSchema(
@@ -118,10 +126,25 @@ def create_transaction_test_data(test_data: dict[str, Any]) -> TransactionTestDa
             "field_name": "asset_transfer",
             "field_class": AssetTransferTransactionFields,
         },
-        "ApplicationCall": {
-            "type": TransactionType.APPLICATION_CALL,
-            "field_name": "application_call",
-            "field_class": ApplicationCallTransactionFields,
+        "AssetConfig": {
+            "type": TransactionType.ASSET_CONFIG,
+            "field_name": "asset_config",
+            "field_class": AssetConfigTransactionFields,
+        },
+        "AssetFreeze": {
+            "type": TransactionType.ASSET_FREEZE,
+            "field_name": "asset_freeze",
+            "field_class": AssetFreezeTransactionFields,
+        },
+        "AppCall": {
+            "type": TransactionType.APP_CALL,
+            "field_name": "app_call",
+            "field_class": AppCallTransactionFields,
+        },
+        "KeyRegistration": {
+            "type": TransactionType.KEY_REGISTRATION,
+            "field_name": "key_registration",
+            "field_class": KeyRegistrationTransactionFields,
         },
     }
 
@@ -133,6 +156,10 @@ def create_transaction_test_data(test_data: dict[str, Any]) -> TransactionTestDa
     # Extract the specific transaction field data
     transaction_field_data = transaction_data.pop(transaction_config["field_name"])
 
+    # Handle assetFreeze objects - ensure frozen field defaults to false if missing
+    if transaction_type_str == "AssetFreeze" and "frozen" not in transaction_field_data:
+        transaction_field_data["frozen"] = False
+
     # Build the transaction kwargs
     transaction_kwargs = {
         **transaction_data,
@@ -141,6 +168,10 @@ def create_transaction_test_data(test_data: dict[str, Any]) -> TransactionTestDa
             **transaction_field_data
         ),
     }
+
+    # default genesis_id to None
+    if "genesis_id" not in transaction_kwargs:
+        transaction_kwargs["genesis_id"] = None
 
     return TransactionTestData(
         **test_data,

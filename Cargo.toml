@@ -1,21 +1,29 @@
 [workspace]
 resolver = "2"
 members = [
+  "crates/algokit_http_client",
   "crates/algokit_transact",
   "crates/algokit_transact_ffi",
-  "tools/build_pkgs",
+  "crates/algokit_utils",
+  "crates/algokit_abi",
+  "crates/algokit_test_artifacts",
   "crates/ffi_macros",
+  "crates/algod_client",
+  "crates/indexer_client",
+  "tools/build_pkgs",
   "crates/uniffi-bindgen",
   "docs",
   "tools/cargo-bin",
+  "tools/api_tools",
 ]
 
 [workspace.dependencies]
-uniffi = { version = "0.28.3" }
-thiserror = { version = "2.0.7" }
-wasm-bindgen = { version = "0.2.99" }
-tsify-next = { version = "0.5.4", features = ["js"] }
-js-sys = { version = "0.3.77" }
+uniffi = { version = "0.29.4" }
+snafu = { version = "0.8" }
+base32 = { version = "0.5.1" }
+sha2 = { version = "0.10.8" }
+rstest = { version = "0.25.0" }
 
 [workspace.metadata.bin]
 polytest = { version = "0.3.0", locked = true }
+cargo-insta = { version = "1.43.1", locked = true }

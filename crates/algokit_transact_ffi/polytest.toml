@@ -7,8 +7,12 @@ package_name = "algokit_transact"
 desc = "Tests for payment transactions"
 groups = ["Transaction Tests"]
 
-[suite."Application Call"]
-desc = "Tests for application call transactions"
+[suite.AssetConfig]
+desc = "Tests for asset config transactions"
+groups = ["Transaction Tests"]
+
+[suite."App Call"]
+desc = "Tests for app call transactions"
 groups = ["Transaction Tests"]
 
 [suite."Generic Transaction"]
@@ -18,6 +22,10 @@ groups = ["Generic Transaction Tests"]
 [suite."Transaction Group"]
 desc = "Transaction Group tests"
 groups = ["Transaction Group Tests"]
+
+[suite."Key Registration"]
+desc = "Tests for key registration transactions"
+groups = ["Transaction Tests"]
 
 # Test Group: Generic Transaction Tests
 
@@ -67,6 +75,9 @@ desc = "A transaction id can be obtained from a transaction"
 [group."Transaction Tests".test.example]
 desc = "A human-readable example of forming a transaction and signing it"
 
+[group."Transaction Tests".test."multisig example"]
+desc = "A human-readable example of forming a transaction and signing it with a multisignature sig"
+
 [group."Transaction Tests".test."assign fee"]
 desc = "A fee can be calculated and assigned to a transaction"
 
@@ -81,6 +92,7 @@ desc = "A collection of transactions can be encoded"
 
 [group."Transaction Group Tests".test."encode signed transactions"]
 desc = "A collection of signed transactions can be encoded"
+
 
 # Test Targets
 
