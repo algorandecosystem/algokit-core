@@ -26,7 +26,7 @@ async fn compile_applies_template_params_and_emits_event(
         updatable: Some(false),
         deletable: Some(false),
     };
-    let _ = client.compile(&compilation_params).await?;
+    client.compile(&compilation_params).await?;
 
     if let Ok((event_type, data)) =
         tokio::time::timeout(std::time::Duration::from_millis(5000), events.recv()).await?
@@ -38,7 +38,6 @@ async fn compile_applies_template_params_and_emits_event(
                 approval_source_map,
                 clear_source_map,
             }) => {
-                // We no longer force an app_name in the test fixture; just assert the event is emitted and has maps.
                 assert!(app_name.is_none() || app_name.as_deref() == Some("TestingApp"));
                 assert!(approval_source_map.is_some());
                 assert!(clear_source_map.is_some());

@@ -22,7 +22,7 @@ async fn test_create_then_call_app(
     let result = client
         .send()
         .call(
-            algokit_utils::applications::app_client::AppClientMethodCallParams {
+            AppClientMethodCallParams {
                 method: "call_abi".to_string(),
                 args: vec![AppMethodCallArg::ABIValue(ABIValue::from("test"))],
                 sender: Some(sender.to_string()),
