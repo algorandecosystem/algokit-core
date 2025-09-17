@@ -1,9 +1,10 @@
 from typing import override
 import typing
 from algokit_utils.algokit_http_client import HttpClient, HttpMethod, HttpResponse
-from algokit_utils.algokit_transact_ffi import SignedTransaction, Transaction, encode_transaction
+from algokit_utils.algokit_transact_ffi import OnApplicationComplete, SignedTransaction, Transaction, encode_transaction
 from algokit_utils import ABIBool, AlgodClient, TransactionSigner
 from algokit_utils.algokit_utils_ffi import (
+    AppCreateParams,
     CommonParams,
     Composer,
     PaymentParams,
@@ -121,3 +122,31 @@ def test_abi_bool_array():
             abi.bool(True) # type: ignore
         ]
     ).encoded_bytes() == b'\x00\x01\x80'
+
+INT_1_PROG = bytes.fromhex('0b810143')
+
+@pytest.mark.asyncio
+async def test_app_create():
+    algod = AlgodClient(HttpClientImpl())
+
+
+    create_composer = Composer(
+        algod_client=algod,
+        signer_getter=SignerGetter(),
+    )
+
+    create_composer.add_app_create(
+        params=AppCreateParams(
+            common_params=CommonParams(
+                    sender=ADDR,
+            ),
+            on_complete=OnApplicationComplete.NO_OP,
+            approval_program=INT_1_PROG,
+            clear_state_program=INT_1_PROG,
+        )
+    )
+
+    await create_composer.build()
+    txids = await create_composer.send()
+    assert(len(txids) == 1)
+    assert(len(txids[0]) == 52)
