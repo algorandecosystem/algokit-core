@@ -687,6 +687,19 @@ impl Composer {
                                 ComposerTransaction::AssetDestroy(p) => Some(&mut p.signer),
                                 ComposerTransaction::AssetFreeze(p) => Some(&mut p.signer),
                                 ComposerTransaction::AssetUnfreeze(p) => Some(&mut p.signer),
+                                ComposerTransaction::AppCall(p) => Some(&mut p.signer),
+                                ComposerTransaction::AppCreateCall(p) => Some(&mut p.signer),
+                                ComposerTransaction::AppUpdateCall(p) => Some(&mut p.signer),
+                                ComposerTransaction::AppDeleteCall(p) => Some(&mut p.signer),
+                                ComposerTransaction::OnlineKeyRegistration(p) => {
+                                    Some(&mut p.signer)
+                                }
+                                ComposerTransaction::OfflineKeyRegistration(p) => {
+                                    Some(&mut p.signer)
+                                }
+                                ComposerTransaction::NonParticipationKeyRegistration(p) => {
+                                    Some(&mut p.signer)
+                                }
                                 _ => None,
                             };
                             if let Some(slot) = signer_slot {
