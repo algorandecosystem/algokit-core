@@ -472,6 +472,8 @@ def _uniffi_check_contract_api_version(lib):
 def _uniffi_check_api_checksums(lib):
     if lib.uniffi_algokit_utils_ffi_checksum_func_run_asset_freeze_test_suite() != 6358:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algokit_utils_ffi_checksum_func_run_tests() != 44347:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algokit_utils_ffi_checksum_func_test_frozen_asset_transfer_simple() != 46066:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algokit_utils_ffi_checksum_method_assetfreezetestadapter_adapter_name() != 52805:
@@ -509,6 +511,8 @@ def _uniffi_check_api_checksums(lib):
     if lib.uniffi_algokit_utils_ffi_checksum_method_composer_build() != 13184:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algokit_utils_ffi_checksum_method_composer_send() != 61263:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algokit_utils_ffi_checksum_method_composertestadapter_new() != 45029:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algokit_utils_ffi_checksum_method_transactionsigner_sign_transactions() != 55831:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
@@ -638,6 +642,9 @@ _UNIFFI_CALLBACK_INTERFACE_ASSET_FREEZE_TEST_ADAPTER_METHOD2 = ctypes.CFUNCTYPE(
 _UNIFFI_CALLBACK_INTERFACE_ASSET_FREEZE_TEST_ADAPTER_METHOD3 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,ctypes.c_uint64,ctypes.POINTER(ctypes.c_int8),
     ctypes.POINTER(_UniffiRustCallStatus),
 )
+_UNIFFI_CALLBACK_INTERFACE_COMPOSER_TEST_ADAPTER_METHOD0 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,ctypes.POINTER(ctypes.c_void_p),
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
 _UNIFFI_CALLBACK_INTERFACE_TRANSACTION_SIGNER_METHOD0 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
 )
 _UNIFFI_CALLBACK_INTERFACE_TRANSACTION_SIGNER_METHOD1 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBufferTransaction,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
@@ -651,6 +658,11 @@ class _UniffiVTableCallbackInterfaceAssetFreezeTestAdapter(ctypes.Structure):
         ("setup_frozen_asset", _UNIFFI_CALLBACK_INTERFACE_ASSET_FREEZE_TEST_ADAPTER_METHOD1),
         ("try_transfer_frozen", _UNIFFI_CALLBACK_INTERFACE_ASSET_FREEZE_TEST_ADAPTER_METHOD2),
         ("is_frozen", _UNIFFI_CALLBACK_INTERFACE_ASSET_FREEZE_TEST_ADAPTER_METHOD3),
+        ("uniffi_free", _UNIFFI_CALLBACK_INTERFACE_FREE),
+    ]
+class _UniffiVTableCallbackInterfaceComposerTestAdapter(ctypes.Structure):
+    _fields_ = [
+        ("new", _UNIFFI_CALLBACK_INTERFACE_COMPOSER_TEST_ADAPTER_METHOD0),
         ("uniffi_free", _UNIFFI_CALLBACK_INTERFACE_FREE),
     ]
 class _UniffiVTableCallbackInterfaceTransactionSigner(ctypes.Structure):
@@ -818,6 +830,25 @@ _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_send.argtypes = (
     ctypes.c_void_p,
 )
 _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_send.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_composertestadapter.argtypes = (
+    ctypes.c_void_p,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_composertestadapter.restype = ctypes.c_void_p
+_UniffiLib.uniffi_algokit_utils_ffi_fn_free_composertestadapter.argtypes = (
+    ctypes.c_void_p,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_algokit_utils_ffi_fn_free_composertestadapter.restype = None
+_UniffiLib.uniffi_algokit_utils_ffi_fn_init_callback_vtable_composertestadapter.argtypes = (
+    ctypes.POINTER(_UniffiVTableCallbackInterfaceComposerTestAdapter),
+)
+_UniffiLib.uniffi_algokit_utils_ffi_fn_init_callback_vtable_composertestadapter.restype = None
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composertestadapter_new.argtypes = (
+    ctypes.c_void_p,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composertestadapter_new.restype = ctypes.c_void_p
 _UniffiLib.uniffi_algokit_utils_ffi_fn_clone_transactionsigner.argtypes = (
     ctypes.c_void_p,
     ctypes.POINTER(_UniffiRustCallStatus),
@@ -872,6 +903,10 @@ _UniffiLib.uniffi_algokit_utils_ffi_fn_func_run_asset_freeze_test_suite.argtypes
     ctypes.POINTER(_UniffiRustCallStatus),
 )
 _UniffiLib.uniffi_algokit_utils_ffi_fn_func_run_asset_freeze_test_suite.restype = _UniffiRustBuffer
+_UniffiLib.uniffi_algokit_utils_ffi_fn_func_run_tests.argtypes = (
+    ctypes.c_void_p,
+)
+_UniffiLib.uniffi_algokit_utils_ffi_fn_func_run_tests.restype = ctypes.c_uint64
 _UniffiLib.uniffi_algokit_utils_ffi_fn_func_test_frozen_asset_transfer_simple.argtypes = (
     ctypes.c_void_p,
     _UniffiRustBuffer,
@@ -1152,6 +1187,9 @@ _UniffiLib.ffi_algokit_utils_ffi_rust_future_complete_void.restype = None
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_func_run_asset_freeze_test_suite.argtypes = (
 )
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_func_run_asset_freeze_test_suite.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_func_run_tests.argtypes = (
+)
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_func_run_tests.restype = ctypes.c_uint16
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_func_test_frozen_asset_transfer_simple.argtypes = (
 )
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_func_test_frozen_asset_transfer_simple.restype = ctypes.c_uint16
@@ -1209,6 +1247,9 @@ _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_build.restype = cty
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_send.argtypes = (
 )
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_send.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composertestadapter_new.argtypes = (
+)
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composertestadapter_new.restype = ctypes.c_uint16
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_transactionsigner_sign_transactions.argtypes = (
 )
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_transactionsigner_sign_transactions.restype = ctypes.c_uint16
@@ -1363,6 +1404,8 @@ class _UniffiConverterBytes(_UniffiConverterRustBuffer):
     def write(value, buf):
         buf.write_i32(len(value))
         buf.write(value)
+
+
 
 
 
@@ -3139,6 +3182,117 @@ class _UniffiConverterTypeAssetFreezeTestAdapter:
     @classmethod
     def write(cls, value: AssetFreezeTestAdapterProtocol, buf: _UniffiRustBuffer):
         buf.write_u64(cls.lower(value))
+class ComposerTestAdapterProtocol(typing.Protocol):
+    def new(self, ):
+        raise NotImplementedError
+# ComposerTestAdapter is a foreign trait so treated like a callback interface, where the
+# primary use-case is the trait being implemented locally.
+# It is a base-class local implementations might subclass.
+
+
+class ComposerTestAdapter():
+    def new(self, ):
+        raise NotImplementedError
+# `ComposerTestAdapterImpl` is the implementation for a Rust implemented version.
+class ComposerTestAdapterImpl():
+    _pointer: ctypes.c_void_p
+    
+    def __init__(self, *args, **kwargs):
+        raise ValueError("This class has no default constructor")
+
+    def __del__(self):
+        # In case of partial initialization of instances.
+        pointer = getattr(self, "_pointer", None)
+        if pointer is not None:
+            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_free_composertestadapter, pointer)
+
+    def _uniffi_clone_pointer(self):
+        return _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_composertestadapter, self._pointer)
+
+    # Used by alternative constructors or any methods which return this type.
+    @classmethod
+    def _make_instance_(cls, pointer):
+        # Lightly yucky way to bypass the usual __init__ logic
+        # and just create a new instance with the required pointer.
+        inst = cls.__new__(cls)
+        inst._pointer = pointer
+        return inst
+
+
+    def new(self, ) -> "Composer":
+        return _UniffiConverterTypeComposer.lift(
+            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composertestadapter_new,self._uniffi_clone_pointer(),)
+        )
+
+
+
+
+
+# Put all the bits inside a class to keep the top-level namespace clean
+class _UniffiTraitImplComposerTestAdapter:
+    # For each method, generate a callback function to pass to Rust
+
+    @_UNIFFI_CALLBACK_INTERFACE_COMPOSER_TEST_ADAPTER_METHOD0
+    def new(
+            uniffi_handle,
+            uniffi_out_return,
+            uniffi_call_status_ptr,
+        ):
+        uniffi_obj = _UniffiConverterTypeComposerTestAdapter._handle_map.get(uniffi_handle)
+        def make_call():
+            args = ()
+            method = uniffi_obj.new
+            return method(*args)
+
+        
+        def write_return_value(v):
+            uniffi_out_return[0] = _UniffiConverterTypeComposer.lower(v)
+        _uniffi_trait_interface_call(
+                uniffi_call_status_ptr.contents,
+                make_call,
+                write_return_value,
+        )
+
+    @_UNIFFI_CALLBACK_INTERFACE_FREE
+    def _uniffi_free(uniffi_handle):
+        _UniffiConverterTypeComposerTestAdapter._handle_map.remove(uniffi_handle)
+
+    # Generate the FFI VTable.  This has a field for each callback interface method.
+    _uniffi_vtable = _UniffiVTableCallbackInterfaceComposerTestAdapter(
+        new,
+        _uniffi_free
+    )
+    # Send Rust a pointer to the VTable.  Note: this means we need to keep the struct alive forever,
+    # or else bad things will happen when Rust tries to access it.
+    _UniffiLib.uniffi_algokit_utils_ffi_fn_init_callback_vtable_composertestadapter(ctypes.byref(_uniffi_vtable))
+
+
+
+class _UniffiConverterTypeComposerTestAdapter:
+    _handle_map = _UniffiHandleMap()
+
+    @staticmethod
+    def lift(value: int):
+        return ComposerTestAdapterImpl._make_instance_(value)
+
+    @staticmethod
+    def check_lower(value: ComposerTestAdapter):
+        pass
+
+    @staticmethod
+    def lower(value: ComposerTestAdapterProtocol):
+        return _UniffiConverterTypeComposerTestAdapter._handle_map.insert(value)
+
+    @classmethod
+    def read(cls, buf: _UniffiRustBuffer):
+        ptr = buf.read_u64()
+        if ptr == 0:
+            raise InternalError("Raw pointer value was null")
+        return cls.lift(ptr)
+
+    @classmethod
+    def write(cls, value: ComposerTestAdapterProtocol, buf: _UniffiRustBuffer):
+        buf.write_u64(cls.lower(value))
 class TransactionSignerProtocol(typing.Protocol):
     def sign_transactions(self, transactions: "typing.List[Transaction]",indices: "typing.List[int]"):
         raise NotImplementedError
@@ -3911,6 +4065,24 @@ def run_asset_freeze_test_suite(adapter: "AssetFreezeTestAdapter",freeze_manager
         _UniffiConverterString.lower(bob),
         _UniffiConverterUInt64.lower(asset_id)))
 
+async def run_tests(adapter: "ComposerTestAdapter") -> "str":
+
+    _UniffiConverterTypeComposerTestAdapter.check_lower(adapter)
+    
+    return await _uniffi_rust_call_async(
+        _UniffiLib.uniffi_algokit_utils_ffi_fn_func_run_tests(
+        _UniffiConverterTypeComposerTestAdapter.lower(adapter)),
+        _UniffiLib.ffi_algokit_utils_ffi_rust_future_poll_rust_buffer,
+        _UniffiLib.ffi_algokit_utils_ffi_rust_future_complete_rust_buffer,
+        _UniffiLib.ffi_algokit_utils_ffi_rust_future_free_rust_buffer,
+        # lift function
+        _UniffiConverterString.lift,
+        
+    # Error FFI converter
+
+    None,
+
+    )
 
 def test_frozen_asset_transfer_simple(adapter: "AssetFreezeTestAdapter",freeze_manager: "str",alice: "str",bob: "str",asset_id: "int") -> "TestResult":
     """
@@ -3954,10 +4126,12 @@ __all__ = [
     "TestResult",
     "TestSuiteResult",
     "run_asset_freeze_test_suite",
+    "run_tests",
     "test_frozen_asset_transfer_simple",
     "AlgodClient",
     "AssetFreezeTestAdapter",
     "Composer",
+    "ComposerTestAdapter",
     "TransactionSigner",
     "TransactionSignerGetter",
 ]

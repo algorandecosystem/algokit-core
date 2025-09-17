@@ -105,6 +105,11 @@ impl TransactionSigner for FfiTransactionSignerFromRust {
     }
 }
 
+/// Helper function to wrap a Rust TransactionSigner for use in FFI
+pub fn wrap_rust_signer(rust_signer: Arc<dyn RustTransactionSigner>) -> Arc<dyn TransactionSigner> {
+    Arc::new(FfiTransactionSignerFromRust { rust_signer })
+}
+
 #[uniffi::export(with_foreign)]
 pub trait TransactionSignerGetter: Send + Sync {
     fn get_signer(&self, address: String) -> Option<Arc<dyn TransactionSigner>>;
