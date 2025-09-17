@@ -1,6 +1,8 @@
 package com.example.transact
 
-import uniffi.algokit_transact_ffi.*
+import android.location.Address
+import uniffi.algokit_transact_ffi.Transaction
+import uniffi.algokit_transact_ffi.addressFromPublicKey
 
 class TransactApi {
     companion object {
@@ -13,12 +15,12 @@ class TransactApi {
         }
     }
 
-    fun createAddressFromPubKey(pubKey: ByteArray): Address {
-        return addressFromPubKey(pubKey)
+    fun createAddressFromPubKey(publicKey: ByteArray): Address {
+      return addressFromPublicKey(publicKey)
     }
 
-    fun createAddressFromString(address: String): Address {
-        return addressFromString(address)
+    fun createAddressFromString(publicKey: ByteArray): Address {
+        return addressFromPublicKey(publicKey)
     }
 
     fun encodeTransaction(transaction: Transaction): ByteArray {
