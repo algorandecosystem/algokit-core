@@ -1,13 +1,15 @@
-use crate::common::TestResult;
 use crate::common::app_fixture::{sandbox_app_fixture, testing_app_fixture, testing_app_spec};
-use algokit_abi::ABIValue;
+use crate::common::{TestResult, nested_contract_fixture};
+use algokit_abi::{ABIMethod, ABIValue};
 use algokit_transact::{BoxReference, SignedTransaction, Transaction};
 use algokit_utils::applications::app_client::AppClientMethodCallParams;
 use algokit_utils::transactions::{PaymentParams, TransactionSigner, TransactionWithSigner};
-use algokit_utils::{AppManager, AppMethodCallArg};
+use algokit_utils::{AppCallMethodCallParams, AppManager, AppMethodCallArg};
 use async_trait::async_trait;
+use num_bigint::BigUint;
 use rand::Rng;
 use rstest::*;
+use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 
 #[rstest]
@@ -311,6 +313,66 @@ async fn test_sign_transaction_in_group_with_different_signer_if_provided(
             None,
         )
         .await?;
+
+    Ok(())
+}
+
+#[rstest]
+#[tokio::test]
+async fn test_sign_nested_transactions_in_group_with_different_signers(
+    #[future] nested_contract_fixture: crate::common::AppFixtureResult,
+) -> TestResult {
+    eprintln!("=== Starting test_sign_transaction_in_group_with_different_signer_if_provided2 ===");
+    let mut f = nested_contract_fixture.await?;
+    let bob_account = f.algorand_fixture.generate_account(None).await?;
+    let bob_addr = bob_account.account().address();
+
+    let alice_account = f.algorand_fixture.generate_account(None).await?;
+    let alice_addr = alice_account.account().address();
+
+    let payment_txn = f
+        .algorand_fixture
+        .algorand_client
+        .create()
+        .payment(PaymentParams {
+            sender: bob_addr.clone(),
+            signer: Some(Arc::new(bob_account.clone())),
+            receiver: bob_addr.clone(),
+            amount: 2_000,
+            ..Default::default()
+        })
+        .await?;
+    let client = f.client;
+
+    let result = client
+        .send()
+        .call(
+            AppClientMethodCallParams {
+                method: "nestedTxnArg".to_string(),
+                args: vec![
+                    AppMethodCallArg::TransactionPlaceholder,
+                    AppMethodCallArg::AppCallMethodCall(AppCallMethodCallParams {
+                        sender: bob_addr.clone(),
+                        signer: Some(Arc::new(bob_account.clone())),
+                        app_id: f.app_id,
+                        method: ABIMethod::from_str("txnArg(pay)address").unwrap(),
+                        args: vec![AppMethodCallArg::Transaction(payment_txn)],
+                        ..Default::default()
+                    }),
+                ],
+                sender: Some(alice_addr.to_string()),
+                signer: Some(Arc::new(alice_account.clone())),
+                ..Default::default()
+            },
+            None,
+            None,
+        )
+        .await?;
+
+    assert_eq!(
+        result.abi_return.as_ref().unwrap().return_value,
+        Some(ABIValue::Uint(BigUint::from(client.app_id())))
+    );
 
     Ok(())
 }

@@ -94,6 +94,10 @@ pub fn testing_app_spec() -> Arc56Contract {
     Arc56Contract::from_json(algokit_test_artifacts::testing_app::APPLICATION_ARC56).unwrap()
 }
 
+pub fn nested_contract_spec() -> Arc56Contract {
+    Arc56Contract::from_json(algokit_test_artifacts::nested_contract::APPLICATION_ARC56).unwrap()
+}
+
 pub fn sandbox_spec() -> Arc56Contract {
     Arc56Contract::from_json(algokit_test_artifacts::sandbox::APPLICATION_ARC56).unwrap()
 }
@@ -122,6 +126,29 @@ pub async fn testing_app_fixture(
         spec,
         AppFixtureOptions {
             template_params: Some(default_teal_params(0, false, false)),
+            ..Default::default()
+        },
+    )
+    .await
+}
+
+#[fixture]
+pub async fn nested_contract_fixture(
+    #[future] algorand_fixture: AlgorandFixtureResult,
+) -> AppFixtureResult {
+    let f = algorand_fixture.await?;
+    let spec = nested_contract_spec();
+    build_app_fixture(
+        f,
+        spec,
+        AppFixtureOptions {
+            args: Some(vec![vec![184u8, 68u8, 123u8, 54u8]]),
+            transaction_composer_config: Some(TransactionComposerConfig {
+                populate_app_call_resources: ResourcePopulation::Enabled {
+                    use_access_list: false,
+                },
+                ..Default::default()
+            }),
             ..Default::default()
         },
     )

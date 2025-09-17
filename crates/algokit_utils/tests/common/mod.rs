@@ -17,22 +17,10 @@ use algokit_utils::config::{AppCompiledEventData, Config, EventData, EventType};
 use base64::prelude::*;
 
 pub use app_fixture::{
-    AppFixture,
-    AppFixtureOptions,
-    AppFixtureResult,
-    boxmap_app_fixture,
-    boxmap_spec,
-    build_app_fixture,
-    default_teal_params,
-    hello_world_app_fixture,
-    hello_world_spec,
-    sandbox_app_fixture,
-    sandbox_spec,
-    testing_app_fixture,
-    testing_app_puya_fixture,
-    testing_app_puya_spec,
-    // Re-export specs and fixtures for convenience
-    testing_app_spec,
+    AppFixture, AppFixtureOptions, AppFixtureResult, boxmap_app_fixture, boxmap_spec,
+    build_app_fixture, default_teal_params, hello_world_app_fixture, hello_world_spec,
+    nested_contract_fixture, sandbox_app_fixture, sandbox_spec, testing_app_fixture,
+    testing_app_puya_fixture, testing_app_puya_spec, testing_app_spec,
 };
 pub use fixture::{AlgorandFixture, AlgorandFixtureResult, algorand_fixture};
 pub use indexer_helpers::{
