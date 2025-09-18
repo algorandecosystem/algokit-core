@@ -168,8 +168,21 @@ impl AppManager {
     ) -> Result<CompiledTeal, AppManagerError> {
         let mut teal_code = Self::strip_teal_comments(teal_template_code);
 
+        // When deployment metadata is provided, avoid replacing
+        // TMPL_UPDATABLE/TMPL_DELETABLE via generic template variables; let the
+        // deploy-time control function handle them.
         if let Some(params) = template_params {
-            teal_code = Self::replace_template_variables(&teal_code, params)?;
+            let filtered_params: TealTemplateParams = if deployment_metadata.is_some() {
+                let mut clone = params.clone();
+                clone.remove("UPDATABLE");
+                clone.remove("DELETABLE");
+                clone.remove("TMPL_UPDATABLE");
+                clone.remove("TMPL_DELETABLE");
+                clone
+            } else {
+                params.clone()
+            };
+            teal_code = Self::replace_template_variables(&teal_code, &filtered_params)?;
         }
 
         if let Some(metadata) = deployment_metadata {

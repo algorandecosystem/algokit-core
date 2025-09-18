@@ -2,6 +2,7 @@ use crate::config::Config;
 use crate::{
     genesis_id_is_localnet,
     transactions::{
+        common::TransactionSignerGetter,
         key_registration::{
             build_non_participation_key_registration, build_offline_key_registration,
             build_online_key_registration,
@@ -239,24 +240,6 @@ pub struct SimulateParams {
     pub skip_signatures: bool,
 }
 
-#[derive(Debug, Clone, Default)]
-pub struct SimulateParams {
-    pub allow_more_logging: Option<bool>,
-    pub allow_empty_signatures: Option<bool>,
-    pub allow_unnamed_resources: Option<bool>,
-    pub extra_opcode_budget: Option<u64>,
-    pub exec_trace_config: Option<algod_client::models::SimulateTraceConfig>,
-    pub simulation_round: Option<u64>,
-    pub skip_signatures: bool,
-}
-
-#[derive(Debug, Clone)]
-pub struct SimulateComposerResults {
-    pub transactions: Vec<Transaction>,
-    pub confirmations: Vec<PendingTransactionResponse>,
-    pub returns: Vec<ABIReturn>,
-}
-
 #[derive(Debug, Clone)]
 pub struct SimulateComposerResults {
     pub group: Option<Byte32>,
@@ -275,7 +258,7 @@ pub struct TransactionComposerConfig {
 #[derive(Clone)]
 pub struct ComposerParams {
     pub algod_client: Arc<AlgodClient>,
-    pub signer_getter: SignerGetter,
+    pub signer_getter: Arc<dyn TransactionSignerGetter>,
     pub composer_config: Option<TransactionComposerConfig>,
 }
 
@@ -485,12 +468,10 @@ impl ComposerTransaction {
     }
 }
 
-pub type SignerGetter =
-    Arc<dyn Fn(Address) -> Result<Arc<dyn TransactionSigner>, ComposerError> + Send + Sync>;
 #[derive(Clone)]
 pub struct Composer {
     algod_client: Arc<AlgodClient>,
-    signer_getter: SignerGetter,
+    signer_getter: Arc<dyn TransactionSignerGetter>,
     composer_config: TransactionComposerConfig,
     transactions: Vec<ComposerTransaction>,
     built_group: Option<Vec<TransactionWithSigner>>,
@@ -767,6 +748,7 @@ impl Composer {
         transaction: ComposerTransaction,
         method_signer: Option<std::sync::Arc<dyn TransactionSigner>>,
     ) -> Result<(), ComposerError> {
+        let starting_index = self.transactions.len();
         let mut composer_transactions =
             Self::extract_composer_transactions_from_app_method_call_params(args, method_signer);
         composer_transactions.push(transaction);
@@ -775,7 +757,65 @@ impl Composer {
             return Err(ComposerError::GroupSizeError);
         }
 
-        for composer_transaction in composer_transactions {
+        for (offset, composer_transaction) in composer_transactions.into_iter().enumerate() {
+            // If this is a method call with a signer set, attach it directly to preceding bare txn args
+            let maybe_signer: Option<Arc<dyn TransactionSigner>> = match &composer_transaction {
+                ComposerTransaction::AppCallMethodCall(p) => p.signer.clone(),
+                ComposerTransaction::AppCreateMethodCall(p) => p.signer.clone(),
+                ComposerTransaction::AppUpdateMethodCall(p) => p.signer.clone(),
+                ComposerTransaction::AppDeleteMethodCall(p) => p.signer.clone(),
+                _ => None,
+            };
+            if let Some(signer) = maybe_signer {
+                let end_exclusive = starting_index + offset;
+                for idx in starting_index..end_exclusive {
+                    match self.transactions.get_mut(idx) {
+                        Some(ComposerTransaction::Transaction(tx)) => {
+                            // Upgrade to TransactionWithSigner if not already signed
+                            let tx_clone = tx.clone();
+                            *self.transactions.get_mut(idx).unwrap() =
+                                ComposerTransaction::TransactionWithSigner(TransactionWithSigner {
+                                    transaction: tx_clone,
+                                    signer: signer.clone(),
+                                });
+                        }
+                        Some(other) => {
+                            let signer_slot = match other {
+                                ComposerTransaction::Payment(p) => Some(&mut p.signer),
+                                ComposerTransaction::AccountClose(p) => Some(&mut p.signer),
+                                ComposerTransaction::AssetTransfer(p) => Some(&mut p.signer),
+                                ComposerTransaction::AssetOptIn(p) => Some(&mut p.signer),
+                                ComposerTransaction::AssetOptOut(p) => Some(&mut p.signer),
+                                ComposerTransaction::AssetClawback(p) => Some(&mut p.signer),
+                                ComposerTransaction::AssetCreate(p) => Some(&mut p.signer),
+                                ComposerTransaction::AssetConfig(p) => Some(&mut p.signer),
+                                ComposerTransaction::AssetDestroy(p) => Some(&mut p.signer),
+                                ComposerTransaction::AssetFreeze(p) => Some(&mut p.signer),
+                                ComposerTransaction::AssetUnfreeze(p) => Some(&mut p.signer),
+                                ComposerTransaction::AppCall(p) => Some(&mut p.signer),
+                                ComposerTransaction::AppCreateCall(p) => Some(&mut p.signer),
+                                ComposerTransaction::AppUpdateCall(p) => Some(&mut p.signer),
+                                ComposerTransaction::AppDeleteCall(p) => Some(&mut p.signer),
+                                ComposerTransaction::OnlineKeyRegistration(p) => {
+                                    Some(&mut p.signer)
+                                }
+                                ComposerTransaction::OfflineKeyRegistration(p) => {
+                                    Some(&mut p.signer)
+                                }
+                                ComposerTransaction::NonParticipationKeyRegistration(p) => {
+                                    Some(&mut p.signer)
+                                }
+                                _ => None,
+                            };
+                            if let Some(slot) = signer_slot {
+                                slot.get_or_insert_with(|| signer.clone());
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
+
             self.push(composer_transaction)?;
         }
 
@@ -2017,7 +2057,9 @@ impl Composer {
                             transaction_signer
                         } else {
                             let sender_address = txn.header().sender.clone();
-                            (self.signer_getter)(sender_address.clone())?
+                            self.signer_getter
+                                .get_signer(sender_address.clone())
+                                .map_err(|e| ComposerError::SigningError { message: e })?
                         }
                     }
                 };
@@ -2267,11 +2309,8 @@ impl Composer {
 
         self.build().await?;
 
-        let transactions_with_signers = self
-            .built_group
-            .as_ref()
-            .filter(|&txs| !txs.is_empty())
-            .ok_or(ComposerError::StateError {
+        let transactions_with_signers =
+            self.built_group.as_ref().ok_or(ComposerError::StateError {
                 message: "No transactions available".to_string(),
             })?;
 
@@ -2358,147 +2397,6 @@ impl Composer {
             simulate_response,
         })
     }
-
-    pub async fn simulate(
-        &mut self,
-        params: Option<SimulateParams>,
-    ) -> Result<SimulateComposerResults, ComposerError> {
-        let params = params.unwrap_or_default();
-
-        // Build transactions (this also runs analysis for resource population/fees as configured)
-        self.build(None).await?;
-
-        // Prepare transactions for simulation: drop group field and use empty signatures or gather signatures
-        let transactions_with_signers =
-            self.built_group.as_ref().ok_or(ComposerError::StateError {
-                message: "No transactions built".to_string(),
-            })?;
-
-        // If skip_signatures, attach NULL signatures; else gather signatures then strip sigs for simulate
-        let signed: Vec<SignedTransaction> = if params.skip_signatures {
-            transactions_with_signers
-                .iter()
-                .map(|txn_with_signer| SignedTransaction {
-                    transaction: txn_with_signer.transaction.clone(),
-                    signature: Some(EMPTY_SIGNATURE),
-                    auth_address: None,
-                    multisignature: None,
-                })
-                .collect()
-        } else {
-            // Ensure signatures are available to resolve signers then use empty signatures per simulate API
-            let signed_group = self.gather_signatures().await?.clone();
-            signed_group
-                .into_iter()
-                .map(|mut s| {
-                    // Replace actual signatures with empty signature for simulate
-                    s.signature = Some(EMPTY_SIGNATURE);
-                    s
-                })
-                .collect()
-        };
-
-        // Clear group on each txn and re-group
-        let mut txns: Vec<Transaction> = signed
-            .iter()
-            .map(|s| {
-                let mut t = s.transaction.clone();
-                let header = t.header_mut();
-                header.group = None;
-                t
-            })
-            .collect();
-        if txns.len() > 1 {
-            txns = txns
-                .assign_group()
-                .map_err(|e| ComposerError::TransactionError {
-                    message: format!("Failed to assign group: {}", e),
-                })?;
-        }
-
-        // Wrap for simulate request
-        let signed_for_sim: Vec<SignedTransaction> = txns
-            .into_iter()
-            .map(|t| SignedTransaction {
-                transaction: t,
-                signature: Some(EMPTY_SIGNATURE),
-                auth_address: None,
-                multisignature: None,
-            })
-            .collect();
-
-        let txn_group = SimulateRequestTransactionGroup {
-            txns: signed_for_sim,
-        };
-        let simulate_request = SimulateRequest {
-            txn_groups: vec![txn_group],
-            round: params.simulation_round,
-            allow_empty_signatures: Some(params.allow_empty_signatures.unwrap_or(true)),
-            allow_more_logging: params.allow_more_logging,
-            allow_unnamed_resources: params.allow_unnamed_resources,
-            extra_opcode_budget: params.extra_opcode_budget,
-            exec_trace_config: params.exec_trace_config,
-            fix_signers: Some(true),
-        };
-
-        // Call simulate endpoint
-        let response = self
-            .algod_client
-            .simulate_transaction(simulate_request, Some(Format::Msgpack))
-            .await
-            .map_err(|e| ComposerError::AlgodClientError { source: e })?;
-
-        let group = &response.txn_groups[0];
-
-        if let Some(failure_message) = &group.failure_message {
-            let failed_at = group
-                .failed_at
-                .as_ref()
-                .map(|v| {
-                    v.iter()
-                        .map(|i| i.to_string())
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                })
-                .unwrap_or_else(|| "unknown".to_string());
-            return Err(ComposerError::StateError {
-                message: format!(
-                    "Error analyzing group requirements via simulate in transaction {}: {}",
-                    failed_at, failure_message
-                ),
-            });
-        }
-
-        // Collect confirmations and ABI returns similar to send()
-        let confirmations: Vec<PendingTransactionResponse> = group
-            .txn_results
-            .iter()
-            .map(|r| r.txn_result.clone())
-            .collect();
-
-        let transactions: Vec<Transaction> = self
-            .built_group
-            .as_ref()
-            .unwrap()
-            .iter()
-            .map(|tw| tw.transaction.clone())
-            .collect();
-
-        let abi_returns = self.parse_abi_return_values(&confirmations);
-        let returns: Vec<ABIReturn> = abi_returns
-            .into_iter()
-            .filter_map(|r| match r {
-                Ok(Some(v)) => Some(v),
-                _ => None,
-            })
-            .collect();
-
-        Ok(SimulateComposerResults {
-            transactions,
-            confirmations,
-            returns,
-        })
-    }
 }
 
 #[cfg(test)]
@@ -2511,7 +2409,7 @@ mod tests {
     fn test_composer_params() -> ComposerParams {
         ComposerParams {
             algod_client: Arc::new(AlgodClient::testnet()),
-            signer_getter: Arc::new(|_| Ok(Arc::new(EmptySigner {}))),
+            signer_getter: Arc::new(EmptySigner {}),
             composer_config: Some(TransactionComposerConfig {
                 populate_app_call_resources: ResourcePopulation::Disabled,
                 cover_app_call_inner_transaction_fees: false,

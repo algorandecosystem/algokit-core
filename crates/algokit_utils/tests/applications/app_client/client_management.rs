@@ -1,8 +1,8 @@
 use crate::common::{AlgorandFixtureResult, TestResult, algorand_fixture, deploy_arc56_contract};
 use algokit_abi::{ABIValue, Arc56Contract};
 use algokit_transact::{OnApplicationComplete, StateSchema};
-use algokit_utils::applications::app_client::AppClient;
-use algokit_utils::clients::app_manager::{AppManager, TealTemplateParams};
+use algokit_utils::applications::app_client::{AppClient, AppClientMethodCallParams};
+use algokit_utils::clients::app_manager::AppManager;
 use algokit_utils::{AlgorandClient as RootAlgorandClient, AppCreateParams, AppMethodCallArg};
 use rstest::*;
 use std::collections::HashMap;
@@ -62,12 +62,8 @@ async fn from_creator_and_name_resolves_and_can_call(
     let clear_teal = src.get_decoded_clear().expect("clear");
 
     let app_manager: &AppManager = fixture.algorand_client.app();
-    let compiled_approval = app_manager
-        .compile_teal_template(&approval_teal, None::<&TealTemplateParams>, None)
-        .await?;
-    let compiled_clear = app_manager
-        .compile_teal_template(&clear_teal, None::<&TealTemplateParams>, None)
-        .await?;
+    let compiled_approval = app_manager.compile_teal(&approval_teal).await?;
+    let compiled_clear = app_manager.compile_teal(&clear_teal).await?;
 
     let app_name = "MY_APP".to_string();
     let deploy_note = format!(
@@ -98,19 +94,18 @@ async fn from_creator_and_name_resolves_and_can_call(
         ..Default::default()
     };
 
-    let create_result = fixture
-        .algorand_client
-        .send()
-        .app_create(create_params, None)
-        .await?;
+    let mut composer = fixture.algorand_client.new_group(None);
+    composer.add_app_create(create_params)?;
+    let create_group = composer.send(None).await?;
+    let app_id = create_group.confirmations[0]
+        .app_id
+        .expect("No app ID returned");
 
     fixture
-        .wait_for_indexer_transaction(&create_result.common_params.tx_id)
+        .wait_for_indexer_transaction(&create_group.transaction_ids[0])
         .await?;
 
-    let mut algorand = RootAlgorandClient::default_localnet(None);
-    algorand.set_signer(sender.clone(), Arc::new(fixture.test_account.clone()));
-
+    let algorand = RootAlgorandClient::default_localnet(None);
     let client = AppClient::from_creator_and_name(
         &sender.to_string(),
         &app_name,
@@ -124,13 +119,13 @@ async fn from_creator_and_name_resolves_and_can_call(
     )
     .await?;
 
-    assert_eq!(client.app_id(), create_result.app_id);
+    assert_eq!(client.app_id(), app_id);
     assert_eq!(client.app_name(), Some(&app_name));
 
     let res = client
         .send()
         .call(
-            algokit_utils::applications::app_client::AppClientMethodCallParams {
+            AppClientMethodCallParams {
                 method: "hello_world".to_string(),
                 args: vec![AppMethodCallArg::ABIValue(ABIValue::from("test"))],
                 sender: Some(sender.to_string()),
@@ -144,7 +139,7 @@ async fn from_creator_and_name_resolves_and_can_call(
     let abi_ret = res.abi_return.as_ref().expect("abi return");
     match &abi_ret.return_value {
         Some(ABIValue::String(s)) => assert_eq!(s, "Hello, test"),
-        _ => panic!("expected string return"),
+        _ => return Err("expected string return".into()),
     }
 
     Ok(())

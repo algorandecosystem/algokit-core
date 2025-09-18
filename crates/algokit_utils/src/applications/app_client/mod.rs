@@ -39,7 +39,7 @@ pub use state_accessor::StateAccessor;
 pub use transaction_builder::TransactionBuilder;
 pub use types::{
     AppClientBareCallParams, AppClientMethodCallParams, AppClientParams, AppSourceMaps,
-    FundAppAccountParams,
+    CompilationParams, FundAppAccountParams,
 };
 
 type BoxNameFilter = Box<dyn Fn(&BoxName) -> bool>;
@@ -200,22 +200,28 @@ impl AppClient {
         None
     }
 
+    /// Get the application ID.
     pub fn app_id(&self) -> u64 {
         self.app_id
     }
+    /// Get the ARC-56 application specification.
     pub fn app_spec(&self) -> &Arc56Contract {
         &self.app_spec
     }
+    /// Get the Algorand client instance.
     pub fn algorand(&self) -> &AlgorandClient {
         &self.algorand
     }
+    /// Get the application name if configured.
     pub fn app_name(&self) -> Option<&String> {
         self.app_name.as_ref()
     }
+    /// Get the default sender address if configured.
     pub fn default_sender(&self) -> Option<&String> {
         self.default_sender.as_ref()
     }
 
+    /// Get the application's account address.
     pub fn app_address(&self) -> Address {
         Address::from_app_id(&self.app_id)
     }
@@ -251,6 +257,7 @@ impl AppClient {
         })
     }
 
+    /// Fund the application's account with Algos.
     pub async fn fund_app_account(
         &self,
         params: FundAppAccountParams,
@@ -259,6 +266,7 @@ impl AppClient {
         self.send().fund_app_account(params, send_params).await
     }
 
+    /// Get the application's global state.
     pub async fn get_global_state(&self) -> Result<HashMap<Vec<u8>, AppState>, AppClientError> {
         self.algorand
             .app()
@@ -267,6 +275,7 @@ impl AppClient {
             .map_err(|e| AppClientError::AppManagerError { source: e })
     }
 
+    /// Get the application's local state for a specific account.
     pub async fn get_local_state(
         &self,
         address: &str,
@@ -278,7 +287,7 @@ impl AppClient {
             .map_err(|e| AppClientError::AppManagerError { source: e })
     }
 
-    // TODO: comments
+    /// Get all box names for the application.
     pub async fn get_box_names(&self) -> Result<Vec<BoxName>, AppClientError> {
         self.algorand
             .app()
@@ -298,6 +307,7 @@ impl AppClient {
         Ok(values)
     }
 
+    /// Get the raw value of a specific box.
     pub async fn get_box_value(&self, name: &BoxIdentifier) -> Result<Vec<u8>, AppClientError> {
         self.algorand
             .app()
@@ -351,15 +361,19 @@ impl AppClient {
             .collect())
     }
 
+    /// Get a parameter builder for creating transaction parameters.
     pub fn params(&self) -> ParamsBuilder<'_> {
         ParamsBuilder { client: self }
     }
+    /// Get a transaction builder for creating unsigned transactions.
     pub fn create_transaction(&self) -> TransactionBuilder<'_> {
         TransactionBuilder { client: self }
     }
+    /// Get a transaction sender for executing transactions.
     pub fn send(&self) -> TransactionSender<'_> {
         TransactionSender { client: self }
     }
+    /// Get a state accessor for reading application state with ABI decoding.
     pub fn state(&self) -> StateAccessor<'_> {
         StateAccessor::new(self)
     }

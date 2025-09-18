@@ -16,10 +16,12 @@ pub struct StateAccessor<'app_client> {
 }
 
 impl<'app_client> StateAccessor<'app_client> {
+    /// Create a new state accessor for the given app client.
     pub fn new(client: &'app_client AppClient) -> Self {
         Self { client }
     }
 
+    /// Get an accessor for the application's global state.
     pub fn global_state(&self) -> AppStateAccessor<'_> {
         let provider = GlobalStateProvider {
             client: self.client,
@@ -27,6 +29,7 @@ impl<'app_client> StateAccessor<'app_client> {
         AppStateAccessor::new("global".to_string(), Box::new(provider))
     }
 
+    /// Get an accessor for an account's local state with this application.
     pub fn local_state(&self, address: &str) -> AppStateAccessor<'_> {
         let provider = LocalStateProvider {
             client: self.client,
@@ -35,6 +38,7 @@ impl<'app_client> StateAccessor<'app_client> {
         AppStateAccessor::new("local".to_string(), Box::new(provider))
     }
 
+    /// Get an accessor for the application's box storage.
     pub fn box_storage(&self) -> BoxStateAccessor<'app_client> {
         BoxStateAccessor {
             client: self.client,
@@ -108,10 +112,12 @@ pub struct AppStateAccessor<'provider> {
 }
 
 impl<'provider> AppStateAccessor<'provider> {
+    /// Create a new app state accessor with the given name and provider.
     pub fn new(name: String, provider: Box<dyn StateProvider + 'provider>) -> Self {
         Self { name, provider }
     }
 
+    /// Get all ABI-decoded state values for this storage type.
     pub async fn get_all(&self) -> Result<HashMap<String, Option<ABIValue>>, AppClientError> {
         let state = self.provider.get_app_state().await?;
         let storage_key_map = self.provider.get_storage_keys()?;
@@ -124,6 +130,7 @@ impl<'provider> AppStateAccessor<'provider> {
         Ok(result)
     }
 
+    /// Get a specific ABI-decoded state value by key name.
     pub async fn get_value(&self, key_name: &str) -> Result<Option<ABIValue>, AppClientError> {
         let state = self.provider.get_app_state().await?;
         let storage_key_map = self.provider.get_storage_keys()?;
@@ -158,6 +165,7 @@ impl<'provider> AppStateAccessor<'provider> {
         }
     }
 
+    /// Get all key-value pairs from an ABI-defined state map.
     pub async fn get_map(
         &self,
         map_name: &str,
@@ -199,6 +207,7 @@ impl<'provider> AppStateAccessor<'provider> {
         Ok(result)
     }
 
+    /// Get a specific value from an ABI-defined state map by key.
     pub async fn get_map_value(
         &self,
         map_name: &str,
@@ -238,6 +247,7 @@ impl<'provider> AppStateAccessor<'provider> {
 }
 
 impl BoxStateAccessor<'_> {
+    /// Get all ABI-decoded box values for this application.
     pub async fn get_all(&self) -> Result<HashMap<String, ABIValue>, AppClientError> {
         let box_storage_keys = self
             .client
@@ -265,6 +275,7 @@ impl BoxStateAccessor<'_> {
         Ok(results)
     }
 
+    /// Get a specific ABI-decoded box value by name.
     pub async fn get_value(&self, name: &str) -> Result<ABIValue, AppClientError> {
         let box_storage_keys = self
             .client
@@ -293,6 +304,7 @@ impl BoxStateAccessor<'_> {
             .map_err(|e| AppClientError::ABIError { source: e })
     }
 
+    /// Get all key-value pairs from an ABI-defined box map.
     pub async fn get_map(
         &self,
         map_name: &str,
@@ -344,6 +356,7 @@ impl BoxStateAccessor<'_> {
         Ok(results)
     }
 
+    /// Get a specific value from an ABI-defined box map by key.
     pub async fn get_map_value(
         &self,
         map_name: &str,

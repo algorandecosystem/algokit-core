@@ -874,7 +874,7 @@ async fn group_simulate_matches_send(
         .await?;
     let send = composer.send(None).await?;
 
-    assert_eq!(simulate.transaction_ids.len(), send.transaction_ids.len());
+    assert_eq!(simulate.transaction_ids, send.transaction_ids);
     // Compare all ABI returns in order where both sides have a value
     for (simulate_abi_return, send_abi_return) in
         simulate.abi_returns.iter().zip(send.abi_returns.iter())

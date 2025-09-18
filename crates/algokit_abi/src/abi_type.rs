@@ -230,7 +230,7 @@ impl ABIType {
         }
     }
 
-    pub fn from_struct(
+    pub(crate) fn from_struct(
         struct_name: &str,
         structs: &HashMap<String, Vec<StructField>>,
     ) -> Result<Self, ABIError> {

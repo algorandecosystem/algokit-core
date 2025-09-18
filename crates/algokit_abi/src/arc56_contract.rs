@@ -1,7 +1,7 @@
+use crate::abi_method::{ABIDefaultValue, ABIMethod, ABIMethodArg, ABIMethodArgType};
 use crate::abi_type::ABIType;
 use crate::constants::VOID_RETURN_TYPE;
 use crate::error::ABIError;
-use crate::method::{ABIDefaultValue, ABIMethod, ABIMethodArg, ABIMethodArgType};
 use base64::{Engine as _, engine::general_purpose};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -537,7 +537,7 @@ impl Arc56Contract {
     }
 
     /// Get a method by name or signature
-    pub fn get_arc56_method(&self, method_name_or_signature: &str) -> Result<&Method, ABIError> {
+    pub fn get_method(&self, method_name_or_signature: &str) -> Result<&Method, ABIError> {
         if !method_name_or_signature.contains('(') {
             // Filter by method name
             let methods: Vec<&Method> = self
@@ -663,7 +663,7 @@ impl Arc56Contract {
 
     /// Get a method by name or signature and convert to ABIMethod
     pub fn find_abi_method(&self, method_name_or_signature: &str) -> Result<ABIMethod, ABIError> {
-        let arc56_method = self.get_arc56_method(method_name_or_signature)?;
+        let arc56_method = self.get_method(method_name_or_signature)?;
         self.to_abi_method(arc56_method)
     }
 

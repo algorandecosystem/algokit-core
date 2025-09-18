@@ -22,6 +22,7 @@ impl<'app_client> TransactionSender<'app_client> {
         }
     }
 
+    /// Execute an ABI method call with the specified on-complete action.
     pub async fn call(
         &self,
         params: AppClientMethodCallParams,
@@ -31,7 +32,7 @@ impl<'app_client> TransactionSender<'app_client> {
         let arc56_method = self
             .client
             .app_spec
-            .get_arc56_method(&params.method)
+            .get_method(&params.method)
             .map_err(|e| AppClientError::ABIError { source: e })?;
 
         let mut method_params = self.client.params().call(params, on_complete).await?;
@@ -114,7 +115,7 @@ impl<'app_client> TransactionSender<'app_client> {
         }
     }
 
-    /// Call a method with OptIn.
+    /// Execute an ABI method call with OptIn on-complete action.
     pub async fn opt_in(
         &self,
         params: AppClientMethodCallParams,
@@ -130,7 +131,7 @@ impl<'app_client> TransactionSender<'app_client> {
             .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
     }
 
-    /// Call a method with CloseOut.
+    /// Execute an ABI method call with CloseOut on-complete action.
     pub async fn close_out(
         &self,
         params: AppClientMethodCallParams,
@@ -146,7 +147,7 @@ impl<'app_client> TransactionSender<'app_client> {
             .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
     }
 
-    /// Call a method with Delete.
+    /// Execute an ABI method call with Delete on-complete action.
     pub async fn delete(
         &self,
         params: AppClientMethodCallParams,
@@ -162,7 +163,7 @@ impl<'app_client> TransactionSender<'app_client> {
             .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
     }
 
-    /// Update the application with a method call.
+    /// Update the application using an ABI method call.
     pub async fn update(
         &self,
         params: AppClientMethodCallParams,
@@ -183,7 +184,7 @@ impl<'app_client> TransactionSender<'app_client> {
             .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
     }
 
-    /// Fund the application account.
+    /// Send payment to fund the application's account.
     pub async fn fund_app_account(
         &self,
         params: FundAppAccountParams,
@@ -201,7 +202,7 @@ impl<'app_client> TransactionSender<'app_client> {
 }
 
 impl BareTransactionSender<'_> {
-    /// Call with NoOp.
+    /// Execute a bare application call with the specified on-complete action.
     pub async fn call(
         &self,
         params: AppClientBareCallParams,
@@ -217,7 +218,7 @@ impl BareTransactionSender<'_> {
             .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
     }
 
-    /// Call with OptIn.
+    /// Execute a bare application call with OptIn on-complete action.
     pub async fn opt_in(
         &self,
         params: AppClientBareCallParams,
@@ -232,7 +233,7 @@ impl BareTransactionSender<'_> {
             .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
     }
 
-    /// Call with CloseOut.
+    /// Execute a bare application call with CloseOut on-complete action.
     pub async fn close_out(
         &self,
         params: AppClientBareCallParams,
@@ -247,7 +248,7 @@ impl BareTransactionSender<'_> {
             .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
     }
 
-    /// Call with Delete.
+    /// Execute a bare application call with Delete on-complete action.
     pub async fn delete(
         &self,
         params: AppClientBareCallParams,
@@ -262,7 +263,7 @@ impl BareTransactionSender<'_> {
             .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
     }
 
-    /// Call with ClearState.
+    /// Execute a bare application call with ClearState on-complete action.
     pub async fn clear_state(
         &self,
         params: AppClientBareCallParams,
@@ -277,7 +278,7 @@ impl BareTransactionSender<'_> {
             .map_err(|e| super::utils::transform_transaction_error(self.client, e, true))
     }
 
-    /// Update with bare call.
+    /// Update the application using a bare application call.
     pub async fn update(
         &self,
         params: AppClientBareCallParams,

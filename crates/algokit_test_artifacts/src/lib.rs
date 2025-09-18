@@ -73,6 +73,8 @@ pub mod nested_contract {
     /// Contract for testing nested application call scenarios
     /// and complex transaction composition.
     pub const APPLICATION: &str = include_str!("../contracts/nested_contract/application.json");
+    pub const APPLICATION_ARC56: &str =
+        include_str!("../contracts/nested_contract/application.arc56.json");
 }
 
 /// Nested struct storage contract artifacts
@@ -184,8 +186,8 @@ pub mod testing_app_arc56_templates {
     pub const APP_SPEC_ARC56: &str =
         include_str!("../contracts/testing_app_arc56/app_spec.arc56.json");
 }
-
 /// Extra pages test contract artifacts
+
 pub mod extra_pages_test {
     /// Aggregate application (ARC56) used by extra pages tests
     pub const APPLICATION_ARC56: &str =

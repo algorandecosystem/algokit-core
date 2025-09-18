@@ -7,6 +7,7 @@ use crate::{
 };
 
 impl AppClient {
+    /// Compile the application's approval and clear programs with optional template parameters.
     pub async fn compile(
         &self,
         compilation_params: &CompilationParams,
@@ -54,42 +55,36 @@ impl AppClient {
                 })?;
 
         // 1) Decode TEAL from ARC-56 source
-        let mut teal =
-            source
-                .get_decoded_approval()
-                .map_err(|e| AppClientError::CompilationError {
-                    message: e.to_string(),
-                })?;
+        let teal = source
+            .get_decoded_approval()
+            .map_err(|e| AppClientError::CompilationError {
+                message: e.to_string(),
+            })?;
 
-        // 2) Apply template variables if provided
-        if let Some(params) = &compilation_params.deploy_time_params {
-            teal =
-                crate::clients::app_manager::AppManager::replace_template_variables(&teal, params)
-                    .map_err(|e| AppClientError::CompilationError {
-                        message: e.to_string(),
-                    })?;
-        }
-
-        // 3) Apply deploy-time controls
-        if compilation_params.updatable.is_some() || compilation_params.deletable.is_some() {
-            let metadata = DeploymentMetadata {
-                updatable: compilation_params.updatable,
-                deletable: compilation_params.deletable,
+        // 2-4) Compile via AppManager helper with template params and deploy-time controls
+        let metadata =
+            if compilation_params.updatable.is_some() || compilation_params.deletable.is_some() {
+                Some(DeploymentMetadata {
+                    updatable: compilation_params.updatable,
+                    deletable: compilation_params.deletable,
+                })
+            } else {
+                None
             };
-            teal = crate::clients::app_manager::AppManager::replace_teal_template_deploy_time_control_params(&teal, &metadata)
-                .map_err(|e| AppClientError::CompilationError { message: e.to_string()})?;
-        }
 
-        // 4) Compile to populate AppManager cache and source maps
-        let _compiled = self
+        let compiled = self
             .algorand()
             .app()
-            .compile_teal(&teal)
+            .compile_teal_template(
+                &teal,
+                compilation_params.deploy_time_params.as_ref(),
+                metadata.as_ref(),
+            )
             .await
             .map_err(|e| AppClientError::AppManagerError { source: e })?;
 
         // Return TEAL source bytes (TransactionSender will pull compiled bytes from cache)
-        Ok(teal.into_bytes())
+        Ok(compiled.teal.into_bytes())
     }
 
     async fn compile_clear(
@@ -105,32 +100,20 @@ impl AppClient {
                 })?;
 
         // 1) Decode TEAL from ARC-56 source
-        let mut teal =
-            source
-                .get_decoded_clear()
-                .map_err(|e| AppClientError::CompilationError {
-                    message: e.to_string(),
-                })?;
+        let teal = source
+            .get_decoded_clear()
+            .map_err(|e| AppClientError::CompilationError {
+                message: e.to_string(),
+            })?;
 
-        // 2) Apply template variables if provided
-        if let Some(params) = &compilation_params.deploy_time_params {
-            teal =
-                crate::clients::app_manager::AppManager::replace_template_variables(&teal, params)
-                    .map_err(|e| AppClientError::CompilationError {
-                        message: e.to_string(),
-                    })?;
-        }
-
-        // 3) NOTE: Deploy-time controls don't apply to clear program; skip
-
-        // 4) Compile to populate AppManager cache and source maps
-        let _compiled = self
+        // 2-4) Compile via AppManager helper with template params; no deploy-time controls for clear
+        let compiled = self
             .algorand()
             .app()
-            .compile_teal(&teal)
+            .compile_teal_template(&teal, compilation_params.deploy_time_params.as_ref(), None)
             .await
             .map_err(|e| AppClientError::AppManagerError { source: e })?;
 
-        Ok(teal.into_bytes())
+        Ok(compiled.teal.into_bytes())
     }
 }

@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
+pub mod app_fixture;
 pub mod fixture;
 pub mod indexer_helpers;
 pub mod local_net_dispenser;
@@ -8,7 +9,6 @@ pub mod mnemonic;
 pub mod test_account;
 
 use algokit_abi::Arc56Contract;
-use algokit_transact::Address;
 use algokit_utils::AppCreateParams;
 use algokit_utils::clients::app_manager::{
     AppManager, DeploymentMetadata, TealTemplateParams, TealTemplateValue,
@@ -16,6 +16,12 @@ use algokit_utils::clients::app_manager::{
 use algokit_utils::config::{AppCompiledEventData, Config, EventData, EventType};
 use base64::prelude::*;
 
+pub use app_fixture::{
+    AppFixture, AppFixtureOptions, AppFixtureResult, boxmap_app_fixture, boxmap_spec,
+    build_app_fixture, default_teal_params, hello_world_app_fixture, hello_world_spec,
+    nested_contract_fixture, sandbox_app_fixture, sandbox_spec, testing_app_fixture,
+    testing_app_puya_fixture, testing_app_puya_spec, testing_app_spec,
+};
 pub use fixture::{AlgorandFixture, AlgorandFixtureResult, algorand_fixture};
 pub use indexer_helpers::{
     IndexerWaitConfig, IndexerWaitError, wait_for_indexer, wait_for_indexer_transaction,
@@ -27,7 +33,7 @@ pub type TestResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
 
 pub async fn deploy_arc56_contract(
     fixture: &AlgorandFixture,
-    sender: &Address,
+    sender: &algokit_transact::Address,
     arc56_contract: &Arc56Contract,
     template_params: Option<TealTemplateParams>,
     deploy_metadata: Option<DeploymentMetadata>,
@@ -60,18 +66,6 @@ pub async fn deploy_arc56_contract(
             deploy_metadata.as_ref(),
         )
         .await?;
-
-    // If debug is enabled, emit an AppCompiled event similar to AppClient::compile
-    if Config::debug() {
-        let event = AppCompiledEventData {
-            app_name: Some(arc56_contract.name.clone()),
-            approval_source_map: approval_compile.source_map.clone(),
-            clear_source_map: clear_compile.source_map.clone(),
-        };
-        Config::events()
-            .emit(EventType::AppCompiled, EventData::AppCompiled(event))
-            .await;
-    }
 
     let app_create_params = AppCreateParams {
         sender: sender.clone(),
