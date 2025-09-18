@@ -11,17 +11,15 @@ use super::{
     payment::{AccountCloseParams, PaymentParams},
     sender_results::{
         SendAppCallResult, SendAppCreateResult, SendAppUpdateResult, SendAssetCreateResult,
-        SendTransactionResult, TransactionResultError,
+        SendResult, TransactionResultError,
     },
 };
 use crate::clients::asset_manager::{AssetManager, AssetManagerError};
-use crate::{
-    clients::app_manager::{AppManager, AppManagerError, CompiledTeal},
-    transactions::TransactionComposerConfig,
-};
+use crate::{clients::app_manager::AppManagerError, transactions::TransactionComposerConfig};
 use algod_client::apis::AlgodApiError;
-use algokit_abi::ABIMethod;
-use algokit_transact::Address;
+use algod_client::models::PendingTransactionResponse;
+use algokit_abi::ABIReturn;
+use algokit_transact::{Address, Byte32, Transaction};
 use snafu::Snafu;
 
 use std::{str::FromStr, sync::Arc};
@@ -74,104 +72,63 @@ impl From<TransactionResultError> for TransactionSenderError {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct SendResult {
+    pub transaction: Transaction,
+    pub confirmation: PendingTransactionResponse,
+    pub transaction_id: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct SendAssetCreateResult {
+    pub transaction: Transaction,
+    pub confirmation: PendingTransactionResponse,
+    pub transaction_id: String,
+    pub asset_id: u64,
+}
+
+#[derive(Debug, Clone)]
+pub struct SendAppCreateResult {
+    pub transaction: Transaction,
+    pub confirmation: PendingTransactionResponse,
+    pub transaction_id: String,
+    pub app_id: u64,
+    pub app_address: Address,
+}
+
+#[derive(Debug, Clone)]
+pub struct SendAppMethodCallResult {
+    pub transaction: Transaction,
+    pub confirmation: PendingTransactionResponse,
+    pub transaction_id: String,
+    pub abi_return: ABIReturn,
+    pub transactions: Vec<Transaction>,
+    pub confirmations: Vec<PendingTransactionResponse>,
+    pub transaction_ids: Vec<String>,
+    pub abi_returns: Vec<ABIReturn>,
+    pub group: Option<Byte32>,
+}
+
+#[derive(Debug, Clone)]
+pub struct SendAppCreateMethodCallResult {
+    pub transaction: Transaction,
+    pub confirmation: PendingTransactionResponse,
+    pub transaction_id: String,
+    pub abi_return: ABIReturn,
+    pub transactions: Vec<Transaction>,
+    pub confirmations: Vec<PendingTransactionResponse>,
+    pub transaction_ids: Vec<String>,
+    pub abi_returns: Vec<ABIReturn>,
+    pub group: Option<Byte32>,
+    pub app_id: u64,
+    pub app_address: Address,
+}
+
 /// Sends transactions and groups with validation and result processing.
 #[derive(Clone)]
 pub struct TransactionSender {
     asset_manager: AssetManager,
-    app_manager: AppManager,
     new_group: Arc<dyn Fn(Option<TransactionComposerConfig>) -> Composer>,
-}
-
-pub trait HasMethod {
-    fn method(&self) -> &ABIMethod;
-}
-
-pub trait HasPrograms {
-    fn approval_program(&self) -> &[u8];
-    fn clear_state_program(&self) -> &[u8];
-}
-
-// Implement HasMethod for method call parameters
-impl<T> HasMethod for AppCallMethodCallParams<T>
-where
-    T: super::app_call::ValidMethodCallArg,
-{
-    fn method(&self) -> &ABIMethod {
-        &self.method
-    }
-}
-
-impl<T> HasMethod for AppCreateMethodCallParams<T>
-where
-    T: super::app_call::ValidMethodCallArg,
-{
-    fn method(&self) -> &ABIMethod {
-        &self.method
-    }
-}
-
-impl<T> HasMethod for AppUpdateMethodCallParams<T>
-where
-    T: super::app_call::ValidMethodCallArg,
-{
-    fn method(&self) -> &ABIMethod {
-        &self.method
-    }
-}
-
-impl<T> HasMethod for AppDeleteMethodCallParams<T>
-where
-    T: super::app_call::ValidMethodCallArg,
-{
-    fn method(&self) -> &ABIMethod {
-        &self.method
-    }
-}
-
-impl HasPrograms for AppCreateParams {
-    fn approval_program(&self) -> &[u8] {
-        &self.approval_program
-    }
-
-    fn clear_state_program(&self) -> &[u8] {
-        &self.clear_state_program
-    }
-}
-
-impl HasPrograms for AppUpdateParams {
-    fn approval_program(&self) -> &[u8] {
-        &self.approval_program
-    }
-
-    fn clear_state_program(&self) -> &[u8] {
-        &self.clear_state_program
-    }
-}
-
-impl<T> HasPrograms for AppCreateMethodCallParams<T>
-where
-    T: super::app_call::ValidMethodCallArg,
-{
-    fn approval_program(&self) -> &[u8] {
-        &self.approval_program
-    }
-
-    fn clear_state_program(&self) -> &[u8] {
-        &self.clear_state_program
-    }
-}
-
-impl<T> HasPrograms for AppUpdateMethodCallParams<T>
-where
-    T: super::app_call::ValidMethodCallArg,
-{
-    fn approval_program(&self) -> &[u8] {
-        &self.approval_program
-    }
-
-    fn clear_state_program(&self) -> &[u8] {
-        &self.clear_state_program
-    }
 }
 
 impl TransactionSender {
@@ -179,11 +136,9 @@ impl TransactionSender {
     pub fn new(
         new_group: impl Fn(Option<TransactionComposerConfig>) -> Composer + 'static,
         asset_manager: AssetManager,
-        app_manager: AppManager,
     ) -> Self {
         Self {
             asset_manager,
-            app_manager,
             new_group: Arc::new(new_group),
         }
     }
@@ -192,111 +147,89 @@ impl TransactionSender {
         (self.new_group)(params)
     }
 
-    async fn send_and_parse(
-        &self,
-        mut composer: Composer,
-        send_params: Option<SendParams>,
-    ) -> Result<SendTransactionResult, TransactionSenderError> {
-        let transactions_with_signers = composer.build().await?;
-
-        let transactions: Vec<algokit_transact::Transaction> = transactions_with_signers
-            .iter()
-            .map(|tx_with_signer| tx_with_signer.transaction.clone())
-            .collect();
-
-        let composer_results = composer.send(send_params).await?;
-
-        let group_id = composer_results
-            .group
-            .map(hex::encode)
-            .unwrap_or_else(|| "".to_string());
-
-        // Enhanced ABI return processing using app_manager
-        let abi_returns = if composer_results.abi_returns.is_empty() {
-            None
-        } else {
-            Some(composer_results.abi_returns)
-        };
-
-        let result = SendTransactionResult::new(
-            group_id,
-            composer_results.transaction_ids,
-            transactions,
-            composer_results.confirmations,
-            abi_returns,
-        )?;
-
-        Ok(result)
-    }
-
-    /// Helper method to send a single transaction using the standard 3-line pattern.
-    /// Creates a new group, adds the transaction using the provided closure, and sends it.
     async fn send_single_transaction<F>(
         &self,
-        send_params: Option<SendParams>,
         add_transaction: F,
-    ) -> Result<SendTransactionResult, TransactionSenderError>
+        send_params: Option<SendParams>,
+    ) -> Result<SendResult, TransactionSenderError>
     where
         F: FnOnce(&mut Composer) -> Result<(), ComposerError>,
     {
         let mut composer = self.new_group(None);
         add_transaction(&mut composer)?;
-        self.send_and_parse(composer, send_params).await
+        let composer_results = composer.send(send_params).await?;
+
+        Ok(SendResult {
+            transaction: composer_results.transactions.last().unwrap().clone(),
+            confirmation: composer_results.confirmations.last().unwrap().clone(),
+            transaction_id: composer_results.transaction_ids.last().unwrap().clone(),
+        })
     }
 
-    /// Helper method to send a single transaction and wrap the result in a specific type.
-    /// Creates a new group, adds the transaction using the provided closure, sends it,
-    /// and applies a result transformer function.
     async fn send_single_transaction_with_result<F, R, T>(
         &self,
-        send_params: Option<SendParams>,
         add_transaction: F,
         transform_result: T,
+        send_params: Option<SendParams>,
     ) -> Result<R, TransactionSenderError>
     where
         F: FnOnce(&mut Composer) -> Result<(), ComposerError>,
-        T: FnOnce(SendTransactionResult) -> Result<R, TransactionSenderError>,
+        T: FnOnce(SendResult) -> Result<R, TransactionSenderError>,
     {
-        let mut composer = self.new_group(None);
-        add_transaction(&mut composer)?;
-        let base_result = self.send_and_parse(composer, send_params).await?;
+        let base_result = self
+            .send_single_transaction(add_transaction, send_params)
+            .await?;
         transform_result(base_result)
     }
 
-    /// Extract compilation metadata for TEAL programs using app manager caching.
-    fn extract_compilation_metadata(
+    async fn send_method_call<F>(
         &self,
-        params: &impl HasPrograms,
-    ) -> (Option<CompiledTeal>, Option<CompiledTeal>) {
-        let approval_program = params.approval_program();
-        let clear_state_program = params.clear_state_program();
+        add_transaction: F,
+        send_params: Option<SendParams>,
+    ) -> Result<SendAppMethodCallResult, TransactionSenderError>
+    where
+        F: FnOnce(&mut Composer) -> Result<(), ComposerError>,
+    {
+        let mut composer = self.new_group(None);
+        add_transaction(&mut composer)?;
+        let composer_results = composer.send(send_params).await?;
 
-        // Convert program bytes to TEAL strings for compilation lookup
-        let approval_teal = String::from_utf8(approval_program.to_vec()).ok();
-        let clear_state_teal = String::from_utf8(clear_state_program.to_vec()).ok();
-
-        let compiled_approval = if let Some(teal) = approval_teal {
-            self.app_manager.get_compilation_result(&teal)
-        } else {
-            None
-        };
-
-        let compiled_clear = if let Some(teal) = clear_state_teal {
-            self.app_manager.get_compilation_result(&teal)
-        } else {
-            None
-        };
-
-        (compiled_approval, compiled_clear)
+        Ok(SendAppMethodCallResult {
+            transaction: composer_results.transactions.last().unwrap().clone(),
+            confirmation: composer_results.confirmations.last().unwrap().clone(),
+            transaction_id: composer_results.transaction_ids.last().unwrap().clone(),
+            abi_return: composer_results.abi_returns.last().unwrap().clone(),
+            transactions: composer_results.transactions,
+            abi_returns: composer_results.abi_returns,
+            confirmations: composer_results.confirmations,
+            transaction_ids: composer_results.transaction_ids,
+            group: composer_results.group,
+        })
     }
+
+    async fn send_method_call_with_result<F, R, T>(
+        &self,
+        add_transaction: F,
+        transform_result: T,
+        send_params: Option<SendParams>,
+    ) -> Result<R, TransactionSenderError>
+    where
+        F: FnOnce(&mut Composer) -> Result<(), ComposerError>,
+        T: FnOnce(SendAppMethodCallResult) -> Result<R, TransactionSenderError>,
+    {
+        let base_result = self.send_method_call(add_transaction, send_params).await?;
+        transform_result(base_result)
+    }
+
+    // TODO: missing methods
 
     /// Send payment transaction to transfer Algo between accounts.
     pub async fn payment(
         &self,
         params: PaymentParams,
         send_params: Option<SendParams>,
-    ) -> Result<SendTransactionResult, TransactionSenderError> {
-        self.send_single_transaction(send_params, |composer| composer.add_payment(params))
+    ) -> Result<SendResult, TransactionSenderError> {
+        self.send_single_transaction(|composer| composer.add_payment(params), send_params)
             .await
     }
 
@@ -305,8 +238,8 @@ impl TransactionSender {
         &self,
         params: AccountCloseParams,
         send_params: Option<SendParams>,
-    ) -> Result<SendTransactionResult, TransactionSenderError> {
-        self.send_single_transaction(send_params, |composer| composer.add_account_close(params))
+    ) -> Result<SendResult, TransactionSenderError> {
+        self.send_single_transaction(|composer| composer.add_account_close(params), send_params)
             .await
     }
 
@@ -315,7 +248,7 @@ impl TransactionSender {
         &self,
         params: AssetTransferParams,
         send_params: Option<SendParams>,
-    ) -> Result<SendTransactionResult, TransactionSenderError> {
+    ) -> Result<SendResult, TransactionSenderError> {
         // Enhanced parameter validation
         if params.asset_id == 0 {
             return Err(TransactionSenderError::InvalidParameters {
@@ -324,7 +257,7 @@ impl TransactionSender {
         }
         // Note: amount can be 0 for opt-in transactions, so we don't validate it here
 
-        self.send_single_transaction(send_params, |composer| composer.add_asset_transfer(params))
+        self.send_single_transaction(|composer| composer.add_asset_transfer(params), send_params)
             .await
     }
 
@@ -333,8 +266,8 @@ impl TransactionSender {
         &self,
         params: AssetOptInParams,
         send_params: Option<SendParams>,
-    ) -> Result<SendTransactionResult, TransactionSenderError> {
-        self.send_single_transaction(send_params, |composer| composer.add_asset_opt_in(params))
+    ) -> Result<SendResult, TransactionSenderError> {
+        self.send_single_transaction(|composer| composer.add_asset_opt_in(params), send_params)
             .await
     }
 
@@ -345,7 +278,7 @@ impl TransactionSender {
         params: AssetOptOutParams,
         send_params: Option<SendParams>,
         ensure_zero_balance: Option<bool>,
-    ) -> Result<SendTransactionResult, TransactionSenderError> {
+    ) -> Result<SendResult, TransactionSenderError> {
         if ensure_zero_balance.unwrap_or(true) {
             // Ensure account has zero balance before opting out
             let account_info = self
@@ -401,97 +334,102 @@ impl TransactionSender {
             params
         };
 
-        self.send_single_transaction(send_params, |composer| composer.add_asset_opt_out(params))
+        self.send_single_transaction(|composer| composer.add_asset_opt_out(params), send_params)
             .await
     }
 
-    /// Send asset creation transaction.
     pub async fn asset_create(
         &self,
         params: AssetCreateParams,
         send_params: Option<SendParams>,
     ) -> Result<SendAssetCreateResult, TransactionSenderError> {
         self.send_single_transaction_with_result(
-            send_params,
             |composer| composer.add_asset_create(params),
             |base_result| {
-                SendAssetCreateResult::new(base_result)
-                    .map_err(|e| TransactionSenderError::TransactionResultError { source: e })
+                let asset_id = base_result.confirmation.asset_id.ok_or_else(|| {
+                    TransactionSenderError::ValidationError {
+                        message: "Asset creation confirmation missing asset-index".to_string(),
+                    }
+                })?;
+                Ok(SendAssetCreateResult {
+                    transaction: base_result.transaction,
+                    confirmation: base_result.confirmation,
+                    transaction_id: base_result.transaction_id,
+                    asset_id: asset_id,
+                })
             },
+            send_params,
         )
         .await
     }
 
-    /// Send asset configuration transaction.
     pub async fn asset_config(
         &self,
         params: AssetConfigParams,
         send_params: Option<SendParams>,
-    ) -> Result<SendTransactionResult, TransactionSenderError> {
-        self.send_single_transaction(send_params, |composer| composer.add_asset_config(params))
+    ) -> Result<SendResult, TransactionSenderError> {
+        self.send_single_transaction(|composer| composer.add_asset_config(params), send_params)
             .await
     }
 
-    /// Send asset destroy transaction.
     pub async fn asset_destroy(
         &self,
         params: AssetDestroyParams,
         send_params: Option<SendParams>,
-    ) -> Result<SendTransactionResult, TransactionSenderError> {
-        self.send_single_transaction(send_params, |composer| composer.add_asset_destroy(params))
+    ) -> Result<SendResult, TransactionSenderError> {
+        self.send_single_transaction(|composer| composer.add_asset_destroy(params), send_params)
             .await
     }
 
-    /// Send asset freeze transaction.
     pub async fn asset_freeze(
         &self,
         params: AssetFreezeParams,
         send_params: Option<SendParams>,
-    ) -> Result<SendTransactionResult, TransactionSenderError> {
-        self.send_single_transaction(send_params, |composer| composer.add_asset_freeze(params))
+    ) -> Result<SendResult, TransactionSenderError> {
+        self.send_single_transaction(|composer| composer.add_asset_freeze(params), send_params)
             .await
     }
 
-    /// Send asset unfreeze transaction.
     pub async fn asset_unfreeze(
         &self,
         params: AssetUnfreezeParams,
         send_params: Option<SendParams>,
-    ) -> Result<SendTransactionResult, TransactionSenderError> {
-        self.send_single_transaction(send_params, |composer| composer.add_asset_unfreeze(params))
+    ) -> Result<SendResult, TransactionSenderError> {
+        self.send_single_transaction(|composer| composer.add_asset_unfreeze(params), send_params)
             .await
     }
 
-    /// Send app call transaction.
     pub async fn app_call(
         &self,
         params: AppCallParams,
         send_params: Option<SendParams>,
-    ) -> Result<SendTransactionResult, TransactionSenderError> {
-        self.send_single_transaction(send_params, |composer| composer.add_app_call(params))
+    ) -> Result<SendResult, TransactionSenderError> {
+        self.send_single_transaction(|composer| composer.add_app_call(params), send_params)
             .await
     }
 
-    /// Send app creation transaction.
     pub async fn app_create(
         &self,
         params: AppCreateParams,
         send_params: Option<SendParams>,
     ) -> Result<SendAppCreateResult, TransactionSenderError> {
-        // Extract compilation metadata using helper method
-        let (compiled_approval, compiled_clear) = self.extract_compilation_metadata(&params);
-
         self.send_single_transaction_with_result(
-            send_params,
             |composer| composer.add_app_create(params),
             |base_result| {
-                // Convert CompiledTeal to Vec<u8> for the result
-                let approval_bytes = compiled_approval.map(|ct| ct.compiled_base64_to_bytes);
-                let clear_bytes = compiled_clear.map(|ct| ct.compiled_base64_to_bytes);
-
-                SendAppCreateResult::new(base_result, None, approval_bytes, clear_bytes)
-                    .map_err(|e| TransactionSenderError::TransactionResultError { source: e })
+                let app_id = base_result.confirmation.app_id.ok_or_else(|| {
+                    TransactionSenderError::ValidationError {
+                        message: "App creation confirmation missing application-index".to_string(),
+                    }
+                })?;
+                Ok(SendAppCreateResult {
+                    transaction: base_result.transaction,
+                    confirmation: base_result.confirmation,
+                    transaction_id: base_result.transaction_id,
+                    app_id: app_id,
+                    app_address: Address::from_app_id(&app_id),
+                })
             },
+            send_params,
         )
         .await
     }
@@ -502,26 +440,8 @@ impl TransactionSender {
         params: AppUpdateParams,
         send_params: Option<SendParams>,
     ) -> Result<SendAppUpdateResult, TransactionSenderError> {
-        // Extract compilation metadata using helper method
-        let (compiled_approval, compiled_clear) = self.extract_compilation_metadata(&params);
-
-        self.send_single_transaction_with_result(
-            send_params,
-            |composer| composer.add_app_update(params),
-            |base_result| {
-                // Convert CompiledTeal to Vec<u8> for the result
-                let approval_bytes = compiled_approval.map(|ct| ct.compiled_base64_to_bytes);
-                let clear_bytes = compiled_clear.map(|ct| ct.compiled_base64_to_bytes);
-
-                Ok(SendAppUpdateResult::new(
-                    base_result,
-                    None,
-                    approval_bytes,
-                    clear_bytes,
-                ))
-            },
-        )
-        .await
+        self.send_single_transaction(|composer| composer.add_app_update(params), send_params)
+            .await
     }
 
     /// Send app delete transaction.
@@ -529,8 +449,8 @@ impl TransactionSender {
         &self,
         params: AppDeleteParams,
         send_params: Option<SendParams>,
-    ) -> Result<SendTransactionResult, TransactionSenderError> {
-        self.send_single_transaction(send_params, |composer| composer.add_app_delete(params))
+    ) -> Result<SendResult, TransactionSenderError> {
+        self.send_single_transaction(|composer| composer.add_app_delete(params), send_params)
             .await
     }
 
@@ -540,17 +460,9 @@ impl TransactionSender {
         params: AppCallMethodCallParams,
         send_params: Option<SendParams>,
     ) -> Result<SendAppCallResult, TransactionSenderError> {
-        self.send_single_transaction_with_result(
-            send_params,
+        self.send_method_call(
             |composer| composer.add_app_call_method_call(params),
-            |base_result| {
-                let abi_return = base_result
-                    .abi_returns
-                    .as_ref()
-                    .and_then(|returns| returns.last())
-                    .cloned();
-                Ok(SendAppCallResult::new(base_result, abi_return))
-            },
+            send_params,
         )
         .await
     }
@@ -560,27 +472,30 @@ impl TransactionSender {
         &self,
         params: AppCreateMethodCallParams,
         send_params: Option<SendParams>,
-    ) -> Result<SendAppCreateResult, TransactionSenderError> {
-        // Extract compilation metadata using helper method
-        let (compiled_approval, compiled_clear) = self.extract_compilation_metadata(&params);
-
-        self.send_single_transaction_with_result(
-            send_params,
+    ) -> Result<SendAppCreateMethodCallResult, TransactionSenderError> {
+        self.send_method_call_with_result(
             |composer| composer.add_app_create_method_call(params),
             |base_result| {
-                let abi_return = base_result
-                    .abi_returns
-                    .as_ref()
-                    .and_then(|returns| returns.last())
-                    .cloned();
-
-                // Convert CompiledTeal to Vec<u8> for the result
-                let approval_bytes = compiled_approval.map(|ct| ct.compiled_base64_to_bytes);
-                let clear_bytes = compiled_clear.map(|ct| ct.compiled_base64_to_bytes);
-
-                SendAppCreateResult::new(base_result, abi_return, approval_bytes, clear_bytes)
-                    .map_err(|e| TransactionSenderError::TransactionResultError { source: e })
+                let app_id = base_result.confirmation.app_id.ok_or_else(|| {
+                    TransactionSenderError::ValidationError {
+                        message: "App creation confirmation missing application-index".to_string(),
+                    }
+                })?;
+                Ok(SendAppCreateMethodCallResult {
+                    transaction: base_result.transaction,
+                    confirmation: base_result.confirmation,
+                    transaction_id: base_result.transaction_id,
+                    abi_return: base_result.abi_return,
+                    transactions: base_result.transactions,
+                    confirmations: base_result.confirmations,
+                    transaction_ids: base_result.transaction_ids,
+                    abi_returns: base_result.abi_returns,
+                    group: base_result.group,
+                    app_id: app_id,
+                    app_address: Address::from_app_id(&app_id),
+                })
             },
+            send_params,
         )
         .await
     }
@@ -591,29 +506,9 @@ impl TransactionSender {
         params: AppUpdateMethodCallParams,
         send_params: Option<SendParams>,
     ) -> Result<SendAppUpdateResult, TransactionSenderError> {
-        // Extract compilation metadata using helper method
-        let (compiled_approval, compiled_clear) = self.extract_compilation_metadata(&params);
-
-        self.send_single_transaction_with_result(
-            send_params,
+        self.send_method_call(
             |composer| composer.add_app_update_method_call(params),
-            |base_result| {
-                let abi_return = base_result
-                    .abi_returns
-                    .as_ref()
-                    .and_then(|returns| returns.last())
-                    .cloned();
-                // Convert CompiledTeal to Vec<u8> for the result
-                let approval_bytes = compiled_approval.map(|ct| ct.compiled_base64_to_bytes);
-                let clear_bytes = compiled_clear.map(|ct| ct.compiled_base64_to_bytes);
-
-                Ok(SendAppUpdateResult::new(
-                    base_result,
-                    abi_return,
-                    approval_bytes,
-                    clear_bytes,
-                ))
-            },
+            send_params,
         )
         .await
     }
@@ -624,17 +519,9 @@ impl TransactionSender {
         params: AppDeleteMethodCallParams,
         send_params: Option<SendParams>,
     ) -> Result<SendAppCallResult, TransactionSenderError> {
-        self.send_single_transaction_with_result(
-            send_params,
+        self.send_method_call(
             |composer| composer.add_app_delete_method_call(params),
-            |base_result| {
-                let abi_return = base_result
-                    .abi_returns
-                    .as_ref()
-                    .and_then(|returns| returns.last())
-                    .cloned();
-                Ok(SendAppCallResult::new(base_result, abi_return))
-            },
+            send_params,
         )
         .await
     }
@@ -644,10 +531,11 @@ impl TransactionSender {
         &self,
         params: OnlineKeyRegistrationParams,
         send_params: Option<SendParams>,
-    ) -> Result<SendTransactionResult, TransactionSenderError> {
-        self.send_single_transaction(send_params, |composer| {
-            composer.add_online_key_registration(params)
-        })
+    ) -> Result<SendResult, TransactionSenderError> {
+        self.send_single_transaction(
+            |composer| composer.add_online_key_registration(params),
+            send_params,
+        )
         .await
     }
 
@@ -656,32 +544,11 @@ impl TransactionSender {
         &self,
         params: OfflineKeyRegistrationParams,
         send_params: Option<SendParams>,
-    ) -> Result<SendTransactionResult, TransactionSenderError> {
-        self.send_single_transaction(send_params, |composer| {
-            composer.add_offline_key_registration(params)
-        })
+    ) -> Result<SendResult, TransactionSenderError> {
+        self.send_single_transaction(
+            |composer| composer.add_offline_key_registration(params),
+            send_params,
+        )
         .await
-    }
-
-    /// Generate lease from arbitrary data.
-    pub fn encode_lease(&self, lease_data: &[u8]) -> Result<[u8; 32], TransactionSenderError> {
-        if lease_data.len() <= 32 {
-            let mut lease = [0u8; 32];
-            lease[..lease_data.len()].copy_from_slice(lease_data);
-            Ok(lease)
-        } else {
-            use sha2::{Digest, Sha256};
-            let mut hasher = Sha256::new();
-            hasher.update(lease_data);
-            let hash_result = hasher.finalize();
-            let mut lease = [0u8; 32];
-            lease.copy_from_slice(&hash_result);
-            Ok(lease)
-        }
-    }
-
-    /// Generate unique lease from string identifier.
-    pub fn string_lease(&self, identifier: &str) -> [u8; 32] {
-        self.encode_lease(identifier.as_bytes()).unwrap()
     }
 }

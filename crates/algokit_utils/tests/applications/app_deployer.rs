@@ -80,7 +80,7 @@ async fn test_created_app_is_retrieved_by_name_with_deployment_metadata(
     let result = transaction_sender.app_create(create_params, None).await?;
 
     algorand_fixture
-        .wait_for_indexer_transaction(&result.common_params.tx_id)
+        .wait_for_indexer_transaction(&result.common_params.transaction_id)
         .await?;
 
     let apps = app_deployer
@@ -145,7 +145,7 @@ async fn test_latest_created_app_is_retrieved(#[future] fixture: FixtureResult) 
     let result_3 = transaction_sender.app_create(create_params_3, None).await?;
 
     algorand_fixture
-        .wait_for_indexer_transaction(&result_3.common_params.tx_id)
+        .wait_for_indexer_transaction(&result_3.common_params.transaction_id)
         .await?;
 
     let apps = app_deployer
@@ -241,7 +241,7 @@ async fn test_created_updated_and_deleted_apps_are_retrieved_by_name_with_deploy
     let delete_result = transaction_sender.app_delete(delete_params, None).await?;
 
     algorand_fixture
-        .wait_for_indexer_transaction(&delete_result.tx_id)
+        .wait_for_indexer_transaction(&delete_result.transaction_id)
         .await?;
 
     let apps = app_deployer

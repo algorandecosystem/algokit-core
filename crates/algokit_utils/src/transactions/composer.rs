@@ -155,6 +155,7 @@ impl From<AlgoKitTransactError> for ComposerError {
 #[derive(Debug)]
 pub struct SendTransactionComposerResults {
     pub group: Option<Byte32>,
+    pub transactions: Vec<Transaction>,
     pub transaction_ids: Vec<String>,
     pub confirmations: Vec<PendingTransactionResponse>,
     pub abi_returns: Vec<ABIReturn>,
@@ -2165,7 +2166,11 @@ impl Composer {
                 message: format!("Failed to submit transaction(s): {:?}", e),
             })?;
 
-        let transaction_ids: Vec<String> = signed_transactions
+        let transactions: Vec<Transaction> = signed_transactions
+            .iter()
+            .map(|txn| txn.transaction.clone())
+            .collect::<Vec<Transaction>>();
+        let transaction_ids: Vec<String> = transactions
             .iter()
             .map(|txn| txn.id())
             .collect::<Result<Vec<String>, _>>()?;
@@ -2181,6 +2186,7 @@ impl Composer {
 
         Ok(SendTransactionComposerResults {
             group,
+            transactions,
             transaction_ids,
             confirmations,
             abi_returns,

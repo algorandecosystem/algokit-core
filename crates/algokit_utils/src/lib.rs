@@ -19,10 +19,9 @@ pub use transactions::{
     AssetTransferParams, AssetUnfreezeParams, Composer, ComposerError, ComposerTransaction,
     EmptySigner, NonParticipationKeyRegistrationParams, OfflineKeyRegistrationParams,
     OnlineKeyRegistrationParams, PaymentParams, ResourcePopulation, SendAppCallResult,
-    SendAppCreateResult, SendAppUpdateResult, SendAssetCreateResult, SendParams,
-    SendTransactionComposerResults, SendTransactionResult, TransactionCreator,
-    TransactionResultError, TransactionSender, TransactionSenderError, TransactionSigner,
-    TransactionWithSigner,
+    SendAppCreateResult, SendAppUpdateResult, SendAssetCreateResult, SendParams, SendResult,
+    SendTransactionComposerResults, TransactionCreator, TransactionResultError, TransactionSender,
+    TransactionSenderError, TransactionSigner, TransactionWithSigner,
 };
 
 pub use applications::app_client::{AppClient, AppClientError, AppClientParams, AppSourceMaps};

@@ -35,5 +35,5 @@ pub use payment::{AccountCloseParams, PaymentParams};
 pub use sender::{TransactionSender, TransactionSenderError};
 pub use sender_results::{
     SendAppCallResult, SendAppCreateResult, SendAppUpdateResult, SendAssetCreateResult,
-    SendTransactionResult, TransactionResultError,
+    SendResult, TransactionResultError,
 };

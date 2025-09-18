@@ -1,4 +1,4 @@
-use crate::transactions::SendTransactionResult;
+use crate::transactions::SendResult;
 use crate::transactions::composer::SimulateParams;
 use crate::{AppClientError, SendAppCallResult, SendParams};
 use algokit_transact::{MAX_SIMULATE_OPCODE_BUDGET, OnApplicationComplete};
@@ -92,7 +92,7 @@ impl<'app_client> TransactionSender<'app_client> {
             let abi_returns = simulate_results.abi_returns;
             let last_abi_return = abi_returns.last().cloned();
 
-            let send_transaction_result = SendTransactionResult::new(
+            let send_transaction_result = SendResult::new(
                 group_id,
                 simulate_results.transaction_ids,
                 transactions,
@@ -189,7 +189,7 @@ impl<'app_client> TransactionSender<'app_client> {
         &self,
         params: FundAppAccountParams,
         send_params: Option<SendParams>,
-    ) -> Result<SendTransactionResult, AppClientError> {
+    ) -> Result<SendResult, AppClientError> {
         let payment = self.client.params().fund_app_account(&params)?;
 
         self.client
@@ -208,7 +208,7 @@ impl BareTransactionSender<'_> {
         params: AppClientBareCallParams,
         on_complete: Option<OnApplicationComplete>,
         send_params: Option<SendParams>,
-    ) -> Result<SendTransactionResult, AppClientError> {
+    ) -> Result<SendResult, AppClientError> {
         let params = self.client.params().bare().call(params, on_complete)?;
         self.client
             .algorand
@@ -223,7 +223,7 @@ impl BareTransactionSender<'_> {
         &self,
         params: AppClientBareCallParams,
         send_params: Option<SendParams>,
-    ) -> Result<SendTransactionResult, AppClientError> {
+    ) -> Result<SendResult, AppClientError> {
         let app_call = self.client.params().bare().opt_in(params)?;
         self.client
             .algorand
@@ -238,7 +238,7 @@ impl BareTransactionSender<'_> {
         &self,
         params: AppClientBareCallParams,
         send_params: Option<SendParams>,
-    ) -> Result<SendTransactionResult, AppClientError> {
+    ) -> Result<SendResult, AppClientError> {
         let app_call = self.client.params().bare().close_out(params)?;
         self.client
             .algorand
@@ -253,7 +253,7 @@ impl BareTransactionSender<'_> {
         &self,
         params: AppClientBareCallParams,
         send_params: Option<SendParams>,
-    ) -> Result<SendTransactionResult, AppClientError> {
+    ) -> Result<SendResult, AppClientError> {
         let delete_params = self.client.params().bare().delete(params)?;
         self.client
             .algorand
@@ -268,7 +268,7 @@ impl BareTransactionSender<'_> {
         &self,
         params: AppClientBareCallParams,
         send_params: Option<SendParams>,
-    ) -> Result<SendTransactionResult, AppClientError> {
+    ) -> Result<SendResult, AppClientError> {
         let app_call = self.client.params().bare().clear_state(params)?;
         self.client
             .algorand
