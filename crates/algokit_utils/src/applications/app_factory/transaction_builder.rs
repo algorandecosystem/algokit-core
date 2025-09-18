@@ -1,6 +1,7 @@
 use super::AppFactory;
 use crate::applications::app_client::CompilationParams;
-use crate::transactions::{BuiltTransactions, composer::ComposerError};
+use crate::transactions::composer::ComposerError;
+use algokit_transact::Transaction;
 
 pub struct TransactionBuilder<'a> {
     pub(crate) factory: &'a AppFactory,
@@ -21,7 +22,7 @@ impl<'a> TransactionBuilder<'a> {
         &self,
         params: super::types::AppFactoryCreateMethodCallParams,
         compilation_params: Option<CompilationParams>,
-    ) -> Result<BuiltTransactions, ComposerError> {
+    ) -> Result<Vec<Transaction>, ComposerError> {
         // Compile using centralized helper
         let compiled = self
             .factory
@@ -60,10 +61,17 @@ impl<'a> TransactionBuilder<'a> {
         });
 
         let create_params = crate::transactions::AppCreateMethodCallParams {
-            common_params: crate::transactions::common::CommonTransactionParams {
-                sender,
-                ..Default::default()
-            },
+            sender,
+            signer: params.signer,
+            rekey_to: params.rekey_to,
+            note: params.note,
+            lease: params.lease,
+            static_fee: params.static_fee,
+            extra_fee: params.extra_fee,
+            max_fee: params.max_fee,
+            validity_window: params.validity_window,
+            first_valid_round: params.first_valid_round,
+            last_valid_round: params.last_valid_round,
             on_complete: params
                 .on_complete
                 .unwrap_or(algokit_transact::OnApplicationComplete::NoOp),
@@ -91,7 +99,7 @@ impl<'a> TransactionBuilder<'a> {
         &self,
         params: super::types::AppFactoryUpdateMethodCallParams,
         compilation_params: Option<CompilationParams>,
-    ) -> Result<BuiltTransactions, ComposerError> {
+    ) -> Result<Vec<Transaction>, ComposerError> {
         let compiled = self
             .factory
             .compile_programs_with(compilation_params)
@@ -111,10 +119,17 @@ impl<'a> TransactionBuilder<'a> {
             .map_err(|e| ComposerError::TransactionError { message: e })?;
 
         let update_params = crate::transactions::AppUpdateMethodCallParams {
-            common_params: crate::transactions::common::CommonTransactionParams {
-                sender,
-                ..Default::default()
-            },
+            sender,
+            signer: params.signer,
+            rekey_to: params.rekey_to,
+            note: params.note,
+            lease: params.lease,
+            static_fee: params.static_fee,
+            extra_fee: params.extra_fee,
+            max_fee: params.max_fee,
+            validity_window: params.validity_window,
+            first_valid_round: params.first_valid_round,
+            last_valid_round: params.last_valid_round,
             app_id: params.app_id,
             approval_program: compiled.approval.compiled_base64_to_bytes,
             clear_state_program: compiled.clear.compiled_base64_to_bytes,
@@ -172,10 +187,17 @@ impl BareTransactionBuilder<'_> {
         });
 
         let create_params = crate::transactions::AppCreateParams {
-            common_params: crate::transactions::common::CommonTransactionParams {
-                sender,
-                ..Default::default()
-            },
+            sender,
+            signer: params.signer,
+            rekey_to: params.rekey_to,
+            note: params.note,
+            lease: params.lease,
+            static_fee: params.static_fee,
+            extra_fee: params.extra_fee,
+            max_fee: params.max_fee,
+            validity_window: params.validity_window,
+            first_valid_round: params.first_valid_round,
+            last_valid_round: params.last_valid_round,
             on_complete: params
                 .on_complete
                 .unwrap_or(algokit_transact::OnApplicationComplete::NoOp),
@@ -217,10 +239,17 @@ impl BareTransactionBuilder<'_> {
             .map_err(|e| ComposerError::TransactionError { message: e })?;
 
         let update_params = crate::transactions::AppUpdateParams {
-            common_params: crate::transactions::common::CommonTransactionParams {
-                sender,
-                ..Default::default()
-            },
+            sender,
+            signer: params.signer,
+            rekey_to: params.rekey_to,
+            note: params.note,
+            lease: params.lease,
+            static_fee: params.static_fee,
+            extra_fee: params.extra_fee,
+            max_fee: params.max_fee,
+            validity_window: params.validity_window,
+            first_valid_round: params.first_valid_round,
+            last_valid_round: params.last_valid_round,
             app_id: params.app_id,
             approval_program: compiled.approval.compiled_base64_to_bytes,
             clear_state_program: compiled.clear.compiled_base64_to_bytes,
@@ -248,10 +277,17 @@ impl BareTransactionBuilder<'_> {
             .map_err(|e| ComposerError::TransactionError { message: e })?;
 
         let delete_params = crate::transactions::AppDeleteParams {
-            common_params: crate::transactions::common::CommonTransactionParams {
-                sender,
-                ..Default::default()
-            },
+            sender,
+            signer: params.signer,
+            rekey_to: params.rekey_to,
+            note: params.note,
+            lease: params.lease,
+            static_fee: params.static_fee,
+            extra_fee: params.extra_fee,
+            max_fee: params.max_fee,
+            validity_window: params.validity_window,
+            first_valid_round: params.first_valid_round,
+            last_valid_round: params.last_valid_round,
             app_id: params.app_id,
             args: params.args,
             account_references: params.account_references,

@@ -27,7 +27,7 @@ pub struct AppSourceMaps {
 pub struct AppClientParams {
     pub app_id: u64,
     pub app_spec: Arc56Contract,
-    pub algorand: AlgorandClient,
+    pub algorand: Arc<AlgorandClient>,
     pub app_name: Option<String>,
     pub default_sender: Option<String>,
     pub default_signer: Option<Arc<dyn TransactionSigner>>,
@@ -41,7 +41,7 @@ pub struct FundAppAccountParams {
     pub amount: u64,
     pub sender: Option<String>,
     #[debug(skip)]
-    pub signer: Option<std::sync::Arc<dyn TransactionSigner>>,
+    pub signer: Option<Arc<dyn TransactionSigner>>,
     pub rekey_to: Option<String>,
     pub note: Option<Vec<u8>>,
     pub lease: Option<[u8; 32]>,
@@ -61,7 +61,7 @@ pub struct AppClientMethodCallParams {
     pub args: Vec<AppMethodCallArg>,
     pub sender: Option<String>,
     #[debug(skip)]
-    pub signer: Option<std::sync::Arc<dyn TransactionSigner>>,
+    pub signer: Option<Arc<dyn TransactionSigner>>,
     pub rekey_to: Option<String>,
     pub note: Option<Vec<u8>>,
     pub lease: Option<[u8; 32]>,
@@ -83,7 +83,7 @@ pub struct AppClientBareCallParams {
     pub args: Option<Vec<Vec<u8>>>,
     pub sender: Option<String>,
     #[debug(skip)]
-    pub signer: Option<std::sync::Arc<dyn TransactionSigner>>,
+    pub signer: Option<Arc<dyn TransactionSigner>>,
     pub rekey_to: Option<String>,
     pub note: Option<Vec<u8>>,
     pub lease: Option<[u8; 32]>,

@@ -4,10 +4,10 @@ use crate::applications::app_deployer::{
     DeployAppDeleteMethodCallParams, DeployAppDeleteParams, DeployAppUpdateMethodCallParams,
     DeployAppUpdateParams,
 };
-use crate::transactions::common::CommonTransactionParams;
 use algokit_abi::ABIMethod;
 use algokit_transact::OnApplicationComplete;
 use algokit_transact::StateSchema as TxStateSchema;
+use std::str::FromStr;
 // use std::str::FromStr;
 
 pub struct ParamsBuilder<'a> {
@@ -45,10 +45,17 @@ impl<'a> ParamsBuilder<'a> {
         )?;
 
         Ok(DeployAppCreateMethodCallParams {
-            common_params: CommonTransactionParams {
-                sender,
-                ..Default::default()
-            },
+            sender,
+            signer: params.signer,
+            rekey_to: params.rekey_to,
+            note: params.note,
+            lease: params.lease,
+            static_fee: params.static_fee,
+            extra_fee: params.extra_fee,
+            max_fee: params.max_fee,
+            validity_window: params.validity_window,
+            first_valid_round: params.first_valid_round,
+            last_valid_round: params.last_valid_round,
             on_complete: params.on_complete.unwrap_or(OnApplicationComplete::NoOp),
             approval_program: AppProgram::Teal(approval_teal),
             clear_state_program: AppProgram::Teal(clear_teal),
@@ -82,14 +89,24 @@ impl<'a> ParamsBuilder<'a> {
         let merged_args = super::utils::merge_create_args_with_defaults(
             self.factory,
             &params.method,
-            &params.args,
+            &Some(params.args.clone()),
         )?;
 
         Ok(DeployAppUpdateMethodCallParams {
-            common_params: CommonTransactionParams {
-                sender,
-                ..Default::default()
-            },
+            sender,
+            signer: params.signer,
+            rekey_to: params
+                .rekey_to
+                .as_ref()
+                .and_then(|s| algokit_transact::Address::from_str(s).ok()),
+            note: params.note,
+            lease: params.lease,
+            static_fee: params.static_fee,
+            extra_fee: params.extra_fee,
+            max_fee: params.max_fee,
+            validity_window: params.validity_window,
+            first_valid_round: params.first_valid_round,
+            last_valid_round: params.last_valid_round,
             method,
             args: merged_args,
             account_references: None,
@@ -113,14 +130,24 @@ impl<'a> ParamsBuilder<'a> {
         let merged_args = super::utils::merge_create_args_with_defaults(
             self.factory,
             &params.method,
-            &params.args,
+            &Some(params.args.clone()),
         )?;
 
         Ok(DeployAppDeleteMethodCallParams {
-            common_params: CommonTransactionParams {
-                sender,
-                ..Default::default()
-            },
+            sender,
+            signer: params.signer,
+            rekey_to: params
+                .rekey_to
+                .as_ref()
+                .and_then(|s| algokit_transact::Address::from_str(s).ok()),
+            note: params.note,
+            lease: params.lease,
+            static_fee: params.static_fee,
+            extra_fee: params.extra_fee,
+            max_fee: params.max_fee,
+            validity_window: params.validity_window,
+            first_valid_round: params.first_valid_round,
+            last_valid_round: params.last_valid_round,
             method,
             args: merged_args,
             account_references: None,
@@ -145,10 +172,17 @@ impl BareParamsBuilder<'_> {
             .map_err(AppFactoryError::ValidationError)?;
 
         Ok(DeployAppCreateParams {
-            common_params: CommonTransactionParams {
-                sender,
-                ..Default::default()
-            },
+            sender,
+            signer: params.signer,
+            rekey_to: params.rekey_to,
+            note: params.note,
+            lease: params.lease,
+            static_fee: params.static_fee,
+            extra_fee: params.extra_fee,
+            max_fee: params.max_fee,
+            validity_window: params.validity_window,
+            first_valid_round: params.first_valid_round,
+            last_valid_round: params.last_valid_round,
             on_complete: params.on_complete.unwrap_or(OnApplicationComplete::NoOp),
             approval_program: AppProgram::Teal(approval_teal),
             clear_state_program: AppProgram::Teal(clear_teal),
@@ -179,10 +213,20 @@ impl BareParamsBuilder<'_> {
             .map_err(AppFactoryError::ValidationError)?;
 
         Ok(DeployAppUpdateParams {
-            common_params: CommonTransactionParams {
-                sender,
-                ..Default::default()
-            },
+            sender,
+            signer: params.signer,
+            rekey_to: params
+                .rekey_to
+                .as_ref()
+                .and_then(|s| algokit_transact::Address::from_str(s).ok()),
+            note: params.note,
+            lease: params.lease,
+            static_fee: params.static_fee,
+            extra_fee: params.extra_fee,
+            max_fee: params.max_fee,
+            validity_window: params.validity_window,
+            first_valid_round: params.first_valid_round,
+            last_valid_round: params.last_valid_round,
             args: params.args,
             account_references: None,
             app_references: params.app_references,
@@ -203,10 +247,20 @@ impl BareParamsBuilder<'_> {
             .map_err(AppFactoryError::ValidationError)?;
 
         Ok(DeployAppDeleteParams {
-            common_params: CommonTransactionParams {
-                sender,
-                ..Default::default()
-            },
+            sender,
+            signer: params.signer,
+            rekey_to: params
+                .rekey_to
+                .as_ref()
+                .and_then(|s| algokit_transact::Address::from_str(s).ok()),
+            note: params.note,
+            lease: params.lease,
+            static_fee: params.static_fee,
+            extra_fee: params.extra_fee,
+            max_fee: params.max_fee,
+            validity_window: params.validity_window,
+            first_valid_round: params.first_valid_round,
+            last_valid_round: params.last_valid_round,
             args: params.args,
             account_references: None,
             app_references: params.app_references,
@@ -250,10 +304,8 @@ pub(crate) fn to_abi_method(
     method: &str,
 ) -> Result<ABIMethod, AppFactoryError> {
     contract
-        .get_arc56_method(method)
-        .map_err(|e| AppFactoryError::MethodNotFound(e.to_string()))?
-        .to_abi_method()
-        .map_err(|e| AppFactoryError::ValidationError(e.to_string()))
+        .find_abi_method(method)
+        .map_err(|e| AppFactoryError::MethodNotFound(e.to_string()))
 }
 
 // Note: Deploy param structs accept Address already parsed where relevant; factory-level

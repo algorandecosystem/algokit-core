@@ -64,16 +64,7 @@ impl AppFactory {
             .await
             .map_err(|e| AppFactoryError::CompilationError(e.to_string()))?;
 
-        // Capture source maps for export
-        if crate::config::Config::debug() {
-            if let Some(map) = &approval.source_map {
-                // best-effort capture; avoid failing compile on map issues
-                let _ = map.clone();
-            }
-            if let Some(map) = &clear.source_map {
-                let _ = map.clone();
-            }
-        }
+        self.update_source_maps(approval.source_map.clone(), clear.source_map.clone());
 
         Ok(CompiledPrograms { approval, clear })
     }
@@ -116,6 +107,8 @@ impl AppFactory {
             .compile_teal_template(&clear_teal, cp.deploy_time_params.as_ref(), None)
             .await
             .map_err(|e| AppFactoryError::CompilationError(e.to_string()))?;
+
+        self.update_source_maps(approval.source_map.clone(), clear.source_map.clone());
 
         Ok(CompiledPrograms { approval, clear })
     }

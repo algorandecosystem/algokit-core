@@ -15,6 +15,7 @@ pub struct AlgorandClient {
     client_manager: ClientManager,
     asset_manager: AssetManager,
     app_manager: AppManager,
+    app_deployer: AppDeployer,
     transaction_sender: TransactionSender,
     transaction_creator: TransactionCreator,
     account_manager: Arc<Mutex<AccountManager>>,
@@ -57,14 +58,13 @@ impl AlgorandClient {
             asset_manager.clone(),
             app_manager.clone(),
         );
-
         // Create closure for TransactionCreator
         let transaction_creator = TransactionCreator::new(new_group.clone());
 
         let app_deployer = AppDeployer::new(
             app_manager.clone(),
             transaction_sender.clone(),
-            Some(client_manager.indexer()),
+            Some(client_manager.indexer().unwrap()),
         );
 
         Self {
@@ -72,6 +72,7 @@ impl AlgorandClient {
             account_manager: account_manager.clone(),
             asset_manager,
             app_manager,
+            app_deployer,
             transaction_sender,
             transaction_creator,
             default_composer_config: params.composer_config.clone(),

@@ -17,7 +17,7 @@ pub(crate) fn merge_create_args_with_defaults(
 
     let contract = factory.app_spec();
     let method = contract
-        .get_arc56_method(method_name_or_signature)
+        .get_method(method_name_or_signature)
         .map_err(|e| AppFactoryError::ValidationError(e.to_string()))?;
 
     let mut result: Vec<crate::transactions::AppMethodCallArg> =
@@ -76,15 +76,12 @@ pub(crate) fn transform_transaction_error_for_factory(
     err: crate::transactions::TransactionSenderError,
     is_clear: bool,
 ) -> crate::transactions::TransactionSenderError {
-    let client = crate::applications::app_client::AppClient::new(
-        crate::applications::app_client::AppClientParams {
-            app_id: None,
-            app_spec: factory.app_spec().clone(),
-            algorand: factory.algorand().clone(),
-            app_name: Some(factory.app_name().to_string()),
-            default_sender: factory.default_sender.clone(),
-            source_maps: None,
-        },
-    );
-    crate::applications::app_client::transform_transaction_error(&client, err, is_clear)
+    let err_str = err.to_string();
+    if let Some(logic_message) = factory.logic_error_for(&err_str, is_clear) {
+        crate::transactions::TransactionSenderError::ValidationError {
+            message: logic_message,
+        }
+    } else {
+        err
+    }
 }

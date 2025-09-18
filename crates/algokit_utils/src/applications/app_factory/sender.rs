@@ -73,10 +73,17 @@ impl<'a> TransactionSender<'a> {
         });
 
         let create_params = crate::transactions::AppCreateMethodCallParams {
-            common_params: crate::transactions::common::CommonTransactionParams {
-                sender,
-                ..Default::default()
-            },
+            sender,
+            signer: params.signer,
+            rekey_to: params.rekey_to,
+            note: params.note,
+            lease: params.lease,
+            static_fee: params.static_fee,
+            extra_fee: params.extra_fee,
+            max_fee: params.max_fee,
+            validity_window: params.validity_window,
+            first_valid_round: params.first_valid_round,
+            last_valid_round: params.last_valid_round,
             on_complete: params
                 .on_complete
                 .unwrap_or(algokit_transact::OnApplicationComplete::NoOp),
@@ -104,12 +111,14 @@ impl<'a> TransactionSender<'a> {
             })?;
 
         let app_client = AppClient::new(AppClientParams {
-            app_id: Some(result.app_id),
+            app_id: result.app_id,
             app_spec: self.factory.app_spec().clone(),
             algorand: self.factory.algorand().clone(),
             app_name: Some(self.factory.app_name().to_string()),
             default_sender: self.factory.default_sender.clone(),
-            source_maps: None,
+            default_signer: self.factory.default_signer.clone(),
+            source_maps: self.factory.current_source_maps(),
+            transaction_composer_config: self.factory.transaction_composer_config.clone(),
         });
 
         Ok((app_client, result))
@@ -141,10 +150,17 @@ impl<'a> TransactionSender<'a> {
             .map_err(|e| TransactionSenderError::ValidationError { message: e })?;
 
         let update_params = crate::transactions::AppUpdateMethodCallParams {
-            common_params: crate::transactions::common::CommonTransactionParams {
-                sender,
-                ..Default::default()
-            },
+            sender,
+            signer: params.signer,
+            rekey_to: params.rekey_to,
+            note: params.note,
+            lease: params.lease,
+            static_fee: params.static_fee,
+            extra_fee: params.extra_fee,
+            max_fee: params.max_fee,
+            validity_window: params.validity_window,
+            first_valid_round: params.first_valid_round,
+            last_valid_round: params.last_valid_round,
             app_id: params.app_id,
             approval_program: compiled.approval.compiled_base64_to_bytes,
             clear_state_program: compiled.clear.compiled_base64_to_bytes,
@@ -183,10 +199,17 @@ impl<'a> TransactionSender<'a> {
             .map_err(|e| TransactionSenderError::ValidationError { message: e })?;
 
         let delete_params = crate::transactions::AppDeleteMethodCallParams {
-            common_params: crate::transactions::common::CommonTransactionParams {
-                sender,
-                ..Default::default()
-            },
+            sender,
+            signer: params.signer,
+            rekey_to: params.rekey_to,
+            note: params.note,
+            lease: params.lease,
+            static_fee: params.static_fee,
+            extra_fee: params.extra_fee,
+            max_fee: params.max_fee,
+            validity_window: params.validity_window,
+            first_valid_round: params.first_valid_round,
+            last_valid_round: params.last_valid_round,
             app_id: params.app_id,
             method,
             args: params.args.unwrap_or_default(),
@@ -247,10 +270,17 @@ impl BareTransactionSender<'_> {
         });
 
         let create_params = crate::transactions::AppCreateParams {
-            common_params: crate::transactions::common::CommonTransactionParams {
-                sender,
-                ..Default::default()
-            },
+            sender,
+            signer: params.signer,
+            rekey_to: params.rekey_to,
+            note: params.note,
+            lease: params.lease,
+            static_fee: params.static_fee,
+            extra_fee: params.extra_fee,
+            max_fee: params.max_fee,
+            validity_window: params.validity_window,
+            first_valid_round: params.first_valid_round,
+            last_valid_round: params.last_valid_round,
             on_complete: params
                 .on_complete
                 .unwrap_or(algokit_transact::OnApplicationComplete::NoOp),
@@ -277,12 +307,14 @@ impl BareTransactionSender<'_> {
             })?;
 
         let app_client = AppClient::new(AppClientParams {
-            app_id: Some(result.app_id),
+            app_id: result.app_id,
             app_spec: self.factory.app_spec().clone(),
             algorand: self.factory.algorand().clone(),
             app_name: Some(self.factory.app_name().to_string()),
             default_sender: self.factory.default_sender.clone(),
-            source_maps: None,
+            default_signer: self.factory.default_signer.clone(),
+            source_maps: self.factory.current_source_maps(),
+            transaction_composer_config: self.factory.transaction_composer_config.clone(),
         });
 
         Ok((app_client, result))
@@ -309,10 +341,17 @@ impl BareTransactionSender<'_> {
             .map_err(|e| TransactionSenderError::ValidationError { message: e })?;
 
         let update_params = crate::transactions::AppUpdateParams {
-            common_params: crate::transactions::common::CommonTransactionParams {
-                sender,
-                ..Default::default()
-            },
+            sender,
+            signer: params.signer,
+            rekey_to: params.rekey_to,
+            note: params.note,
+            lease: params.lease,
+            static_fee: params.static_fee,
+            extra_fee: params.extra_fee,
+            max_fee: params.max_fee,
+            validity_window: params.validity_window,
+            first_valid_round: params.first_valid_round,
+            last_valid_round: params.last_valid_round,
             app_id: params.app_id,
             approval_program: compiled.approval.compiled_base64_to_bytes,
             clear_state_program: compiled.clear.compiled_base64_to_bytes,
@@ -345,10 +384,17 @@ impl BareTransactionSender<'_> {
             .map_err(|e| TransactionSenderError::ValidationError { message: e })?;
 
         let delete_params = crate::transactions::AppDeleteParams {
-            common_params: crate::transactions::common::CommonTransactionParams {
-                sender,
-                ..Default::default()
-            },
+            sender,
+            signer: params.signer,
+            rekey_to: params.rekey_to,
+            note: params.note,
+            lease: params.lease,
+            static_fee: params.static_fee,
+            extra_fee: params.extra_fee,
+            max_fee: params.max_fee,
+            validity_window: params.validity_window,
+            first_valid_round: params.first_valid_round,
+            last_valid_round: params.last_valid_round,
             app_id: params.app_id,
             args: params.args,
             account_references: params.account_references,

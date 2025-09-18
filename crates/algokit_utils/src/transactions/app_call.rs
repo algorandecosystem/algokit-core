@@ -15,7 +15,7 @@ use algokit_transact::{
 };
 use derive_more::Debug;
 use num_bigint::BigUint;
-use std::str::FromStr;
+use std::{str::FromStr, sync::Arc};
 
 #[derive(Debug, Clone)]
 pub enum AppMethodCallArg {
@@ -217,7 +217,7 @@ where
     /// A signer used to sign transaction(s); if not specified then
     /// an attempt will be made to find a registered signer for the
     ///  given `sender` or use a default signer (if configured).
-    pub signer: Option<std::sync::Arc<dyn TransactionSigner>>,
+    pub signer: Option<Arc<dyn TransactionSigner>>,
     /// The address of the account sending the transaction.
     pub sender: algokit_transact::Address,
     /// Change the signing key of the sender to the given address.
@@ -308,7 +308,7 @@ where
     /// A signer used to sign transaction(s); if not specified then
     /// an attempt will be made to find a registered signer for the
     ///  given `sender` or use a default signer (if configured).
-    pub signer: Option<std::sync::Arc<dyn TransactionSigner>>,
+    pub signer: Option<Arc<dyn TransactionSigner>>,
     /// The address of the account sending the transaction.
     pub sender: algokit_transact::Address,
     /// Change the signing key of the sender to the given address.
@@ -393,7 +393,7 @@ where
     /// A signer used to sign transaction(s); if not specified then
     /// an attempt will be made to find a registered signer for the
     ///  given `sender` or use a default signer (if configured).
-    pub signer: Option<std::sync::Arc<dyn TransactionSigner>>,
+    pub signer: Option<Arc<dyn TransactionSigner>>,
     /// The address of the account sending the transaction.
     pub sender: algokit_transact::Address,
     /// Change the signing key of the sender to the given address.
@@ -462,7 +462,7 @@ where
     /// A signer used to sign transaction(s); if not specified then
     /// an attempt will be made to find a registered signer for the
     ///  given `sender` or use a default signer (if configured).
-    pub signer: Option<std::sync::Arc<dyn TransactionSigner>>,
+    pub signer: Option<Arc<dyn TransactionSigner>>,
     /// The address of the account sending the transaction.
     pub sender: algokit_transact::Address,
     /// Change the signing key of the sender to the given address.

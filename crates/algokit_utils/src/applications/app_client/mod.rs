@@ -48,7 +48,7 @@ type BoxNameFilter = Box<dyn Fn(&BoxName) -> bool>;
 pub struct AppClient {
     app_id: u64,
     app_spec: Arc56Contract,
-    algorand: AlgorandClient,
+    algorand: Arc<AlgorandClient>,
     default_sender: Option<String>,
     default_signer: Option<Arc<dyn TransactionSigner>>,
     source_maps: Option<AppSourceMaps>,
@@ -77,7 +77,7 @@ impl AppClient {
     /// or the network's genesis hash present in the node's suggested params.
     pub async fn from_network(
         app_spec: Arc56Contract,
-        algorand: AlgorandClient,
+        algorand: Arc<AlgorandClient>,
         app_name: Option<String>,
         default_sender: Option<String>,
         default_signer: Option<Arc<dyn TransactionSigner>>,
@@ -124,7 +124,7 @@ impl AppClient {
         creator_address: &str,
         app_name: &str,
         app_spec: Arc56Contract,
-        algorand: AlgorandClient,
+        algorand: Arc<AlgorandClient>,
         default_sender: Option<String>,
         default_signer: Option<Arc<dyn TransactionSigner>>,
         source_maps: Option<AppSourceMaps>,
