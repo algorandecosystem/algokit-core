@@ -5,14 +5,15 @@ use super::{
     },
     asset_config::{AssetConfigParams, AssetCreateParams, AssetDestroyParams},
     asset_freeze::{AssetFreezeParams, AssetUnfreezeParams},
-    asset_transfer::{AssetOptInParams, AssetOptOutParams, AssetTransferParams},
-    composer::{Composer, ComposerError, SendParams},
-    key_registration::{OfflineKeyRegistrationParams, OnlineKeyRegistrationParams},
-    payment::{AccountCloseParams, PaymentParams},
-    sender_results::{
-        SendAppCallResult, SendAppCreateResult, SendAppUpdateResult, SendAssetCreateResult,
-        SendResult, TransactionResultError,
+    asset_transfer::{
+        AssetClawbackParams, AssetOptInParams, AssetOptOutParams, AssetTransferParams,
     },
+    composer::{Composer, ComposerError, SendParams},
+    key_registration::{
+        NonParticipationKeyRegistrationParams, OfflineKeyRegistrationParams,
+        OnlineKeyRegistrationParams,
+    },
+    payment::{AccountCloseParams, PaymentParams},
 };
 use crate::clients::asset_manager::{AssetManager, AssetManagerError};
 use crate::{clients::app_manager::AppManagerError, transactions::TransactionComposerConfig};
@@ -34,8 +35,6 @@ pub enum TransactionSenderError {
     AssetManagerError { source: AssetManagerError },
     #[snafu(display("App manager error: {source}"))]
     AppManagerError { source: AppManagerError },
-    #[snafu(display("Transaction result error: {source}"))]
-    TransactionResultError { source: TransactionResultError },
     #[snafu(display("Invalid parameters: {message}"))]
     InvalidParameters { message: String },
     #[snafu(display("Transaction validation error: {message}"))]
@@ -63,12 +62,6 @@ impl From<AssetManagerError> for TransactionSenderError {
 impl From<AppManagerError> for TransactionSenderError {
     fn from(e: AppManagerError) -> Self {
         Self::AppManagerError { source: e }
-    }
-}
-
-impl From<TransactionResultError> for TransactionSenderError {
-    fn from(e: TransactionResultError) -> Self {
-        Self::TransactionResultError { source: e }
     }
 }
 
@@ -221,8 +214,6 @@ impl TransactionSender {
         transform_result(base_result)
     }
 
-    // TODO: missing methods
-
     /// Send payment transaction to transfer Algo between accounts.
     pub async fn payment(
         &self,
@@ -249,14 +240,6 @@ impl TransactionSender {
         params: AssetTransferParams,
         send_params: Option<SendParams>,
     ) -> Result<SendResult, TransactionSenderError> {
-        // Enhanced parameter validation
-        if params.asset_id == 0 {
-            return Err(TransactionSenderError::InvalidParameters {
-                message: "Asset ID must be greater than 0".to_string(),
-            });
-        }
-        // Note: amount can be 0 for opt-in transactions, so we don't validate it here
-
         self.send_single_transaction(|composer| composer.add_asset_transfer(params), send_params)
             .await
     }
@@ -399,6 +382,16 @@ impl TransactionSender {
             .await
     }
 
+    /// Send asset clawback transaction.
+    pub async fn asset_clawback(
+        &self,
+        params: AssetClawbackParams,
+        send_params: Option<SendParams>,
+    ) -> Result<SendResult, TransactionSenderError> {
+        self.send_single_transaction(|composer| composer.add_asset_clawback(params), send_params)
+            .await
+    }
+
     pub async fn app_call(
         &self,
         params: AppCallParams,
@@ -439,7 +432,7 @@ impl TransactionSender {
         &self,
         params: AppUpdateParams,
         send_params: Option<SendParams>,
-    ) -> Result<SendAppUpdateResult, TransactionSenderError> {
+    ) -> Result<SendResult, TransactionSenderError> {
         self.send_single_transaction(|composer| composer.add_app_update(params), send_params)
             .await
     }
@@ -459,7 +452,7 @@ impl TransactionSender {
         &self,
         params: AppCallMethodCallParams,
         send_params: Option<SendParams>,
-    ) -> Result<SendAppCallResult, TransactionSenderError> {
+    ) -> Result<SendAppMethodCallResult, TransactionSenderError> {
         self.send_method_call(
             |composer| composer.add_app_call_method_call(params),
             send_params,
@@ -505,7 +498,7 @@ impl TransactionSender {
         &self,
         params: AppUpdateMethodCallParams,
         send_params: Option<SendParams>,
-    ) -> Result<SendAppUpdateResult, TransactionSenderError> {
+    ) -> Result<SendAppMethodCallResult, TransactionSenderError> {
         self.send_method_call(
             |composer| composer.add_app_update_method_call(params),
             send_params,
@@ -518,7 +511,7 @@ impl TransactionSender {
         &self,
         params: AppDeleteMethodCallParams,
         send_params: Option<SendParams>,
-    ) -> Result<SendAppCallResult, TransactionSenderError> {
+    ) -> Result<SendAppMethodCallResult, TransactionSenderError> {
         self.send_method_call(
             |composer| composer.add_app_delete_method_call(params),
             send_params,
@@ -547,6 +540,19 @@ impl TransactionSender {
     ) -> Result<SendResult, TransactionSenderError> {
         self.send_single_transaction(
             |composer| composer.add_offline_key_registration(params),
+            send_params,
+        )
+        .await
+    }
+
+    /// Send non-participation key registration transaction.
+    pub async fn non_participation_key_registration(
+        &self,
+        params: NonParticipationKeyRegistrationParams,
+        send_params: Option<SendParams>,
+    ) -> Result<SendResult, TransactionSenderError> {
+        self.send_single_transaction(
+            |composer| composer.add_non_participation_key_registration(params),
             send_params,
         )
         .await

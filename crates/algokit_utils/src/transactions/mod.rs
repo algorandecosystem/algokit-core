@@ -8,7 +8,6 @@ pub mod creator;
 pub mod key_registration;
 pub mod payment;
 pub mod sender;
-pub mod sender_results;
 
 // Re-export commonly used transaction types
 pub use app_call::{
@@ -33,7 +32,3 @@ pub use key_registration::{
 };
 pub use payment::{AccountCloseParams, PaymentParams};
 pub use sender::{TransactionSender, TransactionSenderError};
-pub use sender_results::{
-    SendAppCallResult, SendAppCreateResult, SendAppUpdateResult, SendAssetCreateResult,
-    SendResult, TransactionResultError,
-};
