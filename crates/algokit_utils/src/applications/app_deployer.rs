@@ -964,8 +964,8 @@ impl AppDeployer {
         let confirmed_round = create_confirmation.confirmed_round.unwrap();
 
         let app_metadata = AppMetadata {
-            app_id: app_id,
-            app_address: app_address,
+            app_id,
+            app_address,
             created_round: confirmed_round,
             updated_round: confirmed_round,
             created_metadata: metadata.clone(),

@@ -426,7 +426,7 @@ impl TransactionSender {
                     transaction: base_result.transaction,
                     confirmation: base_result.confirmation,
                     transaction_id: base_result.transaction_id,
-                    asset_id: asset_id,
+                    asset_id,
                 })
             },
             send_params,
@@ -569,7 +569,7 @@ impl TransactionSender {
                     transaction: base_result.transaction,
                     confirmation: base_result.confirmation,
                     transaction_id: base_result.transaction_id,
-                    app_id: app_id,
+                    app_id,
                     app_address: Address::from_app_id(&app_id),
                 })
             },
@@ -663,7 +663,7 @@ impl TransactionSender {
                     transaction_ids: base_result.transaction_ids,
                     abi_returns: base_result.abi_returns,
                     group: base_result.group,
-                    app_id: app_id,
+                    app_id,
                     app_address: Address::from_app_id(&app_id),
                 })
             },
