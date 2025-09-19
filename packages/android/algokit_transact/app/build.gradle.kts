@@ -51,8 +51,8 @@ android {
 }
 
 dependencies {
-    // implementation(project(":transact"))
-    implementation("com.example.transact:algo-transact-ffi:0.0.1")
+    implementation(project(":transact"))
+    // implementation("com.example.transact:algo-transact-ffi:0.0.1")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
