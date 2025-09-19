@@ -28,6 +28,10 @@ pub fn build(package: &Package) -> Result<()> {
 
     run(&cargo_build_cmd, None, None)?;
 
+    if kotlin_out_dir.exists() {
+        std::fs::remove_dir_all(&kotlin_out_dir)?;
+    }
+
     run(
         &format!(
             "cargo run -p uniffi-bindgen generate --library {} --language kotlin --out-dir {}",
