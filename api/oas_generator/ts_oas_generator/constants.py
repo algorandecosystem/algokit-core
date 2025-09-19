@@ -198,6 +198,10 @@ FORMAT_PARAM_NAME: Final[str] = "format"
 DEFAULT_TAG: Final[str] = "default"
 DEFAULT_API_TAG: Final[str] = "api"
 
+
+# Vendor extensions
+X_ALGOKIT_FIELD_RENAME: Final[str] = "x-algokit-field-rename"
+
 # Backup directory prefix
 BACKUP_DIR_PREFIX: Final[str] = "tsgen_bak_"
 

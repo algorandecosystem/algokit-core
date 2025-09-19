@@ -7,12 +7,12 @@ export type PendingTransactionResponse = {
   /**
    * The asset index if the transaction was found and it created an asset.
    */
-  assetIndex?: bigint;
+  assetId?: bigint;
 
   /**
    * The application index if the transaction was found and it created an application.
    */
-  applicationIndex?: bigint;
+  appId?: bigint;
 
   /**
    * Rewards in microalgos applied to the close remainder to account.

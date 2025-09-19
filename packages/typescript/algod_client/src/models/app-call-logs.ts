@@ -10,7 +10,7 @@ export type AppCallLogs = {
   /**
    * The application from which the logs were generated
    */
-  applicationIndex: bigint;
+  appId: bigint;
 
   /**
    * The transaction ID of the outer app call that lead to these logs

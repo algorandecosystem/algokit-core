@@ -9,7 +9,7 @@ from typing import Any
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from ts_oas_generator import constants
-from ts_oas_generator.generator.filters import FILTERS, ts_camel_case, ts_pascal_case, ts_type
+from ts_oas_generator.generator.filters import FILTERS, ts_camel_case, ts_kebab_case, ts_pascal_case, ts_type
 from ts_oas_generator.parser.oas_parser import OASParser
 
 # Type aliases for clarity
@@ -120,7 +120,6 @@ class TemplateRenderer:
         self.env = self._create_environment()
 
     def _create_environment(self) -> Environment:
-        """Create and configure Jinja2 environment."""
         env = Environment(
             loader=FileSystemLoader(str(self.template_dir)),
             autoescape=select_autoescape(["html", "xml"]),
@@ -131,12 +130,10 @@ class TemplateRenderer:
         return env
 
     def render(self, template_name: str, context: TemplateContext) -> str:
-        """Render a single template."""
         template = self.env.get_template(template_name)
         return template.render(**context)
 
     def render_batch(self, template_map: dict[Path, tuple[str, TemplateContext]]) -> FileMap:
-        """Render multiple templates."""
         return {path: self.render(template, context) for path, (template, context) in template_map.items()}
 
 
@@ -145,9 +142,10 @@ class SchemaProcessor:
 
     def __init__(self, renderer: TemplateRenderer) -> None:
         self.renderer = renderer
+        self._wire_to_canonical: dict[str, str] = {}
+        self._camel_to_wire: dict[str, str] = {}
 
     def generate_models(self, output_dir: Path, schemas: Schema) -> FileMap:
-        """Generate TypeScript model files from schemas."""
         models_dir = output_dir / constants.DirectoryName.SRC / constants.DirectoryName.MODELS
         files: FileMap = {}
 
@@ -155,15 +153,14 @@ class SchemaProcessor:
         for name, schema in schemas.items():
             context = self._create_model_context(name, schema, schemas)
             content = self.renderer.render(constants.MODEL_TEMPLATE, context)
-            files[models_dir / f"{name.lower()}{constants.MODEL_FILE_EXTENSION}"] = content
+            file_name = f"{ts_kebab_case(name)}{constants.MODEL_FILE_EXTENSION}"
+            files[models_dir / file_name] = content
 
-        # Generate comprehensive AlgokitSignedTransaction model
         # TODO(utils-ts): Delete this temporary model once utils-ts is part of the monorepo
         files[models_dir / f"algokitsignedtransaction{constants.MODEL_FILE_EXTENSION}"] = self.renderer.render(
             "models/algokitsignedtransaction.ts.j2", {}
         )
 
-        # Generate barrel export
         files[models_dir / constants.INDEX_FILE] = self.renderer.render(
             constants.MODELS_INDEX_TEMPLATE,
             {"schemas": schemas, "include_temp_signed_txn": True},
@@ -172,7 +169,6 @@ class SchemaProcessor:
         return files
 
     def _create_model_context(self, name: str, schema: Schema, all_schemas: Schema) -> TemplateContext:
-        """Create context for model template rendering."""
         is_object = self._is_object_schema(schema)
         properties = self._extract_properties(schema) if is_object else []
 
@@ -188,7 +184,6 @@ class SchemaProcessor:
 
     @staticmethod
     def _is_object_schema(schema: Schema) -> bool:
-        """Check if schema represents an object type."""
         is_type_object = schema.get(constants.SchemaKey.TYPE) == constants.TypeScriptType.OBJECT
         has_properties = constants.SchemaKey.PROPERTIES in schema
         has_composition = any(
@@ -196,13 +191,12 @@ class SchemaProcessor:
         )
         return (is_type_object or has_properties) and not has_composition
 
-    @staticmethod
-    def _extract_properties(schema: Schema) -> list[dict[str, Any]]:
-        """Extract properties from an object schema."""
+    def _extract_properties(self, schema: Schema) -> list[dict[str, Any]]:
         properties = []
         required_fields = set(schema.get(constants.SchemaKey.REQUIRED, []))
 
         for prop_name, prop_schema in (schema.get(constants.SchemaKey.PROPERTIES) or {}).items():
+            self._register_rename(prop_name, prop_schema)
             properties.append(
                 {
                     "name": prop_name,
@@ -212,6 +206,19 @@ class SchemaProcessor:
             )
 
         return properties
+
+    def _register_rename(self, wire_name: str, schema: dict[str, Any]) -> None:
+        rename_value = schema.get(constants.X_ALGOKIT_FIELD_RENAME)
+        if not isinstance(rename_value, str) or not rename_value:
+            return
+
+        # Preserve first occurrence to avoid accidental overrides from conflicting specs
+        self._wire_to_canonical.setdefault(wire_name, rename_value)
+        self._camel_to_wire.setdefault(ts_camel_case(rename_value), wire_name)
+
+    @property
+    def rename_mappings(self) -> tuple[dict[str, str], dict[str, str]]:
+        return self._wire_to_canonical, self._camel_to_wire
 
 
 class OperationProcessor:
@@ -609,6 +616,7 @@ class CodeGenerator:
         files.update(self.schema_processor.generate_models(output_dir, all_schemas))
         files.update(self.operation_processor.generate_service(output_dir, ops_by_tag, tags, service_class))
         files.update(self._generate_client_files(output_dir, client_class, service_class))
+        files.update(self._generate_rename_map(output_dir))
 
         return files
 
@@ -642,6 +650,7 @@ class CodeGenerator:
             core_dir / "json.ts": ("base/src/core/json.ts.j2", context),
             core_dir / "msgpack.ts": ("base/src/core/msgpack.ts.j2", context),
             core_dir / "casing.ts": ("base/src/core/casing.ts.j2", context),
+            core_dir / "codecs.ts": ("base/src/core/codecs.ts.j2", context),
             # Project files
             src_dir / "index.ts": ("base/src/index.ts.j2", context),
             output_dir / "package.json": ("base/package.json.j2", context),
@@ -668,6 +677,24 @@ class CodeGenerator:
         }
 
         return self.renderer.render_batch(template_map)
+
+    def _generate_rename_map(self, output_dir: Path) -> FileMap:
+        """Render rename map supporting vendor rename extensions."""
+        wire_to_canonical, camel_to_wire = self.schema_processor.rename_mappings
+
+        core_dir = output_dir / constants.DirectoryName.SRC / constants.DirectoryName.CORE
+        # TODO(utils-ts): leverage rename metadata when emitting DTO mappers so base64 fields can flow into Uint8Array by default.
+        return {
+            core_dir / "rename-map.ts": (
+                self.renderer.render(
+                    "base/src/core/rename-map.ts.j2",
+                    {
+                        "wire_to_canonical": wire_to_canonical,
+                        "camel_to_wire": camel_to_wire,
+                    },
+                )
+            )
+        }
 
     @staticmethod
     def _extract_class_names(package_name: str) -> tuple[str, str]:

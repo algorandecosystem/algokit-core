@@ -1,0 +1,15 @@
+/* Auto-generated rename hints derived from OpenAPI vendor extensions. */
+
+export const WIRE_TO_CANONICAL: Record<string, string> = {
+{% for wire, canonical in wire_to_canonical|dictsort %}
+  '{{ wire }}': '{{ canonical }}',
+{% endfor %}
+};
+
+export const CANONICAL_CAMEL_TO_WIRE: Record<string, string> = {
+{% for camel, wire in camel_to_wire|dictsort %}
+  '{{ camel }}': '{{ wire }}',
+{% endfor %}
+};
+
+export const HAS_RENAME_HINTS = Object.keys(WIRE_TO_CANONICAL).length > 0;

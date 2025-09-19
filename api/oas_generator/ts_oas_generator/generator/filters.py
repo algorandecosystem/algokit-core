@@ -59,6 +59,11 @@ def ts_camel_case(name: str) -> str:
     return pas[:1].lower() + pas[1:] if pas else pas
 
 
+def ts_kebab_case(name: str) -> str:
+    parts = _split_words(name)
+    return "-".join(p.lower() for p in parts)
+
+
 def ts_property_name(name: str) -> str:
     """Return a safe TS property name, quoting if necessary."""
     return name if _IDENTIFIER_RE.match(name) else f"'{name}'"
@@ -108,6 +113,7 @@ def _inline_object(schema: dict[str, Any], schemas: dict[str, Any] | None) -> st
     parts: list[str] = []
 
     for prop_name, prop_schema in properties.items():
+        canonical_name = prop_schema.get(constants.X_ALGOKIT_FIELD_RENAME) or prop_name
         # Add property description as doc comment
         description = prop_schema.get("description")
         if description:
@@ -117,7 +123,7 @@ def _inline_object(schema: dict[str, Any], schemas: dict[str, Any] | None) -> st
             parts.append(f"\n  {indented_doc}")
 
         # Generate camelCase TS property names for better DX
-        ts_name = ts_camel_case(prop_name)
+        ts_name = ts_camel_case(canonical_name)
         ts_t = ts_type(prop_schema, schemas)
         opt = "" if prop_name in required else "?"
         parts.append(f"{ts_name}{opt}: {ts_t};")
@@ -313,6 +319,7 @@ FILTERS: dict[str, Any] = {
     "ts_type": ts_type,
     "ts_pascal_case": ts_pascal_case,
     "ts_camel_case": ts_camel_case,
+    "ts_kebab_case": ts_kebab_case,
     "ts_property_name": ts_property_name,
     "has_msgpack_2xx": has_msgpack_2xx,
     "response_content_types": response_content_types,
