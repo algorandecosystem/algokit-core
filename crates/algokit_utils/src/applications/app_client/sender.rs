@@ -1,6 +1,6 @@
 use crate::transactions::SendResult;
 use crate::transactions::composer::SimulateParams;
-use crate::{AppClientError, SendAppCallResult, SendParams};
+use crate::{AppClientError, SendAppMethodCallResult, SendParams};
 use algokit_transact::{MAX_SIMULATE_OPCODE_BUDGET, OnApplicationComplete};
 
 use super::types::{AppClientBareCallParams, AppClientMethodCallParams, CompilationParams};
@@ -28,7 +28,7 @@ impl<'app_client> TransactionSender<'app_client> {
         params: AppClientMethodCallParams,
         on_complete: Option<OnApplicationComplete>,
         send_params: Option<SendParams>,
-    ) -> Result<SendAppCallResult, AppClientError> {
+    ) -> Result<SendAppMethodCallResult, AppClientError> {
         let arc56_method = self
             .client
             .app_spec
@@ -71,40 +71,22 @@ impl<'app_client> TransactionSender<'app_client> {
                 ..Default::default()
             };
 
-            let transactions_with_signers = composer
-                .build()
-                .await
-                .map_err(|e| AppClientError::ComposerError { source: e })?;
-            let transactions = transactions_with_signers
-                .iter()
-                .map(|tx_with_signer| tx_with_signer.transaction.clone())
-                .collect();
-
             let simulate_results = composer
                 .simulate(Some(simulate_params))
                 .await
                 .map_err(|e| AppClientError::ComposerError { source: e })?;
 
-            let group_id = simulate_results
-                .group
-                .map(hex::encode)
-                .unwrap_or_else(|| "".to_string());
-            let abi_returns = simulate_results.abi_returns;
-            let last_abi_return = abi_returns.last().cloned();
-
-            let send_transaction_result = SendResult::new(
-                group_id,
-                simulate_results.transaction_ids,
-                transactions,
-                simulate_results.confirmations,
-                Some(abi_returns),
-            )
-            .map_err(|e| AppClientError::TransactionResultError { source: e })?;
-
-            let send_app_call_result =
-                SendAppCallResult::new(send_transaction_result, last_abi_return);
-
-            Ok(send_app_call_result)
+            Ok(SendAppMethodCallResult {
+                transaction: simulate_results.transactions.last().unwrap().clone(),
+                confirmation: simulate_results.confirmations.last().unwrap().clone(),
+                transaction_id: simulate_results.transaction_ids.last().unwrap().clone(),
+                abi_return: simulate_results.abi_returns.last().unwrap().clone(),
+                transactions: simulate_results.transactions,
+                abi_returns: simulate_results.abi_returns,
+                confirmations: simulate_results.confirmations,
+                transaction_ids: simulate_results.transaction_ids,
+                group: simulate_results.group,
+            })
         } else {
             self.client
                 .algorand
@@ -120,7 +102,7 @@ impl<'app_client> TransactionSender<'app_client> {
         &self,
         params: AppClientMethodCallParams,
         send_params: Option<SendParams>,
-    ) -> Result<SendAppCallResult, AppClientError> {
+    ) -> Result<SendAppMethodCallResult, AppClientError> {
         let method_params = self.client.params().opt_in(params).await?;
 
         self.client
@@ -136,7 +118,7 @@ impl<'app_client> TransactionSender<'app_client> {
         &self,
         params: AppClientMethodCallParams,
         send_params: Option<SendParams>,
-    ) -> Result<SendAppCallResult, AppClientError> {
+    ) -> Result<SendAppMethodCallResult, AppClientError> {
         let method_params = self.client.params().close_out(params).await?;
 
         self.client
@@ -152,7 +134,7 @@ impl<'app_client> TransactionSender<'app_client> {
         &self,
         params: AppClientMethodCallParams,
         send_params: Option<SendParams>,
-    ) -> Result<SendAppCallResult, AppClientError> {
+    ) -> Result<SendAppMethodCallResult, AppClientError> {
         let delete_params = self.client.params().delete(params).await?;
 
         self.client
@@ -169,7 +151,7 @@ impl<'app_client> TransactionSender<'app_client> {
         params: AppClientMethodCallParams,
         compilation_params: Option<CompilationParams>,
         send_params: Option<SendParams>,
-    ) -> Result<crate::transactions::SendAppUpdateResult, AppClientError> {
+    ) -> Result<SendAppMethodCallResult, AppClientError> {
         let update_params = self
             .client
             .params()
@@ -284,7 +266,7 @@ impl BareTransactionSender<'_> {
         params: AppClientBareCallParams,
         compilation_params: Option<CompilationParams>,
         send_params: Option<SendParams>,
-    ) -> Result<crate::transactions::SendAppUpdateResult, AppClientError> {
+    ) -> Result<SendResult, AppClientError> {
         let update_params = self
             .client
             .params()

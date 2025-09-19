@@ -4,10 +4,6 @@ use crate::AppClientError;
 use crate::transactions::TransactionSenderError;
 use std::str::FromStr;
 
-fn contains_logic_error(s: &str) -> bool {
-    extract_logic_error_data(s).is_some()
-}
-
 /// Transform transaction errors to include enhanced logic error details when applicable.
 pub fn transform_transaction_error(
     client: &AppClient,
@@ -15,7 +11,7 @@ pub fn transform_transaction_error(
     is_clear_state_program: bool,
 ) -> AppClientError {
     let err_str = err.to_string();
-    if contains_logic_error(&err_str) {
+    if extract_logic_error_data(&err_str).is_some() {
         // Only transform errors that are for this app (when app_id is known)
         if client.app_id() != 0 {
             let app_tag = format!("app={}", client.app_id());
@@ -23,10 +19,7 @@ pub fn transform_transaction_error(
                 return AppClientError::TransactionSenderError { source: err };
             }
         }
-        let tx_err = crate::transactions::TransactionResultError::ParsingError {
-            message: err_str.clone(),
-        };
-        let logic = client.expose_logic_error(&tx_err, is_clear_state_program);
+        let logic = client.expose_logic_error(&err_str, is_clear_state_program);
         return AppClientError::LogicError {
             message: logic.message.clone(),
             logic: Box::new(logic),

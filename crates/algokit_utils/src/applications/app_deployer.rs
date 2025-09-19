@@ -881,7 +881,7 @@ impl AppDeployer {
         clear_state_program: &[u8],
         send_params: &SendParams,
     ) -> Result<AppDeployResult, AppDeployError> {
-        let result = match create_params {
+        let (app_id, app_address) = match create_params {
             CreateParams::AppCreateCall(params) => {
                 let app_create_params = AppCreateParams {
                     sender: params.sender.clone(),
@@ -907,10 +907,12 @@ impl AppDeployer {
                     asset_references: params.asset_references.clone(),
                     box_references: params.box_references.clone(),
                 };
-                self.transaction_sender
+                let app_create_result = self
+                    .transaction_sender
                     .app_create(app_create_params, Some(send_params.clone()))
                     .await
-                    .map_err(|e| AppDeployError::TransactionSenderError { source: e })?
+                    .map_err(|e| AppDeployError::TransactionSenderError { source: e })?;
+                Ok((app_create_result.app_id, app_create_result.app_address))
             }
             CreateParams::AppCreateMethodCall(params) => {
                 let app_create_method_params = AppCreateMethodCallParams {
@@ -938,10 +940,12 @@ impl AppDeployer {
                     asset_references: params.asset_references.clone(),
                     box_references: params.box_references.clone(),
                 };
-                self.transaction_sender
+                let app_create_result = self
+                    .transaction_sender
                     .app_create_method_call(app_create_method_params, Some(send_params.clone()))
                     .await
-                    .map_err(|e| AppDeployError::TransactionSenderError { source: e })?
+                    .map_err(|e| AppDeployError::TransactionSenderError { source: e })?;
+                Ok((app_create_result.app_id, app_create_result.app_address))
             }
         };
 
