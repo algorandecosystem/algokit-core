@@ -302,7 +302,7 @@ impl AppDeployer {
     /// * `indexer_client` - An optional `IndexerClient` for app metadata lookup
     pub fn new(
         app_manager: AppManager,
-        transaction_sender: TransactionSender, // TODO: do we need this?
+        transaction_sender: TransactionSender,
         indexer_client: Option<Arc<IndexerClient>>,
     ) -> Self {
         Self {
