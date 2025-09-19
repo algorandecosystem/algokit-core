@@ -86,8 +86,7 @@ async fn test_nested_structs_described_by_structure(
         )
         .await?;
 
-    let abi_ret = result.abi_return.expect("abi return");
-    let value = abi_ret.return_value.expect("decoded value");
+    let value = result.abi_return.return_value.expect("decoded value");
     match value {
         ABIValue::Struct(ref outer) => {
             let x = match outer.get("x").expect("x") {
@@ -191,8 +190,7 @@ async fn test_nested_structs_referenced_by_name(
         )
         .await?;
 
-    let abi_ret = result.abi_return.expect("abi return");
-    let value = abi_ret.return_value.expect("decoded value");
+    let value = result.abi_return.return_value.expect("decoded value");
     match value {
         ABIValue::Struct(ref outer) => {
             let x = match outer.get("x").expect("x") {

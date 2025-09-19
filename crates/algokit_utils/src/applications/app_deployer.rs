@@ -4,9 +4,8 @@ use crate::clients::app_manager::{
 use crate::transactions::{TransactionSender, TransactionSenderError};
 use crate::{
     AppCreateMethodCallParams, AppCreateParams, AppDeleteMethodCallParams, AppDeleteParams,
-    AppMethodCallArg, AppUpdateMethodCallParams, AppUpdateParams, ComposerError,
-    SendAppCreateMethodCallResult, SendAppCreateResult, SendParams, SendTransactionComposerResults,
-    create_transaction_params,
+    AppMethodCallArg, AppUpdateMethodCallParams, AppUpdateParams, ComposerError, SendParams,
+    SendTransactionComposerResults, create_transaction_params,
 };
 use algokit_transact::{Address, OnApplicationComplete};
 use base64::{Engine as _, engine::general_purpose};
@@ -303,7 +302,7 @@ impl AppDeployer {
     /// * `indexer_client` - An optional `IndexerClient` for app metadata lookup
     pub fn new(
         app_manager: AppManager,
-        transaction_sender: TransactionSender,
+        transaction_sender: TransactionSender, // TODO: do we need this?
         indexer_client: Option<Arc<IndexerClient>>,
     ) -> Self {
         Self {

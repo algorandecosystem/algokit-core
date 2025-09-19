@@ -35,7 +35,6 @@ async fn fixture(#[future] algorand_fixture: AlgorandFixtureResult) -> FixtureRe
             move |_params| new_composer.clone()
         },
         asset_manager,
-        app_manager.clone(),
     );
 
     let app_deployer = AppDeployer::new(
@@ -80,7 +79,7 @@ async fn test_created_app_is_retrieved_by_name_with_deployment_metadata(
     let result = transaction_sender.app_create(create_params, None).await?;
 
     algorand_fixture
-        .wait_for_indexer_transaction(&result.common_params.transaction_id)
+        .wait_for_indexer_transaction(&result.transaction_id)
         .await?;
 
     let apps = app_deployer
@@ -95,9 +94,7 @@ async fn test_created_app_is_retrieved_by_name_with_deployment_metadata(
     assert_eq!(app.app_address, result.app_address);
     assert_eq!(
         app.created_round,
-        result.common_params.confirmations[0]
-            .confirmed_round
-            .unwrap()
+        result.confirmation.confirmed_round.unwrap()
     );
     assert_eq!(app.created_metadata, creation_metadata);
     assert_eq!(app.updated_round, app.created_round);
@@ -145,7 +142,7 @@ async fn test_latest_created_app_is_retrieved(#[future] fixture: FixtureResult) 
     let result_3 = transaction_sender.app_create(create_params_3, None).await?;
 
     algorand_fixture
-        .wait_for_indexer_transaction(&result_3.common_params.transaction_id)
+        .wait_for_indexer_transaction(&result_3.transaction_id)
         .await?;
 
     let apps = app_deployer
@@ -265,17 +262,13 @@ async fn test_created_updated_and_deleted_apps_are_retrieved_by_name_with_deploy
     assert_eq!(app_1_data.app_address, result_1.app_address);
     assert_eq!(
         app_1_data.created_round,
-        result_1.common_params.confirmations[0]
-            .confirmed_round
-            .unwrap()
+        result_1.confirmation.confirmed_round.unwrap()
     );
     assert_eq!(app_1_data.created_metadata, creation_metadata);
     assert_ne!(app_1_data.created_round, app_1_data.updated_round);
     assert_eq!(
         app_1_data.updated_round,
-        update_result.common_params.confirmations[0]
-            .confirmed_round
-            .unwrap()
+        update_result.confirmation.confirmed_round.unwrap()
     );
     assert_eq!(app_1_data.name, update_metadata.name);
     assert_eq!(app_1_data.updatable, update_metadata.updatable);
