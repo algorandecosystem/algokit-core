@@ -31,4 +31,7 @@ pub use key_registration::{
     OnlineKeyRegistrationParams,
 };
 pub use payment::{AccountCloseParams, PaymentParams};
-pub use sender::{TransactionSender, TransactionSenderError};
+pub use sender::{
+    SendAppCreateMethodCallResult, SendAppCreateResult, SendAppMethodCallResult,
+    SendAssetCreateResult, SendResult, TransactionSender, TransactionSenderError,
+};

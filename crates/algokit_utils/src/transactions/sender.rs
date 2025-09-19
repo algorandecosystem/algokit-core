@@ -125,7 +125,6 @@ pub struct TransactionSender {
 }
 
 impl TransactionSender {
-    /// Create a new TransactionSender instance.
     pub fn new(
         new_group: impl Fn(Option<TransactionComposerConfig>) -> Composer + 'static,
         asset_manager: AssetManager,
@@ -214,7 +213,14 @@ impl TransactionSender {
         transform_result(base_result)
     }
 
-    /// Send payment transaction to transfer Algo between accounts.
+    /// Send a payment transaction to transfer Algo between accounts.
+    ///
+    /// # Arguments
+    /// * `params` - The parameters for the payment transaction
+    /// * `send_params` - Optional parameters for sending the transaction
+    ///
+    /// # Returns
+    /// The result of the payment transaction and the transaction that was sent
     pub async fn payment(
         &self,
         params: PaymentParams,
@@ -224,7 +230,16 @@ impl TransactionSender {
             .await
     }
 
-    /// Send account close transaction.
+    /// Close an account and transfer remaining balance to another account.
+    ///
+    /// **Warning:** Be careful this can lead to loss of funds if not used correctly.
+    ///
+    /// # Arguments
+    /// * `params` - The parameters for the account close transaction
+    /// * `send_params` - Optional parameters for sending the transaction
+    ///
+    /// # Returns
+    /// The result of the account close transaction and the transaction that was sent
     pub async fn account_close(
         &self,
         params: AccountCloseParams,
@@ -234,7 +249,14 @@ impl TransactionSender {
             .await
     }
 
-    /// Send asset transfer transaction.
+    /// Transfer an Algorand Standard Asset.
+    ///
+    /// # Arguments
+    /// * `params` - The parameters for the asset transfer transaction
+    /// * `send_params` - Optional parameters for sending the transaction
+    ///
+    /// # Returns
+    /// The result of the asset transfer transaction and the transaction that was sent
     pub async fn asset_transfer(
         &self,
         params: AssetTransferParams,
@@ -244,7 +266,14 @@ impl TransactionSender {
             .await
     }
 
-    /// Send asset opt-in transaction.
+    /// Opt an account into an Algorand Standard Asset.
+    ///
+    /// # Arguments
+    /// * `params` - The parameters for the asset opt-in transaction
+    /// * `send_params` - Optional parameters for sending the transaction
+    ///
+    /// # Returns
+    /// The result of the asset opt-in transaction and the transaction that was sent
     pub async fn asset_opt_in(
         &self,
         params: AssetOptInParams,
@@ -254,8 +283,20 @@ impl TransactionSender {
             .await
     }
 
-    /// Send asset opt-out transaction.
+    /// Opt an account out of an Algorand Standard Asset.
+    ///
+    /// **Note:** If the account has a balance of the asset,
+    /// it will not be able to opt-out unless `ensure_zero_balance`
+    /// is set to `false` (but then the account will lose the assets).
     /// When no close remainder to address is specified, the asset creator will be resolved and used.
+    ///
+    /// # Arguments
+    /// * `params` - The parameters for the asset opt-out transaction
+    /// * `send_params` - Optional parameters for sending the transaction
+    /// * `ensure_zero_balance` - Whether to ensure the account has zero balance before opting out
+    ///
+    /// # Returns
+    /// The result of the asset opt-out transaction and the transaction that was sent
     pub async fn asset_opt_out(
         &self,
         params: AssetOptOutParams,
@@ -321,6 +362,17 @@ impl TransactionSender {
             .await
     }
 
+    /// Create a new Algorand Standard Asset.
+    ///
+    /// The account that sends this transaction will automatically be
+    /// opted in to the asset and will hold all units after creation.
+    ///
+    /// # Arguments
+    /// * `params` - The parameters for the asset creation transaction
+    /// * `send_params` - Optional parameters for sending the transaction
+    ///
+    /// # Returns
+    /// The result of the asset create transaction and the transaction that was sent
     pub async fn asset_create(
         &self,
         params: AssetCreateParams,
@@ -346,6 +398,18 @@ impl TransactionSender {
         .await
     }
 
+    /// Configure an existing Algorand Standard Asset.
+    ///
+    /// **Note:** The manager, reserve, freeze, and clawback addresses
+    /// are immutably empty if they are not set. If manager is not set then
+    /// all fields are immutable from that point forward.
+    ///
+    /// # Arguments
+    /// * `params` - The parameters for the asset config transaction
+    /// * `send_params` - Optional parameters for sending the transaction
+    ///
+    /// # Returns
+    /// The result of the asset config transaction and the transaction that was sent
     pub async fn asset_config(
         &self,
         params: AssetConfigParams,
@@ -355,6 +419,18 @@ impl TransactionSender {
             .await
     }
 
+    /// Destroys an Algorand Standard Asset.
+    ///
+    /// Created assets can be destroyed only by the asset manager account.
+    /// All of the assets must be owned by the creator of the asset before
+    /// the asset can be deleted.
+    ///
+    /// # Arguments
+    /// * `params` - The parameters for the asset destroy transaction
+    /// * `send_params` - Optional parameters for sending the transaction
+    ///
+    /// # Returns
+    /// The result of the asset destroy transaction and the transaction that was sent
     pub async fn asset_destroy(
         &self,
         params: AssetDestroyParams,
@@ -364,6 +440,14 @@ impl TransactionSender {
             .await
     }
 
+    /// Freeze an Algorand Standard Asset for an account.
+    ///
+    /// # Arguments
+    /// * `params` - The parameters for the asset freeze transaction
+    /// * `send_params` - Optional parameters for sending the transaction
+    ///
+    /// # Returns
+    /// The result of the asset freeze transaction and the transaction that was sent
     pub async fn asset_freeze(
         &self,
         params: AssetFreezeParams,
@@ -373,6 +457,14 @@ impl TransactionSender {
             .await
     }
 
+    /// Unfreeze an Algorand Standard Asset for an account.
+    ///
+    /// # Arguments
+    /// * `params` - The parameters for the asset unfreeze transaction
+    /// * `send_params` - Optional parameters for sending the transaction
+    ///
+    /// # Returns
+    /// The result of the asset unfreeze transaction and the transaction that was sent
     pub async fn asset_unfreeze(
         &self,
         params: AssetUnfreezeParams,
@@ -382,7 +474,14 @@ impl TransactionSender {
             .await
     }
 
-    /// Send asset clawback transaction.
+    /// Clawback an Algorand Standard Asset from an account.
+    ///
+    /// # Arguments
+    /// * `params` - The parameters for the asset clawback transaction
+    /// * `send_params` - Optional parameters for sending the transaction
+    ///
+    /// # Returns
+    /// The result of the asset clawback transaction and the transaction that was sent
     pub async fn asset_clawback(
         &self,
         params: AssetClawbackParams,
@@ -392,6 +491,14 @@ impl TransactionSender {
             .await
     }
 
+    /// Call a smart contract.
+    ///
+    /// # Arguments
+    /// * `params` - The parameters for the app call transaction
+    /// * `send_params` - Optional parameters for sending the transaction
+    ///
+    /// # Returns
+    /// The result of the app call transaction and the transaction that was sent
     pub async fn app_call(
         &self,
         params: AppCallParams,
@@ -401,6 +508,14 @@ impl TransactionSender {
             .await
     }
 
+    /// Create a smart contract.
+    ///
+    /// # Arguments
+    /// * `params` - The parameters for the app creation transaction
+    /// * `send_params` - Optional parameters for sending the transaction
+    ///
+    /// # Returns
+    /// The result of the app create transaction and the transaction that was sent
     pub async fn app_create(
         &self,
         params: AppCreateParams,
@@ -427,7 +542,14 @@ impl TransactionSender {
         .await
     }
 
-    /// Send app update transaction.
+    /// Update a smart contract.
+    ///
+    /// # Arguments
+    /// * `params` - The parameters for the app update transaction
+    /// * `send_params` - Optional parameters for sending the transaction
+    ///
+    /// # Returns
+    /// The result of the app update transaction and the transaction that was sent
     pub async fn app_update(
         &self,
         params: AppUpdateParams,
@@ -437,7 +559,14 @@ impl TransactionSender {
             .await
     }
 
-    /// Send app delete transaction.
+    /// Delete a smart contract.
+    ///
+    /// # Arguments
+    /// * `params` - The parameters for the app deletion transaction
+    /// * `send_params` - Optional parameters for sending the transaction
+    ///
+    /// # Returns
+    /// The result of the app delete transaction and the transaction that was sent
     pub async fn app_delete(
         &self,
         params: AppDeleteParams,
@@ -447,7 +576,14 @@ impl TransactionSender {
             .await
     }
 
-    /// Send ABI method call transaction.
+    /// Call a smart contract via an ABI method.
+    ///
+    /// # Arguments
+    /// * `params` - The parameters for the app call transaction
+    /// * `send_params` - Optional parameters for sending the transaction
+    ///
+    /// # Returns
+    /// The result of the application ABI method call transaction and the transaction that was sent
     pub async fn app_call_method_call(
         &self,
         params: AppCallMethodCallParams,
@@ -460,7 +596,14 @@ impl TransactionSender {
         .await
     }
 
-    /// Send ABI method call for app creation.
+    /// Create a smart contract via an ABI method.
+    ///
+    /// # Arguments
+    /// * `params` - The parameters for the app creation transaction
+    /// * `send_params` - Optional parameters for sending the transaction
+    ///
+    /// # Returns
+    /// The result of the application ABI method create transaction and the transaction that was sent
     pub async fn app_create_method_call(
         &self,
         params: AppCreateMethodCallParams,
@@ -493,7 +636,14 @@ impl TransactionSender {
         .await
     }
 
-    /// Send ABI method call for app update.
+    /// Update a smart contract via an ABI method.
+    ///
+    /// # Arguments
+    /// * `params` - The parameters for the app update transaction
+    /// * `send_params` - Optional parameters for sending the transaction
+    ///
+    /// # Returns
+    /// The result of the application ABI method update transaction and the transaction that was sent
     pub async fn app_update_method_call(
         &self,
         params: AppUpdateMethodCallParams,
@@ -506,7 +656,14 @@ impl TransactionSender {
         .await
     }
 
-    /// Send ABI method call for app deletion.
+    /// Delete a smart contract via an ABI method.
+    ///
+    /// # Arguments
+    /// * `params` - The parameters for the app deletion transaction
+    /// * `send_params` - Optional parameters for sending the transaction
+    ///
+    /// # Returns
+    /// The result of the application ABI method delete transaction and the transaction that was sent
     pub async fn app_delete_method_call(
         &self,
         params: AppDeleteMethodCallParams,
@@ -519,7 +676,14 @@ impl TransactionSender {
         .await
     }
 
-    /// Send online key registration transaction.
+    /// Register an online key.
+    ///
+    /// # Arguments
+    /// * `params` - The parameters for the key registration transaction
+    /// * `send_params` - Optional parameters for sending the transaction
+    ///
+    /// # Returns
+    /// The result of the online key registration transaction and the transaction that was sent
     pub async fn online_key_registration(
         &self,
         params: OnlineKeyRegistrationParams,
@@ -532,7 +696,14 @@ impl TransactionSender {
         .await
     }
 
-    /// Send offline key registration transaction.
+    /// Register an offline key.
+    ///
+    /// # Arguments
+    /// * `params` - The parameters for the key registration transaction
+    /// * `send_params` - Optional parameters for sending the transaction
+    ///
+    /// # Returns
+    /// The result of the offline key registration transaction and the transaction that was sent
     pub async fn offline_key_registration(
         &self,
         params: OfflineKeyRegistrationParams,
@@ -545,7 +716,14 @@ impl TransactionSender {
         .await
     }
 
-    /// Send non-participation key registration transaction.
+    /// Register a non-participation key.
+    ///
+    /// # Arguments
+    /// * `params` - The parameters for the key registration transaction
+    /// * `send_params` - Optional parameters for sending the transaction
+    ///
+    /// # Returns
+    /// The result of the non-participation key registration transaction and the transaction that was sent
     pub async fn non_participation_key_registration(
         &self,
         params: NonParticipationKeyRegistrationParams,
