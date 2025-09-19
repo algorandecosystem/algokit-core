@@ -136,7 +136,8 @@ async fn from_creator_and_name_resolves_and_can_call(
         )
         .await?;
 
-    match &res.abi_return.return_value {
+    let abi_ret = res.abi_return.as_ref().expect("abi return");
+    match &abi_ret.return_value {
         Some(ABIValue::String(s)) => assert_eq!(s, "Hello, test"),
         _ => return Err("expected string return".into()),
     }

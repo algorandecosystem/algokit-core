@@ -77,10 +77,28 @@ impl<'app_client> TransactionSender<'app_client> {
                 .map_err(|e| AppClientError::ComposerError { source: e })?;
 
             Ok(SendAppMethodCallResult {
-                transaction: simulate_results.transactions.last().unwrap().clone(),
-                confirmation: simulate_results.confirmations.last().unwrap().clone(),
-                transaction_id: simulate_results.transaction_ids.last().unwrap().clone(),
-                abi_return: simulate_results.abi_returns.last().unwrap().clone(),
+                transaction: simulate_results
+                    .transactions
+                    .last()
+                    .ok_or(AppClientError::ValidationError {
+                        message: "No transaction returned".to_string(),
+                    })?
+                    .clone(),
+                confirmation: simulate_results
+                    .confirmations
+                    .last()
+                    .ok_or(AppClientError::ValidationError {
+                        message: "No confirmation returned".to_string(),
+                    })?
+                    .clone(),
+                transaction_id: simulate_results
+                    .transaction_ids
+                    .last()
+                    .ok_or(AppClientError::ValidationError {
+                        message: "No transaction Id returned".to_string(),
+                    })?
+                    .clone(),
+                abi_return: simulate_results.abi_returns.last().cloned(),
                 transactions: simulate_results.transactions,
                 abi_returns: simulate_results.abi_returns,
                 confirmations: simulate_results.confirmations,

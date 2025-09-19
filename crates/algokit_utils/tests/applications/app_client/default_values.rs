@@ -30,7 +30,7 @@ async fn test_default_value_from_literal(
         .await?;
     let defined_ret = defined
         .abi_return
-        .return_value
+        .and_then(|r| r.return_value)
         .expect("Expected ABI return value");
     match defined_ret {
         ABIValue::String(s) => assert_eq!(s, "defined value"),
@@ -52,7 +52,7 @@ async fn test_default_value_from_literal(
         .await?;
     let default_ret = defaulted
         .abi_return
-        .return_value
+        .and_then(|r| r.return_value)
         .expect("Expected ABI return value");
     match default_ret {
         ABIValue::String(s) => assert_eq!(s, "default value"),
@@ -86,7 +86,7 @@ async fn test_default_value_from_method(
         .await?;
     let defined_ret = defined
         .abi_return
-        .return_value
+        .and_then(|r| r.return_value)
         .expect("Expected ABI return value");
     match defined_ret {
         ABIValue::String(s) => assert_eq!(s, "ABI, defined value"),
@@ -108,7 +108,7 @@ async fn test_default_value_from_method(
         .await?;
     let default_ret = defaulted
         .abi_return
-        .return_value
+        .and_then(|r| r.return_value)
         .expect("Expected ABI return value");
     match default_ret {
         ABIValue::String(s) => assert_eq!(s, "ABI, default value"),
@@ -166,7 +166,7 @@ async fn test_default_value_from_global_state(
         .await?;
     let defined_ret = defined
         .abi_return
-        .return_value
+        .and_then(|r| r.return_value)
         .expect("Expected ABI return value");
     match defined_ret {
         ABIValue::Uint(v) => assert_eq!(v, BigUint::from(123u64)),
@@ -188,7 +188,7 @@ async fn test_default_value_from_global_state(
         .await?;
     let default_ret = defaulted
         .abi_return
-        .return_value
+        .and_then(|r| r.return_value)
         .expect("Expected ABI return value");
     match default_ret {
         ABIValue::Uint(v) => assert_eq!(v, BigUint::from(456u64)),
@@ -259,7 +259,7 @@ async fn test_default_value_from_local_state(
         .await?;
     let defined_ret = defined
         .abi_return
-        .return_value
+        .and_then(|r| r.return_value)
         .expect("Expected ABI return value");
     match defined_ret {
         ABIValue::String(s) => assert_eq!(s, "Local state, defined value"),
@@ -281,7 +281,7 @@ async fn test_default_value_from_local_state(
         .await?;
     let default_ret = defaulted
         .abi_return
-        .return_value
+        .and_then(|r| r.return_value)
         .expect("Expected ABI return value");
     match default_ret {
         ABIValue::String(s) => assert_eq!(s, "Local state, banana"),

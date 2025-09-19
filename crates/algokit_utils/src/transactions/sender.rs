@@ -94,7 +94,7 @@ pub struct SendAppMethodCallResult {
     pub transaction: Transaction,
     pub confirmation: PendingTransactionResponse,
     pub transaction_id: String,
-    pub abi_return: ABIReturn,
+    pub abi_return: Option<ABIReturn>,
     pub transactions: Vec<Transaction>,
     pub confirmations: Vec<PendingTransactionResponse>,
     pub transaction_ids: Vec<String>,
@@ -107,7 +107,7 @@ pub struct SendAppCreateMethodCallResult {
     pub transaction: Transaction,
     pub confirmation: PendingTransactionResponse,
     pub transaction_id: String,
-    pub abi_return: ABIReturn,
+    pub abi_return: Option<ABIReturn>,
     pub transactions: Vec<Transaction>,
     pub confirmations: Vec<PendingTransactionResponse>,
     pub transaction_ids: Vec<String>,
@@ -152,9 +152,27 @@ impl TransactionSender {
         let composer_results = composer.send(send_params).await?;
 
         Ok(SendResult {
-            transaction: composer_results.transactions.last().unwrap().clone(),
-            confirmation: composer_results.confirmations.last().unwrap().clone(),
-            transaction_id: composer_results.transaction_ids.last().unwrap().clone(),
+            transaction: composer_results
+                .transactions
+                .last()
+                .ok_or(TransactionSenderError::ValidationError {
+                    message: "No transaction returned".to_string(),
+                })?
+                .clone(),
+            confirmation: composer_results
+                .confirmations
+                .last()
+                .ok_or(TransactionSenderError::ValidationError {
+                    message: "No confirmation returned".to_string(),
+                })?
+                .clone(),
+            transaction_id: composer_results
+                .transaction_ids
+                .last()
+                .ok_or(TransactionSenderError::ValidationError {
+                    message: "No transaction Id returned".to_string(),
+                })?
+                .clone(),
         })
     }
 
@@ -187,10 +205,28 @@ impl TransactionSender {
         let composer_results = composer.send(send_params).await?;
 
         Ok(SendAppMethodCallResult {
-            transaction: composer_results.transactions.last().unwrap().clone(),
-            confirmation: composer_results.confirmations.last().unwrap().clone(),
-            transaction_id: composer_results.transaction_ids.last().unwrap().clone(),
-            abi_return: composer_results.abi_returns.last().unwrap().clone(),
+            transaction: composer_results
+                .transactions
+                .last()
+                .ok_or(TransactionSenderError::ValidationError {
+                    message: "No transaction returned".to_string(),
+                })?
+                .clone(),
+            confirmation: composer_results
+                .confirmations
+                .last()
+                .ok_or(TransactionSenderError::ValidationError {
+                    message: "No confirmation returned".to_string(),
+                })?
+                .clone(),
+            transaction_id: composer_results
+                .transaction_ids
+                .last()
+                .ok_or(TransactionSenderError::ValidationError {
+                    message: "No transaction Id returned".to_string(),
+                })?
+                .clone(),
+            abi_return: composer_results.abi_returns.last().cloned(),
             transactions: composer_results.transactions,
             abi_returns: composer_results.abi_returns,
             confirmations: composer_results.confirmations,
