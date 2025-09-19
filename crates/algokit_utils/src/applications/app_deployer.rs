@@ -4,8 +4,9 @@ use crate::clients::app_manager::{
 use crate::transactions::{TransactionSender, TransactionSenderError};
 use crate::{
     AppCreateMethodCallParams, AppCreateParams, AppDeleteMethodCallParams, AppDeleteParams,
-    AppMethodCallArg, AppUpdateMethodCallParams, AppUpdateParams, ComposerError, SendParams,
-    SendTransactionComposerResults, create_transaction_params,
+    AppMethodCallArg, AppUpdateMethodCallParams, AppUpdateParams, ComposerError,
+    SendAppCreateMethodCallResult, SendAppCreateResult, SendParams, SendTransactionComposerResults,
+    create_transaction_params,
 };
 use algokit_transact::{Address, OnApplicationComplete};
 use base64::{Engine as _, engine::general_purpose};
@@ -881,7 +882,9 @@ impl AppDeployer {
         clear_state_program: &[u8],
         send_params: &SendParams,
     ) -> Result<AppDeployResult, AppDeployError> {
-        let (app_id, app_address) = match create_params {
+        let mut composer = self.transaction_sender.new_group(None);
+
+        match create_params {
             CreateParams::AppCreateCall(params) => {
                 let app_create_params = AppCreateParams {
                     sender: params.sender.clone(),
@@ -907,12 +910,9 @@ impl AppDeployer {
                     asset_references: params.asset_references.clone(),
                     box_references: params.box_references.clone(),
                 };
-                let app_create_result = self
-                    .transaction_sender
-                    .app_create(app_create_params, Some(send_params.clone()))
-                    .await
-                    .map_err(|e| AppDeployError::TransactionSenderError { source: e })?;
-                Ok((app_create_result.app_id, app_create_result.app_address))
+                composer
+                    .add_app_create(app_create_params)
+                    .map_err(|e| AppDeployError::ComposerError { source: e })?;
             }
             CreateParams::AppCreateMethodCall(params) => {
                 let app_create_method_params = AppCreateMethodCallParams {
@@ -940,20 +940,33 @@ impl AppDeployer {
                     asset_references: params.asset_references.clone(),
                     box_references: params.box_references.clone(),
                 };
-                let app_create_result = self
-                    .transaction_sender
-                    .app_create_method_call(app_create_method_params, Some(send_params.clone()))
-                    .await
-                    .map_err(|e| AppDeployError::TransactionSenderError { source: e })?;
-                Ok((app_create_result.app_id, app_create_result.app_address))
+                composer
+                    .add_app_create_method_call(app_create_method_params)
+                    .map_err(|e| AppDeployError::ComposerError { source: e })?;
             }
         };
 
-        let confirmed_round = result.common_params.confirmation.confirmed_round.unwrap();
+        let composer_result = composer
+            .send(Some(send_params.clone()))
+            .await
+            .map_err(|e| AppDeployError::ComposerError { source: e })?;
+
+        let create_confirmation =
+            composer_result
+                .confirmations
+                .last()
+                .ok_or(AppDeployError::ComposerError {
+                    source: ComposerError::TransactionError {
+                        message: String::from("Could not get create confirmation"),
+                    },
+                })?;
+        let app_id = create_confirmation.app_id.unwrap();
+        let app_address = Address::from_app_id(&app_id);
+        let confirmed_round = create_confirmation.confirmed_round.unwrap();
 
         let app_metadata = AppMetadata {
-            app_id: result.app_id,
-            app_address: result.app_address,
+            app_id: app_id,
+            app_address: app_address,
             created_round: confirmed_round,
             updated_round: confirmed_round,
             created_metadata: metadata.clone(),
@@ -973,12 +986,7 @@ impl AppDeployer {
 
         Ok(AppDeployResult::Create {
             app: app_metadata,
-            result: SendTransactionComposerResults {
-                group: None,
-                transaction_ids: result.common_params.tx_ids.clone(),
-                confirmations: vec![result.common_params.confirmation.clone()],
-                abi_returns: result.abi_return.map_or(vec![], |r| vec![r]),
-            },
+            result: composer_result,
         })
     }
 
@@ -995,7 +1003,9 @@ impl AppDeployer {
             "Updating existing {} app to version {}.",
             metadata.name, metadata.version
         );
-        let result = match update_params {
+        let mut composer = self.transaction_sender.new_group(None);
+
+        match update_params {
             UpdateParams::AppUpdateCall(params) => {
                 let app_update_params = AppUpdateParams {
                     sender: params.sender.clone(),
@@ -1018,10 +1028,9 @@ impl AppDeployer {
                     asset_references: params.asset_references.clone(),
                     box_references: params.box_references.clone(),
                 };
-                self.transaction_sender
-                    .app_update(app_update_params, Some(send_params.clone()))
-                    .await
-                    .map_err(|e| AppDeployError::TransactionSenderError { source: e })?
+                composer
+                    .add_app_update(app_update_params)
+                    .map_err(|e| AppDeployError::ComposerError { source: e })?;
             }
             UpdateParams::AppUpdateMethodCall(params) => {
                 let app_update_method_params = AppUpdateMethodCallParams {
@@ -1046,18 +1055,32 @@ impl AppDeployer {
                     asset_references: params.asset_references.clone(),
                     box_references: params.box_references.clone(),
                 };
-                self.transaction_sender
-                    .app_update_method_call(app_update_method_params, Some(send_params.clone()))
-                    .await
-                    .map_err(|e| AppDeployError::TransactionSenderError { source: e })?
+                composer
+                    .add_app_update_method_call(app_update_method_params)
+                    .map_err(|e| AppDeployError::ComposerError { source: e })?;
             }
         };
+
+        let composer_result = composer
+            .send(Some(send_params.clone()))
+            .await
+            .map_err(|e| AppDeployError::ComposerError { source: e })?;
+
+        let update_confirmation =
+            composer_result
+                .confirmations
+                .last()
+                .ok_or(AppDeployError::ComposerError {
+                    source: ComposerError::TransactionError {
+                        message: String::from("Could not get create confirmation"),
+                    },
+                })?;
 
         let app_metadata = AppMetadata {
             app_id: existing_app_metadata.app_id,
             app_address: existing_app_metadata.app_address.clone(),
             created_round: existing_app_metadata.created_round,
-            updated_round: result.common_params.confirmation.confirmed_round.unwrap(),
+            updated_round: update_confirmation.confirmed_round.unwrap(),
             created_metadata: existing_app_metadata.created_metadata.clone(),
             deleted: false,
             name: metadata.name.clone(),
@@ -1075,12 +1098,7 @@ impl AppDeployer {
 
         Ok(AppDeployResult::Update {
             app: app_metadata,
-            result: SendTransactionComposerResults {
-                group: None,
-                transaction_ids: result.common_params.tx_ids.clone(),
-                confirmations: vec![result.common_params.confirmation.clone()],
-                abi_returns: result.abi_return.map_or(vec![], |r| vec![r]),
-            },
+            result: composer_result,
         })
     }
 
