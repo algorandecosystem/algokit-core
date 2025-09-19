@@ -25,8 +25,8 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val address = TransactApi()
-                        .createAddressFromString("YVRRLLVBX54N44WG4EZJWPXXA6RROAU5TLHB4XHCMZFVZBVCB6KSDWDSEQ")
-                    Greeting(address.address)
+                        .getPubKeyFromAddress("YVRRLLVBX54N44WG4EZJWPXXA6RROAU5TLHB4XHCMZFVZBVCB6KSDWDSEQ")
+                    Greeting(address.toString())
                 }
             }
         }
