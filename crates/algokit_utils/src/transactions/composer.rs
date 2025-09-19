@@ -1,4 +1,4 @@
-use crate::config::Config;
+use crate::config::{Config, EventData, EventType, TxnGroupSimulatedEventData};
 use crate::{
     genesis_id_is_localnet,
     transactions::{
@@ -2223,7 +2223,7 @@ impl Composer {
     ) -> Result<SendTransactionComposerResults, ComposerError> {
         self.gather_signatures().await?;
 
-        let (group, signed_transactions) = {
+        let (group, encoded_bytes, transaction_ids, last_valid_max) = {
             let stxns = self
                 .signed_group
                 .as_ref()
@@ -2231,7 +2231,35 @@ impl Composer {
                 .ok_or(ComposerError::StateError {
                     message: "No transactions available".to_string(),
                 })?;
-            (stxns[0].transaction.header().group, stxns)
+
+            let group = stxns[0].transaction.header().group;
+
+            // Encode each signed transaction and concatenate them
+            let mut encoded_bytes = Vec::new();
+            for signed_txn in stxns {
+                let encoded_txn =
+                    signed_txn
+                        .encode()
+                        .map_err(|e| ComposerError::TransactionError {
+                            message: format!("Failed to encode signed transaction: {}", e),
+                        })?;
+                encoded_bytes.extend_from_slice(&encoded_txn);
+            }
+
+            let transaction_ids: Vec<String> = stxns
+                .iter()
+                .map(|txn| txn.id())
+                .collect::<Result<Vec<String>, _>>()?;
+
+            let last_valid_max = stxns
+                .iter()
+                .map(|signed_transaction| signed_transaction.transaction.header().last_valid)
+                .max()
+                .ok_or(ComposerError::StateError {
+                    message: "Failed to calculate last valid round".to_string(),
+                })?;
+
+            (group, encoded_bytes, transaction_ids, last_valid_max)
         };
 
         let wait_rounds = if let Some(max_rounds_to_wait_for_confirmation) =
@@ -2241,30 +2269,42 @@ impl Composer {
         } else {
             let suggested_params = self.get_suggested_params().await?;
             let first_round: u64 = suggested_params.last_round; // The last round seen, so is the first round valid
-            let last_round: u64 = signed_transactions
-                .iter()
-                .map(|signed_transaction| signed_transaction.transaction.header().last_valid)
-                .max()
-                .ok_or(ComposerError::StateError {
-                    message: "Failed to calculate last valid round".to_string(),
-                })?;
-            ((last_round - first_round) + 1).try_into().map_err(|e| {
-                ComposerError::TransactionError {
+            ((last_valid_max - first_round) + 1)
+                .try_into()
+                .map_err(|e| ComposerError::TransactionError {
                     message: format!("Failed to calculate rounds to wait: {}", e),
-                }
-            })?
+                })?
         };
 
-        // Encode each signed transaction and concatenate them
-        let mut encoded_bytes = Vec::new();
+        // If debugging with full tracing enabled, emit a simulate event before submission for AVM debugging
+        if Config::debug() && Config::trace_all() {
+            let simulate_params = SimulateParams {
+                allow_more_logging: Some(true),
+                allow_empty_signatures: Some(true),
+                allow_unnamed_resources: Some(true),
+                extra_opcode_budget: None,
+                exec_trace_config: Some(algod_client::models::SimulateTraceConfig {
+                    enable: Some(true),
+                    stack_change: Some(true),
+                    scratch_change: Some(true),
+                    state_change: Some(true),
+                }),
+                simulation_round: None,
+                skip_signatures: true,
+            };
 
-        for signed_txn in signed_transactions {
-            let encoded_txn = signed_txn
-                .encode()
-                .map_err(|e| ComposerError::TransactionError {
-                    message: format!("Failed to encode signed transaction: {}", e),
-                })?;
-            encoded_bytes.extend_from_slice(&encoded_txn);
+            if let Ok(simulated) = self.simulate(Some(simulate_params)).await {
+                let payload = serde_json::to_value(&simulated.simulate_response)
+                    .unwrap_or_else(|_| serde_json::json!({}));
+                Config::events()
+                    .emit(
+                        EventType::TxnGroupSimulated,
+                        EventData::TxnGroupSimulated(TxnGroupSimulatedEventData {
+                            simulate_response: payload,
+                        }),
+                    )
+                    .await;
+            }
         }
 
         let _ = self
@@ -2274,11 +2314,6 @@ impl Composer {
             .map_err(|e| ComposerError::TransactionError {
                 message: format!("Failed to submit transaction(s): {:?}", e),
             })?;
-
-        let transaction_ids: Vec<String> = signed_transactions
-            .iter()
-            .map(|txn| txn.id())
-            .collect::<Result<Vec<String>, _>>()?;
 
         let mut confirmations = Vec::new();
         for id in &transaction_ids {
@@ -2372,6 +2407,18 @@ impl Composer {
                         .join(", ")
                 })
                 .unwrap_or_else(|| "unknown".to_string());
+            if Config::debug() {
+                let payload = serde_json::to_value(&simulate_response)
+                    .unwrap_or_else(|_| serde_json::json!({}));
+                Config::events()
+                    .emit(
+                        EventType::TxnGroupSimulated,
+                        EventData::TxnGroupSimulated(TxnGroupSimulatedEventData {
+                            simulate_response: payload,
+                        }),
+                    )
+                    .await;
+            }
             return Err(ComposerError::TransactionError {
                 message: format!(
                     "Transaction failed at transaction(s) {} in the group. {}",
@@ -2388,6 +2435,19 @@ impl Composer {
             .collect();
 
         let abi_returns = self.parse_abi_return_values(&confirmations);
+
+        if Config::debug() && Config::trace_all() {
+            let payload =
+                serde_json::to_value(&simulate_response).unwrap_or_else(|_| serde_json::json!({}));
+            Config::events()
+                .emit(
+                    EventType::TxnGroupSimulated,
+                    EventData::TxnGroupSimulated(TxnGroupSimulatedEventData {
+                        simulate_response: payload,
+                    }),
+                )
+                .await;
+        }
 
         Ok(SimulateComposerResults {
             group,

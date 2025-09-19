@@ -1,18 +1,33 @@
 use super::AppFactory;
+use super::utils::{
+    build_bare_create_params, build_bare_delete_params, build_bare_update_params,
+    build_create_method_call_params, build_delete_method_call_params,
+    build_update_method_call_params, merge_args_with_defaults, prepare_compiled_method,
+    transform_transaction_error_for_factory,
+};
+use crate::SendTransactionResult;
 use crate::applications::app_client::CompilationParams;
 use crate::applications::app_client::{AppClient, AppClientParams};
-use crate::transactions::{SendAppCreateResult, SendParams, TransactionSenderError};
+use crate::applications::app_factory::params_builder::to_abi_method;
+use crate::applications::app_factory::{
+    AppFactoryCreateMethodCallParams, AppFactoryCreateMethodCallResult, AppFactoryCreateParams,
+    AppFactoryDeleteMethodCallParams, AppFactoryDeleteParams, AppFactoryMethodCallResult,
+    AppFactoryUpdateMethodCallParams, AppFactoryUpdateParams,
+};
+use crate::transactions::{
+    SendAppCallResult, SendAppCreateResult, SendAppUpdateResult, SendParams, TransactionSenderError,
+};
 
-pub struct TransactionSender<'a> {
-    pub(crate) factory: &'a AppFactory,
+pub struct TransactionSender<'app_factory> {
+    pub(crate) factory: &'app_factory AppFactory,
 }
 
-pub struct BareTransactionSender<'a> {
-    pub(crate) factory: &'a AppFactory,
+pub struct BareTransactionSender<'app_factory> {
+    pub(crate) factory: &'app_factory AppFactory,
 }
 
-impl<'a> TransactionSender<'a> {
-    pub fn bare(&self) -> BareTransactionSender<'a> {
+impl<'app_factory> TransactionSender<'app_factory> {
+    pub fn bare(&self) -> BareTransactionSender<'app_factory> {
         BareTransactionSender {
             factory: self.factory,
         }
@@ -21,94 +36,56 @@ impl<'a> TransactionSender<'a> {
     /// Send an app creation via method call and return (AppClient, SendAppCreateResult)
     pub async fn create(
         &self,
-        params: super::types::AppFactoryCreateMethodCallParams,
+        params: AppFactoryCreateMethodCallParams,
         send_params: Option<SendParams>,
         compilation_params: Option<CompilationParams>,
-    ) -> Result<(AppClient, SendAppCreateResult), TransactionSenderError> {
-        // Compile using centralized helper (with override params)
-        let compiled = self
-            .factory
-            .compile_programs_with(compilation_params)
-            .await
+    ) -> Result<(AppClient, AppFactoryCreateMethodCallResult), TransactionSenderError> {
+        // Merge user args with ARC-56 literal defaults
+        let merged_args = merge_args_with_defaults(self.factory, &params.method, &params.args)
             .map_err(|e| TransactionSenderError::ValidationError {
                 message: e.to_string(),
             })?;
 
-        // Merge user args with ARC-56 literal defaults
-        let merged_args = super::utils::merge_create_args_with_defaults(
+        // Prepare compiled programs, method and sender in one step
+        let (compiled, method, sender) = prepare_compiled_method(
             self.factory,
             &params.method,
-            &params.args,
+            compilation_params,
+            &params.sender,
         )
+        .await
         .map_err(|e| TransactionSenderError::ValidationError {
             message: e.to_string(),
         })?;
 
-        // Resolve ABI method
-        let method = super::params_builder::to_abi_method(self.factory.app_spec(), &params.method)
-            .map_err(|e| TransactionSenderError::ValidationError {
-                message: e.to_string(),
-            })?;
+        // Resolve schema defaults via helper only when needed by builder
 
-        // Resolve sender
-        let sender = self
-            .factory
-            .get_sender_address(&params.sender)
-            .map_err(|e| TransactionSenderError::ValidationError { message: e })?;
+        // Avoid moving compiled bytes we still need later
+        let approval_bytes = compiled.approval.compiled_base64_to_bytes.clone();
+        let clear_bytes = compiled.clear.compiled_base64_to_bytes.clone();
 
-        // Default schemas from spec when not provided
-        let global_schema = params.global_state_schema.or_else(|| {
-            let s = &self.factory.app_spec().state.schema.global_state;
-            Some(algokit_transact::StateSchema {
-                num_uints: s.ints,
-                num_byte_slices: s.bytes,
-            })
-        });
-        let local_schema = params.local_state_schema.or_else(|| {
-            let s = &self.factory.app_spec().state.schema.local_state;
-            Some(algokit_transact::StateSchema {
-                num_uints: s.ints,
-                num_byte_slices: s.bytes,
-            })
-        });
-
-        let create_params = crate::transactions::AppCreateMethodCallParams {
+        let create_params = build_create_method_call_params(
+            self.factory,
             sender,
-            signer: params.signer,
-            rekey_to: params.rekey_to,
-            note: params.note,
-            lease: params.lease,
-            static_fee: params.static_fee,
-            extra_fee: params.extra_fee,
-            max_fee: params.max_fee,
-            validity_window: params.validity_window,
-            first_valid_round: params.first_valid_round,
-            last_valid_round: params.last_valid_round,
-            on_complete: params
-                .on_complete
-                .unwrap_or(algokit_transact::OnApplicationComplete::NoOp),
-            approval_program: compiled.approval.compiled_base64_to_bytes,
-            clear_state_program: compiled.clear.compiled_base64_to_bytes,
+            &params,
             method,
-            args: merged_args,
-            account_references: params.account_references,
-            app_references: params.app_references,
-            asset_references: params.asset_references,
-            box_references: params.box_references,
-            global_state_schema: global_schema,
-            local_state_schema: local_schema,
-            extra_program_pages: params.extra_program_pages,
-        };
+            merged_args,
+            approval_bytes.clone(),
+            clear_bytes.clone(),
+        );
 
-        let result = self
+        let mut result = self
             .factory
             .algorand()
             .send()
             .app_create_method_call(create_params, send_params)
             .await
-            .map_err(|e| {
-                super::utils::transform_transaction_error_for_factory(self.factory, e, false)
-            })?;
+            .map_err(|e| transform_transaction_error_for_factory(self.factory, e, false))?;
+
+        result.compiled_approval = Some(approval_bytes);
+        result.compiled_clear = Some(clear_bytes);
+        result.approval_source_map = compiled.approval.source_map.clone();
+        result.clear_source_map = compiled.clear.source_map.clone();
 
         let app_client = AppClient::new(AppClientParams {
             app_id: result.app_id,
@@ -121,112 +98,98 @@ impl<'a> TransactionSender<'a> {
             transaction_composer_config: self.factory.transaction_composer_config.clone(),
         });
 
-        Ok((app_client, result))
+        // Extract ABI return value as ABIValue (if present and decodable)
+        let arc56_return = self
+            .factory
+            .parse_method_return_value(&result.abi_return)
+            .map_err(|e| TransactionSenderError::ValidationError {
+                message: e.to_string(),
+            })?;
+
+        Ok((
+            app_client,
+            AppFactoryMethodCallResult::new(result, arc56_return),
+        ))
     }
 
     /// Send an app update via method call
     pub async fn update(
         &self,
-        params: super::types::AppFactoryUpdateMethodCallParams,
+        params: AppFactoryUpdateMethodCallParams,
         send_params: Option<SendParams>,
         compilation_params: Option<CompilationParams>,
-    ) -> Result<crate::transactions::SendAppUpdateResult, TransactionSenderError> {
-        let compiled = self
-            .factory
-            .compile_programs_with(compilation_params)
-            .await
-            .map_err(|e| TransactionSenderError::ValidationError {
-                message: e.to_string(),
-            })?;
+    ) -> Result<SendAppUpdateResult, TransactionSenderError> {
+        let (compiled, method, sender) = prepare_compiled_method(
+            self.factory,
+            &params.method,
+            compilation_params,
+            &params.sender,
+        )
+        .await
+        .map_err(|e| TransactionSenderError::ValidationError {
+            message: e.to_string(),
+        })?;
 
-        let method = super::params_builder::to_abi_method(self.factory.app_spec(), &params.method)
-            .map_err(|e| TransactionSenderError::ValidationError {
-                message: e.to_string(),
-            })?;
+        let approval_bytes = compiled.approval.compiled_base64_to_bytes.clone();
+        let clear_bytes = compiled.clear.compiled_base64_to_bytes.clone();
 
-        let sender = self
-            .factory
-            .get_sender_address(&params.sender)
-            .map_err(|e| TransactionSenderError::ValidationError { message: e })?;
-
-        let update_params = crate::transactions::AppUpdateMethodCallParams {
+        let update_params = build_update_method_call_params(
+            self.factory,
             sender,
-            signer: params.signer,
-            rekey_to: params.rekey_to,
-            note: params.note,
-            lease: params.lease,
-            static_fee: params.static_fee,
-            extra_fee: params.extra_fee,
-            max_fee: params.max_fee,
-            validity_window: params.validity_window,
-            first_valid_round: params.first_valid_round,
-            last_valid_round: params.last_valid_round,
-            app_id: params.app_id,
-            approval_program: compiled.approval.compiled_base64_to_bytes,
-            clear_state_program: compiled.clear.compiled_base64_to_bytes,
+            &params,
             method,
-            args: params.args.unwrap_or_default(),
-            account_references: params.account_references,
-            app_references: params.app_references,
-            asset_references: params.asset_references,
-            box_references: params.box_references,
-        };
+            params.args.clone().unwrap_or_default(),
+            approval_bytes.clone(),
+            clear_bytes.clone(),
+        );
 
-        self.factory
+        let mut result = self
+            .factory
             .algorand()
             .send()
             .app_update_method_call(update_params, send_params)
             .await
-            .map_err(|e| {
-                super::utils::transform_transaction_error_for_factory(self.factory, e, false)
-            })
+            .map_err(|e| transform_transaction_error_for_factory(self.factory, e, false))?;
+
+        result.compiled_approval = Some(approval_bytes);
+        result.compiled_clear = Some(clear_bytes);
+        result.approval_source_map = compiled.approval.source_map.clone();
+        result.clear_source_map = compiled.clear.source_map.clone();
+
+        Ok(result)
     }
 
     /// Send an app delete via method call
     pub async fn delete(
         &self,
-        params: super::types::AppFactoryDeleteMethodCallParams,
+        params: AppFactoryDeleteMethodCallParams,
         send_params: Option<SendParams>,
-    ) -> Result<crate::transactions::SendAppCallResult, TransactionSenderError> {
-        let method = super::params_builder::to_abi_method(self.factory.app_spec(), &params.method)
-            .map_err(|e| TransactionSenderError::ValidationError {
+    ) -> Result<SendAppCallResult, TransactionSenderError> {
+        let method = to_abi_method(self.factory.app_spec(), &params.method).map_err(|e| {
+            TransactionSenderError::ValidationError {
                 message: e.to_string(),
-            })?;
+            }
+        })?;
 
         let sender = self
             .factory
             .get_sender_address(&params.sender)
             .map_err(|e| TransactionSenderError::ValidationError { message: e })?;
 
-        let delete_params = crate::transactions::AppDeleteMethodCallParams {
+        let delete_params = build_delete_method_call_params(
+            self.factory,
             sender,
-            signer: params.signer,
-            rekey_to: params.rekey_to,
-            note: params.note,
-            lease: params.lease,
-            static_fee: params.static_fee,
-            extra_fee: params.extra_fee,
-            max_fee: params.max_fee,
-            validity_window: params.validity_window,
-            first_valid_round: params.first_valid_round,
-            last_valid_round: params.last_valid_round,
-            app_id: params.app_id,
+            &params,
             method,
-            args: params.args.unwrap_or_default(),
-            account_references: params.account_references,
-            app_references: params.app_references,
-            asset_references: params.asset_references,
-            box_references: params.box_references,
-        };
+            params.args.clone().unwrap_or_default(),
+        );
 
         self.factory
             .algorand()
             .send()
             .app_delete_method_call(delete_params, send_params)
             .await
-            .map_err(|e| {
-                super::utils::transform_transaction_error_for_factory(self.factory, e, true)
-            })
+            .map_err(|e| transform_transaction_error_for_factory(self.factory, e, true))
     }
 }
 
@@ -234,7 +197,7 @@ impl BareTransactionSender<'_> {
     /// Send a bare app creation and return (AppClient, SendAppCreateResult)
     pub async fn create(
         &self,
-        params: Option<super::types::AppFactoryCreateParams>,
+        params: Option<AppFactoryCreateParams>,
         send_params: Option<SendParams>,
         compilation_params: Option<CompilationParams>,
     ) -> Result<(AppClient, SendAppCreateResult), TransactionSenderError> {
@@ -254,57 +217,28 @@ impl BareTransactionSender<'_> {
             .get_sender_address(&params.sender)
             .map_err(|e| TransactionSenderError::ValidationError { message: e })?;
 
-        let global_schema = params.global_state_schema.or_else(|| {
-            let s = &self.factory.app_spec().state.schema.global_state;
-            Some(algokit_transact::StateSchema {
-                num_uints: s.ints,
-                num_byte_slices: s.bytes,
-            })
-        });
-        let local_schema = params.local_state_schema.or_else(|| {
-            let s = &self.factory.app_spec().state.schema.local_state;
-            Some(algokit_transact::StateSchema {
-                num_uints: s.ints,
-                num_byte_slices: s.bytes,
-            })
-        });
+        // Schema defaults handled in builder
 
-        let create_params = crate::transactions::AppCreateParams {
+        let create_params = build_bare_create_params(
+            self.factory,
             sender,
-            signer: params.signer,
-            rekey_to: params.rekey_to,
-            note: params.note,
-            lease: params.lease,
-            static_fee: params.static_fee,
-            extra_fee: params.extra_fee,
-            max_fee: params.max_fee,
-            validity_window: params.validity_window,
-            first_valid_round: params.first_valid_round,
-            last_valid_round: params.last_valid_round,
-            on_complete: params
-                .on_complete
-                .unwrap_or(algokit_transact::OnApplicationComplete::NoOp),
-            approval_program: compiled.approval.compiled_base64_to_bytes,
-            clear_state_program: compiled.clear.compiled_base64_to_bytes,
-            args: params.args,
-            account_references: params.account_references,
-            app_references: params.app_references,
-            asset_references: params.asset_references,
-            box_references: params.box_references,
-            global_state_schema: global_schema,
-            local_state_schema: local_schema,
-            extra_program_pages: params.extra_program_pages,
-        };
+            &params,
+            compiled.approval.compiled_base64_to_bytes.clone(),
+            compiled.clear.compiled_base64_to_bytes.clone(),
+        );
 
-        let result = self
+        let mut result = self
             .factory
             .algorand()
             .send()
             .app_create(create_params, send_params)
             .await
-            .map_err(|e| {
-                super::utils::transform_transaction_error_for_factory(self.factory, e, false)
-            })?;
+            .map_err(|e| transform_transaction_error_for_factory(self.factory, e, false))?;
+
+        result.compiled_approval = Some(compiled.approval.compiled_base64_to_bytes.clone());
+        result.compiled_clear = Some(compiled.clear.compiled_base64_to_bytes.clone());
+        result.approval_source_map = compiled.approval.source_map.clone();
+        result.clear_source_map = compiled.clear.source_map.clone();
 
         let app_client = AppClient::new(AppClientParams {
             app_id: result.app_id,
@@ -323,10 +257,10 @@ impl BareTransactionSender<'_> {
     /// Send an app update (bare)
     pub async fn update(
         &self,
-        params: super::types::AppFactoryUpdateParams,
+        params: AppFactoryUpdateParams,
         send_params: Option<SendParams>,
         compilation_params: Option<CompilationParams>,
-    ) -> Result<crate::transactions::SendAppUpdateResult, TransactionSenderError> {
+    ) -> Result<SendAppUpdateResult, TransactionSenderError> {
         let compiled = self
             .factory
             .compile_programs_with(compilation_params)
@@ -340,76 +274,40 @@ impl BareTransactionSender<'_> {
             .get_sender_address(&params.sender)
             .map_err(|e| TransactionSenderError::ValidationError { message: e })?;
 
-        let update_params = crate::transactions::AppUpdateParams {
+        let update_params = build_bare_update_params(
+            self.factory,
             sender,
-            signer: params.signer,
-            rekey_to: params.rekey_to,
-            note: params.note,
-            lease: params.lease,
-            static_fee: params.static_fee,
-            extra_fee: params.extra_fee,
-            max_fee: params.max_fee,
-            validity_window: params.validity_window,
-            first_valid_round: params.first_valid_round,
-            last_valid_round: params.last_valid_round,
-            app_id: params.app_id,
-            approval_program: compiled.approval.compiled_base64_to_bytes,
-            clear_state_program: compiled.clear.compiled_base64_to_bytes,
-            args: params.args,
-            account_references: params.account_references,
-            app_references: params.app_references,
-            asset_references: params.asset_references,
-            box_references: params.box_references,
-        };
+            &params,
+            compiled.approval.compiled_base64_to_bytes,
+            compiled.clear.compiled_base64_to_bytes,
+        );
 
         self.factory
             .algorand()
             .send()
             .app_update(update_params, send_params)
             .await
-            .map_err(|e| {
-                super::utils::transform_transaction_error_for_factory(self.factory, e, false)
-            })
+            .map_err(|e| transform_transaction_error_for_factory(self.factory, e, false))
     }
 
     /// Send an app delete (bare)
     pub async fn delete(
         &self,
-        params: super::types::AppFactoryDeleteParams,
+        params: AppFactoryDeleteParams,
         send_params: Option<SendParams>,
-    ) -> Result<crate::transactions::SendTransactionResult, TransactionSenderError> {
+    ) -> Result<SendTransactionResult, TransactionSenderError> {
         let sender = self
             .factory
             .get_sender_address(&params.sender)
             .map_err(|e| TransactionSenderError::ValidationError { message: e })?;
 
-        let delete_params = crate::transactions::AppDeleteParams {
-            sender,
-            signer: params.signer,
-            rekey_to: params.rekey_to,
-            note: params.note,
-            lease: params.lease,
-            static_fee: params.static_fee,
-            extra_fee: params.extra_fee,
-            max_fee: params.max_fee,
-            validity_window: params.validity_window,
-            first_valid_round: params.first_valid_round,
-            last_valid_round: params.last_valid_round,
-            app_id: params.app_id,
-            args: params.args,
-            account_references: params.account_references,
-            app_references: params.app_references,
-            asset_references: params.asset_references,
-            box_references: params.box_references,
-        };
+        let delete_params = build_bare_delete_params(self.factory, sender, &params);
 
         self.factory
             .algorand()
             .send()
             .app_delete(delete_params, send_params)
             .await
-            .map_err(|e| {
-                super::utils::transform_transaction_error_for_factory(self.factory, e, true)
-            })
+            .map_err(|e| transform_transaction_error_for_factory(self.factory, e, true))
     }
 }

@@ -498,38 +498,10 @@ impl AppDeployer {
                 })?;
 
         // Query indexer for apps created by this address; localnet-only retry to allow catch-up
-        let is_localnet = self.app_manager.is_localnet().await.unwrap_or(false);
-        let mut created_apps_response_opt = None;
-        let mut tries: u32 = 0;
-        let max_tries: u32 = if is_localnet { 100 } else { 1 };
-        while tries < max_tries {
-            match indexer
-                .lookup_account_created_applications(
-                    &creator_address_str,
-                    None,
-                    Some(true),
-                    None,
-                    None,
-                )
-                .await
-            {
-                Ok(resp) => {
-                    created_apps_response_opt = Some(resp);
-                    break;
-                }
-                Err(e) => {
-                    if !is_localnet {
-                        return Err(AppDeployError::IndexerError { source: e });
-                    }
-                    tries += 1;
-                    tokio::time::sleep(std::time::Duration::from_millis(200)).await;
-                }
-            }
-        }
-        let created_apps_response =
-            created_apps_response_opt.ok_or_else(|| AppDeployError::DeploymentLookupFailed {
-                message: String::from("Indexer did not catch up in time on localnet"),
-            })?;
+        let created_apps_response = indexer
+            .lookup_account_created_applications(&creator_address_str, None, Some(true), None, None)
+            .await
+            .map_err(|e| AppDeployError::IndexerError { source: e })?;
 
         let mut app_lookup = HashMap::new();
 
@@ -674,15 +646,10 @@ impl AppDeployer {
     ) -> Result<(Vec<u8>, Vec<u8>), AppDeployError> {
         let approval_bytes = match approval_program {
             AppProgram::Teal(code) => {
-                // Always pass through provided deploy-time controls; AppManager enforces token presence
                 let metadata = DeploymentMetadata {
                     updatable: deployment_metadata.updatable,
                     deletable: deployment_metadata.deletable,
                 };
-                info!(
-                    "Compiling approval TEAL with controls: updatable={:?}, deletable={:?}",
-                    metadata.updatable, metadata.deletable
-                );
                 let metadata_opt = if metadata.updatable.is_some() || metadata.deletable.is_some() {
                     Some(&metadata)
                 } else {
@@ -754,10 +721,8 @@ impl AppDeployer {
             ),
         };
 
-        // Compute extra program pages from the compiled program bytes to match Python behavior
         let new_extra_pages =
             Self::calculate_extra_program_pages(approval_program, clear_state_program);
-
         let global_ints_break =
             new_global_schema.is_some_and(|schema| schema.num_uints > existing_app.global_ints);
         let global_bytes_break = new_global_schema
@@ -1336,7 +1301,6 @@ impl AppDeployer {
     }
 
     /// Calculate minimum number of extra program pages required to fit the programs.
-    /// Mirrors Python: calculate_extra_program_pages(approval, clear)
     fn calculate_extra_program_pages(approval: &[u8], clear: &[u8]) -> u32 {
         let total = approval.len().saturating_add(clear.len());
         if total == 0 {

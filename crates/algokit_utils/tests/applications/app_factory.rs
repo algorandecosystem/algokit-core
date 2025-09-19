@@ -6,10 +6,11 @@ use algokit_abi::Arc56Contract;
 use algokit_transact::Address;
 use algokit_transact::OnApplicationComplete;
 use algokit_utils::applications::app_client::{AppClientMethodCallParams, CompilationParams};
-use algokit_utils::applications::app_factory::AppFactoryParams;
 use algokit_utils::applications::app_factory::{
-    AppFactory, AppFactoryCreateMethodCallParams, AppFactoryCreateParams,
+    AppFactory, AppFactoryCreateMethodCallParams, AppFactoryParams,
 };
+use algokit_utils::applications::app_factory::{AppFactoryCreateParams, DeployArgs};
+use algokit_utils::applications::{AppDeployResult, OnSchemaBreak, OnUpdate};
 use algokit_utils::clients::app_manager::{TealTemplateParams, TealTemplateValue};
 use algokit_utils::transactions::TransactionComposerConfig;
 use algokit_utils::{AlgorandClient, AppMethodCallArg};
@@ -88,7 +89,6 @@ fn compilation_params(value: u64, updatable: bool, deletable: bool) -> Compilati
 async fn bare_create_with_deploy_time_params(
     #[future] algorand_fixture: AlgorandFixtureResult,
 ) -> TestResult {
-    // Python: test_create_app — references/.../test_app_factory.py:L85-L105
     let fixture = algorand_fixture.await?;
     let (algorand_client, test_account) = into_factory_inputs(fixture);
 
@@ -125,6 +125,11 @@ async fn bare_create_with_deploy_time_params(
         algokit_transact::Address::from_app_id(&client.app_id())
     );
     assert!(res.app_id > 0);
+    assert!(res.compiled_approval.is_some());
+    assert!(res.compiled_clear.is_some());
+    assert!(res.approval_source_map.is_some());
+    assert!(res.clear_source_map.is_some());
+    assert!(res.common_params.confirmation.confirmed_round.is_some());
     Ok(())
 }
 
@@ -133,7 +138,6 @@ async fn bare_create_with_deploy_time_params(
 async fn constructor_compilation_params_precedence(
     #[future] algorand_fixture: AlgorandFixtureResult,
 ) -> TestResult {
-    // Python: test_create_app_with_constructor_deploy_time_params — L107-L135
     let fixture = algorand_fixture.await?;
     let (algorand_client, test_account) = into_factory_inputs(fixture);
 
@@ -164,7 +168,6 @@ async fn constructor_compilation_params_precedence(
 async fn oncomplete_override_on_create(
     #[future] algorand_fixture: AlgorandFixtureResult,
 ) -> TestResult {
-    // Python: test_create_app_with_oncomplete_overload — L137-L157
     let fixture = algorand_fixture.await?;
     let (algorand_client, test_account) = into_factory_inputs(fixture);
 
@@ -205,6 +208,10 @@ async fn oncomplete_override_on_create(
         algokit_transact::Address::from_app_id(&client.app_id())
     );
     assert!(result.common_params.confirmations.first().is_some());
+    assert!(result.compiled_approval.is_some());
+    assert!(result.compiled_clear.is_some());
+    assert!(result.approval_source_map.is_some());
+    assert!(result.clear_source_map.is_some());
     Ok(())
 }
 
@@ -213,7 +220,6 @@ async fn oncomplete_override_on_create(
 async fn abi_based_create_returns_value(
     #[future] algorand_fixture: AlgorandFixtureResult,
 ) -> TestResult {
-    // Python: test_create_app_with_abi — L448-L465
     let fixture = algorand_fixture.await?;
     let (algorand_client, test_account) = into_factory_inputs(fixture);
 
@@ -247,12 +253,15 @@ async fn abi_based_create_returns_value(
         )
         .await?;
 
-    let abi_ret = call_return.abi_return.expect("abi return");
-    if let Some(algokit_abi::ABIValue::String(s)) = abi_ret.return_value {
-        assert_eq!(s, "string_io");
-    } else {
-        panic!("expected string");
+    let abi_ret = call_return.arc56_return().expect("abi return").clone();
+    match abi_ret {
+        algokit_abi::ABIValue::String(s) => assert_eq!(s, "string_io"),
+        other => panic!("expected string return, got {other:?}"),
     }
+    assert!(call_return.compiled_approval.is_some());
+    assert!(call_return.compiled_clear.is_some());
+    assert!(call_return.approval_source_map.is_some());
+    assert!(call_return.clear_source_map.is_some());
     Ok(())
 }
 
@@ -261,7 +270,6 @@ async fn abi_based_create_returns_value(
 async fn create_then_call_via_app_client(
     #[future] algorand_fixture: AlgorandFixtureResult,
 ) -> TestResult {
-    // Python: test_create_then_call_app — L396-L409
     let fixture = algorand_fixture.await?;
     let sender = fixture.test_account.account().address();
     let (algorand_client, test_account) = into_factory_inputs(fixture);
@@ -294,7 +302,7 @@ async fn create_then_call_via_app_client(
         )
         .await?;
 
-    let abi_ret = send_res.abi_return.expect("abi return");
+    let abi_ret = send_res.abi_return.clone().expect("abi return");
     if let Some(algokit_abi::ABIValue::String(s)) = abi_ret.return_value {
         assert_eq!(s, "Hello, test");
     } else {
@@ -308,7 +316,6 @@ async fn create_then_call_via_app_client(
 async fn call_app_with_too_many_args(
     #[future] algorand_fixture: AlgorandFixtureResult,
 ) -> TestResult {
-    // Python: test_call_app_with_too_many_args — L411-L424
     let fixture = algorand_fixture.await?;
     let sender = fixture.test_account.account().address();
     let (algorand_client, test_account) = into_factory_inputs(fixture);
@@ -363,7 +370,6 @@ async fn call_app_with_too_many_args(
 #[rstest]
 #[tokio::test]
 async fn call_app_with_rekey(#[future] algorand_fixture: AlgorandFixtureResult) -> TestResult {
-    // Python: test_call_app_with_rekey — L426-L446
     let mut fixture = algorand_fixture.await?;
     let sender = fixture.test_account.account().address();
     // Generate a new account to rekey to before consuming the fixture
@@ -409,17 +415,9 @@ async fn call_app_with_rekey(#[future] algorand_fixture: AlgorandFixtureResult) 
         // signer will be picked up from account manager: set_signer already configured for original sender,
         // but after rekey the auth address must be rekey_to's signer. Use explicit signer.
         signer: Some(Arc::new(rekey_to.clone())),
-        rekey_to: None,
-        note: None,
-        lease: None,
-        static_fee: None,
-        extra_fee: None,
-        max_fee: None,
-        validity_window: None,
-        first_valid_round: None,
-        last_valid_round: None,
         receiver: sender.clone(),
         amount: 0,
+        ..Default::default()
     };
     let _ = algorand_client.send().payment(pay, None).await?;
     Ok(())
@@ -430,7 +428,6 @@ async fn call_app_with_rekey(#[future] algorand_fixture: AlgorandFixtureResult) 
 async fn delete_app_with_abi_direct(
     #[future] algorand_fixture: AlgorandFixtureResult,
 ) -> TestResult {
-    // Python: test_delete_app_with_abi — L493-L512
     let fixture = algorand_fixture.await?;
     let sender = fixture.test_account.account().address();
     let (algorand_client, test_account) = into_factory_inputs(fixture);
@@ -469,7 +466,7 @@ async fn delete_app_with_abi_direct(
         )
         .await?;
 
-    let abi_ret = delete_res.abi_return.expect("abi return expected");
+    let abi_ret = delete_res.abi_return.clone().expect("abi return expected");
     if let Some(algokit_abi::ABIValue::String(s)) = abi_ret.return_value {
         assert_eq!(s, "string_io");
     } else {
@@ -524,12 +521,16 @@ async fn update_app_with_abi_direct(
         )
         .await?;
 
-    let abi_ret = update_res.abi_return.expect("abi return expected");
+    let abi_ret = update_res.abi_return.clone().expect("abi return expected");
     if let Some(algokit_abi::ABIValue::String(s)) = abi_ret.return_value {
         assert_eq!(s, "string_io");
     } else {
         panic!("expected string return");
     }
+    assert!(update_res.compiled_approval.is_some());
+    assert!(update_res.compiled_clear.is_some());
+    assert!(update_res.approval_source_map.is_some());
+    assert!(update_res.clear_source_map.is_some());
     Ok(())
 }
 
@@ -538,7 +539,6 @@ async fn update_app_with_abi_direct(
 async fn deploy_when_immutable_and_permanent(
     #[future] algorand_fixture: AlgorandFixtureResult,
 ) -> TestResult {
-    // Python: test_deploy_when_immutable_and_permanent — L159-L170
     let fixture = algorand_fixture.await?;
     let (algorand_client, test_account) = into_factory_inputs(fixture);
 
@@ -558,17 +558,11 @@ async fn deploy_when_immutable_and_permanent(
     .await;
 
     let _ = factory
-        .deploy(
-            Some(algokit_utils::applications::OnUpdate::Fail),
-            Some(algokit_utils::applications::OnSchemaBreak::Fail),
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-        )
+        .deploy(DeployArgs {
+            on_update: Some(OnUpdate::Fail),
+            on_schema_break: Some(OnSchemaBreak::Fail),
+            ..Default::default()
+        })
         .await?;
     Ok(())
 }
@@ -576,7 +570,6 @@ async fn deploy_when_immutable_and_permanent(
 #[rstest]
 #[tokio::test]
 async fn deploy_app_create(#[future] algorand_fixture: AlgorandFixtureResult) -> TestResult {
-    // Python: test_deploy_app_create — L173-L187
     let fixture = algorand_fixture.await?;
     let (algorand_client, test_account) = into_factory_inputs(fixture);
 
@@ -594,23 +587,36 @@ async fn deploy_app_create(#[future] algorand_fixture: AlgorandFixtureResult) ->
     )
     .await;
 
-    let (client, deploy_result) = factory
-        .deploy(None, None, None, None, None, None, None, None, None)
-        .await?;
+    let (client, deploy_result) = factory.deploy(Default::default()).await?;
 
     match &deploy_result.operation_performed {
-        algokit_utils::applications::AppDeployResult::Create { .. } => {}
+        AppDeployResult::Create { .. } => {}
         _ => panic!("expected Create"),
     }
+    let create_result = deploy_result
+        .create_result
+        .as_ref()
+        .expect("create result expected");
     assert!(client.app_id() > 0);
     assert_eq!(client.app_id(), deploy_result.app.app_id);
+    assert!(create_result.compiled_approval.is_some());
+    assert!(create_result.compiled_clear.is_some());
+    assert!(create_result.approval_source_map.is_some());
+    assert!(create_result.clear_source_map.is_some());
+    assert_eq!(
+        create_result
+            .common_params
+            .confirmation
+            .app_id
+            .unwrap_or_default(),
+        deploy_result.app.app_id
+    );
     Ok(())
 }
 
 #[rstest]
 #[tokio::test]
 async fn deploy_app_create_abi(#[future] algorand_fixture: AlgorandFixtureResult) -> TestResult {
-    // Python: test_deploy_app_create_abi — L189-L206
     let fixture = algorand_fixture.await?;
     let (algorand_client, test_account) = into_factory_inputs(fixture);
 
@@ -638,32 +644,41 @@ async fn deploy_app_create_abi(#[future] algorand_fixture: AlgorandFixtureResult
     };
 
     let (client, deploy_result) = factory
-        .deploy(
-            None,
-            None,
-            Some(create_params),
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-        )
+        .deploy(DeployArgs {
+            create_params: Some(create_params),
+            ..Default::default()
+        })
         .await?;
 
     match &deploy_result.operation_performed {
-        algokit_utils::applications::AppDeployResult::Create { .. } => {}
+        AppDeployResult::Create { .. } => {}
         _ => panic!("expected Create"),
     }
+    let create_result = deploy_result
+        .create_result
+        .as_ref()
+        .expect("create result expected");
     assert!(client.app_id() > 0);
     assert_eq!(client.app_id(), deploy_result.app.app_id);
+    let abi_value = create_result
+        .arc56_return()
+        .cloned()
+        .and_then(|v| match v {
+            algokit_abi::ABIValue::String(s) => Some(s),
+            other => panic!("expected string abi return, got {other:?}"),
+        })
+        .expect("abi return expected");
+    assert_eq!(abi_value, "arg_io");
+    assert!(create_result.compiled_approval.is_some());
+    assert!(create_result.compiled_clear.is_some());
+    assert!(create_result.approval_source_map.is_some());
+    assert!(create_result.clear_source_map.is_some());
     Ok(())
 }
 
 #[rstest]
 #[tokio::test]
 async fn deploy_app_update(#[future] algorand_fixture: AlgorandFixtureResult) -> TestResult {
-    // Python: test_deploy_app_update — L208-L241
     let fixture = algorand_fixture.await?;
     let (algorand_client, test_account) = into_factory_inputs(fixture);
 
@@ -684,13 +699,15 @@ async fn deploy_app_update(#[future] algorand_fixture: AlgorandFixtureResult) ->
     .await;
 
     // Initial create (updatable)
-    let (_client1, create_res) = factory
-        .deploy(None, None, None, None, None, None, None, None, None)
-        .await?;
+    let (_client1, create_res) = factory.deploy(Default::default()).await?;
     match &create_res.operation_performed {
-        algokit_utils::applications::AppDeployResult::Create { .. } => {}
+        AppDeployResult::Create { .. } => {}
         _ => panic!("expected Create"),
     }
+    let initial_create = create_res
+        .create_result
+        .as_ref()
+        .expect("create result expected");
 
     // Update
     let factory2 = build_testing_app_factory(
@@ -710,26 +727,36 @@ async fn deploy_app_update(#[future] algorand_fixture: AlgorandFixtureResult) ->
     .await;
 
     let (_client2, update_res) = factory2
-        .deploy(
-            Some(algokit_utils::applications::OnUpdate::Update),
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-        )
+        .deploy(DeployArgs {
+            on_update: Some(OnUpdate::Update),
+            ..Default::default()
+        })
         .await?;
 
     match &update_res.operation_performed {
-        algokit_utils::applications::AppDeployResult::Update { .. } => {}
+        AppDeployResult::Update { .. } => {}
         _ => panic!("expected Update"),
     }
+    let updated = update_res
+        .update_result
+        .as_ref()
+        .expect("update result expected");
     assert_eq!(create_res.app.app_id, update_res.app.app_id);
     assert_eq!(create_res.app.app_address, update_res.app.app_address);
     assert!(update_res.app.updated_round >= create_res.app.created_round);
+    assert!(initial_create.compiled_approval.is_some());
+    assert!(initial_create.compiled_clear.is_some());
+    assert!(updated.compiled_approval.is_some());
+    assert!(updated.compiled_clear.is_some());
+    assert!(updated.approval_source_map.is_some());
+    assert!(updated.clear_source_map.is_some());
+    assert_eq!(
+        update_res
+            .update_result
+            .as_ref()
+            .and_then(|r| r.common_params.confirmation.confirmed_round),
+        Some(update_res.app.updated_round)
+    );
     Ok(())
 }
 
@@ -738,7 +765,6 @@ async fn deploy_app_update(#[future] algorand_fixture: AlgorandFixtureResult) ->
 async fn deploy_app_update_detects_extra_pages_as_breaking_change(
     #[future] algorand_fixture: AlgorandFixtureResult,
 ) -> TestResult {
-    // Python: test_deploy_app_update_detects_extra_pages_as_breaking_change — L243-L272
     let fixture = algorand_fixture.await?;
     // Factory with small program spec
     let small_spec = algokit_abi::Arc56Contract::from_json(
@@ -762,11 +788,9 @@ async fn deploy_app_update_detects_extra_pages_as_breaking_change(
     .await;
 
     // Create using small
-    let (_small_client, create_res) = factory
-        .deploy(None, None, None, None, None, None, None, None, None)
-        .await?;
+    let (_small_client, create_res) = factory.deploy(Default::default()).await?;
     match &create_res.operation_performed {
-        algokit_utils::applications::AppDeployResult::Create { .. } => {}
+        AppDeployResult::Create { .. } => {}
         _ => panic!("expected Create for small"),
     }
 
@@ -791,21 +815,15 @@ async fn deploy_app_update_detects_extra_pages_as_breaking_change(
     .await;
 
     let (large_client, update_res) = factory_large
-        .deploy(
-            Some(algokit_utils::applications::OnUpdate::Update),
-            Some(algokit_utils::applications::OnSchemaBreak::Append),
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-        )
+        .deploy(DeployArgs {
+            on_update: Some(OnUpdate::Update),
+            on_schema_break: Some(OnSchemaBreak::Append),
+            ..Default::default()
+        })
         .await?;
 
     match &update_res.operation_performed {
-        algokit_utils::applications::AppDeployResult::Create { .. } => {}
+        AppDeployResult::Create { .. } => {}
         _ => panic!("expected Create on schema break append"),
     }
 
@@ -816,8 +834,64 @@ async fn deploy_app_update_detects_extra_pages_as_breaking_change(
 
 #[rstest]
 #[tokio::test]
+async fn deploy_app_update_detects_extra_pages_as_breaking_change_fail_case(
+    #[future] algorand_fixture: AlgorandFixtureResult,
+) -> TestResult {
+    let fixture = algorand_fixture.await?;
+    // Start with small
+    let small_spec = algokit_abi::Arc56Contract::from_json(
+        algokit_test_artifacts::extra_pages_test::SMALL_ARC56,
+    )
+    .expect("valid arc56");
+    let (algorand_client, test_account) = into_factory_inputs(fixture);
+    let factory_small = build_app_factory_with_spec(
+        Arc::clone(&algorand_client),
+        test_account.clone(),
+        small_spec,
+        AppFactoryOptions {
+            updatable: Some(true),
+            ..Default::default()
+        },
+    )
+    .await;
+
+    // Create using small
+    let (_small_client, _create_res) = factory_small.deploy(Default::default()).await?;
+
+    // Switch to large and attempt update with Fail schema break
+    let large_spec = algokit_abi::Arc56Contract::from_json(
+        algokit_test_artifacts::extra_pages_test::LARGE_ARC56,
+    )
+    .expect("valid arc56");
+    let factory_fail = build_app_factory_with_spec(
+        algorand_client,
+        test_account,
+        large_spec,
+        AppFactoryOptions {
+            updatable: Some(true),
+            ..Default::default()
+        },
+    )
+    .await;
+
+    let err = factory_fail
+        .deploy(DeployArgs {
+            on_update: Some(OnUpdate::Update),
+            on_schema_break: Some(OnSchemaBreak::Fail),
+            ..Default::default()
+        })
+        .await;
+    let msg = match err {
+        Ok(_) => panic!("expected schema break fail error"),
+        Err(e) => e.to_string(),
+    };
+    assert!(msg.contains("Executing the fail on schema break strategy, stopping deployment."));
+    Ok(())
+}
+
+#[rstest]
+#[tokio::test]
 async fn deploy_app_update_abi(#[future] algorand_fixture: AlgorandFixtureResult) -> TestResult {
-    // Python: test_deploy_app_update_abi — L274-L309
     let fixture = algorand_fixture.await?;
     let (algorand_client, test_account) = into_factory_inputs(fixture);
 
@@ -838,9 +912,7 @@ async fn deploy_app_update_abi(#[future] algorand_fixture: AlgorandFixtureResult
     .await;
 
     // Create updatable
-    let _ = factory
-        .deploy(None, None, None, None, None, None, None, None, None)
-        .await?;
+    let _ = factory.deploy(Default::default()).await?;
 
     // Update via ABI with VALUE=2 but same updatable/deletable
     let update_params = AppClientMethodCallParams {
@@ -866,21 +938,42 @@ async fn deploy_app_update_abi(#[future] algorand_fixture: AlgorandFixtureResult
     )
     .await;
     let (_client2, update_res) = factory2
-        .deploy(
-            Some(algokit_utils::applications::OnUpdate::Update),
-            None,
-            None,
-            Some(update_params),
-            None,
-            None,
-            None,
-            None,
-            None,
-        )
+        .deploy(DeployArgs {
+            on_update: Some(OnUpdate::Update),
+            update_params: Some(update_params),
+            ..Default::default()
+        })
         .await?;
     match &update_res.operation_performed {
-        algokit_utils::applications::AppDeployResult::Update { .. } => {}
+        AppDeployResult::Update { .. } => {}
         _ => panic!("expected Update"),
+    }
+    let update_result = update_res
+        .update_result
+        .as_ref()
+        .expect("update result expected");
+    let abi_return = update_result
+        .arc56_return()
+        .cloned()
+        .and_then(|v| match v {
+            algokit_abi::ABIValue::String(s) => Some(s),
+            other => panic!("expected string return, got {other:?}"),
+        })
+        .expect("abi return");
+    assert_eq!(abi_return, "args_io");
+    assert!(update_result.compiled_approval.is_some());
+    assert!(update_result.compiled_clear.is_some());
+    assert!(update_result.approval_source_map.is_some());
+    assert!(update_result.clear_source_map.is_some());
+    // Ensure update onComplete is UpdateApplication
+    match &update_result.common_params.transaction {
+        algokit_transact::Transaction::AppCall(fields) => {
+            assert_eq!(
+                fields.on_complete,
+                algokit_transact::OnApplicationComplete::UpdateApplication
+            );
+        }
+        _ => panic!("expected app call"),
     }
     Ok(())
 }
@@ -888,7 +981,6 @@ async fn deploy_app_update_abi(#[future] algorand_fixture: AlgorandFixtureResult
 #[rstest]
 #[tokio::test]
 async fn deploy_app_replace(#[future] algorand_fixture: AlgorandFixtureResult) -> TestResult {
-    // Python: test_deploy_app_replace — L312-L350
     let fixture = algorand_fixture.await?;
     let (algorand_client, test_account) = into_factory_inputs(fixture);
 
@@ -908,9 +1000,7 @@ async fn deploy_app_replace(#[future] algorand_fixture: AlgorandFixtureResult) -
     )
     .await;
 
-    let (_client1, create_res) = factory
-        .deploy(None, None, None, None, None, None, None, None, None)
-        .await?;
+    let (_client1, create_res) = factory.deploy(Default::default()).await?;
     let old_app_id = create_res.app.app_id;
 
     // Replace
@@ -930,30 +1020,64 @@ async fn deploy_app_replace(#[future] algorand_fixture: AlgorandFixtureResult) -
     )
     .await;
     let (_client2, replace_res) = factory2
-        .deploy(
-            Some(algokit_utils::applications::OnUpdate::Replace),
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-        )
+        .deploy(DeployArgs {
+            on_update: Some(OnUpdate::Replace),
+            ..Default::default()
+        })
         .await?;
     match &replace_res.operation_performed {
-        algokit_utils::applications::AppDeployResult::Replace { .. } => {}
+        AppDeployResult::Replace { .. } => {}
         _ => panic!("expected Replace"),
     }
     assert!(replace_res.app.app_id > old_app_id);
+    let create_result = replace_res
+        .create_result
+        .as_ref()
+        .expect("replace create result expected");
+    assert!(create_result.compiled_approval.is_some());
+    assert!(create_result.compiled_clear.is_some());
+    let _delete_result = replace_res
+        .delete_result
+        .as_ref()
+        .expect("replace delete result expected");
+    let replace_create = replace_res
+        .create_result
+        .as_ref()
+        .expect("replace create result expected");
+    let replace_delete = replace_res
+        .delete_result
+        .as_ref()
+        .expect("replace delete result expected");
+    assert!(replace_create.compiled_approval.is_some());
+    assert!(replace_create.compiled_clear.is_some());
+    assert!(
+        replace_delete
+            .common_params
+            .confirmation
+            .confirmed_round
+            .is_some()
+    );
+    // Ensure delete app call references old app id and correct onComplete
+    match &replace_delete.common_params.transaction {
+        algokit_transact::Transaction::AppCall(fields) => {
+            assert_eq!(
+                fields.on_complete,
+                algokit_transact::OnApplicationComplete::DeleteApplication
+            );
+            assert_eq!(fields.app_id, old_app_id);
+        }
+        _ => panic!("expected app call"),
+    }
+    assert_eq!(
+        replace_res.app.app_address,
+        algokit_transact::Address::from_app_id(&replace_res.app.app_id)
+    );
     Ok(())
 }
 
 #[rstest]
 #[tokio::test]
 async fn deploy_app_replace_abi(#[future] algorand_fixture: AlgorandFixtureResult) -> TestResult {
-    // Python: test_deploy_app_replace_abi — L352-L394
     let fixture = algorand_fixture.await?;
     let (algorand_client, test_account) = into_factory_inputs(fixture);
 
@@ -975,17 +1099,10 @@ async fn deploy_app_replace_abi(#[future] algorand_fixture: AlgorandFixtureResul
 
     // Initial create
     let (_client1, create_res) = factory
-        .deploy(
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            Some("APP_NAME".to_string()),
-            None,
-        )
+        .deploy(DeployArgs {
+            app_name: Some("APP_NAME".to_string()),
+            ..Default::default()
+        })
         .await?;
 
     let old_app_id = create_res.app.app_id;
@@ -1017,22 +1134,40 @@ async fn deploy_app_replace_abi(#[future] algorand_fixture: AlgorandFixtureResul
     )
     .await;
     let (_client2, replace_res) = factory2
-        .deploy(
-            Some(algokit_utils::applications::OnUpdate::Replace),
-            None,
-            Some(create_params),
-            Some(delete_params),
-            None,
-            None,
-            None,
-            None,
-            None,
-        )
+        .deploy(DeployArgs {
+            on_update: Some(OnUpdate::Replace),
+            create_params: Some(create_params),
+            delete_params: Some(delete_params),
+            ..Default::default()
+        })
         .await?;
     match &replace_res.operation_performed {
-        algokit_utils::applications::AppDeployResult::Replace { .. } => {}
+        AppDeployResult::Replace { .. } => {}
         _ => panic!("expected Replace"),
     }
     assert!(replace_res.app.app_id > old_app_id);
+    // Validate ABI return values for create/delete
+    let create_res = replace_res
+        .create_result
+        .as_ref()
+        .expect("create result expected");
+
+    let create_ret = create_res
+        .arc56_return()
+        .cloned()
+        .and_then(|v| match v {
+            algokit_abi::ABIValue::String(s) => Some(s),
+            _ => None,
+        })
+        .expect("create abi return");
+    assert_eq!(create_ret, "arg_io");
+
+    if let Some(delete_res) = replace_res.delete_result.as_ref() {
+        if let Some(abi_ret) = delete_res.abi_return.clone().and_then(|r| r.return_value) {
+            if let algokit_abi::ABIValue::String(s) = abi_ret {
+                assert_eq!(s, "arg2_io");
+            }
+        }
+    }
     Ok(())
 }

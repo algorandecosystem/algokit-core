@@ -6,28 +6,22 @@ use crate::{
     config::{AppCompiledEventData, EventData},
 };
 
+use crate::clients::app_manager::{CompiledPrograms, CompiledTeal};
+
 impl AppClient {
     /// Compile the application's approval and clear programs with optional template parameters.
     pub async fn compile(
         &self,
         compilation_params: &CompilationParams,
-    ) -> Result<(Vec<u8>, Vec<u8>), AppClientError> {
+    ) -> Result<CompiledPrograms, AppClientError> {
         let approval = self.compile_approval(compilation_params).await?;
         let clear = self.compile_clear(compilation_params).await?;
 
         // Emit AppCompiled event when debug flag is enabled
         if Config::debug() {
             let app_name = self.app_name.clone();
-            let approval_map = self
-                .algorand()
-                .app()
-                .get_compilation_result(&String::from_utf8_lossy(&approval))
-                .and_then(|c| c.source_map);
-            let clear_map = self
-                .algorand()
-                .app()
-                .get_compilation_result(&String::from_utf8_lossy(&clear))
-                .and_then(|c| c.source_map);
+            let approval_map = approval.source_map.clone();
+            let clear_map = clear.source_map.clone();
 
             let event = AppCompiledEventData {
                 app_name,
@@ -39,13 +33,13 @@ impl AppClient {
                 .await;
         }
 
-        Ok((approval, clear))
+        Ok(CompiledPrograms { approval, clear })
     }
 
     async fn compile_approval(
         &self,
         compilation_params: &CompilationParams,
-    ) -> Result<Vec<u8>, AppClientError> {
+    ) -> Result<CompiledTeal, AppClientError> {
         let source =
             self.app_spec
                 .source
@@ -83,14 +77,13 @@ impl AppClient {
             .await
             .map_err(|e| AppClientError::AppManagerError { source: e })?;
 
-        // Return TEAL source bytes (TransactionSender will pull compiled bytes from cache)
-        Ok(compiled.teal.into_bytes())
+        Ok(compiled)
     }
 
     async fn compile_clear(
         &self,
         compilation_params: &CompilationParams,
-    ) -> Result<Vec<u8>, AppClientError> {
+    ) -> Result<CompiledTeal, AppClientError> {
         let source =
             self.app_spec
                 .source
@@ -114,6 +107,6 @@ impl AppClient {
             .await
             .map_err(|e| AppClientError::AppManagerError { source: e })?;
 
-        Ok(compiled.teal.into_bytes())
+        Ok(compiled)
     }
 }

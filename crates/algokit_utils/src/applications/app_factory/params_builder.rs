@@ -4,12 +4,14 @@ use crate::applications::app_deployer::{
     DeployAppDeleteMethodCallParams, DeployAppDeleteParams, DeployAppUpdateMethodCallParams,
     DeployAppUpdateParams,
 };
+use crate::applications::app_factory::utils::merge_args_with_defaults;
+use crate::applications::app_factory::{AppFactoryCreateMethodCallParams, AppFactoryCreateParams};
 use algokit_abi::ABIMethod;
 use algokit_transact::OnApplicationComplete;
 use algokit_transact::StateSchema as TxStateSchema;
 use std::str::FromStr;
-// use std::str::FromStr;
 
+use super::utils::resolve_signer;
 pub struct ParamsBuilder<'a> {
     pub(crate) factory: &'a AppFactory,
 }
@@ -28,25 +30,21 @@ impl<'a> ParamsBuilder<'a> {
     /// Create DeployAppCreateMethodCallParams from factory inputs
     pub fn create(
         &self,
-        params: super::types::AppFactoryCreateMethodCallParams,
+        params: AppFactoryCreateMethodCallParams,
     ) -> Result<DeployAppCreateMethodCallParams, AppFactoryError> {
         let (approval_teal, clear_teal) = decode_teal_from_spec(self.factory)?;
         let method = to_abi_method(self.factory.app_spec(), &params.method)?;
         let sender = self
             .factory
             .get_sender_address(&params.sender)
-            .map_err(AppFactoryError::ValidationError)?;
+            .map_err(|message| AppFactoryError::ValidationError { message })?;
 
         // Merge user args with ARC-56 literal defaults for create-time ABI
-        let merged_args = super::utils::merge_create_args_with_defaults(
-            self.factory,
-            &params.method,
-            &params.args,
-        )?;
+        let merged_args = merge_args_with_defaults(self.factory, &params.method, &params.args)?;
 
         Ok(DeployAppCreateMethodCallParams {
             sender,
-            signer: params.signer,
+            signer: resolve_signer(self.factory, &params.sender, params.signer),
             rekey_to: params.rekey_to,
             note: params.note,
             lease: params.lease,
@@ -84,17 +82,14 @@ impl<'a> ParamsBuilder<'a> {
         let sender = self
             .factory
             .get_sender_address(&params.sender)
-            .map_err(AppFactoryError::ValidationError)?;
+            .map_err(|message| AppFactoryError::ValidationError { message })?;
 
-        let merged_args = super::utils::merge_create_args_with_defaults(
-            self.factory,
-            &params.method,
-            &Some(params.args.clone()),
-        )?;
+        let merged_args =
+            merge_args_with_defaults(self.factory, &params.method, &Some(params.args.clone()))?;
 
         Ok(DeployAppUpdateMethodCallParams {
             sender,
-            signer: params.signer,
+            signer: resolve_signer(self.factory, &params.sender, params.signer),
             rekey_to: params
                 .rekey_to
                 .as_ref()
@@ -125,17 +120,14 @@ impl<'a> ParamsBuilder<'a> {
         let sender = self
             .factory
             .get_sender_address(&params.sender)
-            .map_err(AppFactoryError::ValidationError)?;
+            .map_err(|message| AppFactoryError::ValidationError { message })?;
 
-        let merged_args = super::utils::merge_create_args_with_defaults(
-            self.factory,
-            &params.method,
-            &Some(params.args.clone()),
-        )?;
+        let merged_args =
+            merge_args_with_defaults(self.factory, &params.method, &Some(params.args.clone()))?;
 
         Ok(DeployAppDeleteMethodCallParams {
             sender,
-            signer: params.signer,
+            signer: resolve_signer(self.factory, &params.sender, params.signer),
             rekey_to: params
                 .rekey_to
                 .as_ref()
@@ -162,18 +154,18 @@ impl BareParamsBuilder<'_> {
     /// Create DeployAppCreateParams from factory inputs
     pub fn create(
         &self,
-        params: Option<super::types::AppFactoryCreateParams>,
+        params: Option<AppFactoryCreateParams>,
     ) -> Result<DeployAppCreateParams, AppFactoryError> {
         let params = params.unwrap_or_default();
         let (approval_teal, clear_teal) = decode_teal_from_spec(self.factory)?;
         let sender = self
             .factory
             .get_sender_address(&params.sender)
-            .map_err(AppFactoryError::ValidationError)?;
+            .map_err(|message| AppFactoryError::ValidationError { message })?;
 
         Ok(DeployAppCreateParams {
             sender,
-            signer: params.signer,
+            signer: resolve_signer(self.factory, &params.sender, params.signer),
             rekey_to: params.rekey_to,
             note: params.note,
             lease: params.lease,
@@ -210,11 +202,11 @@ impl BareParamsBuilder<'_> {
         let sender = self
             .factory
             .get_sender_address(&params.sender)
-            .map_err(AppFactoryError::ValidationError)?;
+            .map_err(|message| AppFactoryError::ValidationError { message })?;
 
         Ok(DeployAppUpdateParams {
             sender,
-            signer: params.signer,
+            signer: resolve_signer(self.factory, &params.sender, params.signer),
             rekey_to: params
                 .rekey_to
                 .as_ref()
@@ -244,11 +236,11 @@ impl BareParamsBuilder<'_> {
         let sender = self
             .factory
             .get_sender_address(&params.sender)
-            .map_err(AppFactoryError::ValidationError)?;
+            .map_err(|message| AppFactoryError::ValidationError { message })?;
 
         Ok(DeployAppDeleteParams {
             sender,
-            signer: params.signer,
+            signer: resolve_signer(self.factory, &params.sender, params.signer),
             rekey_to: params
                 .rekey_to
                 .as_ref()
@@ -271,15 +263,25 @@ impl BareParamsBuilder<'_> {
 }
 
 fn decode_teal_from_spec(factory: &AppFactory) -> Result<(String, String), AppFactoryError> {
-    let source = factory.app_spec().source.as_ref().ok_or_else(|| {
-        AppFactoryError::CompilationError("Missing source in app spec".to_string())
-    })?;
-    let approval = source
-        .get_decoded_approval()
-        .map_err(|e| AppFactoryError::CompilationError(e.to_string()))?;
+    let source =
+        factory
+            .app_spec()
+            .source
+            .as_ref()
+            .ok_or_else(|| AppFactoryError::CompilationError {
+                message: "Missing source in app spec".to_string(),
+            })?;
+    let approval =
+        source
+            .get_decoded_approval()
+            .map_err(|e| AppFactoryError::CompilationError {
+                message: e.to_string(),
+            })?;
     let clear = source
         .get_decoded_clear()
-        .map_err(|e| AppFactoryError::CompilationError(e.to_string()))?;
+        .map_err(|e| AppFactoryError::CompilationError {
+            message: e.to_string(),
+        })?;
     Ok((approval, clear))
 }
 
@@ -305,7 +307,9 @@ pub(crate) fn to_abi_method(
 ) -> Result<ABIMethod, AppFactoryError> {
     contract
         .find_abi_method(method)
-        .map_err(|e| AppFactoryError::MethodNotFound(e.to_string()))
+        .map_err(|e| AppFactoryError::MethodNotFound {
+            message: e.to_string(),
+        })
 }
 
 // Note: Deploy param structs accept Address already parsed where relevant; factory-level

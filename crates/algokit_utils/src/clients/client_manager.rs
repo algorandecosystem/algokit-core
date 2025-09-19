@@ -295,6 +295,7 @@ impl ClientManager {
     }
 
     /// Returns an AppClient resolved by creator address and name using indexer lookup.
+    #[allow(clippy::too_many_arguments)]
     pub async fn get_app_client_by_creator_and_name(
         &self,
         algorand: Arc<AlgorandClient>,
@@ -322,6 +323,7 @@ impl ClientManager {
     }
 
     /// Returns an AppClient for an existing application by ID.
+    #[allow(clippy::too_many_arguments)]
     pub fn get_app_client_by_id(
         &self,
         algorand: Arc<AlgorandClient>,
@@ -346,6 +348,7 @@ impl ClientManager {
     }
 
     /// Returns an AppClient resolved by network using app spec networks mapping.
+    #[allow(clippy::too_many_arguments)]
     pub async fn get_app_client_by_network(
         &self,
         algorand: Arc<AlgorandClient>,

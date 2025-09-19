@@ -1,12 +1,61 @@
 use std::collections::HashMap;
+use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 
-use algokit_abi::Arc56Contract;
+use algokit_abi::{ABIValue, Arc56Contract};
 
 use crate::AlgorandClient;
 use crate::AppSourceMaps;
 use crate::clients::app_manager::TealTemplateValue;
-use crate::transactions::{TransactionComposerConfig, TransactionSigner};
+use crate::transactions::{
+    AppMethodCallArg, TransactionComposerConfig, TransactionSigner,
+    sender_results::{SendAppCallResult, SendAppCreateResult, SendAppUpdateResult},
+};
+
+#[derive(Clone, Debug)]
+pub struct AppFactoryCompilationResult {
+    pub approval_program: Vec<u8>,
+    pub clear_state_program: Vec<u8>,
+    pub compiled_approval: crate::clients::app_manager::CompiledTeal,
+    pub compiled_clear: crate::clients::app_manager::CompiledTeal,
+}
+
+#[derive(Clone, Debug)]
+pub struct AppFactoryMethodCallResult<T> {
+    inner: T,
+    arc56_return: Option<ABIValue>,
+}
+
+impl<T> AppFactoryMethodCallResult<T> {
+    pub fn new(inner: T, arc56_return: Option<ABIValue>) -> Self {
+        Self {
+            inner,
+            arc56_return,
+        }
+    }
+
+    pub fn arc56_return(&self) -> Option<&ABIValue> {
+        self.arc56_return.as_ref()
+    }
+
+    pub fn into_parts(self) -> (T, Option<ABIValue>) {
+        (self.inner, self.arc56_return)
+    }
+}
+
+impl<T> Deref for AppFactoryMethodCallResult<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl<T> DerefMut for AppFactoryMethodCallResult<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.inner
+    }
+}
 
 pub struct AppFactoryParams {
     pub algorand: Arc<AlgorandClient>,
@@ -49,7 +98,7 @@ pub struct AppFactoryCreateParams {
 #[derive(Clone, Default)]
 pub struct AppFactoryCreateMethodCallParams {
     pub method: String,
-    pub args: Option<Vec<crate::transactions::AppMethodCallArg>>, // raw args accepted; processing later
+    pub args: Option<Vec<AppMethodCallArg>>,
     pub on_complete: Option<algokit_transact::OnApplicationComplete>,
     pub account_references: Option<Vec<algokit_transact::Address>>,
     pub app_references: Option<Vec<u64>>,
@@ -71,20 +120,15 @@ pub struct AppFactoryCreateMethodCallParams {
     pub last_valid_round: Option<u64>,
 }
 
-pub type AppFactoryCreateMethodCallResult =
-    crate::transactions::sender_results::SendAppCreateResult;
-
-// Factory-specific type aliases to sender results (if needed later)
-pub type SendAppCreateFactoryTransactionResult =
-    crate::transactions::sender_results::SendAppCreateResult;
-pub type SendAppUpdateFactoryTransactionResult =
-    crate::transactions::sender_results::SendAppUpdateResult;
+pub type AppFactoryCreateMethodCallResult = AppFactoryMethodCallResult<SendAppCreateResult>;
+pub type AppFactoryUpdateMethodCallResult = AppFactoryMethodCallResult<SendAppUpdateResult>;
+pub type AppFactoryDeleteMethodCallResult = AppFactoryMethodCallResult<SendAppCallResult>;
 
 #[derive(Clone, Default)]
 pub struct AppFactoryUpdateMethodCallParams {
     pub app_id: u64,
     pub method: String,
-    pub args: Option<Vec<crate::transactions::AppMethodCallArg>>, // raw args accepted; processing later
+    pub args: Option<Vec<AppMethodCallArg>>, // raw args accepted; processing later
     pub sender: Option<String>,
     pub account_references: Option<Vec<algokit_transact::Address>>,
     pub app_references: Option<Vec<u64>>,
@@ -127,7 +171,7 @@ pub struct AppFactoryUpdateParams {
 pub struct AppFactoryDeleteMethodCallParams {
     pub app_id: u64,
     pub method: String,
-    pub args: Option<Vec<crate::transactions::AppMethodCallArg>>, // raw args accepted; processing later
+    pub args: Option<Vec<AppMethodCallArg>>,
     pub sender: Option<String>,
     pub account_references: Option<Vec<algokit_transact::Address>>,
     pub app_references: Option<Vec<u64>>,
@@ -170,7 +214,7 @@ pub struct AppFactoryDeleteParams {
 pub struct AppFactoryDeployResult {
     pub app: crate::applications::app_deployer::AppMetadata,
     pub operation_performed: crate::applications::app_deployer::AppDeployResult,
-    pub create_result: Option<crate::transactions::sender_results::SendAppCreateResult>,
-    pub update_result: Option<crate::transactions::sender_results::SendAppUpdateResult>,
-    pub delete_result: Option<crate::transactions::sender_results::SendAppCallResult>,
+    pub create_result: Option<AppFactoryCreateMethodCallResult>,
+    pub update_result: Option<AppFactoryUpdateMethodCallResult>,
+    pub delete_result: Option<AppFactoryDeleteMethodCallResult>,
 }

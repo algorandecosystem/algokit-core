@@ -36,6 +36,12 @@ pub struct CompiledTeal {
 }
 
 #[derive(Debug, Clone)]
+pub struct CompiledPrograms {
+    pub approval: CompiledTeal,
+    pub clear: CompiledTeal,
+}
+
+#[derive(Debug, Clone)]
 pub enum AppState {
     Uint(UintAppState),
     Bytes(BytesAppState),

@@ -187,7 +187,6 @@ pub mod testing_app_arc56_templates {
         include_str!("../contracts/testing_app_arc56/app_spec.arc56.json");
 }
 /// Extra pages test contract artifacts
-
 pub mod extra_pages_test {
     /// Aggregate application (ARC56) used by extra pages tests
     pub const APPLICATION_ARC56: &str =
