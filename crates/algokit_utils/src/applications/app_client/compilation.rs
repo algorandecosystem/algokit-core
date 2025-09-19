@@ -19,13 +19,11 @@ impl AppClient {
         if Config::debug() {
             let app_name = self.app_name.clone();
             let approval_map = self
-                .algorand()
-                .app()
+                .app_manager
                 .get_compilation_result(&String::from_utf8_lossy(&approval))
                 .and_then(|c| c.source_map);
             let clear_map = self
-                .algorand()
-                .app()
+                .app_manager
                 .get_compilation_result(&String::from_utf8_lossy(&clear))
                 .and_then(|c| c.source_map);
 
@@ -73,8 +71,7 @@ impl AppClient {
             };
 
         let compiled = self
-            .algorand()
-            .app()
+            .app_manager
             .compile_teal_template(
                 &teal,
                 compilation_params.deploy_time_params.as_ref(),
@@ -108,8 +105,7 @@ impl AppClient {
 
         // 2-4) Compile via AppManager helper with template params; no deploy-time controls for clear
         let compiled = self
-            .algorand()
-            .app()
+            .app_manager
             .compile_teal_template(&teal, compilation_params.deploy_time_params.as_ref(), None)
             .await
             .map_err(|e| AppClientError::AppManagerError { source: e })?;

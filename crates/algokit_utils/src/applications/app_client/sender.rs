@@ -40,12 +40,8 @@ impl<'app_client> TransactionSender<'app_client> {
         if method_params.on_complete == OnApplicationComplete::NoOp
             && arc56_method.readonly == Some(true)
         {
+            let mut composer = self.client.new_group();
             let transaction_composer_config = self.client.transaction_composer_config.clone();
-
-            let mut composer = self
-                .client
-                .algorand()
-                .new_group(transaction_composer_config.clone());
 
             if transaction_composer_config
                 .clone()
@@ -107,8 +103,7 @@ impl<'app_client> TransactionSender<'app_client> {
             Ok(send_app_call_result)
         } else {
             self.client
-                .algorand
-                .send()
+                .transaction_sender
                 .app_call_method_call(method_params, send_params)
                 .await
                 .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
@@ -124,8 +119,7 @@ impl<'app_client> TransactionSender<'app_client> {
         let method_params = self.client.params().opt_in(params).await?;
 
         self.client
-            .algorand
-            .send()
+            .transaction_sender
             .app_call_method_call(method_params, send_params)
             .await
             .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
@@ -140,8 +134,7 @@ impl<'app_client> TransactionSender<'app_client> {
         let method_params = self.client.params().close_out(params).await?;
 
         self.client
-            .algorand
-            .send()
+            .transaction_sender
             .app_call_method_call(method_params, send_params)
             .await
             .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
@@ -156,8 +149,7 @@ impl<'app_client> TransactionSender<'app_client> {
         let delete_params = self.client.params().delete(params).await?;
 
         self.client
-            .algorand
-            .send()
+            .transaction_sender
             .app_delete_method_call(delete_params, send_params)
             .await
             .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
@@ -177,8 +169,7 @@ impl<'app_client> TransactionSender<'app_client> {
             .await?;
 
         self.client
-            .algorand
-            .send()
+            .transaction_sender
             .app_update_method_call(update_params, send_params)
             .await
             .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
@@ -193,8 +184,7 @@ impl<'app_client> TransactionSender<'app_client> {
         let payment = self.client.params().fund_app_account(&params)?;
 
         self.client
-            .algorand
-            .send()
+            .transaction_sender
             .payment(payment, send_params)
             .await
             .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
@@ -211,8 +201,7 @@ impl BareTransactionSender<'_> {
     ) -> Result<SendTransactionResult, AppClientError> {
         let params = self.client.params().bare().call(params, on_complete)?;
         self.client
-            .algorand
-            .send()
+            .transaction_sender
             .app_call(params, send_params)
             .await
             .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
@@ -226,8 +215,7 @@ impl BareTransactionSender<'_> {
     ) -> Result<SendTransactionResult, AppClientError> {
         let app_call = self.client.params().bare().opt_in(params)?;
         self.client
-            .algorand
-            .send()
+            .transaction_sender
             .app_call(app_call, send_params)
             .await
             .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
@@ -241,8 +229,7 @@ impl BareTransactionSender<'_> {
     ) -> Result<SendTransactionResult, AppClientError> {
         let app_call = self.client.params().bare().close_out(params)?;
         self.client
-            .algorand
-            .send()
+            .transaction_sender
             .app_call(app_call, send_params)
             .await
             .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
@@ -256,8 +243,7 @@ impl BareTransactionSender<'_> {
     ) -> Result<SendTransactionResult, AppClientError> {
         let delete_params = self.client.params().bare().delete(params)?;
         self.client
-            .algorand
-            .send()
+            .transaction_sender
             .app_delete(delete_params, send_params)
             .await
             .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
@@ -271,8 +257,7 @@ impl BareTransactionSender<'_> {
     ) -> Result<SendTransactionResult, AppClientError> {
         let app_call = self.client.params().bare().clear_state(params)?;
         self.client
-            .algorand
-            .send()
+            .transaction_sender
             .app_call(app_call, send_params)
             .await
             .map_err(|e| super::utils::transform_transaction_error(self.client, e, true))
@@ -293,8 +278,7 @@ impl BareTransactionSender<'_> {
             .await?;
 
         self.client
-            .algorand
-            .send()
+            .transaction_sender
             .app_update(update_params, send_params)
             .await
             .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))

@@ -1,4 +1,7 @@
-use crate::AlgorandClient;
+use crate::AppManager;
+use crate::Composer;
+use crate::TransactionCreator;
+use crate::TransactionSender;
 use crate::clients::app_manager::TealTemplateValue;
 use crate::transactions::TransactionComposerConfig;
 use crate::transactions::TransactionSigner;
@@ -27,12 +30,15 @@ pub struct AppSourceMaps {
 pub struct AppClientParams {
     pub app_id: u64,
     pub app_spec: Arc56Contract,
-    pub algorand: AlgorandClient,
     pub app_name: Option<String>,
     pub default_sender: Option<String>,
     pub default_signer: Option<Arc<dyn TransactionSigner>>,
     pub source_maps: Option<AppSourceMaps>,
     pub transaction_composer_config: Option<TransactionComposerConfig>,
+    pub app_manager: Arc<AppManager>,
+    pub transaction_creator: Arc<TransactionCreator>,
+    pub transaction_sender: Arc<TransactionSender>,
+    pub new_group: Arc<dyn Fn(Option<TransactionComposerConfig>) -> Composer>,
 }
 
 /// Parameters for funding an application's account.

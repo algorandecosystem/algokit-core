@@ -2,7 +2,6 @@ use crate::common::{AlgorandFixtureResult, TestResult, algorand_fixture, deploy_
 use algokit_abi::{ABIValue, Arc56Contract};
 use algokit_transact::{OnApplicationComplete, StateSchema};
 use algokit_utils::applications::app_client::{AppClient, AppClientMethodCallParams};
-use algokit_utils::clients::app_manager::AppManager;
 use algokit_utils::{AlgorandClient as RootAlgorandClient, AppCreateParams, AppMethodCallArg};
 use rstest::*;
 use std::collections::HashMap;
@@ -61,7 +60,7 @@ async fn from_creator_and_name_resolves_and_can_call(
     let approval_teal = src.get_decoded_approval().expect("approval");
     let clear_teal = src.get_decoded_clear().expect("clear");
 
-    let app_manager: &AppManager = fixture.algorand_client.app();
+    let app_manager = fixture.algorand_client.app();
     let compiled_approval = app_manager.compile_teal(&approval_teal).await?;
     let compiled_clear = app_manager.compile_teal(&clear_teal).await?;
 

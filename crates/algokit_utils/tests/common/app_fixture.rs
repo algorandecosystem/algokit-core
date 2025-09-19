@@ -52,10 +52,23 @@ pub async fn build_app_fixture(
 
     let mut algorand = AlgorandClient::default_localnet(None);
     algorand.set_signer(sender.clone(), Arc::new(fixture.test_account.clone()));
+
+    let new_group = {
+        let client_manager = algorand.client();
+        let algod_client = client_manager.algod();
+        Arc::new(move |config| {
+            let account_manager = Arc::new(Mutex::new(AccountManager::new()));
+            Composer::new(ComposerParams {
+                algod_client: algod_client.clone(),
+                signer_getter: account_manager,
+                composer_config: config,
+            })
+        })
+    };
+
     let client = AppClient::new(AppClientParams {
         app_id,
         app_spec: spec.clone(),
-        algorand,
         app_name: opts.app_name.clone(),
         default_sender: Some(
             opts.default_sender_override
@@ -64,6 +77,10 @@ pub async fn build_app_fixture(
         default_signer: None,
         source_maps: None,
         transaction_composer_config: opts.transaction_composer_config,
+        app_manager: algorand.app(),
+        new_group,
+        transaction_creator: algorand.create(),
+        transaction_sender: algorand.send(),
     });
 
     Ok(AppFixture {

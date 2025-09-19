@@ -458,7 +458,6 @@ async fn box_methods_with_manually_encoded_abi_args(
         .await?;
 
     let retrieved = client
-        .algorand()
         .app()
         .get_box_value_from_abi_type(client.app_id(), &box_identifier, &value_type)
         .await?;

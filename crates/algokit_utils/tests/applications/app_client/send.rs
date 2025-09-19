@@ -172,8 +172,9 @@ async fn test_call_app_with_rekey(
         )
         .await?;
 
-    let _payment_result = client
-        .algorand()
+    let _payment_result = f
+        .algorand_fixture
+        .algorand_client
         .send()
         .payment(
             PaymentParams {

@@ -12,6 +12,7 @@ use base64::{Engine, prelude::BASE64_STANDARD};
 use rstest::*;
 use serde_json;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use crate::common::{AlgorandFixture, AlgorandFixtureResult, TestResult, algorand_fixture};
 
@@ -27,7 +28,6 @@ async fn fixture(#[future] algorand_fixture: AlgorandFixtureResult) -> FixtureRe
         let new_composer = composer.clone();
         move |_params| new_composer.clone()
     });
-    let app_manager = AppManager::new(algod_client.clone());
 
     let transaction_sender = TransactionSender::new(
         {
@@ -35,11 +35,11 @@ async fn fixture(#[future] algorand_fixture: AlgorandFixtureResult) -> FixtureRe
             move |_params| new_composer.clone()
         },
         asset_manager,
-        app_manager.clone(),
+        algorand_fixture.algorand_client.app(),
     );
 
     let app_deployer = AppDeployer::new(
-        app_manager.clone(),
+        algorand_fixture.algorand_client.app(),
         transaction_sender.clone(),
         Some(indexer_client.clone()),
     );
@@ -1047,8 +1047,8 @@ async fn test_deploy_append_for_update_app_when_on_update_append_app(
 struct Fixture {
     test_account: Address,
     algorand_fixture: AlgorandFixture,
-    app_manager: AppManager,
-    transaction_sender: TransactionSender,
+    app_manager: Arc<AppManager>,
+    transaction_sender: Arc<TransactionSender>,
     app_deployer: AppDeployer,
 }
 

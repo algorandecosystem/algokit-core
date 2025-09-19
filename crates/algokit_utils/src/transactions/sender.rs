@@ -77,8 +77,8 @@ impl From<TransactionResultError> for TransactionSenderError {
 /// Sends transactions and groups with validation and result processing.
 #[derive(Clone)]
 pub struct TransactionSender {
-    asset_manager: AssetManager,
-    app_manager: AppManager,
+    asset_manager: Arc<AssetManager>,
+    app_manager: Arc<AppManager>,
     new_group: Arc<dyn Fn(Option<TransactionComposerConfig>) -> Composer>,
 }
 
@@ -178,8 +178,8 @@ impl TransactionSender {
     /// Create a new TransactionSender instance.
     pub fn new(
         new_group: impl Fn(Option<TransactionComposerConfig>) -> Composer + 'static,
-        asset_manager: AssetManager,
-        app_manager: AppManager,
+        asset_manager: Arc<AssetManager>,
+        app_manager: Arc<AppManager>,
     ) -> Self {
         Self {
             asset_manager,

@@ -365,8 +365,7 @@ impl AppClient {
     /// This avoids async calls; returns None if not available.
     fn get_program_bytes(&self, is_clear_state_program: bool) -> Option<Vec<u8>> {
         let teal_src = self.decode_teal(is_clear_state_program)?;
-        self.algorand()
-            .app()
+        self.app_manager
             .get_compilation_result(&teal_src)
             .map(|c| c.compiled_base64_to_bytes)
     }

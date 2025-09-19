@@ -1,9 +1,9 @@
 use crate::applications::AppDeployer;
 use crate::clients::app_manager::{AppState, BoxName};
 use crate::clients::network_client::NetworkDetails;
-use crate::transactions::{TransactionComposerConfig, TransactionSigner};
+use crate::transactions::{ComposerParams, TransactionComposerConfig, TransactionSigner};
 use crate::{AlgorandClient, clients::app_manager::BoxIdentifier};
-use crate::{SendParams, SendTransactionResult};
+use crate::{AppManager, Composer, SendParams, SendTransactionResult, TransactionCreator};
 use algokit_abi::{ABIType, ABIValue, Arc56Contract};
 use algokit_transact::Address;
 use std::collections::HashMap;
@@ -48,12 +48,15 @@ type BoxNameFilter = Box<dyn Fn(&BoxName) -> bool>;
 pub struct AppClient {
     app_id: u64,
     app_spec: Arc56Contract,
-    algorand: AlgorandClient,
     default_sender: Option<String>,
     default_signer: Option<Arc<dyn TransactionSigner>>,
     source_maps: Option<AppSourceMaps>,
     app_name: Option<String>,
     transaction_composer_config: Option<TransactionComposerConfig>,
+    app_manager: Arc<AppManager>,
+    transaction_creator: Arc<TransactionCreator>, // TODO: remove this
+    transaction_sender: Arc<crate::TransactionSender>, // TODO: remove this
+    new_group: Arc<dyn Fn(Option<TransactionComposerConfig>) -> Composer>,
 }
 
 impl AppClient {
@@ -62,14 +65,19 @@ impl AppClient {
         Self {
             app_id: params.app_id,
             app_spec: params.app_spec,
-            algorand: params.algorand,
             default_sender: params.default_sender,
             default_signer: params.default_signer,
             source_maps: params.source_maps,
             app_name: params.app_name,
             transaction_composer_config: params.transaction_composer_config,
+            app_manager: params.app_manager,
+            transaction_creator: params.transaction_creator,
+            transaction_sender: params.transaction_sender,
+            new_group: params.new_group,
         }
     }
+
+    // TODO: clone method
 
     /// Construct from the current network using app_spec.networks mapping.
     ///
@@ -106,15 +114,34 @@ impl AppClient {
             available: available_keys,
         })?;
 
+        let app_manager = algorand.app();
+        let transaction_creator = algorand.create();
+        let transaction_sender = algorand.send();
+
+        let new_group = {
+            let algod_client = algorand.client().algod();
+            let account_manager = algorand.account();
+            Arc::new(move |config| {
+                Composer::new(ComposerParams {
+                    algod_client: algod_client.clone(),
+                    signer_getter: account_manager.clone(),
+                    composer_config: config,
+                })
+            })
+        };
+
         Ok(Self::new(AppClientParams {
             app_id,
             app_spec,
-            algorand,
             app_name,
             default_sender,
             default_signer,
             source_maps,
             transaction_composer_config,
+            app_manager,
+            transaction_creator,
+            transaction_sender,
+            new_group,
         }))
     }
 
@@ -162,15 +189,34 @@ impl AppClient {
                 ),
             })?;
 
+        let app_manager = algorand.app();
+        let transaction_creator = algorand.create();
+        let transaction_sender = algorand.send();
+
+        let new_group = {
+            let algod_client = algorand.client().algod();
+            let account_manager = algorand.account();
+            Arc::new(move |config| {
+                Composer::new(ComposerParams {
+                    algod_client: algod_client.clone(),
+                    signer_getter: account_manager.clone(),
+                    composer_config: config,
+                })
+            })
+        };
+
         Ok(Self::new(AppClientParams {
             app_id: app_metadata.app_id,
             app_spec,
-            algorand,
             app_name: Some(app_name.to_string()),
             default_sender,
             default_signer,
             source_maps,
             transaction_composer_config,
+            app_manager,
+            transaction_creator,
+            transaction_sender,
+            new_group,
         }))
     }
 
@@ -208,10 +254,6 @@ impl AppClient {
     pub fn app_spec(&self) -> &Arc56Contract {
         &self.app_spec
     }
-    /// Get the Algorand client instance.
-    pub fn algorand(&self) -> &AlgorandClient {
-        &self.algorand
-    }
     /// Get the application name if configured.
     pub fn app_name(&self) -> Option<&String> {
         self.app_name.as_ref()
@@ -220,7 +262,6 @@ impl AppClient {
     pub fn default_sender(&self) -> Option<&String> {
         self.default_sender.as_ref()
     }
-
     /// Get the application's account address.
     pub fn app_address(&self) -> Address {
         Address::from_app_id(&self.app_id)
@@ -239,6 +280,14 @@ impl AppClient {
         Address::from_str(sender_str).map_err(|e| AppClientError::ValidationError {
             message: format!("Invalid sender address: {}", e),
         })
+    }
+
+    pub fn new_group(&self) -> Composer {
+        return (self.new_group)(self.transaction_composer_config.clone());
+    }
+
+    pub fn app(&self) -> Arc<AppManager> {
+        return self.app_manager.clone();
     }
 
     /// Resolve the signer for a transaction based on the sender and default configuration.
@@ -268,8 +317,7 @@ impl AppClient {
 
     /// Get the application's global state.
     pub async fn get_global_state(&self) -> Result<HashMap<Vec<u8>, AppState>, AppClientError> {
-        self.algorand
-            .app()
+        self.app_manager
             .get_global_state(self.app_id)
             .await
             .map_err(|e| AppClientError::AppManagerError { source: e })
@@ -280,8 +328,7 @@ impl AppClient {
         &self,
         address: &str,
     ) -> Result<std::collections::HashMap<Vec<u8>, AppState>, AppClientError> {
-        self.algorand
-            .app()
+        self.app_manager
             .get_local_state(self.app_id, address)
             .await
             .map_err(|e| AppClientError::AppManagerError { source: e })
@@ -289,8 +336,7 @@ impl AppClient {
 
     /// Get all box names for the application.
     pub async fn get_box_names(&self) -> Result<Vec<BoxName>, AppClientError> {
-        self.algorand
-            .app()
+        self.app_manager
             .get_box_names(self.app_id)
             .await
             .map_err(|e| AppClientError::AppManagerError { source: e })
@@ -309,8 +355,7 @@ impl AppClient {
 
     /// Get the raw value of a specific box.
     pub async fn get_box_value(&self, name: &BoxIdentifier) -> Result<Vec<u8>, AppClientError> {
-        self.algorand
-            .app()
+        self.app_manager
             .get_box_value(self.app_id, name)
             .await
             .map_err(|e| AppClientError::AppManagerError { source: e })
@@ -322,8 +367,7 @@ impl AppClient {
         name: &BoxIdentifier,
         abi_type: &ABIType,
     ) -> Result<ABIValue, AppClientError> {
-        self.algorand
-            .app()
+        self.app_manager
             .get_box_value_from_abi_type(self.app_id, name, abi_type)
             .await
             .map_err(|e| AppClientError::AppManagerError { source: e })
@@ -348,8 +392,7 @@ impl AppClient {
             .collect();
 
         let values = self
-            .algorand
-            .app()
+            .app_manager
             .get_box_values_from_abi_type(self.app_id, &box_names, abi_type)
             .await
             .map_err(|e| AppClientError::AppManagerError { source: e })?;

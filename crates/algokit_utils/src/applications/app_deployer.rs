@@ -288,8 +288,8 @@ pub enum AppDeployError {
 #[derive(Clone)]
 pub struct AppDeployer {
     indexer_client: Option<Arc<IndexerClient>>,
-    app_manager: AppManager,
-    transaction_sender: TransactionSender,
+    app_manager: Arc<AppManager>,
+    transaction_sender: Arc<TransactionSender>,
     app_lookups: Arc<Mutex<HashMap<String, AppLookup>>>,
 }
 
@@ -301,8 +301,8 @@ impl AppDeployer {
     /// * `transaction_sender` - A `TransactionSender` instance
     /// * `indexer_client` - An optional `IndexerClient` for app metadata lookup
     pub fn new(
-        app_manager: AppManager,
-        transaction_sender: TransactionSender,
+        app_manager: Arc<AppManager>,
+        transaction_sender: Arc<TransactionSender>,
         indexer_client: Option<Arc<IndexerClient>>,
     ) -> Self {
         Self {

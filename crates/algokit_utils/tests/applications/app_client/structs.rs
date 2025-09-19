@@ -1,11 +1,14 @@
 use crate::common::{AlgorandFixtureResult, TestResult, algorand_fixture, deploy_arc56_contract};
 use algokit_abi::{ABIValue, Arc56Contract};
 use algokit_utils::applications::app_client::AppClientMethodCallParams;
-use algokit_utils::transactions::TransactionComposerConfig;
-use algokit_utils::{AlgorandClient as RootAlgorandClient, AppMethodCallArg, ResourcePopulation};
+use algokit_utils::transactions::{ComposerParams, TransactionComposerConfig};
+use algokit_utils::{
+    AccountManager, AlgorandClient as RootAlgorandClient, AppClient, AppClientParams,
+    AppMethodCallArg, Composer, ResourcePopulation,
+};
 use rstest::*;
 use std::collections::HashMap;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 fn get_nested_struct_spec() -> Arc56Contract {
     let json = algokit_test_artifacts::nested_struct_storage::APPLICATION_ARC56;
@@ -37,23 +40,38 @@ async fn test_nested_structs_described_by_structure(
 
     let mut algorand = RootAlgorandClient::default_localnet(None);
     algorand.set_signer(sender.clone(), Arc::new(fixture.test_account.clone()));
-    let app_client = algokit_utils::applications::app_client::AppClient::new(
-        algokit_utils::applications::app_client::AppClientParams {
-            app_id,
-            app_spec: spec,
-            algorand,
-            app_name: None,
-            default_sender: Some(sender.to_string()),
-            default_signer: None,
-            source_maps: None,
-            transaction_composer_config: Some(TransactionComposerConfig {
-                populate_app_call_resources: ResourcePopulation::Enabled {
-                    use_access_list: false,
-                },
-                ..Default::default()
-            }),
-        },
-    );
+
+    let new_group = {
+        let client_manager = algorand.client();
+        let algod_client = client_manager.algod();
+        Arc::new(move |config| {
+            let account_manager = Arc::new(Mutex::new(AccountManager::new()));
+            Composer::new(ComposerParams {
+                algod_client: algod_client.clone(),
+                signer_getter: account_manager,
+                composer_config: config,
+            })
+        })
+    };
+
+    let app_client = AppClient::new(AppClientParams {
+        app_id,
+        app_spec: spec,
+        app_name: None,
+        default_sender: Some(sender.to_string()),
+        default_signer: None,
+        source_maps: None,
+        transaction_composer_config: Some(TransactionComposerConfig {
+            populate_app_call_resources: ResourcePopulation::Enabled {
+                use_access_list: false,
+            },
+            ..Default::default()
+        }),
+        app_manager: algorand.app(),
+        new_group,
+        transaction_creator: algorand.create(),
+        transaction_sender: algorand.send(),
+    });
 
     app_client
         .send()
@@ -147,18 +165,32 @@ async fn test_nested_structs_referenced_by_name(
 
     let mut algorand = RootAlgorandClient::default_localnet(None);
     algorand.set_signer(sender.clone(), Arc::new(fixture.test_account.clone()));
-    let app_client = algokit_utils::applications::app_client::AppClient::new(
-        algokit_utils::applications::app_client::AppClientParams {
-            app_id,
-            app_spec: spec,
-            algorand,
-            app_name: None,
-            default_sender: Some(sender.to_string()),
-            default_signer: None,
-            source_maps: None,
-            transaction_composer_config: None,
-        },
-    );
+
+    let new_group = {
+        let client_manager = algorand.client();
+        let algod_client = client_manager.algod();
+        Arc::new(move |config| {
+            let account_manager = Arc::new(Mutex::new(AccountManager::new()));
+            Composer::new(ComposerParams {
+                algod_client: algod_client.clone(),
+                signer_getter: account_manager,
+                composer_config: config,
+            })
+        })
+    };
+    let app_client = AppClient::new(AppClientParams {
+        app_id,
+        app_spec: spec,
+        app_name: None,
+        default_sender: Some(sender.to_string()),
+        default_signer: None,
+        source_maps: None,
+        transaction_composer_config: None,
+        app_manager: algorand.app(),
+        new_group,
+        transaction_creator: algorand.create(),
+        transaction_sender: algorand.send(),
+    });
 
     app_client
         .send()

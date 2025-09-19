@@ -30,8 +30,7 @@ impl TransactionBuilder<'_> {
         let params = self.client.params().call(params, on_complete).await?;
         let trasactions = self
             .client
-            .algorand
-            .create()
+            .transaction_creator
             .app_call_method_call(params)
             .map_err(|e| AppClientError::ComposerError { source: e })
             .await?;
@@ -46,8 +45,7 @@ impl TransactionBuilder<'_> {
         let params = self.client.params().opt_in(params).await?;
         let trasactions = self
             .client
-            .algorand
-            .create()
+            .transaction_creator
             .app_call_method_call(params)
             .map_err(|e| AppClientError::ComposerError { source: e })
             .await?;
@@ -62,8 +60,7 @@ impl TransactionBuilder<'_> {
         let params = self.client.params().close_out(params).await?;
         let trasactions = self
             .client
-            .algorand
-            .create()
+            .transaction_creator
             .app_call_method_call(params)
             .map_err(|e| AppClientError::ComposerError { source: e })
             .await?;
@@ -78,8 +75,7 @@ impl TransactionBuilder<'_> {
         let params = self.client.params().clear_state(params).await?;
         let trasactions = self
             .client
-            .algorand
-            .create()
+            .transaction_creator
             .app_call_method_call(params)
             .map_err(|e| AppClientError::ComposerError { source: e })
             .await?;
@@ -94,8 +90,7 @@ impl TransactionBuilder<'_> {
         let params = self.client.params().delete(params).await?;
         let trasactions = self
             .client
-            .algorand
-            .create()
+            .transaction_creator
             .app_delete_method_call(params)
             .map_err(|e| AppClientError::ComposerError { source: e })
             .await?;
@@ -115,8 +110,7 @@ impl TransactionBuilder<'_> {
             .await?;
         let trasactions = self
             .client
-            .algorand
-            .create()
+            .transaction_creator
             .app_update_method_call(params)
             .map_err(|e| AppClientError::ComposerError { source: e })
             .await?;
@@ -130,8 +124,7 @@ impl TransactionBuilder<'_> {
     ) -> Result<algokit_transact::Transaction, AppClientError> {
         let params = self.client.params().fund_app_account(&params)?;
         self.client
-            .algorand
-            .create()
+            .transaction_creator
             .payment(params)
             .map_err(|e| AppClientError::ComposerError { source: e })
             .await
@@ -147,8 +140,7 @@ impl BareTransactionBuilder<'_> {
     ) -> Result<algokit_transact::Transaction, AppClientError> {
         let params = self.client.params().bare().call(params, on_complete)?;
         self.client
-            .algorand
-            .create()
+            .transaction_creator
             .app_call(params)
             .map_err(|e| AppClientError::ComposerError { source: e })
             .await
@@ -161,8 +153,7 @@ impl BareTransactionBuilder<'_> {
     ) -> Result<algokit_transact::Transaction, AppClientError> {
         let params = self.client.params().bare().opt_in(params)?;
         self.client
-            .algorand
-            .create()
+            .transaction_creator
             .app_call(params)
             .map_err(|e| AppClientError::ComposerError { source: e })
             .await
@@ -175,8 +166,7 @@ impl BareTransactionBuilder<'_> {
     ) -> Result<algokit_transact::Transaction, AppClientError> {
         let params = self.client.params().bare().close_out(params)?;
         self.client
-            .algorand
-            .create()
+            .transaction_creator
             .app_call(params)
             .map_err(|e| AppClientError::ComposerError { source: e })
             .await
@@ -189,8 +179,7 @@ impl BareTransactionBuilder<'_> {
     ) -> Result<algokit_transact::Transaction, AppClientError> {
         let params = self.client.params().bare().delete(params)?;
         self.client
-            .algorand
-            .create()
+            .transaction_creator
             .app_delete(params)
             .map_err(|e| AppClientError::ComposerError { source: e })
             .await
@@ -203,8 +192,7 @@ impl BareTransactionBuilder<'_> {
     ) -> Result<algokit_transact::Transaction, AppClientError> {
         let params = self.client.params().bare().clear_state(params)?;
         self.client
-            .algorand
-            .create()
+            .transaction_creator
             .app_call(params)
             .map_err(|e| AppClientError::ComposerError { source: e })
             .await
@@ -223,8 +211,7 @@ impl BareTransactionBuilder<'_> {
             .update(params, compilation_params)
             .await?;
         self.client
-            .algorand
-            .create()
+            .transaction_creator
             .app_update(params)
             .map_err(|e| AppClientError::ComposerError { source: e })
             .await
