@@ -32,10 +32,7 @@ pub trait TransactionSigner: Send + Sync {
     async fn sign_transaction(
         &self,
         transaction: Transaction,
-    ) -> Result<SignedTransaction, UtilsError> {
-        let result = self.sign_transactions(vec![transaction], vec![0]).await?;
-        Ok(result[0].clone())
-    }
+    ) -> Result<SignedTransaction, UtilsError>;
 }
 
 struct RustTransactionSignerFromFfi {
@@ -98,6 +95,18 @@ impl TransactionSigner for FfiTransactionSignerFromRust {
             })?;
 
         Ok(signed_txns.into_iter().map(|st| st.into()).collect())
+    }
+
+    async fn sign_transaction(
+        &self,
+        transaction: Transaction,
+    ) -> Result<SignedTransaction, UtilsError> {
+        let txns = vec![transaction];
+        let indices = vec![0u32];
+        let mut signed_txns = self.sign_transactions(txns, indices).await?;
+        signed_txns.pop().ok_or(UtilsError::UtilsError {
+            message: "No signed transaction returned".to_string(),
+        })
     }
 }
 
