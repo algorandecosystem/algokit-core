@@ -30,8 +30,6 @@ impl AppFactory {
         resolved
     }
 
-    // Removed unused compile_programs in favor of compile_programs_with
-
     pub(crate) async fn compile_programs_with(
         &self,
         override_cp: Option<CompilationParams>,

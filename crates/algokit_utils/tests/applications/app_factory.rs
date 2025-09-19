@@ -200,7 +200,7 @@ async fn oncomplete_override_on_create(
                 algokit_transact::OnApplicationComplete::OptIn
             );
         }
-        _ => panic!("expected app call"),
+        _ => return Err("expected app call".into()),
     }
     assert!(client.app_id() > 0);
     assert_eq!(
@@ -253,10 +253,13 @@ async fn abi_based_create_returns_value(
         )
         .await?;
 
-    let abi_ret = call_return.arc56_return().expect("abi return").clone();
+    let abi_ret = call_return
+        .arc56_return()
+        .expect("abi return expected")
+        .clone();
     match abi_ret {
         algokit_abi::ABIValue::String(s) => assert_eq!(s, "string_io"),
-        other => panic!("expected string return, got {other:?}"),
+        other => return Err(format!("expected string return, got {other:?}").into()),
     }
     assert!(call_return.compiled_approval.is_some());
     assert!(call_return.compiled_clear.is_some());
@@ -302,11 +305,11 @@ async fn create_then_call_via_app_client(
         )
         .await?;
 
-    let abi_ret = send_res.abi_return.clone().expect("abi return");
+    let abi_ret = send_res.abi_return.clone().expect("abi return expected");
     if let Some(algokit_abi::ABIValue::String(s)) = abi_ret.return_value {
         assert_eq!(s, "Hello, test");
     } else {
-        panic!("expected string");
+        return Err("expected string".into());
     }
     Ok(())
 }
@@ -359,9 +362,7 @@ async fn call_app_with_too_many_args(
     let msg = err.to_string();
     // Accept the actual error message format from Rust implementation
     assert!(
-        msg.contains("The number of provided arguments is 2 while the method expects 1 arguments")
-            || msg.contains("Unexpected arg at position 1. call_abi only expects 1 args")
-            || msg.contains("Unexpected arg at position 2. call_abi only expects 1 args"),
+        msg.contains("The number of provided arguments is 2 while the method expects 1 arguments"),
         "Expected error message about too many arguments, got: {msg}"
     );
     Ok(())
@@ -470,7 +471,7 @@ async fn delete_app_with_abi_direct(
     if let Some(algokit_abi::ABIValue::String(s)) = abi_ret.return_value {
         assert_eq!(s, "string_io");
     } else {
-        panic!("expected string return");
+        return Err("expected string return".into());
     }
     Ok(())
 }
@@ -525,7 +526,7 @@ async fn update_app_with_abi_direct(
     if let Some(algokit_abi::ABIValue::String(s)) = abi_ret.return_value {
         assert_eq!(s, "string_io");
     } else {
-        panic!("expected string return");
+        return Err("expected string return".into());
     }
     assert!(update_res.compiled_approval.is_some());
     assert!(update_res.compiled_clear.is_some());
@@ -557,7 +558,7 @@ async fn deploy_when_immutable_and_permanent(
     )
     .await;
 
-    let _ = factory
+    factory
         .deploy(DeployArgs {
             on_update: Some(OnUpdate::Fail),
             on_schema_break: Some(OnSchemaBreak::Fail),
@@ -591,7 +592,7 @@ async fn deploy_app_create(#[future] algorand_fixture: AlgorandFixtureResult) ->
 
     match &deploy_result.operation_performed {
         AppDeployResult::Create { .. } => {}
-        _ => panic!("expected Create"),
+        _ => return Err("expected Create".into()),
     }
     let create_result = deploy_result
         .create_result
@@ -652,7 +653,7 @@ async fn deploy_app_create_abi(#[future] algorand_fixture: AlgorandFixtureResult
 
     match &deploy_result.operation_performed {
         AppDeployResult::Create { .. } => {}
-        _ => panic!("expected Create"),
+        _ => return Err("expected Create".into()),
     }
     let create_result = deploy_result
         .create_result
@@ -663,11 +664,11 @@ async fn deploy_app_create_abi(#[future] algorand_fixture: AlgorandFixtureResult
     let abi_value = create_result
         .arc56_return()
         .cloned()
-        .and_then(|v| match v {
-            algokit_abi::ABIValue::String(s) => Some(s),
-            other => panic!("expected string abi return, got {other:?}"),
-        })
         .expect("abi return expected");
+    let abi_value = match abi_value {
+        algokit_abi::ABIValue::String(s) => s,
+        other => return Err(format!("expected string abi return, got {other:?}").into()),
+    };
     assert_eq!(abi_value, "arg_io");
     assert!(create_result.compiled_approval.is_some());
     assert!(create_result.compiled_clear.is_some());
@@ -702,7 +703,7 @@ async fn deploy_app_update(#[future] algorand_fixture: AlgorandFixtureResult) ->
     let (_client1, create_res) = factory.deploy(Default::default()).await?;
     match &create_res.operation_performed {
         AppDeployResult::Create { .. } => {}
-        _ => panic!("expected Create"),
+        _ => return Err("expected Create".into()),
     }
     let initial_create = create_res
         .create_result
@@ -735,7 +736,7 @@ async fn deploy_app_update(#[future] algorand_fixture: AlgorandFixtureResult) ->
 
     match &update_res.operation_performed {
         AppDeployResult::Update { .. } => {}
-        _ => panic!("expected Update"),
+        _ => return Err("expected Update".into()),
     }
     let updated = update_res
         .update_result
@@ -791,7 +792,7 @@ async fn deploy_app_update_detects_extra_pages_as_breaking_change(
     let (_small_client, create_res) = factory.deploy(Default::default()).await?;
     match &create_res.operation_performed {
         AppDeployResult::Create { .. } => {}
-        _ => panic!("expected Create for small"),
+        _ => return Err("expected Create for small".into()),
     }
 
     // Switch to large spec and attempt update with Append schema break
@@ -824,7 +825,7 @@ async fn deploy_app_update_detects_extra_pages_as_breaking_change(
 
     match &update_res.operation_performed {
         AppDeployResult::Create { .. } => {}
-        _ => panic!("expected Create on schema break append"),
+        _ => return Err("expected Create on schema break append".into()),
     }
 
     // App id should differ between small and large
@@ -874,15 +875,15 @@ async fn deploy_app_update_detects_extra_pages_as_breaking_change_fail_case(
     )
     .await;
 
-    let err = factory_fail
+    let msg = match factory_fail
         .deploy(DeployArgs {
             on_update: Some(OnUpdate::Update),
             on_schema_break: Some(OnSchemaBreak::Fail),
             ..Default::default()
         })
-        .await;
-    let msg = match err {
-        Ok(_) => panic!("expected schema break fail error"),
+        .await
+    {
+        Ok(_) => return Err("expected schema break fail error".into()),
         Err(e) => e.to_string(),
     };
     assert!(msg.contains("Executing the fail on schema break strategy, stopping deployment."));
@@ -946,20 +947,17 @@ async fn deploy_app_update_abi(#[future] algorand_fixture: AlgorandFixtureResult
         .await?;
     match &update_res.operation_performed {
         AppDeployResult::Update { .. } => {}
-        _ => panic!("expected Update"),
+        _ => return Err("expected Update".into()),
     }
     let update_result = update_res
         .update_result
         .as_ref()
         .expect("update result expected");
-    let abi_return = update_result
-        .arc56_return()
-        .cloned()
-        .and_then(|v| match v {
-            algokit_abi::ABIValue::String(s) => Some(s),
-            other => panic!("expected string return, got {other:?}"),
-        })
-        .expect("abi return");
+    let abi_value = update_result.arc56_return().cloned().expect("abi return");
+    let abi_return = match abi_value {
+        algokit_abi::ABIValue::String(s) => s,
+        other => return Err(format!("expected string return, got {other:?}").into()),
+    };
     assert_eq!(abi_return, "args_io");
     assert!(update_result.compiled_approval.is_some());
     assert!(update_result.compiled_clear.is_some());
@@ -973,7 +971,7 @@ async fn deploy_app_update_abi(#[future] algorand_fixture: AlgorandFixtureResult
                 algokit_transact::OnApplicationComplete::UpdateApplication
             );
         }
-        _ => panic!("expected app call"),
+        _ => return Err("expected app call".into()),
     }
     Ok(())
 }
@@ -1027,19 +1025,9 @@ async fn deploy_app_replace(#[future] algorand_fixture: AlgorandFixtureResult) -
         .await?;
     match &replace_res.operation_performed {
         AppDeployResult::Replace { .. } => {}
-        _ => panic!("expected Replace"),
+        _ => return Err("expected Replace".into()),
     }
     assert!(replace_res.app.app_id > old_app_id);
-    let create_result = replace_res
-        .create_result
-        .as_ref()
-        .expect("replace create result expected");
-    assert!(create_result.compiled_approval.is_some());
-    assert!(create_result.compiled_clear.is_some());
-    let _delete_result = replace_res
-        .delete_result
-        .as_ref()
-        .expect("replace delete result expected");
     let replace_create = replace_res
         .create_result
         .as_ref()
@@ -1048,6 +1036,8 @@ async fn deploy_app_replace(#[future] algorand_fixture: AlgorandFixtureResult) -
         .delete_result
         .as_ref()
         .expect("replace delete result expected");
+    assert!(replace_create.compiled_approval.is_some());
+    assert!(replace_create.compiled_clear.is_some());
     assert!(replace_create.compiled_approval.is_some());
     assert!(replace_create.compiled_clear.is_some());
     assert!(
@@ -1066,7 +1056,7 @@ async fn deploy_app_replace(#[future] algorand_fixture: AlgorandFixtureResult) -
             );
             assert_eq!(fields.app_id, old_app_id);
         }
-        _ => panic!("expected app call"),
+        _ => return Err("expected app call".into()),
     }
     assert_eq!(
         replace_res.app.app_address,
@@ -1143,7 +1133,7 @@ async fn deploy_app_replace_abi(#[future] algorand_fixture: AlgorandFixtureResul
         .await?;
     match &replace_res.operation_performed {
         AppDeployResult::Replace { .. } => {}
-        _ => panic!("expected Replace"),
+        _ => return Err("expected Replace".into()),
     }
     assert!(replace_res.app.app_id > old_app_id);
     // Validate ABI return values for create/delete
@@ -1152,14 +1142,14 @@ async fn deploy_app_replace_abi(#[future] algorand_fixture: AlgorandFixtureResul
         .as_ref()
         .expect("create result expected");
 
-    let create_ret = create_res
+    let create_value = create_res
         .arc56_return()
         .cloned()
-        .and_then(|v| match v {
-            algokit_abi::ABIValue::String(s) => Some(s),
-            _ => None,
-        })
         .expect("create abi return");
+    let create_ret = match create_value {
+        algokit_abi::ABIValue::String(s) => s,
+        _ => return Err("create abi return".into()),
+    };
     assert_eq!(create_ret, "arg_io");
 
     if let Some(delete_res) = replace_res.delete_result.as_ref() {
