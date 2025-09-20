@@ -35,7 +35,7 @@ impl ABIValue {
     }
 
     #[uniffi::constructor]
-    pub fn from_bytes(bytes: Vec<u8>, abi_type: Arc<dyn ABIType>) -> Result<Self, UtilsError> {
+    pub fn from_bytes(bytes: Vec<u8>, abi_type: &ABIType) -> Result<Self, UtilsError> {
         let rust_abi_type =
             RustABIType::from_str(&abi_type.to_string()).map_err(|e| UtilsError::UtilsError {
                 message: format!("Failed to parse ABI type: {}", e),
@@ -124,7 +124,7 @@ impl ABIValue {
     }
 
     #[uniffi::constructor]
-    pub fn array(element_type: Arc<dyn ABIType>, values: Vec<Arc<ABIValue>>) -> Self {
+    pub fn array(element_type: &ABIType, values: Vec<Arc<ABIValue>>) -> Self {
         let abi_type_str = format!("{}[]", element_type.to_string());
         let rust_abi_type = RustABIType::from_str(&abi_type_str).unwrap();
         let abi_value = RustABIValue::Array(
@@ -143,11 +143,7 @@ impl ABIValue {
     }
 
     #[uniffi::constructor]
-    pub fn static_array(
-        element_type: Arc<dyn ABIType>,
-        size: u64,
-        values: Vec<Arc<ABIValue>>,
-    ) -> Self {
+    pub fn static_array(element_type: &ABIType, size: u64, values: Vec<Arc<ABIValue>>) -> Self {
         let abi_type_str = format!("{}[{}]", element_type.to_string(), size);
         let rust_abi_type = RustABIType::from_str(&abi_type_str).unwrap();
         let abi_value = RustABIValue::Array(
