@@ -1,25 +1,20 @@
-use std::sync::Arc;
+use std::str::FromStr;
 
+use algokit_abi::ABIType as RustABIType;
 use derive_more::Display;
 
-#[derive(uniffi::Object, Display)]
+use crate::transactions::common::UtilsError;
+
+#[derive(uniffi::Record, Display)]
 pub struct ABIType {
-    pub abi_type: algokit_abi::ABIType,
+    pub abi_type: String,
 }
 
 #[uniffi::export]
-impl ABIType {
-    #[uniffi::constructor]
-    pub fn bool() -> Self {
-        Self {
-            abi_type: algokit_abi::ABIType::Bool,
-        }
-    }
-
-    #[uniffi::constructor]
-    pub fn array(element_type: Arc<ABIType>) -> Self {
-        Self {
-            abi_type: algokit_abi::ABIType::DynamicArray(Box::new(element_type.abi_type.clone())),
-        }
-    }
+pub fn normalize_abi_type(abi_type: String) -> Result<String, UtilsError> {
+    Ok(RustABIType::from_str(&abi_type)
+        .map_err(|e| UtilsError::UtilsError {
+            message: format!("Failed to parse ABI type {}: {}", abi_type, e),
+        })?
+        .to_string())
 }

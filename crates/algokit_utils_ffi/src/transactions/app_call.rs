@@ -3,6 +3,7 @@ use algokit_transact::Address;
 use algokit_transact_ffi::transactions::app_call::{
     BoxReference, OnApplicationComplete, StateSchema,
 };
+use std::str::FromStr;
 use std::sync::Arc;
 
 use super::common::{CommonParams, UtilsError};
@@ -12,11 +13,12 @@ use algokit_utils::transactions::app_call::{
 };
 
 use algokit_abi::ABIMethodArgType as RustABIMethodArgType;
+use algokit_abi::ABIType as RustABIType;
 
 #[derive(uniffi::Enum)]
 pub enum ABIMethodArgType {
     /// A value that is directly encoded in the app arguments.
-    Value(Arc<ABIType>),
+    Value(ABIType),
     // TODO: txn and ref
 }
 
@@ -24,7 +26,7 @@ impl From<ABIMethodArgType> for RustABIMethodArgType {
     fn from(value: ABIMethodArgType) -> Self {
         match value {
             ABIMethodArgType::Value(abi_type) => {
-                RustABIMethodArgType::Value(abi_type.abi_type.clone())
+                RustABIMethodArgType::Value(RustABIType::from_str(&abi_type.abi_type).unwrap())
             }
         }
     }
@@ -33,9 +35,9 @@ impl From<ABIMethodArgType> for RustABIMethodArgType {
 impl From<RustABIMethodArgType> for ABIMethodArgType {
     fn from(value: RustABIMethodArgType) -> Self {
         match value {
-            RustABIMethodArgType::Value(abi_type) => {
-                ABIMethodArgType::Value(Arc::new(ABIType { abi_type }))
-            }
+            RustABIMethodArgType::Value(abi_type) => ABIMethodArgType::Value(ABIType {
+                abi_type: abi_type.to_string(),
+            }),
             _ => todo!(),
         }
     }
@@ -58,7 +60,7 @@ pub struct ABIMethod {
     /// A list of the method's arguments.
     pub args: Vec<ABIMethodArg>,
     /// The return type of the method, or `None` if the method does not return a value.
-    pub returns: Option<Arc<ABIType>>,
+    pub returns: Option<ABIType>,
     /// An optional description of the method.
     pub description: Option<String>,
 }
