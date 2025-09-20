@@ -4,9 +4,14 @@ from algokit_utils.algokit_http_client import HttpClient, HttpMethod, HttpRespon
 from algokit_utils.algokit_transact_ffi import OnApplicationComplete, SignedTransaction, Transaction, encode_transaction
 from algokit_utils import AlgodClient, TransactionSigner
 from algokit_utils.algokit_utils_ffi import (
+    AbiMethod,
+    AbiMethodArg,
+    AbiMethodArgType,
     AbiType,
+    AppCallMethodCallParams,
     AppCallParams,
     AppCreateParams,
+    AppMethodCallArg,
     CommonParams,
     Composer,
     PaymentParams,
@@ -171,5 +176,26 @@ async def test_app_create_and_call():
     response = await call_composer.send()
     assert(len(response.transaction_ids) == 1)
     assert(len(response.transaction_ids[0]) == 52)
+
+    method_composer = Composer(
+        algod_client=algod,
+        signer_getter=SignerGetter(),
+    )
+
+    method_composer.add_app_call_method_call(
+        params=AppCallMethodCallParams(
+                common_params=CommonParams(
+                    sender=ADDR,
+                ),
+                app_id=app_id,
+                args=[AppMethodCallArg.ABI_VALUE(AbiValue.bool(True))],
+                on_complete=OnApplicationComplete.NO_OP,
+                method=AbiMethod(name="myMethod", args=[AbiMethodArg(arg_type=AbiMethodArgType.VALUE(bool_type), name="a", description="")], returns=None, description="")
+        )
+    )
+
+    method_response = await method_composer.send()
+    assert(len(method_response.transaction_ids) == 1)
+    assert(len(method_response.transaction_ids[0]) == 52)
 
 

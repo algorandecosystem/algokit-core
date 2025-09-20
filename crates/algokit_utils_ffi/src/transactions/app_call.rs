@@ -158,16 +158,20 @@ pub struct AppCallMethodCallParams {
     pub args: Vec<AppMethodCallArg>,
     /// List of accounts in addition to the sender that may be accessed
     /// from the app's approval program and clear state program.
+    #[uniffi(default = None)]
     pub account_references: Option<Vec<String>>,
     /// List of apps in addition to the current app that may be called
     /// from the app's approval program and clear state program.
+    #[uniffi(default = None)]
     pub app_references: Option<Vec<u64>>,
     /// Lists the assets whose parameters may be accessed by this app's
     /// approval program and clear state program.
     ///
     /// The access is read-only.
+    #[uniffi(default = None)]
     pub asset_references: Option<Vec<u64>>,
     /// The boxes that should be made available for the runtime of the program.
+    #[uniffi(default = None)]
     pub box_references: Option<Vec<BoxReference>>,
     /// Defines what additional actions occur with the transaction.
     pub on_complete: OnApplicationComplete,
