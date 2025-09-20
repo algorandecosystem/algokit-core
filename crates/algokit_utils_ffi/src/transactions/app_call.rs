@@ -3,7 +3,6 @@ use algokit_transact::Address;
 use algokit_transact_ffi::transactions::app_call::{
     BoxReference, OnApplicationComplete, StateSchema,
 };
-use std::str::FromStr;
 use std::sync::Arc;
 
 use super::common::{CommonParams, UtilsError};
@@ -12,13 +11,13 @@ use algokit_utils::transactions::app_call::{
     AppCallParams as RustAppCallParams, AppCreateParams as RustAppCreateParams,
 };
 
+use algokit_abi::ABIMethodArg as RustABIMethodArg;
 use algokit_abi::ABIMethodArgType as RustABIMethodArgType;
-use algokit_abi::ABIType as RustABIType;
 
 #[derive(uniffi::Enum)]
 pub enum ABIMethodArgType {
     /// A value that is directly encoded in the app arguments.
-    Value(ABIType),
+    Value(Arc<ABIType>),
     // TODO: txn and ref
 }
 
@@ -26,7 +25,7 @@ impl From<ABIMethodArgType> for RustABIMethodArgType {
     fn from(value: ABIMethodArgType) -> Self {
         match value {
             ABIMethodArgType::Value(abi_type) => {
-                RustABIMethodArgType::Value(RustABIType::from_str(&abi_type.abi_type).unwrap())
+                RustABIMethodArgType::Value(abi_type.abi_type.clone())
             }
         }
     }
@@ -35,9 +34,9 @@ impl From<ABIMethodArgType> for RustABIMethodArgType {
 impl From<RustABIMethodArgType> for ABIMethodArgType {
     fn from(value: RustABIMethodArgType) -> Self {
         match value {
-            RustABIMethodArgType::Value(abi_type) => ABIMethodArgType::Value(ABIType {
-                abi_type: abi_type.to_string(),
-            }),
+            RustABIMethodArgType::Value(abi_type) => {
+                ABIMethodArgType::Value(Arc::new(ABIType { abi_type }))
+            }
             _ => todo!(),
         }
     }
@@ -53,6 +52,28 @@ pub struct ABIMethodArg {
     pub description: Option<String>,
 }
 
+impl From<ABIMethodArg> for RustABIMethodArg {
+    fn from(value: ABIMethodArg) -> Self {
+        RustABIMethodArg {
+            arg_type: value.arg_type.into(),
+            name: value.name,
+            description: value.description,
+        }
+    }
+}
+
+impl From<RustABIMethodArg> for ABIMethodArg {
+    fn from(value: RustABIMethodArg) -> Self {
+        ABIMethodArg {
+            arg_type: value.arg_type.into(),
+            name: value.name,
+            description: value.description,
+        }
+    }
+}
+
+use algokit_abi::ABIMethod as RustABIMethod;
+
 #[derive(uniffi::Record)]
 pub struct ABIMethod {
     /// The name of the method.
@@ -60,9 +81,31 @@ pub struct ABIMethod {
     /// A list of the method's arguments.
     pub args: Vec<ABIMethodArg>,
     /// The return type of the method, or `None` if the method does not return a value.
-    pub returns: Option<ABIType>,
+    pub returns: Option<Arc<ABIType>>,
     /// An optional description of the method.
     pub description: Option<String>,
+}
+
+impl From<ABIMethod> for RustABIMethod {
+    fn from(value: ABIMethod) -> Self {
+        RustABIMethod {
+            name: value.name,
+            args: value.args.into_iter().map(|arg| arg.into()).collect(),
+            returns: value.returns.map(|r| r.abi_type.clone()),
+            description: value.description,
+        }
+    }
+}
+
+impl From<RustABIMethod> for ABIMethod {
+    fn from(value: RustABIMethod) -> Self {
+        ABIMethod {
+            name: value.name,
+            args: value.args.into_iter().map(|arg| arg.into()).collect(),
+            returns: value.returns.map(|r| Arc::new(ABIType { abi_type: r })),
+            description: value.description,
+        }
+    }
 }
 
 #[derive(uniffi::Enum)]
@@ -70,6 +113,37 @@ pub struct ABIMethod {
 pub enum AppMethodCallArg {
     ABIValue(Arc<ABIValue>),
     AppCreateCall(AppCreateParams),
+}
+
+impl From<AppMethodCallArg> for algokit_utils::transactions::app_call::AppMethodCallArg {
+    fn from(value: AppMethodCallArg) -> Self {
+        match value {
+            AppMethodCallArg::ABIValue(abi_value) => {
+                algokit_utils::transactions::app_call::AppMethodCallArg::ABIValue(
+                    abi_value.rust_value.clone(),
+                )
+            }
+            AppMethodCallArg::AppCreateCall(app_create_params) => {
+                algokit_utils::transactions::app_call::AppMethodCallArg::AppCreateCall(
+                    app_create_params.try_into().unwrap(),
+                )
+            }
+        }
+    }
+}
+
+impl From<algokit_utils::transactions::app_call::AppMethodCallArg> for AppMethodCallArg {
+    fn from(value: algokit_utils::transactions::app_call::AppMethodCallArg) -> Self {
+        match value {
+            algokit_utils::transactions::app_call::AppMethodCallArg::ABIValue(rust_value) => {
+                AppMethodCallArg::ABIValue(Arc::new(ABIValue { rust_value }))
+            }
+            algokit_utils::transactions::app_call::AppMethodCallArg::AppCreateCall(
+                app_create_params,
+            ) => AppMethodCallArg::AppCreateCall(app_create_params.into()),
+            _ => todo!(),
+        }
+    }
 }
 
 #[derive(uniffi::Record)]
@@ -97,6 +171,65 @@ pub struct AppCallMethodCallParams {
     pub box_references: Option<Vec<BoxReference>>,
     /// Defines what additional actions occur with the transaction.
     pub on_complete: OnApplicationComplete,
+}
+
+impl TryFrom<AppCallMethodCallParams>
+    for algokit_utils::transactions::app_call::AppCallMethodCallParams
+{
+    type Error = UtilsError;
+
+    fn try_from(value: AppCallMethodCallParams) -> Result<Self, Self::Error> {
+        Ok(
+            algokit_utils::transactions::app_call::AppCallMethodCallParams {
+                common_params: value.common_params.try_into()?,
+                app_id: value.app_id,
+                method: value.method.into(),
+                args: value.args.into_iter().map(|arg| arg.into()).collect(),
+                account_references: value
+                    .account_references
+                    .map(|accounts| {
+                        accounts
+                            .into_iter()
+                            .map(|a| a.parse())
+                            .collect::<Result<Vec<_>, _>>()
+                    })
+                    .transpose()
+                    .map_err(|e: <algokit_transact::Address as std::str::FromStr>::Err| {
+                        UtilsError::UtilsError {
+                            message: e.to_string(),
+                        }
+                    })?,
+                app_references: value.app_references,
+                asset_references: value.asset_references,
+                box_references: value
+                    .box_references
+                    .map(|boxes| boxes.into_iter().map(|b| b.into()).collect()),
+                on_complete: value.on_complete.into(),
+            },
+        )
+    }
+}
+
+impl From<algokit_utils::transactions::app_call::AppCallMethodCallParams>
+    for AppCallMethodCallParams
+{
+    fn from(value: algokit_utils::transactions::app_call::AppCallMethodCallParams) -> Self {
+        AppCallMethodCallParams {
+            common_params: value.common_params.into(),
+            app_id: value.app_id,
+            method: value.method.into(),
+            args: value.args.into_iter().map(|arg| arg.into()).collect(),
+            account_references: value
+                .account_references
+                .map(|accounts| accounts.into_iter().map(|a| a.to_string()).collect()),
+            app_references: value.app_references,
+            asset_references: value.asset_references,
+            box_references: value
+                .box_references
+                .map(|boxes| boxes.into_iter().map(|b| b.into()).collect()),
+            on_complete: value.on_complete.into(),
+        }
+    }
 }
 
 #[derive(uniffi::Record)]

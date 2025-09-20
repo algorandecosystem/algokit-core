@@ -107,23 +107,19 @@ async def test_composer():
     assert(len(response.transaction_ids[0]) == 52)
     print(response.transaction_ids)
 
-abi = AbiValue
+bool_type = AbiType("bool")
 
 def test_abi_bool():
-    abi_bool: AbiValue = abi.bool(True) # type: ignore
-    assert abi_bool.encoded_bytes() == b'\x80'
-    assert abi_bool.get_bool() == True
+    bool_val: AbiValue = AbiValue.bool(True)
+    assert bool_type.encode(bool_val) == b'\x80'
+    assert bool_type.decode(b'\x80').get_bool() == True
 
-    decoded_bool: AbiValue = abi.from_bytes(b'\x80', AbiType(abi_type="bool")) # type: ignore
-    assert decoded_bool.get_bool() == True
-
+bool_array_type = AbiType("bool[]")
 def test_abi_bool_array():
-    assert abi.array(
-        element_type=AbiType(abi_type="bool"),
-        values=[
-            abi.bool(True) # type: ignore
-        ]
-    ).encoded_bytes() == b'\x00\x01\x80'
+
+    bool_array_val: AbiValue = AbiValue.array([AbiValue.bool(True)])
+    assert bool_array_type.encode(bool_array_val) == b'\x00\x01\x80'
+    assert bool_array_type.decode(b'\x00\x01\x80').get_array() == [AbiValue.bool(True)]
 
 INT_1_PROG = bytes.fromhex('0b810143')
 

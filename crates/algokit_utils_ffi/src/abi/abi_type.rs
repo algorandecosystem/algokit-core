@@ -1,25 +1,39 @@
-use std::{fmt::Display, str::FromStr};
+use std::str::FromStr;
 
 use algokit_abi::ABIType as RustABIType;
 
 use crate::transactions::common::UtilsError;
 
-#[derive(uniffi::Record)]
+#[derive(uniffi::Object)]
 pub struct ABIType {
-    pub abi_type: String,
-}
-
-impl Display for ABIType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.abi_type)
-    }
+    pub abi_type: RustABIType,
 }
 
 #[uniffi::export]
-pub fn normalize_abi_type(abi_type: String) -> Result<String, UtilsError> {
-    Ok(RustABIType::from_str(&abi_type)
-        .map_err(|e| UtilsError::UtilsError {
-            message: format!("Failed to parse ABI type {}: {}", abi_type, e),
-        })?
-        .to_string())
+impl ABIType {
+    #[uniffi::constructor]
+    pub fn new(type_str: &str) -> Result<Self, UtilsError> {
+        RustABIType::from_str(type_str)
+            .map(|abi_type| ABIType { abi_type })
+            .map_err(|e| UtilsError::UtilsError {
+                message: e.to_string(),
+            })
+    }
+
+    pub fn encode(&self, value: &crate::abi::abi_value::ABIValue) -> Result<Vec<u8>, UtilsError> {
+        self.abi_type
+            .encode(&value.rust_value)
+            .map_err(|e| UtilsError::UtilsError {
+                message: e.to_string(),
+            })
+    }
+
+    pub fn decode(&self, data: &[u8]) -> Result<crate::abi::abi_value::ABIValue, UtilsError> {
+        self.abi_type
+            .decode(data)
+            .map(|v| crate::abi::abi_value::ABIValue { rust_value: v })
+            .map_err(|e| UtilsError::UtilsError {
+                message: e.to_string(),
+            })
+    }
 }
