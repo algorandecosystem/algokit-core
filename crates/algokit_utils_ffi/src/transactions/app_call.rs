@@ -1,13 +1,101 @@
+use crate::abi::{abi_type::ABIType, abi_value::ABIValue};
 use algokit_transact::Address;
 use algokit_transact_ffi::transactions::app_call::{
     BoxReference, OnApplicationComplete, StateSchema,
 };
+use std::sync::Arc;
 
 use super::common::{CommonParams, UtilsError};
 
 use algokit_utils::transactions::app_call::{
     AppCallParams as RustAppCallParams, AppCreateParams as RustAppCreateParams,
 };
+
+use algokit_abi::ABIMethodArgType as RustABIMethodArgType;
+
+#[derive(uniffi::Enum)]
+pub enum ABIMethodArgType {
+    /// A value that is directly encoded in the app arguments.
+    Value(Arc<ABIType>),
+    // TODO: txn and ref
+}
+
+impl From<ABIMethodArgType> for RustABIMethodArgType {
+    fn from(value: ABIMethodArgType) -> Self {
+        match value {
+            ABIMethodArgType::Value(abi_type) => {
+                RustABIMethodArgType::Value(abi_type.abi_type.clone())
+            }
+        }
+    }
+}
+
+impl From<RustABIMethodArgType> for ABIMethodArgType {
+    fn from(value: RustABIMethodArgType) -> Self {
+        match value {
+            RustABIMethodArgType::Value(abi_type) => {
+                ABIMethodArgType::Value(Arc::new(ABIType { abi_type }))
+            }
+            _ => todo!(),
+        }
+    }
+}
+
+#[derive(uniffi::Record)]
+pub struct ABIMethodArg {
+    /// The type of the argument.
+    pub arg_type: ABIMethodArgType,
+    /// An optional name for the argument.
+    pub name: Option<String>,
+    /// An optional description of the argument.
+    pub description: Option<String>,
+}
+
+#[derive(uniffi::Record)]
+pub struct ABIMethod {
+    /// The name of the method.
+    pub name: String,
+    /// A list of the method's arguments.
+    pub args: Vec<ABIMethodArg>,
+    /// The return type of the method, or `None` if the method does not return a value.
+    pub returns: Option<Arc<ABIType>>,
+    /// An optional description of the method.
+    pub description: Option<String>,
+}
+
+#[derive(uniffi::Enum)]
+#[allow(clippy::large_enum_variant)]
+pub enum AppMethodCallArg {
+    ABIValue(Arc<ABIValue>),
+    AppCreateCall(AppCreateParams),
+}
+
+#[derive(uniffi::Record)]
+pub struct AppCallMethodCallParams {
+    pub common_params: CommonParams,
+    /// ID of the app being called.
+    pub app_id: u64,
+    /// The ABI method to call.
+    pub method: ABIMethod,
+    /// Transaction specific arguments available in the app's
+    /// approval program and clear state program.
+    pub args: Vec<AppMethodCallArg>,
+    /// List of accounts in addition to the sender that may be accessed
+    /// from the app's approval program and clear state program.
+    pub account_references: Option<Vec<String>>,
+    /// List of apps in addition to the current app that may be called
+    /// from the app's approval program and clear state program.
+    pub app_references: Option<Vec<u64>>,
+    /// Lists the assets whose parameters may be accessed by this app's
+    /// approval program and clear state program.
+    ///
+    /// The access is read-only.
+    pub asset_references: Option<Vec<u64>>,
+    /// The boxes that should be made available for the runtime of the program.
+    pub box_references: Option<Vec<BoxReference>>,
+    /// Defines what additional actions occur with the transaction.
+    pub on_complete: OnApplicationComplete,
+}
 
 #[derive(uniffi::Record)]
 pub struct AppCallParams {
