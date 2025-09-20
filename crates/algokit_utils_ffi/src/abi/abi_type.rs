@@ -1,13 +1,18 @@
-use std::str::FromStr;
+use std::{fmt::Display, str::FromStr};
 
 use algokit_abi::ABIType as RustABIType;
-use derive_more::Display;
 
 use crate::transactions::common::UtilsError;
 
-#[derive(uniffi::Record, Display)]
+#[derive(uniffi::Record)]
 pub struct ABIType {
     pub abi_type: String,
+}
+
+impl Display for ABIType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.abi_type)
+    }
 }
 
 #[uniffi::export]
