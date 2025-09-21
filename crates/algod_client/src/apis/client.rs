@@ -369,7 +369,11 @@ impl AlgodClient {
 
         #[cfg(feature = "ffi_uniffi")]
         {
-            result.map(|v| serde_json::to_string(&v).unwrap_or_default())
+            result.map(|v| {
+                serde_json::to_string(&v).map_err(|e| Error::Serde {
+                    message: e.to_string(),
+                })
+            })?
         }
 
         #[cfg(not(feature = "ffi_uniffi"))]
