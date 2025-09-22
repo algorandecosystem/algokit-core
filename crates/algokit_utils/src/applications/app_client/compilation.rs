@@ -40,31 +40,19 @@ impl AppClient {
         &self,
         compilation_params: &CompilationParams,
     ) -> Result<CompiledTeal, AppClientError> {
-        let source =
+        // 1) Decode TEAL from ARC-56 source
+        let (teal, _) =
             self.app_spec
-                .source
-                .as_ref()
-                .ok_or_else(|| AppClientError::CompilationError {
-                    message: "Missing source in app spec".to_string(),
+                .decoded_teal()
+                .map_err(|e| AppClientError::CompilationError {
+                    message: e.to_string(),
                 })?;
 
-        // 1) Decode TEAL from ARC-56 source
-        let teal = source
-            .get_decoded_approval()
-            .map_err(|e| AppClientError::CompilationError {
-                message: e.to_string(),
-            })?;
-
         // 2-4) Compile via AppManager helper with template params and deploy-time controls
-        let metadata =
-            if compilation_params.updatable.is_some() || compilation_params.deletable.is_some() {
-                Some(DeploymentMetadata {
-                    updatable: compilation_params.updatable,
-                    deletable: compilation_params.deletable,
-                })
-            } else {
-                None
-            };
+        let metadata = DeploymentMetadata {
+            updatable: compilation_params.updatable,
+            deletable: compilation_params.deletable,
+        };
 
         let compiled = self
             .algorand()
@@ -72,7 +60,7 @@ impl AppClient {
             .compile_teal_template(
                 &teal,
                 compilation_params.deploy_time_params.as_ref(),
-                metadata.as_ref(),
+                Some(&metadata),
             )
             .await
             .map_err(|e| AppClientError::AppManagerError { source: e })?;
@@ -84,20 +72,13 @@ impl AppClient {
         &self,
         compilation_params: &CompilationParams,
     ) -> Result<CompiledTeal, AppClientError> {
-        let source =
-            self.app_spec
-                .source
-                .as_ref()
-                .ok_or_else(|| AppClientError::CompilationError {
-                    message: "Missing source in app spec".to_string(),
-                })?;
-
         // 1) Decode TEAL from ARC-56 source
-        let teal = source
-            .get_decoded_clear()
-            .map_err(|e| AppClientError::CompilationError {
-                message: e.to_string(),
-            })?;
+        let (_, teal) =
+            self.app_spec
+                .decoded_teal()
+                .map_err(|e| AppClientError::CompilationError {
+                    message: e.to_string(),
+                })?;
 
         // 2-4) Compile via AppManager helper with template params; no deploy-time controls for clear
         let compiled = self

@@ -178,12 +178,17 @@ impl AppManager {
         // TMPL_UPDATABLE/TMPL_DELETABLE via generic template variables; let the
         // deploy-time control function handle them.
         if let Some(params) = template_params {
-            let filtered_params: TealTemplateParams = if deployment_metadata.is_some() {
+            let filtered_params: TealTemplateParams = if let Some(meta) = deployment_metadata {
                 let mut clone = params.clone();
-                clone.remove("UPDATABLE");
-                clone.remove("DELETABLE");
-                clone.remove("TMPL_UPDATABLE");
-                clone.remove("TMPL_DELETABLE");
+                // Only strip corresponding template params when an explicit override is provided
+                if meta.updatable.is_some() {
+                    clone.remove("UPDATABLE");
+                    clone.remove("TMPL_UPDATABLE");
+                }
+                if meta.deletable.is_some() {
+                    clone.remove("DELETABLE");
+                    clone.remove("TMPL_DELETABLE");
+                }
                 clone
             } else {
                 params.clone()

@@ -38,23 +38,9 @@ impl AppFactory {
         override_cp: Option<CompilationParams>,
     ) -> Result<CompiledPrograms, AppFactoryError> {
         let cp = self.resolve_compilation_params(override_cp);
-        let source =
+        let (approval_teal, clear_teal) =
             self.app_spec()
-                .source
-                .as_ref()
-                .ok_or_else(|| AppFactoryError::CompilationError {
-                    message: "Missing source in app spec".to_string(),
-                })?;
-
-        let approval_teal =
-            source
-                .get_decoded_approval()
-                .map_err(|e| AppFactoryError::CompilationError {
-                    message: e.to_string(),
-                })?;
-        let clear_teal =
-            source
-                .get_decoded_clear()
+                .decoded_teal()
                 .map_err(|e| AppFactoryError::CompilationError {
                     message: e.to_string(),
                 })?;

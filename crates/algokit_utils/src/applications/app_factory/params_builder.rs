@@ -7,7 +7,6 @@ use crate::applications::app_deployer::{
 };
 use crate::applications::app_factory::utils::merge_args_with_defaults;
 use crate::applications::app_factory::{AppFactoryCreateMethodCallParams, AppFactoryCreateParams};
-use algokit_abi::ABIMethod;
 use algokit_transact::OnApplicationComplete;
 use algokit_transact::StateSchema as TxStateSchema;
 use std::str::FromStr;
@@ -33,8 +32,18 @@ impl<'a> ParamsBuilder<'a> {
         &self,
         params: AppFactoryCreateMethodCallParams,
     ) -> Result<DeployAppCreateMethodCallParams, AppFactoryError> {
-        let (approval_teal, clear_teal) = decode_teal_from_spec(self.factory)?;
-        let method = to_abi_method(self.factory.app_spec(), &params.method)?;
+        let (approval_teal, clear_teal) = self.factory.app_spec().decoded_teal().map_err(|e| {
+            AppFactoryError::CompilationError {
+                message: e.to_string(),
+            }
+        })?;
+        let method = self
+            .factory
+            .app_spec()
+            .find_abi_method(&params.method)
+            .map_err(|e| AppFactoryError::MethodNotFound {
+                message: e.to_string(),
+            })?;
         let sender = self
             .factory
             .get_sender_address(&params.sender)
@@ -79,7 +88,13 @@ impl<'a> ParamsBuilder<'a> {
         &self,
         params: AppClientMethodCallParams,
     ) -> Result<DeployAppUpdateMethodCallParams, AppFactoryError> {
-        let method = to_abi_method(self.factory.app_spec(), &params.method)?;
+        let method = self
+            .factory
+            .app_spec()
+            .find_abi_method(&params.method)
+            .map_err(|e| AppFactoryError::MethodNotFound {
+                message: e.to_string(),
+            })?;
         let sender = self
             .factory
             .get_sender_address(&params.sender)
@@ -117,7 +132,13 @@ impl<'a> ParamsBuilder<'a> {
         &self,
         params: AppClientMethodCallParams,
     ) -> Result<DeployAppDeleteMethodCallParams, AppFactoryError> {
-        let method = to_abi_method(self.factory.app_spec(), &params.method)?;
+        let method = self
+            .factory
+            .app_spec()
+            .find_abi_method(&params.method)
+            .map_err(|e| AppFactoryError::MethodNotFound {
+                message: e.to_string(),
+            })?;
         let sender = self
             .factory
             .get_sender_address(&params.sender)
@@ -158,7 +179,11 @@ impl BareParamsBuilder<'_> {
         params: Option<AppFactoryCreateParams>,
     ) -> Result<DeployAppCreateParams, AppFactoryError> {
         let params = params.unwrap_or_default();
-        let (approval_teal, clear_teal) = decode_teal_from_spec(self.factory)?;
+        let (approval_teal, clear_teal) = self.factory.app_spec().decoded_teal().map_err(|e| {
+            AppFactoryError::CompilationError {
+                message: e.to_string(),
+            }
+        })?;
         let sender = self
             .factory
             .get_sender_address(&params.sender)
@@ -263,29 +288,6 @@ impl BareParamsBuilder<'_> {
     }
 }
 
-fn decode_teal_from_spec(factory: &AppFactory) -> Result<(String, String), AppFactoryError> {
-    let source =
-        factory
-            .app_spec()
-            .source
-            .as_ref()
-            .ok_or_else(|| AppFactoryError::CompilationError {
-                message: "Missing source in app spec".to_string(),
-            })?;
-    let approval =
-        source
-            .get_decoded_approval()
-            .map_err(|e| AppFactoryError::CompilationError {
-                message: e.to_string(),
-            })?;
-    let clear = source
-        .get_decoded_clear()
-        .map_err(|e| AppFactoryError::CompilationError {
-            message: e.to_string(),
-        })?;
-    Ok((approval, clear))
-}
-
 fn default_global_schema(factory: &AppFactory) -> TxStateSchema {
     let s = &factory.app_spec().state.schema.global_state;
     TxStateSchema {
@@ -301,17 +303,3 @@ fn default_local_schema(factory: &AppFactory) -> TxStateSchema {
         num_byte_slices: s.bytes,
     }
 }
-
-pub(crate) fn to_abi_method(
-    contract: &algokit_abi::Arc56Contract,
-    method: &str,
-) -> Result<ABIMethod, AppFactoryError> {
-    contract
-        .find_abi_method(method)
-        .map_err(|e| AppFactoryError::MethodNotFound {
-            message: e.to_string(),
-        })
-}
-
-// Note: Deploy param structs accept Address already parsed where relevant; factory-level
-// params use String types mirroring Python/TS. For now we pass through as-is.

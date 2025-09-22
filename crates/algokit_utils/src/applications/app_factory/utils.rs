@@ -1,6 +1,5 @@
 use super::{AppFactory, AppFactoryError};
 use crate::applications::app_client::CompilationParams;
-use crate::applications::app_factory::params_builder::to_abi_method;
 use crate::applications::app_factory::{AppFactoryCreateMethodCallParams, AppFactoryCreateParams};
 use crate::clients::app_manager::CompiledPrograms;
 use crate::transactions::{
@@ -24,7 +23,11 @@ impl AppFactory {
         sender_opt: &Option<String>,
     ) -> Result<(CompiledPrograms, ABIMethod, Address), AppFactoryError> {
         let compiled = self.compile_programs_with(compilation_params).await?;
-        let method = to_abi_method(self.app_spec(), method_sig)?;
+        let method = self.app_spec().find_abi_method(method_sig).map_err(|e| {
+            AppFactoryError::MethodNotFound {
+                message: e.to_string(),
+            }
+        })?;
         let sender = self
             .get_sender_address(sender_opt)
             .map_err(|message| AppFactoryError::ValidationError { message })?;
