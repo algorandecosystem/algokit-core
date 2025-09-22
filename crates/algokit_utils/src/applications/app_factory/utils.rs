@@ -7,10 +7,9 @@ use crate::transactions::{
     AppCreateMethodCallParams, AppCreateParams, AppMethodCallArg, TransactionSenderError,
     TransactionSigner,
 };
-use algokit_abi::abi_method::ABIDefaultValue;
+use algokit_abi::ABIMethod;
 use algokit_abi::abi_type::ABIType;
-use algokit_abi::arc56_contract::DefaultValueSource;
-use algokit_abi::{ABIMethod, ABIMethodArgType};
+use algokit_abi::arc56_contract::{DefaultValue, DefaultValueSource, MethodArg};
 use algokit_transact::{Address, OnApplicationComplete, StateSchema};
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as Base64;
@@ -51,34 +50,26 @@ pub(crate) fn merge_args_with_defaults(
     let provided = user_args.as_ref().map(|v| v.as_slice()).unwrap_or(&[]);
 
     for (i, arg_def) in method.args.iter().enumerate() {
+        let method_arg_name = arg_def
+            .name
+            .as_ref()
+            .cloned()
+            .unwrap_or_else(|| format!("arg{}", i + 1));
+
         if i < provided.len() {
             let provided_arg = &provided[i];
-            let method_arg_name = arg_def
-                .name
-                .as_ref()
-                .cloned()
-                .unwrap_or_else(|| format!("arg{}", i + 1));
 
-            match (&arg_def.arg_type, provided_arg) {
-                (ABIMethodArgType::Value(_), AppMethodCallArg::DefaultValue) => {
-                    let default = arg_def.default_value.as_ref().ok_or_else(|| {
-                        AppFactoryError::ValidationError {
-                            message: format!(
-                                "No default value defined for argument {} in call to method {}",
-                                method_arg_name, method.name
-                            ),
-                        }
-                    })?;
+            if matches!(provided_arg, AppMethodCallArg::DefaultValue) {
+                let default = arg_def.default_value.as_ref().ok_or_else(|| {
+                    AppFactoryError::ValidationError {
+                        message: format!(
+                            "No default value defined for argument {} in call to method {}",
+                            method_arg_name, method.name
+                        ),
+                    }
+                })?;
 
-                    let literal = decode_literal_default_value(
-                        default,
-                        arg_def,
-                        &method.name,
-                        &method_arg_name,
-                    )?;
-                    result.push(AppMethodCallArg::ABIValue(literal));
-                }
-                (_, AppMethodCallArg::DefaultValue) => {
+                if default.source != DefaultValueSource::Literal {
                     return Err(AppFactoryError::ValidationError {
                         message: format!(
                             "Default value is not supported by argument {} in call to method {}",
@@ -86,22 +77,19 @@ pub(crate) fn merge_args_with_defaults(
                         ),
                     });
                 }
-                _ => {
-                    result.push(provided_arg.clone());
-                }
+
+                let literal =
+                    decode_literal_default_value(default, arg_def, &method.name, &method_arg_name)?;
+                result.push(AppMethodCallArg::ABIValue(literal));
+            } else {
+                result.push(provided_arg.clone());
             }
 
             continue;
         }
 
-        // Otherwise try literal default
         if let Some(default) = &arg_def.default_value {
             if matches!(default.source, DefaultValueSource::Literal) {
-                let method_arg_name = arg_def
-                    .name
-                    .as_ref()
-                    .cloned()
-                    .unwrap_or_else(|| format!("arg{}", i + 1));
                 let literal =
                     decode_literal_default_value(default, arg_def, &method.name, &method_arg_name)?;
 
@@ -110,17 +98,10 @@ pub(crate) fn merge_args_with_defaults(
             }
         }
 
-        // No provided arg and no supported default -> error like Python implementation
-        let name = arg_def
-            .name
-            .as_ref()
-            .cloned()
-            .unwrap_or_else(|| format!("arg{}", i + 1));
-        let method_name = &method.name;
         return Err(AppFactoryError::ValidationError {
             message: format!(
                 "No value provided for required argument {} in call to method {}",
-                name, method_name
+                method_arg_name, method.name
             ),
         });
     }
@@ -129,8 +110,8 @@ pub(crate) fn merge_args_with_defaults(
 }
 
 fn decode_literal_default_value(
-    default: &ABIDefaultValue,
-    arg_def: &algokit_abi::ABIMethodArg,
+    default: &DefaultValue,
+    arg_def: &MethodArg,
     method_name: &str,
     arg_name: &str,
 ) -> Result<algokit_abi::ABIValue, AppFactoryError> {
@@ -143,13 +124,11 @@ fn decode_literal_default_value(
         });
     }
 
-    let abi_type = if let Some(value_type) = default.value_type.clone() {
-        value_type
-    } else {
-        ABIType::from_str(&arg_def.arg_type).map_err(|e| AppFactoryError::ValidationError {
+    let abi_type_str = default.value_type.as_deref().unwrap_or(&arg_def.arg_type);
+    let abi_type =
+        ABIType::from_str(abi_type_str).map_err(|e| AppFactoryError::ValidationError {
             message: e.to_string(),
-        })?
-    };
+        })?;
 
     let bytes = Base64
         .decode(&default.data)

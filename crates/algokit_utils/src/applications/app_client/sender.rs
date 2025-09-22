@@ -302,7 +302,8 @@ impl BareTransactionSender<'_> {
             .await?;
 
         let mut result = self
-            .algorand
+            .client
+            .algorand()
             .send()
             .app_update(update_params, send_params)
             .await
