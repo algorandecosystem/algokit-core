@@ -41,9 +41,7 @@ impl<'a> ParamsBuilder<'a> {
             .factory
             .app_spec()
             .find_abi_method(&params.method)
-            .map_err(|e| AppFactoryError::MethodNotFound {
-                message: e.to_string(),
-            })?;
+            .map_err(|e| AppFactoryError::ABIError { source: e })?;
         let sender = self
             .factory
             .get_sender_address(&params.sender)
@@ -92,9 +90,7 @@ impl<'a> ParamsBuilder<'a> {
             .factory
             .app_spec()
             .find_abi_method(&params.method)
-            .map_err(|e| AppFactoryError::MethodNotFound {
-                message: e.to_string(),
-            })?;
+            .map_err(|e| AppFactoryError::ABIError { source: e })?;
         let sender = self
             .factory
             .get_sender_address(&params.sender)
@@ -136,9 +132,7 @@ impl<'a> ParamsBuilder<'a> {
             .factory
             .app_spec()
             .find_abi_method(&params.method)
-            .map_err(|e| AppFactoryError::MethodNotFound {
-                message: e.to_string(),
-            })?;
+            .map_err(|e| AppFactoryError::ABIError { source: e })?;
         let sender = self
             .factory
             .get_sender_address(&params.sender)

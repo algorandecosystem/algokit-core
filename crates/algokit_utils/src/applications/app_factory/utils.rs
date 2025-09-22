@@ -23,11 +23,10 @@ impl AppFactory {
         sender_opt: &Option<String>,
     ) -> Result<(CompiledPrograms, ABIMethod, Address), AppFactoryError> {
         let compiled = self.compile_programs_with(compilation_params).await?;
-        let method = self.app_spec().find_abi_method(method_sig).map_err(|e| {
-            AppFactoryError::MethodNotFound {
-                message: e.to_string(),
-            }
-        })?;
+        let method = self
+            .app_spec()
+            .find_abi_method(method_sig)
+            .map_err(|e| AppFactoryError::ABIError { source: e })?;
         let sender = self
             .get_sender_address(sender_opt)
             .map_err(|message| AppFactoryError::ValidationError { message })?;
