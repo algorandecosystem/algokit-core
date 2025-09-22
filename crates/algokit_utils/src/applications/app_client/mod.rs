@@ -25,7 +25,7 @@ pub struct BoxValue {
 }
 mod compilation;
 mod error;
-mod error_transformation;
+pub(crate) mod error_transformation;
 mod params_builder;
 mod state_accessor;
 mod transaction_builder;

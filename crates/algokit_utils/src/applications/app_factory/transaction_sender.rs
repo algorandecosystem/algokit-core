@@ -67,16 +67,18 @@ impl<'app_factory> TransactionSender<'app_factory> {
             clear_bytes.clone(),
         );
 
-        let mut result = self
+        let result = self
             .factory
             .algorand()
             .send()
             .app_create_method_call(create_params, send_params)
             .await
-            .map_err(|e| transform_transaction_error_for_factory(self.factory, e, false))?;
-
-        result.compiled_approval = Some(approval_bytes);
-        result.compiled_clear = Some(clear_bytes);
+            .map_err(|e| transform_transaction_error_for_factory(self.factory, e, false))
+            .map(|mut res| {
+                res.compiled_approval = Some(approval_bytes);
+                res.compiled_clear = Some(clear_bytes);
+                res
+            })?;
 
         let app_client = AppClient::new(AppClientParams {
             app_id: result.app_id,

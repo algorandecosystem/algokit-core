@@ -5,6 +5,7 @@ use std::sync::{Arc, Mutex};
 use algokit_abi::arc56_contract::CallOnApplicationComplete;
 use algokit_abi::{ABIReturn, ABIValue, Arc56Contract};
 
+use crate::applications::app_client::error_transformation::LogicErrorContext;
 use crate::applications::app_client::{AppClientMethodCallParams, CompilationParams};
 use crate::applications::app_deployer::{AppLookup, OnSchemaBreak, OnUpdate};
 use crate::applications::app_factory;
@@ -498,22 +499,16 @@ impl AppFactory {
             message: error_str.to_string(),
         };
 
-        let client = AppClient::new(AppClientParams {
+        let source_maps = self.current_source_maps();
+        let context = LogicErrorContext {
             app_id: 0,
-            app_spec: self.app_spec.clone(),
-            algorand: self.algorand.clone(),
-            app_name: Some(self.app_name.clone()),
-            default_sender: self.default_sender.clone(),
-            default_signer: self.default_signer.clone(),
-            source_maps: self.current_source_maps(),
-            transaction_composer_config: self.transaction_composer_config.clone(),
-        });
+            app_spec: &self.app_spec,
+            algorand: self.algorand.as_ref(),
+            source_maps: source_maps.as_ref(),
+        };
 
-        Some(
-            client
-                .expose_logic_error(&tx_err, is_clear_state_program)
-                .message,
-        )
+        let logic = context.expose_logic_error(&tx_err, is_clear_state_program);
+        Some(logic.message)
     }
 
     /// Idempotently deploys (create, update, or replace) an application using
