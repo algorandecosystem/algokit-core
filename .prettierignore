@@ -12,5 +12,5 @@ coverage
 .idea
 # don't format auto generated code docs
 docs/code
-# don't format test contract artifacts
-tests/example-contracts/**/*.json
+# don't format the polytest tests, as they have issues with single quotes in test names
+**/tests/*.test.ts

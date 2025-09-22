@@ -1,8 +1,13 @@
 import * as ed from '@noble/ed25519'
 import { describe, expect, test } from 'vitest'
-import { testData } from '../../tests/common'
-import { decodeSignedTransactions, encodeSignedTransaction, encodeSignedTransactions, SignedTransaction } from './signed-transaction'
-import { decodeTransactions, encodeTransaction, encodeTransactions, groupTransactions } from './transaction'
+import { testData } from './common'
+import {
+  decodeSignedTransactions,
+  encodeSignedTransaction,
+  encodeSignedTransactions,
+  SignedTransaction,
+} from '../src/transactions/signed-transaction'
+import { decodeTransactions, encodeTransaction, encodeTransactions, groupTransactions } from '../src/transactions/transaction'
 
 const simplePayment = testData.simplePayment
 const optInAssetTransfer = testData.optInAssetTransfer
@@ -26,7 +31,7 @@ describe('Transaction Group', () => {
   describe('Transaction Group Tests', () => {
     // Polytest Group: Transaction Group Tests
 
-    test('group transactions', () => {
+    test("group transactions", () => {
       const { txs, expectedGroupId } = simpleGroup()
       const groupedTxs = groupTransactions(txs)
 
@@ -37,7 +42,7 @@ describe('Transaction Group', () => {
       }
     })
 
-    test('encode transactions', () => {
+    test("encode transactions", () => {
       const { txs } = simpleGroup()
       const groupedTxs = groupTransactions(txs)
 
@@ -52,7 +57,7 @@ describe('Transaction Group', () => {
       expect(decodedGroupedTxs).toEqual(groupedTxs)
     })
 
-    test('encode signed transactions', async () => {
+    test("encode signed transactions", async () => {
       const { txs } = simpleGroup()
       const groupedTxs = groupTransactions(txs)
       const encodedGroupedTxs = encodeTransactions(groupedTxs)

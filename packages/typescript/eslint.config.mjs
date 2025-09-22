@@ -41,7 +41,7 @@ export default tseslint.config(
   },
   // Test file overrides
   {
-    files: ['**/*.spec.ts'],
+    files: ['**/*.spec.ts', '**/*.test.ts'],
     rules: {
       'no-restricted-syntax': 'off',
     },
