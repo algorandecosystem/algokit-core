@@ -20,6 +20,22 @@ use base64::engine::general_purpose::STANDARD as Base64;
 use std::str::FromStr;
 use std::sync::Arc;
 
+impl AppFactory {
+    pub(crate) async fn prepare_compiled_method(
+        &self,
+        method_sig: &str,
+        compilation_params: Option<CompilationParams>,
+        sender_opt: &Option<String>,
+    ) -> Result<(CompiledPrograms, ABIMethod, Address), AppFactoryError> {
+        let compiled = self.compile_programs_with(compilation_params).await?;
+        let method = to_abi_method(self.app_spec(), method_sig)?;
+        let sender = self
+            .get_sender_address(sender_opt)
+            .map_err(|message| AppFactoryError::ValidationError { message })?;
+        Ok((compiled, method, sender))
+    }
+}
+
 /// Merge user-provided ABI method arguments with ARC-56 literal defaults.
 /// Only 'literal' default values are supported; others will be ignored and treated as missing.
 pub(crate) fn merge_args_with_defaults(
@@ -121,21 +137,6 @@ pub(crate) fn resolve_signer(
             _ => None,
         },
     )
-}
-
-/// Compile programs, resolve ABI method and sender in one step.
-pub(crate) async fn prepare_compiled_method(
-    factory: &AppFactory,
-    method_sig: &str,
-    compilation_params: Option<CompilationParams>,
-    sender_opt: &Option<String>,
-) -> Result<(CompiledPrograms, ABIMethod, algokit_transact::Address), AppFactoryError> {
-    let compiled = factory.compile_programs_with(compilation_params).await?;
-    let method = to_abi_method(factory.app_spec(), method_sig)?;
-    let sender = factory
-        .get_sender_address(sender_opt)
-        .map_err(|message| AppFactoryError::ValidationError { message })?;
-    Ok((compiled, method, sender))
 }
 
 /// Returns the provided schemas or falls back to those declared in the contract spec.

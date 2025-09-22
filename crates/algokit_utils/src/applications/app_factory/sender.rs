@@ -2,7 +2,7 @@ use super::AppFactory;
 use super::utils::{
     build_bare_create_params, build_bare_delete_params, build_bare_update_params,
     build_create_method_call_params, build_delete_method_call_params,
-    build_update_method_call_params, merge_args_with_defaults, prepare_compiled_method,
+    build_update_method_call_params, merge_args_with_defaults,
     transform_transaction_error_for_factory,
 };
 use crate::SendTransactionResult;
@@ -47,16 +47,13 @@ impl<'app_factory> TransactionSender<'app_factory> {
             })?;
 
         // Prepare compiled programs, method and sender in one step
-        let (compiled, method, sender) = prepare_compiled_method(
-            self.factory,
-            &params.method,
-            compilation_params,
-            &params.sender,
-        )
-        .await
-        .map_err(|e| TransactionSenderError::ValidationError {
-            message: e.to_string(),
-        })?;
+        let (compiled, method, sender) = self
+            .factory
+            .prepare_compiled_method(&params.method, compilation_params, &params.sender)
+            .await
+            .map_err(|e| TransactionSenderError::ValidationError {
+                message: e.to_string(),
+            })?;
 
         // Resolve schema defaults via helper only when needed by builder
 
@@ -119,16 +116,13 @@ impl<'app_factory> TransactionSender<'app_factory> {
         send_params: Option<SendParams>,
         compilation_params: Option<CompilationParams>,
     ) -> Result<SendAppUpdateResult, TransactionSenderError> {
-        let (compiled, method, sender) = prepare_compiled_method(
-            self.factory,
-            &params.method,
-            compilation_params,
-            &params.sender,
-        )
-        .await
-        .map_err(|e| TransactionSenderError::ValidationError {
-            message: e.to_string(),
-        })?;
+        let (compiled, method, sender) = self
+            .factory
+            .prepare_compiled_method(&params.method, compilation_params, &params.sender)
+            .await
+            .map_err(|e| TransactionSenderError::ValidationError {
+                message: e.to_string(),
+            })?;
 
         let approval_bytes = compiled.approval.compiled_base64_to_bytes.clone();
         let clear_bytes = compiled.clear.compiled_base64_to_bytes.clone();

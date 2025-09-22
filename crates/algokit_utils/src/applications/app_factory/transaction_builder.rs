@@ -1,7 +1,5 @@
 use super::AppFactory;
-use super::utils::{
-    build_create_method_call_params, build_update_method_call_params, prepare_compiled_method,
-};
+use super::utils::{build_create_method_call_params, build_update_method_call_params};
 use crate::applications::app_client::CompilationParams;
 use crate::applications::app_factory::utils::resolve_signer;
 use crate::applications::app_factory::{
@@ -34,16 +32,13 @@ impl<'app_factory> TransactionBuilder<'app_factory> {
         compilation_params: Option<CompilationParams>,
     ) -> Result<Vec<Transaction>, ComposerError> {
         // Prepare compiled programs, method and sender in one step
-        let (compiled, method, sender) = prepare_compiled_method(
-            self.factory,
-            &params.method,
-            compilation_params,
-            &params.sender,
-        )
-        .await
-        .map_err(|e| ComposerError::TransactionError {
-            message: e.to_string(),
-        })?;
+        let (compiled, method, sender) = self
+            .factory
+            .prepare_compiled_method(&params.method, compilation_params, &params.sender)
+            .await
+            .map_err(|e| ComposerError::TransactionError {
+                message: e.to_string(),
+            })?;
 
         let create_params = build_create_method_call_params(
             self.factory,
@@ -67,16 +62,13 @@ impl<'app_factory> TransactionBuilder<'app_factory> {
         params: AppFactoryUpdateMethodCallParams,
         compilation_params: Option<CompilationParams>,
     ) -> Result<Vec<Transaction>, ComposerError> {
-        let (compiled, method, sender) = prepare_compiled_method(
-            self.factory,
-            &params.method,
-            compilation_params,
-            &params.sender,
-        )
-        .await
-        .map_err(|e| ComposerError::TransactionError {
-            message: e.to_string(),
-        })?;
+        let (compiled, method, sender) = self
+            .factory
+            .prepare_compiled_method(&params.method, compilation_params, &params.sender)
+            .await
+            .map_err(|e| ComposerError::TransactionError {
+                message: e.to_string(),
+            })?;
 
         let update_params = build_update_method_call_params(
             self.factory,

@@ -117,7 +117,7 @@ impl<'app_client> ParamsBuilder<'app_client> {
     ) -> Result<(AppUpdateMethodCallParams, CompiledPrograms), AppClientError> {
         // Compile programs (and populate AppManager cache/source maps)
         let compilation_params = compilation_params.unwrap_or_default();
-        let compiled = self.client.compile(&compilation_params).await?;
+        let compiled_programs = self.client.compile(&compilation_params).await?;
 
         let abi_method = self.get_abi_method(&params.method)?;
         let sender = self.client.get_sender_address(&params.sender)?.as_str();
@@ -146,11 +146,11 @@ impl<'app_client> ParamsBuilder<'app_client> {
             app_references: params.app_references.clone(),
             asset_references: params.asset_references.clone(),
             box_references: params.box_references.clone(),
-            approval_program: compiled.approval.compiled_base64_to_bytes.clone(),
-            clear_state_program: compiled.clear.compiled_base64_to_bytes.clone(),
+            approval_program: compiled_programs.approval.compiled_base64_to_bytes.clone(),
+            clear_state_program: compiled_programs.clear.compiled_base64_to_bytes.clone(),
         };
 
-        Ok((update_params, compiled))
+        Ok((update_params, compiled_programs))
     }
 
     /// Build parameters for funding the application's account.
@@ -478,7 +478,7 @@ impl BareParamsBuilder<'_> {
     ) -> Result<(AppUpdateParams, CompiledPrograms), AppClientError> {
         // Compile programs (and populate AppManager cache/source maps)
         let compilation_params = compilation_params.unwrap_or_default();
-        let compiled = self.client.compile(&compilation_params).await?;
+        let compiled_programs = self.client.compile(&compilation_params).await?;
 
         let update_params = AppUpdateParams {
             sender: self.client.get_sender_address(&params.sender)?,
@@ -500,11 +500,11 @@ impl BareParamsBuilder<'_> {
             app_references: params.app_references,
             asset_references: params.asset_references,
             box_references: params.box_references,
-            approval_program: compiled.approval.compiled_base64_to_bytes.clone(),
-            clear_state_program: compiled.clear.compiled_base64_to_bytes.clone(),
+            approval_program: compiled_programs.approval.compiled_base64_to_bytes.clone(),
+            clear_state_program: compiled_programs.clear.compiled_base64_to_bytes.clone(),
         };
 
-        Ok((update_params, compiled))
+        Ok((update_params, compiled_programs))
     }
 
     fn build_bare_app_call_params(

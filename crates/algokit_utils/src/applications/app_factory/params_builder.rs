@@ -1,4 +1,5 @@
 use super::{AppFactory, AppFactoryError};
+use crate::applications::app_client::{AppClientBareCallParams, AppClientMethodCallParams};
 use crate::applications::app_deployer::{
     AppProgram, DeployAppCreateMethodCallParams, DeployAppCreateParams,
     DeployAppDeleteMethodCallParams, DeployAppDeleteParams, DeployAppUpdateMethodCallParams,
@@ -76,7 +77,7 @@ impl<'a> ParamsBuilder<'a> {
     /// Create DeployAppUpdateMethodCallParams
     pub fn deploy_update(
         &self,
-        params: crate::applications::app_client::AppClientMethodCallParams,
+        params: AppClientMethodCallParams,
     ) -> Result<DeployAppUpdateMethodCallParams, AppFactoryError> {
         let method = to_abi_method(self.factory.app_spec(), &params.method)?;
         let sender = self
@@ -114,7 +115,7 @@ impl<'a> ParamsBuilder<'a> {
     /// Create DeployAppDeleteMethodCallParams
     pub fn deploy_delete(
         &self,
-        params: crate::applications::app_client::AppClientMethodCallParams,
+        params: AppClientMethodCallParams,
     ) -> Result<DeployAppDeleteMethodCallParams, AppFactoryError> {
         let method = to_abi_method(self.factory.app_spec(), &params.method)?;
         let sender = self
@@ -196,7 +197,7 @@ impl BareParamsBuilder<'_> {
     /// Create DeployAppUpdateParams
     pub fn deploy_update(
         &self,
-        params: Option<crate::applications::app_client::AppClientBareCallParams>,
+        params: Option<AppClientBareCallParams>,
     ) -> Result<DeployAppUpdateParams, AppFactoryError> {
         let params = params.unwrap_or_default();
         let sender = self
@@ -230,7 +231,7 @@ impl BareParamsBuilder<'_> {
     /// Create DeployAppDeleteParams
     pub fn deploy_delete(
         &self,
-        params: Option<crate::applications::app_client::AppClientBareCallParams>,
+        params: Option<AppClientBareCallParams>,
     ) -> Result<DeployAppDeleteParams, AppFactoryError> {
         let params = params.unwrap_or_default();
         let sender = self

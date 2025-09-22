@@ -294,18 +294,26 @@ impl BareTransactionSender<'_> {
         compilation_params: Option<CompilationParams>,
         send_params: Option<SendParams>,
     ) -> Result<SendAppUpdateResult, AppClientError> {
-        let (update_params, _compiled) = self
+        let (update_params, compiled_programs) = self
             .client
             .params()
             .bare()
             .update(params, compilation_params)
             .await?;
 
-        self.client
+        let mut result = self
             .algorand
             .send()
             .app_update(update_params, send_params)
             .await
-            .map_err(|e| transform_transaction_error(self.client, e, false))
+            .map_err(|e| transform_transaction_error(self.client, e, false))?;
+
+        result.compiled_approval =
+            Some(compiled_programs.approval.compiled_base64_to_bytes.clone());
+        result.compiled_clear = Some(compiled_programs.clear.compiled_base64_to_bytes.clone());
+        result.approval_source_map = compiled_programs.approval.source_map.clone();
+        result.clear_source_map = compiled_programs.clear.source_map.clone();
+
+        Ok(result)
     }
 }

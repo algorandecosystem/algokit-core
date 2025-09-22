@@ -1,6 +1,9 @@
 use super::{AppFactory, AppFactoryError};
 use crate::applications::app_client::CompilationParams;
-use crate::clients::app_manager::CompiledPrograms;
+use crate::clients::app_manager::{
+    CompiledPrograms, DELETABLE_TEMPLATE_NAME, DeploymentMetadata, UPDATABLE_TEMPLATE_NAME,
+};
+use algokit_abi::arc56_contract::CallOnApplicationComplete;
 
 impl AppFactory {
     pub(crate) fn resolve_compilation_params(
@@ -14,16 +17,16 @@ impl AppFactory {
         if resolved.updatable.is_none() {
             resolved.updatable = self.updatable.or_else(|| {
                 self.detect_deploy_time_control_flag(
-                    crate::clients::app_manager::UPDATABLE_TEMPLATE_NAME,
-                    algokit_abi::arc56_contract::CallOnApplicationComplete::UpdateApplication,
+                    UPDATABLE_TEMPLATE_NAME,
+                    CallOnApplicationComplete::UpdateApplication,
                 )
             });
         }
         if resolved.deletable.is_none() {
             resolved.deletable = self.deletable.or_else(|| {
                 self.detect_deploy_time_control_flag(
-                    crate::clients::app_manager::DELETABLE_TEMPLATE_NAME,
-                    algokit_abi::arc56_contract::CallOnApplicationComplete::DeleteApplication,
+                    DELETABLE_TEMPLATE_NAME,
+                    CallOnApplicationComplete::DeleteApplication,
                 )
             });
         }
@@ -56,7 +59,7 @@ impl AppFactory {
                     message: e.to_string(),
                 })?;
 
-        let metadata = crate::clients::app_manager::DeploymentMetadata {
+        let metadata = DeploymentMetadata {
             updatable: cp.updatable,
             deletable: cp.deletable,
         };
