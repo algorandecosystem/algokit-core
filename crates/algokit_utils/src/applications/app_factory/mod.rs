@@ -24,15 +24,15 @@ use app_factory::types as aftypes;
 mod compilation;
 mod error;
 mod params_builder;
-mod sender;
 mod transaction_builder;
+mod transaction_sender;
 mod types;
 mod utils;
 
 pub use error::AppFactoryError;
 pub use params_builder::ParamsBuilder;
-pub use sender::TransactionSender;
 pub use transaction_builder::TransactionBuilder;
+pub use transaction_sender::TransactionSender;
 pub use types::*;
 
 /// Factory for creating and deploying Algorand applications from an ARC-56 spec.

@@ -27,16 +27,16 @@ mod compilation;
 mod error;
 mod error_transformation;
 mod params_builder;
-mod sender;
 mod state_accessor;
 mod transaction_builder;
+mod transaction_sender;
 mod types;
 mod utils;
 pub use error::AppClientError;
 use params_builder::ParamsBuilder;
-pub use sender::TransactionSender;
 pub use state_accessor::StateAccessor;
 pub use transaction_builder::TransactionBuilder;
+pub use transaction_sender::TransactionSender;
 pub use types::{
     AppClientBareCallParams, AppClientMethodCallParams, AppClientParams, AppSourceMaps,
     CompilationParams, FundAppAccountParams,
