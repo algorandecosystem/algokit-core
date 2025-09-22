@@ -1,33 +1,5 @@
-use super::AppClient;
-use super::error_transformation::extract_logic_error_data;
 use crate::AppClientError;
-use crate::transactions::TransactionSenderError;
 use std::str::FromStr;
-
-/// Transform transaction errors to include enhanced logic error details when applicable.
-pub fn transform_transaction_error(
-    client: &AppClient,
-    err: TransactionSenderError,
-    is_clear_state_program: bool,
-) -> AppClientError {
-    let err_str = err.to_string();
-    if extract_logic_error_data(&err_str).is_some() {
-        // Only transform errors that are for this app (when app_id is known)
-        if client.app_id() != 0 {
-            let app_tag = format!("app={}", client.app_id());
-            if !err_str.contains(&app_tag) {
-                return AppClientError::TransactionSenderError { source: err };
-            }
-        }
-        let logic = client.expose_logic_error(&err_str, is_clear_state_program);
-        return AppClientError::LogicError {
-            message: logic.message.clone(),
-            logic: Box::new(logic),
-        };
-    }
-
-    AppClientError::TransactionSenderError { source: err }
-}
 
 /// Parse optional account reference strings into Address objects.
 pub fn parse_account_refs_to_addresses(

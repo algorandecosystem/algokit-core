@@ -111,7 +111,7 @@ impl<'app_client> TransactionSender<'app_client> {
                 .send()
                 .app_call_method_call(method_params, send_params)
                 .await
-                .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
+                .map_err(|e| self.client.transform_transaction_error(e, false))
         }
     }
 
@@ -128,7 +128,7 @@ impl<'app_client> TransactionSender<'app_client> {
             .send()
             .app_call_method_call(method_params, send_params)
             .await
-            .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
+            .map_err(|e| self.client.transform_transaction_error(e, false))
     }
 
     /// Execute an ABI method call with CloseOut on-complete action.
@@ -144,7 +144,7 @@ impl<'app_client> TransactionSender<'app_client> {
             .send()
             .app_call_method_call(method_params, send_params)
             .await
-            .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
+            .map_err(|e| self.client.transform_transaction_error(e, false))
     }
 
     /// Execute an ABI method call with Delete on-complete action.
@@ -160,7 +160,7 @@ impl<'app_client> TransactionSender<'app_client> {
             .send()
             .app_delete_method_call(delete_params, send_params)
             .await
-            .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
+            .map_err(|e| self.client.transform_transaction_error(e, false))
     }
 
     /// Update the application using an ABI method call.
@@ -181,7 +181,7 @@ impl<'app_client> TransactionSender<'app_client> {
             .send()
             .app_update_method_call(update_params, send_params)
             .await
-            .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
+            .map_err(|e| self.client.transform_transaction_error(e, false))
     }
 
     /// Send payment to fund the application's account.
@@ -197,7 +197,7 @@ impl<'app_client> TransactionSender<'app_client> {
             .send()
             .payment(payment, send_params)
             .await
-            .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
+            .map_err(|e| self.client.transform_transaction_error(e, false))
     }
 }
 
@@ -215,7 +215,7 @@ impl BareTransactionSender<'_> {
             .send()
             .app_call(params, send_params)
             .await
-            .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
+            .map_err(|e| self.client.transform_transaction_error(e, false))
     }
 
     /// Execute a bare application call with OptIn on-complete action.
@@ -230,7 +230,7 @@ impl BareTransactionSender<'_> {
             .send()
             .app_call(app_call, send_params)
             .await
-            .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
+            .map_err(|e| self.client.transform_transaction_error(e, false))
     }
 
     /// Execute a bare application call with CloseOut on-complete action.
@@ -245,7 +245,7 @@ impl BareTransactionSender<'_> {
             .send()
             .app_call(app_call, send_params)
             .await
-            .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
+            .map_err(|e| self.client.transform_transaction_error(e, false))
     }
 
     /// Execute a bare application call with Delete on-complete action.
@@ -260,7 +260,7 @@ impl BareTransactionSender<'_> {
             .send()
             .app_delete(delete_params, send_params)
             .await
-            .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
+            .map_err(|e| self.client.transform_transaction_error(e, false))
     }
 
     /// Execute a bare application call with ClearState on-complete action.
@@ -275,7 +275,7 @@ impl BareTransactionSender<'_> {
             .send()
             .app_call(app_call, send_params)
             .await
-            .map_err(|e| super::utils::transform_transaction_error(self.client, e, true))
+            .map_err(|e| self.client.transform_transaction_error(e, true))
     }
 
     /// Update the application using a bare application call.
@@ -297,6 +297,6 @@ impl BareTransactionSender<'_> {
             .send()
             .app_update(update_params, send_params)
             .await
-            .map_err(|e| super::utils::transform_transaction_error(self.client, e, false))
+            .map_err(|e| self.client.transform_transaction_error(e, false))
     }
 }
