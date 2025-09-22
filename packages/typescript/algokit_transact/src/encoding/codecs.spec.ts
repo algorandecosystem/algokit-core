@@ -120,7 +120,13 @@ describe('Codecs', () => {
 
     test('should omit default value when encoding', () => {
       expect(bigIntCodec.encode(0n)).toBeUndefined()
-      expect(bigIntCodec.encode(42n)).toBe(42n)
+    })
+
+    test('should encode with smallest size', () => {
+      expect(bigIntCodec.encode(BigInt(0x7fffffff))).toBe(2147483647)
+      expect(bigIntCodec.encode(BigInt(-0x7fffffff) - 1n)).toBe(-2147483648)
+      expect(bigIntCodec.encode(BigInt(0x7fffffff) + 1n)).toBe(2147483648n)
+      expect(bigIntCodec.encode(BigInt(-0x7fffffff) - 2n)).toBe(-2147483649n)
     })
 
     test('should decode undefined to default value', () => {

@@ -37,12 +37,12 @@
     "lint:fix": "eslint ./src/ --fix",
     "check-types": "tsc --noEmit",
     "audit": "better-npm-audit audit",
-    "format": "prettier --config ../.prettierrc.cjs --write .",
+    "format": "prettier --config ../.prettierrc.cjs --ignore-path ../../../.prettierignore --write .",
     "semantic-release": "semantic-release",
     "pre-commit": "run-s check-types lint:fix audit format test"
   },
   "dependencies": {
-    "algorand-msgpack": "^1.1.0",
+    "@msgpack/msgpack": "^3.1.2",
     "buffer": "^6.0.3",
     "hi-base32": "^0.5.1",
     "js-sha512": "^0.9.0"

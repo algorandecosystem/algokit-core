@@ -13,10 +13,10 @@ export type TransactionDto = {
   snd?: Uint8Array
 
   /** First valid round */
-  fv?: bigint
+  fv?: bigint | number
 
   /** Last valid round */
-  lv?: bigint
+  lv?: bigint | number
 
   /** Genesis ID (optional) */
   gen?: string
@@ -25,7 +25,7 @@ export type TransactionDto = {
   gh?: Uint8Array
 
   /** Transaction fee in microALGO (optional) */
-  fee?: bigint
+  fee?: bigint | number
 
   /** Transaction note (optional) */
   note?: Uint8Array
@@ -41,7 +41,7 @@ export type TransactionDto = {
 
   // Payment transaction fields (type: 'pay')
   /** Payment amount in microALGO */
-  amt?: bigint
+  amt?: bigint | number
 
   /** Payment receiver address */
   rcv?: Uint8Array
@@ -51,10 +51,10 @@ export type TransactionDto = {
 
   // Asset transfer fields (type: 'axfer')
   /** Asset ID for transfer */
-  xaid?: bigint
+  xaid?: bigint | number
 
   /** Asset amount to transfer */
-  aamt?: bigint
+  aamt?: bigint | number
 
   /** Asset receiver address */
   arcv?: Uint8Array
@@ -67,14 +67,14 @@ export type TransactionDto = {
 
   // Asset config fields (type: 'acfg')
   /** Asset ID for configuration */
-  caid?: bigint
+  caid?: bigint | number
 
   /** Asset parameters */
   apar?: AssetParamsDto
 
   // Asset freeze fields (type: 'afrz')
   /** Asset ID for freeze */
-  faid?: bigint
+  faid?: bigint | number
 
   /** Address to freeze/unfreeze */
   fadd?: Uint8Array
@@ -84,7 +84,7 @@ export type TransactionDto = {
 
   // Application call fields (type: 'appl')
   /** Application ID */
-  apid?: bigint
+  apid?: bigint | number
 
   /** OnApplicationComplete action */
   apan?: number
@@ -108,10 +108,10 @@ export type TransactionDto = {
   apat?: Uint8Array[]
 
   /** Application references */
-  apfa?: bigint[]
+  apfa?: (bigint | number)[]
 
   /** Asset references */
-  apas?: bigint[]
+  apas?: (bigint | number)[]
 
   /** Extra program pages */
   apep?: number
@@ -124,13 +124,13 @@ export type TransactionDto = {
   selkey?: Uint8Array
 
   /** Vote first round */
-  votefst?: bigint
+  votefst?: bigint | number
 
   /** Vote last round */
-  votelst?: bigint
+  votelst?: bigint | number
 
   /** Vote key dilution */
-  votekd?: bigint
+  votekd?: bigint | number
 
   /** State proof key */
   sprfkey?: Uint8Array
@@ -144,7 +144,7 @@ export type TransactionDto = {
  */
 export type AssetParamsDto = {
   /** Total number of units */
-  t?: bigint
+  t?: bigint | number
 
   /** Number of decimal places */
   dc?: number

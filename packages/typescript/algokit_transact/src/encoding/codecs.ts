@@ -31,9 +31,21 @@ class NumberCodec extends Codec<number> {
   }
 }
 
-class BigIntCodec extends Codec<bigint> {
+class BigIntCodec extends Codec<bigint, bigint | number> {
   public defaultValue(): bigint {
     return 0n
+  }
+
+  protected isDefaultValue(value: bigint): boolean {
+    return BigInt(this.toEncoded(value)) === this.defaultValue()
+  }
+
+  protected toEncoded(value: bigint): bigint | number {
+    // Use number if it fits in 32-bit signed integer range, matching expected msgpack encoding behavior
+    if (value <= BigInt(0x7fffffff) && value >= BigInt(-0x7fffffff - 1)) {
+      return Number(value)
+    }
+    return value
   }
 
   protected fromEncoded(value: number | bigint): bigint {
