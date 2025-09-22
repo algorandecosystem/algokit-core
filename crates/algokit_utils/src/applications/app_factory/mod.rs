@@ -156,16 +156,20 @@ impl AppFactory {
         })?;
         let create_arc56 = self.parse_method_return_value(&create_abi)?;
         let create_result = Some(AppFactoryMethodCallResult::new(created, create_arc56));
-        // Optional delete index 1
+        // Optional delete uses the final transaction in the replacement group
         let delete_result = if composer_result.confirmations.len() > 1 {
-            let delete_tx = composer_result.confirmations[1].txn.transaction.clone();
+            let delete_index = composer_result.confirmations.len() - 1;
+            let delete_tx = composer_result.confirmations[delete_index]
+                .txn
+                .transaction
+                .clone();
             let delete_base = SendTransactionResult::new(
                 composer_result.group.map(hex::encode).unwrap_or_default(),
-                vec![composer_result.transaction_ids[1].clone()],
+                vec![composer_result.transaction_ids[delete_index].clone()],
                 vec![delete_tx],
-                vec![composer_result.confirmations[1].clone()],
-                if composer_result.abi_returns.len() > 1 {
-                    Some(vec![composer_result.abi_returns[1].clone()])
+                vec![composer_result.confirmations[delete_index].clone()],
+                if composer_result.abi_returns.len() > delete_index {
+                    Some(vec![composer_result.abi_returns[delete_index].clone()])
                 } else {
                     None
                 },
@@ -489,7 +493,6 @@ impl AppFactory {
     }
 
     /// Idempotently deploy (create/update/delete) an application using AppDeployer
-    #[allow(clippy::too_many_arguments)]
     pub async fn deploy(
         &self,
         args: DeployArgs,

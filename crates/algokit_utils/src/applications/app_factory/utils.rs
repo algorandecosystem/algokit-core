@@ -1,14 +1,10 @@
 use super::{AppFactory, AppFactoryError};
 use crate::applications::app_client::CompilationParams;
 use crate::applications::app_factory::params_builder::to_abi_method;
-use crate::applications::app_factory::{
-    AppFactoryCreateMethodCallParams, AppFactoryCreateParams, AppFactoryDeleteMethodCallParams,
-    AppFactoryDeleteParams, AppFactoryUpdateMethodCallParams, AppFactoryUpdateParams,
-};
+use crate::applications::app_factory::{AppFactoryCreateMethodCallParams, AppFactoryCreateParams};
 use crate::clients::app_manager::CompiledPrograms;
 use crate::transactions::{
-    AppCreateMethodCallParams, AppCreateParams, AppDeleteMethodCallParams, AppDeleteParams,
-    AppMethodCallArg, AppUpdateMethodCallParams, AppUpdateParams, TransactionSenderError,
+    AppCreateMethodCallParams, AppCreateParams, AppMethodCallArg, TransactionSenderError,
     TransactionSigner,
 };
 use algokit_abi::abi_method::ABIDefaultValue;
@@ -273,68 +269,6 @@ pub(crate) fn build_create_method_call_params(
     }
 }
 
-pub(crate) fn build_update_method_call_params(
-    factory: &AppFactory,
-    sender: Address,
-    base: &AppFactoryUpdateMethodCallParams,
-    method: ABIMethod,
-    args: Vec<AppMethodCallArg>,
-    approval_program: Vec<u8>,
-    clear_state_program: Vec<u8>,
-) -> AppUpdateMethodCallParams {
-    AppUpdateMethodCallParams {
-        sender,
-        signer: resolve_signer(factory, &base.sender, base.signer.clone()),
-        rekey_to: base.rekey_to.clone(),
-        note: base.note.clone(),
-        lease: base.lease,
-        static_fee: base.static_fee,
-        extra_fee: base.extra_fee,
-        max_fee: base.max_fee,
-        validity_window: base.validity_window,
-        first_valid_round: base.first_valid_round,
-        last_valid_round: base.last_valid_round,
-        app_id: base.app_id,
-        approval_program,
-        clear_state_program,
-        method,
-        args,
-        account_references: base.account_references.clone(),
-        app_references: base.app_references.clone(),
-        asset_references: base.asset_references.clone(),
-        box_references: base.box_references.clone(),
-    }
-}
-
-pub(crate) fn build_delete_method_call_params(
-    factory: &AppFactory,
-    sender: Address,
-    base: &AppFactoryDeleteMethodCallParams,
-    method: ABIMethod,
-    args: Vec<AppMethodCallArg>,
-) -> AppDeleteMethodCallParams {
-    AppDeleteMethodCallParams {
-        sender,
-        signer: resolve_signer(factory, &base.sender, base.signer.clone()),
-        rekey_to: base.rekey_to.clone(),
-        note: base.note.clone(),
-        lease: base.lease,
-        static_fee: base.static_fee,
-        extra_fee: base.extra_fee,
-        max_fee: base.max_fee,
-        validity_window: base.validity_window,
-        first_valid_round: base.first_valid_round,
-        last_valid_round: base.last_valid_round,
-        app_id: base.app_id,
-        method,
-        args,
-        account_references: base.account_references.clone(),
-        app_references: base.app_references.clone(),
-        asset_references: base.asset_references.clone(),
-        box_references: base.box_references.clone(),
-    }
-}
-
 pub(crate) fn build_bare_create_params(
     factory: &AppFactory,
     sender: Address,
@@ -371,61 +305,5 @@ pub(crate) fn build_bare_create_params(
         global_state_schema,
         local_state_schema,
         extra_program_pages: base.extra_program_pages,
-    }
-}
-
-pub(crate) fn build_bare_update_params(
-    factory: &AppFactory,
-    sender: Address,
-    base: &AppFactoryUpdateParams,
-    approval_program: Vec<u8>,
-    clear_state_program: Vec<u8>,
-) -> AppUpdateParams {
-    AppUpdateParams {
-        sender,
-        signer: resolve_signer(factory, &base.sender, base.signer.clone()),
-        rekey_to: base.rekey_to.clone(),
-        note: base.note.clone(),
-        lease: base.lease,
-        static_fee: base.static_fee,
-        extra_fee: base.extra_fee,
-        max_fee: base.max_fee,
-        validity_window: base.validity_window,
-        first_valid_round: base.first_valid_round,
-        last_valid_round: base.last_valid_round,
-        app_id: base.app_id,
-        approval_program,
-        clear_state_program,
-        args: base.args.clone(),
-        account_references: base.account_references.clone(),
-        app_references: base.app_references.clone(),
-        asset_references: base.asset_references.clone(),
-        box_references: base.box_references.clone(),
-    }
-}
-
-pub(crate) fn build_bare_delete_params(
-    factory: &AppFactory,
-    sender: Address,
-    base: &AppFactoryDeleteParams,
-) -> AppDeleteParams {
-    AppDeleteParams {
-        sender,
-        signer: resolve_signer(factory, &base.sender, base.signer.clone()),
-        rekey_to: base.rekey_to.clone(),
-        note: base.note.clone(),
-        lease: base.lease,
-        static_fee: base.static_fee,
-        extra_fee: base.extra_fee,
-        max_fee: base.max_fee,
-        validity_window: base.validity_window,
-        first_valid_round: base.first_valid_round,
-        last_valid_round: base.last_valid_round,
-        app_id: base.app_id,
-        args: base.args.clone(),
-        account_references: base.account_references.clone(),
-        app_references: base.app_references.clone(),
-        asset_references: base.asset_references.clone(),
-        box_references: base.box_references.clone(),
     }
 }

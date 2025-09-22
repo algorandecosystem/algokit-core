@@ -1,14 +1,9 @@
 use super::AppFactory;
-use super::utils::{build_create_method_call_params, build_update_method_call_params};
+use super::utils::build_create_method_call_params;
 use crate::applications::app_client::CompilationParams;
 use crate::applications::app_factory::utils::resolve_signer;
-use crate::applications::app_factory::{
-    AppFactoryCreateMethodCallParams, AppFactoryCreateParams, AppFactoryDeleteParams,
-    AppFactoryUpdateMethodCallParams, AppFactoryUpdateParams,
-};
-use crate::transactions::{
-    AppCreateParams, AppDeleteParams, AppUpdateParams, composer::ComposerError,
-};
+use crate::applications::app_factory::{AppFactoryCreateMethodCallParams, AppFactoryCreateParams};
+use crate::transactions::{AppCreateParams, composer::ComposerError};
 use algokit_transact::Transaction;
 
 pub struct TransactionBuilder<'app_factory> {
@@ -54,36 +49,6 @@ impl<'app_factory> TransactionBuilder<'app_factory> {
             .algorand()
             .create()
             .app_create_method_call(create_params)
-            .await
-    }
-
-    pub async fn update(
-        &self,
-        params: AppFactoryUpdateMethodCallParams,
-        compilation_params: Option<CompilationParams>,
-    ) -> Result<Vec<Transaction>, ComposerError> {
-        let (compiled, method, sender) = self
-            .factory
-            .prepare_compiled_method(&params.method, compilation_params, &params.sender)
-            .await
-            .map_err(|e| ComposerError::TransactionError {
-                message: e.to_string(),
-            })?;
-
-        let update_params = build_update_method_call_params(
-            self.factory,
-            sender,
-            &params,
-            method,
-            params.args.clone().unwrap_or_default(),
-            compiled.approval.compiled_base64_to_bytes,
-            compiled.clear.compiled_base64_to_bytes,
-        );
-
-        self.factory
-            .algorand()
-            .create()
-            .app_update_method_call(update_params)
             .await
     }
 }
@@ -156,89 +121,6 @@ impl BareTransactionBuilder<'_> {
             .algorand()
             .create()
             .app_create(create_params)
-            .await
-    }
-
-    pub async fn update(
-        &self,
-        params: AppFactoryUpdateParams,
-        compilation_params: Option<CompilationParams>,
-    ) -> Result<algokit_transact::Transaction, ComposerError> {
-        let compiled = self
-            .factory
-            .compile_programs_with(compilation_params)
-            .await
-            .map_err(|e| ComposerError::TransactionError {
-                message: e.to_string(),
-            })?;
-
-        let sender = self
-            .factory
-            .get_sender_address(&params.sender)
-            .map_err(|e| ComposerError::TransactionError { message: e })?;
-
-        let update_params = AppUpdateParams {
-            sender,
-            signer: resolve_signer(self.factory, &params.sender, params.signer),
-            rekey_to: params.rekey_to,
-            note: params.note,
-            lease: params.lease,
-            static_fee: params.static_fee,
-            extra_fee: params.extra_fee,
-            max_fee: params.max_fee,
-            validity_window: params.validity_window,
-            first_valid_round: params.first_valid_round,
-            last_valid_round: params.last_valid_round,
-            app_id: params.app_id,
-            approval_program: compiled.approval.compiled_base64_to_bytes,
-            clear_state_program: compiled.clear.compiled_base64_to_bytes,
-            args: params.args,
-            account_references: params.account_references,
-            app_references: params.app_references,
-            asset_references: params.asset_references,
-            box_references: params.box_references,
-        };
-
-        self.factory
-            .algorand()
-            .create()
-            .app_update(update_params)
-            .await
-    }
-
-    pub async fn delete(
-        &self,
-        params: AppFactoryDeleteParams,
-    ) -> Result<algokit_transact::Transaction, ComposerError> {
-        let sender = self
-            .factory
-            .get_sender_address(&params.sender)
-            .map_err(|e| ComposerError::TransactionError { message: e })?;
-
-        let delete_params = AppDeleteParams {
-            sender,
-            signer: resolve_signer(self.factory, &params.sender, params.signer),
-            rekey_to: params.rekey_to,
-            note: params.note,
-            lease: params.lease,
-            static_fee: params.static_fee,
-            extra_fee: params.extra_fee,
-            max_fee: params.max_fee,
-            validity_window: params.validity_window,
-            first_valid_round: params.first_valid_round,
-            last_valid_round: params.last_valid_round,
-            app_id: params.app_id,
-            args: params.args,
-            account_references: params.account_references,
-            app_references: params.app_references,
-            asset_references: params.asset_references,
-            box_references: params.box_references,
-        };
-
-        self.factory
-            .algorand()
-            .create()
-            .app_delete(delete_params)
             .await
     }
 }

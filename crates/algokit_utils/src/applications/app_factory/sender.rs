@@ -3,23 +3,16 @@
 
 use super::AppFactory;
 use super::utils::{
-    build_bare_create_params, build_bare_delete_params, build_bare_update_params,
-    build_create_method_call_params, build_delete_method_call_params,
-    build_update_method_call_params, merge_args_with_defaults,
+    build_bare_create_params, build_create_method_call_params, merge_args_with_defaults,
     transform_transaction_error_for_factory,
 };
-use crate::SendTransactionResult;
 use crate::applications::app_client::CompilationParams;
 use crate::applications::app_client::{AppClient, AppClientParams};
-use crate::applications::app_factory::params_builder::to_abi_method;
 use crate::applications::app_factory::{
     AppFactoryCreateMethodCallParams, AppFactoryCreateMethodCallResult, AppFactoryCreateParams,
-    AppFactoryDeleteMethodCallParams, AppFactoryDeleteParams, AppFactoryMethodCallResult,
-    AppFactoryUpdateMethodCallParams, AppFactoryUpdateParams,
+    AppFactoryMethodCallResult,
 };
-use crate::transactions::{
-    SendAppCallResult, SendAppCreateResult, SendAppUpdateResult, SendParams, TransactionSenderError,
-};
+use crate::transactions::{SendAppCreateResult, SendParams, TransactionSenderError};
 
 /// Sends factory-backed create transactions and returns both the client and send results.
 pub struct TransactionSender<'app_factory> {
@@ -59,8 +52,6 @@ impl<'app_factory> TransactionSender<'app_factory> {
             .map_err(|e| TransactionSenderError::ValidationError {
                 message: e.to_string(),
             })?;
-
-        // Resolve schema defaults via helper only when needed by builder
 
         // Avoid moving compiled bytes we still need later
         let approval_bytes = compiled.approval.compiled_base64_to_bytes.clone();
@@ -113,83 +104,6 @@ impl<'app_factory> TransactionSender<'app_factory> {
             AppFactoryMethodCallResult::new(result, arc56_return),
         ))
     }
-
-    /// Send an app update via method call
-    pub async fn update(
-        &self,
-        params: AppFactoryUpdateMethodCallParams,
-        send_params: Option<SendParams>,
-        compilation_params: Option<CompilationParams>,
-    ) -> Result<SendAppUpdateResult, TransactionSenderError> {
-        let (compiled, method, sender) = self
-            .factory
-            .prepare_compiled_method(&params.method, compilation_params, &params.sender)
-            .await
-            .map_err(|e| TransactionSenderError::ValidationError {
-                message: e.to_string(),
-            })?;
-
-        let approval_bytes = compiled.approval.compiled_base64_to_bytes.clone();
-        let clear_bytes = compiled.clear.compiled_base64_to_bytes.clone();
-
-        let update_params = build_update_method_call_params(
-            self.factory,
-            sender,
-            &params,
-            method,
-            params.args.clone().unwrap_or_default(),
-            approval_bytes.clone(),
-            clear_bytes.clone(),
-        );
-
-        let mut result = self
-            .factory
-            .algorand()
-            .send()
-            .app_update_method_call(update_params, send_params)
-            .await
-            .map_err(|e| transform_transaction_error_for_factory(self.factory, e, false))?;
-
-        result.compiled_approval = Some(approval_bytes);
-        result.compiled_clear = Some(clear_bytes);
-        result.approval_source_map = compiled.approval.source_map.clone();
-        result.clear_source_map = compiled.clear.source_map.clone();
-
-        Ok(result)
-    }
-
-    /// Send an app delete via method call
-    pub async fn delete(
-        &self,
-        params: AppFactoryDeleteMethodCallParams,
-        send_params: Option<SendParams>,
-    ) -> Result<SendAppCallResult, TransactionSenderError> {
-        let method = to_abi_method(self.factory.app_spec(), &params.method).map_err(|e| {
-            TransactionSenderError::ValidationError {
-                message: e.to_string(),
-            }
-        })?;
-
-        let sender = self
-            .factory
-            .get_sender_address(&params.sender)
-            .map_err(|e| TransactionSenderError::ValidationError { message: e })?;
-
-        let delete_params = build_delete_method_call_params(
-            self.factory,
-            sender,
-            &params,
-            method,
-            params.args.clone().unwrap_or_default(),
-        );
-
-        self.factory
-            .algorand()
-            .send()
-            .app_delete_method_call(delete_params, send_params)
-            .await
-            .map_err(|e| transform_transaction_error_for_factory(self.factory, e, true))
-    }
 }
 
 impl BareTransactionSender<'_> {
@@ -215,8 +129,6 @@ impl BareTransactionSender<'_> {
             .factory
             .get_sender_address(&params.sender)
             .map_err(|e| TransactionSenderError::ValidationError { message: e })?;
-
-        // Schema defaults handled in builder
 
         let create_params = build_bare_create_params(
             self.factory,
@@ -251,62 +163,5 @@ impl BareTransactionSender<'_> {
         });
 
         Ok((app_client, result))
-    }
-
-    /// Send an app update (bare)
-    pub async fn update(
-        &self,
-        params: AppFactoryUpdateParams,
-        send_params: Option<SendParams>,
-        compilation_params: Option<CompilationParams>,
-    ) -> Result<SendAppUpdateResult, TransactionSenderError> {
-        let compiled = self
-            .factory
-            .compile_programs_with(compilation_params)
-            .await
-            .map_err(|e| TransactionSenderError::ValidationError {
-                message: e.to_string(),
-            })?;
-
-        let sender = self
-            .factory
-            .get_sender_address(&params.sender)
-            .map_err(|e| TransactionSenderError::ValidationError { message: e })?;
-
-        let update_params = build_bare_update_params(
-            self.factory,
-            sender,
-            &params,
-            compiled.approval.compiled_base64_to_bytes,
-            compiled.clear.compiled_base64_to_bytes,
-        );
-
-        self.factory
-            .algorand()
-            .send()
-            .app_update(update_params, send_params)
-            .await
-            .map_err(|e| transform_transaction_error_for_factory(self.factory, e, false))
-    }
-
-    /// Send an app delete (bare)
-    pub async fn delete(
-        &self,
-        params: AppFactoryDeleteParams,
-        send_params: Option<SendParams>,
-    ) -> Result<SendTransactionResult, TransactionSenderError> {
-        let sender = self
-            .factory
-            .get_sender_address(&params.sender)
-            .map_err(|e| TransactionSenderError::ValidationError { message: e })?;
-
-        let delete_params = build_bare_delete_params(self.factory, sender, &params);
-
-        self.factory
-            .algorand()
-            .send()
-            .app_delete(delete_params, send_params)
-            .await
-            .map_err(|e| transform_transaction_error_for_factory(self.factory, e, true))
     }
 }
