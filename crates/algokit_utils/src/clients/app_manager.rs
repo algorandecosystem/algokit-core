@@ -1,4 +1,3 @@
-use crate::clients::network_client::genesis_id_is_localnet;
 use algod_client::{
     apis::{AlgodClient, Error as AlgodError},
     models::TealKeyValue,
@@ -344,8 +343,7 @@ impl AppManager {
     /// Decode box value using ABI type.
     ///
     /// This method takes an ABIType directly and uses it to decode the box value,
-    /// returning an ABIValue directly for simpler usage patterns that match the
-    /// TypeScript and Python implementations.
+    /// returning an ABIValue directly for simpler usage patterns.
     ///
     /// # Arguments
     /// * `app_id` - The app ID
@@ -373,8 +371,7 @@ impl AppManager {
     /// Decode multiple box values using ABI type.
     ///
     /// This method takes an ABIType directly and uses it to decode multiple box values,
-    /// returning ABIValue objects directly for simpler usage patterns that match the
-    /// TypeScript and Python implementations.
+    /// returning ABIValue objects directly for simpler usage patterns.
     ///
     /// # Arguments
     /// * `app_id` - The app ID
@@ -397,16 +394,6 @@ impl AppManager {
             );
         }
         Ok(values)
-    }
-
-    /// Determine if the connected network is a localnet by inspecting genesis ID
-    pub async fn is_localnet(&self) -> Result<bool, AppManagerError> {
-        let params = self
-            .algod_client
-            .transaction_params()
-            .await
-            .map_err(|e| AppManagerError::AlgodClientError { source: e })?;
-        Ok(genesis_id_is_localnet(&params.genesis_id))
     }
 
     /// Get ABI return value from transaction confirmation.

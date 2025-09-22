@@ -1,6 +1,3 @@
-//! Send helpers for `AppFactory`, mirroring the TypeScript/Python surface by exposing
-//! create-only flows while attaching compiled program metadata to results.
-
 use super::AppFactory;
 use super::utils::{
     build_bare_create_params, build_create_method_call_params, merge_args_with_defaults,
@@ -25,26 +22,30 @@ pub struct BareTransactionSender<'app_factory> {
 }
 
 impl<'app_factory> TransactionSender<'app_factory> {
+    /// Returns helpers for bare (non-ABI) create transactions.
     pub fn bare(&self) -> BareTransactionSender<'app_factory> {
         BareTransactionSender {
             factory: self.factory,
         }
     }
 
-    /// Send an app creation via method call and return (AppClient, SendAppCreateResult)
+    /// Sends an app creation method call and returns the new client with the factory
+    /// flavoured result wrapper.
+    ///
+    /// # Errors
+    /// Returns [`TransactionSenderError`] if argument merging, compilation, or the
+    /// underlying transaction submission fails.
     pub async fn create(
         &self,
         params: AppFactoryCreateMethodCallParams,
         send_params: Option<SendParams>,
         compilation_params: Option<CompilationParams>,
     ) -> Result<(AppClient, AppFactoryCreateMethodCallResult), TransactionSenderError> {
-        // Merge user args with ARC-56 literal defaults
         let merged_args = merge_args_with_defaults(self.factory, &params.method, &params.args)
             .map_err(|e| TransactionSenderError::ValidationError {
                 message: e.to_string(),
             })?;
 
-        // Prepare compiled programs, method and sender in one step
         let (compiled, method, sender) = self
             .factory
             .prepare_compiled_method(&params.method, compilation_params, &params.sender)
@@ -53,7 +54,6 @@ impl<'app_factory> TransactionSender<'app_factory> {
                 message: e.to_string(),
             })?;
 
-        // Avoid moving compiled bytes we still need later
         let approval_bytes = compiled.approval.compiled_base64_to_bytes.clone();
         let clear_bytes = compiled.clear.compiled_base64_to_bytes.clone();
 
@@ -77,8 +77,6 @@ impl<'app_factory> TransactionSender<'app_factory> {
 
         result.compiled_approval = Some(approval_bytes);
         result.compiled_clear = Some(clear_bytes);
-        result.approval_source_map = compiled.approval.source_map.clone();
-        result.clear_source_map = compiled.clear.source_map.clone();
 
         let app_client = AppClient::new(AppClientParams {
             app_id: result.app_id,
@@ -91,7 +89,6 @@ impl<'app_factory> TransactionSender<'app_factory> {
             transaction_composer_config: self.factory.transaction_composer_config.clone(),
         });
 
-        // Extract ABI return value as ABIValue (if present and decodable)
         let arc56_return = self
             .factory
             .parse_method_return_value(&result.abi_return)
@@ -107,7 +104,11 @@ impl<'app_factory> TransactionSender<'app_factory> {
 }
 
 impl BareTransactionSender<'_> {
-    /// Send a bare app creation and return (AppClient, SendAppCreateResult)
+    /// Sends a bare app creation and returns the new client with the send result.
+    ///
+    /// # Errors
+    /// Returns [`TransactionSenderError`] if compilation fails, the sender address is
+    /// invalid, or the underlying transaction submission fails.
     pub async fn create(
         &self,
         params: Option<AppFactoryCreateParams>,
@@ -116,7 +117,6 @@ impl BareTransactionSender<'_> {
     ) -> Result<(AppClient, SendAppCreateResult), TransactionSenderError> {
         let params = params.unwrap_or_default();
 
-        // Compile using centralized helper (with override params)
         let compiled = self
             .factory
             .compile_programs_with(compilation_params)
@@ -148,8 +148,6 @@ impl BareTransactionSender<'_> {
 
         result.compiled_approval = Some(compiled.approval.compiled_base64_to_bytes.clone());
         result.compiled_clear = Some(compiled.clear.compiled_base64_to_bytes.clone());
-        result.approval_source_map = compiled.approval.source_map.clone();
-        result.clear_source_map = compiled.clear.source_map.clone();
 
         let app_client = AppClient::new(AppClientParams {
             app_id: result.app_id,

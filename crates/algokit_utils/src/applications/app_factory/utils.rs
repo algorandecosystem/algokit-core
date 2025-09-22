@@ -63,7 +63,7 @@ pub(crate) fn merge_args_with_defaults(
 
             if matches!(provided_arg, AppMethodCallArg::DefaultValue) {
                 let default = arg_def.default_value.as_ref().ok_or_else(|| {
-                    AppFactoryError::ValidationError {
+                    AppFactoryError::ParamsBuilderError {
                         message: format!(
                             "No default value defined for argument {} in call to method {}",
                             method_arg_name, method.name
@@ -72,7 +72,7 @@ pub(crate) fn merge_args_with_defaults(
                 })?;
 
                 if default.source != DefaultValueSource::Literal {
-                    return Err(AppFactoryError::ValidationError {
+                    return Err(AppFactoryError::ParamsBuilderError {
                         message: format!(
                             "Default value is not supported by argument {} in call to method {}",
                             method_arg_name, method.name
@@ -100,7 +100,7 @@ pub(crate) fn merge_args_with_defaults(
             }
         }
 
-        return Err(AppFactoryError::ValidationError {
+        return Err(AppFactoryError::ParamsBuilderError {
             message: format!(
                 "No value provided for required argument {} in call to method {}",
                 method_arg_name, method.name
@@ -118,7 +118,7 @@ fn decode_literal_default_value(
     arg_name: &str,
 ) -> Result<algokit_abi::ABIValue, AppFactoryError> {
     if !matches!(default.source, DefaultValueSource::Literal) {
-        return Err(AppFactoryError::ValidationError {
+        return Err(AppFactoryError::ParamsBuilderError {
             message: format!(
                 "Default value for argument {} in call to method {} must be a literal",
                 arg_name, method_name
@@ -128,13 +128,13 @@ fn decode_literal_default_value(
 
     let abi_type_str = default.value_type.as_deref().unwrap_or(&arg_def.arg_type);
     let abi_type =
-        ABIType::from_str(abi_type_str).map_err(|e| AppFactoryError::ValidationError {
+        ABIType::from_str(abi_type_str).map_err(|e| AppFactoryError::ParamsBuilderError {
             message: e.to_string(),
         })?;
 
     let bytes = Base64
         .decode(&default.data)
-        .map_err(|e| AppFactoryError::ValidationError {
+        .map_err(|e| AppFactoryError::ParamsBuilderError {
             message: format!(
                 "Failed to base64-decode default literal for argument {} in call to method {}: {}",
                 arg_name, method_name, e
@@ -143,12 +143,7 @@ fn decode_literal_default_value(
 
     let abi_value = abi_type
         .decode(&bytes)
-        .map_err(|e| AppFactoryError::ValidationError {
-            message: format!(
-                "Failed to decode default literal for argument {} in call to method {}: {}",
-                arg_name, method_name, e
-            ),
-        })?;
+        .map_err(|e| AppFactoryError::ABIError { source: e })?;
 
     Ok(abi_value)
 }

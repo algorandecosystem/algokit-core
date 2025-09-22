@@ -12,22 +12,31 @@ use algokit_transact::StateSchema as TxStateSchema;
 use std::str::FromStr;
 
 use super::utils::resolve_signer;
+
+/// Builds method-call deploy parameters using the factory's configuration.
 pub struct ParamsBuilder<'a> {
     pub(crate) factory: &'a AppFactory,
 }
 
+/// Builds bare (non-ABI) deploy parameters backed by factory defaults.
 pub struct BareParamsBuilder<'a> {
     pub(crate) factory: &'a AppFactory,
 }
 
 impl<'a> ParamsBuilder<'a> {
+    /// Returns the bare parameter builder for constructing non-ABI transactions.
     pub fn bare(&self) -> BareParamsBuilder<'a> {
         BareParamsBuilder {
             factory: self.factory,
         }
     }
 
-    /// Create DeployAppCreateMethodCallParams from factory inputs
+    /// Builds [`DeployAppCreateMethodCallParams`] using the supplied inputs and the
+    /// factory's compiled programs.
+    ///
+    /// # Errors
+    /// Returns [`AppFactoryError`] if the spec cannot be compiled, the method cannot be
+    /// located, or the sender address is invalid.
     pub fn create(
         &self,
         params: AppFactoryCreateMethodCallParams,
@@ -81,7 +90,12 @@ impl<'a> ParamsBuilder<'a> {
         })
     }
 
-    /// Create DeployAppUpdateMethodCallParams
+    /// Builds [`DeployAppUpdateMethodCallParams`] for an update call, merging default
+    /// arguments defined in the ARC-56 contract.
+    ///
+    /// # Errors
+    /// Returns [`AppFactoryError`] if the method cannot be resolved, default arguments
+    /// cannot be merged, or the sender address is invalid.
     pub fn deploy_update(
         &self,
         params: AppClientMethodCallParams,
@@ -123,7 +137,12 @@ impl<'a> ParamsBuilder<'a> {
         })
     }
 
-    /// Create DeployAppDeleteMethodCallParams
+    /// Builds [`DeployAppDeleteMethodCallParams`] for a delete call, merging default
+    /// arguments defined in the ARC-56 contract.
+    ///
+    /// # Errors
+    /// Returns [`AppFactoryError`] if the method cannot be resolved, default arguments
+    /// cannot be merged, or the sender address is invalid.
     pub fn deploy_delete(
         &self,
         params: AppClientMethodCallParams,
@@ -167,7 +186,11 @@ impl<'a> ParamsBuilder<'a> {
 }
 
 impl BareParamsBuilder<'_> {
-    /// Create DeployAppCreateParams from factory inputs
+    /// Builds [`DeployAppCreateParams`] using factory defaults and compiled programs.
+    ///
+    /// # Errors
+    /// Returns [`AppFactoryError`] if the spec cannot be compiled or the sender address
+    /// is invalid.
     pub fn create(
         &self,
         params: Option<AppFactoryCreateParams>,
@@ -213,7 +236,11 @@ impl BareParamsBuilder<'_> {
         })
     }
 
-    /// Create DeployAppUpdateParams
+    /// Builds [`DeployAppUpdateParams`] for a bare update transaction using factory
+    /// defaults.
+    ///
+    /// # Errors
+    /// Returns [`AppFactoryError`] if the sender address is invalid.
     pub fn deploy_update(
         &self,
         params: Option<AppClientBareCallParams>,
@@ -247,7 +274,11 @@ impl BareParamsBuilder<'_> {
         })
     }
 
-    /// Create DeployAppDeleteParams
+    /// Builds [`DeployAppDeleteParams`] for a bare delete transaction using factory
+    /// defaults.
+    ///
+    /// # Errors
+    /// Returns [`AppFactoryError`] if the sender address is invalid.
     pub fn deploy_delete(
         &self,
         params: Option<AppClientBareCallParams>,

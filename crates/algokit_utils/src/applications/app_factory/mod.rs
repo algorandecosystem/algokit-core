@@ -35,7 +35,12 @@ pub use transaction_builder::TransactionBuilder;
 pub use transaction_sender::TransactionSender;
 pub use types::*;
 
-/// Factory for creating and deploying Algorand applications from an ARC-56 spec.
+/// ARC-56 factory that compiles an application spec, deploys app instances,
+/// and builds [`AppClient`]s for interacting with them.
+///
+/// Constructed from [`AppFactoryParams`], the factory centralises shared context such
+/// as the Algorand client, default sender and signer, and any deploy-time template
+/// substitutions.
 pub struct AppFactory {
     app_spec: Arc56Contract,
     algorand: Arc<AlgorandClient>,
@@ -77,8 +82,6 @@ impl AppFactory {
             last_abi_return.clone(),
             Some(compiled.approval.compiled_base64_to_bytes.clone()),
             Some(compiled.clear.compiled_base64_to_bytes.clone()),
-            compiled.approval.source_map.clone(),
-            compiled.clear.source_map.clone(),
         )
         .map_err(|e| AppFactoryError::ValidationError {
             message: e.to_string(),
@@ -148,8 +151,6 @@ impl AppFactory {
             create_abi.clone(),
             Some(compiled.approval.compiled_base64_to_bytes.clone()),
             Some(compiled.clear.compiled_base64_to_bytes.clone()),
-            compiled.approval.source_map.clone(),
-            compiled.clear.source_map.clone(),
         )
         .map_err(|e| AppFactoryError::ValidationError {
             message: e.to_string(),
@@ -256,13 +257,16 @@ impl AppFactory {
         }
     }
 
+    /// Returns the application name derived from the app spec or provided override.
     pub fn app_name(&self) -> &str {
         &self.app_name
     }
+    /// Returns the normalised ARC-56 contract backing this factory.
     pub fn app_spec(&self) -> &Arc56Contract {
         &self.app_spec
     }
 
+    /// Returns the shared [`AlgorandClient`] configured for the factory.
     pub fn algorand(&self) -> Arc<AlgorandClient> {
         self.algorand.clone()
     }
@@ -271,21 +275,30 @@ impl AppFactory {
         &self.version
     }
 
+    /// Returns a [`ParamsBuilder`] that defers transaction construction for create,
+    /// update, and delete operations while reusing factory defaults.
     pub fn params(&self) -> ParamsBuilder<'_> {
         ParamsBuilder { factory: self }
     }
+    /// Returns a [`TransactionBuilder`] for constructing transactions without submitting
+    /// them yet.
     pub fn create_transaction(&self) -> TransactionBuilder<'_> {
         TransactionBuilder { factory: self }
     }
+    /// Returns a [`TransactionSender`] that sends transactions immediately and surfaces
+    /// their results.
     pub fn send(&self) -> TransactionSender<'_> {
         TransactionSender { factory: self }
     }
 
+    /// Imports compiled source maps so subsequent calls can surface logic errors with
+    /// meaningful context.
     pub fn import_source_maps(&self, source_maps: AppSourceMaps) {
         *self.approval_source_map.lock().unwrap() = source_maps.approval_source_map;
         *self.clear_source_map.lock().unwrap() = source_maps.clear_source_map;
     }
 
+    /// Exports the cached source maps, returning an error if they have not been loaded yet.
     pub fn export_source_maps(&self) -> Result<AppSourceMaps, AppFactoryError> {
         let approval = self
             .approval_source_map
@@ -309,6 +322,8 @@ impl AppFactory {
         })
     }
 
+    /// Compiles the approval and clear programs for this factory's app specification.
+    /// Optional `compilation_params` control template substitution and updatability flags.
     pub async fn compile(
         &self,
         compilation_params: Option<CompilationParams>,
@@ -322,6 +337,8 @@ impl AppFactory {
         })
     }
 
+    /// Creates a new [`AppClient`] configured for the provided application ID, with
+    /// optional overrides for name, sender, signer, and source maps.
     pub fn get_app_client_by_id(
         &self,
         app_id: u64,
@@ -345,6 +362,13 @@ impl AppFactory {
         })
     }
 
+    /// Resolves an application by creator address and name using AlgoKit deployment
+    /// semantics and returns a configured [`AppClient`]. Optional overrides control the
+    /// resolved name, sender, signer, and whether the lookup cache is bypassed.
+    ///
+    /// # Errors
+    /// Returns [`AppFactoryError`] if the application cannot be resolved or the
+    /// resulting client cannot be created.
     pub async fn get_app_client_by_creator_and_name(
         &self,
         creator_address: &str,
@@ -492,7 +516,24 @@ impl AppFactory {
         )
     }
 
-    /// Idempotently deploy (create/update/delete) an application using AppDeployer
+    /// Idempotently deploys (create, update, or replace) an application using
+    /// `AppDeployer` semantics.
+    ///
+    /// The factory applies deploy-time template substitutions and reuses default
+    /// sender/signer settings while coordinating create, update, and optional delete
+    /// transactions.
+    ///
+    /// # Notes
+    /// * Inspect `operation_performed` on the returned [`AppFactoryDeployResult`] to
+    ///   understand which operation was executed and to access related metadata.
+    /// * When `on_schema_break` is `OnSchemaBreak::Replace`, a breaking schema change
+    ///   deletes and recreates the application.
+    /// * When `on_update` is `OnUpdate::Replace`, differing TEAL sources trigger a
+    ///   delete-and-recreate cycle.
+    ///
+    /// # Errors
+    /// Returns [`AppFactoryError`] if parameter construction fails, compilation fails,
+    /// or the deployment encounters an error on chain.
     pub async fn deploy(
         &self,
         args: DeployArgs,

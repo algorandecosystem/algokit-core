@@ -6,21 +6,29 @@ use crate::applications::app_factory::{AppFactoryCreateMethodCallParams, AppFact
 use crate::transactions::{AppCreateParams, composer::ComposerError};
 use algokit_transact::Transaction;
 
+/// Builds transactions for AppFactory create flows without immediately submitting them.
 pub struct TransactionBuilder<'app_factory> {
     pub(crate) factory: &'app_factory AppFactory,
 }
 
+/// Builds bare create transactions ready for manual submission.
 pub struct BareTransactionBuilder<'app_factory> {
     pub(crate) factory: &'app_factory AppFactory,
 }
 
 impl<'app_factory> TransactionBuilder<'app_factory> {
+    /// Returns helpers for building bare (non-ABI) transactions.
     pub fn bare(&self) -> BareTransactionBuilder<'app_factory> {
         BareTransactionBuilder {
             factory: self.factory,
         }
     }
 
+    /// Builds transactions for an app creation method call without sending them.
+    ///
+    /// # Errors
+    /// Returns [`ComposerError`] if compilation fails, method lookup fails, or
+    /// transaction construction encounters invalid inputs.
     pub async fn create(
         &self,
         params: AppFactoryCreateMethodCallParams,
@@ -54,6 +62,10 @@ impl<'app_factory> TransactionBuilder<'app_factory> {
 }
 
 impl BareTransactionBuilder<'_> {
+    /// Builds a bare app creation transaction without sending it.
+    ///
+    /// # Errors
+    /// Returns [`ComposerError`] if compilation fails or the sender address is invalid.
     pub async fn create(
         &self,
         params: Option<AppFactoryCreateParams>,

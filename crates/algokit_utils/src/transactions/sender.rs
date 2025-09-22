@@ -489,7 +489,7 @@ impl TransactionSender {
                 let approval_bytes = compiled_approval.map(|ct| ct.compiled_base64_to_bytes);
                 let clear_bytes = compiled_clear.map(|ct| ct.compiled_base64_to_bytes);
 
-                SendAppCreateResult::new(base_result, None, approval_bytes, clear_bytes, None, None)
+                SendAppCreateResult::new(base_result, None, approval_bytes, clear_bytes)
                     .map_err(|e| TransactionSenderError::TransactionResultError { source: e })
             },
         )
@@ -580,15 +580,8 @@ impl TransactionSender {
                 let approval_bytes = compiled_approval.map(|ct| ct.compiled_base64_to_bytes);
                 let clear_bytes = compiled_clear.map(|ct| ct.compiled_base64_to_bytes);
 
-                SendAppCreateResult::new(
-                    base_result,
-                    abi_return,
-                    approval_bytes,
-                    clear_bytes,
-                    None,
-                    None,
-                )
-                .map_err(|e| TransactionSenderError::TransactionResultError { source: e })
+                SendAppCreateResult::new(base_result, abi_return, approval_bytes, clear_bytes)
+                    .map_err(|e| TransactionSenderError::TransactionResultError { source: e })
             },
         )
         .await

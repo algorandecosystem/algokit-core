@@ -127,8 +127,6 @@ async fn bare_create_with_deploy_time_params(
     assert!(res.app_id > 0);
     assert!(res.compiled_approval.is_some());
     assert!(res.compiled_clear.is_some());
-    assert!(res.approval_source_map.is_some());
-    assert!(res.clear_source_map.is_some());
     assert!(res.common_params.confirmation.confirmed_round.is_some());
     Ok(())
 }
@@ -210,8 +208,6 @@ async fn oncomplete_override_on_create(
     assert!(result.common_params.confirmations.first().is_some());
     assert!(result.compiled_approval.is_some());
     assert!(result.compiled_clear.is_some());
-    assert!(result.approval_source_map.is_some());
-    assert!(result.clear_source_map.is_some());
     Ok(())
 }
 
@@ -263,8 +259,6 @@ async fn abi_based_create_returns_value(
     }
     assert!(call_return.compiled_approval.is_some());
     assert!(call_return.compiled_clear.is_some());
-    assert!(call_return.approval_source_map.is_some());
-    assert!(call_return.clear_source_map.is_some());
     Ok(())
 }
 
@@ -602,8 +596,6 @@ async fn deploy_app_create(#[future] algorand_fixture: AlgorandFixtureResult) ->
     assert_eq!(client.app_id(), deploy_result.app.app_id);
     assert!(create_result.compiled_approval.is_some());
     assert!(create_result.compiled_clear.is_some());
-    assert!(create_result.approval_source_map.is_some());
-    assert!(create_result.clear_source_map.is_some());
     assert_eq!(
         create_result
             .common_params
@@ -672,8 +664,6 @@ async fn deploy_app_create_abi(#[future] algorand_fixture: AlgorandFixtureResult
     assert_eq!(abi_value, "arg_io");
     assert!(create_result.compiled_approval.is_some());
     assert!(create_result.compiled_clear.is_some());
-    assert!(create_result.approval_source_map.is_some());
-    assert!(create_result.clear_source_map.is_some());
     Ok(())
 }
 

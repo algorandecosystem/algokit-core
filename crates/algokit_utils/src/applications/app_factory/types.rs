@@ -128,7 +128,7 @@ pub type AppFactoryDeleteMethodCallResult = AppFactoryMethodCallResult<SendAppCa
 pub struct AppFactoryUpdateMethodCallParams {
     pub app_id: u64,
     pub method: String,
-    pub args: Option<Vec<AppMethodCallArg>>, // Accept ARC-56 literal arguments; merge step normalises before execution
+    pub args: Option<Vec<AppMethodCallArg>>,
     pub sender: Option<String>,
     pub account_references: Option<Vec<algokit_transact::Address>>,
     pub app_references: Option<Vec<u64>>,
@@ -210,11 +210,17 @@ pub struct AppFactoryDeleteParams {
     pub last_valid_round: Option<u64>,
 }
 
+/// Result from deploying an application via [`AppFactory`].
 #[derive(Debug)]
 pub struct AppFactoryDeployResult {
+    /// Metadata for the deployed application.
     pub app: crate::applications::app_deployer::AppMetadata,
+    /// The deployment outcome describing which operation was performed.
     pub operation_performed: crate::applications::app_deployer::AppDeployResult,
+    /// Detailed result for the create transaction when a new application was created.
     pub create_result: Option<AppFactoryCreateMethodCallResult>,
+    /// Detailed result for the update transaction when an application was updated.
     pub update_result: Option<AppFactoryUpdateMethodCallResult>,
+    /// Detailed result for the delete transaction when an application was replaced.
     pub delete_result: Option<AppFactoryDeleteMethodCallResult>,
 }
