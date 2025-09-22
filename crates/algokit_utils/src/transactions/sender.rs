@@ -65,55 +65,92 @@ impl From<AppManagerError> for TransactionSenderError {
     }
 }
 
+/// Result from sending a single transaction.
 #[derive(Debug, Clone)]
 pub struct SendResult {
+    /// The transaction that has been sent
     pub transaction: Transaction,
+    /// The response from sending and waiting for the transaction
     pub confirmation: PendingTransactionResponse,
+    /// The transaction ID that has been sent
     pub transaction_id: String,
 }
 
+/// Result from sending an asset create transaction.
 #[derive(Debug, Clone)]
 pub struct SendAssetCreateResult {
+    /// The transaction that has been sent
     pub transaction: Transaction,
+    /// The response from sending and waiting for the transaction
     pub confirmation: PendingTransactionResponse,
+    /// The transaction ID that has been sent
     pub transaction_id: String,
+    /// The ID of the created asset
     pub asset_id: u64,
 }
 
+/// Result from sending an app create transaction.
 #[derive(Debug, Clone)]
 pub struct SendAppCreateResult {
+    /// The transaction that has been sent
     pub transaction: Transaction,
+    /// The response from sending and waiting for the transaction
     pub confirmation: PendingTransactionResponse,
+    /// The transaction ID that has been sent
     pub transaction_id: String,
+    /// The ID of the created app
     pub app_id: u64,
+    /// The address of the created app
     pub app_address: Address,
 }
 
+/// Result from sending an app method call transaction.
 #[derive(Debug, Clone)]
 pub struct SendAppMethodCallResult {
+    /// The primary transaction that has been sent
     pub transaction: Transaction,
+    /// The response from sending and waiting for the primary transaction
     pub confirmation: PendingTransactionResponse,
+    /// The transaction ID of the primary transaction that has been sent
     pub transaction_id: String,
+    /// The ABI return value from the primary method call (optional)
     pub abi_return: Option<ABIReturn>,
+    /// The transactions that were sent
     pub transactions: Vec<Transaction>,
+    /// The responses from sending and waiting for the transactions
     pub confirmations: Vec<PendingTransactionResponse>,
+    /// The transaction IDs that have been sent
     pub transaction_ids: Vec<String>,
+    /// The returned values of ABI methods
     pub abi_returns: Vec<ABIReturn>,
+    /// The group ID (optional)
     pub group: Option<Byte32>,
 }
 
+/// Result from sending an app create method call transaction.
 #[derive(Debug, Clone)]
 pub struct SendAppCreateMethodCallResult {
+    /// The primary transaction that has been sent
     pub transaction: Transaction,
+    /// The response from sending and waiting for the primary transaction
     pub confirmation: PendingTransactionResponse,
+    /// The transaction ID of the primary transaction that has been sent
     pub transaction_id: String,
+    /// The ABI return value from the primary method call (optional)
     pub abi_return: Option<ABIReturn>,
+    /// The transactions that were sent
     pub transactions: Vec<Transaction>,
+    /// The responses from sending and waiting for the transactions
     pub confirmations: Vec<PendingTransactionResponse>,
+    /// The transaction IDs that have been sent
     pub transaction_ids: Vec<String>,
+    /// The returned values of ABI methods
     pub abi_returns: Vec<ABIReturn>,
+    /// The group ID (optional)
     pub group: Option<Byte32>,
+    /// The ID of the created app
     pub app_id: u64,
+    /// The address of the created app
     pub app_address: Address,
 }
 
@@ -125,6 +162,14 @@ pub struct TransactionSender {
 }
 
 impl TransactionSender {
+    /// Create a new transaction sender.
+    ///
+    /// # Arguments
+    /// * `new_group` - Factory function for creating new transaction composers
+    /// * `asset_manager` - Asset manager for handling asset operations
+    ///
+    /// # Returns
+    /// A new `TransactionSender` instance
     pub fn new(
         new_group: impl Fn(Option<TransactionComposerConfig>) -> Composer + 'static,
         asset_manager: AssetManager,
@@ -135,6 +180,13 @@ impl TransactionSender {
         }
     }
 
+    /// Create a new transaction composer group.
+    ///
+    /// # Arguments
+    /// * `params` - Optional configuration for the transaction composer
+    ///
+    /// # Returns
+    /// A new `Composer` instance
     pub fn new_group(&self, params: Option<TransactionComposerConfig>) -> Composer {
         (self.new_group)(params)
     }
