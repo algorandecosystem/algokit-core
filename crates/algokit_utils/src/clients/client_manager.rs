@@ -1,5 +1,7 @@
 use crate::AlgorandClient;
 use crate::applications::app_client::{AppClient, AppClientError, AppClientParams, AppSourceMaps};
+use crate::applications::app_factory::{AppFactory, AppFactoryParams};
+use crate::clients::app_manager::TealTemplateValue;
 use crate::clients::network_client::{
     AlgoClientConfig, AlgoConfig, AlgorandService, NetworkDetails, TokenHeader,
     genesis_id_is_localnet,
@@ -11,7 +13,7 @@ use algokit_http_client::DefaultHttpClient;
 use base64::{Engine, engine::general_purpose};
 use indexer_client::IndexerClient;
 use snafu::Snafu;
-use std::{env, sync::Arc};
+use std::{collections::HashMap, env, sync::Arc};
 use tokio::sync::RwLock;
 
 #[derive(Debug, Snafu)]
@@ -292,6 +294,36 @@ impl ClientManager {
     pub fn get_indexer_client_from_environment() -> Result<IndexerClient, ClientManagerError> {
         let config = Self::get_indexer_config_from_environment()?;
         Self::get_indexer_client(&config)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn get_app_factory(
+        &self,
+        algorand: Arc<AlgorandClient>,
+        app_spec: Arc56Contract,
+        app_name: Option<String>,
+        default_sender: Option<String>,
+        default_signer: Option<Arc<dyn TransactionSigner>>,
+        version: Option<String>,
+        deploy_time_params: Option<HashMap<String, TealTemplateValue>>,
+        updatable: Option<bool>,
+        deletable: Option<bool>,
+        source_maps: Option<AppSourceMaps>,
+        transaction_composer_config: Option<TransactionComposerConfig>,
+    ) -> AppFactory {
+        AppFactory::new(AppFactoryParams {
+            algorand,
+            app_spec,
+            app_name,
+            default_sender,
+            default_signer,
+            version,
+            deploy_time_params,
+            updatable,
+            deletable,
+            source_maps,
+            transaction_composer_config,
+        })
     }
 
     /// Returns an AppClient resolved by creator address and name using indexer lookup.

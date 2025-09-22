@@ -1,3 +1,6 @@
+//! Send helpers for `AppFactory`, mirroring the TypeScript/Python surface by exposing
+//! create-only flows while attaching compiled program metadata to results.
+
 use super::AppFactory;
 use super::utils::{
     build_bare_create_params, build_bare_delete_params, build_bare_update_params,
@@ -18,10 +21,12 @@ use crate::transactions::{
     SendAppCallResult, SendAppCreateResult, SendAppUpdateResult, SendParams, TransactionSenderError,
 };
 
+/// Sends factory-backed create transactions and returns both the client and send results.
 pub struct TransactionSender<'app_factory> {
     pub(crate) factory: &'app_factory AppFactory,
 }
 
+/// Bare transaction helpers for AppFactory create flows.
 pub struct BareTransactionSender<'app_factory> {
     pub(crate) factory: &'app_factory AppFactory,
 }

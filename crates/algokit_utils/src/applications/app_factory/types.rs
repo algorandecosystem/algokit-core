@@ -128,7 +128,7 @@ pub type AppFactoryDeleteMethodCallResult = AppFactoryMethodCallResult<SendAppCa
 pub struct AppFactoryUpdateMethodCallParams {
     pub app_id: u64,
     pub method: String,
-    pub args: Option<Vec<AppMethodCallArg>>, // raw args accepted; processing later
+    pub args: Option<Vec<AppMethodCallArg>>, // Accept ARC-56 literal arguments; merge step normalises before execution
     pub sender: Option<String>,
     pub account_references: Option<Vec<algokit_transact::Address>>,
     pub app_references: Option<Vec<u64>>,
