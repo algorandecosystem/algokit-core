@@ -17,6 +17,7 @@ use crate::models::TealKeyValueStore;
 /// Stores the global information associated with an application.
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct ApplicationParams {
     /// The address that created this application. This is the address where the parameters and global state for this application can be found.
     #[serde(rename = "creator", skip_serializing_if = "Option::is_none")]
@@ -37,7 +38,7 @@ pub struct ApplicationParams {
         rename = "extra-program-pages",
         skip_serializing_if = "Option::is_none"
     )]
-    pub extra_program_pages: Option<u64>,
+    pub extra_program_pages: Option<u32>,
     #[serde(rename = "local-state-schema", skip_serializing_if = "Option::is_none")]
     pub local_state_schema: Option<ApplicationStateSchema>,
     #[serde(

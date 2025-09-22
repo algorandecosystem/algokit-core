@@ -364,7 +364,7 @@ impl AssetConfigTransactionFields {
         if let Some(ref url) = self.url {
             if url.len() > 96 {
                 errors.push(TransactionValidationError::FieldTooLong {
-                    field: "URL".to_string(),
+                    field: "Url".to_string(),
                     actual: url.len(),
                     max: 96,
                     unit: "bytes".to_string(),
@@ -378,48 +378,48 @@ impl AssetConfigTransactionFields {
         }
     }
 
-    pub fn validate_for_reconfigure(&self) -> Result<(), Vec<TransactionValidationError>> {
+    pub fn validate_for_configure(&self) -> Result<(), Vec<TransactionValidationError>> {
         let mut errors = Vec::new();
 
         if self.total.is_some() {
             errors.push(TransactionValidationError::ImmutableField(
-                "total".to_string(),
+                "Total".to_string(),
             ));
         }
 
         if self.decimals.is_some() {
             errors.push(TransactionValidationError::ImmutableField(
-                "decimals".to_string(),
+                "Decimals".to_string(),
             ));
         }
 
         if self.default_frozen.is_some() {
             errors.push(TransactionValidationError::ImmutableField(
-                "default_frozen".to_string(),
+                "Default frozen".to_string(),
             ));
         }
 
         if self.asset_name.is_some() {
             errors.push(TransactionValidationError::ImmutableField(
-                "asset_name".to_string(),
+                "Asset name".to_string(),
             ));
         }
 
         if self.unit_name.is_some() {
             errors.push(TransactionValidationError::ImmutableField(
-                "unit_name".to_string(),
+                "Unit name".to_string(),
             ));
         }
 
         if self.url.is_some() {
             errors.push(TransactionValidationError::ImmutableField(
-                "url".to_string(),
+                "Url".to_string(),
             ));
         }
 
         if self.metadata_hash.is_some() {
             errors.push(TransactionValidationError::ImmutableField(
-                "metadata_hash".to_string(),
+                "Metadata hash".to_string(),
             ));
         }
 
@@ -467,7 +467,7 @@ impl Validate for AssetConfigTransactionFields {
 
                 match has_asset_params {
                     true => self
-                        .validate_for_reconfigure()
+                        .validate_for_configure()
                         .map_err(|errors| errors.iter().map(|e| e.to_string()).collect()),
                     false => Ok(()),
                 }
@@ -513,7 +513,7 @@ mod tests {
         assert!(error_text.contains("Decimals cannot exceed 19 decimal places"));
         assert!(error_text.contains("Asset name cannot exceed 32 bytes"));
         assert!(error_text.contains("Unit name cannot exceed 8 bytes"));
-        assert!(error_text.contains("URL cannot exceed 96 bytes"));
+        assert!(error_text.contains("Url cannot exceed 96 bytes"));
     }
 
     #[test]
@@ -541,7 +541,7 @@ mod tests {
     // Asset Reconfigure Validation Tests
 
     #[test]
-    fn test_validate_valid_asset_reconfigure() {
+    fn test_validate_valid_asset_config() {
         let asset_config = AssetConfigTransactionFields {
             header: TransactionHeaderMother::example().build().unwrap(),
             asset_id: 123,                                   // Existing asset
@@ -585,7 +585,7 @@ mod tests {
     }
 
     #[test]
-    fn test_validate_asset_reconfigure_multiple_immutable_field_errors() {
+    fn test_validate_asset_config_multiple_immutable_field_errors() {
         let asset_config = AssetConfigTransactionFields {
             header: TransactionHeaderMother::example().build().unwrap(),
             asset_id: 123,                                  // Existing asset
@@ -609,13 +609,13 @@ mod tests {
 
         // Check that all immutable field errors are present
         let error_text = errors.join("\n");
-        assert!(error_text.contains("total") && error_text.contains("immutable"));
-        assert!(error_text.contains("decimals") && error_text.contains("immutable"));
-        assert!(error_text.contains("default_frozen") && error_text.contains("immutable"));
-        assert!(error_text.contains("asset_name") && error_text.contains("immutable"));
-        assert!(error_text.contains("unit_name") && error_text.contains("immutable"));
-        assert!(error_text.contains("url") && error_text.contains("immutable"));
-        assert!(error_text.contains("metadata_hash") && error_text.contains("immutable"));
+        assert!(error_text.contains("Total") && error_text.contains("immutable"));
+        assert!(error_text.contains("Decimals") && error_text.contains("immutable"));
+        assert!(error_text.contains("Default frozen") && error_text.contains("immutable"));
+        assert!(error_text.contains("Asset name") && error_text.contains("immutable"));
+        assert!(error_text.contains("Unit name") && error_text.contains("immutable"));
+        assert!(error_text.contains("Url") && error_text.contains("immutable"));
+        assert!(error_text.contains("Metadata hash") && error_text.contains("immutable"));
     }
 
     #[test]
@@ -628,8 +628,8 @@ mod tests {
     }
 
     #[test]
-    fn test_asset_reconfigure_snapshot() {
-        let data = TestDataMother::asset_reconfigure();
+    fn test_asset_config_snapshot() {
+        let data = TestDataMother::asset_config();
         assert_eq!(
             data.id,
             String::from("GAMRAG3KCG23U2HOELJF32OQAWAISLIFBB5RLDDDYHUSOZNYN7MQ")

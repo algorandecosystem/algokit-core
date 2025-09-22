@@ -1,9 +1,11 @@
 use algokit_abi::{ABIType, abi_type::BitSize};
 use algokit_test_artifacts::template_variables;
-use algokit_utils::{clients::app_manager::*, testing::algorand_fixture};
+use algokit_utils::clients::app_manager::*;
 use base64::prelude::*;
 use rstest::*;
 use std::collections::HashMap;
+
+use crate::common::{AlgorandFixtureResult, TestResult, algorand_fixture};
 
 /// Test template variable replacement behavior
 #[rstest]
@@ -101,11 +103,11 @@ pushbytes "b64 //8=""#;
 }
 
 /// Test TEAL compilation and caching behavior
+#[rstest]
 #[tokio::test]
-async fn test_teal_compilation() {
-    let mut fixture = algorand_fixture().await.unwrap();
-    fixture.new_scope().await.unwrap();
-    let app_manager = AppManager::new(fixture.context().unwrap().algod.clone());
+async fn test_teal_compilation(#[future] algorand_fixture: AlgorandFixtureResult) -> TestResult {
+    let algorand_fixture = algorand_fixture.await?;
+    let app_manager = algorand_fixture.algorand_client.app();
 
     let teal = "#pragma version 3\npushint 1\nreturn";
     let result = app_manager.compile_teal(teal).await.unwrap();
@@ -131,14 +133,18 @@ async fn test_teal_compilation() {
     let different_teal = "#pragma version 3\npushint 2\nreturn";
     let different_result = app_manager.compile_teal(different_teal).await.unwrap();
     assert_ne!(result.compiled_hash, different_result.compiled_hash);
+
+    Ok(())
 }
 
 /// Test template compilation
+#[rstest]
 #[tokio::test]
-async fn test_template_compilation() {
-    let mut fixture = algorand_fixture().await.unwrap();
-    fixture.new_scope().await.unwrap();
-    let app_manager = AppManager::new(fixture.context().unwrap().algod.clone());
+async fn test_template_compilation(
+    #[future] algorand_fixture: AlgorandFixtureResult,
+) -> TestResult {
+    let algorand_fixture = algorand_fixture.await?;
+    let app_manager = algorand_fixture.algorand_client.app();
 
     let template_params = HashMap::from([("VALUE".to_string(), TealTemplateValue::Int(42))]);
     let result = app_manager
@@ -154,14 +160,16 @@ async fn test_template_compilation() {
     assert!(!result.teal.contains("TMPL_"));
     // Check deterministic compilation results for template with int 42
     assert_eq!(result.compiled_base64_to_bytes, vec![3, 129, 42, 67]);
+
+    Ok(())
 }
 
 /// Test deploy-time control
+#[rstest]
 #[tokio::test]
-async fn test_deploy_time_control() {
-    let mut fixture = algorand_fixture().await.unwrap();
-    fixture.new_scope().await.unwrap();
-    let app_manager = AppManager::new(fixture.context().unwrap().algod.clone());
+async fn test_deploy_time_control(#[future] algorand_fixture: AlgorandFixtureResult) -> TestResult {
+    let algorand_fixture = algorand_fixture.await?;
+    let app_manager = algorand_fixture.algorand_client.app();
 
     let template = format!(
         "#pragma version 3\npushint {}\npushint {}\nreturn",
@@ -180,14 +188,18 @@ async fn test_deploy_time_control() {
     assert!(result.teal.contains("pushint 1"));
     assert!(result.teal.contains("pushint 0"));
     assert!(!result.teal.contains("TMPL_"));
+
+    Ok(())
 }
 
 /// Test real contract compilation
+#[rstest]
 #[tokio::test]
-async fn test_real_contract_compilation() {
-    let mut fixture = algorand_fixture().await.unwrap();
-    fixture.new_scope().await.unwrap();
-    let app_manager = AppManager::new(fixture.context().unwrap().algod.clone());
+async fn test_real_contract_compilation(
+    #[future] algorand_fixture: AlgorandFixtureResult,
+) -> TestResult {
+    let algorand_fixture = algorand_fixture.await?;
+    let app_manager = algorand_fixture.algorand_client.app();
 
     let contract: serde_json::Value =
         serde_json::from_str(template_variables::APPLICATION_ARC56).unwrap();
@@ -231,6 +243,8 @@ async fn test_real_contract_compilation() {
         result.compiled_hash,
         "P2FNVZSIY7ETR6HLNUMUA7SXEK5ZHQBWLFH3T2IJKHBKHMLKA5KAIWQZFE"
     );
+
+    Ok(())
 }
 
 /// Test template substitution
@@ -293,11 +307,11 @@ NOTTMPL_STR // not replaced
 }
 
 /// Test compilation error handling
+#[rstest]
 #[tokio::test]
-async fn test_compilation_errors() {
-    let mut fixture = algorand_fixture().await.unwrap();
-    fixture.new_scope().await.unwrap();
-    let app_manager = AppManager::new(fixture.context().unwrap().algod.clone());
+async fn test_compilation_errors(#[future] algorand_fixture: AlgorandFixtureResult) -> TestResult {
+    let algorand_fixture = algorand_fixture.await?;
+    let app_manager = algorand_fixture.algorand_client.app();
 
     // Invalid TEAL should fail
     let result = app_manager
@@ -318,6 +332,8 @@ async fn test_compilation_errors() {
         Ok(compiled) => assert!(compiled.teal.contains("TMPL_MISSING")),
         Err(_) => {} // Both outcomes are acceptable
     }
+
+    Ok(())
 }
 
 /// Test that BoxIdentifier correctly handles binary data
@@ -394,8 +410,15 @@ fn test_app_state_keys_as_vec_u8() {
 
     // Verify the actual data in AppState
     let app_state = &result[&key_raw];
-    assert_eq!(app_state.key_raw, key_raw);
-    assert_eq!(app_state.key_base64, Base64.encode(&key_raw));
+    match app_state {
+        AppState::Uint(uint_value) => {
+            assert_eq!(uint_value.key_raw, key_raw);
+            assert_eq!(uint_value.key_base64, Base64.encode(&key_raw));
+        }
+        AppState::Bytes(_) => {
+            panic!("Expected AppState::Uint");
+        }
+    }
 
     // Test with binary key data (non-UTF-8)
     let binary_key = vec![0xFF, 0xFE, 0xFD, 0x00];
@@ -404,7 +427,7 @@ fn test_app_state_keys_as_vec_u8() {
     let binary_state_val = TealKeyValue {
         key: binary_key_base64,
         value: TealValue {
-            r#type: 2,
+            r#type: 2, // Uint type
             bytes: Vec::new(),
             uint: 123,
         },
@@ -416,7 +439,15 @@ fn test_app_state_keys_as_vec_u8() {
     // Verify binary key works correctly
     assert!(binary_result.contains_key(&binary_key));
     let binary_app_state = &binary_result[&binary_key];
-    assert_eq!(binary_app_state.key_raw, binary_key);
+    match binary_app_state {
+        AppState::Uint(uint_app_state) => {
+            assert_eq!(uint_app_state.key_raw, binary_key);
+            assert_eq!(uint_app_state.value, 123);
+        }
+        AppState::Bytes(_) => {
+            panic!("Expected AppState::Uint");
+        }
+    }
 
     // Test bytes value type with base64 deserialization
     let bytes_key = b"bytes_key".to_vec();
@@ -438,18 +469,16 @@ fn test_app_state_keys_as_vec_u8() {
     // Verify bytes value handling
     assert!(bytes_result.contains_key(&bytes_key));
     let bytes_app_state = &bytes_result[&bytes_key];
-    assert_eq!(bytes_app_state.key_raw, bytes_key);
-    assert_eq!(bytes_app_state.value_raw, Some(bytes_value.clone()));
-    assert_eq!(
-        bytes_app_state.value_base64,
-        Some(Base64.encode(&bytes_value))
-    );
-
-    // Check that the bytes value is correctly decoded as UTF-8 string
-    if let AppStateValue::Bytes(ref value_str) = bytes_app_state.value {
-        assert_eq!(value_str, "Hello, World!");
-    } else {
-        panic!("Expected AppStateValue::Bytes");
+    match bytes_app_state {
+        AppState::Uint(_) => {
+            panic!("Expected AppState::Bytes");
+        }
+        AppState::Bytes(value) => {
+            assert_eq!(value.key_raw, bytes_key);
+            assert_eq!(value.value_raw, bytes_value.clone());
+            assert_eq!(value.value_base64, Base64.encode(&bytes_value));
+            assert_eq!(value.value, "Hello, World!");
+        }
     }
 }
 

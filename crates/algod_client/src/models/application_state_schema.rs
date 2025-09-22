@@ -9,18 +9,25 @@
  */
 
 use crate::models;
-use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
+#[cfg(not(feature = "ffi_uniffi"))]
+use algokit_transact::SignedTransaction as AlgokitSignedTransaction;
 use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "ffi_uniffi")]
+use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
+
+use algokit_transact::AlgorandMsgpack;
 
 /// Specifies maximums on the number of each type that may be stored.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct ApplicationStateSchema {
     /// \[nui\] num of uints.
     #[serde(rename = "num-uint")]
-    pub num_uint: u64,
+    pub num_uint: u32,
     /// \[nbs\] num of byte slices.
     #[serde(rename = "num-byte-slice")]
-    pub num_byte_slice: u64,
+    pub num_byte_slice: u32,
 }
 
 impl AlgorandMsgpack for ApplicationStateSchema {
@@ -29,7 +36,7 @@ impl AlgorandMsgpack for ApplicationStateSchema {
 
 impl ApplicationStateSchema {
     /// Constructor for ApplicationStateSchema
-    pub fn new(num_uint: u64, num_byte_slice: u64) -> ApplicationStateSchema {
+    pub fn new(num_uint: u32, num_byte_slice: u32) -> ApplicationStateSchema {
         ApplicationStateSchema {
             num_uint,
             num_byte_slice,

@@ -16,19 +16,17 @@ pub use app_call::{
     AppDeleteMethodCallParams, AppDeleteParams, AppMethodCallArg, AppUpdateMethodCallParams,
     AppUpdateParams,
 };
-pub use asset_config::{AssetCreateParams, AssetDestroyParams, AssetReconfigureParams};
+pub use asset_config::{AssetConfigParams, AssetCreateParams, AssetDestroyParams};
 pub use asset_freeze::{AssetFreezeParams, AssetUnfreezeParams};
 pub use asset_transfer::{
     AssetClawbackParams, AssetOptInParams, AssetOptOutParams, AssetTransferParams,
 };
-pub use common::{
-    CommonParams, EmptySigner, TransactionSigner, TransactionSignerGetter, TransactionWithSigner,
-};
+pub use common::{EmptySigner, TransactionSigner, TransactionWithSigner};
 pub use composer::{
-    Composer, ComposerError, ComposerTransaction, ResourcePopulation, SendParams,
-    SendTransactionComposerResults,
+    Composer, ComposerError, ComposerParams, ComposerTransaction, ResourcePopulation, SendParams,
+    SendTransactionComposerResults, TransactionComposerConfig,
 };
-pub use creator::{BuiltTransactions, TransactionCreator};
+pub use creator::TransactionCreator;
 pub use key_registration::{
     NonParticipationKeyRegistrationParams, OfflineKeyRegistrationParams,
     OnlineKeyRegistrationParams,

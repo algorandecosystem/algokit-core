@@ -3,7 +3,7 @@ use algokit_http_client::DefaultHttpClient;
 use algokit_utils::ClientManager;
 use std::sync::Arc;
 
-use crate::common::init_test_logging;
+use crate::common::logging::init_test_logging;
 
 #[tokio::test]
 async fn test_get_transaction_params() {
@@ -11,7 +11,7 @@ async fn test_get_transaction_params() {
 
     // Create algod client using ClientManager
     let config = ClientManager::get_config_from_environment_or_localnet();
-    let algod_client = ClientManager::get_algod_client(&config.algod_config);
+    let algod_client = ClientManager::get_algod_client(&config.algod_config).unwrap();
 
     // Call the transaction params endpoint
     let result = algod_client.transaction_params().await;

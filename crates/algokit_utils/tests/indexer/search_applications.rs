@@ -1,10 +1,16 @@
 use algokit_http_client::DefaultHttpClient;
 use algokit_transact::{OnApplicationComplete, StateSchema};
-use algokit_utils::{AppCreateParams, ClientManager, CommonParams, testing::*};
+use algokit_utils::{AppCreateParams, ClientManager};
 use indexer_client::{IndexerClient, apis::Error as IndexerError};
+use rstest::rstest;
 use std::sync::Arc;
 
-use crate::common::init_test_logging;
+use crate::common::{
+    AlgorandFixture, TestResult,
+    fixture::{AlgorandFixtureResult, algorand_fixture},
+    indexer_helpers::wait_for_indexer,
+    logging::init_test_logging,
+};
 
 const HELLO_WORLD_APPROVAL_PROGRAM: [u8; 18] = [
     10, 128, 7, 72, 101, 108, 108, 111, 44, 32, 54, 26, 0, 80, 176, 129, 1, 67,
@@ -12,15 +18,10 @@ const HELLO_WORLD_APPROVAL_PROGRAM: [u8; 18] = [
 
 const HELLO_WORLD_CLEAR_STATE_PROGRAM: [u8; 4] = [10, 129, 1, 67];
 
-async fn create_app(
-    context: &AlgorandTestContext,
-    sender: algokit_transact::Address,
-) -> Option<u64> {
+async fn create_app(algorand_fixture: &AlgorandFixture) -> Option<u64> {
+    let sender = algorand_fixture.test_account.account().address();
     let params = AppCreateParams {
-        common_params: CommonParams {
-            sender,
-            ..Default::default()
-        },
+        sender,
         on_complete: OnApplicationComplete::NoOp,
         approval_program: HELLO_WORLD_APPROVAL_PROGRAM.to_vec(),
         clear_state_program: HELLO_WORLD_CLEAR_STATE_PROGRAM.to_vec(),
@@ -38,30 +39,29 @@ async fn create_app(
         app_references: None,
         asset_references: None,
         box_references: None,
+        ..Default::default()
     };
 
-    let mut composer = context.composer.clone();
+    let mut composer = algorand_fixture.algorand_client.new_group(None);
     composer.add_app_create(params).unwrap();
     let result = composer.send(None).await.unwrap();
     result.confirmations[0].app_id
 }
 
+#[rstest]
 #[tokio::test]
-async fn finds_created_application() {
-    init_test_logging();
-
-    let mut fixture = algorand_fixture().await.unwrap();
-    fixture.new_scope().await.unwrap();
-    let context = fixture.context().unwrap();
-    let sender = context.test_account.account().unwrap().address();
-
-    let app_id = create_app(context, sender).await.unwrap();
+async fn finds_created_application(
+    #[future] algorand_fixture: AlgorandFixtureResult,
+) -> TestResult {
+    let algorand_fixture = algorand_fixture.await?;
+    let app_id = create_app(&algorand_fixture).await.unwrap();
 
     let config = ClientManager::get_config_from_environment_or_localnet();
-    let base_url = if let Some(port) = config.indexer_config.port {
-        format!("{}:{}", config.indexer_config.server, port)
+    let indexer_config = config.indexer_config.unwrap();
+    let base_url = if let Some(port) = indexer_config.port {
+        format!("{}:{}", indexer_config.server, port)
     } else {
-        config.indexer_config.server.clone()
+        indexer_config.server.clone()
     };
     let indexer_client = IndexerClient::new(Arc::new(DefaultHttpClient::new(&base_url)));
 
@@ -95,6 +95,8 @@ async fn finds_created_application() {
 
     assert!(!response.applications.is_empty());
     assert_eq!(response.applications[0].id, app_id);
+
+    Ok(())
 }
 
 #[tokio::test]

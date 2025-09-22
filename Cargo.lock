@@ -32,6 +32,7 @@ version = "0.0.1"
 dependencies = [
  "algokit_http_client",
  "algokit_transact",
+ "algokit_transact_ffi",
  "base64 0.22.1",
  "rmp-serde",
  "serde",
@@ -42,6 +43,7 @@ dependencies = [
  "snafu",
  "tokio",
  "tokio-test",
+ "uniffi",
  "url",
  "uuid",
 ]
@@ -136,6 +138,7 @@ dependencies = [
  "futures",
  "hex",
  "indexer_client",
+ "insta",
  "lazy_static",
  "log",
  "num-bigint",
@@ -1817,6 +1820,7 @@ name = "indexer_client"
 version = "2.0.0"
 dependencies = [
  "algokit_http_client",
+ "algokit_transact_ffi",
  "base64 0.22.1",
  "serde",
  "serde_bytes",
@@ -1826,6 +1830,7 @@ dependencies = [
  "snafu",
  "tokio",
  "tokio-test",
+ "uniffi",
  "url",
  "uuid",
 ]
@@ -1880,6 +1885,8 @@ checksum = "154934ea70c58054b556dd430b99a98c2a7ff5309ac9891597e339b5c28f4371"
 dependencies = [
  "console",
  "once_cell",
+ "pest",
+ "pest_derive",
  "serde",
  "similar",
 ]

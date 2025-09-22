@@ -1,10 +1,10 @@
-use algokit_utils::{AlgorandClient, testing::algorand_fixture};
+use algokit_utils::AlgorandClient;
 
 /// Test basic functionality of AlgorandClient
 #[tokio::test]
 async fn test_algorand_client_basic_functionality()
 -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let client = AlgorandClient::default_localnet();
+    let client = AlgorandClient::default_localnet(None);
 
     // Test that we can get suggested params (this verifies client connectivity)
     let suggested_params = client
@@ -30,27 +30,24 @@ async fn test_algorand_client_basic_functionality()
 async fn test_algorand_client_initialization() {
     // Test default localnet initialization - we can't access internal fields,
     // so just verify the client can be created without panicking
-    let _client_localnet = AlgorandClient::default_localnet();
+    let _client_localnet = AlgorandClient::default_localnet(None);
 
     // Test testnet initialization
-    let _client_testnet = AlgorandClient::testnet();
+    let _client_testnet = AlgorandClient::testnet(None);
 
     // Test mainnet initialization
-    let _client_mainnet = AlgorandClient::mainnet();
+    let _client_mainnet = AlgorandClient::mainnet(None);
 
     // Test from environment (should default to localnet if no env vars set)
-    let _client_env = AlgorandClient::from_environment();
+    let _client_env = AlgorandClient::from_environment(None);
 }
 
 /// Test AlgorandClient with fixture integration
 #[tokio::test]
 async fn test_algorand_client_with_fixture() -> Result<(), Box<dyn std::error::Error + Send + Sync>>
 {
-    let mut fixture = algorand_fixture().await?;
-    fixture.new_scope().await?;
-
     // Use from_environment since the fixture sets up the environment properly
-    let client = AlgorandClient::from_environment();
+    let client = AlgorandClient::from_environment(None);
 
     // Test suggested params through fixture
     let suggested_params = client

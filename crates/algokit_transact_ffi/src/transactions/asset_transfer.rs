@@ -38,7 +38,7 @@ impl TryFrom<Transaction> for algokit_transact::AssetTransferTransactionFields {
         let data = tx.clone().asset_transfer.unwrap();
         let header: algokit_transact::TransactionHeader = tx.try_into()?;
 
-        Ok(Self {
+        let transaction_fields = Self {
             header,
             asset_id: data.asset_id,
             amount: data.amount,
@@ -48,7 +48,15 @@ impl TryFrom<Transaction> for algokit_transact::AssetTransferTransactionFields {
                 .close_remainder_to
                 .map(|addr| addr.parse())
                 .transpose()?,
-        })
+        };
+
+        transaction_fields
+            .validate()
+            .map_err(|errors| AlgoKitTransactError::DecodingError {
+                message: format!("Asset transfer validation failed: {}", errors.join(", ")),
+            })?;
+
+        Ok(transaction_fields)
     }
 }
 
@@ -63,8 +71,7 @@ mod tests {
         let txn: Transaction = TransactionMother::simple_asset_transfer()
             .build()
             .unwrap()
-            .try_into()
-            .unwrap();
+            .into();
 
         // Encode the transaction
         let encoded = encode_transaction(txn).unwrap();
@@ -77,12 +84,25 @@ mod tests {
     #[test]
     fn test_asset_transfer_transaction_id_ffi() {
         let data = TestDataMother::simple_asset_transfer();
-        let tx_ffi: Transaction = data.transaction.try_into().unwrap();
+        let tx_ffi: Transaction = data.transaction.into();
 
         let actual_id = get_transaction_id(tx_ffi.clone()).unwrap();
         let actual_id_raw = get_transaction_id_raw(tx_ffi.clone()).unwrap();
 
         assert_eq!(actual_id, data.id);
         assert_eq!(actual_id_raw, data.id_raw);
+    }
+
+    #[test]
+    fn test_encode_transaction_validation_integration() {
+        // invalid
+        let mut tx: Transaction = TestDataMother::simple_asset_transfer().transaction.into();
+        tx.asset_transfer.as_mut().unwrap().asset_id = 0;
+        let result = encode_transaction(tx);
+        assert!(result.is_err());
+
+        // valid
+        let result = encode_transaction(TestDataMother::simple_asset_transfer().transaction.into());
+        assert!(result.is_ok());
     }
 }

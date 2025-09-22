@@ -1,7 +1,9 @@
 use num_bigint::BigUint;
+use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
 
 /// Represents a value that can be encoded or decoded as an ABI type.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ABIValue {
     /// A boolean value.
     Bool(bool),
@@ -15,6 +17,10 @@ pub enum ABIValue {
     Array(Vec<ABIValue>),
     /// An Algorand address.
     Address(String),
+    /// Raw bytes.
+    Bytes(Vec<u8>),
+    /// A struct value represented as a key-value map.
+    Struct(HashMap<String, ABIValue>),
 }
 
 impl From<bool> for ABIValue {
@@ -83,6 +89,12 @@ impl From<Vec<ABIValue>> for ABIValue {
     }
 }
 
+impl From<HashMap<String, ABIValue>> for ABIValue {
+    fn from(value: HashMap<String, ABIValue>) -> Self {
+        ABIValue::Struct(value)
+    }
+}
+
 impl ABIValue {
     /// Create an ABIValue::Byte from a u8 value
     pub fn from_byte(value: u8) -> Self {
@@ -93,10 +105,59 @@ impl ABIValue {
     pub fn from_address<S: Into<String>>(value: S) -> Self {
         ABIValue::Address(value.into())
     }
+
+    /// Create an ABIValue::Struct from a HashMap
+    pub fn from_struct(value: HashMap<String, ABIValue>) -> Self {
+        ABIValue::Struct(value)
+    }
+}
+
+impl Hash for ABIValue {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        match self {
+            ABIValue::Bool(b) => {
+                0u8.hash(state);
+                b.hash(state);
+            }
+            ABIValue::Uint(u) => {
+                1u8.hash(state);
+                u.to_bytes_be().hash(state);
+            }
+            ABIValue::String(s) => {
+                2u8.hash(state);
+                s.hash(state);
+            }
+            ABIValue::Byte(b) => {
+                3u8.hash(state);
+                b.hash(state);
+            }
+            ABIValue::Array(arr) => {
+                4u8.hash(state);
+                arr.hash(state);
+            }
+            ABIValue::Address(addr) => {
+                5u8.hash(state);
+                addr.hash(state);
+            }
+            ABIValue::Bytes(bytes) => {
+                6u8.hash(state);
+                bytes.hash(state);
+            }
+            ABIValue::Struct(map) => {
+                7u8.hash(state);
+                // For HashMap, we need to hash in a consistent order
+                let mut pairs: Vec<_> = map.iter().collect();
+                pairs.sort_by_key(|(k, _)| *k);
+                pairs.hash(state);
+            }
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
 
     #[test]
@@ -108,32 +169,26 @@ mod tests {
         assert_eq!(value, ABIValue::Bool(false));
     }
 
-    #[test]
-    fn test_from_uint_types() {
-        let value = ABIValue::from(42u8);
-        assert_eq!(value, ABIValue::Uint(BigUint::from(42u8)));
-
-        let value = ABIValue::from(1000u16);
-        assert_eq!(value, ABIValue::Uint(BigUint::from(1000u16)));
-
-        let value = ABIValue::from(100000u32);
-        assert_eq!(value, ABIValue::Uint(BigUint::from(100000u32)));
-
-        let value = ABIValue::from(10000000000u64);
-        assert_eq!(value, ABIValue::Uint(BigUint::from(10000000000u64)));
-
-        let value = ABIValue::from(340282366920938463463374607431768211455u128);
-        assert_eq!(
-            value,
-            ABIValue::Uint(BigUint::from(340282366920938463463374607431768211455u128))
-        );
-
-        let value = ABIValue::from(12345usize);
-        assert_eq!(value, ABIValue::Uint(BigUint::from(12345usize)));
-
-        let big_value = BigUint::from(999999u64);
-        let value = ABIValue::from(big_value.clone());
-        assert_eq!(value, ABIValue::Uint(big_value));
+    #[rstest]
+    #[case(ABIValue::from(42u8), ABIValue::Uint(BigUint::from(42u8)))]
+    #[case(ABIValue::from(1000u16), ABIValue::Uint(BigUint::from(1000u16)))]
+    #[case(ABIValue::from(100000u32), ABIValue::Uint(BigUint::from(100000u32)))]
+    #[case(
+        ABIValue::from(10000000000u64),
+        ABIValue::Uint(BigUint::from(10000000000u64))
+    )]
+    #[case(
+        ABIValue::from(340282366920938463463374607431768211455u128),
+        ABIValue::Uint(BigUint::from(340282366920938463463374607431768211455u128))
+    )]
+    #[case(ABIValue::from(12345usize), ABIValue::Uint(BigUint::from(12345usize)))]
+    #[case(ABIValue::from(100000u32), ABIValue::Uint(BigUint::from(100000u32)))]
+    #[case(
+        ABIValue::from(BigUint::from(999999u64)),
+        ABIValue::Uint(BigUint::from(999999u64))
+    )]
+    fn test_from_uint_types(#[case] abi_value_1: ABIValue, #[case] abi_value_2: ABIValue) {
+        assert_eq!(abi_value_1, abi_value_2);
     }
 
     #[test]
@@ -175,5 +230,19 @@ mod tests {
         let addr_str = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ";
         let value = ABIValue::from_address(addr_str);
         assert_eq!(value, ABIValue::Address(addr_str.to_string()));
+    }
+
+    #[test]
+    fn test_from_struct() {
+        let mut struct_map = HashMap::new();
+        struct_map.insert("name".to_string(), ABIValue::String("Alice".to_string()));
+        struct_map.insert("age".to_string(), ABIValue::Uint(BigUint::from(30u32)));
+
+        let value = ABIValue::from_struct(struct_map.clone());
+        assert_eq!(value, ABIValue::Struct(struct_map.clone()));
+
+        // Test with From trait
+        let value2 = ABIValue::from(struct_map.clone());
+        assert_eq!(value2, ABIValue::Struct(struct_map));
     }
 }

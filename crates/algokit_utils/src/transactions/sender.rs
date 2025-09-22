@@ -3,7 +3,7 @@ use super::{
         AppCallMethodCallParams, AppCallParams, AppCreateMethodCallParams, AppCreateParams,
         AppDeleteMethodCallParams, AppDeleteParams, AppUpdateMethodCallParams, AppUpdateParams,
     },
-    asset_config::{AssetCreateParams, AssetDestroyParams, AssetReconfigureParams},
+    asset_config::{AssetConfigParams, AssetCreateParams, AssetDestroyParams},
     asset_freeze::{AssetFreezeParams, AssetUnfreezeParams},
     asset_transfer::{AssetOptInParams, AssetOptOutParams, AssetTransferParams},
     composer::{Composer, ComposerError, SendParams},
@@ -14,10 +14,13 @@ use super::{
         SendTransactionResult, TransactionResultError,
     },
 };
-use crate::clients::app_manager::{AppManager, AppManagerError, CompiledTeal};
 use crate::clients::asset_manager::{AssetManager, AssetManagerError};
+use crate::{
+    clients::app_manager::{AppManager, AppManagerError, CompiledTeal},
+    transactions::TransactionComposerConfig,
+};
 use algod_client::apis::AlgodApiError;
-use algokit_abi::{ABIMethod, ABIReturn};
+use algokit_abi::ABIMethod;
 use algokit_transact::Address;
 use snafu::Snafu;
 
@@ -76,7 +79,7 @@ impl From<TransactionResultError> for TransactionSenderError {
 pub struct TransactionSender {
     asset_manager: AssetManager,
     app_manager: AppManager,
-    new_group: Arc<dyn Fn() -> Composer>,
+    new_group: Arc<dyn Fn(Option<TransactionComposerConfig>) -> Composer>,
 }
 
 pub trait HasMethod {
@@ -174,7 +177,7 @@ where
 impl TransactionSender {
     /// Create a new TransactionSender instance.
     pub fn new(
-        new_group: impl Fn() -> Composer + 'static,
+        new_group: impl Fn(Option<TransactionComposerConfig>) -> Composer + 'static,
         asset_manager: AssetManager,
         app_manager: AppManager,
     ) -> Self {
@@ -185,8 +188,8 @@ impl TransactionSender {
         }
     }
 
-    pub fn new_group(&self) -> Composer {
-        (self.new_group)()
+    pub fn new_group(&self, params: Option<TransactionComposerConfig>) -> Composer {
+        (self.new_group)(params)
     }
 
     async fn send_and_parse(
@@ -194,9 +197,9 @@ impl TransactionSender {
         mut composer: Composer,
         send_params: Option<SendParams>,
     ) -> Result<SendTransactionResult, TransactionSenderError> {
-        let built_transactions = composer.build(None).await?;
+        let transactions_with_signers = composer.build().await?;
 
-        let raw_transactions: Vec<algokit_transact::Transaction> = built_transactions
+        let transactions: Vec<algokit_transact::Transaction> = transactions_with_signers
             .iter()
             .map(|tx_with_signer| tx_with_signer.transaction.clone())
             .collect();
@@ -204,35 +207,21 @@ impl TransactionSender {
         let composer_results = composer.send(send_params).await?;
 
         let group_id = composer_results
-            .group_id
+            .group
             .map(hex::encode)
             .unwrap_or_else(|| "".to_string());
 
         // Enhanced ABI return processing using app_manager
-        let abi_returns: Option<Vec<ABIReturn>> = if !composer_results.abi_returns.is_empty() {
-            let returns: Result<Vec<_>, _> = composer_results
-                .abi_returns
-                .into_iter()
-                .map(|result| {
-                    result.map_err(|e| TransactionSenderError::ComposerError { source: e })
-                })
-                .collect();
-            match returns {
-                Ok(returns) => {
-                    // Process ABI returns with app_manager for enhanced parsing
-                    let processed_returns: Vec<_> = returns.into_iter().flatten().collect();
-                    Some(processed_returns)
-                }
-                Err(_) => None,
-            }
-        } else {
+        let abi_returns = if composer_results.abi_returns.is_empty() {
             None
+        } else {
+            Some(composer_results.abi_returns)
         };
 
         let result = SendTransactionResult::new(
             group_id,
             composer_results.transaction_ids,
-            raw_transactions,
+            transactions,
             composer_results.confirmations,
             abi_returns,
         )?;
@@ -250,7 +239,7 @@ impl TransactionSender {
     where
         F: FnOnce(&mut Composer) -> Result<(), ComposerError>,
     {
-        let mut composer = self.new_group();
+        let mut composer = self.new_group(None);
         add_transaction(&mut composer)?;
         self.send_and_parse(composer, send_params).await
     }
@@ -268,55 +257,10 @@ impl TransactionSender {
         F: FnOnce(&mut Composer) -> Result<(), ComposerError>,
         T: FnOnce(SendTransactionResult) -> Result<R, TransactionSenderError>,
     {
-        let mut composer = self.new_group();
+        let mut composer = self.new_group(None);
         add_transaction(&mut composer)?;
         let base_result = self.send_and_parse(composer, send_params).await?;
         transform_result(base_result)
-    }
-
-    /// Extract ABI return from transaction result using app manager for enhanced processing.
-    ///
-    /// This method takes a transaction result and method parameter to extract and parse
-    /// ABI return values with proper type information from the app manager.
-    ///
-    /// # Arguments
-    /// * `result` - The transaction result containing potential ABI returns
-    /// * `params` - Parameters containing the method definition for ABI processing
-    ///
-    /// # Returns
-    /// * `Option<ABIReturn>` - The processed ABI return if available and valid
-    fn extract_abi_return_from_result(
-        &self,
-        result: &SendTransactionResult,
-        params: &impl HasMethod,
-    ) -> Option<ABIReturn> {
-        // Get the last ABI return from the result (most recent transaction)
-        let abi_return = result.abi_returns.as_ref()?.last()?.clone();
-
-        // Use app manager to enhance the ABI return processing
-        let method = params.method();
-
-        // If the method has a return type, validate and enhance the return
-        if method.returns.is_some() {
-            // Use app manager static method to parse the return value with proper method information
-            match AppManager::get_abi_return(&abi_return.raw_return_value, method) {
-                Ok(Some(parsed)) => {
-                    // Return enhanced ABIReturn with validated parsing
-                    Some(parsed)
-                }
-                Ok(None) => {
-                    // Method has no return type
-                    Some(abi_return)
-                }
-                Err(_) => {
-                    // Return original if parsing fails
-                    Some(abi_return)
-                }
-            }
-        } else {
-            // Method has no return type, return as-is
-            Some(abi_return)
-        }
     }
 
     /// Extract compilation metadata for TEAL programs using app manager caching.
@@ -395,12 +339,41 @@ impl TransactionSender {
     }
 
     /// Send asset opt-out transaction.
+    /// When no close remainder to address is specified, the asset creator will be resolved and used.
     pub async fn asset_opt_out(
         &self,
         params: AssetOptOutParams,
         send_params: Option<SendParams>,
         ensure_zero_balance: Option<bool>,
     ) -> Result<SendTransactionResult, TransactionSenderError> {
+        if ensure_zero_balance.unwrap_or(true) {
+            // Ensure account has zero balance before opting out
+            let account_info = self
+                .asset_manager
+                .get_account_information(&params.sender, params.asset_id)
+                .await
+                .map_err(|e| TransactionSenderError::ValidationError {
+                    message: format!(
+                        "Account {} validation failed for Asset {}: {}",
+                        params.sender, params.asset_id, e
+                    ),
+                })?;
+
+            let balance = account_info
+                .asset_holding
+                .as_ref()
+                .map(|h| h.amount)
+                .unwrap_or(0);
+            if balance != 0 {
+                return Err(TransactionSenderError::ValidationError {
+                    message: format!(
+                        "Account {} does not have a zero balance for Asset {}; can't opt-out.",
+                        params.sender, params.asset_id
+                    ),
+                });
+            }
+        }
+
         // Resolve close_remainder_to to asset creator if not specified
         let params = if params.close_remainder_to.is_none() {
             let asset_info = self
@@ -428,34 +401,6 @@ impl TransactionSender {
             params
         };
 
-        if ensure_zero_balance.unwrap_or(true) {
-            // Ensure account has zero balance before opting out
-            let account_info = self
-                .asset_manager
-                .get_account_information(&params.common_params.sender, params.asset_id)
-                .await
-                .map_err(|e| TransactionSenderError::ValidationError {
-                    message: format!(
-                        "Account {} validation failed for Asset {}: {}",
-                        params.common_params.sender, params.asset_id, e
-                    ),
-                })?;
-
-            let balance = account_info
-                .asset_holding
-                .as_ref()
-                .map(|h| h.amount)
-                .unwrap_or(0);
-            if balance != 0 {
-                return Err(TransactionSenderError::ValidationError {
-                    message: format!(
-                        "Account {} does not have a zero balance for Asset {}; can't opt-out.",
-                        params.common_params.sender, params.asset_id
-                    ),
-                });
-            }
-        }
-
         self.send_single_transaction(send_params, |composer| composer.add_asset_opt_out(params))
             .await
     }
@@ -480,13 +425,11 @@ impl TransactionSender {
     /// Send asset configuration transaction.
     pub async fn asset_config(
         &self,
-        params: AssetReconfigureParams,
+        params: AssetConfigParams,
         send_params: Option<SendParams>,
     ) -> Result<SendTransactionResult, TransactionSenderError> {
-        self.send_single_transaction(send_params, |composer| {
-            composer.add_asset_reconfigure(params)
-        })
-        .await
+        self.send_single_transaction(send_params, |composer| composer.add_asset_config(params))
+            .await
     }
 
     /// Send asset destroy transaction.
@@ -597,13 +540,15 @@ impl TransactionSender {
         params: AppCallMethodCallParams,
         send_params: Option<SendParams>,
     ) -> Result<SendAppCallResult, TransactionSenderError> {
-        let params_clone = params.clone();
         self.send_single_transaction_with_result(
             send_params,
             |composer| composer.add_app_call_method_call(params),
             |base_result| {
-                // Extract ABI return using helper method for enhanced processing
-                let abi_return = self.extract_abi_return_from_result(&base_result, &params_clone);
+                let abi_return = base_result
+                    .abi_returns
+                    .as_ref()
+                    .and_then(|returns| returns.last())
+                    .cloned();
                 Ok(SendAppCallResult::new(base_result, abi_return))
             },
         )
@@ -618,14 +563,16 @@ impl TransactionSender {
     ) -> Result<SendAppCreateResult, TransactionSenderError> {
         // Extract compilation metadata using helper method
         let (compiled_approval, compiled_clear) = self.extract_compilation_metadata(&params);
-        let params_clone = params.clone();
 
         self.send_single_transaction_with_result(
             send_params,
             |composer| composer.add_app_create_method_call(params),
             |base_result| {
-                // Extract ABI return using helper method for enhanced processing
-                let abi_return = self.extract_abi_return_from_result(&base_result, &params_clone);
+                let abi_return = base_result
+                    .abi_returns
+                    .as_ref()
+                    .and_then(|returns| returns.last())
+                    .cloned();
 
                 // Convert CompiledTeal to Vec<u8> for the result
                 let approval_bytes = compiled_approval.map(|ct| ct.compiled_base64_to_bytes);
@@ -646,15 +593,16 @@ impl TransactionSender {
     ) -> Result<SendAppUpdateResult, TransactionSenderError> {
         // Extract compilation metadata using helper method
         let (compiled_approval, compiled_clear) = self.extract_compilation_metadata(&params);
-        let params_clone = params.clone();
 
         self.send_single_transaction_with_result(
             send_params,
             |composer| composer.add_app_update_method_call(params),
             |base_result| {
-                // Extract ABI return using helper method for enhanced processing
-                let abi_return = self.extract_abi_return_from_result(&base_result, &params_clone);
-
+                let abi_return = base_result
+                    .abi_returns
+                    .as_ref()
+                    .and_then(|returns| returns.last())
+                    .cloned();
                 // Convert CompiledTeal to Vec<u8> for the result
                 let approval_bytes = compiled_approval.map(|ct| ct.compiled_base64_to_bytes);
                 let clear_bytes = compiled_clear.map(|ct| ct.compiled_base64_to_bytes);
@@ -676,13 +624,15 @@ impl TransactionSender {
         params: AppDeleteMethodCallParams,
         send_params: Option<SendParams>,
     ) -> Result<SendAppCallResult, TransactionSenderError> {
-        let params_clone = params.clone();
         self.send_single_transaction_with_result(
             send_params,
             |composer| composer.add_app_delete_method_call(params),
             |base_result| {
-                // Extract ABI return using helper method for enhanced processing
-                let abi_return = self.extract_abi_return_from_result(&base_result, &params_clone);
+                let abi_return = base_result
+                    .abi_returns
+                    .as_ref()
+                    .and_then(|returns| returns.last())
+                    .cloned();
                 Ok(SendAppCallResult::new(base_result, abi_return))
             },
         )

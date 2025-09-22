@@ -1,57 +1,52 @@
-use crate::common::init_test_logging;
 use algokit_test_artifacts::testing_app;
 use algokit_transact::{Address, OnApplicationComplete};
-use algokit_utils::SendParams;
 use algokit_utils::applications::{
     AppDeployMetadata, AppDeployParams, AppDeployResult, AppDeployer, AppProgram, CreateParams,
     DeleteParams, DeployAppCreateParams, DeployAppDeleteParams, DeployAppUpdateParams,
     OnSchemaBreak, OnUpdate, UpdateParams,
 };
 use algokit_utils::clients::app_manager::{AppManager, DeploymentMetadata, TealTemplateValue};
-use algokit_utils::testing::*;
-use algokit_utils::{AppCreateParams, AssetManager, CommonParams, TransactionSender};
+use algokit_utils::{AppCreateParams, TransactionSender};
+use algokit_utils::{AssetManager, SendParams};
 use base64::{Engine, prelude::BASE64_STANDARD};
 use rstest::*;
 use serde_json;
 use std::collections::HashMap;
-use std::sync::Arc;
 
-type TestResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
+use crate::common::{AlgorandFixture, AlgorandFixtureResult, TestResult, algorand_fixture};
 
 #[fixture]
-async fn setup() -> SetupResult {
-    init_test_logging();
-    let mut fixture = algorand_fixture().await?;
-    fixture.new_scope().await?;
+async fn fixture(#[future] algorand_fixture: AlgorandFixtureResult) -> FixtureResult {
+    let algorand_fixture = algorand_fixture.await?;
+    let test_account = algorand_fixture.test_account.account().address();
+    let algod_client = algorand_fixture.algod.clone();
+    let indexer_client = algorand_fixture.indexer.clone();
 
-    let context = fixture.context()?;
-    let test_account = context.test_account.account()?.address();
-
-    let algod_client = context.algod.clone();
-    let indexer_client = context.indexer.clone();
-    let test_account_clone = context.test_account.clone();
-    let asset_manager = AssetManager::new(algod_client.clone());
+    let composer = algorand_fixture.algorand_client.new_group(None);
+    let asset_manager = AssetManager::new(algod_client.clone(), {
+        let new_composer = composer.clone();
+        move |_params| new_composer.clone()
+    });
     let app_manager = AppManager::new(algod_client.clone());
-    let transaction_sender_algod_client = context.algod.clone();
+
     let transaction_sender = TransactionSender::new(
-        move || {
-            algokit_utils::Composer::new(
-                transaction_sender_algod_client.clone(),
-                Arc::new(test_account_clone.clone()),
-            )
+        {
+            let new_composer = composer.clone();
+            move |_params| new_composer.clone()
         },
         asset_manager,
         app_manager.clone(),
     );
+
     let app_deployer = AppDeployer::new(
         app_manager.clone(),
         transaction_sender.clone(),
         Some(indexer_client.clone()),
     );
 
-    Ok(TestData {
+    Ok(Fixture {
         test_account,
-        fixture,
+        algorand_fixture,
         app_manager,
         transaction_sender,
         app_deployer,
@@ -61,17 +56,16 @@ async fn setup() -> SetupResult {
 #[rstest]
 #[tokio::test]
 async fn test_created_app_is_retrieved_by_name_with_deployment_metadata(
-    #[future] setup: SetupResult,
+    #[future] fixture: FixtureResult,
 ) -> TestResult {
-    let TestData {
+    let Fixture {
         test_account,
         app_manager,
         transaction_sender,
-        fixture,
+        algorand_fixture,
         mut app_deployer,
         ..
-    } = setup.await?;
-    let context = fixture.context()?;
+    } = fixture.await?;
 
     let creation_metadata = get_metadata(AppDeployMetadataParams {
         name: Some(String::from("MY_APP")),
@@ -85,7 +79,7 @@ async fn test_created_app_is_retrieved_by_name_with_deployment_metadata(
 
     let result = transaction_sender.app_create(create_params, None).await?;
 
-    context
+    algorand_fixture
         .wait_for_indexer_transaction(&result.common_params.tx_id)
         .await?;
 
@@ -118,16 +112,15 @@ async fn test_created_app_is_retrieved_by_name_with_deployment_metadata(
 
 #[rstest]
 #[tokio::test]
-async fn test_latest_created_app_is_retrieved(#[future] setup: SetupResult) -> TestResult {
-    let TestData {
+async fn test_latest_created_app_is_retrieved(#[future] fixture: FixtureResult) -> TestResult {
+    let Fixture {
         test_account,
         app_manager,
         transaction_sender,
-        fixture,
+        algorand_fixture,
         mut app_deployer,
         ..
-    } = setup.await?;
-    let context = fixture.context()?;
+    } = fixture.await?;
 
     let creation_metadata = get_metadata(AppDeployMetadataParams {
         name: Some(String::from("MY_APP")),
@@ -138,20 +131,20 @@ async fn test_latest_created_app_is_retrieved(#[future] setup: SetupResult) -> T
 
     let mut create_params_1 =
         get_testing_app_create_params(&app_manager, &test_account, &creation_metadata).await?;
-    create_params_1.common_params.lease = Some([1u8; 32]);
+    create_params_1.lease = Some([1u8; 32]);
     transaction_sender.app_create(create_params_1, None).await?;
 
     let mut create_params_2 =
         get_testing_app_create_params(&app_manager, &test_account, &creation_metadata).await?;
-    create_params_2.common_params.lease = Some([2u8; 32]);
+    create_params_2.lease = Some([2u8; 32]);
     transaction_sender.app_create(create_params_2, None).await?;
 
     let mut create_params_3 =
         get_testing_app_create_params(&app_manager, &test_account, &creation_metadata).await?;
-    create_params_3.common_params.lease = Some([3u8; 32]);
+    create_params_3.lease = Some([3u8; 32]);
     let result_3 = transaction_sender.app_create(create_params_3, None).await?;
 
-    context
+    algorand_fixture
         .wait_for_indexer_transaction(&result_3.common_params.tx_id)
         .await?;
 
@@ -167,17 +160,16 @@ async fn test_latest_created_app_is_retrieved(#[future] setup: SetupResult) -> T
 #[rstest]
 #[tokio::test]
 async fn test_created_updated_and_deleted_apps_are_retrieved_by_name_with_deployment_metadata(
-    #[future] setup: SetupResult,
+    #[future] fixture: FixtureResult,
 ) -> TestResult {
-    let TestData {
+    let Fixture {
         test_account,
         app_manager,
         transaction_sender,
-        fixture,
+        algorand_fixture,
         mut app_deployer,
         ..
-    } = setup.await?;
-    let context = fixture.context()?;
+    } = fixture.await?;
 
     let creation_metadata = get_metadata(AppDeployMetadataParams {
         name: Some(String::from("MY_APP")),
@@ -213,7 +205,17 @@ async fn test_created_updated_and_deleted_apps_are_retrieved_by_name_with_deploy
     let update_create_params =
         get_testing_app_create_params(&app_manager, &test_account, &update_metadata).await?;
     let update_params = algokit_utils::AppUpdateParams {
-        common_params: update_create_params.common_params,
+        sender: update_create_params.sender.clone(),
+        signer: update_create_params.signer.clone(),
+        rekey_to: update_create_params.rekey_to.clone(),
+        note: update_create_params.note.clone(),
+        lease: update_create_params.lease,
+        static_fee: update_create_params.static_fee,
+        extra_fee: update_create_params.extra_fee,
+        max_fee: update_create_params.max_fee,
+        validity_window: update_create_params.validity_window,
+        first_valid_round: update_create_params.first_valid_round,
+        last_valid_round: update_create_params.last_valid_round,
         app_id: result_1.app_id,
         approval_program: update_create_params.approval_program,
         clear_state_program: update_create_params.clear_state_program,
@@ -227,20 +229,18 @@ async fn test_created_updated_and_deleted_apps_are_retrieved_by_name_with_deploy
 
     // Delete app 3
     let delete_params = algokit_utils::AppDeleteParams {
-        common_params: CommonParams {
-            sender: test_account.clone(),
-            ..Default::default()
-        },
+        sender: test_account.clone(),
         app_id: result_3.app_id,
         args: None,
         account_references: None,
         app_references: None,
         asset_references: None,
         box_references: None,
+        ..Default::default()
     };
     let delete_result = transaction_sender.app_delete(delete_params, None).await?;
 
-    context
+    algorand_fixture
         .wait_for_indexer_transaction(&delete_result.tx_id)
         .await?;
 
@@ -299,12 +299,12 @@ async fn test_created_updated_and_deleted_apps_are_retrieved_by_name_with_deploy
 
 #[rstest]
 #[tokio::test]
-async fn test_deploy_new_app(#[future] setup: SetupResult) -> TestResult {
-    let TestData {
+async fn test_deploy_new_app(#[future] fixture: FixtureResult) -> TestResult {
+    let Fixture {
         test_account,
         mut app_deployer,
         ..
-    } = setup.await?;
+    } = fixture.await?;
 
     let metadata = get_metadata(AppDeployMetadataParams {
         ..Default::default()
@@ -338,13 +338,13 @@ async fn test_deploy_new_app(#[future] setup: SetupResult) -> TestResult {
 #[rstest]
 #[tokio::test]
 async fn test_fail_to_deploy_immutable_app_without_tmpl_updatable(
-    #[future] setup: SetupResult,
+    #[future] fixture: FixtureResult,
 ) -> TestResult {
-    let TestData {
+    let Fixture {
         test_account,
         mut app_deployer,
         ..
-    } = setup.await?;
+    } = fixture.await?;
 
     let metadata = get_metadata(AppDeployMetadataParams {
         updatable: Some(true),
@@ -374,13 +374,13 @@ async fn test_fail_to_deploy_immutable_app_without_tmpl_updatable(
 #[rstest]
 #[tokio::test]
 async fn test_fail_to_deploy_permanent_app_without_tmpl_deletable(
-    #[future] setup: SetupResult,
+    #[future] fixture: FixtureResult,
 ) -> TestResult {
-    let TestData {
+    let Fixture {
         test_account,
         mut app_deployer,
         ..
-    } = setup.await?;
+    } = fixture.await?;
 
     let metadata = get_metadata(AppDeployMetadataParams {
         deletable: Some(true),
@@ -409,14 +409,13 @@ async fn test_fail_to_deploy_permanent_app_without_tmpl_deletable(
 
 #[rstest]
 #[tokio::test]
-async fn test_deploy_update_to_updatable_app(#[future] setup: SetupResult) -> TestResult {
-    let TestData {
+async fn test_deploy_update_to_updatable_app(#[future] fixture: FixtureResult) -> TestResult {
+    let Fixture {
         test_account,
         mut app_deployer,
-        fixture,
+        algorand_fixture,
         ..
-    } = setup.await?;
-    let context = fixture.context()?;
+    } = fixture.await?;
 
     // Deploy initial app with updatable=true
     let metadata = get_metadata(AppDeployMetadataParams {
@@ -433,7 +432,9 @@ async fn test_deploy_update_to_updatable_app(#[future] setup: SetupResult) -> Te
         _ => return Err("Expected Create result".into()),
     };
 
-    context.wait_for_indexer_transaction(&tx_id).await?;
+    algorand_fixture
+        .wait_for_indexer_transaction(&tx_id)
+        .await?;
 
     // Deploy update with same metadata but different version
     let metadata_2 = AppDeployMetadata {
@@ -475,14 +476,13 @@ async fn test_deploy_update_to_updatable_app(#[future] setup: SetupResult) -> Te
 
 #[rstest]
 #[tokio::test]
-async fn test_deploy_update_to_immutable_app_fails(#[future] setup: SetupResult) -> TestResult {
-    let TestData {
+async fn test_deploy_update_to_immutable_app_fails(#[future] fixture: FixtureResult) -> TestResult {
+    let Fixture {
         test_account,
         mut app_deployer,
-        fixture,
+        algorand_fixture,
         ..
-    } = setup.await?;
-    let context = fixture.context()?;
+    } = fixture.await?;
 
     // Deploy initial app (immutable)
     let metadata = get_metadata(AppDeployMetadataParams {
@@ -494,7 +494,7 @@ async fn test_deploy_update_to_immutable_app_fails(#[future] setup: SetupResult)
 
     let result_1 = app_deployer.deploy(deployment_1).await?;
 
-    context
+    algorand_fixture
         .wait_for_indexer_transaction(&match result_1 {
             AppDeployResult::Create { result, .. } => result.transaction_ids[0].clone(),
             _ => return Err("Expected Create result".into()),
@@ -529,15 +529,14 @@ async fn test_deploy_update_to_immutable_app_fails(#[future] setup: SetupResult)
 #[rstest]
 #[tokio::test]
 async fn test_deploy_failure_for_updated_app_when_on_update_fail(
-    #[future] setup: SetupResult,
+    #[future] fixture: FixtureResult,
 ) -> TestResult {
-    let TestData {
+    let Fixture {
         test_account,
         mut app_deployer,
-        fixture,
+        algorand_fixture,
         ..
-    } = setup.await?;
-    let context = fixture.context()?;
+    } = fixture.await?;
 
     // Deploy initial app
     let metadata = get_metadata(AppDeployMetadataParams {
@@ -548,7 +547,7 @@ async fn test_deploy_failure_for_updated_app_when_on_update_fail(
 
     let result_1 = app_deployer.deploy(deployment_1).await?;
 
-    context
+    algorand_fixture
         .wait_for_indexer_transaction(&match result_1 {
             AppDeployResult::Create { result, .. } => result.transaction_ids[0].clone(),
             _ => return Err("Expected Create result".into()),
@@ -578,15 +577,14 @@ async fn test_deploy_failure_for_updated_app_when_on_update_fail(
 #[rstest]
 #[tokio::test]
 async fn test_deploy_replacement_to_deletable_updated_app(
-    #[future] setup: SetupResult,
+    #[future] fixture: FixtureResult,
 ) -> TestResult {
-    let TestData {
+    let Fixture {
         test_account,
         mut app_deployer,
-        fixture,
+        algorand_fixture,
         ..
-    } = setup.await?;
-    let context = fixture.context()?;
+    } = fixture.await?;
 
     // Deploy initial app (deletable)
     let metadata = get_metadata(AppDeployMetadataParams {
@@ -602,7 +600,7 @@ async fn test_deploy_replacement_to_deletable_updated_app(
         _ => return Err("Expected Create result".into()),
     };
 
-    context
+    algorand_fixture
         .wait_for_indexer_transaction(&match result_1 {
             AppDeployResult::Create { result, .. } => result.transaction_ids[0].clone(),
             _ => return Err("Expected Create result".into()),
@@ -650,15 +648,14 @@ async fn test_deploy_replacement_to_deletable_updated_app(
 #[rstest]
 #[tokio::test]
 async fn test_deploy_failure_for_replacement_of_permanent_updated_app(
-    #[future] setup: SetupResult,
+    #[future] fixture: FixtureResult,
 ) -> TestResult {
-    let TestData {
+    let Fixture {
         test_account,
         mut app_deployer,
-        fixture,
+        algorand_fixture,
         ..
-    } = setup.await?;
-    let context = fixture.context()?;
+    } = fixture.await?;
 
     // Deploy initial app (permanent)
     let metadata = get_metadata(AppDeployMetadataParams {
@@ -670,7 +667,7 @@ async fn test_deploy_failure_for_replacement_of_permanent_updated_app(
 
     let result_1 = app_deployer.deploy(deployment_1).await?;
 
-    context
+    algorand_fixture
         .wait_for_indexer_transaction(&match result_1 {
             AppDeployResult::Create { result, .. } => result.transaction_ids[0].clone(),
             _ => return Err("Expected Create result".into()),
@@ -705,15 +702,14 @@ async fn test_deploy_failure_for_replacement_of_permanent_updated_app(
 #[rstest]
 #[tokio::test]
 async fn test_deploy_replacement_of_deletable_schema_broken_app(
-    #[future] setup: SetupResult,
+    #[future] fixture: FixtureResult,
 ) -> TestResult {
-    let TestData {
+    let Fixture {
         test_account,
         mut app_deployer,
-        fixture,
+        algorand_fixture,
         ..
-    } = setup.await?;
-    let context = fixture.context()?;
+    } = fixture.await?;
 
     // Deploy initial app (deletable)
     let metadata = get_metadata(AppDeployMetadataParams {
@@ -729,7 +725,9 @@ async fn test_deploy_replacement_of_deletable_schema_broken_app(
         _ => return Err("Expected Create result".into()),
     };
 
-    context.wait_for_indexer_transaction(&tx_id).await?;
+    algorand_fixture
+        .wait_for_indexer_transaction(&tx_id)
+        .await?;
 
     // Deploy replacement with schema break
     let metadata_2 = get_metadata(AppDeployMetadataParams {
@@ -771,15 +769,14 @@ async fn test_deploy_replacement_of_deletable_schema_broken_app(
 #[rstest]
 #[tokio::test]
 async fn test_deploy_replacement_to_schema_broken_permanent_app_fails(
-    #[future] setup: SetupResult,
+    #[future] fixture: FixtureResult,
 ) -> TestResult {
-    let TestData {
+    let Fixture {
         test_account,
         mut app_deployer,
-        fixture,
+        algorand_fixture,
         ..
-    } = setup.await?;
-    let context = fixture.context()?;
+    } = fixture.await?;
 
     // Deploy initial app (permanent)
     let metadata = get_metadata(AppDeployMetadataParams {
@@ -791,7 +788,7 @@ async fn test_deploy_replacement_to_schema_broken_permanent_app_fails(
 
     let result_1 = app_deployer.deploy(deployment_1).await?;
 
-    context
+    algorand_fixture
         .wait_for_indexer_transaction(&match result_1 {
             AppDeployResult::Create { result, .. } => result.transaction_ids[0].clone(),
             _ => return Err("Expected Create result".into()),
@@ -826,15 +823,14 @@ async fn test_deploy_replacement_to_schema_broken_permanent_app_fails(
 #[rstest]
 #[tokio::test]
 async fn test_deploy_failure_for_replacement_of_schema_broken_app_when_on_schema_break_fail(
-    #[future] setup: SetupResult,
+    #[future] fixture: FixtureResult,
 ) -> TestResult {
-    let TestData {
+    let Fixture {
         test_account,
         mut app_deployer,
-        fixture,
+        algorand_fixture,
         ..
-    } = setup.await?;
-    let context = fixture.context()?;
+    } = fixture.await?;
 
     // Deploy initial app
     let metadata = get_metadata(AppDeployMetadataParams {
@@ -845,7 +841,7 @@ async fn test_deploy_failure_for_replacement_of_schema_broken_app_when_on_schema
 
     let result_1 = app_deployer.deploy(deployment_1).await?;
 
-    context
+    algorand_fixture
         .wait_for_indexer_transaction(&match result_1 {
             AppDeployResult::Create { result, .. } => result.transaction_ids[0].clone(),
             _ => return Err("Expected Create result".into()),
@@ -877,15 +873,14 @@ async fn test_deploy_failure_for_replacement_of_schema_broken_app_when_on_schema
 #[rstest]
 #[tokio::test]
 async fn test_do_nothing_if_deploying_app_with_no_changes(
-    #[future] setup: SetupResult,
+    #[future] fixture: FixtureResult,
 ) -> TestResult {
-    let TestData {
+    let Fixture {
         test_account,
         mut app_deployer,
-        fixture,
+        algorand_fixture,
         ..
-    } = setup.await?;
-    let context = fixture.context()?;
+    } = fixture.await?;
 
     // Deploy initial app
     let metadata = get_metadata(AppDeployMetadataParams {
@@ -900,7 +895,9 @@ async fn test_do_nothing_if_deploying_app_with_no_changes(
         _ => return Err("Expected Create result".into()),
     };
 
-    context.wait_for_indexer_transaction(&tx_id).await?;
+    algorand_fixture
+        .wait_for_indexer_transaction(&tx_id)
+        .await?;
 
     // Deploy again with no changes
     let result_2 = app_deployer.deploy(deployment).await?;
@@ -926,15 +923,14 @@ async fn test_do_nothing_if_deploying_app_with_no_changes(
 #[rstest]
 #[tokio::test]
 async fn test_deploy_append_for_schema_broken_app_when_on_schema_break_append_app(
-    #[future] setup: SetupResult,
+    #[future] fixture: FixtureResult,
 ) -> TestResult {
-    let TestData {
+    let Fixture {
         test_account,
         mut app_deployer,
-        fixture,
+        algorand_fixture,
         ..
-    } = setup.await?;
-    let context = fixture.context()?;
+    } = fixture.await?;
 
     // Deploy initial app
     let metadata = get_metadata(AppDeployMetadataParams {
@@ -949,7 +945,9 @@ async fn test_deploy_append_for_schema_broken_app_when_on_schema_break_append_ap
         _ => return Err("Expected Create result".into()),
     };
 
-    context.wait_for_indexer_transaction(&tx_id).await?;
+    algorand_fixture
+        .wait_for_indexer_transaction(&tx_id)
+        .await?;
 
     // Deploy with schema break and OnSchemaBreak::Append
     let deployment_2 = get_testing_app_deploy_params(
@@ -985,15 +983,14 @@ async fn test_deploy_append_for_schema_broken_app_when_on_schema_break_append_ap
 #[rstest]
 #[tokio::test]
 async fn test_deploy_append_for_update_app_when_on_update_append_app(
-    #[future] setup: SetupResult,
+    #[future] fixture: FixtureResult,
 ) -> TestResult {
-    let TestData {
+    let Fixture {
         test_account,
         mut app_deployer,
-        fixture,
+        algorand_fixture,
         ..
-    } = setup.await?;
-    let context = fixture.context()?;
+    } = fixture.await?;
 
     // Deploy initial app
     let metadata = get_metadata(AppDeployMetadataParams {
@@ -1008,7 +1005,9 @@ async fn test_deploy_append_for_update_app_when_on_update_append_app(
         _ => return Err("Expected Create result".into()),
     };
 
-    context.wait_for_indexer_transaction(&tx_id).await?;
+    algorand_fixture
+        .wait_for_indexer_transaction(&tx_id)
+        .await?;
 
     // Deploy with code changes and OnUpdate::Append
     let metadata_2 = get_metadata(AppDeployMetadataParams {
@@ -1045,15 +1044,15 @@ async fn test_deploy_append_for_update_app_when_on_update_append_app(
     Ok(())
 }
 
-struct TestData {
+struct Fixture {
     test_account: Address,
-    fixture: AlgorandFixture,
+    algorand_fixture: AlgorandFixture,
     app_manager: AppManager,
     transaction_sender: TransactionSender,
     app_deployer: AppDeployer,
 }
 
-type SetupResult = Result<TestData, Box<dyn std::error::Error + Send + Sync>>;
+type FixtureResult = Result<Fixture, Box<dyn std::error::Error + Send + Sync>>;
 
 #[derive(Debug, Default, Clone)]
 struct AppDeployMetadataParams {
@@ -1116,10 +1115,7 @@ async fn get_testing_app_deploy_params(
         on_schema_break,
         on_update,
         create_params: CreateParams::AppCreateCall(DeployAppCreateParams {
-            common_params: CommonParams {
-                sender: sender.clone(),
-                ..Default::default()
-            },
+            sender: sender.clone(),
             approval_program: AppProgram::Teal(approval_program),
             clear_state_program: AppProgram::Teal(clear_program),
             global_state_schema: Some(global_schema),
@@ -1130,24 +1126,17 @@ async fn get_testing_app_deploy_params(
             ..Default::default()
         }),
         update_params: UpdateParams::AppUpdateCall(DeployAppUpdateParams {
-            common_params: CommonParams {
-                sender: sender.clone(),
-                ..Default::default()
-            },
+            sender: sender.clone(),
             ..Default::default()
         }),
         delete_params: DeleteParams::AppDeleteCall(DeployAppDeleteParams {
-            common_params: CommonParams {
-                sender: sender.clone(),
-                ..Default::default()
-            },
+            sender: sender.clone(),
             ..Default::default()
         }),
         existing_deployments: None,
         ignore_cache: None,
         send_params: SendParams {
             max_rounds_to_wait_for_confirmation: Some(100),
-            ..Default::default()
         },
     })
 }
@@ -1201,11 +1190,8 @@ async fn get_testing_app_create_params(
     let note = format!("ALGOKIT_DEPLOYER:j{}", note_data);
 
     Ok(AppCreateParams {
-        common_params: CommonParams {
-            sender: sender.clone(),
-            note: Some(note.into_bytes()),
-            ..Default::default()
-        },
+        sender: sender.clone(),
+        note: Some(note.into_bytes()),
         approval_program: approval_compiled.compiled_base64_to_bytes,
         clear_state_program: clear_compiled.compiled_base64_to_bytes,
         on_complete: OnApplicationComplete::NoOp,
@@ -1223,5 +1209,6 @@ async fn get_testing_app_create_params(
             num_uints: 1,
         }),
         extra_program_pages: None,
+        ..Default::default()
     })
 }

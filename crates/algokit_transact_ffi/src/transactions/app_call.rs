@@ -46,7 +46,7 @@ pub struct AppCallTransactionFields {
     /// and clear state program may not exceed 2048*(1+extra_program_pages) bytes.
     /// Currently, the maximum value is 3.
     /// This cannot be changed after creation.
-    extra_program_pages: Option<u64>,
+    extra_program_pages: Option<u32>,
 
     /// Transaction specific arguments available in the app's
     /// approval program and clear state program.
@@ -252,10 +252,10 @@ impl From<OnApplicationComplete> for algokit_transact::OnApplicationComplete {
 #[ffi_record]
 pub struct StateSchema {
     /// Maximum number of integer values that may be stored.
-    num_uints: u64,
+    num_uints: u32,
 
     /// Maximum number of byte slice values that may be stored.
-    num_byte_slices: u64,
+    num_byte_slices: u32,
 }
 
 impl From<algokit_transact::StateSchema> for StateSchema {
@@ -284,13 +284,13 @@ mod tests {
     #[test]
     fn test_encode_transaction_validation_integration() {
         // invalid
-        let mut tx: Transaction = TestDataMother::app_call().transaction.try_into().unwrap();
+        let mut tx: Transaction = TestDataMother::app_call().transaction.into();
         tx.app_call.as_mut().unwrap().app_id = 0;
         let result = encode_transaction(tx);
         assert!(result.is_err());
 
         // valid
-        let result = encode_transaction(TestDataMother::app_call().transaction.try_into().unwrap());
+        let result = encode_transaction(TestDataMother::app_call().transaction.into());
         assert!(result.is_ok());
     }
 }

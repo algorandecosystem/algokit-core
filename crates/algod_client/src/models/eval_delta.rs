@@ -9,15 +9,22 @@
  */
 
 use crate::models;
-use algokit_transact::{AlgorandMsgpack, SignedTransaction as AlgokitSignedTransaction};
+#[cfg(not(feature = "ffi_uniffi"))]
+use algokit_transact::SignedTransaction as AlgokitSignedTransaction;
 use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "ffi_uniffi")]
+use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
+
+use algokit_transact::AlgorandMsgpack;
 
 /// Represents a TEAL value delta.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct EvalDelta {
     /// \[at\] delta action.
     #[serde(rename = "action")]
-    pub action: u64,
+    pub action: u32,
     /// \[bs\] bytes value.
     #[serde(rename = "bytes", skip_serializing_if = "Option::is_none")]
     pub bytes: Option<String>,
@@ -32,7 +39,7 @@ impl AlgorandMsgpack for EvalDelta {
 
 impl EvalDelta {
     /// Constructor for EvalDelta
-    pub fn new(action: u64) -> EvalDelta {
+    pub fn new(action: u32) -> EvalDelta {
         EvalDelta {
             action,
             bytes: None,
