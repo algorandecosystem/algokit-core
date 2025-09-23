@@ -12,11 +12,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::models::TransactionSignatureMultisigSubsignature;
 
-/// \[msig\] structure holding multiple subsignatures.
+/// structure holding multiple subsignatures.
 ///
 /// Definition:
 /// crypto/multisig.go : MultisigSig
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct TransactionSignatureMultisig {
     /// \[subsig\] holds pairs of public key and signatures.
     #[serde(rename = "subsignature", skip_serializing_if = "Option::is_none")]
