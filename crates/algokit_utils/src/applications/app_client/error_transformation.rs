@@ -2,6 +2,9 @@ use crate::{AppClientError, TransactionSenderError};
 
 use super::types::LogicError;
 use super::{AppClient, AppSourceMaps};
+use crate::AlgorandClient;
+use crate::transactions::TransactionResultError;
+use algokit_abi::{Arc56Contract, arc56_contract::PcOffsetMethod};
 use algokit_abi::arc56_contract::PcOffsetMethod;
 use lazy_static::lazy_static;
 use regex::Regex;
@@ -21,6 +24,30 @@ lazy_static! {
     .unwrap();
     static ref INNER_LOGIC_ERROR_RE: Regex =
         Regex::new(r"inner tx (\d+) failed:.*?pc=([0-9]+)").unwrap();
+}
+
+pub(crate) fn extract_logic_error_data(error_str: &str) -> Option<LogicErrorData> {
+    let caps = LOGIC_ERROR_RE.captures(error_str)?;
+    let pc = if let Some(inner) = INNER_LOGIC_ERROR_RE.captures(error_str) {
+        inner
+            .get(2)
+            .and_then(|m| m.as_str().parse::<u64>().ok())
+            .unwrap_or_else(|| caps["pc"].parse::<u64>().unwrap_or(0))
+    } else {
+        caps["pc"].parse::<u64>().unwrap_or(0)
+    };
+    Some(LogicErrorData {
+        transaction_id: caps["transaction_id"].to_string(),
+        message: caps["message"].to_string(),
+        pc,
+    })
+}
+
+pub(crate) struct LogicErrorContext<'logic_error_ctx> {
+    pub app_id: u64,
+    pub app_spec: &'logic_error_ctx Arc56Contract,
+    pub algorand: &'logic_error_ctx AlgorandClient,
+    pub source_maps: Option<&'logic_error_ctx AppSourceMaps>,
 }
 
 impl AppClient {
@@ -54,6 +81,9 @@ impl AppClient {
     }
 
     pub(crate) fn transform_transaction_error(
+impl LogicErrorContext<'_> {
+    /// Create an enhanced LogicError from a transaction error, applying source maps if available.
+    pub(crate) fn expose_logic_error(
         &self,
         err: TransactionSenderError,
         is_clear_state_program: bool,
@@ -103,7 +133,7 @@ impl AppClient {
         let mut arc56_line_no: Option<u64> = None;
         let mut arc56_lines: Vec<String> = Vec::new();
 
-        if let Some(si_model) = self.app_spec().source_info.as_ref() {
+        if let Some(si_model) = self.app_spec.source_info.as_ref() {
             let program_source_info = if is_clear_state_program {
                 &si_model.clear
             } else {
@@ -141,7 +171,7 @@ impl AppClient {
             }
 
             if arc56_line_no.is_some()
-                && self.app_spec().source.is_some()
+                && self.app_spec.source.is_some()
                 && self.get_source_map(is_clear_state_program).is_none()
             {
                 if let Some(teal_src) = self.decode_teal(is_clear_state_program) {
@@ -160,6 +190,18 @@ impl AppClient {
 
         let app_id_from_msg = Self::extract_app_id(error_message);
         let app_id = app_id_from_msg.unwrap_or(self.app_id().to_string());
+        if let Some(emsg) = arc56_error_message.or(msg_msg) {
+            let app_id_from_msg = Self::extract_app_id(&err_str);
+            let app_id = app_id_from_msg
+                .or_else(|| Some(self.app_id.to_string()))
+                .unwrap_or_else(|| "N/A".to_string());
+            let txid_str = tx_id.unwrap_or_else(|| "N/A".to_string());
+            let runtime_msg = format!(
+                "Runtime error when executing {} (appId: {}) in transaction {}: {}",
+                self.app_spec.name, app_id, txid_str, emsg
+            );
+            logic.message = runtime_msg.clone();
+        }
 
         let processed_error_message = format!(
             "Runtime error when executing {} (appId: {}) in transaction {}: {}",
@@ -234,7 +276,7 @@ impl AppClient {
 
     /// Get the selected program's source map.
     fn get_source_map(&self, is_clear_state_program: bool) -> Option<&JsonValue> {
-        let maps = self.source_maps.as_ref()?;
+        let maps = self.source_maps?;
         if is_clear_state_program {
             maps.clear_source_map.as_ref()
         } else {
@@ -375,7 +417,7 @@ impl AppClient {
     /// This avoids async calls; returns None if not available.
     fn get_program_bytes(&self, is_clear_state_program: bool) -> Option<Vec<u8>> {
         let teal_src = self.decode_teal(is_clear_state_program)?;
-        self.algorand()
+        self.algorand
             .app()
             .get_compilation_result(&teal_src)
             .map(|c| c.compiled_base64_to_bytes)
@@ -383,7 +425,7 @@ impl AppClient {
 
     /// Decode base64 TEAL source from the app spec.
     fn decode_teal(&self, is_clear_state_program: bool) -> Option<String> {
-        let src = self.app_spec().source.as_ref()?;
+        let src = self.app_spec.source.as_ref()?;
         if is_clear_state_program {
             src.get_decoded_clear().ok()
         } else {
@@ -397,5 +439,23 @@ impl AppClient {
         re.captures(error_str)
             .and_then(|caps| caps.get(1))
             .map(|m| m.as_str().to_string())
+    }
+}
+
+impl AppClient {
+    /// Create an enhanced LogicError from a transaction error, applying source maps if available.
+    pub fn expose_logic_error(
+        &self,
+        error: &TransactionResultError,
+        is_clear_state_program: bool,
+    ) -> LogicError {
+        let context = LogicErrorContext {
+            app_id: self.app_id(),
+            app_spec: self.app_spec(),
+            algorand: self.algorand(),
+            source_maps: self.source_maps.as_ref(),
+        };
+
+        context.expose_logic_error(error, is_clear_state_program)
     }
 }

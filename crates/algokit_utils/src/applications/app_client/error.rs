@@ -1,3 +1,4 @@
+use crate::applications::app_client::types::LogicError;
 use crate::ComposerError;
 use crate::clients::app_manager::AppManagerError;
 use crate::clients::client_manager::ClientManagerError;
@@ -34,7 +35,7 @@ pub enum AppClientError {
     #[snafu(display("{message}"))]
     LogicError {
         message: String,
-        logic: Box<super::types::LogicError>,
+        logic: Box<LogicError>,
     },
     #[snafu(display("Transact error: {source}"))]
     TransactError { source: AlgoKitTransactError },
