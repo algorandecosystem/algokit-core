@@ -27,6 +27,7 @@ pub use asset_transfer::{AssetTransferTransactionBuilder, AssetTransferTransacti
 pub use common::{TransactionHeader, TransactionHeaderBuilder};
 pub use heartbeat::{
     HeartbeatProof, HeartbeatProofBuilder, HeartbeatTransactionBuilder, HeartbeatTransactionFields,
+    heartbeat_deserializer, heartbeat_serializer,
 };
 pub use key_registration::{KeyRegistrationTransactionBuilder, KeyRegistrationTransactionFields};
 pub use payment::{PaymentTransactionBuilder, PaymentTransactionFields};
@@ -68,6 +69,8 @@ pub enum Transaction {
     #[serde(rename = "keyreg")]
     KeyRegistration(KeyRegistrationTransactionFields),
 
+    #[serde(serialize_with = "heartbeat_serializer")]
+    #[serde(deserialize_with = "heartbeat_deserializer")]
     #[serde(rename = "hb")]
     Heartbeat(HeartbeatTransactionFields),
 }

@@ -1,6 +1,7 @@
 mod app_call;
 mod asset_config;
 mod asset_freeze;
+mod heartbeat;
 mod key_registration;
 
 use crate::{
@@ -20,6 +21,7 @@ use std::{fs::File, str::FromStr};
 pub use app_call::AppCallTransactionMother;
 pub use asset_config::AssetConfigTransactionMother;
 pub use asset_freeze::AssetFreezeTransactionMother;
+pub use heartbeat::HeartbeatTransactionMother;
 pub use key_registration::KeyRegistrationTransactionMother;
 
 pub struct TransactionHeaderMother {}
@@ -475,6 +477,11 @@ impl TestDataMother {
         TransactionTestData::new(transaction, SIGNING_PRIVATE_KEY)
     }
 
+    pub fn heartbeat() -> TransactionTestData {
+        let transaction = HeartbeatTransactionMother::heartbeat().build().unwrap();
+        TransactionTestData::new(transaction, SIGNING_PRIVATE_KEY)
+    }
+
     pub fn asset_freeze() -> TransactionTestData {
         let signing_private_key: Byte32 = [
             2, 205, 103, 33, 67, 14, 82, 196, 115, 196, 206, 254, 50, 110, 63, 182, 149, 229, 184,
@@ -519,6 +526,7 @@ impl TestDataMother {
             "online_key_registration": Self::online_key_registration().as_json(&transform),
             "offline_key_registration": Self::offline_key_registration().as_json(&transform),
             "non_participation_key_registration": Self::non_participation_key_registration().as_json(&transform),
+            "heartbeat": Self::heartbeat().as_json(&transform),
             "asset_freeze": Self::asset_freeze().as_json(&transform),
             "asset_unfreeze": Self::asset_unfreeze().as_json(&transform),
         }));

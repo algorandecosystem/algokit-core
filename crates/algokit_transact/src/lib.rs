@@ -18,6 +18,7 @@ pub use transactions::{
     AppCallTransactionBuilder, AppCallTransactionFields, AssetConfigTransactionBuilder,
     AssetConfigTransactionFields, AssetFreezeTransactionBuilder, AssetFreezeTransactionFields,
     AssetTransferTransactionBuilder, AssetTransferTransactionFields, BoxReference, FeeParams,
+    HeartbeatProof, HeartbeatProofBuilder, HeartbeatTransactionBuilder, HeartbeatTransactionFields,
     KeyRegistrationTransactionBuilder, KeyRegistrationTransactionFields, OnApplicationComplete,
     PaymentTransactionBuilder, PaymentTransactionFields, SignedTransaction, StateSchema,
     Transaction, TransactionHeader, TransactionHeaderBuilder,
