@@ -36,6 +36,20 @@ pub struct Composer {
     inner_composer: Mutex<RustComposer>,
 }
 
+#[uniffi::export(with_foreign)]
+#[async_trait::async_trait]
+pub trait ComposerTrait: Send + Sync {
+    fn add_payment(&self, params: super::payment::PaymentParams) -> Result<(), UtilsError>;
+    fn add_app_create(&self, params: super::app_call::AppCreateParams) -> Result<(), UtilsError>;
+    fn add_app_call(&self, params: super::app_call::AppCallParams) -> Result<(), UtilsError>;
+    fn add_app_call_method_call(
+        &self,
+        params: super::app_call::AppCallMethodCallParams,
+    ) -> Result<(), UtilsError>;
+    async fn send(&self) -> Result<TempSendResponse, UtilsError>;
+    async fn build(&self) -> Result<(), UtilsError>;
+}
+
 #[uniffi::export]
 impl Composer {
     #[uniffi::constructor]
@@ -59,8 +73,12 @@ impl Composer {
             inner_composer: Mutex::new(rust_composer),
         }
     }
+}
 
-    pub fn add_payment(&self, params: super::payment::PaymentParams) -> Result<(), UtilsError> {
+#[uniffi::export]
+#[async_trait::async_trait]
+impl ComposerTrait for Composer {
+    fn add_payment(&self, params: super::payment::PaymentParams) -> Result<(), UtilsError> {
         let mut composer = self.inner_composer.blocking_lock();
         composer
             .add_payment(params.try_into()?)
@@ -69,7 +87,7 @@ impl Composer {
             })
     }
 
-    pub async fn send(&self) -> Result<TempSendResponse, UtilsError> {
+    async fn send(&self) -> Result<TempSendResponse, UtilsError> {
         let mut composer = self.inner_composer.blocking_lock();
         let result = composer
             .send(None)
@@ -83,7 +101,7 @@ impl Composer {
         })
     }
 
-    pub async fn build(&self) -> Result<(), UtilsError> {
+    async fn build(&self) -> Result<(), UtilsError> {
         let mut composer = self.inner_composer.blocking_lock();
         composer.build().await.map_err(|e| UtilsError::UtilsError {
             message: e.to_string(),
@@ -92,10 +110,7 @@ impl Composer {
         Ok(())
     }
 
-    pub fn add_app_create(
-        &self,
-        params: super::app_call::AppCreateParams,
-    ) -> Result<(), UtilsError> {
+    fn add_app_create(&self, params: super::app_call::AppCreateParams) -> Result<(), UtilsError> {
         let mut composer = self.inner_composer.blocking_lock();
         composer
             .add_app_create(params.try_into()?)
@@ -104,7 +119,7 @@ impl Composer {
             })
     }
 
-    pub fn add_app_call(&self, params: super::app_call::AppCallParams) -> Result<(), UtilsError> {
+    fn add_app_call(&self, params: super::app_call::AppCallParams) -> Result<(), UtilsError> {
         let mut composer = self.inner_composer.blocking_lock();
         composer
             .add_app_call(params.try_into()?)
@@ -113,7 +128,7 @@ impl Composer {
             })
     }
 
-    pub fn add_app_call_method_call(
+    fn add_app_call_method_call(
         &self,
         params: super::app_call::AppCallMethodCallParams,
     ) -> Result<(), UtilsError> {
