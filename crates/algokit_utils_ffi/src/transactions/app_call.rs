@@ -1,11 +1,14 @@
 use crate::abi::{abi_type::ABIType, abi_value::ABIValue};
+use crate::create_transaction_params;
 use algokit_transact::Address;
 use algokit_transact_ffi::transactions::app_call::{
     BoxReference, OnApplicationComplete, StateSchema,
 };
 use std::sync::Arc;
 
-use super::common::{CommonParams, UtilsError};
+use super::common::{
+    FfiTransactionSignerFromRust, RustTransactionSignerFromFfi, TransactionSigner, UtilsError,
+};
 
 use algokit_utils::transactions::app_call::{
     AppCallParams as RustAppCallParams, AppCreateParams as RustAppCreateParams,
@@ -14,7 +17,7 @@ use algokit_utils::transactions::app_call::{
 use algokit_abi::ABIMethodArg as RustABIMethodArg;
 use algokit_abi::ABIMethodArgType as RustABIMethodArgType;
 
-#[derive(uniffi::Enum)]
+#[derive(uniffi::Enum, Debug)]
 pub enum ABIMethodArgType {
     /// A value that is directly encoded in the app arguments.
     Value(Arc<ABIType>),
@@ -42,7 +45,7 @@ impl From<RustABIMethodArgType> for ABIMethodArgType {
     }
 }
 
-#[derive(uniffi::Record)]
+#[derive(uniffi::Record, Debug)]
 pub struct ABIMethodArg {
     /// The type of the argument.
     pub arg_type: ABIMethodArgType,
@@ -58,6 +61,7 @@ impl From<ABIMethodArg> for RustABIMethodArg {
             arg_type: value.arg_type.into(),
             name: value.name,
             description: value.description,
+            default_value: None, // FFI doesn't support default values yet
         }
     }
 }
@@ -74,7 +78,7 @@ impl From<RustABIMethodArg> for ABIMethodArg {
 
 use algokit_abi::ABIMethod as RustABIMethod;
 
-#[derive(uniffi::Record)]
+#[derive(uniffi::Record, Debug)]
 pub struct ABIMethod {
     /// The name of the method.
     pub name: String,
@@ -108,7 +112,7 @@ impl From<RustABIMethod> for ABIMethod {
     }
 }
 
-#[derive(uniffi::Enum)]
+#[derive(uniffi::Enum, Debug)]
 #[allow(clippy::large_enum_variant)]
 pub enum AppMethodCallArg {
     ABIValue(Arc<ABIValue>),
@@ -146,35 +150,36 @@ impl From<algokit_utils::transactions::app_call::AppMethodCallArg> for AppMethod
     }
 }
 
-#[derive(uniffi::Record)]
-pub struct AppCallMethodCallParams {
-    pub common_params: CommonParams,
-    /// ID of the app being called.
-    pub app_id: u64,
-    /// The ABI method to call.
-    pub method: ABIMethod,
-    /// Transaction specific arguments available in the app's
-    /// approval program and clear state program.
-    pub args: Vec<AppMethodCallArg>,
-    /// List of accounts in addition to the sender that may be accessed
-    /// from the app's approval program and clear state program.
-    #[uniffi(default = None)]
-    pub account_references: Option<Vec<String>>,
-    /// List of apps in addition to the current app that may be called
-    /// from the app's approval program and clear state program.
-    #[uniffi(default = None)]
-    pub app_references: Option<Vec<u64>>,
-    /// Lists the assets whose parameters may be accessed by this app's
-    /// approval program and clear state program.
-    ///
-    /// The access is read-only.
-    #[uniffi(default = None)]
-    pub asset_references: Option<Vec<u64>>,
-    /// The boxes that should be made available for the runtime of the program.
-    #[uniffi(default = None)]
-    pub box_references: Option<Vec<BoxReference>>,
-    /// Defines what additional actions occur with the transaction.
-    pub on_complete: OnApplicationComplete,
+create_transaction_params! {
+    #[derive(uniffi::Record)]
+    pub struct AppCallMethodCallParams {
+        /// ID of the app being called.
+        pub app_id: u64,
+        /// The ABI method to call.
+        pub method: ABIMethod,
+        /// Transaction specific arguments available in the app's
+        /// approval program and clear state program.
+        pub args: Vec<AppMethodCallArg>,
+        /// List of accounts in addition to the sender that may be accessed
+        /// from the app's approval program and clear state program.
+        #[uniffi(default = None)]
+        pub account_references: Option<Vec<String>>,
+        /// List of apps in addition to the current app that may be called
+        /// from the app's approval program and clear state program.
+        #[uniffi(default = None)]
+        pub app_references: Option<Vec<u64>>,
+        /// Lists the assets whose parameters may be accessed by this app's
+        /// approval program and clear state program.
+        ///
+        /// The access is read-only.
+        #[uniffi(default = None)]
+        pub asset_references: Option<Vec<u64>>,
+        /// The boxes that should be made available for the runtime of the program.
+        #[uniffi(default = None)]
+        pub box_references: Option<Vec<BoxReference>>,
+        /// Defines what additional actions occur with the transaction.
+        pub on_complete: OnApplicationComplete,
+    }
 }
 
 impl TryFrom<AppCallMethodCallParams>
@@ -185,7 +190,30 @@ impl TryFrom<AppCallMethodCallParams>
     fn try_from(value: AppCallMethodCallParams) -> Result<Self, Self::Error> {
         Ok(
             algokit_utils::transactions::app_call::AppCallMethodCallParams {
-                common_params: value.common_params.try_into()?,
+                sender: value.sender.parse().map_err(|e| UtilsError::UtilsError {
+                    message: format!("Invalid sender address: {}", e),
+                })?,
+                signer: value.signer.map(|s| {
+                    Arc::new(RustTransactionSignerFromFfi { ffi_signer: s })
+                        as Arc<dyn algokit_utils::transactions::common::TransactionSigner>
+                }),
+                rekey_to: value.rekey_to.map(|r| r.parse()).transpose().map_err(|e| {
+                    UtilsError::UtilsError {
+                        message: format!("Invalid rekey_to address: {}", e),
+                    }
+                })?,
+                note: value.note,
+                lease: value.lease.map(|l| {
+                    let mut lease_bytes = [0u8; 32];
+                    lease_bytes.copy_from_slice(&l[..32.min(l.len())]);
+                    lease_bytes
+                }),
+                static_fee: value.static_fee,
+                extra_fee: value.extra_fee,
+                max_fee: value.max_fee,
+                validity_window: value.validity_window,
+                first_valid_round: value.first_valid_round,
+                last_valid_round: value.last_valid_round,
                 app_id: value.app_id,
                 method: value.method.into(),
                 args: value.args.into_iter().map(|arg| arg.into()).collect(),
@@ -219,7 +247,20 @@ impl From<algokit_utils::transactions::app_call::AppCallMethodCallParams>
 {
     fn from(value: algokit_utils::transactions::app_call::AppCallMethodCallParams) -> Self {
         AppCallMethodCallParams {
-            common_params: value.common_params.into(),
+            sender: value.sender.to_string(),
+            signer: value.signer.map(|s| {
+                Arc::new(FfiTransactionSignerFromRust { rust_signer: s })
+                    as Arc<dyn TransactionSigner>
+            }),
+            rekey_to: value.rekey_to.map(|r| r.to_string()),
+            note: value.note,
+            lease: value.lease.map(|l| l.to_vec()),
+            static_fee: value.static_fee,
+            extra_fee: value.extra_fee,
+            max_fee: value.max_fee,
+            validity_window: value.validity_window,
+            first_valid_round: value.first_valid_round,
+            last_valid_round: value.last_valid_round,
             app_id: value.app_id,
             method: value.method.into(),
             args: value.args.into_iter().map(|arg| arg.into()).collect(),
@@ -236,34 +277,35 @@ impl From<algokit_utils::transactions::app_call::AppCallMethodCallParams>
     }
 }
 
-#[derive(uniffi::Record)]
-pub struct AppCallParams {
-    pub common_params: CommonParams,
-    /// ID of the app being called.
-    pub app_id: u64,
-    /// Defines what additional actions occur with the transaction.
-    pub on_complete: OnApplicationComplete,
-    /// Transaction specific arguments available in the app's
-    /// approval program and clear state program.
-    #[uniffi(default = None)]
-    pub args: Option<Vec<Vec<u8>>>,
-    /// List of accounts in addition to the sender that may be accessed
-    /// from the app's approval program and clear state program.
-    #[uniffi(default = None)]
-    pub account_references: Option<Vec<String>>,
-    /// List of apps in addition to the current app that may be called
-    /// from the app's approval program and clear state program.
-    #[uniffi(default = None)]
-    pub app_references: Option<Vec<u64>>,
-    /// Lists the assets whose parameters may be accessed by this app's
-    /// approval program and clear state program.
-    ///
-    /// The access is read-only.
-    #[uniffi(default = None)]
-    pub asset_references: Option<Vec<u64>>,
-    /// The boxes that should be made available for the runtime of the program.
-    #[uniffi(default = None)]
-    pub box_references: Option<Vec<BoxReference>>,
+create_transaction_params! {
+    #[derive(uniffi::Record)]
+    pub struct AppCallParams {
+        /// ID of the app being called.
+        pub app_id: u64,
+        /// Defines what additional actions occur with the transaction.
+        pub on_complete: OnApplicationComplete,
+        /// Transaction specific arguments available in the app's
+        /// approval program and clear state program.
+        #[uniffi(default = None)]
+        pub args: Option<Vec<Vec<u8>>>,
+        /// List of accounts in addition to the sender that may be accessed
+        /// from the app's approval program and clear state program.
+        #[uniffi(default = None)]
+        pub account_references: Option<Vec<String>>,
+        /// List of apps in addition to the current app that may be called
+        /// from the app's approval program and clear state program.
+        #[uniffi(default = None)]
+        pub app_references: Option<Vec<u64>>,
+        /// Lists the assets whose parameters may be accessed by this app's
+        /// approval program and clear state program.
+        ///
+        /// The access is read-only.
+        #[uniffi(default = None)]
+        pub asset_references: Option<Vec<u64>>,
+        /// The boxes that should be made available for the runtime of the program.
+        #[uniffi(default = None)]
+        pub box_references: Option<Vec<BoxReference>>,
+    }
 }
 
 impl TryFrom<AppCallParams> for RustAppCallParams {
@@ -271,7 +313,30 @@ impl TryFrom<AppCallParams> for RustAppCallParams {
 
     fn try_from(value: AppCallParams) -> Result<Self, Self::Error> {
         Ok(RustAppCallParams {
-            common_params: value.common_params.try_into()?,
+            sender: value.sender.parse().map_err(|e| UtilsError::UtilsError {
+                message: format!("Invalid sender address: {}", e),
+            })?,
+            signer: value.signer.map(|s| {
+                Arc::new(RustTransactionSignerFromFfi { ffi_signer: s })
+                    as Arc<dyn algokit_utils::transactions::common::TransactionSigner>
+            }),
+            rekey_to: value.rekey_to.map(|r| r.parse()).transpose().map_err(|e| {
+                UtilsError::UtilsError {
+                    message: format!("Invalid rekey_to address: {}", e),
+                }
+            })?,
+            note: value.note,
+            lease: value.lease.map(|l| {
+                let mut lease_bytes = [0u8; 32];
+                lease_bytes.copy_from_slice(&l[..32.min(l.len())]);
+                lease_bytes
+            }),
+            static_fee: value.static_fee,
+            extra_fee: value.extra_fee,
+            max_fee: value.max_fee,
+            validity_window: value.validity_window,
+            first_valid_round: value.first_valid_round,
+            last_valid_round: value.last_valid_round,
             app_id: value.app_id,
             on_complete: value.on_complete.into(),
             args: value.args,
@@ -301,7 +366,20 @@ impl TryFrom<AppCallParams> for RustAppCallParams {
 impl From<RustAppCallParams> for AppCallParams {
     fn from(value: RustAppCallParams) -> Self {
         AppCallParams {
-            common_params: value.common_params.into(),
+            sender: value.sender.to_string(),
+            signer: value.signer.map(|s| {
+                Arc::new(FfiTransactionSignerFromRust { rust_signer: s })
+                    as Arc<dyn TransactionSigner>
+            }),
+            rekey_to: value.rekey_to.map(|r| r.to_string()),
+            note: value.note,
+            lease: value.lease.map(|l| l.to_vec()),
+            static_fee: value.static_fee,
+            extra_fee: value.extra_fee,
+            max_fee: value.max_fee,
+            validity_window: value.validity_window,
+            first_valid_round: value.first_valid_round,
+            last_valid_round: value.last_valid_round,
             app_id: value.app_id,
             on_complete: value.on_complete.into(),
             args: value.args,
@@ -317,60 +395,61 @@ impl From<RustAppCallParams> for AppCallParams {
     }
 }
 
-#[derive(uniffi::Record)]
-pub struct AppCreateParams {
-    pub common_params: CommonParams,
-    /// Defines what additional actions occur with the transaction.
-    pub on_complete: OnApplicationComplete,
-    /// Logic executed for every app call transaction, except when
-    /// on-completion is set to "clear".
-    ///
-    /// Approval programs may reject the transaction.
-    pub approval_program: Vec<u8>,
-    /// Logic executed for app call transactions with on-completion set to "clear".
-    ///
-    /// Clear state programs cannot reject the transaction.
-    pub clear_state_program: Vec<u8>,
-    /// Holds the maximum number of global state values.
-    ///
-    /// This cannot be changed after creation.
-    #[uniffi(default = None)]
-    pub global_state_schema: Option<StateSchema>,
-    /// Holds the maximum number of local state values.
-    ///
-    /// This cannot be changed after creation.
-    #[uniffi(default = None)]
-    pub local_state_schema: Option<StateSchema>,
-    /// Number of additional pages allocated to the app's approval
-    /// and clear state programs.
-    ///
-    /// Each extra program page is 2048 bytes. The sum of approval program
-    /// and clear state program may not exceed 2048*(1+extra_program_pages) bytes.
-    /// Currently, the maximum value is 3.
-    /// This cannot be changed after creation.
-    #[uniffi(default = None)]
-    pub extra_program_pages: Option<u64>,
-    /// Transaction specific arguments available in the app's
-    /// approval program and clear state program.
-    #[uniffi(default = None)]
-    pub args: Option<Vec<Vec<u8>>>,
-    /// List of accounts in addition to the sender that may be accessed
-    /// from the app's approval program and clear state program.
-    #[uniffi(default = None)]
-    pub account_references: Option<Vec<String>>,
-    /// List of apps in addition to the current app that may be called
-    /// from the app's approval program and clear state program.
-    #[uniffi(default = None)]
-    pub app_references: Option<Vec<u64>>,
-    /// Lists the assets whose parameters may be accessed by this app's
-    /// approval program and clear state program.
-    ///
-    /// The access is read-only.
-    #[uniffi(default = None)]
-    pub asset_references: Option<Vec<u64>>,
-    /// The boxes that should be made available for the runtime of the program.
-    #[uniffi(default = None)]
-    pub box_references: Option<Vec<BoxReference>>,
+create_transaction_params! {
+    #[derive(uniffi::Record)]
+    pub struct AppCreateParams {
+        /// Defines what additional actions occur with the transaction.
+        pub on_complete: OnApplicationComplete,
+        /// Logic executed for every app call transaction, except when
+        /// on-completion is set to "clear".
+        ///
+        /// Approval programs may reject the transaction.
+        pub approval_program: Vec<u8>,
+        /// Logic executed for app call transactions with on-completion set to "clear".
+        ///
+        /// Clear state programs cannot reject the transaction.
+        pub clear_state_program: Vec<u8>,
+        /// Holds the maximum number of global state values.
+        ///
+        /// This cannot be changed after creation.
+        #[uniffi(default = None)]
+        pub global_state_schema: Option<StateSchema>,
+        /// Holds the maximum number of local state values.
+        ///
+        /// This cannot be changed after creation.
+        #[uniffi(default = None)]
+        pub local_state_schema: Option<StateSchema>,
+        /// Number of additional pages allocated to the app's approval
+        /// and clear state programs.
+        ///
+        /// Each extra program page is 2048 bytes. The sum of approval program
+        /// and clear state program may not exceed 2048*(1+extra_program_pages) bytes.
+        /// Currently, the maximum value is 3.
+        /// This cannot be changed after creation.
+        #[uniffi(default = None)]
+        pub extra_program_pages: Option<u64>,
+        /// Transaction specific arguments available in the app's
+        /// approval program and clear state program.
+        #[uniffi(default = None)]
+        pub args: Option<Vec<Vec<u8>>>,
+        /// List of accounts in addition to the sender that may be accessed
+        /// from the app's approval program and clear state program.
+        #[uniffi(default = None)]
+        pub account_references: Option<Vec<String>>,
+        /// List of apps in addition to the current app that may be called
+        /// from the app's approval program and clear state program.
+        #[uniffi(default = None)]
+        pub app_references: Option<Vec<u64>>,
+        /// Lists the assets whose parameters may be accessed by this app's
+        /// approval program and clear state program.
+        ///
+        /// The access is read-only.
+        #[uniffi(default = None)]
+        pub asset_references: Option<Vec<u64>>,
+        /// The boxes that should be made available for the runtime of the program.
+        #[uniffi(default = None)]
+        pub box_references: Option<Vec<BoxReference>>,
+    }
 }
 
 impl TryFrom<AppCreateParams> for RustAppCreateParams {
@@ -378,13 +457,36 @@ impl TryFrom<AppCreateParams> for RustAppCreateParams {
 
     fn try_from(value: AppCreateParams) -> Result<Self, Self::Error> {
         Ok(RustAppCreateParams {
-            common_params: value.common_params.try_into()?,
+            sender: value.sender.parse().map_err(|e| UtilsError::UtilsError {
+                message: format!("Invalid sender address: {}", e),
+            })?,
+            signer: value.signer.map(|s| {
+                Arc::new(RustTransactionSignerFromFfi { ffi_signer: s })
+                    as Arc<dyn algokit_utils::transactions::common::TransactionSigner>
+            }),
+            rekey_to: value.rekey_to.map(|r| r.parse()).transpose().map_err(|e| {
+                UtilsError::UtilsError {
+                    message: format!("Invalid rekey_to address: {}", e),
+                }
+            })?,
+            note: value.note,
+            lease: value.lease.map(|l| {
+                let mut lease_bytes = [0u8; 32];
+                lease_bytes.copy_from_slice(&l[..32.min(l.len())]);
+                lease_bytes
+            }),
+            static_fee: value.static_fee,
+            extra_fee: value.extra_fee,
+            max_fee: value.max_fee,
+            validity_window: value.validity_window,
+            first_valid_round: value.first_valid_round,
+            last_valid_round: value.last_valid_round,
             on_complete: value.on_complete.into(),
             approval_program: value.approval_program,
             clear_state_program: value.clear_state_program,
             global_state_schema: value.global_state_schema.map(|s| s.into()),
             local_state_schema: value.local_state_schema.map(|s| s.into()),
-            extra_program_pages: value.extra_program_pages,
+            extra_program_pages: value.extra_program_pages.map(|p| p as u32),
             args: value.args,
             account_references: value
                 .account_references
@@ -412,13 +514,26 @@ impl TryFrom<AppCreateParams> for RustAppCreateParams {
 impl From<RustAppCreateParams> for AppCreateParams {
     fn from(value: RustAppCreateParams) -> Self {
         AppCreateParams {
-            common_params: value.common_params.into(),
+            sender: value.sender.to_string(),
+            signer: value.signer.map(|s| {
+                Arc::new(FfiTransactionSignerFromRust { rust_signer: s })
+                    as Arc<dyn TransactionSigner>
+            }),
+            rekey_to: value.rekey_to.map(|r| r.to_string()),
+            note: value.note,
+            lease: value.lease.map(|l| l.to_vec()),
+            static_fee: value.static_fee,
+            extra_fee: value.extra_fee,
+            max_fee: value.max_fee,
+            validity_window: value.validity_window,
+            first_valid_round: value.first_valid_round,
+            last_valid_round: value.last_valid_round,
             on_complete: value.on_complete.into(),
             approval_program: value.approval_program,
             clear_state_program: value.clear_state_program,
             global_state_schema: value.global_state_schema.map(|s| s.into()),
             local_state_schema: value.local_state_schema.map(|s| s.into()),
-            extra_program_pages: value.extra_program_pages,
+            extra_program_pages: value.extra_program_pages.map(|p| p as u64),
             args: value.args,
             account_references: value
                 .account_references

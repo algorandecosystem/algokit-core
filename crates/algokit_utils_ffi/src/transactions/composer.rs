@@ -5,7 +5,7 @@ use crate::transactions::common::{
 };
 use algod_client::AlgodClient as RustAlgodClient;
 use algokit_http_client::HttpClient;
-use algokit_utils::transactions::composer::Composer as RustComposer;
+use algokit_utils::transactions::{ComposerParams, composer::Composer as RustComposer};
 use tokio::sync::Mutex;
 
 #[derive(uniffi::Object)]
@@ -49,10 +49,11 @@ impl Composer {
 
         let rust_algod_client = algod_client.inner_algod_client.blocking_lock();
 
-        let rust_composer = RustComposer::new(
-            Arc::new(rust_algod_client.clone()),
-            Arc::new(rust_signer_getter),
-        );
+        let rust_composer = RustComposer::new(ComposerParams {
+            algod_client: Arc::new(rust_algod_client.clone()),
+            signer_getter: Arc::new(rust_signer_getter),
+            composer_config: None,
+        });
 
         Composer {
             inner_composer: Mutex::new(rust_composer),
@@ -84,12 +85,9 @@ impl Composer {
 
     pub async fn build(&self) -> Result<(), UtilsError> {
         let mut composer = self.inner_composer.blocking_lock();
-        composer
-            .build(None)
-            .await
-            .map_err(|e| UtilsError::UtilsError {
-                message: e.to_string(),
-            })?;
+        composer.build().await.map_err(|e| UtilsError::UtilsError {
+            message: e.to_string(),
+        })?;
 
         Ok(())
     }

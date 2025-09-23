@@ -4,7 +4,6 @@ use algokit_transact::Address;
 use algokit_transact::SignedTransaction as RustSignedTransaction;
 use algokit_transact::Transaction as RustTransaction;
 use algokit_transact_ffi::{SignedTransaction, Transaction};
-use algokit_utils::transactions::common::CommonParams as RustCommonParams;
 use algokit_utils::transactions::common::TransactionSigner as RustTransactionSigner;
 use algokit_utils::transactions::common::TransactionSignerGetter as RustTransactionSignerGetter;
 use algokit_utils::transactions::common::TransactionWithSigner as RustTransactionWithSigner;
@@ -35,8 +34,8 @@ pub trait TransactionSigner: Send + Sync {
     ) -> Result<SignedTransaction, UtilsError>;
 }
 
-struct RustTransactionSignerFromFfi {
-    ffi_signer: Arc<dyn TransactionSigner>,
+pub struct RustTransactionSignerFromFfi {
+    pub ffi_signer: Arc<dyn TransactionSigner>,
 }
 
 #[async_trait]
@@ -46,11 +45,7 @@ impl RustTransactionSigner for RustTransactionSignerFromFfi {
         transactions: &[RustTransaction],
         indices: &[usize],
     ) -> Result<Vec<RustSignedTransaction>, String> {
-        let ffi_txns: Result<Vec<Transaction>, _> = transactions
-            .iter()
-            .map(|t| t.to_owned().try_into())
-            .collect();
-        let ffi_txns = ffi_txns.map_err(|e| format!("Failed to convert transactions: {}", e))?;
+        let ffi_txns: Vec<Transaction> = transactions.iter().map(|t| t.to_owned().into()).collect();
 
         let ffi_signed_txns = self
             .ffi_signer
@@ -66,8 +61,8 @@ impl RustTransactionSigner for RustTransactionSignerFromFfi {
     }
 }
 
-struct FfiTransactionSignerFromRust {
-    rust_signer: Arc<dyn RustTransactionSigner>,
+pub struct FfiTransactionSignerFromRust {
+    pub rust_signer: Arc<dyn RustTransactionSigner>,
 }
 
 #[async_trait]
@@ -112,7 +107,7 @@ impl TransactionSigner for FfiTransactionSignerFromRust {
 
 #[uniffi::export(with_foreign)]
 pub trait TransactionSignerGetter: Send + Sync {
-    fn get_signer(&self, address: String) -> Option<Arc<dyn TransactionSigner>>;
+    fn get_signer(&self, address: String) -> Result<Arc<dyn TransactionSigner>, UtilsError>;
 }
 
 pub struct RustTransactionSignerGetterFromFfi {
@@ -120,13 +115,14 @@ pub struct RustTransactionSignerGetterFromFfi {
 }
 
 impl RustTransactionSignerGetter for RustTransactionSignerGetterFromFfi {
-    fn get_signer(&self, address: Address) -> Option<Arc<dyn RustTransactionSigner>> {
+    fn get_signer(&self, address: Address) -> Result<Arc<dyn RustTransactionSigner>, String> {
         self.ffi_signer_getter
             .get_signer(address.to_string())
             .map(|ffi_signer| {
                 Arc::new(RustTransactionSignerFromFfi { ffi_signer })
                     as Arc<dyn RustTransactionSigner>
             })
+            .map_err(|e| e.to_string())
     }
 }
 
@@ -135,11 +131,16 @@ pub struct FfiTransactionSignerGetterFromRust {
 }
 
 impl TransactionSignerGetter for FfiTransactionSignerGetterFromRust {
-    fn get_signer(&self, address: String) -> Option<Arc<dyn TransactionSigner>> {
+    fn get_signer(&self, address: String) -> Result<Arc<dyn TransactionSigner>, UtilsError> {
         self.rust_signer_getter
-            .get_signer(address.parse().ok()?)
+            .get_signer(address.parse().map_err(|e| UtilsError::UtilsError {
+                message: format!("Invalid address {address}: {e}"),
+            })?)
             .map(|rust_signer| {
                 Arc::new(FfiTransactionSignerFromRust { rust_signer }) as Arc<dyn TransactionSigner>
+            })
+            .map_err(|e| UtilsError::UtilsError {
+                message: e.to_string(),
             })
     }
 }
@@ -174,13 +175,7 @@ impl TryFrom<RustTransactionWithSigner> for TransactionWithSigner {
     type Error = UtilsError;
 
     fn try_from(value: RustTransactionWithSigner) -> Result<Self, Self::Error> {
-        let ffi_txn: Transaction =
-            value
-                .transaction
-                .try_into()
-                .map_err(|e| UtilsError::UtilsError {
-                    message: format!("Failed to convert transaction: {}", e),
-                })?;
+        let ffi_txn: Transaction = value.transaction.into();
 
         Ok(TransactionWithSigner {
             transaction: ffi_txn,
@@ -217,56 +212,57 @@ pub struct CommonParams {
     pub last_valid_round: Option<u64>,
 }
 
-impl From<RustCommonParams> for CommonParams {
-    fn from(params: RustCommonParams) -> Self {
-        CommonParams {
-            sender: params.sender.as_str().to_string(),
-            signer: params.signer.map(|rust_signer| {
-                Arc::new(FfiTransactionSignerFromRust { rust_signer }) as Arc<dyn TransactionSigner>
-            }),
-            rekey_to: params.rekey_to.map(|a| a.as_str().to_string()),
-            note: params.note,
-            lease: params.lease.map(|l| l.to_vec()),
-            static_fee: params.static_fee,
-            extra_fee: params.extra_fee,
-            max_fee: params.max_fee,
-            validity_window: params.validity_window,
-            first_valid_round: params.first_valid_round,
-            last_valid_round: params.last_valid_round,
+#[macro_export]
+macro_rules! create_transaction_params {
+    (
+        $(#[$struct_attr:meta])*
+        pub struct $name:ident {
+            $(
+                $(#[$field_attr:meta])*
+                pub $field:ident: $field_type:ty,
+            )*
         }
-    }
-}
-
-impl TryFrom<CommonParams> for RustCommonParams {
-    type Error = UtilsError;
-
-    fn try_from(params: CommonParams) -> Result<Self, Self::Error> {
-        Ok(RustCommonParams {
-            sender: params.sender.parse().map_err(|e| UtilsError::UtilsError {
-                message: format!("Invalid sender address: {e}"),
-            })?,
-            signer: params.signer.map(|ffi_signer| {
-                Arc::new(RustTransactionSignerFromFfi { ffi_signer })
-                    as Arc<dyn RustTransactionSigner>
-            }),
-            rekey_to: params
-                .rekey_to
-                .map(|a| {
-                    a.parse().map_err(|e| UtilsError::UtilsError {
-                        message: format!("Invalid rekey address: {e}"),
-                    })
-                })
-                .transpose()?,
-            note: params.note,
-            lease: params
-                .lease
-                .map(|l| l.try_into().expect("Invalid lease format")),
-            static_fee: params.static_fee,
-            extra_fee: params.extra_fee,
-            max_fee: params.max_fee,
-            validity_window: params.validity_window,
-            first_valid_round: params.first_valid_round,
-            last_valid_round: params.last_valid_round,
-        })
-    }
+    ) => {
+        $(#[$struct_attr])*
+        #[derive(derive_more::Debug)]
+        pub struct $name {
+            /// The address of the account sending the transaction.
+            pub sender: String,
+            #[debug(skip)]
+            /// A signer used to sign transaction(s); if not specified then
+            /// an attempt will be made to find a registered signer for the
+            ///  given `sender` or use a default signer (if configured).
+            pub signer: Option<std::sync::Arc<dyn $crate::transactions::common::TransactionSigner>>,
+            /// Change the signing key of the sender to the given address.
+            /// **Warning:** Please be careful with this parameter and be sure to read the [official rekey guidance](https://dev.algorand.co/concepts/accounts/rekeying).
+            pub rekey_to: Option<String>,
+            /// Note to attach to the transaction. Max of 1000 bytes.
+            pub note: Option<Vec<u8>>,
+            /// Prevent multiple transactions with the same lease being included within the validity window.
+            ///
+            /// A [lease](https://dev.algorand.co/concepts/transactions/leases)
+            /// enforces a mutually exclusive transaction (useful to prevent double-posting and other scenarios).
+            pub lease: Option<Vec<u8>>,
+            /// The static transaction fee. In most cases you want to use extra fee unless setting the fee to 0 to be covered by another transaction.
+            pub static_fee: Option<u64>,
+            /// The fee to pay IN ADDITION to the suggested fee. Useful for manually covering inner transaction fees.
+            pub extra_fee: Option<u64>,
+            /// Throw an error if the fee for the transaction is more than this amount; prevents overspending on fees during high congestion periods.
+            pub max_fee: Option<u64>,
+            /// How many rounds the transaction should be valid for, if not specified then the registered default validity window will be used.
+            pub validity_window: Option<u32>,
+            /// Set the first round this transaction is valid.
+            /// If left undefined, the value from algod will be used.
+            ///
+            /// We recommend you only set this when you intentionally want this to be some time in the future.
+            pub first_valid_round: Option<u64>,
+            /// The last round this transaction is valid. It is recommended to use validity window instead.
+            pub last_valid_round: Option<u64>,
+            // Specific fields
+            $(
+                $(#[$field_attr])*
+                pub $field: $field_type,
+            )*
+        }
+    };
 }

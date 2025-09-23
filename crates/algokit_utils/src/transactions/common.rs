@@ -21,7 +21,7 @@ pub trait TransactionSigner: Send + Sync {
 }
 
 pub trait TransactionSignerGetter: Send + Sync {
-    fn get_signer(&self, address: Address) -> Option<Arc<dyn TransactionSigner>>;
+    fn get_signer(&self, address: Address) -> Result<Arc<dyn TransactionSigner>, String>;
 }
 
 impl<T: TransactionSignerGetter> TransactionSignerGetter for Mutex<T> {

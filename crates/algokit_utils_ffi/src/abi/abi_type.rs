@@ -4,7 +4,7 @@ use algokit_abi::ABIType as RustABIType;
 
 use crate::transactions::common::UtilsError;
 
-#[derive(uniffi::Object)]
+#[derive(uniffi::Object, Debug)]
 pub struct ABIType {
     pub abi_type: RustABIType,
 }
