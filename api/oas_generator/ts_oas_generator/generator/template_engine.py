@@ -653,10 +653,6 @@ class CodeGenerator:
             core_dir / "codecs.ts": ("base/src/core/codecs.ts.j2", context),
             # Project files
             src_dir / "index.ts": ("base/src/index.ts.j2", context),
-            output_dir / "package.json": ("base/package.json.j2", context),
-            output_dir / "tsconfig.json": ("base/tsconfig.json.j2", context),
-            output_dir / "README.md": ("base/README.md.j2", context),
-            output_dir / ".prettierignore": ("base/.prettierignore.j2", context),
         }
 
         return self.renderer.render_batch(template_map)
