@@ -106,7 +106,7 @@ trait HasTxnSigner {
     fn signer_mut(&mut self) -> &mut Option<Arc<dyn TransactionSigner>>;
 }
 
-fn set_default_signer_if_missing(
+fn set_method_signer_if_missing(
     params: &mut impl HasTxnSigner,
     method_signer: &Option<Arc<dyn TransactionSigner>>,
 ) {
@@ -626,57 +626,57 @@ impl Composer {
                 }
                 AppMethodCallArg::Payment(params) => {
                     let mut p = params.clone();
-                    set_default_signer_if_missing(&mut p, &method_signer);
+                    set_method_signer_if_missing(&mut p, &method_signer);
                     composer_transactions.push(ComposerTransaction::Payment(p));
                 }
                 AppMethodCallArg::AccountClose(params) => {
                     let mut p = params.clone();
-                    set_default_signer_if_missing(&mut p, &method_signer);
+                    set_method_signer_if_missing(&mut p, &method_signer);
                     composer_transactions.push(ComposerTransaction::AccountClose(p));
                 }
                 AppMethodCallArg::AssetTransfer(params) => {
                     let mut p = params.clone();
-                    set_default_signer_if_missing(&mut p, &method_signer);
+                    set_method_signer_if_missing(&mut p, &method_signer);
                     composer_transactions.push(ComposerTransaction::AssetTransfer(p));
                 }
                 AppMethodCallArg::AssetOptIn(params) => {
                     let mut p = params.clone();
-                    set_default_signer_if_missing(&mut p, &method_signer);
+                    set_method_signer_if_missing(&mut p, &method_signer);
                     composer_transactions.push(ComposerTransaction::AssetOptIn(p));
                 }
                 AppMethodCallArg::AssetOptOut(params) => {
                     let mut p = params.clone();
-                    set_default_signer_if_missing(&mut p, &method_signer);
+                    set_method_signer_if_missing(&mut p, &method_signer);
                     composer_transactions.push(ComposerTransaction::AssetOptOut(p));
                 }
                 AppMethodCallArg::AssetClawback(params) => {
                     let mut p = params.clone();
-                    set_default_signer_if_missing(&mut p, &method_signer);
+                    set_method_signer_if_missing(&mut p, &method_signer);
                     composer_transactions.push(ComposerTransaction::AssetClawback(p));
                 }
                 AppMethodCallArg::AssetCreate(params) => {
                     let mut p = params.clone();
-                    set_default_signer_if_missing(&mut p, &method_signer);
+                    set_method_signer_if_missing(&mut p, &method_signer);
                     composer_transactions.push(ComposerTransaction::AssetCreate(p));
                 }
                 AppMethodCallArg::AssetConfig(params) => {
                     let mut p = params.clone();
-                    set_default_signer_if_missing(&mut p, &method_signer);
+                    set_method_signer_if_missing(&mut p, &method_signer);
                     composer_transactions.push(ComposerTransaction::AssetConfig(p));
                 }
                 AppMethodCallArg::AssetDestroy(params) => {
                     let mut p = params.clone();
-                    set_default_signer_if_missing(&mut p, &method_signer);
+                    set_method_signer_if_missing(&mut p, &method_signer);
                     composer_transactions.push(ComposerTransaction::AssetDestroy(p));
                 }
                 AppMethodCallArg::AssetFreeze(params) => {
                     let mut p = params.clone();
-                    set_default_signer_if_missing(&mut p, &method_signer);
+                    set_method_signer_if_missing(&mut p, &method_signer);
                     composer_transactions.push(ComposerTransaction::AssetFreeze(p));
                 }
                 AppMethodCallArg::AssetUnfreeze(params) => {
                     let mut p = params.clone();
-                    set_default_signer_if_missing(&mut p, &method_signer);
+                    set_method_signer_if_missing(&mut p, &method_signer);
                     composer_transactions.push(ComposerTransaction::AssetUnfreeze(p));
                 }
                 AppMethodCallArg::AppCall(params) => {

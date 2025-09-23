@@ -8,16 +8,17 @@ use algokit_abi::{ABIReturn, ABIValue, Arc56Contract};
 use crate::applications::app_client::error_transformation::LogicErrorContext;
 use crate::applications::app_client::{AppClientMethodCallParams, CompilationParams};
 use crate::applications::app_deployer::{AppLookup, OnSchemaBreak, OnUpdate};
-use crate::applications::app_factory;
+use crate::applications::{
+    AppDeployMetadata, AppDeployParams, AppDeployResult, CreateParams, DeleteParams, UpdateParams,
+    app_factory,
+};
 use crate::clients::app_manager::{
     DELETABLE_TEMPLATE_NAME, TealTemplateValue, UPDATABLE_TEMPLATE_NAME,
 };
 use crate::transactions::{
     TransactionComposerConfig, TransactionResultError, TransactionSigner,
     composer::{SendParams as ComposerSendParams, SendTransactionComposerResults},
-    sender_results::{
-        SendAppCallResult, SendAppCreateResult, SendAppUpdateResult, SendTransactionResult,
-    },
+    sender_results::SendTransactionResult,
 };
 use crate::{AlgorandClient, AppClient, AppClientParams, AppSourceMaps};
 use app_factory::types as aftypes;
@@ -78,17 +79,32 @@ impl AppFactory {
         let compiled = self.compile_programs_with(None).await?;
         let base = self.to_send_transaction_result(composer_result)?;
         let last_abi_return = base.abi_returns.as_ref().and_then(|v| v.last()).cloned();
-        let created = SendAppCreateResult::new(
-            base,
-            last_abi_return.clone(),
+        let arc56_return = self.parse_method_return_value(&last_abi_return)?;
+
+        // Extract app_id from confirmation
+        let app_id = base
+            .confirmation
+            .app_id
+            .ok_or_else(|| AppFactoryError::ValidationError {
+                message: "App creation confirmation missing application-index".to_string(),
+            })?;
+        let app_address = algokit_transact::Address::from_app_id(&app_id);
+
+        Ok(AppFactoryCreateMethodCallResult::new(
+            base.transaction,
+            base.confirmation,
+            base.tx_id,
+            base.group_id,
+            base.tx_ids,
+            base.transactions,
+            base.confirmations,
+            app_id,
+            app_address,
             Some(compiled.approval.compiled_base64_to_bytes.clone()),
             Some(compiled.clear.compiled_base64_to_bytes.clone()),
-        )
-        .map_err(|e| AppFactoryError::ValidationError {
-            message: e.to_string(),
-        })?;
-        let arc56_return = self.parse_method_return_value(&last_abi_return)?;
-        Ok(AppFactoryMethodCallResult::new(created, arc56_return))
+            last_abi_return,
+            arc56_return,
+        ))
     }
 
     async fn deploy_update_result(
@@ -98,16 +114,23 @@ impl AppFactory {
         let compiled = self.compile_programs_with(None).await?;
         let base = self.to_send_transaction_result(composer_result)?;
         let last_abi_return = base.abi_returns.as_ref().and_then(|v| v.last()).cloned();
-        let updated = SendAppUpdateResult::new(
-            base,
-            last_abi_return.clone(),
+        let arc56_return = self.parse_method_return_value(&last_abi_return)?;
+
+        Ok(AppFactoryUpdateMethodCallResult::new(
+            base.transaction,
+            base.confirmation,
+            base.tx_id,
+            base.group_id,
+            base.tx_ids,
+            base.transactions,
+            base.confirmations,
             Some(compiled.approval.compiled_base64_to_bytes.clone()),
             Some(compiled.clear.compiled_base64_to_bytes.clone()),
             compiled.approval.source_map.clone(),
             compiled.clear.source_map.clone(),
-        );
-        let arc56_return = self.parse_method_return_value(&last_abi_return)?;
-        Ok(AppFactoryMethodCallResult::new(updated, arc56_return))
+            last_abi_return,
+            arc56_return,
+        ))
     }
 
     async fn deploy_replace_results(
@@ -115,15 +138,19 @@ impl AppFactory {
         composer_result: &SendTransactionComposerResults,
     ) -> Result<
         (
-            Option<AppFactoryCreateMethodCallResult>,
-            Option<AppFactoryDeleteMethodCallResult>,
+            AppFactoryCreateMethodCallResult,
+            AppFactoryDeleteMethodCallResult,
         ),
         AppFactoryError,
     > {
-        if composer_result.confirmations.is_empty()
+        if composer_result.confirmations.len() < 2
             || composer_result.confirmations.len() != composer_result.transaction_ids.len()
         {
-            return Ok((None, None));
+            return Err(AppFactoryError::ValidationError {
+                message: String::from(
+                    "Invalid replace composer result: expected create and delete confirmations",
+                ),
+            });
         }
         let compiled = self.compile_programs_with(None).await?;
         // Create index 0
@@ -131,7 +158,7 @@ impl AppFactory {
         let create_base = SendTransactionResult::new(
             composer_result.group.map(hex::encode).unwrap_or_default(),
             vec![composer_result.transaction_ids[0].clone()],
-            vec![create_tx],
+            vec![create_tx.clone()],
             vec![composer_result.confirmations[0].clone()],
             if !composer_result.abi_returns.is_empty() {
                 Some(vec![composer_result.abi_returns[0].clone()])
@@ -147,49 +174,70 @@ impl AppFactory {
             .as_ref()
             .and_then(|v| v.last())
             .cloned();
-        let created = SendAppCreateResult::new(
-            create_base,
-            create_abi.clone(),
+        let create_arc56 = self.parse_method_return_value(&create_abi)?;
+
+        // Extract app_id from confirmation
+        let app_id =
+            create_base
+                .confirmation
+                .app_id
+                .ok_or_else(|| AppFactoryError::ValidationError {
+                    message: "App creation confirmation missing application-index".to_string(),
+                })?;
+        let app_address = algokit_transact::Address::from_app_id(&app_id);
+
+        let create_result = AppFactoryCreateMethodCallResult::new(
+            create_tx,
+            composer_result.confirmations[0].clone(),
+            composer_result.transaction_ids[0].clone(),
+            composer_result.group.map(hex::encode).unwrap_or_default(),
+            vec![composer_result.transaction_ids[0].clone()],
+            vec![create_base.transaction.clone()],
+            vec![composer_result.confirmations[0].clone()],
+            app_id,
+            app_address,
             Some(compiled.approval.compiled_base64_to_bytes.clone()),
             Some(compiled.clear.compiled_base64_to_bytes.clone()),
+            create_abi.clone(),
+            create_arc56,
+        );
+        // Delete uses the final transaction in the replacement group
+        let delete_index = composer_result.confirmations.len() - 1;
+        let delete_tx = composer_result.confirmations[delete_index]
+            .txn
+            .transaction
+            .clone();
+        let delete_base = SendTransactionResult::new(
+            composer_result.group.map(hex::encode).unwrap_or_default(),
+            vec![composer_result.transaction_ids[delete_index].clone()],
+            vec![delete_tx.clone()],
+            vec![composer_result.confirmations[delete_index].clone()],
+            if composer_result.abi_returns.len() > delete_index {
+                Some(vec![composer_result.abi_returns[delete_index].clone()])
+            } else {
+                None
+            },
         )
         .map_err(|e| AppFactoryError::ValidationError {
             message: e.to_string(),
         })?;
-        let create_arc56 = self.parse_method_return_value(&create_abi)?;
-        let create_result = Some(AppFactoryMethodCallResult::new(created, create_arc56));
-        // Optional delete uses the final transaction in the replacement group
-        let delete_result = if composer_result.confirmations.len() > 1 {
-            let delete_index = composer_result.confirmations.len() - 1;
-            let delete_tx = composer_result.confirmations[delete_index]
-                .txn
-                .transaction
-                .clone();
-            let delete_base = SendTransactionResult::new(
-                composer_result.group.map(hex::encode).unwrap_or_default(),
-                vec![composer_result.transaction_ids[delete_index].clone()],
-                vec![delete_tx],
-                vec![composer_result.confirmations[delete_index].clone()],
-                if composer_result.abi_returns.len() > delete_index {
-                    Some(vec![composer_result.abi_returns[delete_index].clone()])
-                } else {
-                    None
-                },
-            )
-            .map_err(|e| AppFactoryError::ValidationError {
-                message: e.to_string(),
-            })?;
-            let delete_abi = delete_base
-                .abi_returns
-                .as_ref()
-                .and_then(|v| v.last())
-                .cloned();
-            let deleted = SendAppCallResult::new(delete_base, delete_abi.clone());
-            let delete_arc56 = self.parse_method_return_value(&delete_abi)?;
-            Some(AppFactoryMethodCallResult::new(deleted, delete_arc56))
-        } else {
-            None
-        };
+        let delete_abi = delete_base
+            .abi_returns
+            .as_ref()
+            .and_then(|v| v.last())
+            .cloned();
+        let delete_arc56 = self.parse_method_return_value(&delete_abi)?;
+        let delete_result = AppFactoryDeleteMethodCallResult::new(
+            delete_tx,
+            composer_result.confirmations[delete_index].clone(),
+            composer_result.transaction_ids[delete_index].clone(),
+            composer_result.group.map(hex::encode).unwrap_or_default(),
+            vec![composer_result.transaction_ids[delete_index].clone()],
+            vec![delete_base.transaction.clone()],
+            vec![composer_result.confirmations[delete_index].clone()],
+            delete_abi.clone(),
+            delete_arc56,
+        );
         Ok((create_result, delete_result))
     }
     /// Convert SendTransactionComposerResults into a rich SendTransactionResult by
@@ -354,9 +402,7 @@ impl AppFactory {
             app_spec: self.app_spec.clone(),
             algorand: self.algorand.clone(),
             app_name: Some(app_name.unwrap_or_else(|| self.app_name.clone())),
-            default_sender: Some(
-                default_sender.unwrap_or_else(|| self.default_sender.clone().unwrap_or_default()),
-            ),
+            default_sender: default_sender.or_else(|| self.default_sender.clone()),
             default_signer: default_signer.or_else(|| self.default_signer.clone()),
             source_maps: resolved_source_maps,
             transaction_composer_config: self.transaction_composer_config.clone(),
@@ -398,9 +444,7 @@ impl AppFactory {
 
         Ok(client)
     }
-}
 
-impl AppFactory {
     pub(crate) fn get_sender_address(
         &self,
         sender: &Option<String>,
@@ -553,40 +597,28 @@ impl AppFactory {
         let resolved_deploy_time_params = self.deploy_time_params.clone();
 
         let create_deploy_params = match args.create_params {
-            Some(cp) => crate::applications::app_deployer::CreateParams::AppCreateMethodCall(
-                self.params().create(cp)?,
-            ),
-            None => crate::applications::app_deployer::CreateParams::AppCreateCall(
-                self.params().bare().create(None)?,
-            ),
+            Some(cp) => CreateParams::AppCreateMethodCall(self.params().create(cp)?),
+            None => CreateParams::AppCreateCall(self.params().bare().create(None)?),
         };
 
         let update_deploy_params = match args.update_params {
-            Some(up) => crate::applications::app_deployer::UpdateParams::AppUpdateMethodCall(
-                self.params().deploy_update(up)?,
-            ),
-            None => crate::applications::app_deployer::UpdateParams::AppUpdateCall(
-                self.params().bare().deploy_update(None)?,
-            ),
+            Some(up) => UpdateParams::AppUpdateMethodCall(self.params().deploy_update(up)?),
+            None => UpdateParams::AppUpdateCall(self.params().bare().deploy_update(None)?),
         };
 
         let delete_deploy_params = match args.delete_params {
-            Some(dp) => crate::applications::app_deployer::DeleteParams::AppDeleteMethodCall(
-                self.params().deploy_delete(dp)?,
-            ),
-            None => crate::applications::app_deployer::DeleteParams::AppDeleteCall(
-                self.params().bare().deploy_delete(None)?,
-            ),
+            Some(dp) => DeleteParams::AppDeleteMethodCall(self.params().deploy_delete(dp)?),
+            None => DeleteParams::AppDeleteCall(self.params().bare().deploy_delete(None)?),
         };
 
-        let metadata = crate::applications::app_deployer::AppDeployMetadata {
+        let metadata = AppDeployMetadata {
             name: args.app_name.unwrap_or_else(|| self.app_name.clone()),
             version: self.version.clone(),
             updatable: resolved_updatable,
             deletable: resolved_deletable,
         };
 
-        let deploy_params = crate::applications::app_deployer::AppDeployParams {
+        let deploy_params = AppDeployParams {
             metadata,
             deploy_time_params: resolved_deploy_time_params,
             on_schema_break: args.on_schema_break,
@@ -608,10 +640,10 @@ impl AppFactory {
 
         // Build AppClient for the resulting app
         let app_metadata = match &deploy_result {
-            crate::applications::app_deployer::AppDeployResult::Create { app, .. }
-            | crate::applications::app_deployer::AppDeployResult::Update { app, .. }
-            | crate::applications::app_deployer::AppDeployResult::Replace { app, .. }
-            | crate::applications::app_deployer::AppDeployResult::Nothing { app } => app,
+            AppDeployResult::Create { app, .. }
+            | AppDeployResult::Update { app, .. }
+            | AppDeployResult::Replace { app, .. }
+            | AppDeployResult::Nothing { app } => app,
         };
 
         // Create AppClient with shared signers from the factory's AlgorandClient
@@ -632,18 +664,18 @@ impl AppFactory {
         let mut delete_result: Option<aftypes::AppFactoryDeleteMethodCallResult> = None;
 
         match &deploy_result {
-            crate::applications::app_deployer::AppDeployResult::Create { result, .. } => {
+            AppDeployResult::Create { result, .. } => {
                 create_result = Some(self.deploy_create_result(result).await?);
             }
-            crate::applications::app_deployer::AppDeployResult::Update { result, .. } => {
+            AppDeployResult::Update { result, .. } => {
                 update_result = Some(self.deploy_update_result(result).await?);
             }
-            crate::applications::app_deployer::AppDeployResult::Replace { result, .. } => {
+            AppDeployResult::Replace { result, .. } => {
                 let (c, d) = self.deploy_replace_results(result).await?;
-                create_result = c;
-                delete_result = d;
+                create_result = Some(c);
+                delete_result = Some(d);
             }
-            crate::applications::app_deployer::AppDeployResult::Nothing { .. } => {}
+            AppDeployResult::Nothing { .. } => {}
         }
 
         let factory_result = aftypes::AppFactoryDeployResult {

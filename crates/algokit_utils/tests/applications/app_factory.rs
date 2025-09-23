@@ -127,7 +127,7 @@ async fn bare_create_with_deploy_time_params(
     assert!(res.app_id > 0);
     assert!(res.compiled_approval.is_some());
     assert!(res.compiled_clear.is_some());
-    assert!(res.common_params.confirmation.confirmed_round.is_some());
+    assert!(res.confirmation.confirmed_round.is_some());
     Ok(())
 }
 
@@ -191,7 +191,7 @@ async fn oncomplete_override_on_create(
         .create(Some(params), None, Some(compilation_params))
         .await?;
 
-    match &result.common_params.transaction {
+    match &result.transaction {
         algokit_transact::Transaction::AppCall(fields) => {
             assert_eq!(
                 fields.on_complete,
@@ -205,7 +205,7 @@ async fn oncomplete_override_on_create(
         client.app_address(),
         algokit_transact::Address::from_app_id(&client.app_id())
     );
-    assert!(result.common_params.confirmations.first().is_some());
+    assert!(result.confirmations.first().is_some());
     assert!(result.compiled_approval.is_some());
     assert!(result.compiled_clear.is_some());
     Ok(())
@@ -250,7 +250,7 @@ async fn abi_based_create_returns_value(
         .await?;
 
     let abi_ret = call_return
-        .arc56_return()
+        .arc56_return
         .expect("abi return expected")
         .clone();
     match abi_ret {
@@ -597,11 +597,7 @@ async fn deploy_app_create(#[future] algorand_fixture: AlgorandFixtureResult) ->
     assert!(create_result.compiled_approval.is_some());
     assert!(create_result.compiled_clear.is_some());
     assert_eq!(
-        create_result
-            .common_params
-            .confirmation
-            .app_id
-            .unwrap_or_default(),
+        create_result.confirmation.app_id.unwrap_or_default(),
         deploy_result.app.app_id
     );
     Ok(())
@@ -654,8 +650,8 @@ async fn deploy_app_create_abi(#[future] algorand_fixture: AlgorandFixtureResult
     assert!(client.app_id() > 0);
     assert_eq!(client.app_id(), deploy_result.app.app_id);
     let abi_value = create_result
-        .arc56_return()
-        .cloned()
+        .arc56_return
+        .clone()
         .expect("abi return expected");
     let abi_value = match abi_value {
         algokit_abi::ABIValue::String(s) => s,
@@ -745,7 +741,7 @@ async fn deploy_app_update(#[future] algorand_fixture: AlgorandFixtureResult) ->
         update_res
             .update_result
             .as_ref()
-            .and_then(|r| r.common_params.confirmation.confirmed_round),
+            .and_then(|r| r.confirmation.confirmed_round),
         Some(update_res.app.updated_round)
     );
     Ok(())
@@ -943,7 +939,7 @@ async fn deploy_app_update_abi(#[future] algorand_fixture: AlgorandFixtureResult
         .update_result
         .as_ref()
         .expect("update result expected");
-    let abi_value = update_result.arc56_return().cloned().expect("abi return");
+    let abi_value = update_result.arc56_return.clone().expect("abi return");
     let abi_return = match abi_value {
         algokit_abi::ABIValue::String(s) => s,
         other => return Err(format!("expected string return, got {other:?}").into()),
@@ -954,7 +950,7 @@ async fn deploy_app_update_abi(#[future] algorand_fixture: AlgorandFixtureResult
     assert!(update_result.approval_source_map.is_some());
     assert!(update_result.clear_source_map.is_some());
     // Ensure update onComplete is UpdateApplication
-    match &update_result.common_params.transaction {
+    match &update_result.transaction {
         algokit_transact::Transaction::AppCall(fields) => {
             assert_eq!(
                 fields.on_complete,
@@ -1030,15 +1026,9 @@ async fn deploy_app_replace(#[future] algorand_fixture: AlgorandFixtureResult) -
     assert!(replace_create.compiled_clear.is_some());
     assert!(replace_create.compiled_approval.is_some());
     assert!(replace_create.compiled_clear.is_some());
-    assert!(
-        replace_delete
-            .common_params
-            .confirmation
-            .confirmed_round
-            .is_some()
-    );
+    assert!(replace_delete.confirmation.confirmed_round.is_some());
     // Ensure delete app call references old app id and correct onComplete
-    match &replace_delete.common_params.transaction {
+    match &replace_delete.transaction {
         algokit_transact::Transaction::AppCall(fields) => {
             assert_eq!(
                 fields.on_complete,
@@ -1132,10 +1122,7 @@ async fn deploy_app_replace_abi(#[future] algorand_fixture: AlgorandFixtureResul
         .as_ref()
         .expect("create result expected");
 
-    let create_value = create_res
-        .arc56_return()
-        .cloned()
-        .expect("create abi return");
+    let create_value = create_res.arc56_return.clone().expect("create abi return");
     let create_ret = match create_value {
         algokit_abi::ABIValue::String(s) => s,
         _ => return Err("create abi return".into()),

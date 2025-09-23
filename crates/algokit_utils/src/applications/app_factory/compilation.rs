@@ -49,15 +49,15 @@ impl AppFactory {
             updatable: cp.updatable,
             deletable: cp.deletable,
         };
-        let metadata_opt = if metadata.updatable.is_some() || metadata.deletable.is_some() {
-            Some(&metadata)
-        } else {
-            None
-        };
+
         let approval = self
             .algorand()
             .app()
-            .compile_teal_template(&approval_teal, cp.deploy_time_params.as_ref(), metadata_opt)
+            .compile_teal_template(
+                &approval_teal,
+                cp.deploy_time_params.as_ref(),
+                Some(&metadata),
+            )
             .await
             .map_err(|e| AppFactoryError::CompilationError {
                 message: e.to_string(),
