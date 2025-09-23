@@ -22,7 +22,3 @@ AGENTS.md
 .opencode/
 .references/
 .kiro/
-
-
-packages/typescript/algod_client/dist/
-packages/typescript/indexer_client/dist/

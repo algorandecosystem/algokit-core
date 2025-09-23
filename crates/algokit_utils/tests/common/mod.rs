@@ -10,6 +10,7 @@ pub mod test_account;
 
 use algokit_abi::Arc56Contract;
 use algokit_utils::AppCreateParams;
+use algokit_utils::applications::app_factory;
 use algokit_utils::clients::app_manager::{
     AppManager, DeploymentMetadata, TealTemplateParams, TealTemplateValue,
 };
@@ -69,7 +70,7 @@ pub async fn deploy_arc56_contract(
 
     let app_create_params = AppCreateParams {
         sender: sender.clone(),
-        args: args,
+        args,
         approval_program: approval_compile.compiled_base64_to_bytes,
         clear_state_program: clear_compile.compiled_base64_to_bytes,
         global_state_schema: Some(algokit_transact::StateSchema {
