@@ -914,7 +914,6 @@ function isAppCallBelowResourceLimit(txn: Transaction): boolean {
   const appsCount = txn.appCall?.appReferences?.length || 0
   const boxesCount = txn.appCall?.boxReferences?.length || 0
 
-  const MAX_OVERALL_REFERENCES = 8
   return accountsCount + assetsCount + appsCount + boxesCount < MAX_OVERALL_REFERENCES
 }
 
@@ -981,7 +980,7 @@ function populateGroupResource(
         return false
       }
 
-      const appCall = transactions[groupIndex1].appCall!
+      const appCall = txn.appCall!
       if ((appCall.accountReferences?.length ?? 0) >= MAX_ACCOUNT_REFERENCES) {
         return false
       }
@@ -994,7 +993,7 @@ function populateGroupResource(
     })
 
     if (groupIndex2 !== -1) {
-      const appCall = transactions[groupIndex1].appCall!
+      const appCall = transactions[groupIndex2].appCall!
       appCall.accountReferences = appCall.accountReferences ?? []
       if (!appCall.accountReferences.includes(account)) {
         appCall.accountReferences.push(account)
