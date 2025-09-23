@@ -100,9 +100,7 @@ async def test_composer():
         params=PaymentParams(
             amount=1,
             receiver=ADDR,
-            common_params=CommonParams(
-                sender=ADDR,
-            ),
+            sender=ADDR,
         )
     )
 
@@ -140,9 +138,7 @@ async def test_app_create_and_call():
 
     create_composer.add_app_create(
         params=AppCreateParams(
-            common_params=CommonParams(
-                    sender=ADDR,
-            ),
+            sender=ADDR,
             on_complete=OnApplicationComplete.NO_OP,
             approval_program=INT_1_PROG,
             clear_state_program=INT_1_PROG,
@@ -164,9 +160,7 @@ async def test_app_create_and_call():
 
     call_composer.add_app_call(
         params=AppCallParams(
-            common_params=CommonParams(
-                sender=ADDR,
-            ),
+            sender=ADDR,
             app_id=app_id,
             on_complete=OnApplicationComplete.NO_OP,
         )
@@ -184,9 +178,7 @@ async def test_app_create_and_call():
 
     method_composer.add_app_call_method_call(
         params=AppCallMethodCallParams(
-                common_params=CommonParams(
-                    sender=ADDR,
-                ),
+                sender=ADDR,
                 app_id=app_id,
                 args=[AppMethodCallArg.ABI_VALUE(AbiValue.bool(True))],
                 on_complete=OnApplicationComplete.NO_OP,

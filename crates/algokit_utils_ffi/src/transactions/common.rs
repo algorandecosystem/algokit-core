@@ -232,31 +232,41 @@ macro_rules! create_transaction_params {
             /// A signer used to sign transaction(s); if not specified then
             /// an attempt will be made to find a registered signer for the
             ///  given `sender` or use a default signer (if configured).
+            #[uniffi(default = None)]
             pub signer: Option<std::sync::Arc<dyn $crate::transactions::common::TransactionSigner>>,
             /// Change the signing key of the sender to the given address.
             /// **Warning:** Please be careful with this parameter and be sure to read the [official rekey guidance](https://dev.algorand.co/concepts/accounts/rekeying).
+            #[uniffi(default = None)]
             pub rekey_to: Option<String>,
             /// Note to attach to the transaction. Max of 1000 bytes.
+            #[uniffi(default = None)]
             pub note: Option<Vec<u8>>,
             /// Prevent multiple transactions with the same lease being included within the validity window.
             ///
             /// A [lease](https://dev.algorand.co/concepts/transactions/leases)
             /// enforces a mutually exclusive transaction (useful to prevent double-posting and other scenarios).
+            #[uniffi(default = None)]
             pub lease: Option<Vec<u8>>,
             /// The static transaction fee. In most cases you want to use extra fee unless setting the fee to 0 to be covered by another transaction.
+            #[uniffi(default = None)]
             pub static_fee: Option<u64>,
             /// The fee to pay IN ADDITION to the suggested fee. Useful for manually covering inner transaction fees.
+            #[uniffi(default = None)]
             pub extra_fee: Option<u64>,
             /// Throw an error if the fee for the transaction is more than this amount; prevents overspending on fees during high congestion periods.
+            #[uniffi(default = None)]
             pub max_fee: Option<u64>,
             /// How many rounds the transaction should be valid for, if not specified then the registered default validity window will be used.
+            #[uniffi(default = None)]
             pub validity_window: Option<u32>,
             /// Set the first round this transaction is valid.
             /// If left undefined, the value from algod will be used.
             ///
             /// We recommend you only set this when you intentionally want this to be some time in the future.
+            #[uniffi(default = None)]
             pub first_valid_round: Option<u64>,
             /// The last round this transaction is valid. It is recommended to use validity window instead.
+            #[uniffi(default = None)]
             pub last_valid_round: Option<u64>,
             // Specific fields
             $(
