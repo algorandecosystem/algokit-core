@@ -13,6 +13,7 @@ pub use transactions::AppCallTransactionFields;
 pub use transactions::AssetConfigTransactionFields;
 pub use transactions::AssetFreezeTransactionFields;
 pub use transactions::AssetTransferTransactionFields;
+pub use transactions::HeartbeatTransactionFields;
 pub use transactions::KeyRegistrationTransactionFields;
 pub use transactions::PaymentTransactionFields;
 
@@ -96,6 +97,7 @@ pub enum TransactionType {
     AssetConfig,
     KeyRegistration,
     AppCall,
+    Heartbeat,
 }
 
 #[ffi_record]
@@ -191,6 +193,8 @@ pub struct Transaction {
     key_registration: Option<KeyRegistrationTransactionFields>,
 
     asset_freeze: Option<AssetFreezeTransactionFields>,
+
+    heartbeat: Option<HeartbeatTransactionFields>,
 }
 
 impl TryFrom<Transaction> for algokit_transact::Transaction {
@@ -205,6 +209,7 @@ impl TryFrom<Transaction> for algokit_transact::Transaction {
             transaction.key_registration.is_some(),
             transaction.app_call.is_some(),
             transaction.asset_freeze.is_some(),
+            transaction.heartbeat.is_some(),
         ]
         .into_iter()
         .filter(|&x| x)
@@ -235,6 +240,9 @@ impl TryFrom<Transaction> for algokit_transact::Transaction {
                 transaction.try_into()?,
             )),
             TransactionType::AssetFreeze => Ok(algokit_transact::Transaction::AssetFreeze(
+                transaction.try_into()?,
+            )),
+            TransactionType::Heartbeat => Ok(algokit_transact::Transaction::Heartbeat(
                 transaction.try_into()?,
             )),
         }
@@ -283,6 +291,7 @@ impl From<algokit_transact::Transaction> for Transaction {
                     None,
                     None,
                     None,
+                    None,
                 )
             }
             algokit_transact::Transaction::AssetTransfer(asset_transfer) => {
@@ -292,6 +301,7 @@ impl From<algokit_transact::Transaction> for Transaction {
                     TransactionType::AssetTransfer,
                     None,
                     Some(asset_transfer_fields),
+                    None,
                     None,
                     None,
                     None,
@@ -309,6 +319,7 @@ impl From<algokit_transact::Transaction> for Transaction {
                     None,
                     None,
                     None,
+                    None,
                 )
             }
             algokit_transact::Transaction::AppCall(app_call) => {
@@ -320,6 +331,7 @@ impl From<algokit_transact::Transaction> for Transaction {
                     None,
                     None,
                     Some(app_call_fields),
+                    None,
                     None,
                     None,
                 )
@@ -335,6 +347,7 @@ impl From<algokit_transact::Transaction> for Transaction {
                     None,
                     Some(key_registration_fields),
                     None,
+                    None,
                 )
             }
             algokit_transact::Transaction::AssetFreeze(asset_freeze) => {
@@ -348,6 +361,21 @@ impl From<algokit_transact::Transaction> for Transaction {
                     None,
                     None,
                     Some(asset_freeze_fields),
+                    None,
+                )
+            }
+            algokit_transact::Transaction::Heartbeat(heartbeat) => {
+                let heartbeat_fields = heartbeat.clone().into();
+                build_transaction(
+                    heartbeat.header,
+                    TransactionType::Heartbeat,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    Some(heartbeat_fields),
                 )
             }
         }
@@ -434,6 +462,7 @@ fn build_transaction(
     app_call: Option<AppCallTransactionFields>,
     key_registration: Option<KeyRegistrationTransactionFields>,
     asset_freeze: Option<AssetFreezeTransactionFields>,
+    heartbeat: Option<HeartbeatTransactionFields>,
 ) -> Transaction {
     Transaction {
         transaction_type,
@@ -453,6 +482,7 @@ fn build_transaction(
         app_call,
         key_registration,
         asset_freeze,
+        heartbeat,
     }
 }
 
@@ -471,6 +501,7 @@ pub fn get_encoded_transaction_type(
         algokit_transact::Transaction::AppCall(_) => Ok(TransactionType::AppCall),
         algokit_transact::Transaction::KeyRegistration(_) => Ok(TransactionType::KeyRegistration),
         algokit_transact::Transaction::AssetFreeze(_) => Ok(TransactionType::AssetFreeze),
+        algokit_transact::Transaction::Heartbeat(_) => Ok(TransactionType::Heartbeat),
     }
 }
 
