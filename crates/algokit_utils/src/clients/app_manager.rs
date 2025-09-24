@@ -205,38 +205,6 @@ impl AppManager {
         self.compile_teal(&teal_code).await
     }
 
-    pub(crate) async fn compile_programs(
-        &self,
-        approval_teal: &str,
-        clear_teal: &str,
-        compilation_params: Option<CompilationParams>,
-    ) -> Result<CompiledPrograms, AppManagerError> {
-        let compilation_params = compilation_params.unwrap_or_default();
-
-        let metadata = DeploymentMetadata {
-            updatable: compilation_params.updatable,
-            deletable: compilation_params.deletable,
-        };
-
-        let approval = self
-            .compile_teal_template(
-                &approval_teal,
-                compilation_params.deploy_time_params.as_ref(),
-                Some(&metadata),
-            )
-            .await?;
-
-        let clear = self
-            .compile_teal_template(
-                &clear_teal,
-                compilation_params.deploy_time_params.as_ref(),
-                None,
-            )
-            .await?;
-
-        Ok(CompiledPrograms { approval, clear })
-    }
-
     pub fn get_compilation_result(&self, teal_code: &str) -> Option<CompiledTeal> {
         let cache_key = Self::hash_teal_code(teal_code);
         let cache = self.compilation_results.lock().unwrap();

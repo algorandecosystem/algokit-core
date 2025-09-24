@@ -1,6 +1,5 @@
 use crate::AlgorandClient;
 use crate::AppSourceMaps;
-use crate::applications::AppMetadata;
 use crate::clients::app_manager::TealTemplateValue;
 use crate::transactions::{AppMethodCallArg, TransactionComposerConfig, TransactionSigner};
 use algod_client::models::PendingTransactionResponse;
@@ -23,6 +22,7 @@ pub struct AppFactoryCreateResult {
     pub app_id: u64,
     /// The address of the created app
     pub app_address: Address,
+    // TODO: use compiled_programs
     /// The compiled approval program (if provided)
     pub compiled_approval: Option<Vec<u8>>,
     /// The compiled clear state program (if provided)
@@ -57,76 +57,7 @@ pub struct AppFactoryCreateMethodCallResult {
     pub app_id: u64,
     /// The address of the created app
     pub app_address: Address,
-    /// The compiled approval program (if provided)
-    pub compiled_approval: Option<Vec<u8>>,
-    /// The compiled clear state program (if provided)
-    pub compiled_clear: Option<Vec<u8>>,
-    /// The approval program source map (if available)
-    pub approval_source_map: Option<serde_json::Value>,
-    /// The clear program source map (if available)
-    pub clear_source_map: Option<serde_json::Value>,
-    /// The ABI return value
-    pub abi_returns: Vec<ABIReturn>,
-}
-
-/// Result from sending an app update method call via AppFactory.
-#[derive(Clone, Debug)]
-pub struct AppFactoryUpdateMethodCallResult {
-    /// The update transaction
-    pub transaction: Transaction,
-    /// The response from sending and waiting for the update transaction
-    pub confirmation: PendingTransactionResponse,
-    /// The update transaction ID
-    pub transaction_id: String,
-    /// The ABI return value of the update transaction
-    pub abi_return: Option<ABIReturn>,
-    /// The group ID for the transaction group (if any)
-    pub group: Option<Byte32>,
-    /// All transaction IDs in the group
-    pub transaction_ids: Vec<String>,
-    /// All transactions in the group
-    pub transactions: Vec<Transaction>,
-    /// All confirmations in the group
-    pub confirmations: Vec<PendingTransactionResponse>,
-    /// The compiled approval program (if provided)
-    pub compiled_approval: Option<Vec<u8>>,
-    /// The compiled clear state program (if provided)
-    pub compiled_clear: Option<Vec<u8>>,
-    /// The approval program source map (if available)
-    pub approval_source_map: Option<serde_json::Value>,
-    /// The clear program source map (if available)
-    pub clear_source_map: Option<serde_json::Value>,
-    /// The ABI return value
-    pub abi_returns: Vec<ABIReturn>,
-}
-
-/// Result from replacing an app with method calls via AppFactory.
-#[derive(Clone, Debug)]
-pub struct AppFactoryReplaceMethodCallResult {
-    /// The create transaction
-    pub create_transaction: Transaction,
-    /// The response from sending and waiting for the create transaction
-    pub create_confirmation: PendingTransactionResponse,
-    /// The create transaction ID
-    pub create_transaction_id: String,
-    /// The ABI return value of the create transaction
-    pub create_abi_return: Option<ABIReturn>,
-    /// The delete transaction
-    pub delete_transaction: Transaction,
-    /// The response from sending and waiting for the delete transaction
-    pub delete_confirmation: PendingTransactionResponse,
-    /// The delete transaction ID
-    pub delete_transaction_id: String,
-    /// The ABI return value of the delete transaction
-    pub delete_abi_return: Option<ABIReturn>,
-    /// The group ID for the transaction group (if any)
-    pub group: Option<Byte32>,
-    /// All transaction IDs in the group
-    pub transaction_ids: Vec<String>,
-    /// All transactions in the group
-    pub transactions: Vec<Transaction>,
-    /// All confirmations in the group
-    pub confirmations: Vec<PendingTransactionResponse>,
+    // TODO: use compiled_programs
     /// The compiled approval program (if provided)
     pub compiled_approval: Option<Vec<u8>>,
     /// The compiled clear state program (if provided)
@@ -270,41 +201,6 @@ impl AppFactoryCreateMethodCallResult {
     }
 }
 
-impl AppFactoryUpdateMethodCallResult {
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        transaction: Transaction,
-        confirmation: PendingTransactionResponse,
-        transaction_id: String,
-        group: Option<Byte32>,
-        transaction_ids: Vec<String>,
-        transactions: Vec<Transaction>,
-        confirmations: Vec<PendingTransactionResponse>,
-        compiled_approval: Option<Vec<u8>>,
-        compiled_clear: Option<Vec<u8>>,
-        approval_source_map: Option<serde_json::Value>,
-        clear_source_map: Option<serde_json::Value>,
-        abi_return: Option<ABIReturn>,
-        abi_returns: Vec<ABIReturn>,
-    ) -> Self {
-        Self {
-            transaction,
-            confirmation,
-            transaction_id,
-            group,
-            transaction_ids,
-            transactions,
-            confirmations,
-            compiled_approval,
-            compiled_clear,
-            approval_source_map,
-            clear_source_map,
-            abi_return,
-            abi_returns,
-        }
-    }
-}
-
 #[derive(Clone, Default)]
 pub struct AppFactoryUpdateMethodCallParams {
     pub app_id: u64,
@@ -347,26 +243,4 @@ pub struct AppFactoryDeleteMethodCallParams {
     pub validity_window: Option<u32>,
     pub first_valid_round: Option<u64>,
     pub last_valid_round: Option<u64>,
-}
-
-/// The result of an app deployment operation
-#[derive(Debug)]
-pub enum AppFactoryDeployResult {
-    /// Application was created
-    Create {
-        app: AppMetadata,
-        result: AppFactoryCreateMethodCallResult,
-    },
-    /// Application was updated
-    Update {
-        app: AppMetadata,
-        result: AppFactoryUpdateMethodCallResult,
-    },
-    /// Application was replaced (deleted and recreated)
-    Replace {
-        app: AppMetadata,
-        result: AppFactoryReplaceMethodCallResult,
-    },
-    /// No operation was performed
-    Nothing { app: AppMetadata },
 }

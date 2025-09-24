@@ -33,7 +33,6 @@ impl AppFactory {
         resolved
     }
 
-    // TODO: replace this with app_manager.compile_programs
     pub(crate) async fn compile_programs_with(
         &self,
         override_cp: Option<CompilationParams>,

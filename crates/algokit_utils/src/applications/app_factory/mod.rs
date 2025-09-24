@@ -3,7 +3,6 @@ use crate::applications::app_client::error_transformation::LogicErrorContext;
 use crate::applications::app_deployer::{AppLookup, OnSchemaBreak, OnUpdate};
 use crate::applications::{
     AppDeployMetadata, AppDeployParams, AppDeployResult, CreateParams, DeleteParams, UpdateParams,
-    app_factory,
 };
 use crate::clients::app_manager::{
     DELETABLE_TEMPLATE_NAME, TealTemplateValue, UPDATABLE_TEMPLATE_NAME,
@@ -14,7 +13,6 @@ use crate::transactions::{
 use crate::{AlgorandClient, AppClient, AppClientParams, AppSourceMaps};
 use algokit_abi::Arc56Contract;
 use algokit_abi::arc56_contract::CallOnApplicationComplete;
-use app_factory::types as aftypes;
 use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
@@ -338,7 +336,7 @@ impl AppFactory {
     pub async fn deploy(
         &self,
         args: DeployArgs,
-    ) -> Result<(AppClient, AppFactoryDeployResult), AppFactoryError> {
+    ) -> Result<(AppClient, AppDeployResult), AppFactoryError> {
         // Prepare create/update/delete deploy params
         // Auto-detect deploy-time controls if not explicitly provided
         let mut resolved_updatable = self.updatable;
@@ -409,136 +407,7 @@ impl AppFactory {
 
         let app_client = self.get_app_client_by_id(app_id, None, None, None, None);
 
-        // Get current source maps
-        let source_maps = self.current_source_maps();
-        let approval_source_map = source_maps
-            .as_ref()
-            .and_then(|s| s.approval_source_map.clone());
-        let clear_source_map = source_maps
-            .as_ref()
-            .and_then(|s| s.clear_source_map.clone());
-
-        // Convert AppDeployResult to AppFactoryDeployResult
-        let factory_result = match deploy_result {
-            AppDeployResult::Create { app, result } => {
-                // Extract results from the last transaction in the group
-                let last_idx = result.confirmations.len() - 1;
-                let transaction = result.transactions[last_idx].clone();
-                let confirmation = result.confirmations[last_idx].clone();
-                let transaction_id = result.transaction_ids[last_idx].clone();
-                let abi_return = if last_idx < result.abi_returns.len() {
-                    Some(result.abi_returns[last_idx].clone())
-                } else {
-                    None
-                };
-
-                let app_create_result = AppFactoryCreateMethodCallResult::new(
-                    transaction,
-                    confirmation,
-                    transaction_id,
-                    result.group,
-                    abi_return,
-                    result.transaction_ids,
-                    result.transactions,
-                    result.confirmations,
-                    app.app_id,
-                    app.app_address.clone(),
-                    None, // compiled_approval - not available from deployer result
-                    None, // compiled_clear - not available from deployer result
-                    approval_source_map,
-                    clear_source_map,
-                    result.abi_returns,
-                );
-
-                AppFactoryDeployResult::Create {
-                    app,
-                    result: app_create_result,
-                }
-            }
-            AppDeployResult::Update { app, result } => {
-                // Extract results from the last transaction in the group
-                let last_idx = result.confirmations.len() - 1;
-                let transaction = result.transactions[last_idx].clone();
-                let confirmation = result.confirmations[last_idx].clone();
-                let transaction_id = result.transaction_ids[last_idx].clone();
-                let abi_return = if last_idx < result.abi_returns.len() {
-                    Some(result.abi_returns[last_idx].clone())
-                } else {
-                    None
-                };
-
-                let app_update_result = AppFactoryUpdateMethodCallResult::new(
-                    transaction,
-                    confirmation,
-                    transaction_id,
-                    result.group,
-                    result.transaction_ids,
-                    result.transactions,
-                    result.confirmations,
-                    None, // compiled_approval - not available from deployer result
-                    None, // compiled_clear - not available from deployer result
-                    approval_source_map,
-                    clear_source_map,
-                    abi_return,
-                    result.abi_returns,
-                );
-
-                AppFactoryDeployResult::Update {
-                    app,
-                    result: app_update_result,
-                }
-            }
-            AppDeployResult::Replace { app, result } => {
-                // For replace: create results from first transaction, delete results from last transaction
-                let first_idx = 0;
-                let last_idx = result.confirmations.len() - 1;
-
-                let create_transaction = result.transactions[first_idx].clone();
-                let create_confirmation = result.confirmations[first_idx].clone();
-                let create_transaction_id = result.transaction_ids[first_idx].clone();
-                let create_abi_return = if first_idx < result.abi_returns.len() {
-                    Some(result.abi_returns[first_idx].clone())
-                } else {
-                    None
-                };
-
-                let delete_transaction = result.transactions[last_idx].clone();
-                let delete_confirmation = result.confirmations[last_idx].clone();
-                let delete_transaction_id = result.transaction_ids[last_idx].clone();
-                let delete_abi_return = if last_idx < result.abi_returns.len() {
-                    Some(result.abi_returns[last_idx].clone())
-                } else {
-                    None
-                };
-
-                let replace_result = AppFactoryReplaceMethodCallResult {
-                    create_transaction,
-                    create_confirmation,
-                    create_transaction_id,
-                    create_abi_return,
-                    delete_transaction,
-                    delete_confirmation,
-                    delete_transaction_id,
-                    delete_abi_return,
-                    group: result.group,
-                    transaction_ids: result.transaction_ids,
-                    transactions: result.transactions,
-                    confirmations: result.confirmations,
-                    compiled_approval: None, // not available from deployer result
-                    compiled_clear: None,    // not available from deployer result
-                    approval_source_map,
-                    clear_source_map,
-                    abi_returns: result.abi_returns,
-                };
-
-                AppFactoryDeployResult::Replace {
-                    app,
-                    result: replace_result,
-                }
-            }
-            AppDeployResult::Nothing { app } => AppFactoryDeployResult::Nothing { app },
-        };
-
-        Ok((app_client, factory_result))
+        // TODO: update source map
+        Ok((app_client, deploy_result))
     }
 }
