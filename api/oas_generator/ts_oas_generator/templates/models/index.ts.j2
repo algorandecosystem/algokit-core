@@ -3,6 +3,5 @@
 export type { {{ name | ts_pascal_case }} } from './{{ name | ts_kebab_case }}';
 {% endfor %}
 {% if include_temp_signed_txn %}
-// TODO(utils-ts): Remove this export when utils-ts provides SignedTransaction types
 export type { AlgokitSignedTransaction } from './algokitsignedtransaction';
 {% endif %}

@@ -22,7 +22,7 @@ describe('JSON BigInt parsing', () => {
       arrayBuffer: async () => new ArrayBuffer(0),
     });
 
-    const client = new Client({ BASE });
+    const client = new Client({ baseUrl: BASE });
     // Directly use request core to keep template-agnostic
     const res = await client.request.request<{ value: bigint }>({ method: 'GET', url: '/foo' });
     expect(typeof res.value).toBe('bigint');
@@ -41,7 +41,7 @@ describe('Msgpack binary response', () => {
       arrayBuffer: async () => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
     });
 
-    const client = new Client({ BASE });
+    const client = new Client({ baseUrl: BASE });
     const res = await client.request.request<{ ok: bigint | number; small: number }>({ method: 'GET', url: '/foo', expectBinary: true });
     expect(res).toHaveProperty('ok');
   });

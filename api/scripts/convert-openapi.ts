@@ -1,8 +1,9 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 
 import { writeFileSync, mkdirSync } from "fs";
 import { join, dirname } from "path";
 import SwaggerParser from "@apidevtools/swagger-parser";
+import { fileURLToPath } from "node:url";
 
 // ===== TYPES =====
 
@@ -871,6 +872,7 @@ async function main() {
 }
 
 // Run if this is the main module
-if (import.meta.main) {
-  main();
+const isMain = process.argv[1] && process.argv[1] === fileURLToPath(import.meta.url);
+if (isMain) {
+  void main();
 }

@@ -137,7 +137,7 @@ export function normalizeMsgPackIntegers(value: any, intDecoding: IntDecoding): 
       // Throw if any bigint is not safely representable
       traverse(value, (v) => {
         if (typeof v === 'bigint' && !Number.isSafeInteger(Number(v))) {
-          throw new Error('Integer exceeds safe range while INT_DECODING is "safe"');
+          throw new Error('Integer exceeds safe range while intDecoding is "safe"');
         }
       });
       return mapBigInts(value, (bi) => Number(bi));

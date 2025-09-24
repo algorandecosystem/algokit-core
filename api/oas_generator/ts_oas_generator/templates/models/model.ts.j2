@@ -1,7 +1,6 @@
 {% set refTypes = schema | collect_schema_refs(schema_name) %}
 {% if refTypes and refTypes|length > 0 %}
 import type { {{ refTypes | join(', ') }} } from './index';
-
 {% endif %}
 {{ schema.description | ts_doc_comment }}
 {% set modelName = schema_name | ts_pascal_case %}

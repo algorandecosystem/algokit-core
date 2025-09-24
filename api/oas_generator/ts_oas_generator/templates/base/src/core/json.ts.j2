@@ -14,7 +14,7 @@ function traverseAndThrowOnBigInt(obj: any): void { // eslint-disable-line @type
   if (obj === null || obj === undefined) return;
   const t = typeof obj;
   if (t === 'bigint') {
-    throw new Error('Integer exceeds safe range while INT_DECODING is "safe"');
+    throw new Error('Integer exceeds safe range while intDecoding is "safe"');
   }
   if (t !== 'object') return;
   if (Array.isArray(obj)) {

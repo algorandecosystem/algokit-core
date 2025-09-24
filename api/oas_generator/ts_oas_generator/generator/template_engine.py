@@ -64,6 +64,7 @@ class OperationContext:
     request_body: RequestBody | None
     response_type: str
     import_types: set[str]
+    tags: list[str] = None  # type: ignore[assignment]
     # Content negotiation flags
     returns_msgpack: bool = False
     has_format_param: bool = False
@@ -447,7 +448,7 @@ class OperationProcessor:
             supports_json=supports_json,
         )
 
-    def _process_responses(self, responses: Schema, operation_id: str, spec: Schema) -> tuple[str, bool, bool]:
+    def _process_responses(self, responses: Schema, operation_id: str, spec: Schema) -> tuple[str, bool]:
         """Process response specifications."""
 
         return_types: list[str] = []
@@ -506,7 +507,12 @@ class OperationProcessor:
         def extract_types(type_str: str) -> set[str]:
             if not type_str:
                 return set()
-            return {tok for tok in token_re.findall(type_str) if tok in self._model_names and tok not in builtin_types}
+            tokens = set(token_re.findall(type_str))
+            types: set[str] = {tok for tok in tokens if tok in self._model_names and tok not in builtin_types}
+            # Include synthetic models that aren't part of _model_names
+            if "AlgokitSignedTransaction" in tokens:
+                types.add("AlgokitSignedTransaction")
+            return types
 
         # Collect from all type references
         context.import_types = extract_types(context.response_type)
@@ -646,11 +652,10 @@ class CodeGenerator:
             core_dir / "FetchHttpRequest.ts": ("base/src/core/FetchHttpRequest.ts.j2", context),
             core_dir / "ApiError.ts": ("base/src/core/ApiError.ts.j2", context),
             core_dir / "request.ts": ("base/src/core/request.ts.j2", context),
-            core_dir / "CancelablePromise.ts": ("base/src/core/CancelablePromise.ts.j2", context),
+            core_dir / "transformers.ts": ("base/src/core/transformers.ts.j2", context),
             core_dir / "json.ts": ("base/src/core/json.ts.j2", context),
             core_dir / "msgpack.ts": ("base/src/core/msgpack.ts.j2", context),
             core_dir / "casing.ts": ("base/src/core/casing.ts.j2", context),
-            core_dir / "codecs.ts": ("base/src/core/codecs.ts.j2", context),
             # Project files
             src_dir / "index.ts": ("base/src/index.ts.j2", context),
         }
@@ -669,7 +674,6 @@ class CodeGenerator:
                     "client_class_name": client_class,
                 },
             ),
-            src_dir / "index.ts": ("full/src/index.ts.j2", {}),
         }
 
         return self.renderer.render_batch(template_map)

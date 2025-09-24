@@ -5,15 +5,15 @@ export type Box = {
   /**
    * The round for which this information is relevant
    */
-  round: bigint;
+  round: bigint
 
   /**
    * The box name, base64 encoded
    */
-  name: string;
+  name: string
 
   /**
    * The box value, base64 encoded.
    */
-  value: string;
-};
+  value: string
+}

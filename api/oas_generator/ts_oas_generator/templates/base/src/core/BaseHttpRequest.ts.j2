@@ -1,20 +1,27 @@
 import type { ClientConfig } from './ClientConfig';
 
-export interface RequestOptions {
+export type QueryValue = string | number | bigint | boolean;
+export type QueryParams = Record<string, QueryValue | QueryValue[] | undefined>;
+
+type JsonPrimitive = null | boolean | number | string | bigint;
+// eslint-disable-next-line @typescript-eslint/consistent-type-definitions
+export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
+export type BodyValue = Uint8Array | JsonValue;
+
+export interface ApiRequestOptions {
   method: string;
   url: string;
   path?: Record<string, string | number | bigint>;
-  query?: Record<string, any>;
+  query?: QueryParams;
   headers?: Record<string, string>;
-  body?: any;
+  body?: BodyValue;
   mediaType?: string;
   responseHeader?: string;
+  bodyModelKey?: string;
+  responseModelKey?: string;
 }
-
-// Backwards/ergonomic alias used by generated services
-export type ApiRequestOptions = RequestOptions;
 
 export abstract class BaseHttpRequest {
   constructor(public readonly config: ClientConfig) {}
-  abstract request<T>(options: RequestOptions): Promise<T>;
+  abstract request<T>(options: ApiRequestOptions): Promise<T>;
 }

@@ -1,5 +1,4 @@
-import type { AccountParticipation, Application, ApplicationLocalState, ApplicationStateSchema, Asset, AssetHolding } from "./index";
-
+import type { AccountParticipation, Application, ApplicationLocalState, ApplicationStateSchema, Asset, AssetHolding } from './index'
 /**
  * Account information at a given round.
  *
@@ -10,114 +9,114 @@ export type Account = {
   /**
    * the account public key
    */
-  address: string;
+  address: string
 
   /**
    * \[algo\] total number of MicroAlgos in the account
    */
-  amount: bigint;
+  amount: bigint
 
   /**
    * MicroAlgo balance required by the account.
    *
    * The requirement grows based on asset and application usage.
    */
-  minBalance: bigint;
+  minBalance: bigint
 
   /**
    * specifies the amount of MicroAlgos in the account, without the pending rewards.
    */
-  amountWithoutPendingRewards: bigint;
+  amountWithoutPendingRewards: bigint
 
   /**
    * \[appl\] applications local data stored in this account.
    *
    * Note the raw object uses `map[int] -> AppLocalState` for this type.
    */
-  appsLocalState?: ApplicationLocalState[];
+  appsLocalState?: ApplicationLocalState[]
 
   /**
    * The count of all applications that have been opted in, equivalent to the count of application local data (AppLocalState objects) stored in this account.
    */
-  totalAppsOptedIn: bigint;
-  appsTotalSchema?: ApplicationStateSchema;
+  totalAppsOptedIn: bigint
+  appsTotalSchema?: ApplicationStateSchema
 
   /**
    * \[teap\] the sum of all extra application program pages for this account.
    */
-  appsTotalExtraPages?: bigint;
+  appsTotalExtraPages?: bigint
 
   /**
    * \[asset\] assets held by this account.
    *
    * Note the raw object uses `map[int] -> AssetHolding` for this type.
    */
-  assets?: AssetHolding[];
+  assets?: AssetHolding[]
 
   /**
    * The count of all assets that have been opted in, equivalent to the count of AssetHolding objects held by this account.
    */
-  totalAssetsOptedIn: bigint;
+  totalAssetsOptedIn: bigint
 
   /**
    * \[appp\] parameters of applications created by this account including app global data.
    *
    * Note: the raw account uses `map[int] -> AppParams` for this type.
    */
-  createdApps?: Application[];
+  createdApps?: Application[]
 
   /**
    * The count of all apps (AppParams objects) created by this account.
    */
-  totalCreatedApps: bigint;
+  totalCreatedApps: bigint
 
   /**
    * \[apar\] parameters of assets created by this account.
    *
    * Note: the raw account uses `map[int] -> Asset` for this type.
    */
-  createdAssets?: Asset[];
+  createdAssets?: Asset[]
 
   /**
    * The count of all assets (AssetParams objects) created by this account.
    */
-  totalCreatedAssets: bigint;
+  totalCreatedAssets: bigint
 
   /**
    * \[tbx\] The number of existing boxes created by this account's app.
    */
-  totalBoxes?: bigint;
+  totalBoxes?: bigint
 
   /**
    * \[tbxb\] The total number of bytes used by this account's app's box keys and values.
    */
-  totalBoxBytes?: bigint;
-  participation?: AccountParticipation;
+  totalBoxBytes?: bigint
+  participation?: AccountParticipation
 
   /**
    * Whether or not the account can receive block incentives if its balance is in range at proposal time.
    */
-  incentiveEligible?: boolean;
+  incentiveEligible?: boolean
 
   /**
    * amount of MicroAlgos of pending rewards in this account.
    */
-  pendingRewards: bigint;
+  pendingRewards: bigint
 
   /**
    * \[ebase\] used as part of the rewards computation. Only applicable to accounts which are participating.
    */
-  rewardBase?: bigint;
+  rewardBase?: bigint
 
   /**
    * \[ern\] total rewards of MicroAlgos the account has received, including pending rewards.
    */
-  rewards: bigint;
+  rewards: bigint
 
   /**
    * The round for which this information is relevant.
    */
-  round: bigint;
+  round: bigint
 
   /**
    * \[onl\] delegation status of the account's MicroAlgos
@@ -125,7 +124,7 @@ export type Account = {
    * *  Online  - indicates that the associated account used as part of the delegation pool.
    * *   NotParticipating - indicates that the associated account is neither a delegator nor a delegate.
    */
-  status: string;
+  status: string
 
   /**
    * Indicates what type of signature is used by this account, must be one of:
@@ -133,20 +132,20 @@ export type Account = {
    * * msig
    * * lsig
    */
-  sigType?: "sig" | "msig" | "lsig";
+  sigType?: 'sig' | 'msig' | 'lsig'
 
   /**
    * \[spend\] the address against which signing should be checked. If empty, the address of the current account is used. This field can be updated in any transaction by setting the RekeyTo field.
    */
-  authAddr?: string;
+  authAddr?: string
 
   /**
    * The round in which this account last proposed the block.
    */
-  lastProposed?: bigint;
+  lastProposed?: bigint
 
   /**
    * The round in which this account last went online, or explicitly renewed their online status.
    */
-  lastHeartbeat?: bigint;
-};
+  lastHeartbeat?: bigint
+}

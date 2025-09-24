@@ -1,4 +1,6 @@
 import type { BaseHttpRequest, ApiRequestOptions } from '../core/BaseHttpRequest';
+// SignedTransaction codecs (only used when request/response types reference AlgokitSignedTransaction)
+import { encodeSignedTransaction, encodeSignedTransactions } from '@algorandfoundation/algokit-transact';
 {% if import_types and import_types|length > 0 %}
 import type { {{ import_types | sort | join(', ') }} } from '../models/index';
 {% endif %}
@@ -72,7 +74,15 @@ export class {{ service_class_name }} {
 {%- endfor %}
       },
       headers,
-      body: {% if op.requestBody %}params?.body{% else %}undefined{% endif %},
+      body: {% if op.requestBody %}
+        {% if op.requestBody.tsType == 'AlgokitSignedTransaction' %}
+          params?.body ? encodeSignedTransaction(params!.body as any) : undefined
+        {% elif op.requestBody.tsType == 'AlgokitSignedTransaction[]' %}
+          params?.body ? encodeSignedTransactions(params!.body as any) : undefined
+        {% else %}
+          params?.body
+        {% endif %}
+      {% else %}undefined{% endif %},
 {%   if op.requestBody %}
 {%     if op.requestBody.supportsMsgpack and op.requestBody.supportsJson and op.hasFormatParam and op.formatVarName %}
       // Dynamic mediaType based on format parameter (prefer msgpack by default)
@@ -90,6 +100,8 @@ export class {{ service_class_name }} {
       mediaType: undefined,
 {%   endif %}
       ...(requestOptions ?? {}),
+      {% if op.requestBody %}bodyModelKey: {% if op.requestBody.tsType.endswith('[]') %}'{{ op.requestBody.tsType[:-2] }}'{% else %}'{{ op.requestBody.tsType }}'{% endif %},{% endif %}
+      responseModelKey: '{{ op.responseTsType }}',
     });
   }
 

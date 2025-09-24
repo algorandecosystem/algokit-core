@@ -121,7 +121,19 @@ fn execute_command(command: &Commands) -> Result<()> {
         Ok(())
     }
     fn clean_ts_package(rel_dir: &str) -> Result<()> {
-        let default_preserve: &[&str] = &["tests", "node_modules"];
+        // Preserve root files and __tests__/; generator will only write to src/
+        let default_preserve: &[&str] = &[
+            "__tests__",
+            "tests",
+            "node_modules",
+            "eslint.config.mjs",
+            "package.json",
+            "README.md",
+            "rolldown.config.ts",
+            "tsconfig.json",
+            "tsconfig.build.json",
+            "tsconfig.test.json",
+        ];
         clean_ts_package_with_preserve(rel_dir, default_preserve)
     }
     match command {
@@ -225,19 +237,18 @@ fn execute_command(command: &Commands) -> Result<()> {
             )?;
             // Format generated code
             run(
-                "npx --yes prettier --write .",
+                "npx --yes prettier --write src",
                 Some(Path::new("packages/typescript/algod_client")),
                 None,
             )?;
-            // Install dependencies
+            // Build and test using npm workspace scripts
             run(
-                "bun install",
+                "npm run build",
                 Some(Path::new("packages/typescript/algod_client")),
                 None,
             )?;
-            // Build the generated package
             run(
-                "bun run build",
+                "npm run test",
                 Some(Path::new("packages/typescript/algod_client")),
                 None,
             )?;
@@ -253,19 +264,17 @@ fn execute_command(command: &Commands) -> Result<()> {
             )?;
             // Format generated code
             run(
-                "npx --yes prettier --write .",
+                "npx --yes prettier --write src",
                 Some(Path::new("packages/typescript/indexer_client")),
                 None,
             )?;
-            // Install dependencies
             run(
-                "bun install",
+                "npm run build",
                 Some(Path::new("packages/typescript/indexer_client")),
                 None,
             )?;
-            // Build the generated package
             run(
-                "bun run build",
+                "npm run test",
                 Some(Path::new("packages/typescript/indexer_client")),
                 None,
             )?;
@@ -287,55 +296,50 @@ fn execute_command(command: &Commands) -> Result<()> {
             )?;
             // Format both generated packages
             run(
-                "npx --yes prettier --write .",
+                "npx --yes prettier --write src",
                 Some(Path::new("packages/typescript/algod_client")),
                 None,
             )?;
             run(
-                "npx --yes prettier --write .",
+                "npx --yes prettier --write src",
                 Some(Path::new("packages/typescript/indexer_client")),
                 None,
             )?;
-            // Install dependencies for both packages
+            // Build and test both packages
             run(
-                "bun install",
+                "npm run build",
                 Some(Path::new("packages/typescript/algod_client")),
                 None,
             )?;
             run(
-                "bun install",
+                "npm run build",
                 Some(Path::new("packages/typescript/indexer_client")),
                 None,
             )?;
-            // Build both packages
             run(
-                "bun run build",
+                "npm run test",
                 Some(Path::new("packages/typescript/algod_client")),
                 None,
             )?;
             run(
-                "bun run build",
+                "npm run test",
                 Some(Path::new("packages/typescript/indexer_client")),
                 None,
             )?;
         }
         Commands::ConvertOpenapi => {
-            run(
-                "bun scripts/convert-openapi.ts",
-                Some(Path::new("api")),
-                None,
-            )?;
+            run("npm run convert-openapi", Some(Path::new("api")), None)?;
         }
         Commands::ConvertAlgod => {
             run(
-                "bun scripts/convert-openapi.ts --algod-only",
+                "npm run convert-openapi -- --algod-only",
                 Some(Path::new("api")),
                 None,
             )?;
         }
         Commands::ConvertIndexer => {
             run(
-                "bun scripts/convert-openapi.ts --indexer-only",
+                "npm run convert-openapi -- --indexer-only",
                 Some(Path::new("api")),
                 None,
             )?;
