@@ -312,41 +312,28 @@ impl AppFactory {
     ) -> CompilationParams {
         let mut resolved = compilation_params.unwrap_or_default();
 
+        // Merge factory params if available
         if let Some(factory_params) = &self.compilation_params {
-            if resolved.deploy_time_params.is_none() {
-                resolved.deploy_time_params = factory_params.deploy_time_params.clone();
-            }
-            if resolved.updatable.is_none() {
-                resolved.updatable = factory_params.updatable.or_else(|| {
-                    self.detect_deploy_time_control_flag(
-                        UPDATABLE_TEMPLATE_NAME,
-                        CallOnApplicationComplete::UpdateApplication,
-                    )
-                });
-            }
-            if resolved.deletable.is_none() {
-                resolved.deletable = factory_params.deletable.or_else(|| {
-                    self.detect_deploy_time_control_flag(
-                        DELETABLE_TEMPLATE_NAME,
-                        CallOnApplicationComplete::DeleteApplication,
-                    )
-                });
-            }
-        } else {
-            // If no factory params, try to detect from spec
-            if resolved.updatable.is_none() {
-                resolved.updatable = self.detect_deploy_time_control_flag(
-                    UPDATABLE_TEMPLATE_NAME,
-                    CallOnApplicationComplete::UpdateApplication,
-                );
-            }
-            if resolved.deletable.is_none() {
-                resolved.deletable = self.detect_deploy_time_control_flag(
-                    DELETABLE_TEMPLATE_NAME,
-                    CallOnApplicationComplete::DeleteApplication,
-                );
-            }
+            resolved.deploy_time_params = resolved
+                .deploy_time_params
+                .or_else(|| factory_params.deploy_time_params.clone());
+            resolved.updatable = resolved.updatable.or(factory_params.updatable);
+            resolved.deletable = resolved.deletable.or(factory_params.deletable);
         }
+
+        // Auto-detect flags from spec if still unset
+        resolved.updatable = resolved.updatable.or_else(|| {
+            self.detect_deploy_time_control_flag(
+                UPDATABLE_TEMPLATE_NAME,
+                CallOnApplicationComplete::UpdateApplication,
+            )
+        });
+        resolved.deletable = resolved.deletable.or_else(|| {
+            self.detect_deploy_time_control_flag(
+                DELETABLE_TEMPLATE_NAME,
+                CallOnApplicationComplete::DeleteApplication,
+            )
+        });
 
         resolved
     }
