@@ -2,7 +2,7 @@ use crate::common::TestAccount;
 use crate::common::{
     AlgorandFixture, AlgorandFixtureResult, TestResult, algorand_fixture, testing_app_spec,
 };
-use algokit_abi::Arc56Contract;
+use algokit_abi::{ABIValue, Arc56Contract};
 use algokit_transact::Address;
 use algokit_transact::OnApplicationComplete;
 use algokit_utils::applications::app_client::{AppClientMethodCallParams, CompilationParams};
@@ -205,7 +205,6 @@ async fn oncomplete_override_on_create(
         client.app_address(),
         algokit_transact::Address::from_app_id(&client.app_id())
     );
-    assert!(result.confirmations.first().is_some());
     assert!(result.compiled_approval.is_some());
     assert!(result.compiled_clear.is_some());
     Ok(())
@@ -249,12 +248,8 @@ async fn abi_based_create_returns_value(
         )
         .await?;
 
-    let abi_ret = call_return
-        .arc56_return
-        .expect("abi return expected")
-        .clone();
-    match abi_ret {
-        algokit_abi::ABIValue::String(s) => assert_eq!(s, "string_io"),
+    match call_return.abi_return.and_then(|r| r.return_value) {
+        Some(ABIValue::String(s)) => assert_eq!(s, "string_io"),
         other => return Err(format!("expected string return, got {other:?}").into()),
     }
     assert!(call_return.compiled_approval.is_some());
@@ -584,8 +579,8 @@ async fn deploy_app_create(#[future] algorand_fixture: AlgorandFixtureResult) ->
 
     let (client, deploy_result) = factory.deploy(Default::default()).await?;
 
-    match &deploy_result.operation_performed {
-        AppDeployResult::Create { .. } => {}
+    let create_result = match &deploy_result {
+        AppDeployResult::Create { app, result } => result,
         _ => return Err("expected Create".into()),
     }
     let create_result = deploy_result

@@ -171,6 +171,10 @@ impl BareTransactionSender<'_> {
             result.transaction_id,
             app_id,
             app_address,
+            Some(compiled.approval.compiled_base64_to_bytes),
+            Some(compiled.clear.compiled_base64_to_bytes),
+            compiled.approval.source_map.clone(),
+            compiled.clear.source_map.clone(),
         );
 
         Ok((app_client, factory_result))

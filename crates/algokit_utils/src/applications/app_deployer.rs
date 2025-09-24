@@ -7,7 +7,9 @@ use crate::{
     AppMethodCallArg, AppUpdateMethodCallParams, AppUpdateParams, ComposerError, SendParams,
     SendTransactionComposerResults, create_transaction_params,
 };
-use algokit_transact::{Address, OnApplicationComplete};
+use algod_client::models::PendingTransactionResponse;
+use algokit_abi::ABIReturn;
+use algokit_transact::{Address, Byte32, OnApplicationComplete, Transaction};
 use base64::{Engine as _, engine::general_purpose};
 use indexer_client::{IndexerClient, apis::Error as IndexerError};
 use log::{debug, info, warn};
@@ -245,23 +247,121 @@ pub struct AppDeployParams {
     pub send_params: SendParams,
 }
 
+#[derive(Clone, Debug)]
+pub struct AppDeployerCreateResult {
+    /// The create transaction
+    pub transaction: Transaction,
+    /// The response from sending and waiting for the create transaction
+    pub confirmation: PendingTransactionResponse,
+    /// The create transaction ID
+    pub transaction_id: String,
+    /// The ABI return value of the create
+    pub abi_return: Option<ABIReturn>,
+    /// The group ID for the transaction group (if any)
+    pub group: Option<Byte32>,
+    /// All transaction IDs in the group
+    pub transaction_ids: Vec<String>,
+    /// All transactions in the group
+    pub transactions: Vec<Transaction>,
+    /// All confirmations in the group
+    pub confirmations: Vec<PendingTransactionResponse>,
+    /// The ABI return value
+    pub abi_returns: Vec<ABIReturn>,
+    /// The compiled approval program (if provided)
+    pub compiled_approval: Vec<u8>,
+    /// The compiled clear state program (if provided)
+    pub compiled_clear: Vec<u8>,
+    /// The approval program source map (if available)
+    pub approval_source_map: Option<serde_json::Value>,
+    /// The clear program source map (if available)
+    pub clear_source_map: Option<serde_json::Value>,
+}
+
+#[derive(Clone, Debug)]
+pub struct AppDeployerUpdateResult {
+    /// The update transaction
+    pub transaction: Transaction,
+    /// The response from sending and waiting for the update transaction
+    pub confirmation: PendingTransactionResponse,
+    /// The update transaction ID
+    pub transaction_id: String,
+    /// The ABI return value of the update transaction
+    pub abi_return: Option<ABIReturn>,
+    /// The group ID for the transaction group (if any)
+    pub group: Option<Byte32>,
+    /// All transaction IDs in the group
+    pub transaction_ids: Vec<String>,
+    /// All transactions in the group
+    pub transactions: Vec<Transaction>,
+    /// All confirmations in the group
+    pub confirmations: Vec<PendingTransactionResponse>,
+    /// The ABI return value
+    pub abi_returns: Vec<ABIReturn>,
+    /// The compiled approval program (if provided)
+    pub compiled_approval: Vec<u8>,
+    /// The compiled clear state program (if provided)
+    pub compiled_clear: Vec<u8>,
+    /// The approval program source map (if available)
+    pub approval_source_map: Option<serde_json::Value>,
+    /// The clear program source map (if available)
+    pub clear_source_map: Option<serde_json::Value>,
+}
+
+#[derive(Clone, Debug)]
+pub struct AppDeployerReplaceResult {
+    /// The create transaction
+    pub create_transaction: Transaction,
+    /// The response from sending and waiting for the create transaction
+    pub create_confirmation: PendingTransactionResponse,
+    /// The create transaction ID
+    pub create_transaction_id: String,
+    /// The ABI return value of the create transaction
+    pub create_abi_return: Option<ABIReturn>,
+    /// The delete transaction
+    pub delete_transaction: Transaction,
+    /// The response from sending and waiting for the delete transaction
+    pub delete_confirmation: PendingTransactionResponse,
+    /// The delete transaction ID
+    pub delete_transaction_id: String,
+    /// The ABI return value of the delete transaction
+    pub delete_abi_return: Option<ABIReturn>,
+    /// The group ID for the transaction group (if any)
+    pub group: Option<Byte32>,
+    /// All transaction IDs in the group
+    pub transaction_ids: Vec<String>,
+    /// All transactions in the group
+    pub transactions: Vec<Transaction>,
+    /// All confirmations in the group
+    pub confirmations: Vec<PendingTransactionResponse>,
+    /// The compiled approval program (if provided)
+    pub compiled_approval: Vec<u8>,
+    /// The compiled clear state program (if provided)
+    pub compiled_clear: Vec<u8>,
+    /// The approval program source map (if available)
+    pub approval_source_map: Option<serde_json::Value>,
+    /// The clear program source map (if available)
+    pub clear_source_map: Option<serde_json::Value>,
+    /// The ABI return value
+    pub abi_returns: Vec<ABIReturn>,
+}
+
 /// The result of an app deployment operation
 #[derive(Debug)]
 pub enum AppDeployResult {
     /// Application was created
     Create {
         app: AppMetadata,
-        result: SendTransactionComposerResults,
+        result: AppDeployerCreateResult,
     },
     /// Application was updated
     Update {
         app: AppMetadata,
-        result: SendTransactionComposerResults,
+        result: AppDeployerUpdateResult,
     },
     /// Application was replaced (deleted and recreated)
     Replace {
         app: AppMetadata,
-        result: SendTransactionComposerResults,
+        result: AppDeployerReplaceResult,
     },
     /// No operation was performed
     Nothing { app: AppMetadata },
@@ -373,7 +473,7 @@ impl AppDeployer {
             });
         }
         // Compile TEAL code if needed and handle template replacement
-        let (approval_bytes, clear_bytes) = self
+        let (approval_bytes, clear_bytes, approval_source_map, clear_source_map) = self
             .compile_app_programs(
                 match &create_params {
                     CreateParams::AppCreateCall(params) => &params.approval_program,
@@ -415,6 +515,8 @@ impl AppDeployer {
                     &create_params,
                     &approval_bytes,
                     &clear_bytes,
+                    approval_source_map,
+                    clear_source_map,
                     &send_params,
                 )
                 .await;
@@ -445,6 +547,8 @@ impl AppDeployer {
                 &create_params,
                 &approval_bytes,
                 &clear_bytes,
+                approval_source_map,
+                clear_source_map,
                 &delete_params,
                 &send_params,
             )
@@ -458,6 +562,8 @@ impl AppDeployer {
                 &update_params,
                 &approval_bytes,
                 &clear_bytes,
+                approval_source_map,
+                clear_source_map,
                 &delete_params,
                 &send_params,
             )
@@ -643,8 +749,16 @@ impl AppDeployer {
         clear_state_program: &AppProgram,
         deployment_metadata: &AppDeployMetadata,
         deploy_time_params: Option<&TealTemplateParams>,
-    ) -> Result<(Vec<u8>, Vec<u8>), AppDeployError> {
-        let approval_bytes = match approval_program {
+    ) -> Result<
+        (
+            Vec<u8>,
+            Vec<u8>,
+            Option<serde_json::Value>,
+            Option<serde_json::Value>,
+        ),
+        AppDeployError,
+    > {
+        let (approval_bytes, approval_source_map) = match approval_program {
             AppProgram::Teal(code) => {
                 let metadata = DeploymentMetadata {
                     updatable: deployment_metadata.updatable,
@@ -660,24 +774,29 @@ impl AppDeployer {
                     .compile_teal_template(code, deploy_time_params, metadata_opt)
                     .await
                     .map_err(|e| AppDeployError::AppManagerError { source: e })?;
-                compiled.compiled_base64_to_bytes
+                (compiled.compiled_base64_to_bytes, compiled.source_map)
             }
-            AppProgram::CompiledBytes(bytes) => bytes.clone(),
+            AppProgram::CompiledBytes(bytes) => (bytes.clone(), None),
         };
 
-        let clear_state_bytes = match clear_state_program {
+        let (clear_state_bytes, clear_source_map) = match clear_state_program {
             AppProgram::Teal(code) => {
                 let compiled = self
                     .app_manager
                     .compile_teal_template(code, deploy_time_params, None)
                     .await
                     .map_err(|e| AppDeployError::AppManagerError { source: e })?;
-                compiled.compiled_base64_to_bytes
+                (compiled.compiled_base64_to_bytes, compiled.source_map)
             }
-            AppProgram::CompiledBytes(bytes) => bytes.clone(),
+            AppProgram::CompiledBytes(bytes) => (bytes.clone(), None),
         };
 
-        Ok((approval_bytes, clear_state_bytes))
+        Ok((
+            approval_bytes,
+            clear_state_bytes,
+            approval_source_map,
+            clear_source_map,
+        ))
     }
 
     fn parse_deploy_note(note: &[u8]) -> Option<AppDeployMetadata> {
@@ -749,6 +868,8 @@ impl AppDeployer {
         create_params: &CreateParams,
         approval_program: &[u8],
         clear_state_program: &[u8],
+        approval_source_map: Option<serde_json::Value>,
+        clear_source_map: Option<serde_json::Value>,
         delete_params: &DeleteParams,
         send_params: &SendParams,
     ) -> Result<AppDeployResult, AppDeployError> {
@@ -772,6 +893,8 @@ impl AppDeployer {
                     create_params,
                     approval_program,
                     clear_state_program,
+                    approval_source_map,
+                    clear_source_map,
                     send_params,
                 )
                 .await
@@ -792,6 +915,8 @@ impl AppDeployer {
                     create_params,
                     approval_program,
                     clear_state_program,
+                    approval_source_map,
+                    clear_source_map,
                     delete_params,
                     send_params,
                 )
@@ -810,6 +935,8 @@ impl AppDeployer {
         update_params: &UpdateParams,
         approval_program: &[u8],
         clear_state_program: &[u8],
+        approval_source_map: Option<serde_json::Value>,
+        clear_source_map: Option<serde_json::Value>,
         delete_params: &DeleteParams,
         send_params: &SendParams,
     ) -> Result<AppDeployResult, AppDeployError> {
@@ -831,6 +958,8 @@ impl AppDeployer {
                     create_params,
                     approval_program,
                     clear_state_program,
+                    approval_source_map,
+                    clear_source_map,
                     send_params,
                 )
                 .await
@@ -849,6 +978,8 @@ impl AppDeployer {
                     update_params,
                     approval_program,
                     clear_state_program,
+                    approval_source_map,
+                    clear_source_map,
                     send_params,
                 )
                 .await
@@ -869,6 +1000,8 @@ impl AppDeployer {
                     create_params,
                     approval_program,
                     clear_state_program,
+                    approval_source_map,
+                    clear_source_map,
                     delete_params,
                     send_params,
                 )
@@ -883,6 +1016,8 @@ impl AppDeployer {
         create_params: &CreateParams,
         approval_program: &[u8],
         clear_state_program: &[u8],
+        approval_source_map: Option<serde_json::Value>,
+        clear_source_map: Option<serde_json::Value>,
         send_params: &SendParams,
     ) -> Result<AppDeployResult, AppDeployError> {
         let mut composer = self.transaction_sender.new_group(None);
@@ -991,9 +1126,36 @@ impl AppDeployer {
 
         self.update_app_lookup(sender, &app_metadata);
 
+        // Extract results from the last transaction in the group (the create transaction)
+        let last_idx = composer_result.confirmations.len() - 1;
+        let transaction = composer_result.transactions[last_idx].clone();
+        let confirmation = composer_result.confirmations[last_idx].clone();
+        let transaction_id = composer_result.transaction_ids[last_idx].clone();
+        let abi_return = if last_idx < composer_result.abi_returns.len() {
+            Some(composer_result.abi_returns[last_idx].clone())
+        } else {
+            None
+        };
+
+        let create_result = AppDeployerCreateResult {
+            transaction,
+            confirmation,
+            transaction_id,
+            abi_return,
+            group: composer_result.group,
+            transaction_ids: composer_result.transaction_ids,
+            transactions: composer_result.transactions,
+            confirmations: composer_result.confirmations,
+            abi_returns: composer_result.abi_returns,
+            compiled_approval: approval_program.to_vec(),
+            compiled_clear: clear_state_program.to_vec(),
+            approval_source_map,
+            clear_source_map,
+        };
+
         Ok(AppDeployResult::Create {
             app: app_metadata,
-            result: composer_result,
+            result: create_result,
         })
     }
 
@@ -1004,6 +1166,8 @@ impl AppDeployer {
         update_params: &UpdateParams,
         approval_program: &[u8],
         clear_state_program: &[u8],
+        approval_source_map: Option<serde_json::Value>,
+        clear_source_map: Option<serde_json::Value>,
         send_params: &SendParams,
     ) -> Result<AppDeployResult, AppDeployError> {
         info!(
@@ -1103,9 +1267,36 @@ impl AppDeployer {
 
         self.update_app_lookup(sender, &app_metadata);
 
+        // Extract results from the last transaction in the group (the update transaction)
+        let last_idx = composer_result.confirmations.len() - 1;
+        let transaction = composer_result.transactions[last_idx].clone();
+        let confirmation = composer_result.confirmations[last_idx].clone();
+        let transaction_id = composer_result.transaction_ids[last_idx].clone();
+        let abi_return = if last_idx < composer_result.abi_returns.len() {
+            Some(composer_result.abi_returns[last_idx].clone())
+        } else {
+            None
+        };
+
+        let update_result = AppDeployerUpdateResult {
+            transaction,
+            confirmation,
+            transaction_id,
+            abi_return,
+            group: composer_result.group,
+            transaction_ids: composer_result.transaction_ids,
+            transactions: composer_result.transactions,
+            confirmations: composer_result.confirmations,
+            abi_returns: composer_result.abi_returns,
+            compiled_approval: approval_program.to_vec(),
+            compiled_clear: clear_state_program.to_vec(),
+            approval_source_map,
+            clear_source_map,
+        };
+
         Ok(AppDeployResult::Update {
             app: app_metadata,
-            result: composer_result,
+            result: update_result,
         })
     }
 
@@ -1145,6 +1336,8 @@ impl AppDeployer {
         create_params: &CreateParams,
         approval_program: &[u8],
         clear_state_program: &[u8],
+        approval_source_map: Option<serde_json::Value>,
+        clear_source_map: Option<serde_json::Value>,
         delete_params: &DeleteParams,
         send_params: &SendParams,
     ) -> Result<AppDeployResult, AppDeployError> {
@@ -1282,6 +1475,8 @@ impl AppDeployer {
             .await
             .map_err(|e| AppDeployError::ComposerError { source: e })?;
 
+        // TODO: this logic is wrong
+
         // The first confirmation is for the create, second is for delete
         let create_confirmation =
             result
@@ -1315,9 +1510,51 @@ impl AppDeployer {
 
         self.update_app_lookup(sender, &app_metadata);
 
+        // For replace: create results from first transaction, delete results from last transaction
+        let first_idx = 0;
+        let last_idx = result.confirmations.len() - 1;
+
+        let create_transaction = result.transactions[first_idx].clone();
+        let create_confirmation = result.confirmations[first_idx].clone();
+        let create_transaction_id = result.transaction_ids[first_idx].clone();
+        let create_abi_return = if first_idx < result.abi_returns.len() {
+            Some(result.abi_returns[first_idx].clone())
+        } else {
+            None
+        };
+
+        let delete_transaction = result.transactions[last_idx].clone();
+        let delete_confirmation = result.confirmations[last_idx].clone();
+        let delete_transaction_id = result.transaction_ids[last_idx].clone();
+        let delete_abi_return = if last_idx < result.abi_returns.len() {
+            Some(result.abi_returns[last_idx].clone())
+        } else {
+            None
+        };
+
+        let replace_result = AppDeployerReplaceResult {
+            create_transaction,
+            create_confirmation,
+            create_transaction_id,
+            create_abi_return,
+            delete_transaction,
+            delete_confirmation,
+            delete_transaction_id,
+            delete_abi_return,
+            group: result.group,
+            transaction_ids: result.transaction_ids,
+            transactions: result.transactions,
+            confirmations: result.confirmations,
+            compiled_approval: approval_program.to_vec(),
+            compiled_clear: clear_state_program.to_vec(),
+            approval_source_map,
+            clear_source_map,
+            abi_returns: result.abi_returns,
+        };
+
         Ok(AppDeployResult::Replace {
             app: app_metadata,
-            result,
+            result: replace_result,
         })
     }
 
