@@ -1,5 +1,5 @@
-use crate::applications::app_client::AppClientMethodCallParams;
 use crate::applications::app_client::error_transformation::LogicErrorContext;
+use crate::applications::app_client::{AppClientMethodCallParams, CompilationParams};
 use crate::applications::app_deployer::{AppLookup, OnSchemaBreak, OnUpdate};
 use crate::applications::{
     AppDeployMetadata, AppDeployParams, AppDeployResult, CreateParams, DeleteParams, UpdateParams,
@@ -46,6 +46,7 @@ pub struct AppFactory {
     default_signer: Option<Arc<dyn TransactionSigner>>,
     approval_source_map: Mutex<Option<serde_json::Value>>,
     clear_source_map: Mutex<Option<serde_json::Value>>,
+    // TODO: update this to Option<CompilationParams>
     pub(crate) deploy_time_params: Option<HashMap<String, TealTemplateValue>>,
     pub(crate) updatable: Option<bool>,
     pub(crate) deletable: Option<bool>,
@@ -315,6 +316,33 @@ impl AppFactory {
         Some(logic.message)
     }
 
+    fn resolve_compilation_params(
+        &self,
+        compilation_params: Option<CompilationParams>,
+    ) -> CompilationParams {
+        let mut resolved = compilation_params.unwrap_or_default();
+        if resolved.deploy_time_params.is_none() {
+            resolved.deploy_time_params = self.deploy_time_params.clone();
+        }
+        if resolved.updatable.is_none() {
+            resolved.updatable = self.updatable.or_else(|| {
+                self.detect_deploy_time_control_flag(
+                    UPDATABLE_TEMPLATE_NAME,
+                    CallOnApplicationComplete::UpdateApplication,
+                )
+            });
+        }
+        if resolved.deletable.is_none() {
+            resolved.deletable = self.deletable.or_else(|| {
+                self.detect_deploy_time_control_flag(
+                    DELETABLE_TEMPLATE_NAME,
+                    CallOnApplicationComplete::DeleteApplication,
+                )
+            });
+        }
+        resolved
+    }
+
     /// Idempotently deploys (create, update, or replace) an application using
     /// `AppDeployer` semantics.
     ///
@@ -336,29 +364,20 @@ impl AppFactory {
     pub async fn deploy(
         &self,
         args: DeployArgs,
+        compilation_params: Option<CompilationParams>,
     ) -> Result<(AppClient, AppDeployResult), AppFactoryError> {
-        // Prepare create/update/delete deploy params
-        // Auto-detect deploy-time controls if not explicitly provided
-        let mut resolved_updatable = self.updatable;
-        let mut resolved_deletable = self.deletable;
-        if resolved_updatable.is_none() {
-            resolved_updatable = self.detect_deploy_time_control_flag(
-                UPDATABLE_TEMPLATE_NAME,
-                CallOnApplicationComplete::UpdateApplication,
-            );
-        }
-
-        if resolved_deletable.is_none() {
-            resolved_deletable = self.detect_deploy_time_control_flag(
-                DELETABLE_TEMPLATE_NAME,
-                CallOnApplicationComplete::DeleteApplication,
-            );
-        }
-        let resolved_deploy_time_params = self.deploy_time_params.clone();
+        let compilation_params = self.resolve_compilation_params(compilation_params);
 
         let create_deploy_params = match args.create_params {
-            Some(cp) => CreateParams::AppCreateMethodCall(self.params().create(cp)?),
-            None => CreateParams::AppCreateCall(self.params().bare().create(None)?),
+            Some(cp) => CreateParams::AppCreateMethodCall(
+                self.params().create(cp, Some(&compilation_params)).await?,
+            ),
+            None => CreateParams::AppCreateCall(
+                self.params()
+                    .bare()
+                    .create(None, Some(&compilation_params))
+                    .await?,
+            ),
         };
 
         let update_deploy_params = match args.update_params {
@@ -374,13 +393,13 @@ impl AppFactory {
         let metadata = AppDeployMetadata {
             name: args.app_name.unwrap_or_else(|| self.app_name.clone()),
             version: self.version.clone(),
-            updatable: resolved_updatable,
-            deletable: resolved_deletable,
+            updatable: compilation_params.updatable,
+            deletable: compilation_params.deletable,
         };
 
         let deploy_params = AppDeployParams {
             metadata,
-            deploy_time_params: resolved_deploy_time_params,
+            deploy_time_params: compilation_params.deploy_time_params,
             on_schema_break: args.on_schema_break,
             on_update: args.on_update,
             create_params: create_deploy_params,
@@ -407,7 +426,6 @@ impl AppFactory {
 
         let app_client = self.get_app_client_by_id(app_id, None, None, None, None);
 
-        // TODO: update source map
         Ok((app_client, deploy_result))
     }
 }

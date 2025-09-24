@@ -1,5 +1,5 @@
-use crate::AppClientError;
 use crate::applications::app_deployer::AppDeployError;
+use crate::{AppClientError, ComposerError};
 use algokit_abi::ABIError;
 use snafu::Snafu;
 
@@ -17,4 +17,6 @@ pub enum AppFactoryError {
     AppClientError { source: AppClientError },
     #[snafu(display("Transaction sender error: {source}"))]
     AppDeployerError { source: AppDeployError },
+    #[snafu(display("Composer error: {source}"))]
+    ComposerError { source: ComposerError },
 }

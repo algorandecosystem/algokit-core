@@ -7,9 +7,9 @@ use crate::applications::app_client::AppClient;
 use crate::applications::app_client::CompilationParams;
 use crate::applications::app_factory::{
     AppFactoryCreateMethodCallParams, AppFactoryCreateMethodCallResult, AppFactoryCreateParams,
-    AppFactoryCreateResult,
+    AppFactoryCreateResult, AppFactoryError,
 };
-use crate::transactions::{SendParams, TransactionSenderError};
+use crate::transactions::SendParams;
 use algokit_transact::Address;
 
 /// Sends factory-backed create transactions and returns both the client and send results.
@@ -34,26 +34,26 @@ impl<'app_factory> TransactionSender<'app_factory> {
     /// flavoured result wrapper.
     ///
     /// # Errors
-    /// Returns [`TransactionSenderError`] if argument merging, compilation, or the
+    /// Returns [`AppFactoryError`] if argument merging, compilation, or the
     /// underlying transaction submission fails.
     pub async fn create(
         &self,
         params: AppFactoryCreateMethodCallParams,
         send_params: Option<SendParams>,
-        compilation_params: Option<CompilationParams>,
-    ) -> Result<(AppClient, AppFactoryCreateMethodCallResult), TransactionSenderError> {
-        let merged_args = merge_args_with_defaults(self.factory, &params.method, &params.args)
-            .map_err(|e| TransactionSenderError::ValidationError {
-                message: e.to_string(),
-            })?;
-
-        let (compiled, method, sender) = self
+        compilation_params: Option<&CompilationParams>,
+    ) -> Result<(AppClient, AppFactoryCreateMethodCallResult), AppFactoryError> {
+        let compiled = self.factory.compile(compilation_params).await?;
+        let method = self
             .factory
-            .prepare_compiled_method(&params.method, compilation_params, &params.sender)
-            .await
-            .map_err(|e| TransactionSenderError::ValidationError {
-                message: e.to_string(),
-            })?;
+            .app_spec()
+            .find_abi_method(&params.method)
+            .map_err(|e| AppFactoryError::ABIError { source: e })?;
+        let sender = self
+            .factory
+            .get_sender_address(&params.sender)
+            .map_err(|message| AppFactoryError::ValidationError { message })?;
+
+        let merged_args = merge_args_with_defaults(self.factory, &params.method, &params.args)?;
 
         let approval_bytes = compiled.approval.compiled_base64_to_bytes.clone();
         let clear_bytes = compiled.clear.compiled_base64_to_bytes.clone();
@@ -114,28 +114,28 @@ impl BareTransactionSender<'_> {
     /// Sends a bare app creation and returns the new client with the send result.
     ///
     /// # Errors
-    /// Returns [`TransactionSenderError`] if compilation fails, the sender address is
+    /// Returns [`AppFactoryError`] if compilation fails, the sender address is
     /// invalid, or the underlying transaction submission fails.
     pub async fn create(
         &self,
         params: Option<AppFactoryCreateParams>,
         send_params: Option<SendParams>,
-        compilation_params: Option<CompilationParams>,
-    ) -> Result<(AppClient, AppFactoryCreateResult), TransactionSenderError> {
+        compilation_params: Option<&CompilationParams>,
+    ) -> Result<(AppClient, AppFactoryCreateResult), AppFactoryError> {
         let params = params.unwrap_or_default();
 
         let compiled = self
             .factory
-            .compile_programs_with(compilation_params)
+            .compile(compilation_params)
             .await
-            .map_err(|e| TransactionSenderError::ValidationError {
+            .map_err(|e| AppFactoryError::ValidationError {
                 message: e.to_string(),
             })?;
 
         let sender = self
             .factory
             .get_sender_address(&params.sender)
-            .map_err(|e| TransactionSenderError::ValidationError { message: e })?;
+            .map_err(|e| AppFactoryError::ValidationError { message: e })?;
 
         let create_params = build_bare_create_params(
             self.factory,

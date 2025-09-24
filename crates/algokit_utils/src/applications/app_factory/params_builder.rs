@@ -1,5 +1,7 @@
 use super::{AppFactory, AppFactoryError};
-use crate::applications::app_client::{AppClientBareCallParams, AppClientMethodCallParams};
+use crate::applications::app_client::{
+    AppClientBareCallParams, AppClientMethodCallParams, CompilationParams,
+};
 use crate::applications::app_deployer::{
     AppProgram, DeployAppCreateMethodCallParams, DeployAppCreateParams,
     DeployAppDeleteMethodCallParams, DeployAppDeleteParams, DeployAppUpdateMethodCallParams,
@@ -37,15 +39,12 @@ impl<'a> ParamsBuilder<'a> {
     /// # Errors
     /// Returns [`AppFactoryError`] if the spec cannot be compiled, the method cannot be
     /// located, or the sender address is invalid.
-    pub fn create(
+    pub async fn create(
         &self,
         params: AppFactoryCreateMethodCallParams,
+        compilation_params: Option<&CompilationParams>,
     ) -> Result<DeployAppCreateMethodCallParams, AppFactoryError> {
-        let (approval_teal, clear_teal) = self.factory.app_spec().decoded_teal().map_err(|e| {
-            AppFactoryError::CompilationError {
-                message: e.to_string(),
-            }
-        })?;
+        let compiled_programs = self.factory.compile(compilation_params).await?;
         let method = self
             .factory
             .app_spec()
@@ -72,8 +71,12 @@ impl<'a> ParamsBuilder<'a> {
             first_valid_round: params.first_valid_round,
             last_valid_round: params.last_valid_round,
             on_complete: params.on_complete.unwrap_or(OnApplicationComplete::NoOp),
-            approval_program: AppProgram::Teal(approval_teal),
-            clear_state_program: AppProgram::Teal(clear_teal),
+            approval_program: AppProgram::CompiledBytes(
+                compiled_programs.approval.compiled_base64_to_bytes,
+            ),
+            clear_state_program: AppProgram::CompiledBytes(
+                compiled_programs.clear.compiled_base64_to_bytes,
+            ),
             method,
             args: merged_args,
             account_references: None,
@@ -191,16 +194,13 @@ impl BareParamsBuilder<'_> {
     /// # Errors
     /// Returns [`AppFactoryError`] if the spec cannot be compiled or the sender address
     /// is invalid.
-    pub fn create(
+    pub async fn create(
         &self,
         params: Option<AppFactoryCreateParams>,
+        compilation_params: Option<&CompilationParams>,
     ) -> Result<DeployAppCreateParams, AppFactoryError> {
         let params = params.unwrap_or_default();
-        let (approval_teal, clear_teal) = self.factory.app_spec().decoded_teal().map_err(|e| {
-            AppFactoryError::CompilationError {
-                message: e.to_string(),
-            }
-        })?;
+        let compiled_programs = self.factory.compile(compilation_params).await?;
         let sender = self
             .factory
             .get_sender_address(&params.sender)
@@ -219,8 +219,12 @@ impl BareParamsBuilder<'_> {
             first_valid_round: params.first_valid_round,
             last_valid_round: params.last_valid_round,
             on_complete: params.on_complete.unwrap_or(OnApplicationComplete::NoOp),
-            approval_program: AppProgram::Teal(approval_teal),
-            clear_state_program: AppProgram::Teal(clear_teal),
+            approval_program: AppProgram::CompiledBytes(
+                compiled_programs.approval.compiled_base64_to_bytes,
+            ),
+            clear_state_program: AppProgram::CompiledBytes(
+                compiled_programs.clear.compiled_base64_to_bytes,
+            ),
             args: params.args,
             account_references: None,
             app_references: params.app_references,
