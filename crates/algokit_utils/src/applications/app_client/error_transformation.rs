@@ -23,7 +23,6 @@ lazy_static! {
         Regex::new(r"inner tx (\d+) failed:.*?pc=([0-9]+)").unwrap();
 }
 
-// TODO: move somewhere else
 pub(crate) fn extract_logic_error_data(error_str: &str) -> Option<LogicErrorData> {
     let caps = LOGIC_ERROR_RE.captures(error_str)?;
     let pc = if let Some(inner) = INNER_LOGIC_ERROR_RE.captures(error_str) {

@@ -4,16 +4,13 @@ use crate::applications::app_deployer::{AppLookup, OnSchemaBreak, OnUpdate};
 use crate::applications::{
     AppDeployMetadata, AppDeployParams, AppDeployResult, CreateParams, DeleteParams, UpdateParams,
 };
-use crate::clients::app_manager::{
-    DELETABLE_TEMPLATE_NAME, TealTemplateValue, UPDATABLE_TEMPLATE_NAME,
-};
+use crate::clients::app_manager::{DELETABLE_TEMPLATE_NAME, UPDATABLE_TEMPLATE_NAME};
 use crate::transactions::{
     TransactionComposerConfig, TransactionSigner, composer::SendParams as ComposerSendParams,
 };
 use crate::{AlgorandClient, AppClient, AppClientParams, AppSourceMaps};
 use algokit_abi::Arc56Contract;
 use algokit_abi::arc56_contract::CallOnApplicationComplete;
-use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 
@@ -46,11 +43,8 @@ pub struct AppFactory {
     default_signer: Option<Arc<dyn TransactionSigner>>,
     approval_source_map: Mutex<Option<serde_json::Value>>,
     clear_source_map: Mutex<Option<serde_json::Value>>,
-    // TODO: update this to Option<CompilationParams>
-    pub(crate) deploy_time_params: Option<HashMap<String, TealTemplateValue>>,
-    pub(crate) updatable: Option<bool>,
-    pub(crate) deletable: Option<bool>,
-    pub(crate) transaction_composer_config: Option<TransactionComposerConfig>,
+    compilation_params: Option<CompilationParams>,
+    transaction_composer_config: Option<TransactionComposerConfig>,
 }
 
 #[derive(Default)]
@@ -75,9 +69,7 @@ impl AppFactory {
             default_sender,
             default_signer,
             version,
-            deploy_time_params,
-            updatable,
-            deletable,
+            compilation_params,
             source_maps,
             transaction_composer_config,
         } = params;
@@ -96,9 +88,7 @@ impl AppFactory {
             default_signer,
             approval_source_map: Mutex::new(initial_approval_source_map),
             clear_source_map: Mutex::new(initial_clear_source_map),
-            deploy_time_params,
-            updatable,
-            deletable,
+            compilation_params,
             transaction_composer_config,
         }
     }
@@ -321,25 +311,43 @@ impl AppFactory {
         compilation_params: Option<CompilationParams>,
     ) -> CompilationParams {
         let mut resolved = compilation_params.unwrap_or_default();
-        if resolved.deploy_time_params.is_none() {
-            resolved.deploy_time_params = self.deploy_time_params.clone();
-        }
-        if resolved.updatable.is_none() {
-            resolved.updatable = self.updatable.or_else(|| {
-                self.detect_deploy_time_control_flag(
+
+        if let Some(factory_params) = &self.compilation_params {
+            if resolved.deploy_time_params.is_none() {
+                resolved.deploy_time_params = factory_params.deploy_time_params.clone();
+            }
+            if resolved.updatable.is_none() {
+                resolved.updatable = factory_params.updatable.or_else(|| {
+                    self.detect_deploy_time_control_flag(
+                        UPDATABLE_TEMPLATE_NAME,
+                        CallOnApplicationComplete::UpdateApplication,
+                    )
+                });
+            }
+            if resolved.deletable.is_none() {
+                resolved.deletable = factory_params.deletable.or_else(|| {
+                    self.detect_deploy_time_control_flag(
+                        DELETABLE_TEMPLATE_NAME,
+                        CallOnApplicationComplete::DeleteApplication,
+                    )
+                });
+            }
+        } else {
+            // If no factory params, try to detect from spec
+            if resolved.updatable.is_none() {
+                resolved.updatable = self.detect_deploy_time_control_flag(
                     UPDATABLE_TEMPLATE_NAME,
                     CallOnApplicationComplete::UpdateApplication,
-                )
-            });
-        }
-        if resolved.deletable.is_none() {
-            resolved.deletable = self.deletable.or_else(|| {
-                self.detect_deploy_time_control_flag(
+                );
+            }
+            if resolved.deletable.is_none() {
+                resolved.deletable = self.detect_deploy_time_control_flag(
                     DELETABLE_TEMPLATE_NAME,
                     CallOnApplicationComplete::DeleteApplication,
-                )
-            });
+                );
+            }
         }
+
         resolved
     }
 

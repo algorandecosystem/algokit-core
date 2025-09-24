@@ -88,23 +88,20 @@ impl<'app_factory> TransactionSender<'app_factory> {
         let app_id = result.app_id;
         let app_address = Address::from_app_id(&app_id);
 
-        let factory_result = AppFactoryCreateMethodCallResult::new(
-            result.transaction,
-            result.confirmation,
-            result.transaction_id,
-            result.group,
-            result.abi_return,
-            result.transaction_ids,
-            result.transactions,
-            result.confirmations,
+        let factory_result = AppFactoryCreateMethodCallResult {
+            transaction: result.transaction,
+            confirmation: result.confirmation,
+            transaction_id: result.transaction_id,
+            group: result.group,
+            abi_return: result.abi_return,
+            transaction_ids: result.transaction_ids,
+            transactions: result.transactions,
+            confirmations: result.confirmations,
             app_id,
             app_address,
-            Some(approval_bytes),
-            Some(clear_bytes),
-            compiled.approval.source_map.clone(),
-            compiled.clear.source_map.clone(),
-            result.abi_returns,
-        );
+            compiled_programs: compiled,
+            abi_returns: result.abi_returns,
+        };
 
         Ok((app_client, factory_result))
     }
@@ -165,17 +162,14 @@ impl BareTransactionSender<'_> {
         );
 
         // Convert to factory result with flattened fields
-        let factory_result = AppFactoryCreateResult::new(
-            result.transaction,
-            result.confirmation,
-            result.transaction_id,
+        let factory_result = AppFactoryCreateResult {
+            transaction: result.transaction,
+            confirmation: result.confirmation,
+            transaction_id: result.transaction_id,
             app_id,
             app_address,
-            Some(compiled.approval.compiled_base64_to_bytes),
-            Some(compiled.clear.compiled_base64_to_bytes),
-            compiled.approval.source_map.clone(),
-            compiled.clear.source_map.clone(),
-        );
+            compiled_programs: compiled,
+        };
 
         Ok((app_client, factory_result))
     }

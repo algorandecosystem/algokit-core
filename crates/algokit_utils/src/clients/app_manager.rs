@@ -10,8 +10,6 @@ use snafu::Snafu;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
-use crate::applications::app_client::CompilationParams;
-
 #[derive(Debug, Clone)]
 pub enum TealTemplateValue {
     Int(u64),
@@ -33,7 +31,7 @@ pub struct CompiledTeal {
     pub compiled: String,
     pub compiled_hash: String,
     pub compiled_base64_to_bytes: Vec<u8>,
-    pub source_map: Option<serde_json::Value>, // TODO: review this, relying on serde doesn't seem right
+    pub source_map: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Clone)]
