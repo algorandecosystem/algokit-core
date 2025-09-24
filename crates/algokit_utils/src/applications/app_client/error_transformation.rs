@@ -1,11 +1,8 @@
-use crate::{AppClientError, TransactionSenderError};
-
 use super::types::LogicError;
 use super::{AppClient, AppSourceMaps};
 use crate::AlgorandClient;
-use crate::transactions::TransactionResultError;
+use crate::{AppClientError, TransactionSenderError};
 use algokit_abi::{Arc56Contract, arc56_contract::PcOffsetMethod};
-use algokit_abi::arc56_contract::PcOffsetMethod;
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde_json::Value as JsonValue;
@@ -26,6 +23,7 @@ lazy_static! {
         Regex::new(r"inner tx (\d+) failed:.*?pc=([0-9]+)").unwrap();
 }
 
+// TODO: move somewhere else
 pub(crate) fn extract_logic_error_data(error_str: &str) -> Option<LogicErrorData> {
     let caps = LOGIC_ERROR_RE.captures(error_str)?;
     let pc = if let Some(inner) = INNER_LOGIC_ERROR_RE.captures(error_str) {
@@ -62,76 +60,49 @@ impl AppClient {
     }
 }
 
-impl AppClient {
-    fn extract_logic_error_data(error_message: &str) -> Option<LogicErrorData> {
-        let caps = LOGIC_ERROR_RE.captures(error_message)?;
-        let pc = if let Some(inner) = INNER_LOGIC_ERROR_RE.captures(error_message) {
-            inner
-                .get(2)
-                .and_then(|m| m.as_str().parse::<u64>().ok())
-                .unwrap_or_else(|| caps["pc"].parse::<u64>().unwrap_or(0))
-        } else {
-            caps["pc"].parse::<u64>().unwrap_or(0)
-        };
-        Some(LogicErrorData {
-            transaction_id: caps["transaction_id"].to_string(),
-            message: caps["message"].to_string(),
-            pc,
-        })
-    }
-
-    pub(crate) fn transform_transaction_error(
 impl LogicErrorContext<'_> {
     /// Create an enhanced LogicError from a transaction error, applying source maps if available.
     pub(crate) fn expose_logic_error(
         &self,
-        err: TransactionSenderError,
-        is_clear_state_program: bool,
-    ) -> AppClientError {
-        let error_message = err.to_string();
-
-        // Only transform errors that are for this app (when app_id is known)
-        if self.app_id() != 0 {
-            let app_tag = format!("app={}", self.app_id());
-            if !error_message.contains(&app_tag) {
-                return AppClientError::TransactionSenderError { source: err };
-            }
-        }
-
-        let parsed_logic_error_data = Self::extract_logic_error_data(&error_message);
-
-        match parsed_logic_error_data {
-            Some(parsed_logic_error_data) => {
-                let logic_error = self.expose_logic_error(
-                    &error_message,
-                    &parsed_logic_error_data,
-                    is_clear_state_program,
-                );
-                AppClientError::LogicError {
-                    message: logic_error.message.clone(),
-                    logic: Box::new(logic_error),
-                }
-            }
-            None => AppClientError::TransactionSenderError { source: err },
-        }
-    }
-
-    /// Create an enhanced LogicError from a transaction error, applying source maps if available.
-    fn expose_logic_error(
-        &self,
         error_message: &str,
-        logic_error_data: &LogicErrorData,
         is_clear_state_program: bool,
     ) -> LogicError {
-        let (mut line_no, mut lines) =
-            self.apply_source_map_for_message(error_message, is_clear_state_program);
+        let parsed_logic_error_data = extract_logic_error_data(&error_message);
+        let (mut line_no_opt, mut listing) =
+            self.apply_source_map_for_message(&error_message, is_clear_state_program);
         let source_map = self.get_source_map(is_clear_state_program).cloned();
-        let transaction_id = Self::extract_transaction_id(error_message);
-        let pc_opt = Self::extract_pc(error_message);
+        let transaction_id = Self::extract_transaction_id(&error_message);
+        let pc_opt = Self::extract_pc(&error_message);
+
+        let mut logic = LogicError {
+            message: error_message.to_string(),
+            program: None,
+            source_map,
+            transaction_id,
+            pc: pc_opt,
+            line_no: line_no_opt,
+            lines: if listing.is_empty() {
+                None
+            } else {
+                Some(listing.clone())
+            },
+            traces: None,
+            logic_error_str: Some(error_message.to_string()),
+        };
+
+        let (tx_id, parsed_pc, msg_msg) = if let Some(p) = parsed_logic_error_data {
+            (
+                Some(p.transaction_id.clone()),
+                Some(p.pc),
+                Some(p.message.clone()),
+            )
+        } else {
+            (logic.transaction_id.clone(), logic.pc, None)
+        };
 
         let mut arc56_error_message: Option<String> = None;
         let mut arc56_line_no: Option<u64> = None;
-        let mut arc56_lines: Vec<String> = Vec::new();
+        let mut arc56_listing: Vec<String> = Vec::new();
 
         if let Some(si_model) = self.app_spec.source_info.as_ref() {
             let program_source_info = if is_clear_state_program {
@@ -140,7 +111,7 @@ impl LogicErrorContext<'_> {
                 &si_model.approval
             };
 
-            let mut arc56_pc = logic_error_data.pc;
+            let mut arc56_pc = parsed_pc.unwrap_or(0);
 
             if matches!(
                 program_source_info.pc_offset_method,
@@ -176,22 +147,22 @@ impl LogicErrorContext<'_> {
             {
                 if let Some(teal_src) = self.decode_teal(is_clear_state_program) {
                     let center = arc56_line_no.unwrap();
-                    arc56_lines = Self::annotated_teal_snippet(&teal_src, center, 3);
+                    arc56_listing = Self::annotated_teal_snippet(&teal_src, center, 3);
                 }
             }
         }
 
-        if line_no.is_none() && arc56_line_no.is_some() {
-            line_no = arc56_line_no;
+        if line_no_opt.is_none() && arc56_line_no.is_some() {
+            line_no_opt = arc56_line_no;
+            logic.line_no = line_no_opt;
         }
-        if lines.is_empty() && !arc56_lines.is_empty() {
-            lines = arc56_lines;
+        if listing.is_empty() && !arc56_listing.is_empty() {
+            listing = arc56_listing;
+            logic.lines = Some(listing.clone());
         }
 
-        let app_id_from_msg = Self::extract_app_id(error_message);
-        let app_id = app_id_from_msg.unwrap_or(self.app_id().to_string());
         if let Some(emsg) = arc56_error_message.or(msg_msg) {
-            let app_id_from_msg = Self::extract_app_id(&err_str);
+            let app_id_from_msg = Self::extract_app_id(error_message);
             let app_id = app_id_from_msg
                 .or_else(|| Some(self.app_id.to_string()))
                 .unwrap_or_else(|| "N/A".to_string());
@@ -203,25 +174,7 @@ impl LogicErrorContext<'_> {
             logic.message = runtime_msg.clone();
         }
 
-        let processed_error_message = format!(
-            "Runtime error when executing {} (appId: {}) in transaction {}: {}",
-            self.app_spec().name,
-            app_id,
-            logic_error_data.transaction_id,
-            arc56_error_message.unwrap_or(logic_error_data.message.clone())
-        );
-
-        LogicError {
-            message: processed_error_message,
-            program: None,
-            source_map,
-            transaction_id,
-            pc: pc_opt,
-            line_no,
-            lines: (!lines.is_empty()).then(|| lines.clone()),
-            traces: None,
-            logic_error_str: Some(error_message.to_string()),
-        }
+        logic
     }
 
     /// Extract transaction id from an error string.
@@ -443,19 +396,40 @@ impl LogicErrorContext<'_> {
 }
 
 impl AppClient {
-    /// Create an enhanced LogicError from a transaction error, applying source maps if available.
-    pub fn expose_logic_error(
+    pub(crate) fn transform_transaction_error(
         &self,
-        error: &TransactionResultError,
+        err: TransactionSenderError,
         is_clear_state_program: bool,
-    ) -> LogicError {
-        let context = LogicErrorContext {
-            app_id: self.app_id(),
-            app_spec: self.app_spec(),
-            algorand: self.algorand(),
-            source_maps: self.source_maps.as_ref(),
-        };
+    ) -> AppClientError {
+        let error_message = err.to_string();
 
-        context.expose_logic_error(error, is_clear_state_program)
+        // Only transform errors that are for this app (when app_id is known)
+        if self.app_id() != 0 {
+            let app_tag = format!("app={}", self.app_id());
+            if !error_message.contains(&app_tag) {
+                return AppClientError::TransactionSenderError { source: err };
+            }
+        }
+
+        let parsed_logic_error_data = extract_logic_error_data(&error_message);
+
+        match parsed_logic_error_data {
+            Some(_) => {
+                let context = LogicErrorContext {
+                    app_id: self.app_id(),
+                    app_spec: self.app_spec(),
+                    algorand: self.algorand(),
+                    source_maps: self.source_maps.as_ref(),
+                };
+
+                let logic_error =
+                    context.expose_logic_error(&error_message, is_clear_state_program);
+                AppClientError::LogicError {
+                    message: logic_error.message.clone(),
+                    logic: Box::new(logic_error),
+                }
+            }
+            None => AppClientError::TransactionSenderError { source: err },
+        }
     }
 }

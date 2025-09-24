@@ -645,29 +645,6 @@ impl TransactionSender {
     ) -> Result<SendResult, TransactionSenderError> {
         self.send_single_transaction(|composer| composer.add_app_update(params), send_params)
             .await
-    ) -> Result<SendAppUpdateResult, TransactionSenderError> {
-        // Extract compilation metadata using helper method
-        let (compiled_approval, compiled_clear) = self.extract_compilation_metadata(&params);
-
-        self.send_single_transaction_with_result(
-            send_params,
-            |composer| composer.add_app_update(params),
-            |base_result| {
-                // Convert CompiledTeal to Vec<u8> for the result
-                let approval_bytes = compiled_approval.map(|ct| ct.compiled_base64_to_bytes);
-                let clear_bytes = compiled_clear.map(|ct| ct.compiled_base64_to_bytes);
-
-                Ok(SendAppUpdateResult::new(
-                    base_result,
-                    None,
-                    approval_bytes,
-                    clear_bytes,
-                    None,
-                    None,
-                ))
-            },
-        )
-        .await
     }
 
     /// Delete a smart contract.
@@ -763,25 +740,6 @@ impl TransactionSender {
         self.send_method_call(
             |composer| composer.add_app_update_method_call(params),
             send_params,
-            |base_result| {
-                let abi_return = base_result
-                    .abi_returns
-                    .as_ref()
-                    .and_then(|returns| returns.last())
-                    .cloned();
-                // Convert CompiledTeal to Vec<u8> for the result
-                let approval_bytes = compiled_approval.map(|ct| ct.compiled_base64_to_bytes);
-                let clear_bytes = compiled_clear.map(|ct| ct.compiled_base64_to_bytes);
-
-                Ok(SendAppUpdateResult::new(
-                    base_result,
-                    abi_return,
-                    approval_bytes,
-                    clear_bytes,
-                    None,
-                    None,
-                ))
-            },
         )
         .await
     }

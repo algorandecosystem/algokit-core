@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use algod_client::models::PendingTransactionResponse;
 use algokit_abi::{ABIReturn, ABIValue, Arc56Contract};
+use algokit_transact::Byte32;
 use algokit_transact::{Address, Transaction};
 
 use crate::AlgorandClient;
@@ -18,6 +19,21 @@ pub struct AppFactoryCompilationResult {
     pub compiled_clear: crate::clients::app_manager::CompiledTeal,
 }
 
+/// Result from sending an app create call via AppFactory.
+#[derive(Clone, Debug)]
+pub struct AppFactoryCreateResult {
+    /// The transaction that has been sent
+    pub transaction: Transaction,
+    /// The response from sending and waiting for the transaction
+    pub confirmation: PendingTransactionResponse,
+    /// The transaction ID that has been sent
+    pub transaction_id: String,
+    /// The ID of the created app
+    pub app_id: u64,
+    /// The address of the created app
+    pub app_address: Address,
+}
+
 /// Result from sending an app create method call via AppFactory.
 /// Contains transaction details, confirmation, and parsed ARC-56 return value.
 #[derive(Clone, Debug)]
@@ -29,7 +45,7 @@ pub struct AppFactoryCreateMethodCallResult {
     /// The transaction ID that has been sent
     pub transaction_id: String,
     /// The group ID for the transaction group (if any)
-    pub group_id: String,
+    pub group: Option<Byte32>,
     /// All transaction IDs in the group
     pub transaction_ids: Vec<String>,
     /// All transactions in the group
@@ -44,10 +60,14 @@ pub struct AppFactoryCreateMethodCallResult {
     pub compiled_approval: Option<Vec<u8>>,
     /// The compiled clear state program (if provided)
     pub compiled_clear: Option<Vec<u8>>,
+    /// The approval program source map (if available)
+    pub approval_source_map: Option<serde_json::Value>,
+    /// The clear program source map (if available)
+    pub clear_source_map: Option<serde_json::Value>,
     /// The raw ABI return value (for compatibility)
     pub abi_return: Option<ABIReturn>,
-    /// The parsed ARC-56 return value
-    pub arc56_return: Option<ABIValue>,
+    /// The parsed ABI return value
+    pub abi_value: Option<ABIValue>,
 }
 
 /// Result from sending an app update method call via AppFactory.
@@ -61,7 +81,7 @@ pub struct AppFactoryUpdateMethodCallResult {
     /// The transaction ID that has been sent
     pub transaction_id: String,
     /// The group ID for the transaction group (if any)
-    pub group_id: String,
+    pub group: Option<Byte32>,
     /// All transaction IDs in the group
     pub transaction_ids: Vec<String>,
     /// All transactions in the group
@@ -78,8 +98,8 @@ pub struct AppFactoryUpdateMethodCallResult {
     pub clear_source_map: Option<serde_json::Value>,
     /// The raw ABI return value (for compatibility)
     pub abi_return: Option<ABIReturn>,
-    /// The parsed ARC-56 return value
-    pub arc56_return: Option<ABIValue>,
+    /// The parsed ABI return value
+    pub abi_value: Option<ABIValue>,
 }
 
 /// Result from sending an app delete method call via AppFactory.
@@ -93,7 +113,7 @@ pub struct AppFactoryDeleteMethodCallResult {
     /// The transaction ID that has been sent
     pub transaction_id: String,
     /// The group ID for the transaction group (if any)
-    pub group_id: String,
+    pub group: Option<Byte32>,
     /// All transaction IDs in the group
     pub transaction_ids: Vec<String>,
     /// All transactions in the group
@@ -102,8 +122,44 @@ pub struct AppFactoryDeleteMethodCallResult {
     pub confirmations: Vec<PendingTransactionResponse>,
     /// The raw ABI return value (for compatibility)
     pub abi_return: Option<ABIReturn>,
-    /// The parsed ARC-56 return value
-    pub arc56_return: Option<ABIValue>,
+    /// The parsed ABI return value
+    pub abi_value: Option<ABIValue>,
+}
+
+/// Result from replacing an app via AppFactory.
+/// Contains transaction details, confirmation, and parsed ARC-56 return value.
+#[derive(Clone, Debug)]
+pub struct AppFactoryCreateMethodCallResult {
+    /// The transaction that has been sent
+    pub transaction: Transaction,
+    /// The response from sending and waiting for the transaction
+    pub confirmation: PendingTransactionResponse,
+    /// The transaction ID that has been sent
+    pub transaction_id: String,
+    /// The group ID for the transaction group (if any)
+    pub group: Option<Byte32>,
+    /// All transaction IDs in the group
+    pub transaction_ids: Vec<String>,
+    /// All transactions in the group
+    pub transactions: Vec<Transaction>,
+    /// All confirmations in the group
+    pub confirmations: Vec<PendingTransactionResponse>,
+    /// The ID of the created app
+    pub app_id: u64,
+    /// The address of the created app
+    pub app_address: Address,
+    /// The compiled approval program (if provided)
+    pub compiled_approval: Option<Vec<u8>>,
+    /// The compiled clear state program (if provided)
+    pub compiled_clear: Option<Vec<u8>>,
+    /// The approval program source map (if available)
+    pub approval_source_map: Option<serde_json::Value>,
+    /// The clear program source map (if available)
+    pub clear_source_map: Option<serde_json::Value>,
+    /// The raw ABI return value (for compatibility)
+    pub abi_return: Option<ABIReturn>,
+    /// The parsed ABI return value
+    pub abi_value: Option<ABIValue>,
 }
 
 pub struct AppFactoryParams {
@@ -169,6 +225,25 @@ pub struct AppFactoryCreateMethodCallParams {
     pub last_valid_round: Option<u64>,
 }
 
+impl AppFactoryCreateResult {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        transaction: Transaction,
+        confirmation: PendingTransactionResponse,
+        transaction_id: String,
+        app_id: u64,
+        app_address: Address,
+    ) -> Self {
+        Self {
+            transaction,
+            confirmation,
+            transaction_id,
+            app_id,
+            app_address,
+        }
+    }
+}
+
 // Helper methods for creating these results
 impl AppFactoryCreateMethodCallResult {
     #[allow(clippy::too_many_arguments)]
@@ -176,7 +251,7 @@ impl AppFactoryCreateMethodCallResult {
         transaction: Transaction,
         confirmation: PendingTransactionResponse,
         transaction_id: String,
-        group_id: String,
+        group: Option<Byte32>,
         transaction_ids: Vec<String>,
         transactions: Vec<Transaction>,
         confirmations: Vec<PendingTransactionResponse>,
@@ -184,14 +259,16 @@ impl AppFactoryCreateMethodCallResult {
         app_address: Address,
         compiled_approval: Option<Vec<u8>>,
         compiled_clear: Option<Vec<u8>>,
+        approval_source_map: Option<serde_json::Value>,
+        clear_source_map: Option<serde_json::Value>,
         abi_return: Option<ABIReturn>,
-        arc56_return: Option<ABIValue>,
+        abi_value: Option<ABIValue>,
     ) -> Self {
         Self {
             transaction,
             confirmation,
             transaction_id,
-            group_id,
+            group,
             transaction_ids,
             transactions,
             confirmations,
@@ -199,8 +276,10 @@ impl AppFactoryCreateMethodCallResult {
             app_address,
             compiled_approval,
             compiled_clear,
+            approval_source_map,
+            clear_source_map,
             abi_return,
-            arc56_return,
+            abi_value,
         }
     }
 }
@@ -211,7 +290,7 @@ impl AppFactoryUpdateMethodCallResult {
         transaction: Transaction,
         confirmation: PendingTransactionResponse,
         transaction_id: String,
-        group_id: String,
+        group: Option<Byte32>,
         transaction_ids: Vec<String>,
         transactions: Vec<Transaction>,
         confirmations: Vec<PendingTransactionResponse>,
@@ -220,13 +299,13 @@ impl AppFactoryUpdateMethodCallResult {
         approval_source_map: Option<serde_json::Value>,
         clear_source_map: Option<serde_json::Value>,
         abi_return: Option<ABIReturn>,
-        arc56_return: Option<ABIValue>,
+        abi_value: Option<ABIValue>,
     ) -> Self {
         Self {
             transaction,
             confirmation,
             transaction_id,
-            group_id,
+            group,
             transaction_ids,
             transactions,
             confirmations,
@@ -235,7 +314,7 @@ impl AppFactoryUpdateMethodCallResult {
             approval_source_map,
             clear_source_map,
             abi_return,
-            arc56_return,
+            abi_value,
         }
     }
 }
@@ -246,23 +325,23 @@ impl AppFactoryDeleteMethodCallResult {
         transaction: Transaction,
         confirmation: PendingTransactionResponse,
         transaction_id: String,
-        group_id: String,
+        group: Option<Byte32>,
         transaction_ids: Vec<String>,
         transactions: Vec<Transaction>,
         confirmations: Vec<PendingTransactionResponse>,
         abi_return: Option<ABIReturn>,
-        arc56_return: Option<ABIValue>,
+        abi_value: Option<ABIValue>,
     ) -> Self {
         Self {
             transaction,
             confirmation,
             transaction_id,
-            group_id,
+            group,
             transaction_ids,
             transactions,
             confirmations,
             abi_return,
-            arc56_return,
+            abi_value,
         }
     }
 }

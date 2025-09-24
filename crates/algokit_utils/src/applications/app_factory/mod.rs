@@ -2,8 +2,10 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 
+use algod_client::models::PendingTransactionResponse;
 use algokit_abi::arc56_contract::CallOnApplicationComplete;
 use algokit_abi::{ABIReturn, ABIValue, Arc56Contract};
+use algokit_transact::{Transaction, TransactionId};
 
 use crate::applications::app_client::error_transformation::LogicErrorContext;
 use crate::applications::app_client::{AppClientMethodCallParams, CompilationParams};
@@ -16,9 +18,8 @@ use crate::clients::app_manager::{
     DELETABLE_TEMPLATE_NAME, TealTemplateValue, UPDATABLE_TEMPLATE_NAME,
 };
 use crate::transactions::{
-    TransactionComposerConfig, TransactionResultError, TransactionSigner,
+    TransactionComposerConfig, TransactionSigner,
     composer::{SendParams as ComposerSendParams, SendTransactionComposerResults},
-    sender_results::SendTransactionResult,
 };
 use crate::{AlgorandClient, AppClient, AppClientParams, AppSourceMaps};
 use app_factory::types as aftypes;
@@ -72,70 +73,171 @@ pub struct DeployArgs {
 }
 
 impl AppFactory {
+    fn extract_last_transaction_data(
+        composer_result: &SendTransactionComposerResults,
+    ) -> Result<
+        (
+            String,
+            Transaction,
+            PendingTransactionResponse,
+            Option<ABIReturn>,
+            Option<ABIValue>,
+        ),
+        AppFactoryError,
+    > {
+        let transaction_id = composer_result
+            .transaction_ids
+            .last()
+            .ok_or(AppFactoryError::ValidationError {
+                message: "No transaction Id returned".to_string(),
+            })?
+            .clone();
+        let transaction = composer_result
+            .transactions
+            .last()
+            .ok_or(AppFactoryError::ValidationError {
+                message: "No transaction returned".to_string(),
+            })?
+            .clone();
+        let confirmation = composer_result
+            .confirmations
+            .last()
+            .ok_or(AppFactoryError::ValidationError {
+                message: "No confirmation returned".to_string(),
+            })?
+            .clone();
+        let abi_return = composer_result.abi_returns.last().cloned();
+        let abi_value = Self::parse_method_return_value(&abi_return)?;
+
+        Ok((
+            transaction_id,
+            transaction,
+            confirmation,
+            abi_return,
+            abi_value,
+        ))
+    }
+
+    fn extract_first_transaction_data(
+        composer_result: &SendTransactionComposerResults,
+    ) -> Result<
+        (
+            String,
+            Transaction,
+            PendingTransactionResponse,
+            Option<ABIReturn>,
+            Option<ABIValue>,
+        ),
+        AppFactoryError,
+    > {
+        let transaction_id = composer_result
+            .transaction_ids
+            .first()
+            .ok_or(AppFactoryError::ValidationError {
+                message: "No transaction Id returned".to_string(),
+            })?
+            .clone();
+        let transaction = composer_result
+            .transactions
+            .first()
+            .ok_or(AppFactoryError::ValidationError {
+                message: "No transaction returned".to_string(),
+            })?
+            .clone();
+        let confirmation = composer_result
+            .confirmations
+            .first()
+            .ok_or(AppFactoryError::ValidationError {
+                message: "No confirmation returned".to_string(),
+            })?
+            .clone();
+        let abi_return = composer_result.abi_returns.first().cloned();
+        let abi_value = Self::parse_method_return_value(&abi_return)?;
+
+        Ok((
+            transaction_id,
+            transaction,
+            confirmation,
+            abi_return,
+            abi_value,
+        ))
+    }
+
     async fn deploy_create_result(
         &self,
-        composer_result: &SendTransactionComposerResults,
+        composer_result: SendTransactionComposerResults,
     ) -> Result<AppFactoryCreateMethodCallResult, AppFactoryError> {
         let compiled = self.compile_programs_with(None).await?;
-        let base = self.to_send_transaction_result(composer_result)?;
-        let last_abi_return = base.abi_returns.as_ref().and_then(|v| v.last()).cloned();
-        let arc56_return = self.parse_method_return_value(&last_abi_return)?;
+
+        let (
+            primary_transaction_id,
+            primary_transaction,
+            primary_confirmation,
+            primary_abi_return,
+            primary_abi_value,
+        ) = Self::extract_last_transaction_data(&composer_result)?;
 
         // Extract app_id from confirmation
-        let app_id = base
-            .confirmation
-            .app_id
-            .ok_or_else(|| AppFactoryError::ValidationError {
-                message: "App creation confirmation missing application-index".to_string(),
-            })?;
+        let app_id =
+            primary_confirmation
+                .app_id
+                .ok_or_else(|| AppFactoryError::ValidationError {
+                    message: "App creation confirmation missing application-index".to_string(),
+                })?;
         let app_address = algokit_transact::Address::from_app_id(&app_id);
 
         Ok(AppFactoryCreateMethodCallResult::new(
-            base.transaction,
-            base.confirmation,
-            base.tx_id,
-            base.group_id,
-            base.tx_ids,
-            base.transactions,
-            base.confirmations,
+            primary_transaction,
+            primary_confirmation,
+            primary_transaction_id,
+            composer_result.group,
+            composer_result.transaction_ids,
+            composer_result.transactions,
+            composer_result.confirmations,
             app_id,
             app_address,
             Some(compiled.approval.compiled_base64_to_bytes.clone()),
             Some(compiled.clear.compiled_base64_to_bytes.clone()),
-            last_abi_return,
-            arc56_return,
+            compiled.approval.source_map.clone(),
+            compiled.clear.source_map.clone(),
+            primary_abi_return,
+            primary_abi_value,
         ))
     }
 
     async fn deploy_update_result(
         &self,
-        composer_result: &SendTransactionComposerResults,
+        composer_result: SendTransactionComposerResults,
     ) -> Result<AppFactoryUpdateMethodCallResult, AppFactoryError> {
         let compiled = self.compile_programs_with(None).await?;
-        let base = self.to_send_transaction_result(composer_result)?;
-        let last_abi_return = base.abi_returns.as_ref().and_then(|v| v.last()).cloned();
-        let arc56_return = self.parse_method_return_value(&last_abi_return)?;
+        let (
+            primary_transaction_id,
+            primary_transaction,
+            primary_confirmation,
+            primary_abi_return,
+            primary_abi_value,
+        ) = Self::extract_last_transaction_data(&composer_result)?;
 
         Ok(AppFactoryUpdateMethodCallResult::new(
-            base.transaction,
-            base.confirmation,
-            base.tx_id,
-            base.group_id,
-            base.tx_ids,
-            base.transactions,
-            base.confirmations,
+            primary_transaction,
+            primary_confirmation,
+            primary_transaction_id,
+            composer_result.group,
+            composer_result.transaction_ids,
+            composer_result.transactions,
+            composer_result.confirmations,
             Some(compiled.approval.compiled_base64_to_bytes.clone()),
             Some(compiled.clear.compiled_base64_to_bytes.clone()),
             compiled.approval.source_map.clone(),
             compiled.clear.source_map.clone(),
-            last_abi_return,
-            arc56_return,
+            primary_abi_return,
+            primary_abi_value,
         ))
     }
 
     async fn deploy_replace_results(
         &self,
-        composer_result: &SendTransactionComposerResults,
+        composer_result: SendTransactionComposerResults,
     ) -> Result<
         (
             AppFactoryCreateMethodCallResult,
@@ -153,33 +255,19 @@ impl AppFactory {
             });
         }
         let compiled = self.compile_programs_with(None).await?;
+
         // Create index 0
-        let create_tx = composer_result.confirmations[0].txn.transaction.clone();
-        let create_base = SendTransactionResult::new(
-            composer_result.group.map(hex::encode).unwrap_or_default(),
-            vec![composer_result.transaction_ids[0].clone()],
-            vec![create_tx.clone()],
-            vec![composer_result.confirmations[0].clone()],
-            if !composer_result.abi_returns.is_empty() {
-                Some(vec![composer_result.abi_returns[0].clone()])
-            } else {
-                None
-            },
-        )
-        .map_err(|e| AppFactoryError::ValidationError {
-            message: e.to_string(),
-        })?;
-        let create_abi = create_base
-            .abi_returns
-            .as_ref()
-            .and_then(|v| v.last())
-            .cloned();
-        let create_arc56 = self.parse_method_return_value(&create_abi)?;
+        let (
+            create_transaction_id,
+            create_transaction,
+            create_confirmation,
+            create_abi_return,
+            create_abi_value,
+        ) = Self::extract_first_transaction_data(&composer_result)?;
 
         // Extract app_id from confirmation
         let app_id =
-            create_base
-                .confirmation
+            create_confirmation
                 .app_id
                 .ok_or_else(|| AppFactoryError::ValidationError {
                     message: "App creation confirmation missing application-index".to_string(),
@@ -187,7 +275,7 @@ impl AppFactory {
         let app_address = algokit_transact::Address::from_app_id(&app_id);
 
         let create_result = AppFactoryCreateMethodCallResult::new(
-            create_tx,
+            create_transaction,
             composer_result.confirmations[0].clone(),
             composer_result.transaction_ids[0].clone(),
             composer_result.group.map(hex::encode).unwrap_or_default(),
@@ -201,6 +289,7 @@ impl AppFactory {
             create_abi.clone(),
             create_arc56,
         );
+
         // Delete uses the final transaction in the replacement group
         let delete_index = composer_result.confirmations.len() - 1;
         let delete_tx = composer_result.confirmations[delete_index]
@@ -240,36 +329,7 @@ impl AppFactory {
         );
         Ok((create_result, delete_result))
     }
-    /// Convert SendTransactionComposerResults into a rich SendTransactionResult by
-    /// reconstructing transactions from confirmations.
-    fn to_send_transaction_result(
-        &self,
-        composer_results: &SendTransactionComposerResults,
-    ) -> Result<SendTransactionResult, AppFactoryError> {
-        let group_id = composer_results.group.map(hex::encode).unwrap_or_default();
 
-        // Reconstruct transactions from confirmations (txn.signed.transaction)
-        let transactions: Vec<algokit_transact::Transaction> = composer_results
-            .confirmations
-            .iter()
-            .map(|c| c.txn.transaction.clone())
-            .collect();
-
-        SendTransactionResult::new(
-            group_id,
-            composer_results.transaction_ids.clone(),
-            transactions,
-            composer_results.confirmations.clone(),
-            if composer_results.abi_returns.is_empty() {
-                None
-            } else {
-                Some(composer_results.abi_returns.clone())
-            },
-        )
-        .map_err(|e| AppFactoryError::ValidationError {
-            message: e.to_string(),
-        })
-    }
     pub fn new(params: AppFactoryParams) -> Self {
         let AppFactoryParams {
             algorand,
@@ -485,8 +545,7 @@ impl AppFactory {
         }
     }
 
-    pub(crate) fn parse_method_return_value(
-        &self,
+    fn parse_method_return_value(
         abi_return: &Option<ABIReturn>,
     ) -> Result<Option<ABIValue>, AppFactoryError> {
         match abi_return {
@@ -539,10 +598,6 @@ impl AppFactory {
             return None;
         }
 
-        let tx_err = TransactionResultError::ParsingError {
-            message: error_str.to_string(),
-        };
-
         let source_maps = self.current_source_maps();
         let context = LogicErrorContext {
             app_id: 0,
@@ -551,7 +606,7 @@ impl AppFactory {
             source_maps: source_maps.as_ref(),
         };
 
-        let logic = context.expose_logic_error(&tx_err, is_clear_state_program);
+        let logic = context.expose_logic_error(&error_str, is_clear_state_program);
         Some(logic.message)
     }
 

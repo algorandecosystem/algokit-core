@@ -1,7 +1,3 @@
-use crate::applications::app_client::utils::transform_transaction_error;
-use crate::transactions::SendTransactionResult;
-use crate::transactions::composer::SimulateParams;
-use crate::{AppClientError, SendAppCallResult, SendAppUpdateResult, SendParams};
 use crate::transactions::SendResult;
 use crate::transactions::composer::SimulateParams;
 use crate::{AppClientError, SendAppMethodCallResult, SendParams};
@@ -174,14 +170,14 @@ impl<'app_client> TransactionSender<'app_client> {
         compilation_params: Option<CompilationParams>,
         send_params: Option<SendParams>,
     ) -> Result<SendAppMethodCallResult, AppClientError> {
-        let (update_params, compiled) = self
+        // TODO: check _
+        let (update_params, _) = self
             .client
             .params()
             .update(params, compilation_params)
             .await?;
 
-        let mut result = self
-            .client
+        self.client
             .algorand()
             .send()
             .app_update_method_call(update_params, send_params)
@@ -290,15 +286,14 @@ impl BareTransactionSender<'_> {
         compilation_params: Option<CompilationParams>,
         send_params: Option<SendParams>,
     ) -> Result<SendResult, AppClientError> {
-        let update_params = self
+        let (update_params, _) = self
             .client
             .params()
             .bare()
             .update(params, compilation_params)
             .await?;
 
-        let mut result = self
-            .client
+        self.client
             .algorand()
             .send()
             .app_update(update_params, send_params)

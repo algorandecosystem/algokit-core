@@ -7,6 +7,7 @@ use crate::applications::app_client::AppClient;
 use crate::applications::app_client::CompilationParams;
 use crate::applications::app_factory::{
     AppFactoryCreateMethodCallParams, AppFactoryCreateMethodCallResult, AppFactoryCreateParams,
+    AppFactoryCreateResult,
 };
 use crate::transactions::{SendParams, TransactionSenderError};
 use algokit_transact::Address;
@@ -73,12 +74,7 @@ impl<'app_factory> TransactionSender<'app_factory> {
             .send()
             .app_create_method_call(create_params, send_params)
             .await
-            .map_err(|e| transform_transaction_error_for_factory(self.factory, e, false))
-            .map(|mut res| {
-                res.compiled_approval = Some(approval_bytes.clone());
-                res.compiled_clear = Some(clear_bytes.clone());
-                res
-            })?;
+            .map_err(|e| transform_transaction_error_for_factory(self.factory, e, false))?;
 
         let app_client = self.factory.get_app_client_by_id(
             result.app_id,
@@ -99,13 +95,13 @@ impl<'app_factory> TransactionSender<'app_factory> {
             })?;
 
         let factory_result = AppFactoryCreateMethodCallResult::new(
-            result.common_params.transaction,
-            result.common_params.confirmation,
-            result.common_params.tx_id,
-            result.common_params.group_id,
-            result.common_params.tx_ids,
-            result.common_params.transactions,
-            result.common_params.confirmations,
+            result.transaction,
+            result.confirmation,
+            result.transaction_id,
+            result.group,
+            result.transaction_ids,
+            result.transactions,
+            result.confirmations,
             app_id,
             app_address,
             Some(approval_bytes),
@@ -129,7 +125,7 @@ impl BareTransactionSender<'_> {
         params: Option<AppFactoryCreateParams>,
         send_params: Option<SendParams>,
         compilation_params: Option<CompilationParams>,
-    ) -> Result<(AppClient, AppFactoryCreateMethodCallResult), TransactionSenderError> {
+    ) -> Result<(AppClient, AppFactoryCreateResult), TransactionSenderError> {
         let params = params.unwrap_or_default();
 
         let compiled = self
@@ -153,7 +149,7 @@ impl BareTransactionSender<'_> {
             compiled.clear.compiled_base64_to_bytes.clone(),
         );
 
-        let mut result = self
+        let result = self
             .factory
             .algorand()
             .send()
@@ -172,25 +168,13 @@ impl BareTransactionSender<'_> {
             None,
         );
 
-        // Update the result with compiled programs
-        result.compiled_approval = Some(compiled.approval.compiled_base64_to_bytes.clone());
-        result.compiled_clear = Some(compiled.clear.compiled_base64_to_bytes.clone());
-
         // Convert to factory result with flattened fields
-        let factory_result = AppFactoryCreateMethodCallResult::new(
-            result.common_params.transaction,
-            result.common_params.confirmation,
-            result.common_params.tx_id,
-            result.common_params.group_id,
-            result.common_params.tx_ids,
-            result.common_params.transactions,
-            result.common_params.confirmations,
+        let factory_result = AppFactoryCreateResult::new(
+            result.transaction,
+            result.confirmation,
+            result.transaction_id,
             app_id,
             app_address,
-            result.compiled_approval,
-            result.compiled_clear,
-            result.abi_return,
-            None, // No arc56_return for bare calls
         );
 
         Ok((app_client, factory_result))
