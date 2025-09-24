@@ -2,7 +2,7 @@
 
 [[package]]
 name = "algokit-transact"
-version = "1.0.0a49"
+version = "1.0.0a67"
 description = ""
 optional = false
 python-versions = ">=3.9,<4.0"
