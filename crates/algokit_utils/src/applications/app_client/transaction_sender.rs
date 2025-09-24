@@ -1,3 +1,6 @@
+use crate::applications::app_client::types::{
+    AppClientUpdateMethodCallResult, AppClientUpdateResult,
+};
 use crate::transactions::SendResult;
 use crate::transactions::composer::SimulateParams;
 use crate::{AppClientError, SendAppMethodCallResult, SendParams};
@@ -169,20 +172,36 @@ impl<'app_client> TransactionSender<'app_client> {
         params: AppClientMethodCallParams,
         compilation_params: Option<CompilationParams>,
         send_params: Option<SendParams>,
-    ) -> Result<SendAppMethodCallResult, AppClientError> {
-        // TODO: maybe we should return the compiled program stuff
-        let (update_params, _) = self
+    ) -> Result<AppClientUpdateMethodCallResult, AppClientError> {
+        let (update_params, compiled_programs) = self
             .client
             .params()
             .update(params, compilation_params)
             .await?;
 
-        self.client
+        let result = self
+            .client
             .algorand()
             .send()
             .app_update_method_call(update_params, send_params)
             .await
-            .map_err(|e| self.client.transform_transaction_error(e, false))
+            .map_err(|e| self.client.transform_transaction_error(e, false))?;
+
+        Ok(AppClientUpdateMethodCallResult {
+            transaction: result.transaction,
+            confirmation: result.confirmation,
+            transaction_id: result.transaction_id,
+            abi_return: result.abi_return,
+            transactions: result.transactions,
+            confirmations: result.confirmations,
+            transaction_ids: result.transaction_ids,
+            abi_returns: result.abi_returns,
+            group: result.group,
+            compiled_approval: Some(compiled_programs.approval.compiled_base64_to_bytes),
+            compiled_clear: Some(compiled_programs.clear.compiled_base64_to_bytes),
+            approval_source_map: compiled_programs.approval.source_map.clone(),
+            clear_source_map: compiled_programs.clear.source_map.clone(),
+        })
     }
 
     /// Send payment to fund the application's account.
@@ -285,19 +304,30 @@ impl BareTransactionSender<'_> {
         params: AppClientBareCallParams,
         compilation_params: Option<CompilationParams>,
         send_params: Option<SendParams>,
-    ) -> Result<SendResult, AppClientError> {
-        let (update_params, _) = self
+    ) -> Result<AppClientUpdateResult, AppClientError> {
+        let (update_params, compiled_programs) = self
             .client
             .params()
             .bare()
             .update(params, compilation_params)
             .await?;
 
-        self.client
+        let result = self
+            .client
             .algorand()
             .send()
             .app_update(update_params, send_params)
             .await
-            .map_err(|e| self.client.transform_transaction_error(e, false))
+            .map_err(|e| self.client.transform_transaction_error(e, false))?;
+
+        Ok(AppClientUpdateResult {
+            transaction: result.transaction,
+            confirmation: result.confirmation,
+            transaction_id: result.transaction_id,
+            compiled_approval: Some(compiled_programs.approval.compiled_base64_to_bytes),
+            compiled_clear: Some(compiled_programs.clear.compiled_base64_to_bytes),
+            approval_source_map: compiled_programs.approval.source_map.clone(),
+            clear_source_map: compiled_programs.clear.source_map.clone(),
+        })
     }
 }

@@ -93,6 +93,7 @@ impl<'app_factory> TransactionSender<'app_factory> {
             result.confirmation,
             result.transaction_id,
             result.group,
+            result.abi_return,
             result.transaction_ids,
             result.transactions,
             result.confirmations,
@@ -102,7 +103,7 @@ impl<'app_factory> TransactionSender<'app_factory> {
             Some(clear_bytes),
             compiled.approval.source_map.clone(),
             compiled.clear.source_map.clone(),
-            result.abi_return,
+            result.abi_returns,
         );
 
         Ok((app_client, factory_result))

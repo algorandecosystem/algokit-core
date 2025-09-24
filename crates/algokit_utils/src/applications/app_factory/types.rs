@@ -44,6 +44,8 @@ pub struct AppFactoryCreateMethodCallResult {
     pub transaction_id: String,
     /// The group ID for the transaction group (if any)
     pub group: Option<Byte32>,
+    /// The ABI return value
+    pub abi_return: Option<ABIReturn>,
     /// All transaction IDs in the group
     pub transaction_ids: Vec<String>,
     /// All transactions in the group
@@ -63,7 +65,7 @@ pub struct AppFactoryCreateMethodCallResult {
     /// The clear program source map (if available)
     pub clear_source_map: Option<serde_json::Value>,
     /// The ABI return value
-    pub abi_return: Option<ABIReturn>,
+    pub abi_returns: Vec<ABIReturn>,
 }
 
 pub struct AppFactoryParams {
@@ -156,6 +158,7 @@ impl AppFactoryCreateMethodCallResult {
         confirmation: PendingTransactionResponse,
         transaction_id: String,
         group: Option<Byte32>,
+        abi_return: Option<ABIReturn>,
         transaction_ids: Vec<String>,
         transactions: Vec<Transaction>,
         confirmations: Vec<PendingTransactionResponse>,
@@ -165,7 +168,7 @@ impl AppFactoryCreateMethodCallResult {
         compiled_clear: Option<Vec<u8>>,
         approval_source_map: Option<serde_json::Value>,
         clear_source_map: Option<serde_json::Value>,
-        abi_return: Option<ABIReturn>,
+        abi_returns: Vec<ABIReturn>,
     ) -> Self {
         Self {
             transaction,
@@ -182,6 +185,7 @@ impl AppFactoryCreateMethodCallResult {
             approval_source_map,
             clear_source_map,
             abi_return,
+            abi_returns,
         }
     }
 }
