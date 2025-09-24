@@ -87,12 +87,6 @@ impl<'app_factory> TransactionSender<'app_factory> {
         // Extract app ID and construct the factory result
         let app_id = result.app_id;
         let app_address = Address::from_app_id(&app_id);
-        let arc56_return = self
-            .factory
-            .parse_method_return_value(&result.abi_return)
-            .map_err(|e| TransactionSenderError::ValidationError {
-                message: e.to_string(),
-            })?;
 
         let factory_result = AppFactoryCreateMethodCallResult::new(
             result.transaction,
@@ -106,8 +100,9 @@ impl<'app_factory> TransactionSender<'app_factory> {
             app_address,
             Some(approval_bytes),
             Some(clear_bytes),
+            compiled.approval.source_map.clone(),
+            compiled.clear.source_map.clone(),
             result.abi_return,
-            arc56_return,
         );
 
         Ok((app_client, factory_result))

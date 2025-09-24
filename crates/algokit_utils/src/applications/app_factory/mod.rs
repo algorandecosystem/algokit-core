@@ -1,12 +1,3 @@
-use std::collections::HashMap;
-use std::str::FromStr;
-use std::sync::{Arc, Mutex};
-
-use algod_client::models::PendingTransactionResponse;
-use algokit_abi::arc56_contract::CallOnApplicationComplete;
-use algokit_abi::{ABIReturn, ABIValue, Arc56Contract};
-use algokit_transact::{Transaction, TransactionId};
-
 use crate::applications::app_client::error_transformation::LogicErrorContext;
 use crate::applications::app_client::{AppClientMethodCallParams, CompilationParams};
 use crate::applications::app_deployer::{AppLookup, OnSchemaBreak, OnUpdate};
@@ -18,11 +9,15 @@ use crate::clients::app_manager::{
     DELETABLE_TEMPLATE_NAME, TealTemplateValue, UPDATABLE_TEMPLATE_NAME,
 };
 use crate::transactions::{
-    TransactionComposerConfig, TransactionSigner,
-    composer::{SendParams as ComposerSendParams, SendTransactionComposerResults},
+    TransactionComposerConfig, TransactionSigner, composer::SendParams as ComposerSendParams,
 };
 use crate::{AlgorandClient, AppClient, AppClientParams, AppSourceMaps};
+use algokit_abi::Arc56Contract;
+use algokit_abi::arc56_contract::CallOnApplicationComplete;
 use app_factory::types as aftypes;
+use std::collections::HashMap;
+use std::str::FromStr;
+use std::sync::{Arc, Mutex};
 
 mod compilation;
 mod error;
@@ -73,263 +68,6 @@ pub struct DeployArgs {
 }
 
 impl AppFactory {
-    fn extract_last_transaction_data(
-        composer_result: &SendTransactionComposerResults,
-    ) -> Result<
-        (
-            String,
-            Transaction,
-            PendingTransactionResponse,
-            Option<ABIReturn>,
-            Option<ABIValue>,
-        ),
-        AppFactoryError,
-    > {
-        let transaction_id = composer_result
-            .transaction_ids
-            .last()
-            .ok_or(AppFactoryError::ValidationError {
-                message: "No transaction Id returned".to_string(),
-            })?
-            .clone();
-        let transaction = composer_result
-            .transactions
-            .last()
-            .ok_or(AppFactoryError::ValidationError {
-                message: "No transaction returned".to_string(),
-            })?
-            .clone();
-        let confirmation = composer_result
-            .confirmations
-            .last()
-            .ok_or(AppFactoryError::ValidationError {
-                message: "No confirmation returned".to_string(),
-            })?
-            .clone();
-        let abi_return = composer_result.abi_returns.last().cloned();
-        let abi_value = Self::parse_method_return_value(&abi_return)?;
-
-        Ok((
-            transaction_id,
-            transaction,
-            confirmation,
-            abi_return,
-            abi_value,
-        ))
-    }
-
-    fn extract_first_transaction_data(
-        composer_result: &SendTransactionComposerResults,
-    ) -> Result<
-        (
-            String,
-            Transaction,
-            PendingTransactionResponse,
-            Option<ABIReturn>,
-            Option<ABIValue>,
-        ),
-        AppFactoryError,
-    > {
-        let transaction_id = composer_result
-            .transaction_ids
-            .first()
-            .ok_or(AppFactoryError::ValidationError {
-                message: "No transaction Id returned".to_string(),
-            })?
-            .clone();
-        let transaction = composer_result
-            .transactions
-            .first()
-            .ok_or(AppFactoryError::ValidationError {
-                message: "No transaction returned".to_string(),
-            })?
-            .clone();
-        let confirmation = composer_result
-            .confirmations
-            .first()
-            .ok_or(AppFactoryError::ValidationError {
-                message: "No confirmation returned".to_string(),
-            })?
-            .clone();
-        let abi_return = composer_result.abi_returns.first().cloned();
-        let abi_value = Self::parse_method_return_value(&abi_return)?;
-
-        Ok((
-            transaction_id,
-            transaction,
-            confirmation,
-            abi_return,
-            abi_value,
-        ))
-    }
-
-    async fn deploy_create_result(
-        &self,
-        composer_result: SendTransactionComposerResults,
-    ) -> Result<AppFactoryCreateMethodCallResult, AppFactoryError> {
-        let compiled = self.compile_programs_with(None).await?;
-
-        let (
-            primary_transaction_id,
-            primary_transaction,
-            primary_confirmation,
-            primary_abi_return,
-            primary_abi_value,
-        ) = Self::extract_last_transaction_data(&composer_result)?;
-
-        // Extract app_id from confirmation
-        let app_id =
-            primary_confirmation
-                .app_id
-                .ok_or_else(|| AppFactoryError::ValidationError {
-                    message: "App creation confirmation missing application-index".to_string(),
-                })?;
-        let app_address = algokit_transact::Address::from_app_id(&app_id);
-
-        Ok(AppFactoryCreateMethodCallResult::new(
-            primary_transaction,
-            primary_confirmation,
-            primary_transaction_id,
-            composer_result.group,
-            composer_result.transaction_ids,
-            composer_result.transactions,
-            composer_result.confirmations,
-            app_id,
-            app_address,
-            Some(compiled.approval.compiled_base64_to_bytes.clone()),
-            Some(compiled.clear.compiled_base64_to_bytes.clone()),
-            compiled.approval.source_map.clone(),
-            compiled.clear.source_map.clone(),
-            primary_abi_return,
-            primary_abi_value,
-        ))
-    }
-
-    async fn deploy_update_result(
-        &self,
-        composer_result: SendTransactionComposerResults,
-    ) -> Result<AppFactoryUpdateMethodCallResult, AppFactoryError> {
-        let compiled = self.compile_programs_with(None).await?;
-        let (
-            primary_transaction_id,
-            primary_transaction,
-            primary_confirmation,
-            primary_abi_return,
-            primary_abi_value,
-        ) = Self::extract_last_transaction_data(&composer_result)?;
-
-        Ok(AppFactoryUpdateMethodCallResult::new(
-            primary_transaction,
-            primary_confirmation,
-            primary_transaction_id,
-            composer_result.group,
-            composer_result.transaction_ids,
-            composer_result.transactions,
-            composer_result.confirmations,
-            Some(compiled.approval.compiled_base64_to_bytes.clone()),
-            Some(compiled.clear.compiled_base64_to_bytes.clone()),
-            compiled.approval.source_map.clone(),
-            compiled.clear.source_map.clone(),
-            primary_abi_return,
-            primary_abi_value,
-        ))
-    }
-
-    async fn deploy_replace_results(
-        &self,
-        composer_result: SendTransactionComposerResults,
-    ) -> Result<
-        (
-            AppFactoryCreateMethodCallResult,
-            AppFactoryDeleteMethodCallResult,
-        ),
-        AppFactoryError,
-    > {
-        if composer_result.confirmations.len() < 2
-            || composer_result.confirmations.len() != composer_result.transaction_ids.len()
-        {
-            return Err(AppFactoryError::ValidationError {
-                message: String::from(
-                    "Invalid replace composer result: expected create and delete confirmations",
-                ),
-            });
-        }
-        let compiled = self.compile_programs_with(None).await?;
-
-        // Create index 0
-        let (
-            create_transaction_id,
-            create_transaction,
-            create_confirmation,
-            create_abi_return,
-            create_abi_value,
-        ) = Self::extract_first_transaction_data(&composer_result)?;
-
-        // Extract app_id from confirmation
-        let app_id =
-            create_confirmation
-                .app_id
-                .ok_or_else(|| AppFactoryError::ValidationError {
-                    message: "App creation confirmation missing application-index".to_string(),
-                })?;
-        let app_address = algokit_transact::Address::from_app_id(&app_id);
-
-        let create_result = AppFactoryCreateMethodCallResult::new(
-            create_transaction,
-            composer_result.confirmations[0].clone(),
-            composer_result.transaction_ids[0].clone(),
-            composer_result.group.map(hex::encode).unwrap_or_default(),
-            vec![composer_result.transaction_ids[0].clone()],
-            vec![create_base.transaction.clone()],
-            vec![composer_result.confirmations[0].clone()],
-            app_id,
-            app_address,
-            Some(compiled.approval.compiled_base64_to_bytes.clone()),
-            Some(compiled.clear.compiled_base64_to_bytes.clone()),
-            create_abi.clone(),
-            create_arc56,
-        );
-
-        // Delete uses the final transaction in the replacement group
-        let delete_index = composer_result.confirmations.len() - 1;
-        let delete_tx = composer_result.confirmations[delete_index]
-            .txn
-            .transaction
-            .clone();
-        let delete_base = SendTransactionResult::new(
-            composer_result.group.map(hex::encode).unwrap_or_default(),
-            vec![composer_result.transaction_ids[delete_index].clone()],
-            vec![delete_tx.clone()],
-            vec![composer_result.confirmations[delete_index].clone()],
-            if composer_result.abi_returns.len() > delete_index {
-                Some(vec![composer_result.abi_returns[delete_index].clone()])
-            } else {
-                None
-            },
-        )
-        .map_err(|e| AppFactoryError::ValidationError {
-            message: e.to_string(),
-        })?;
-        let delete_abi = delete_base
-            .abi_returns
-            .as_ref()
-            .and_then(|v| v.last())
-            .cloned();
-        let delete_arc56 = self.parse_method_return_value(&delete_abi)?;
-        let delete_result = AppFactoryDeleteMethodCallResult::new(
-            delete_tx,
-            composer_result.confirmations[delete_index].clone(),
-            composer_result.transaction_ids[delete_index].clone(),
-            composer_result.group.map(hex::encode).unwrap_or_default(),
-            vec![composer_result.transaction_ids[delete_index].clone()],
-            vec![delete_base.transaction.clone()],
-            vec![composer_result.confirmations[delete_index].clone()],
-            delete_abi.clone(),
-            delete_arc56,
-        );
-        Ok((create_result, delete_result))
-    }
-
     pub fn new(params: AppFactoryParams) -> Self {
         let AppFactoryParams {
             algorand,
@@ -545,22 +283,6 @@ impl AppFactory {
         }
     }
 
-    fn parse_method_return_value(
-        abi_return: &Option<ABIReturn>,
-    ) -> Result<Option<ABIValue>, AppFactoryError> {
-        match abi_return {
-            None => Ok(None),
-            Some(ret) => {
-                if let Some(err) = &ret.decode_error {
-                    return Err(AppFactoryError::ValidationError {
-                        message: err.to_string(),
-                    });
-                }
-                Ok(ret.return_value.clone())
-            }
-        }
-    }
-
     pub(crate) fn detect_deploy_time_control_flag(
         &self,
         template_name: &str,
@@ -631,7 +353,7 @@ impl AppFactory {
     pub async fn deploy(
         &self,
         args: DeployArgs,
-    ) -> Result<(AppClient, aftypes::AppFactoryDeployResult), AppFactoryError> {
+    ) -> Result<(AppClient, AppDeployResult), AppFactoryError> {
         // Prepare create/update/delete deploy params
         // Auto-detect deploy-time controls if not explicitly provided
         let mut resolved_updatable = self.updatable;
@@ -693,54 +415,15 @@ impl AppFactory {
             .await
             .map_err(|e| AppFactoryError::AppDeployerError { source: e })?;
 
-        // Build AppClient for the resulting app
-        let app_metadata = match &deploy_result {
+        let app_id = match &deploy_result {
             AppDeployResult::Create { app, .. }
             | AppDeployResult::Update { app, .. }
             | AppDeployResult::Replace { app, .. }
-            | AppDeployResult::Nothing { app } => app,
+            | AppDeployResult::Nothing { app } => app.app_id,
         };
 
-        // Create AppClient with shared signers from the factory's AlgorandClient
-        let app_client = AppClient::new(AppClientParams {
-            app_id: app_metadata.app_id,
-            app_spec: self.app_spec.clone(),
-            algorand: self.algorand.clone(),
-            app_name: Some(self.app_name.clone()),
-            default_sender: self.default_sender.clone(),
-            default_signer: self.default_signer.clone(),
-            source_maps: self.current_source_maps(),
-            transaction_composer_config: self.transaction_composer_config.clone(),
-        });
+        let app_client = self.get_app_client_by_id(app_id, None, None, None, None);
 
-        // Convert deploy result into factory result with enriched typed results
-        let mut create_result: Option<aftypes::AppFactoryCreateMethodCallResult> = None;
-        let mut update_result: Option<aftypes::AppFactoryUpdateMethodCallResult> = None;
-        let mut delete_result: Option<aftypes::AppFactoryDeleteMethodCallResult> = None;
-
-        match &deploy_result {
-            AppDeployResult::Create { result, .. } => {
-                create_result = Some(self.deploy_create_result(result).await?);
-            }
-            AppDeployResult::Update { result, .. } => {
-                update_result = Some(self.deploy_update_result(result).await?);
-            }
-            AppDeployResult::Replace { result, .. } => {
-                let (c, d) = self.deploy_replace_results(result).await?;
-                create_result = Some(c);
-                delete_result = Some(d);
-            }
-            AppDeployResult::Nothing { .. } => {}
-        }
-
-        let factory_result = aftypes::AppFactoryDeployResult {
-            app: app_metadata.clone(),
-            operation_performed: deploy_result,
-            create_result,
-            update_result,
-            delete_result,
-        };
-
-        Ok((app_client, factory_result))
+        Ok((app_client, deploy_result))
     }
 }

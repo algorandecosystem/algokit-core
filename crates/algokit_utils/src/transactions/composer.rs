@@ -2225,44 +2225,44 @@ impl Composer {
     ) -> Result<SendTransactionComposerResults, ComposerError> {
         self.gather_signatures().await?;
 
-        let (group, encoded_bytes, transaction_ids, last_valid_max) = {
-            let stxns = self
-                .signed_group
-                .as_ref()
-                .filter(|&stxns| !stxns.is_empty())
-                .ok_or(ComposerError::StateError {
-                    message: "No transactions available".to_string(),
+        let signed_transactions = self
+            .signed_group
+            .as_ref()
+            .filter(|&stxns| !stxns.is_empty())
+            .ok_or(ComposerError::StateError {
+                message: "No transactions available".to_string(),
+            })?;
+
+        let transactions: Vec<Transaction> = signed_transactions
+            .iter()
+            .map(|txn| txn.transaction.clone())
+            .collect::<Vec<Transaction>>();
+
+        let transaction_ids: Vec<String> = transactions
+            .iter()
+            .map(|txn| txn.id())
+            .collect::<Result<Vec<String>, _>>()?;
+
+        let group = signed_transactions[0].transaction.header().group;
+
+        // Encode each signed transaction and concatenate them
+        let mut encoded_bytes = Vec::new();
+        for signed_txn in signed_transactions {
+            let encoded_txn = signed_txn
+                .encode()
+                .map_err(|e| ComposerError::TransactionError {
+                    message: format!("Failed to encode signed transaction: {}", e),
                 })?;
+            encoded_bytes.extend_from_slice(&encoded_txn);
+        }
 
-            let group = stxns[0].transaction.header().group;
-
-            // Encode each signed transaction and concatenate them
-            let mut encoded_bytes = Vec::new();
-            for signed_txn in stxns {
-                let encoded_txn =
-                    signed_txn
-                        .encode()
-                        .map_err(|e| ComposerError::TransactionError {
-                            message: format!("Failed to encode signed transaction: {}", e),
-                        })?;
-                encoded_bytes.extend_from_slice(&encoded_txn);
-            }
-
-            let transaction_ids: Vec<String> = stxns
-                .iter()
-                .map(|txn| txn.id())
-                .collect::<Result<Vec<String>, _>>()?;
-
-            let last_valid_max = stxns
-                .iter()
-                .map(|signed_transaction| signed_transaction.transaction.header().last_valid)
-                .max()
-                .ok_or(ComposerError::StateError {
-                    message: "Failed to calculate last valid round".to_string(),
-                })?;
-
-            (group, encoded_bytes, transaction_ids, last_valid_max)
-        };
+        let last_valid_max = signed_transactions
+            .iter()
+            .map(|signed_transaction| signed_transaction.transaction.header().last_valid)
+            .max()
+            .ok_or(ComposerError::StateError {
+                message: "Failed to calculate last valid round".to_string(),
+            })?;
 
         let wait_rounds = if let Some(max_rounds_to_wait_for_confirmation) =
             params.and_then(|p| p.max_rounds_to_wait_for_confirmation)
@@ -2316,15 +2316,6 @@ impl Composer {
             .map_err(|e| ComposerError::TransactionError {
                 message: format!("Failed to submit transaction(s): {:?}", e),
             })?;
-
-        let transactions: Vec<Transaction> = signed_transactions
-            .iter()
-            .map(|txn| txn.transaction.clone())
-            .collect::<Vec<Transaction>>();
-        let transaction_ids: Vec<String> = transactions
-            .iter()
-            .map(|txn| txn.id())
-            .collect::<Result<Vec<String>, _>>()?;
 
         let mut confirmations = Vec::new();
         for id in &transaction_ids {

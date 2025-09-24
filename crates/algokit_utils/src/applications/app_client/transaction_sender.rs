@@ -170,7 +170,7 @@ impl<'app_client> TransactionSender<'app_client> {
         compilation_params: Option<CompilationParams>,
         send_params: Option<SendParams>,
     ) -> Result<SendAppMethodCallResult, AppClientError> {
-        // TODO: check _
+        // TODO: maybe we should return the compiled program stuff
         let (update_params, _) = self
             .client
             .params()
