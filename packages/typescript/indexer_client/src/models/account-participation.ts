@@ -5,7 +5,7 @@ export type AccountParticipation = {
   /**
    * Selection public key (if any) currently registered for this round.
    */
-  selectionParticipationKey: string
+  selectionParticipationKey: Uint8Array
 
   /**
    * First round for which this participation is valid.
@@ -25,10 +25,10 @@ export type AccountParticipation = {
   /**
    * root participation public key (if any) currently registered for this round.
    */
-  voteParticipationKey: string
+  voteParticipationKey: Uint8Array
 
   /**
    * Root of the state proof key (if any)
    */
-  stateProofKey?: string
+  stateProofKey?: Uint8Array
 }

@@ -5,12 +5,12 @@ export type TealValue = {
   /**
    * \[tt\] value type. Value `1` refers to **bytes**, value `2` refers to **uint**
    */
-  type: bigint
+  type: number
 
   /**
    * \[tb\] bytes value.
    */
-  bytes: string
+  bytes: Uint8Array
 
   /**
    * \[ui\] uint value.

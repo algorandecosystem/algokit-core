@@ -47,12 +47,12 @@ export type TransactionApplication = {
   /**
    * \[apap\] Logic executed for every application transaction, except when on-completion is set to "clear". It can read and write global state for the application, as well as account-specific local state. Approval programs may reject the transaction.
    */
-  approvalProgram?: string
+  approvalProgram?: Uint8Array
 
   /**
    * \[apsu\] Logic executed for application transactions with on-completion set to "clear". It can read and write global state for the application, as well as account-specific local state. Clear state programs cannot reject the transaction.
    */
-  clearStateProgram?: string
+  clearStateProgram?: Uint8Array
 
   /**
    * \[epp\] specifies the additional app program len requested in pages.

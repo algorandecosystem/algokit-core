@@ -2,6 +2,7 @@ import { expect, it, describe } from 'vitest'
 import { AlgodClient } from '../src/client'
 import { getAlgodEnv, getSenderMnemonic } from './config'
 import { PendingTransactionResponse } from '../src/models'
+import { IntDecoding } from '../src'
 
 describe('Algod pendingTransaction', () => {
   it('submits a payment tx and queries pending info', async () => {
@@ -9,7 +10,7 @@ describe('Algod pendingTransaction', () => {
     const algosdk = (await import('algosdk')).default
     const client = new AlgodClient({
       baseUrl: env.algodBaseUrl,
-      intDecoding: 'bigint',
+      intDecoding: IntDecoding.BIGINT,
       headers: env.algodApiToken ? { 'X-Algo-API-Token': env.algodApiToken } : undefined,
     })
 
@@ -28,7 +29,7 @@ describe('Algod pendingTransaction', () => {
         firstValid: Number(sp['lastRound']),
         flatFee: true,
         lastValid: Number(sp['lastRound']) + 1000,
-        genesisHash: algosdk.base64ToBytes(sp['genesisHash']),
+        genesisHash: sp['genesisHash'] as Uint8Array,
         genesisID: sp['genesisId'] as string,
       },
     })

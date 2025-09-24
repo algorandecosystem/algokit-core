@@ -11,12 +11,12 @@ export type ApplicationParams = {
   /**
    * \[approv\] approval program.
    */
-  approvalProgram: string
+  approvalProgram: Uint8Array
 
   /**
    * \[clearp\] approval program.
    */
-  clearStateProgram: string
+  clearStateProgram: Uint8Array
 
   /**
    * \[epp\] the amount of extra program pages available to this app.

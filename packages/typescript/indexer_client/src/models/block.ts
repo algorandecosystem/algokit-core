@@ -29,7 +29,7 @@ export type Block = {
   /**
    * \[gh\] hash to which this block belongs.
    */
-  genesisHash: string
+  genesisHash: Uint8Array
 
   /**
    * \[gen\] ID to which this block belongs.
@@ -39,12 +39,12 @@ export type Block = {
   /**
    * \[prev\] Previous block hash.
    */
-  previousBlockHash: string
+  previousBlockHash: Uint8Array
 
   /**
    * \[prev512\] Previous block hash, using SHA-512.
    */
-  previousBlockHash512?: string
+  previousBlockHash512?: Uint8Array
   rewards?: BlockRewards
 
   /**
@@ -55,7 +55,7 @@ export type Block = {
   /**
    * \[seed\] Sortition seed.
    */
-  seed: string
+  seed: Uint8Array
 
   /**
    * Tracks the status of state proofs.
@@ -75,17 +75,17 @@ export type Block = {
   /**
    * \[txn\] TransactionsRoot authenticates the set of transactions appearing in the block. More specifically, it's the root of a merkle tree whose leaves are the block's Txids, in lexicographic order. For the empty block, it's 0. Note that the TxnRoot does not authenticate the signatures on the transactions, only the transactions themselves. Two blocks with the same transactions but in a different order and with different signatures will have the same TxnRoot.
    */
-  transactionsRoot: string
+  transactionsRoot: Uint8Array
 
   /**
    * \[txn256\] TransactionsRootSHA256 is an auxiliary TransactionRoot, built using a vector commitment instead of a merkle tree, and SHA256 hash function instead of the default SHA512_256. This commitment can be used on environments where only the SHA256 function exists.
    */
-  transactionsRootSha256: string
+  transactionsRootSha256: Uint8Array
 
   /**
    * \[txn512\] TransactionsRootSHA512 is an auxiliary TransactionRoot, built using a vector commitment instead of a merkle tree, and SHA512 hash function instead of the default SHA512_256.
    */
-  transactionsRootSha512?: string
+  transactionsRootSha512?: Uint8Array
 
   /**
    * \[tc\] TxnCounter counts the number of transactions committed in the ledger, from the time at which support for this feature was introduced.

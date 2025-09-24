@@ -145,6 +145,8 @@ class SchemaProcessor:
         self.renderer = renderer
         self._wire_to_canonical: dict[str, str] = {}
         self._camel_to_wire: dict[str, str] = {}
+        self._stx_fields_by_model: dict[str, list[str]] = {}
+        self._bytes_fields_by_model: dict[str, list[str]] = {}
 
     def generate_models(self, output_dir: Path, schemas: Schema) -> FileMap:
         models_dir = output_dir / constants.DirectoryName.SRC / constants.DirectoryName.MODELS
@@ -157,14 +159,9 @@ class SchemaProcessor:
             file_name = f"{ts_kebab_case(name)}{constants.MODEL_FILE_EXTENSION}"
             files[models_dir / file_name] = content
 
-        # TODO(utils-ts): Delete this temporary model once utils-ts is part of the monorepo
-        files[models_dir / f"algokitsignedtransaction{constants.MODEL_FILE_EXTENSION}"] = self.renderer.render(
-            "models/algokitsignedtransaction.ts.j2", {}
-        )
-
         files[models_dir / constants.INDEX_FILE] = self.renderer.render(
             constants.MODELS_INDEX_TEMPLATE,
-            {"schemas": schemas, "include_temp_signed_txn": True},
+            {"schemas": schemas},
         )
 
         return files
@@ -172,6 +169,47 @@ class SchemaProcessor:
     def _create_model_context(self, name: str, schema: Schema, all_schemas: Schema) -> TemplateContext:
         is_object = self._is_object_schema(schema)
         properties = self._extract_properties(schema) if is_object else []
+
+        # Track SignedTransaction field paths for nested encoding (msgpack)
+        if is_object:
+            paths: list[str] = []
+
+            def _traverse(obj: Schema, current_path: list[str]) -> None:
+                if not isinstance(obj, dict):
+                    return
+                # Direct vendor extension
+                if obj.get(constants.X_ALGOKIT_SIGNED_TXN) is True:
+                    paths.append(".".join(current_path))
+                    return
+                # Array case
+                items = obj.get(constants.SchemaKey.ITEMS)
+                if isinstance(items, dict):
+                    # If array of stx or nested, mark with []
+                    _traverse(items, current_path + ["[]"])
+                # Object properties
+                props = obj.get(constants.SchemaKey.PROPERTIES)
+                if isinstance(props, dict):
+                    for prop_name, prop_schema in props.items():
+                        canonical = prop_schema.get(constants.X_ALGOKIT_FIELD_RENAME) or prop_name
+                        _traverse(prop_schema, current_path + [ts_camel_case(canonical)])
+
+            _traverse(schema, [])
+            # Normalize consecutive [] and remove leading/trailing dots
+            normalized = [p.replace("..", ".").strip(".") for p in paths]
+            if normalized:
+                self._stx_fields_by_model[ts_pascal_case(name)] = normalized
+
+        # Track bytes fields for JSON <-> Uint8Array conversion
+        if is_object:
+            model_key = ts_pascal_case(name)
+            for prop in properties:
+                prop_schema = prop["schema"]
+                fmt = prop_schema.get(constants.SchemaKey.FORMAT)
+                is_bytes = fmt == "byte" or prop_schema.get(constants.X_ALGOKIT_BYTES_BASE64) is True
+                if is_bytes:
+                    canonical_name = prop_schema.get(constants.X_ALGOKIT_FIELD_RENAME) or prop["name"]
+                    camel = ts_camel_case(canonical_name)
+                    self._bytes_fields_by_model.setdefault(model_key, []).append(camel)
 
         return {
             "schema_name": name,
@@ -220,6 +258,14 @@ class SchemaProcessor:
     @property
     def rename_mappings(self) -> tuple[dict[str, str], dict[str, str]]:
         return self._wire_to_canonical, self._camel_to_wire
+
+    @property
+    def stx_fields(self) -> dict[str, list[str]]:
+        return self._stx_fields_by_model
+
+    @property
+    def bytes_fields(self) -> dict[str, list[str]]:
+        return self._bytes_fields_by_model
 
 
 class OperationProcessor:
@@ -623,6 +669,9 @@ class CodeGenerator:
         files.update(self.operation_processor.generate_service(output_dir, ops_by_tag, tags, service_class))
         files.update(self._generate_client_files(output_dir, client_class, service_class))
         files.update(self._generate_rename_map(output_dir))
+        files.update(self._generate_bytes_map(output_dir))
+        files.update(self._generate_stx_map(output_dir))
+        files.update(self._generate_transformers(output_dir))
 
         return files
 
@@ -652,7 +701,6 @@ class CodeGenerator:
             core_dir / "FetchHttpRequest.ts": ("base/src/core/FetchHttpRequest.ts.j2", context),
             core_dir / "ApiError.ts": ("base/src/core/ApiError.ts.j2", context),
             core_dir / "request.ts": ("base/src/core/request.ts.j2", context),
-            core_dir / "transformers.ts": ("base/src/core/transformers.ts.j2", context),
             core_dir / "json.ts": ("base/src/core/json.ts.j2", context),
             core_dir / "msgpack.ts": ("base/src/core/msgpack.ts.j2", context),
             core_dir / "casing.ts": ("base/src/core/casing.ts.j2", context),
@@ -683,7 +731,6 @@ class CodeGenerator:
         wire_to_canonical, camel_to_wire = self.schema_processor.rename_mappings
 
         core_dir = output_dir / constants.DirectoryName.SRC / constants.DirectoryName.CORE
-        # TODO(utils-ts): leverage rename metadata when emitting DTO mappers so base64 fields can flow into Uint8Array by default.
         return {
             core_dir / "rename-map.ts": (
                 self.renderer.render(
@@ -692,6 +739,46 @@ class CodeGenerator:
                         "wire_to_canonical": wire_to_canonical,
                         "camel_to_wire": camel_to_wire,
                     },
+                )
+            )
+        }
+
+    def _generate_bytes_map(self, output_dir: Path) -> FileMap:
+        """Render bytes field metadata per model for JSON base64 <-> Uint8Array mapping."""
+        core_dir = output_dir / constants.DirectoryName.SRC / constants.DirectoryName.CORE
+        return {
+            core_dir / "bytes-map.ts": (
+                self.renderer.render(
+                    "base/src/core/bytes-map.ts.j2",
+                    {"bytes_fields": self.schema_processor.bytes_fields},
+                )
+            )
+        }
+
+    def _generate_stx_map(self, output_dir: Path) -> FileMap:
+        """Render stx field paths per model for nested SignedTransaction encoding/decoding in msgpack bodies."""
+        core_dir = output_dir / constants.DirectoryName.SRC / constants.DirectoryName.CORE
+        return {
+            core_dir / "stx-map.ts": (
+                self.renderer.render(
+                    "base/src/core/stx-map.ts.j2",
+                    {"stx_fields": self.schema_processor.stx_fields},
+                )
+            )
+        }
+
+    def _generate_transformers(self, output_dir: Path) -> FileMap:
+        """Render transformers after schemas so we can conditionally include SignedTransaction support."""
+        core_dir = output_dir / constants.DirectoryName.SRC / constants.DirectoryName.CORE
+        uses_stx = any(v for v in self.schema_processor.stx_fields.values())
+        context = {
+            "uses_stx": uses_stx,
+        }
+        return {
+            core_dir / "transformers.ts": (
+                self.renderer.render(
+                    "base/src/core/transformers.ts.j2",
+                    context,
                 )
             )
         }

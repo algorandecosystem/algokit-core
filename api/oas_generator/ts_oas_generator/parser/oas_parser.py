@@ -14,9 +14,6 @@ from typing import Any
 class OASParser:
     """Simple parser for OpenAPI 3.x specifications."""
 
-    # TODO: refine further once utils ts core is within same repo
-    # to handle x-algokit-signed-txn vendor extension
-
     def __init__(self) -> None:
         """Initialize the parser with no loaded data."""
         self.spec_data: dict[str, Any] | None = None

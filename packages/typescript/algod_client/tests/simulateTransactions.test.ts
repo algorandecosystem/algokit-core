@@ -1,5 +1,5 @@
 import { expect, it, describe } from 'vitest'
-import { AlgodClient, ClientConfig, SimulateRequest } from '../src'
+import { AlgodClient, ClientConfig, IntDecoding, SimulateRequest } from '../src'
 import { getAlgodEnv, getSenderMnemonic } from './config'
 
 describe('simulateTransactions', () => {
@@ -9,7 +9,7 @@ describe('simulateTransactions', () => {
     const client = new AlgodClient({
       baseUrl: env.algodBaseUrl,
       headers: { 'X-Algo-API-Token': env.algodApiToken ?? '' },
-      intDecoding: 'bigint',
+      intDecoding: IntDecoding.BIGINT,
     } as ClientConfig)
 
     const mnemonic = env.senderMnemonic ?? (await getSenderMnemonic())
@@ -28,7 +28,7 @@ describe('simulateTransactions', () => {
         firstValid: Number(sp['lastRound']),
         flatFee: true,
         lastValid: Number(sp['lastRound']) + 1000,
-        genesisHash: algosdk.base64ToBytes(sp['genesisHash']),
+        genesisHash: sp['genesisHash'] as Uint8Array,
         genesisID: sp['genesisId'] as string,
       },
     })
@@ -46,7 +46,7 @@ describe('simulateTransactions', () => {
         firstValid: Number(sp['lastRound']),
         flatFee: true,
         lastValid: Number(sp['lastRound']) + 1000,
-        genesisHash: algosdk.base64ToBytes(sp['genesisHash']),
+        genesisHash: sp['genesisHash'] as Uint8Array,
         genesisID: sp['genesisId'] as string,
       },
     })
@@ -78,7 +78,7 @@ describe('simulateTransactions', () => {
       fixSigners: true,
     }
 
-    const res = await client.simulateTransaction({ format: 'msgpack', body: simulateRequest })
+    const res = await client.simulateTransaction({ format: 'json', body: simulateRequest })
     expect(res.txnGroups.length).toBe(1)
     expect(res.txnGroups[0].txnResults.length).toBe(2)
   }, 20000)

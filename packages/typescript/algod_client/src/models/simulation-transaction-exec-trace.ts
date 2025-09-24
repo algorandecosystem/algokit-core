@@ -11,7 +11,7 @@ export type SimulationTransactionExecTrace = {
   /**
    * SHA512_256 hash digest of the approval program executed in transaction.
    */
-  approvalProgramHash?: string
+  approvalProgramHash?: Uint8Array
 
   /**
    * Program trace that contains a trace of opcode effects in a clear state program.
@@ -21,7 +21,7 @@ export type SimulationTransactionExecTrace = {
   /**
    * SHA512_256 hash digest of the clear state program executed in transaction.
    */
-  clearStateProgramHash?: string
+  clearStateProgramHash?: Uint8Array
 
   /**
    * If true, indicates that the clear state program failed and any persistent state changes it produced should be reverted once the program exits.
@@ -41,7 +41,7 @@ export type SimulationTransactionExecTrace = {
   /**
    * SHA512_256 hash digest of the logic sig executed in transaction.
    */
-  logicSigHash?: string
+  logicSigHash?: Uint8Array
 
   /**
    * An array of SimulationTransactionExecTrace representing the execution trace of any inner transactions executed.

@@ -2,12 +2,12 @@ export type IndexerStateProofMessage = {
   /**
    * \[b\]
    */
-  blockHeadersCommitment?: string
+  blockHeadersCommitment?: Uint8Array
 
   /**
    * \[v\]
    */
-  votersCommitment?: string
+  votersCommitment?: Uint8Array
 
   /**
    * \[P\]

@@ -1,9 +1,10 @@
-import type { Account, AlgokitSignedTransaction, Application, DryrunSource } from './index'
+import type { Account, Application, DryrunSource } from './index'
+import type { SignedTransaction } from '@algorandfoundation/algokit-transact'
 /**
  * Request data type for dryrun endpoint. Given the Transactions and simulated ledger state upload, run TEAL scripts and return debugging information.
  */
 export type DryrunRequest = {
-  txns: AlgokitSignedTransaction[]
+  txns: SignedTransaction[]
   accounts: Account[]
   apps: Application[]
 

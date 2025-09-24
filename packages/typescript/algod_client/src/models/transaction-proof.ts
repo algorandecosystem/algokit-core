@@ -5,12 +5,12 @@ export type TransactionProof = {
   /**
    * Proof of transaction membership.
    */
-  proof: string
+  proof: Uint8Array
 
   /**
    * Hash of SignedTxnInBlock for verifying proof.
    */
-  stibhash: string
+  stibhash: Uint8Array
 
   /**
    * Represents the depth of the tree that is being proven, i.e. the number of edges from a leaf to the root.

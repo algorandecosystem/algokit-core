@@ -69,7 +69,7 @@ export type Transaction = {
   /**
    * \[gh\] Hash of genesis block.
    */
-  genesisHash?: string
+  genesisHash?: Uint8Array
 
   /**
    * \[gen\] genesis block ID.
@@ -79,7 +79,7 @@ export type Transaction = {
   /**
    * \[grp\] Base64 encoded byte array of a sha512/256 digest. When present indicates that this transaction is part of a transaction group and the value is the sha512/256 hash of the transactions in that group.
    */
-  group?: string
+  group?: Uint8Array
 
   /**
    * Transaction ID
@@ -100,12 +100,12 @@ export type Transaction = {
   /**
    * \[lx\] Base64 encoded 32-byte array. Lease enforces mutual exclusion of transactions.  If this field is nonzero, then once the transaction is confirmed, it acquires the lease identified by the (Sender, Lease) pair of the transaction until the LastValid round passes.  While this transaction possesses the lease, no other transaction specifying this lease can be confirmed.
    */
-  lease?: string
+  lease?: Uint8Array
 
   /**
    * \[note\] Free form data.
    */
-  note?: string
+  note?: Uint8Array
   paymentTransaction?: TransactionPayment
 
   /**
@@ -158,7 +158,7 @@ export type Transaction = {
   /**
    * \[lg\] Logs for the application being executed by this transaction.
    */
-  logs?: string[]
+  logs?: Uint8Array[]
 
   /**
    * Inner transactions produced by application execution.

@@ -4,7 +4,7 @@ import type { BuildVersion } from './index'
  */
 export type Version = {
   build: BuildVersion
-  genesisHashB64: string
+  genesisHashB64: Uint8Array
   genesisId: string
   versions: string[]
 }

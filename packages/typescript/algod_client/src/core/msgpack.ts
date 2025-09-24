@@ -1,7 +1,5 @@
 import { encode as msgpackEncode, decode as msgpackDecode } from '@msgpack/msgpack'
-// TODO(utils-ts): Remove temporary type import when utils-ts is integrated
-import type { AlgokitSignedTransaction } from '../models'
-import type { IntDecoding } from './json'
+import { IntDecoding } from './json'
 
 /**
  * Prepare value for Algorand-compliant msgpack encoding.
@@ -13,89 +11,7 @@ import type { IntDecoding } from './json'
  * These rules apply universally for both API communication and transaction encoding,
  * as go-algorand uses the same codec settings for all msgpack operations.
  */
-function prepareForEncoding(value: any): any {
-  // eslint-disable-line @typescript-eslint/no-explicit-any
-  if (value === null || value === undefined) {
-    return undefined
-  }
-
-  // Handle numbers - omit zeros
-  if (typeof value === 'number') {
-    if (value === 0) return undefined
-    return value
-  }
-
-  // Handle bigints - omit zeros and convert to number when safe (for smaller encoding)
-  if (typeof value === 'bigint') {
-    if (value === 0n) return undefined
-    // Convert to number if it fits safely (implements PositiveIntUnsigned behavior)
-    if (value <= BigInt(Number.MAX_SAFE_INTEGER) && value >= BigInt(Number.MIN_SAFE_INTEGER)) {
-      return Number(value)
-    }
-    return value
-  }
-
-  // Handle strings - omit empty strings
-  if (typeof value === 'string') {
-    if (value === '') return undefined
-    return value
-  }
-
-  // Handle Uint8Array - omit empty arrays
-  if (value instanceof Uint8Array) {
-    if (value.length === 0) return undefined
-    return value
-  }
-
-  // Handle arrays - omit empty arrays and filter undefined values
-  if (Array.isArray(value)) {
-    if (value.length === 0) return undefined
-    const processed = value.map(prepareForEncoding).filter((v) => v !== undefined)
-    return processed.length > 0 ? processed : undefined
-  }
-
-  // Handle objects - omit empty objects and filter undefined values (RecursiveEmptyCheck)
-  if (value && typeof value === 'object') {
-    const result: any = {} // eslint-disable-line @typescript-eslint/no-explicit-any
-    for (const [k, v] of Object.entries(value)) {
-      const prepared = prepareForEncoding(v)
-      if (prepared !== undefined) {
-        result[k] = prepared
-      }
-    }
-    // Return undefined if object is empty after filtering
-    return Object.keys(result).length > 0 ? result : undefined
-  }
-
-  return value
-}
-
-function convertIntegersToBigInt(value: any): any {
-  // eslint-disable-line @typescript-eslint/no-explicit-any
-  if (value === null || value === undefined) {
-    return value
-  }
-  if (typeof value === 'number' && Number.isInteger(value)) {
-    return BigInt(value)
-  }
-  if (typeof value === 'bigint') {
-    return value
-  }
-  if (value instanceof Uint8Array) {
-    return value
-  }
-  if (Array.isArray(value)) {
-    return value.map(convertIntegersToBigInt)
-  }
-  if (value && typeof value === 'object') {
-    const result: any = {} // eslint-disable-line @typescript-eslint/no-explicit-any
-    for (const [k, v] of Object.entries(value)) {
-      result[k] = convertIntegersToBigInt(v)
-    }
-    return result
-  }
-  return value
-}
+// No global pre-encoding mutation; domain codecs handle omission/short-keys when applicable.
 
 /**
  * Encode a value as msgpack using Algorand's strict encoding rules.
@@ -107,38 +23,29 @@ function convertIntegersToBigInt(value: any): any {
  * @param value - The value to encode
  * @returns Encoded msgpack bytes
  */
-export function encodeMsgPack(value: any): Uint8Array {
-  // eslint-disable-line @typescript-eslint/no-explicit-any
-  const prepared = prepareForEncoding(value)
-
-  // Ensure we return valid msgpack even if everything was omitted
-  const toEncode = prepared === undefined ? {} : prepared
-
-  return msgpackEncode(toEncode, {
+export function encodeMsgPack<T>(value: T): Uint8Array {
+  return msgpackEncode(value as unknown as any, {
+    // eslint-disable-line @typescript-eslint/no-explicit-any
     sortKeys: true, // Canonical = true in go-algorand
     forceIntegerToFloat: false,
-    ignoreUndefined: true, // Handle undefined values from prepareForEncoding
+    ignoreUndefined: true,
     initialBufferSize: 2048,
     useBigInt64: true, // Support for large integers
   })
 }
 
-export function decodeMsgPack(buffer: Uint8Array): any {
-  // eslint-disable-line @typescript-eslint/no-explicit-any
-  const decoded = msgpackDecode(buffer, {
-    useBigInt64: true,
-  })
-  return convertIntegersToBigInt(decoded)
+export function decodeMsgPack<T>(buffer: Uint8Array): T {
+  return msgpackDecode(buffer, { useBigInt64: true }) as T
 }
 
 export function normalizeMsgPackIntegers(value: any, intDecoding: IntDecoding): any {
   // eslint-disable-line @typescript-eslint/no-explicit-any
   switch (intDecoding) {
-    case 'bigint':
+    case IntDecoding.BIGINT:
       return value
-    case 'unsafe':
+    case IntDecoding.UNSAFE:
       return mapBigInts(value, (bi) => Number(bi))
-    case 'safe':
+    case IntDecoding.SAFE:
       // Throw if any bigint is not safely representable
       traverse(value, (v) => {
         if (typeof v === 'bigint' && !Number.isSafeInteger(Number(v))) {
@@ -146,7 +53,7 @@ export function normalizeMsgPackIntegers(value: any, intDecoding: IntDecoding): 
         }
       })
       return mapBigInts(value, (bi) => Number(bi))
-    case 'mixed':
+    case IntDecoding.MIXED:
     default:
       return mapBigInts(value, (bi) => {
         const asNum = Number(bi)
@@ -156,7 +63,7 @@ export function normalizeMsgPackIntegers(value: any, intDecoding: IntDecoding): 
 }
 
 // Helpers to map SignedTransactionDto <-> AlgokitSignedTransaction if present in responses
-// No DTO helpers needed: once utils-ts is integrated, this file remains unchanged.
+// Mapping and integer normalization handled centrally; domain codecs are used via vendor extensions.
 
 function traverse(obj: any, fn: (v: any) => void): void {
   // eslint-disable-line @typescript-eslint/no-explicit-any

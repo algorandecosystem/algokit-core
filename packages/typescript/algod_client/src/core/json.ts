@@ -4,7 +4,33 @@ declare const require: any
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const JSONBigFactory = require('json-bigint')
 
-export type IntDecoding = 'safe' | 'unsafe' | 'mixed' | 'bigint'
+/**
+ * Configure how integers in JSON response will be decoded.
+ */
+export enum IntDecoding {
+  /**
+   * All integers will be decoded as Numbers, meaning any values greater than
+   * Number.MAX_SAFE_INTEGER will lose precision.
+   */
+  UNSAFE = 'unsafe',
+
+  /**
+   * All integers will be decoded as Numbers, but if any values are greater than
+   * Number.MAX_SAFE_INTEGER an error will be thrown.
+   */
+  SAFE = 'safe',
+
+  /**
+   * Integers will be decoded as Numbers if they are less than or equal to
+   * Number.MAX_SAFE_INTEGER, otherwise they will be decoded as BigInts.
+   */
+  MIXED = 'mixed',
+
+  /**
+   * All integers will be decoded as BigInts.
+   */
+  BIGINT = 'bigint',
+}
 
 // Instances
 const JSONBigMixed = JSONBigFactory({ useNativeBigInt: true, alwaysParseAsBig: false })
@@ -42,21 +68,21 @@ function convertLargeNumericStrings(obj: any): any {
   return obj
 }
 
-export function parseJson(text: string, intDecoding: IntDecoding = 'mixed'): any {
+export function parseJson(text: string, intDecoding: IntDecoding = IntDecoding.MIXED): any {
   // eslint-disable-line @typescript-eslint/no-explicit-any
   switch (intDecoding) {
-    case 'unsafe':
+    case IntDecoding.UNSAFE:
       return JSON.parse(text)
-    case 'bigint': {
+    case IntDecoding.BIGINT: {
       const v = JSONBigAllBig.parse(text)
       return convertLargeNumericStrings(v)
     }
-    case 'safe': {
+    case IntDecoding.SAFE: {
       const value = JSONBigMixed.parse(text)
       traverseAndThrowOnBigInt(value)
       return value
     }
-    case 'mixed':
+    case IntDecoding.MIXED:
     default: {
       const v = JSONBigMixed.parse(text)
       return convertLargeNumericStrings(v)

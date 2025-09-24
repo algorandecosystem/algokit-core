@@ -2,10 +2,10 @@ export type TransactionSignatureMultisigSubsignature = {
   /**
    * \[pk\]
    */
-  publicKey?: string
+  publicKey?: Uint8Array
 
   /**
    * \[s\]
    */
-  signature?: string
+  signature?: Uint8Array
 }

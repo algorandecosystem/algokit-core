@@ -1,12 +1,12 @@
 import type { MerkleArrayProof } from './index'
 
 export type StateProofSignature = {
-  falconSignature?: string
+  falconSignature?: Uint8Array
   merkleArrayIndex?: bigint
   proof?: MerkleArrayProof
 
   /**
    * \[vkey\]
    */
-  verifyingKey?: string
+  verifyingKey?: Uint8Array
 }

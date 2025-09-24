@@ -150,8 +150,8 @@ def _inline_object(schema: dict[str, Any], schemas: dict[str, Any] | None) -> st
 
 def _map_primitive(schema_type: str, _schema_format: str | None, _schema: dict[str, Any]) -> str:
     if schema_type == "integer":
-        # Default to bigint for blockchain-sized integers; keep int32 as number
-        if _schema_format == "int32":
+        # Keep small control integers as number when format suggests int32 or when description indicates small discriminator
+        if _schema_format == "int32" or "value type" in str(_schema.get("description", "")).lower():
             return TypeScriptType.NUMBER
         return TypeScriptType.BIGINT
 
@@ -159,7 +159,9 @@ def _map_primitive(schema_type: str, _schema_format: str | None, _schema: dict[s
         return TypeScriptType.NUMBER
 
     if schema_type == "string":
-        # bytes/base64 remain string for JSON representation
+        # bytes/base64 are represented as Uint8Array in domain model
+        if _schema_format == "byte" or _schema.get(constants.X_ALGOKIT_BYTES_BASE64) is True:
+            return TypeScriptType.UINT8ARRAY
         return TypeScriptType.STRING
 
     if schema_type == "boolean":
@@ -183,6 +185,7 @@ def ts_enum_type(schema: dict[str, Any]) -> str | None:
         return " | ".join([f"'{v!s}'" for v in values])
 
     if type_val == "integer":
+        # Integers used as enum discriminators are small; map to number
         return " | ".join([str(v) for v in values])
 
     # Fallback: treat as string literals
@@ -194,10 +197,9 @@ def ts_type(schema: dict[str, Any] | None, schemas: dict[str, Any] | None = None
     if not schema:
         return TypeScriptType.ANY
 
-    # Vendor extension: x-algokit-signed-txn -> reference temporary AlgokitSignedTransaction model
-    # TODO(utils-ts): Remove this vendor extension mapping and rely on real utils SignedTransaction type
+    # Vendor extension: x-algokit-signed-txn -> reference domain SignedTransaction type directly
     if isinstance(schema, dict) and schema.get(constants.X_ALGOKIT_SIGNED_TXN) is True:
-        return "AlgokitSignedTransaction"
+        return "SignedTransaction"
 
     # Handle references
     if "$ref" in schema:
@@ -225,9 +227,8 @@ def ts_type(schema: dict[str, Any] | None, schemas: dict[str, Any] | None = None
     if schema_type == "array":
         items_schema = schema.get(SchemaKey.ITEMS, {})
         # Apply vendor extension on nested items as well
-        # TODO(utils-ts): Remove when x-algokit-signed-txn is handled by utils types
         if isinstance(items_schema, dict) and items_schema.get(constants.X_ALGOKIT_SIGNED_TXN) is True:
-            items_type = "AlgokitSignedTransaction"
+            items_type = "SignedTransaction"
         else:
             items_type = ts_type(items_schema, schemas)
         return f"{items_type}[]"
@@ -276,9 +277,7 @@ def collect_schema_refs(schema: dict[str, Any], current_schema_name: str | None 
         if not obj or not isinstance(obj, dict):
             return
 
-        # Include vendor extension-based synthetic references
-        if obj.get(constants.X_ALGOKIT_SIGNED_TXN) is True:
-            refs.add("AlgokitSignedTransaction")
+        # Do not include external domain types (e.g., SignedTransaction) in local refs
 
         # Direct $ref
         if "$ref" in obj:
@@ -311,6 +310,43 @@ def collect_schema_refs(schema: dict[str, Any], current_schema_name: str | None 
     return sorted(refs)
 
 
+def schema_uses_signed_txn(schema: dict[str, Any]) -> bool:  # noqa: C901
+    """Detect if a schema (recursively) uses the x-algokit-signed-txn vendor extension."""
+    found = False
+
+    def _traverse(obj: Any) -> None:  # noqa: C901
+        nonlocal found
+        if found:
+            return
+        if not isinstance(obj, dict):
+            return
+        if obj.get(constants.X_ALGOKIT_SIGNED_TXN) is True:
+            found = True
+            return
+        if "$ref" in obj:
+            return
+        # properties
+        props = obj.get(constants.SchemaKey.PROPERTIES)
+        if isinstance(props, dict):
+            for v in props.values():
+                _traverse(v)
+        # items
+        if constants.SchemaKey.ITEMS in obj:
+            _traverse(obj[constants.SchemaKey.ITEMS])
+        # composition
+        for key in [constants.SchemaKey.ALL_OF, constants.SchemaKey.ONE_OF, constants.SchemaKey.ANY_OF]:
+            if key in obj and isinstance(obj[key], list):
+                for sub in obj[key]:
+                    _traverse(sub)
+        # additionalProperties
+        addl = obj.get(constants.SchemaKey.ADDITIONAL_PROPERTIES)
+        if isinstance(addl, dict):
+            _traverse(addl)
+
+    _traverse(schema)
+    return found
+
+
 FILTERS: dict[str, Any] = {
     "ts_doc_comment": ts_doc_comment,
     "ts_string_literal": ts_string_literal,
@@ -324,4 +360,5 @@ FILTERS: dict[str, Any] = {
     "has_msgpack_2xx": has_msgpack_2xx,
     "response_content_types": response_content_types,
     "collect_schema_refs": collect_schema_refs,
+    "schema_uses_signed_txn": schema_uses_signed_txn,
 }

@@ -1,6 +1,14 @@
 import type { BaseHttpRequest, ApiRequestOptions } from '../core/BaseHttpRequest';
-// SignedTransaction codecs (only used when request/response types reference AlgokitSignedTransaction)
+{% set needs_stx = false %}
+{% for op in operations %}
+  {% if op.requestBody and (op.requestBody.tsType == 'SignedTransaction' or op.requestBody.tsType == 'SignedTransaction[]') %}
+    {% set needs_stx = true %}
+  {% endif %}
+{% endfor %}
+{% if needs_stx %}
+// SignedTransaction codecs (used when vendor extension x-algokit-signed-txn is present)
 import { encodeSignedTransaction, encodeSignedTransactions } from '@algorandfoundation/algokit-transact';
+{% endif %}
 {% if import_types and import_types|length > 0 %}
 import type { {{ import_types | sort | join(', ') }} } from '../models/index';
 {% endif %}
@@ -75,9 +83,9 @@ export class {{ service_class_name }} {
       },
       headers,
       body: {% if op.requestBody %}
-        {% if op.requestBody.tsType == 'AlgokitSignedTransaction' %}
+        {% if op.requestBody.tsType == 'SignedTransaction' %}
           params?.body ? encodeSignedTransaction(params!.body as any) : undefined
-        {% elif op.requestBody.tsType == 'AlgokitSignedTransaction[]' %}
+        {% elif op.requestBody.tsType == 'SignedTransaction[]' %}
           params?.body ? encodeSignedTransactions(params!.body as any) : undefined
         {% else %}
           params?.body

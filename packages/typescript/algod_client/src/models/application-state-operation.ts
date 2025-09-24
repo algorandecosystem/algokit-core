@@ -16,7 +16,7 @@ export type ApplicationStateOperation = {
   /**
    * The key (name) of the global/local/box state.
    */
-  key: string
+  key: Uint8Array
   newValue?: AvmValue
 
   /**

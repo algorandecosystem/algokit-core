@@ -1,3 +1,0 @@
-// Use the domain SignedTransaction type from algokit-transact
-import type { SignedTransaction } from '@algorandfoundation/algokit-transact'
-export type AlgokitSignedTransaction = SignedTransaction

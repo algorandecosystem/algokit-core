@@ -15,12 +15,12 @@ export type TransactionHeartbeat = {
   /**
    * \[hbsd\] HbSeed must be the block seed for the this transaction's firstValid block.
    */
-  hbSeed: string
+  hbSeed: Uint8Array
 
   /**
    * \[hbvid\] HbVoteID must match the HbAddress account's current VoteID.
    */
-  hbVoteId: string
+  hbVoteId: Uint8Array
 
   /**
    * \[hbkd\] HbKeyDilution must match HbAddress account's current KeyDilution.

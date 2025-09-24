@@ -40,7 +40,7 @@ export type AssetParams = {
   /**
    * \[am\] A commitment to some unspecified asset metadata. The format of this metadata is up to the application.
    */
-  metadataHash?: string
+  metadataHash?: Uint8Array
 
   /**
    * \[an\] Name of this asset, as supplied by the creator. Included only when the asset name is composed of printable utf-8 characters.
@@ -50,7 +50,7 @@ export type AssetParams = {
   /**
    * Base64 encoded name of this asset, as supplied by the creator.
    */
-  nameB64?: string
+  nameB64?: Uint8Array
 
   /**
    * \[r\] Address of account holding reserve (non-minted) units of this asset.
@@ -70,7 +70,7 @@ export type AssetParams = {
   /**
    * Base64 encoded name of a unit of this asset, as supplied by the creator.
    */
-  unitNameB64?: string
+  unitNameB64?: Uint8Array
 
   /**
    * \[au\] URL where more information about the asset can be retrieved. Included only when the URL is composed of printable utf-8 characters.
@@ -80,5 +80,5 @@ export type AssetParams = {
   /**
    * Base64 encoded URL where more information about the asset can be retrieved.
    */
-  urlB64?: string
+  urlB64?: Uint8Array
 }

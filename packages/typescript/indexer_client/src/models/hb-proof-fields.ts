@@ -5,25 +5,25 @@ export type HbProofFields = {
   /**
    * \[s\] Signature of the heartbeat message.
    */
-  hbSig?: string
+  hbSig?: Uint8Array
 
   /**
    * \[p\] Public key of the heartbeat message.
    */
-  hbPk?: string
+  hbPk?: Uint8Array
 
   /**
    * \[p2\] Key for new-style two-level ephemeral signature.
    */
-  hbPk2?: string
+  hbPk2?: Uint8Array
 
   /**
    * \[p1s\] Signature of OneTimeSignatureSubkeyOffsetID(PK, Batch, Offset) under the key PK2.
    */
-  hbPk1sig?: string
+  hbPk1sig?: Uint8Array
 
   /**
    * \[p2s\] Signature of OneTimeSignatureSubkeyBatchID(PK2, Batch) under the master key (OneTimeSignatureVerifier).
    */
-  hbPk2sig?: string
+  hbPk2sig?: Uint8Array
 }

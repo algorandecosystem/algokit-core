@@ -14,12 +14,12 @@ export type TransactionSignatureLogicsig = {
   /**
    * \[l\] Program signed by a signature or multi signature, or hashed to be the address of an account. Base64 encoded TEAL program.
    */
-  logic: string
+  logic: Uint8Array
   multisigSignature?: TransactionSignatureMultisig
   logicMultisigSignature?: TransactionSignatureMultisig
 
   /**
    * \[sig\] ed25519 signature.
    */
-  signature?: string
+  signature?: Uint8Array
 }

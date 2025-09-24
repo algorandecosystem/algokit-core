@@ -4,7 +4,7 @@ export type MerkleArrayProof = {
   /**
    * \[pth\]
    */
-  path?: string[]
+  path?: Uint8Array[]
   hashFactory?: HashFactory
 
   /**

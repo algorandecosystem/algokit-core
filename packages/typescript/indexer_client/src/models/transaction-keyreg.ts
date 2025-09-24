@@ -13,7 +13,7 @@ export type TransactionKeyreg = {
   /**
    * \[selkey\] Public key used with the Verified Random Function (VRF) result during committee selection.
    */
-  selectionParticipationKey?: string
+  selectionParticipationKey?: Uint8Array
 
   /**
    * \[votefst\] First round this participation key is valid.
@@ -33,10 +33,10 @@ export type TransactionKeyreg = {
   /**
    * \[votekey\] Participation public key used in key registration transactions.
    */
-  voteParticipationKey?: string
+  voteParticipationKey?: Uint8Array
 
   /**
    * \[sprfkey\] State proof key used in key registration transactions.
    */
-  stateProofKey?: string
+  stateProofKey?: Uint8Array
 }

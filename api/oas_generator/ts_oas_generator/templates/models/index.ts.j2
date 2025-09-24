@@ -2,6 +2,3 @@
 {% for name, _ in schemas.items() %}
 export type { {{ name | ts_pascal_case }} } from './{{ name | ts_kebab_case }}';
 {% endfor %}
-{% if include_temp_signed_txn %}
-export type { AlgokitSignedTransaction } from './algokitsignedtransaction';
-{% endif %}

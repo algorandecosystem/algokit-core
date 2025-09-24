@@ -10,7 +10,7 @@ export type TealValue = {
   /**
    * bytes value.
    */
-  bytes: string
+  bytes: Uint8Array
 
   /**
    * uint value.

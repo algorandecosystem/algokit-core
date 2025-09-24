@@ -5,7 +5,7 @@ export type AvmValue = {
   /**
    * value type. Value `1` refers to **bytes**, value `2` refers to **uint64**
    */
-  type: bigint
+  type: number
 
   /**
    * bytes value.

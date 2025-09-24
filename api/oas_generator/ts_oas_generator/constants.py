@@ -208,6 +208,7 @@ BACKUP_DIR_PREFIX: Final[str] = "tsgen_bak_"
 # Custom extension
 X_ALGOKIT_BIGINT: Final[str] = "x-algokit-bigint"
 X_ALGOKIT_SIGNED_TXN: Final[str] = "x-algokit-signed-txn"
+X_ALGOKIT_BYTES_BASE64: Final[str] = "x-algokit-bytes-base64"
 
 # Template configuration
 TEMPLATE_TRIM_BLOCKS: Final[bool] = True

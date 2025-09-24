@@ -1,6 +1,4 @@
 import type { BaseHttpRequest, ApiRequestOptions } from '../core/BaseHttpRequest'
-// SignedTransaction codecs (only used when request/response types reference AlgokitSignedTransaction)
-import { encodeSignedTransaction, encodeSignedTransactions } from '@algorandfoundation/algokit-transact'
 import type {
   AbortCatchup,
   Account,

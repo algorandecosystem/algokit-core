@@ -9,7 +9,7 @@ export type StateProofFields = {
   /**
    * \[c\]
    */
-  sigCommit?: string
+  sigCommit?: Uint8Array
 
   /**
    * \[w\]

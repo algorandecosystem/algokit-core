@@ -9,5 +9,5 @@ export type TransactionSignature = {
   /**
    * \[sig\] Standard ed25519 signature.
    */
-  sig?: string
+  sig?: Uint8Array
 }

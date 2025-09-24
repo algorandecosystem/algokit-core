@@ -8,5 +8,5 @@ export type StateProof = {
   /**
    * The encoded StateProof for the message.
    */
-  stateProof: string
+  stateProof: Uint8Array
 }

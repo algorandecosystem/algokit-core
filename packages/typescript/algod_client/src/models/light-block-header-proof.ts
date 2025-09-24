@@ -15,5 +15,5 @@ export type LightBlockHeaderProof = {
   /**
    * The encoded proof.
    */
-  proof: string
+  proof: Uint8Array
 }

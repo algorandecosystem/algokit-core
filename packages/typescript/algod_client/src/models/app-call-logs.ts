@@ -5,7 +5,7 @@ export type AppCallLogs = {
   /**
    * An array of logs
    */
-  logs: string[]
+  logs: Uint8Array[]
 
   /**
    * The application from which the logs were generated

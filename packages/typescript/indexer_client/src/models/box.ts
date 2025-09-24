@@ -10,10 +10,10 @@ export type Box = {
   /**
    * \[name\] box name, base64 encoded
    */
-  name: string
+  name: Uint8Array
 
   /**
    * \[value\] box value, base64 encoded.
    */
-  value: string
+  value: Uint8Array
 }

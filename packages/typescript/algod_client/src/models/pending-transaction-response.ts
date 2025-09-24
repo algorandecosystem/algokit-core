@@ -1,4 +1,5 @@
-import type { AccountStateDelta, AlgokitSignedTransaction, StateDelta } from './index'
+import type { AccountStateDelta, StateDelta } from './index'
+import type { SignedTransaction } from '@algorandfoundation/algokit-transact'
 /**
  * Details about a pending transaction. If the transaction was recently confirmed, includes confirmation details like the round and reward details.
  */
@@ -57,7 +58,7 @@ export type PendingTransactionResponse = {
   /**
    * Logs for the application being executed by this transaction.
    */
-  logs?: string[]
+  logs?: Uint8Array[]
 
   /**
    * Inner transactions produced by application execution.
@@ -67,5 +68,5 @@ export type PendingTransactionResponse = {
   /**
    * The raw signed transaction.
    */
-  txn: AlgokitSignedTransaction
+  txn: SignedTransaction
 }

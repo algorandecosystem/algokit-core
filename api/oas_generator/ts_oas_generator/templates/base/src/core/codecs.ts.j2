@@ -1,6 +1,3 @@
-// Temporary copy of codec helpers from utils-ts until the shared core moves into the monorepo.
-// These keep the generated clients self-contained and ready for future DTO <-> domain mappers.
-
 export abstract class Codec<T, TEncoded = T> {
   public abstract defaultValue(): TEncoded;
 

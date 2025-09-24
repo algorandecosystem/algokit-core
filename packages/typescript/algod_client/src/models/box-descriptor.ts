@@ -5,5 +5,5 @@ export type BoxDescriptor = {
   /**
    * Base64 encoded box name
    */
-  name: string
+  name: Uint8Array
 }

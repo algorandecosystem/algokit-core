@@ -10,5 +10,5 @@ export type ApplicationLogData = {
   /**
    * Logs for the application being executed by the transaction.
    */
-  logs: string[]
+  logs: Uint8Array[]
 }

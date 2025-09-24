@@ -7,7 +7,7 @@ export type StateProofTracking = {
   /**
    * \[v\] Root of a vector commitment containing online accounts that will help sign the proof.
    */
-  votersCommitment?: string
+  votersCommitment?: Uint8Array
 
   /**
    * \[t\] The total number of microalgos held by the online accounts during the StateProof round.

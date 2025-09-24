@@ -18,7 +18,7 @@ export type DryrunTxnResult = {
   appCallMessages?: string[]
   globalDelta?: StateDelta
   localDeltas?: AccountStateDelta[]
-  logs?: string[]
+  logs?: Uint8Array[]
 
   /**
    * Budget added during execution of app call transaction.

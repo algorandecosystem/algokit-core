@@ -2,6 +2,9 @@
 {% if refTypes and refTypes|length > 0 %}
 import type { {{ refTypes | join(', ') }} } from './index';
 {% endif %}
+{% if schema | schema_uses_signed_txn %}
+import type { SignedTransaction } from '@algorandfoundation/algokit-transact';
+{% endif %}
 {{ schema.description | ts_doc_comment }}
 {% set modelName = schema_name | ts_pascal_case %}
 {% set isObject = schema.get('type') == 'object' or ('properties' in schema) %}

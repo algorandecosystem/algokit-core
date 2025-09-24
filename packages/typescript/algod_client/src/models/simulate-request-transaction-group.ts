@@ -1,4 +1,4 @@
-import type { AlgokitSignedTransaction } from './index'
+import type { SignedTransaction } from '@algorandfoundation/algokit-transact'
 /**
  * A transaction group to simulate.
  */
@@ -6,5 +6,5 @@ export type SimulateRequestTransactionGroup = {
   /**
    * An atomic transaction group.
    */
-  txns: AlgokitSignedTransaction[]
+  txns: SignedTransaction[]
 }

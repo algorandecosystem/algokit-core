@@ -1,7 +1,7 @@
 import type { ClientConfig } from './ClientConfig';
 import { ApiError } from './ApiError';
-import { parseJson, stringifyJson } from './json';
-import { decodeMsgPack, encodeMsgPack, normalizeMsgPackIntegers } from './msgpack';
+import { IntDecoding, parseJson, stringifyJson } from './json';
+import { decodeMsgPack, encodeMsgPack } from './msgpack';
  import { toCamelCaseKeysDeep } from './casing';
 import { toKebabCaseKeysDeep } from './casing';
 import { serialize, deserialize } from './transformers';
@@ -84,7 +84,7 @@ export async function request<T>(config: ClientConfig, options: {
     let body: any = undefined;
     try {
       const ct = response.headers.get('content-type');
-      if (ct && ct.includes('application/json')) body = parseJson(await response.text(), config.intDecoding ?? 'mixed');
+      if (ct && ct.includes('application/json')) body = parseJson(await response.text(), config.intDecoding ?? IntDecoding.MIXED);
       else body = await response.text();
     } catch {}
     throw new ApiError(url.toString(), response.status, body);
@@ -98,12 +98,11 @@ export async function request<T>(config: ClientConfig, options: {
   // Parse response by content-type
   const contentType = response.headers.get('content-type') || '';
 
-  // Handle msgpack responses - decode to typed models
+  // Handle msgpack responses - decode to typed models (preserve Uint8Array & BigInt)
   if (contentType.includes('application/msgpack')) {
     const buf = new Uint8Array(await response.arrayBuffer());
     const decoded = decodeMsgPack(buf);
-    const normalized = normalizeMsgPackIntegers(decoded, config.intDecoding ?? 'bigint');
-    return deserialize<T>(options.responseModelKey, normalized, 'application/msgpack');
+    return deserialize<T>(options.responseModelKey, decoded, 'application/msgpack');
   }
 
   // Handle raw binary responses (e.g., application/x-binary for raw transactions)
@@ -115,7 +114,7 @@ export async function request<T>(config: ClientConfig, options: {
   // Handle JSON responses
   if (contentType.includes('application/json')) {
     const text = await response.text();
-    const parsed = parseJson(text, config.intDecoding ?? 'mixed');
+    const parsed = parseJson(text, config.intDecoding ?? IntDecoding.MIXED);
     return deserialize<T>(options.responseModelKey, parsed, 'application/json');
   }
 

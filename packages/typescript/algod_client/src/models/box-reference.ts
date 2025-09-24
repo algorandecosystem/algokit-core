@@ -10,5 +10,5 @@ export type BoxReference = {
   /**
    * Base64 encoded box name
    */
-  name: string
+  name: Uint8Array
 }

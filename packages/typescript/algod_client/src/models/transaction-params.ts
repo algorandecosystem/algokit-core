@@ -20,7 +20,7 @@ export type TransactionParams = {
   /**
    * GenesisHash is the hash of the genesis block.
    */
-  genesisHash: string
+  genesisHash: Uint8Array
 
   /**
    * GenesisID is an ID listed in the genesis block.
