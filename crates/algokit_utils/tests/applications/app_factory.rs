@@ -127,7 +127,7 @@ async fn bare_create_with_deploy_time_params(
         .create(
             Some(AppFactoryCreateParams::default()),
             None,
-            Some(&compilation_params),
+            Some(compilation_params),
         )
         .await?;
 
@@ -200,7 +200,7 @@ async fn oncomplete_override_on_create(
     let (client, result) = factory
         .send()
         .bare()
-        .create(Some(params), None, Some(&compilation_params))
+        .create(Some(params), None, Some(compilation_params))
         .await?;
 
     match &result.transaction {
@@ -256,7 +256,7 @@ async fn abi_based_create_returns_value(
                 ..Default::default()
             },
             None,
-            Some(&cp),
+            Some(cp),
         )
         .await?;
 
@@ -290,7 +290,7 @@ async fn create_then_call_via_app_client(
 
     let cp = compilation_params(1, true, true);
 
-    let (client, _res) = factory.send().bare().create(None, None, Some(&cp)).await?;
+    let (client, _res) = factory.send().bare().create(None, None, Some(cp)).await?;
 
     let send_res = client
         .send()
@@ -342,7 +342,7 @@ async fn call_app_with_too_many_args(
     let (client, _res) = factory
         .send()
         .bare()
-        .create(None, None, Some(&compilation_params(1, false, false)))
+        .create(None, None, Some(compilation_params(1, false, false)))
         .await?;
 
     let err = client
@@ -452,7 +452,7 @@ async fn delete_app_with_abi_direct(
     let (client, _res) = factory
         .send()
         .bare()
-        .create(None, None, Some(&compilation_params(1, false, true)))
+        .create(None, None, Some(compilation_params(1, false, true)))
         .await?;
 
     let delete_res = client
@@ -505,7 +505,7 @@ async fn update_app_with_abi_direct(
     let (client, _create_res) = factory
         .send()
         .bare()
-        .create(None, None, Some(&compilation_params(1, true, false)))
+        .create(None, None, Some(compilation_params(1, true, false)))
         .await?;
 
     // Update via ABI (extra pages are auto-calculated internally)

@@ -371,12 +371,14 @@ impl AppFactory {
 
         let create_deploy_params = match args.create_params {
             Some(cp) => CreateParams::AppCreateMethodCall(
-                self.params().create(cp, Some(&compilation_params)).await?,
+                self.params()
+                    .create(cp, Some(compilation_params.clone()))
+                    .await?,
             ),
             None => CreateParams::AppCreateCall(
                 self.params()
                     .bare()
-                    .create(None, Some(&compilation_params))
+                    .create(None, Some(compilation_params.clone()))
                     .await?,
             ),
         };

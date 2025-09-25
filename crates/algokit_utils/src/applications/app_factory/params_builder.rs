@@ -42,7 +42,7 @@ impl<'a> ParamsBuilder<'a> {
     pub async fn create(
         &self,
         params: AppFactoryCreateMethodCallParams,
-        compilation_params: Option<&CompilationParams>,
+        compilation_params: Option<CompilationParams>,
     ) -> Result<DeployAppCreateMethodCallParams, AppFactoryError> {
         let compiled_programs = self.factory.compile(compilation_params).await?;
         let method = self
@@ -197,7 +197,7 @@ impl BareParamsBuilder<'_> {
     pub async fn create(
         &self,
         params: Option<AppFactoryCreateParams>,
-        compilation_params: Option<&CompilationParams>,
+        compilation_params: Option<CompilationParams>,
     ) -> Result<DeployAppCreateParams, AppFactoryError> {
         let params = params.unwrap_or_default();
         let compiled_programs = self.factory.compile(compilation_params).await?;

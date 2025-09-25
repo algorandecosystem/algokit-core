@@ -5,10 +5,9 @@ use crate::clients::app_manager::{CompiledPrograms, DeploymentMetadata};
 impl AppFactory {
     pub(crate) async fn compile(
         &self,
-        compilation_params: Option<&CompilationParams>,
+        compilation_params: Option<CompilationParams>,
     ) -> Result<CompiledPrograms, AppFactoryError> {
-        let default_params = CompilationParams::default();
-        let compilation_params = compilation_params.unwrap_or(&default_params);
+        let compilation_params = self.resolve_compilation_params(compilation_params);
 
         let (approval_teal, clear_teal) =
             self.app_spec()

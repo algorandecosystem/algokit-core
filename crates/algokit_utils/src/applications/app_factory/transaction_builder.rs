@@ -35,7 +35,7 @@ impl<'app_factory> TransactionBuilder<'app_factory> {
     pub async fn create(
         &self,
         params: AppFactoryCreateMethodCallParams,
-        compilation_params: Option<&CompilationParams>,
+        compilation_params: Option<CompilationParams>,
     ) -> Result<Vec<Transaction>, AppFactoryError> {
         let compiled = self.factory.compile(compilation_params).await?;
         let method = self
@@ -77,7 +77,7 @@ impl BareTransactionBuilder<'_> {
     pub async fn create(
         &self,
         params: Option<AppFactoryCreateParams>,
-        compilation_params: Option<&CompilationParams>,
+        compilation_params: Option<CompilationParams>,
     ) -> Result<algokit_transact::Transaction, AppFactoryError> {
         let params = params.unwrap_or_default();
 

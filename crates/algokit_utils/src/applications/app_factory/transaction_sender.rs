@@ -39,9 +39,10 @@ impl<'app_factory> TransactionSender<'app_factory> {
         &self,
         params: AppFactoryCreateMethodCallParams,
         send_params: Option<SendParams>,
-        compilation_params: Option<&CompilationParams>,
+        compilation_params: Option<CompilationParams>,
     ) -> Result<(AppClient, AppFactoryCreateMethodCallResult), AppFactoryError> {
         let compiled = self.factory.compile(compilation_params).await?;
+
         let method = self
             .factory
             .app_spec()
@@ -116,7 +117,7 @@ impl BareTransactionSender<'_> {
         &self,
         params: Option<AppFactoryCreateParams>,
         send_params: Option<SendParams>,
-        compilation_params: Option<&CompilationParams>,
+        compilation_params: Option<CompilationParams>,
     ) -> Result<(AppClient, AppFactoryCreateResult), AppFactoryError> {
         let params = params.unwrap_or_default();
 
