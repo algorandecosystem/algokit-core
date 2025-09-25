@@ -1,5 +1,4 @@
 use super::{AppFactory, AppFactoryError};
-use crate::TransactionSenderError;
 use crate::applications::app_factory::{AppFactoryCreateMethodCallParams, AppFactoryCreateParams};
 use crate::transactions::{
     AppCreateMethodCallParams, AppCreateParams, AppMethodCallArg, TransactionSigner,
@@ -125,23 +124,6 @@ fn decode_literal_default_value(
         .map_err(|e| AppFactoryError::ABIError { source: e })?;
 
     Ok(abi_value)
-}
-
-// TODO: fix this method?
-/// Transform a transaction error using AppClient logic error exposure for factory flows.
-pub(crate) fn transform_transaction_error_for_factory(
-    factory: &AppFactory,
-    err: TransactionSenderError,
-    is_clear: bool,
-) -> AppFactoryError {
-    let err_str = err.to_string();
-    if let Some(logic_message) = factory.logic_error_for(&err_str, is_clear) {
-        AppFactoryError::ValidationError {
-            message: logic_message,
-        }
-    } else {
-        err
-    }
 }
 
 /// Resolve signer: prefer explicit signer; otherwise use factory default signer when

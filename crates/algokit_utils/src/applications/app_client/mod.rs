@@ -39,7 +39,7 @@ pub use transaction_builder::TransactionBuilder;
 pub use transaction_sender::TransactionSender;
 pub use types::{
     AppClientBareCallParams, AppClientMethodCallParams, AppClientParams, AppSourceMaps,
-    CompilationParams, FundAppAccountParams,
+    CompilationParams, FundAppAccountParams, LogicError,
 };
 
 type BoxNameFilter = Box<dyn Fn(&BoxName) -> bool>;

@@ -1,7 +1,6 @@
 use super::AppFactory;
 use super::utils::{
     build_bare_create_params, build_create_method_call_params, merge_args_with_defaults,
-    transform_transaction_error_for_factory,
 };
 use crate::applications::app_client::AppClient;
 use crate::applications::app_client::CompilationParams;
@@ -74,7 +73,7 @@ impl<'app_factory> TransactionSender<'app_factory> {
             .send()
             .app_create_method_call(create_params, send_params)
             .await
-            .map_err(|e| transform_transaction_error_for_factory(self.factory, e, false))?;
+            .map_err(|e| self.factory.handle_transaction_error(e, false))?;
 
         let app_client = self.factory.get_app_client_by_id(
             result.app_id,
@@ -148,7 +147,7 @@ impl BareTransactionSender<'_> {
             .send()
             .app_create(create_params, send_params)
             .await
-            .map_err(|e| transform_transaction_error_for_factory(self.factory, e, false))?;
+            .map_err(|e| self.factory.handle_transaction_error(e, false))?;
 
         let app_id = result.app_id;
         let app_address = Address::from_app_id(&app_id);

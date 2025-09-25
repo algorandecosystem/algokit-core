@@ -8,7 +8,7 @@ use crate::clients::app_manager::{DELETABLE_TEMPLATE_NAME, UPDATABLE_TEMPLATE_NA
 use crate::transactions::{
     TransactionComposerConfig, TransactionSigner, composer::SendParams as ComposerSendParams,
 };
-use crate::{AlgorandClient, AppClient, AppClientParams, AppSourceMaps};
+use crate::{AlgorandClient, AppClient, AppClientParams, AppSourceMaps, TransactionSenderError};
 use algokit_abi::Arc56Contract;
 use algokit_abi::arc56_contract::CallOnApplicationComplete;
 use std::str::FromStr;
@@ -285,13 +285,16 @@ impl AppFactory {
         Some(bare_allows || method_allows)
     }
 
-    pub(crate) fn logic_error_for(
+    /// Transform a transaction error using AppClient logic error exposure for factory flows.
+    pub(crate) fn handle_transaction_error(
         &self,
-        error_str: &str,
+        error: TransactionSenderError,
         is_clear_state_program: bool,
-    ) -> Option<String> {
+    ) -> AppFactoryError {
+        let error_str = error.to_string();
+
         if !(error_str.contains("logic eval error") || error_str.contains("logic error")) {
-            return None;
+            return AppFactoryError::TransactionSenderError { source: error };
         }
 
         let source_maps = self.current_source_maps();
@@ -302,8 +305,11 @@ impl AppFactory {
             source_maps: source_maps.as_ref(),
         };
 
-        let logic = context.expose_logic_error(&error_str, is_clear_state_program);
-        Some(logic.message)
+        let logic_error = context.expose_logic_error(&error_str, is_clear_state_program);
+        return AppFactoryError::LogicError {
+            message: logic_error.message.clone(),
+            logic: Box::new(logic_error),
+        };
     }
 
     fn resolve_compilation_params(
