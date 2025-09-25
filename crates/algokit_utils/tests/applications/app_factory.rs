@@ -748,7 +748,6 @@ async fn deploy_app_update(#[future] algorand_fixture: AlgorandFixtureResult) ->
     Ok(())
 }
 
-/*
 #[rstest]
 #[tokio::test]
 async fn deploy_app_update_detects_extra_pages_as_breaking_change(
@@ -804,11 +803,14 @@ async fn deploy_app_update_detects_extra_pages_as_breaking_change(
     .await;
 
     let (large_client, update_res) = factory_large
-        .deploy(DeployArgs {
-            on_update: Some(OnUpdate::Update),
-            on_schema_break: Some(OnSchemaBreak::Append),
-            ..Default::default()
-        }, None)
+        .deploy(
+            DeployArgs {
+                on_update: Some(OnUpdate::Update),
+                on_schema_break: Some(OnSchemaBreak::Append),
+                ..Default::default()
+            },
+            None,
+        )
         .await?;
 
     let (large_app_metadata, _) = match &update_res {
@@ -820,9 +822,7 @@ async fn deploy_app_update_detects_extra_pages_as_breaking_change(
     assert_ne!(small_app_metadata.app_id, large_client.app_id());
     Ok(())
 }
-*/
 
-/*
 #[rstest]
 #[tokio::test]
 async fn deploy_app_update_detects_extra_pages_as_breaking_change_fail_case(
@@ -866,11 +866,14 @@ async fn deploy_app_update_detects_extra_pages_as_breaking_change_fail_case(
     .await;
 
     let msg = match factory_fail
-        .deploy(DeployArgs {
-            on_update: Some(OnUpdate::Update),
-            on_schema_break: Some(OnSchemaBreak::Fail),
-            ..Default::default()
-        }, None)
+        .deploy(
+            DeployArgs {
+                on_update: Some(OnUpdate::Update),
+                on_schema_break: Some(OnSchemaBreak::Fail),
+                ..Default::default()
+            },
+            None,
+        )
         .await
     {
         Ok(_) => return Err("expected schema break fail error".into()),
@@ -879,7 +882,6 @@ async fn deploy_app_update_detects_extra_pages_as_breaking_change_fail_case(
     assert!(msg.contains("Executing the fail on schema break strategy, stopping deployment."));
     Ok(())
 }
-*/
 
 #[rstest]
 #[tokio::test]

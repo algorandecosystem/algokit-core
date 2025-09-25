@@ -42,9 +42,12 @@ impl<'a> ParamsBuilder<'a> {
     pub async fn create(
         &self,
         params: AppFactoryCreateMethodCallParams,
-        compilation_params: Option<CompilationParams>,
     ) -> Result<DeployAppCreateMethodCallParams, AppFactoryError> {
-        let compiled_programs = self.factory.compile(compilation_params).await?;
+        let (approval_teal, clear_teal) = self.factory.app_spec().decoded_teal().map_err(|e| {
+            AppFactoryError::CompilationError {
+                message: e.to_string(),
+            }
+        })?;
         let method = self
             .factory
             .app_spec()
@@ -71,12 +74,8 @@ impl<'a> ParamsBuilder<'a> {
             first_valid_round: params.first_valid_round,
             last_valid_round: params.last_valid_round,
             on_complete: params.on_complete.unwrap_or(OnApplicationComplete::NoOp),
-            approval_program: AppProgram::CompiledBytes(
-                compiled_programs.approval.compiled_base64_to_bytes,
-            ),
-            clear_state_program: AppProgram::CompiledBytes(
-                compiled_programs.clear.compiled_base64_to_bytes,
-            ),
+            approval_program: AppProgram::Teal(approval_teal),
+            clear_state_program: AppProgram::Teal(clear_teal),
             method,
             args: merged_args,
             account_references: None,
@@ -197,10 +196,14 @@ impl BareParamsBuilder<'_> {
     pub async fn create(
         &self,
         params: Option<AppFactoryCreateParams>,
-        compilation_params: Option<CompilationParams>,
     ) -> Result<DeployAppCreateParams, AppFactoryError> {
+        let (approval_teal, clear_teal) = self.factory.app_spec().decoded_teal().map_err(|e| {
+            AppFactoryError::CompilationError {
+                message: e.to_string(),
+            }
+        })?;
+
         let params = params.unwrap_or_default();
-        let compiled_programs = self.factory.compile(compilation_params).await?;
         let sender = self
             .factory
             .get_sender_address(&params.sender)
@@ -219,12 +222,8 @@ impl BareParamsBuilder<'_> {
             first_valid_round: params.first_valid_round,
             last_valid_round: params.last_valid_round,
             on_complete: params.on_complete.unwrap_or(OnApplicationComplete::NoOp),
-            approval_program: AppProgram::CompiledBytes(
-                compiled_programs.approval.compiled_base64_to_bytes,
-            ),
-            clear_state_program: AppProgram::CompiledBytes(
-                compiled_programs.clear.compiled_base64_to_bytes,
-            ),
+            approval_program: AppProgram::Teal(approval_teal),
+            clear_state_program: AppProgram::Teal(clear_teal),
             args: params.args,
             account_references: None,
             app_references: params.app_references,

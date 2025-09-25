@@ -370,17 +370,8 @@ impl AppFactory {
         let compilation_params = self.resolve_compilation_params(compilation_params);
 
         let create_deploy_params = match args.create_params {
-            Some(cp) => CreateParams::AppCreateMethodCall(
-                self.params()
-                    .create(cp, Some(compilation_params.clone()))
-                    .await?,
-            ),
-            None => CreateParams::AppCreateCall(
-                self.params()
-                    .bare()
-                    .create(None, Some(compilation_params.clone()))
-                    .await?,
-            ),
+            Some(cp) => CreateParams::AppCreateMethodCall(self.params().create(cp).await?),
+            None => CreateParams::AppCreateCall(self.params().bare().create(None).await?),
         };
 
         let update_deploy_params = match args.update_params {
@@ -428,6 +419,25 @@ impl AppFactory {
         };
 
         let app_client = self.get_app_client_by_id(app_id, None, None, None, None);
+
+        // Extract and update source maps from the deploy result
+        let (approval_source_map, clear_source_map) = match &deploy_result {
+            AppDeployResult::Create { result, .. } => (
+                result.compiled_programs.approval.source_map.clone(),
+                result.compiled_programs.clear.source_map.clone(),
+            ),
+            AppDeployResult::Update { result, .. } => (
+                result.compiled_programs.approval.source_map.clone(),
+                result.compiled_programs.clear.source_map.clone(),
+            ),
+            AppDeployResult::Replace { result, .. } => (
+                result.compiled_programs.approval.source_map.clone(),
+                result.compiled_programs.clear.source_map.clone(),
+            ),
+            AppDeployResult::Nothing { .. } => (None, None),
+        };
+
+        self.update_source_maps(approval_source_map, clear_source_map);
 
         Ok((app_client, deploy_result))
     }
