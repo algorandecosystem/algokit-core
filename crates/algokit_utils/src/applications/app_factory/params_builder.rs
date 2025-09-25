@@ -1,7 +1,5 @@
 use super::{AppFactory, AppFactoryError};
-use crate::applications::app_client::{
-    AppClientBareCallParams, AppClientMethodCallParams,
-};
+use crate::applications::app_client::{AppClientBareCallParams, AppClientMethodCallParams};
 use crate::applications::app_deployer::{
     AppProgram, DeployAppCreateMethodCallParams, DeployAppCreateParams,
     DeployAppDeleteMethodCallParams, DeployAppDeleteParams, DeployAppUpdateMethodCallParams,

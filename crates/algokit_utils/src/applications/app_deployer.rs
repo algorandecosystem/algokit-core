@@ -9,7 +9,7 @@ use crate::{
     SendParams, create_transaction_params,
 };
 use algod_client::models::PendingTransactionResponse;
-use algokit_abi::{ABIError, ABIMethod, ABIReturn};
+use algokit_abi::ABIReturn;
 use algokit_transact::{Address, Byte32, OnApplicationComplete, Transaction};
 use base64::{Engine as _, engine::general_purpose};
 use indexer_client::{IndexerClient, apis::Error as IndexerError};
@@ -20,7 +20,6 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 const APP_DEPLOY_NOTE_PREFIX: &str = "ALGOKIT_DEPLOYER";
-const ABI_RETURN_PREFIX: &[u8] = &[0x15, 0x1f, 0x7c, 0x75];
 
 /// Enum for app program variants - either TEAL source code or compiled bytecode
 #[derive(Debug, Clone, PartialEq)]
