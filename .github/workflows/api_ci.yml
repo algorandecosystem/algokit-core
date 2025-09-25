@@ -124,14 +124,19 @@ jobs:
         working-directory: packages/typescript
         run: npm run lint --workspace ${{ matrix.workspace }}
 
-      - name: Build generated client
-        working-directory: packages/typescript
-        run: npm run build --workspace ${{ matrix.workspace }}
-
-      - name: Build algokit utils ts
+      - name: Build all TypeScript packages
         working-directory: packages/typescript
         run: |
-          npm run build
+          npm run build --workspace @algorandfoundation/algokit-common
+          npm run build --workspace @algorandfoundation/algokit-abi
+          npm run build --workspace @algorandfoundation/algokit-transact
+          npm run build --workspace ${{ matrix.workspace }}
+
+      - name: Update package links after build
+        working-directory: packages/typescript
+        run: |
+          # Re-install to ensure dist folders are properly linked
+          npm install --prefer-offline --no-audit --no-fund
 
       - name: Test generated client
         working-directory: packages/typescript

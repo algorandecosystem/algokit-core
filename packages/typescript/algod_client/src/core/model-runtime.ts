@@ -264,13 +264,8 @@ class SignedTransactionCodec implements TypeCodec<unknown> {
   }
 }
 
-try {
-  // Optional dependency: only register codec when the transact package is available.
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const transact = require('@algorandfoundation/algokit-transact')
-  encodeSignedTransactionImpl = transact.encodeSignedTransaction as (value: unknown) => Uint8Array
-  decodeSignedTransactionImpl = transact.decodeSignedTransaction as (value: Uint8Array) => unknown
-  registerCodec('SignedTransaction', new SignedTransactionCodec())
-} catch {
-  // No-op: SignedTransaction support is optional.
-}
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const transact = require('@algorandfoundation/algokit-transact')
+encodeSignedTransactionImpl = transact.encodeSignedTransaction as (value: unknown) => Uint8Array
+decodeSignedTransactionImpl = transact.decodeSignedTransaction as (value: Uint8Array) => unknown
+registerCodec('SignedTransaction', new SignedTransactionCodec())
