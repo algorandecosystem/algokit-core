@@ -22,6 +22,27 @@ import type {
   SearchForBlockHeaders,
   SearchForTransactions,
 } from '../models/index'
+import { Block as BlockCodecs } from '../models/block'
+import { Box as BoxCodecs } from '../models/box'
+import { HealthCheck as HealthCheckCodecs } from '../models/health-check'
+import { LookupAccountAppLocalStates as LookupAccountAppLocalStatesCodecs } from '../models/lookup-account-app-local-states'
+import { LookupAccountAssets as LookupAccountAssetsCodecs } from '../models/lookup-account-assets'
+import { LookupAccountById as LookupAccountByIdCodecs } from '../models/lookup-account-by-id'
+import { LookupAccountCreatedApplications as LookupAccountCreatedApplicationsCodecs } from '../models/lookup-account-created-applications'
+import { LookupAccountCreatedAssets as LookupAccountCreatedAssetsCodecs } from '../models/lookup-account-created-assets'
+import { LookupAccountTransactions as LookupAccountTransactionsCodecs } from '../models/lookup-account-transactions'
+import { LookupApplicationById as LookupApplicationByIdCodecs } from '../models/lookup-application-by-id'
+import { LookupApplicationLogsById as LookupApplicationLogsByIdCodecs } from '../models/lookup-application-logs-by-id'
+import { LookupAssetBalances as LookupAssetBalancesCodecs } from '../models/lookup-asset-balances'
+import { LookupAssetById as LookupAssetByIdCodecs } from '../models/lookup-asset-by-id'
+import { LookupAssetTransactions as LookupAssetTransactionsCodecs } from '../models/lookup-asset-transactions'
+import { LookupTransaction as LookupTransactionCodecs } from '../models/lookup-transaction'
+import { SearchForAccounts as SearchForAccountsCodecs } from '../models/search-for-accounts'
+import { SearchForApplicationBoxes as SearchForApplicationBoxesCodecs } from '../models/search-for-application-boxes'
+import { SearchForApplications as SearchForApplicationsCodecs } from '../models/search-for-applications'
+import { SearchForAssets as SearchForAssetsCodecs } from '../models/search-for-assets'
+import { SearchForBlockHeaders as SearchForBlockHeadersCodecs } from '../models/search-for-block-headers'
+import { SearchForTransactions as SearchForTransactionsCodecs } from '../models/search-for-transactions'
 
 export class IndexerApi {
   constructor(public readonly httpRequest: BaseHttpRequest) {}
@@ -29,7 +50,7 @@ export class IndexerApi {
   /**
    * Lookup an account's asset holdings, optionally for a specific ID.
    */
-  lookupAccountAppLocalStates(
+  async lookupAccountAppLocalStates(
     accountId: string,
     params?: { applicationId?: number | bigint; includeAll?: boolean; limit?: number | bigint; next?: string },
     requestOptions?: ApiRequestOptions,
@@ -39,7 +60,7 @@ export class IndexerApi {
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/accounts/{account-id}/apps-local-state',
       path: { 'account-id': accountId },
@@ -53,14 +74,18 @@ export class IndexerApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'LookupAccountAppLocalStates',
     })
+    const parsed = (await rsp) as LookupAccountAppLocalStates
+    try {
+      return (LookupAccountAppLocalStatesCodecs as any).decodeJson(parsed as any) as LookupAccountAppLocalStates
+    } catch {}
+    return parsed
   }
 
   /**
    * Lookup an account's asset holdings, optionally for a specific ID.
    */
-  lookupAccountAssets(
+  async lookupAccountAssets(
     accountId: string,
     params?: { assetId?: number | bigint; includeAll?: boolean; limit?: number | bigint; next?: string },
     requestOptions?: ApiRequestOptions,
@@ -70,7 +95,7 @@ export class IndexerApi {
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/accounts/{account-id}/assets',
       path: { 'account-id': accountId },
@@ -84,14 +109,18 @@ export class IndexerApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'LookupAccountAssets',
     })
+    const parsed = (await rsp) as LookupAccountAssets
+    try {
+      return (LookupAccountAssetsCodecs as any).decodeJson(parsed as any) as LookupAccountAssets
+    } catch {}
+    return parsed
   }
 
   /**
    * Lookup account information.
    */
-  lookupAccountById(
+  async lookupAccountById(
     accountId: string,
     params?: {
       round?: number | bigint
@@ -105,7 +134,7 @@ export class IndexerApi {
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/accounts/{account-id}',
       path: { 'account-id': accountId },
@@ -118,14 +147,18 @@ export class IndexerApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'LookupAccountById',
     })
+    const parsed = (await rsp) as LookupAccountById
+    try {
+      return (LookupAccountByIdCodecs as any).decodeJson(parsed as any) as LookupAccountById
+    } catch {}
+    return parsed
   }
 
   /**
    * Lookup an account's created application parameters, optionally for a specific ID.
    */
-  lookupAccountCreatedApplications(
+  async lookupAccountCreatedApplications(
     accountId: string,
     params?: { applicationId?: number | bigint; includeAll?: boolean; limit?: number | bigint; next?: string },
     requestOptions?: ApiRequestOptions,
@@ -135,7 +168,7 @@ export class IndexerApi {
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/accounts/{account-id}/created-applications',
       path: { 'account-id': accountId },
@@ -149,14 +182,18 @@ export class IndexerApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'LookupAccountCreatedApplications',
     })
+    const parsed = (await rsp) as LookupAccountCreatedApplications
+    try {
+      return (LookupAccountCreatedApplicationsCodecs as any).decodeJson(parsed as any) as LookupAccountCreatedApplications
+    } catch {}
+    return parsed
   }
 
   /**
    * Lookup an account's created asset parameters, optionally for a specific ID.
    */
-  lookupAccountCreatedAssets(
+  async lookupAccountCreatedAssets(
     accountId: string,
     params?: { assetId?: number | bigint; includeAll?: boolean; limit?: number | bigint; next?: string },
     requestOptions?: ApiRequestOptions,
@@ -166,7 +203,7 @@ export class IndexerApi {
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/accounts/{account-id}/created-assets',
       path: { 'account-id': accountId },
@@ -180,14 +217,18 @@ export class IndexerApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'LookupAccountCreatedAssets',
     })
+    const parsed = (await rsp) as LookupAccountCreatedAssets
+    try {
+      return (LookupAccountCreatedAssetsCodecs as any).decodeJson(parsed as any) as LookupAccountCreatedAssets
+    } catch {}
+    return parsed
   }
 
   /**
    * Lookup account transactions. Transactions are returned newest to oldest.
    */
-  lookupAccountTransactions(
+  async lookupAccountTransactions(
     accountId: string,
     params?: {
       limit?: number | bigint
@@ -213,7 +254,7 @@ export class IndexerApi {
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/accounts/{account-id}/transactions',
       path: { 'account-id': accountId },
@@ -242,14 +283,18 @@ export class IndexerApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'LookupAccountTransactions',
     })
+    const parsed = (await rsp) as LookupAccountTransactions
+    try {
+      return (LookupAccountTransactionsCodecs as any).decodeJson(parsed as any) as LookupAccountTransactions
+    } catch {}
+    return parsed
   }
 
   /**
    * Given an application ID and box name, returns base64 encoded box name and value. Box names must be in the goal app call arg form 'encoding:value'. For ints, use the form 'int:1234'. For raw bytes, encode base 64 and use 'b64' prefix as in 'b64:A=='. For printable strings, use the form 'str:hello'. For addresses, use the form 'addr:XYZ...'.
    */
-  lookupApplicationBoxByIdandName(
+  async lookupApplicationBoxByIdandName(
     applicationId: number | bigint,
     params?: { name: string },
     requestOptions?: ApiRequestOptions,
@@ -259,7 +304,7 @@ export class IndexerApi {
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/applications/{application-id}/box',
       path: { 'application-id': typeof applicationId === 'bigint' ? applicationId.toString() : applicationId },
@@ -268,14 +313,18 @@ export class IndexerApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'Box',
     })
+    const parsed = (await rsp) as Box
+    try {
+      return (BoxCodecs as any).decodeJson(parsed as any) as Box
+    } catch {}
+    return parsed
   }
 
   /**
    * Lookup application.
    */
-  lookupApplicationById(
+  async lookupApplicationById(
     applicationId: number | bigint,
     params?: { includeAll?: boolean },
     requestOptions?: ApiRequestOptions,
@@ -285,7 +334,7 @@ export class IndexerApi {
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/applications/{application-id}',
       path: { 'application-id': typeof applicationId === 'bigint' ? applicationId.toString() : applicationId },
@@ -294,14 +343,18 @@ export class IndexerApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'LookupApplicationById',
     })
+    const parsed = (await rsp) as LookupApplicationById
+    try {
+      return (LookupApplicationByIdCodecs as any).decodeJson(parsed as any) as LookupApplicationById
+    } catch {}
+    return parsed
   }
 
   /**
    * Lookup application logs.
    */
-  lookupApplicationLogsById(
+  async lookupApplicationLogsById(
     applicationId: number | bigint,
     params?: {
       limit?: number | bigint
@@ -318,7 +371,7 @@ export class IndexerApi {
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/applications/{application-id}/logs',
       path: { 'application-id': typeof applicationId === 'bigint' ? applicationId.toString() : applicationId },
@@ -334,14 +387,18 @@ export class IndexerApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'LookupApplicationLogsById',
     })
+    const parsed = (await rsp) as LookupApplicationLogsById
+    try {
+      return (LookupApplicationLogsByIdCodecs as any).decodeJson(parsed as any) as LookupApplicationLogsById
+    } catch {}
+    return parsed
   }
 
   /**
    * Lookup the list of accounts who hold this asset
    */
-  lookupAssetBalances(
+  async lookupAssetBalances(
     assetId: number | bigint,
     params?: {
       includeAll?: boolean
@@ -357,7 +414,7 @@ export class IndexerApi {
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/assets/{asset-id}/balances',
       path: { 'asset-id': typeof assetId === 'bigint' ? assetId.toString() : assetId },
@@ -376,14 +433,18 @@ export class IndexerApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'LookupAssetBalances',
     })
+    const parsed = (await rsp) as LookupAssetBalances
+    try {
+      return (LookupAssetBalancesCodecs as any).decodeJson(parsed as any) as LookupAssetBalances
+    } catch {}
+    return parsed
   }
 
   /**
    * Lookup asset information.
    */
-  lookupAssetById(
+  async lookupAssetById(
     assetId: number | bigint,
     params?: { includeAll?: boolean },
     requestOptions?: ApiRequestOptions,
@@ -393,7 +454,7 @@ export class IndexerApi {
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/assets/{asset-id}',
       path: { 'asset-id': typeof assetId === 'bigint' ? assetId.toString() : assetId },
@@ -402,14 +463,18 @@ export class IndexerApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'LookupAssetById',
     })
+    const parsed = (await rsp) as LookupAssetById
+    try {
+      return (LookupAssetByIdCodecs as any).decodeJson(parsed as any) as LookupAssetById
+    } catch {}
+    return parsed
   }
 
   /**
    * Lookup transactions for an asset. Transactions are returned oldest to newest.
    */
-  lookupAssetTransactions(
+  async lookupAssetTransactions(
     assetId: number | bigint,
     params?: {
       limit?: number | bigint
@@ -437,7 +502,7 @@ export class IndexerApi {
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/assets/{asset-id}/transactions',
       path: { 'asset-id': typeof assetId === 'bigint' ? assetId.toString() : assetId },
@@ -468,20 +533,24 @@ export class IndexerApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'LookupAssetTransactions',
     })
+    const parsed = (await rsp) as LookupAssetTransactions
+    try {
+      return (LookupAssetTransactionsCodecs as any).decodeJson(parsed as any) as LookupAssetTransactions
+    } catch {}
+    return parsed
   }
 
   /**
    * Lookup block.
    */
-  lookupBlock(roundNumber: number | bigint, params?: { headerOnly?: boolean }, requestOptions?: ApiRequestOptions): Promise<Block> {
+  async lookupBlock(roundNumber: number | bigint, params?: { headerOnly?: boolean }, requestOptions?: ApiRequestOptions): Promise<Block> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/blocks/{round-number}',
       path: { 'round-number': typeof roundNumber === 'bigint' ? roundNumber.toString() : roundNumber },
@@ -490,20 +559,24 @@ export class IndexerApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'Block',
     })
+    const parsed = (await rsp) as Block
+    try {
+      return (BlockCodecs as any).decodeJson(parsed as any) as Block
+    } catch {}
+    return parsed
   }
 
   /**
    * Lookup a single transaction.
    */
-  lookupTransaction(txid: string, requestOptions?: ApiRequestOptions): Promise<LookupTransaction> {
+  async lookupTransaction(txid: string, requestOptions?: ApiRequestOptions): Promise<LookupTransaction> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/transactions/{txid}',
       path: { txid: txid },
@@ -512,17 +585,21 @@ export class IndexerApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'LookupTransaction',
     })
+    const parsed = (await rsp) as LookupTransaction
+    try {
+      return (LookupTransactionCodecs as any).decodeJson(parsed as any) as LookupTransaction
+    } catch {}
+    return parsed
   }
 
-  makeHealthCheck(requestOptions?: ApiRequestOptions): Promise<HealthCheck> {
+  async makeHealthCheck(requestOptions?: ApiRequestOptions): Promise<HealthCheck> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/health',
       path: {},
@@ -531,14 +608,18 @@ export class IndexerApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'HealthCheck',
     })
+    const parsed = (await rsp) as HealthCheck
+    try {
+      return (HealthCheckCodecs as any).decodeJson(parsed as any) as HealthCheck
+    } catch {}
+    return parsed
   }
 
   /**
    * Search for accounts.
    */
-  searchForAccounts(
+  async searchForAccounts(
     params?: {
       assetId?: number | bigint
       limit?: number | bigint
@@ -559,7 +640,7 @@ export class IndexerApi {
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/accounts',
       path: {},
@@ -584,14 +665,18 @@ export class IndexerApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'SearchForAccounts',
     })
+    const parsed = (await rsp) as SearchForAccounts
+    try {
+      return (SearchForAccountsCodecs as any).decodeJson(parsed as any) as SearchForAccounts
+    } catch {}
+    return parsed
   }
 
   /**
    * Given an application ID, returns the box names of that application sorted lexicographically.
    */
-  searchForApplicationBoxes(
+  async searchForApplicationBoxes(
     applicationId: number | bigint,
     params?: { limit?: number | bigint; next?: string },
     requestOptions?: ApiRequestOptions,
@@ -601,7 +686,7 @@ export class IndexerApi {
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/applications/{application-id}/boxes',
       path: { 'application-id': typeof applicationId === 'bigint' ? applicationId.toString() : applicationId },
@@ -610,14 +695,18 @@ export class IndexerApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'SearchForApplicationBoxes',
     })
+    const parsed = (await rsp) as SearchForApplicationBoxes
+    try {
+      return (SearchForApplicationBoxesCodecs as any).decodeJson(parsed as any) as SearchForApplicationBoxes
+    } catch {}
+    return parsed
   }
 
   /**
    * Search for applications
    */
-  searchForApplications(
+  async searchForApplications(
     params?: { applicationId?: number | bigint; creator?: string; includeAll?: boolean; limit?: number | bigint; next?: string },
     requestOptions?: ApiRequestOptions,
   ): Promise<SearchForApplications> {
@@ -626,7 +715,7 @@ export class IndexerApi {
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/applications',
       path: {},
@@ -641,14 +730,18 @@ export class IndexerApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'SearchForApplications',
     })
+    const parsed = (await rsp) as SearchForApplications
+    try {
+      return (SearchForApplicationsCodecs as any).decodeJson(parsed as any) as SearchForApplications
+    } catch {}
+    return parsed
   }
 
   /**
    * Search for assets.
    */
-  searchForAssets(
+  async searchForAssets(
     params?: {
       includeAll?: boolean
       limit?: number | bigint
@@ -665,7 +758,7 @@ export class IndexerApi {
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/assets',
       path: {},
@@ -682,14 +775,18 @@ export class IndexerApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'SearchForAssets',
     })
+    const parsed = (await rsp) as SearchForAssets
+    try {
+      return (SearchForAssetsCodecs as any).decodeJson(parsed as any) as SearchForAssets
+    } catch {}
+    return parsed
   }
 
   /**
    * Search for block headers. Block headers are returned in ascending round order. Transactions are not included in the output.
    */
-  searchForBlockHeaders(
+  async searchForBlockHeaders(
     params?: {
       limit?: number | bigint
       next?: string
@@ -708,7 +805,7 @@ export class IndexerApi {
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/block-headers',
       path: {},
@@ -727,14 +824,18 @@ export class IndexerApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'SearchForBlockHeaders',
     })
+    const parsed = (await rsp) as SearchForBlockHeaders
+    try {
+      return (SearchForBlockHeadersCodecs as any).decodeJson(parsed as any) as SearchForBlockHeaders
+    } catch {}
+    return parsed
   }
 
   /**
    * Search for transactions. Transactions are returned oldest to newest unless the address parameter is used, in which case results are returned newest to oldest.
    */
-  searchForTransactions(
+  async searchForTransactions(
     params?: {
       limit?: number | bigint
       next?: string
@@ -764,7 +865,7 @@ export class IndexerApi {
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/transactions',
       path: {},
@@ -798,7 +899,11 @@ export class IndexerApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'SearchForTransactions',
     })
+    const parsed = (await rsp) as SearchForTransactions
+    try {
+      return (SearchForTransactionsCodecs as any).decodeJson(parsed as any) as SearchForTransactions
+    } catch {}
+    return parsed
   }
 }

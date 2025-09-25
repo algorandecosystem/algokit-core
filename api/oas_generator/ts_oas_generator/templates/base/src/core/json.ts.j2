@@ -90,3 +90,31 @@ export function parseJson(text: string, intDecoding: IntDecoding = IntDecoding.M
 export function stringifyJson(value: any): string { // eslint-disable-line @typescript-eslint/no-explicit-any
   return JSON.stringify(value, (_k, v) => (typeof v === 'bigint' ? v.toString() : v));
 }
+
+// Base64 helpers usable in Node and browser
+export function toBase64(bytes: Uint8Array): string {
+  if (typeof Buffer !== 'undefined') {
+    return Buffer.from(bytes).toString('base64');
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const btoaFn: any = (globalThis as any).btoa;
+  if (typeof btoaFn === 'function') {
+    return btoaFn(String.fromCharCode(...bytes));
+  }
+  throw new Error('Base64 encoding not supported in this environment');
+}
+
+export function fromBase64(s: string): Uint8Array {
+  if (typeof Buffer !== 'undefined') {
+    return new Uint8Array(Buffer.from(s, 'base64'));
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const atobFn: any = (globalThis as any).atob;
+  if (typeof atobFn === 'function') {
+    const bin = atobFn(s);
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+  throw new Error('Base64 decoding not supported in this environment');
+}

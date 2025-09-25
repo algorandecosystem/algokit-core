@@ -347,6 +347,36 @@ def schema_uses_signed_txn(schema: dict[str, Any]) -> bool:  # noqa: C901
     return found
 
 
+# ---------- Type string helpers for templates ----------
+
+
+def ts_is_array_type(type_str: str) -> bool:
+    t = (type_str or "").strip()
+    return t.endswith("[]") or (t.startswith("Array<") and t.endswith(">"))
+
+
+def ts_array_item_type(type_str: str) -> str:
+    t = (type_str or "").strip()
+    if t.endswith("[]"):
+        return t[:-2]
+    if t.startswith("Array<") and t.endswith(">"):
+        return t[len("Array<") : -1]
+    return t
+
+
+def ts_is_builtin_or_primitive(type_str: str) -> bool:
+    t = (type_str or "").strip()
+    return t in constants.TS_BUILTIN_TYPES or t in {TypeScriptType.ANY, TypeScriptType.NULL, TypeScriptType.OBJECT}
+
+
+def ts_is_model_type(type_str: str) -> bool:
+    t = (type_str or "").strip()
+    if ts_is_array_type(t):
+        t = ts_array_item_type(t)
+    # Treat PascalCase identifiers as model types and exclude TS builtins
+    return bool(re.match(r"^[A-Z][A-Za-z0-9_]*$", t)) and not ts_is_builtin_or_primitive(t)
+
+
 FILTERS: dict[str, Any] = {
     "ts_doc_comment": ts_doc_comment,
     "ts_string_literal": ts_string_literal,
@@ -361,4 +391,8 @@ FILTERS: dict[str, Any] = {
     "response_content_types": response_content_types,
     "collect_schema_refs": collect_schema_refs,
     "schema_uses_signed_txn": schema_uses_signed_txn,
+    "ts_is_array_type": ts_is_array_type,
+    "ts_array_item_type": ts_array_item_type,
+    "ts_is_builtin_or_primitive": ts_is_builtin_or_primitive,
+    "ts_is_model_type": ts_is_model_type,
 }

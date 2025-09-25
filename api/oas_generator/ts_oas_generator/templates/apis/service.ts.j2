@@ -1,16 +1,22 @@
 import type { BaseHttpRequest, ApiRequestOptions } from '../core/BaseHttpRequest';
 {% set needs_stx = false %}
+{% set model_values = [] %}
 {% for op in operations %}
   {% if op.requestBody and (op.requestBody.tsType == 'SignedTransaction' or op.requestBody.tsType == 'SignedTransaction[]') %}
     {% set needs_stx = true %}
   {% endif %}
+  {% if op.responseTsType == 'SignedTransaction' or op.responseTsType == 'SignedTransaction[]' %}
+    {% set needs_stx = true %}
+  {% endif %}
 {% endfor %}
 {% if needs_stx %}
-// SignedTransaction codecs (used when vendor extension x-algokit-signed-txn is present)
 import { encodeSignedTransaction, encodeSignedTransactions } from '@algorandfoundation/algokit-transact';
 {% endif %}
 {% if import_types and import_types|length > 0 %}
 import type { {{ import_types | sort | join(', ') }} } from '../models/index';
+{% for t in import_types %}
+import { {{ t }} as {{ t }}Codecs } from '../models/{{ t | ts_kebab_case }}';
+{% endfor %}
 {% endif %}
 
 export class {{ service_class_name }} {
@@ -18,7 +24,7 @@ export class {{ service_class_name }} {
 
 {% for op in operations %}
   {{ op.description | ts_doc_comment }}
-  {{ op.operationId | ts_camel_case }}(
+  async {{ op.operationId | ts_camel_case }}(
 {%- for p in op.pathParameters %}
     {{ p.varName }}: {{ p.tsType }},
 {%- endfor %}
@@ -68,7 +74,7 @@ export class {{ service_class_name }} {
     }
 {%   endfor %}
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: '{{ op.method }}',
       url: '{{ op.path }}',
       path: {
@@ -83,10 +89,43 @@ export class {{ service_class_name }} {
       },
       headers,
       body: {% if op.requestBody %}
-        {% if op.requestBody.tsType == 'SignedTransaction' %}
-          params?.body ? encodeSignedTransaction(params!.body as any) : undefined
-        {% elif op.requestBody.tsType == 'SignedTransaction[]' %}
-          params?.body ? encodeSignedTransactions(params!.body as any) : undefined
+        {% if op.requestBody.supportsMsgpack and (op.hasFormatParam and op.formatVarName) %}
+          ((): any => { // eslint-disable-line @typescript-eslint/no-explicit-any
+            const b = params?.body as any;
+            if (b == null) return undefined;
+            if (params?.{{ op.formatVarName }} === 'json') {
+              {% if op.requestBody.tsType.endswith('[]') %}
+              const t = '{{ op.requestBody.tsType[:-2] }}';
+              try { return ({{ op.requestBody.tsType[:-2] }}Codecs as any).encodeJsonArray(b); } catch {}
+              {% else %}
+              const t = '{{ op.requestBody.tsType }}';
+              if (t === 'SignedTransaction') return b; // JSON not supported for raw STX
+              try { return ({{ op.requestBody.tsType }}Codecs as any).encodeJson(b); } catch {}
+              {% endif %}
+              return b;
+            } else {
+              {% if op.requestBody.tsType == 'SignedTransaction' %}
+              return encodeSignedTransaction(b as any);
+              {% elif op.requestBody.tsType == 'SignedTransaction[]' %}
+              return encodeSignedTransactions(b as any);
+              {% elif op.requestBody.tsType.endswith('[]') %}
+              const t = '{{ op.requestBody.tsType[:-2] }}';
+              try { return ({{ op.requestBody.tsType[:-2] }}Codecs as any).encodeMsgpackArray(b); } catch {}
+              {% else %}
+              const t = '{{ op.requestBody.tsType }}';
+              try { return ({{ op.requestBody.tsType }}Codecs as any).encodeMsgpack(b); } catch {}
+              {% endif %}
+              return b instanceof Uint8Array ? b : b;
+            }
+          })()
+        {% elif op.requestBody.supportsMsgpack and not op.requestBody.supportsJson %}
+          ((): any => { const b = params?.body as any; if (b == null) return undefined;
+            {% if op.requestBody.tsType == 'SignedTransaction' %}return encodeSignedTransaction(b as any);{% elif op.requestBody.tsType == 'SignedTransaction[]' %}return encodeSignedTransactions(b as any);{% elif op.requestBody.tsType.endswith('[]') %}const t='{{ op.requestBody.tsType[:-2] }}'; if (t in ModelCodecs) return (ModelCodecs as any)[t].encodeMsgpack(b);{% else %}const t='{{ op.requestBody.tsType }}'; if (t in ModelCodecs) return (ModelCodecs as any)[t].encodeMsgpack(b);{% endif %}
+            return b instanceof Uint8Array ? b : b; })()
+        {% elif op.requestBody.supportsJson %}
+          ((): any => { const b = params?.body as any; if (b == null) return undefined;
+            {% if op.requestBody.tsType.endswith('[]') %}try { return ({{ op.requestBody.tsType[:-2] }}Codecs as any).encodeJsonArray(b); } catch {}{% else %}try { return ({{ op.requestBody.tsType }}Codecs as any).encodeJson(b); } catch {}{% endif %}
+            return b; })()
         {% else %}
           params?.body
         {% endif %}
@@ -108,9 +147,67 @@ export class {{ service_class_name }} {
       mediaType: undefined,
 {%   endif %}
       ...(requestOptions ?? {}),
-      {% if op.requestBody %}bodyModelKey: {% if op.requestBody.tsType.endswith('[]') %}'{{ op.requestBody.tsType[:-2] }}'{% else %}'{{ op.requestBody.tsType }}'{% endif %},{% endif %}
-      responseModelKey: '{{ op.responseTsType }}',
     });
+{%   if op.returnsMsgpack %}
+{%     if op.hasFormatParam and op.formatVarName %}
+    if (params?.{{ op.formatVarName }} === 'json') {
+      const parsed = await rsp as {{ op.responseTsType }};
+{%       set resp_t = op.responseTsType %}
+{%       if resp_t == 'SignedTransaction' %}
+      // JSON STX is not supported as object; pass through
+      return parsed;
+{%       elif resp_t == 'SignedTransaction[]' %}
+      return parsed;
+{%       elif resp_t.endswith('[]') %}
+      try { return ({{ resp_t[:-2] }}Codecs as any).decodeJsonArray(parsed as any) as {{ op.responseTsType }}; } catch {}
+      return parsed;
+{%       else %}
+      try { return ({{ resp_t }}Codecs as any).decodeJson(parsed as any) as {{ op.responseTsType }}; } catch {}
+      return parsed;
+{%       endif %}
+    } else {
+      const buf = await rsp as unknown as Uint8Array;
+{%       set resp_t = op.responseTsType %}
+{%       if resp_t == 'SignedTransaction' %}
+      return decodeSignedTransaction(buf) as unknown as {{ op.responseTsType }};
+{%       elif resp_t == 'SignedTransaction[]' %}
+      return decodeSignedTransaction(buf) as unknown as {{ op.responseTsType }}; // server may return group bytes
+{%       elif resp_t.endswith('[]') %}
+      try { return ({{ resp_t[:-2] }}Codecs as any).decodeMsgpackArray(buf) as {{ op.responseTsType }}; } catch {}
+      return (buf as unknown) as {{ op.responseTsType }};
+{%       else %}
+      try { return ({{ resp_t }}Codecs as any).decodeMsgpack(buf) as {{ op.responseTsType }}; } catch {}
+      return (buf as unknown) as {{ op.responseTsType }};
+{%       endif %}
+    }
+{%     else %}
+    const buf = await rsp as unknown as Uint8Array;
+{%       set resp_t = op.responseTsType %}
+{%       if resp_t == 'SignedTransaction' %}
+    return decodeSignedTransaction(buf) as unknown as {{ op.responseTsType }};
+{%       elif resp_t == 'SignedTransaction[]' %}
+    return decodeSignedTransaction(buf) as unknown as {{ op.responseTsType }};
+{%       elif resp_t.endswith('[]') %}
+    try { return ({{ resp_t[:-2] }}Codecs as any).decodeMsgpackArray(buf) as {{ op.responseTsType }}; } catch {}
+    return (buf as unknown) as {{ op.responseTsType }};
+{%       else %}
+    try { return ({{ resp_t }}Codecs as any).decodeMsgpack(buf) as {{ op.responseTsType }}; } catch {}
+    return (buf as unknown) as {{ op.responseTsType }};
+{%       endif %}
+{%     endif %}
+{%   else %}
+    const parsed = await rsp as {{ op.responseTsType }};
+{%     set resp_t = op.responseTsType %}
+{%     if resp_t == 'SignedTransaction' or resp_t == 'SignedTransaction[]' %}
+    return parsed;
+{%     elif resp_t.endswith('[]') %}
+    try { return ({{ resp_t[:-2] }}Codecs as any).decodeJsonArray(parsed as any) as {{ op.responseTsType }}; } catch {}
+    return parsed;
+{%     else %}
+    try { return ({{ resp_t }}Codecs as any).decodeJson(parsed as any) as {{ op.responseTsType }}; } catch {}
+    return parsed;
+{%     endif %}
+{%   endif %}
   }
 
 {% endfor %}

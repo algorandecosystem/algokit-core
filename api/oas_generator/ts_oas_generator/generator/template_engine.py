@@ -110,6 +110,36 @@ class OperationContext:
         }
 
 
+@dataclass
+class FieldDescriptor:
+    """Descriptor for a single model field used by templates."""
+
+    name: str  # camelCase name used in TS domain type
+    wire_name: str  # wire name (kebab or original in OAS) used on the wire
+    ts_type: str  # TypeScript type string for the domain type
+    is_array: bool
+    ref_model: str | None
+    is_bytes: bool
+    is_bigint: bool
+    is_signed_txn: bool
+    is_optional: bool
+    is_nullable: bool
+
+
+@dataclass
+class ModelDescriptor:
+    """Descriptor for a schema model including field metadata."""
+
+    model_name: str
+    fields: list[FieldDescriptor]
+    is_object: bool
+    is_array: bool = False
+    array_item_ref: str | None = None
+    array_item_is_bytes: bool = False
+    array_item_is_bigint: bool = False
+    array_item_is_signed_txn: bool = False
+
+
 class TemplateRenderer:
     """Handles template rendering operations."""
 
@@ -145,8 +175,6 @@ class SchemaProcessor:
         self.renderer = renderer
         self._wire_to_canonical: dict[str, str] = {}
         self._camel_to_wire: dict[str, str] = {}
-        self._stx_fields_by_model: dict[str, list[str]] = {}
-        self._bytes_fields_by_model: dict[str, list[str]] = {}
 
     def generate_models(self, output_dir: Path, schemas: Schema) -> FileMap:
         models_dir = output_dir / constants.DirectoryName.SRC / constants.DirectoryName.MODELS
@@ -154,7 +182,8 @@ class SchemaProcessor:
 
         # Generate individual model files
         for name, schema in schemas.items():
-            context = self._create_model_context(name, schema, schemas)
+            descriptor = self._build_model_descriptor(name, schema, schemas)
+            context = self._create_model_context(name, schema, schemas, descriptor)
             content = self.renderer.render(constants.MODEL_TEMPLATE, context)
             file_name = f"{ts_kebab_case(name)}{constants.MODEL_FILE_EXTENSION}"
             files[models_dir / file_name] = content
@@ -166,50 +195,11 @@ class SchemaProcessor:
 
         return files
 
-    def _create_model_context(self, name: str, schema: Schema, all_schemas: Schema) -> TemplateContext:
+    def _create_model_context(
+        self, name: str, schema: Schema, all_schemas: Schema, descriptor: ModelDescriptor
+    ) -> TemplateContext:
         is_object = self._is_object_schema(schema)
         properties = self._extract_properties(schema) if is_object else []
-
-        # Track SignedTransaction field paths for nested encoding (msgpack)
-        if is_object:
-            paths: list[str] = []
-
-            def _traverse(obj: Schema, current_path: list[str]) -> None:
-                if not isinstance(obj, dict):
-                    return
-                # Direct vendor extension
-                if obj.get(constants.X_ALGOKIT_SIGNED_TXN) is True:
-                    paths.append(".".join(current_path))
-                    return
-                # Array case
-                items = obj.get(constants.SchemaKey.ITEMS)
-                if isinstance(items, dict):
-                    # If array of stx or nested, mark with []
-                    _traverse(items, current_path + ["[]"])
-                # Object properties
-                props = obj.get(constants.SchemaKey.PROPERTIES)
-                if isinstance(props, dict):
-                    for prop_name, prop_schema in props.items():
-                        canonical = prop_schema.get(constants.X_ALGOKIT_FIELD_RENAME) or prop_name
-                        _traverse(prop_schema, current_path + [ts_camel_case(canonical)])
-
-            _traverse(schema, [])
-            # Normalize consecutive [] and remove leading/trailing dots
-            normalized = [p.replace("..", ".").strip(".") for p in paths]
-            if normalized:
-                self._stx_fields_by_model[ts_pascal_case(name)] = normalized
-
-        # Track bytes fields for JSON <-> Uint8Array conversion
-        if is_object:
-            model_key = ts_pascal_case(name)
-            for prop in properties:
-                prop_schema = prop["schema"]
-                fmt = prop_schema.get(constants.SchemaKey.FORMAT)
-                is_bytes = fmt == "byte" or prop_schema.get(constants.X_ALGOKIT_BYTES_BASE64) is True
-                if is_bytes:
-                    canonical_name = prop_schema.get(constants.X_ALGOKIT_FIELD_RENAME) or prop["name"]
-                    camel = ts_camel_case(canonical_name)
-                    self._bytes_fields_by_model.setdefault(model_key, []).append(camel)
 
         return {
             "schema_name": name,
@@ -219,6 +209,7 @@ class SchemaProcessor:
             "properties": properties,
             "has_additional_properties": schema.get(constants.SchemaKey.ADDITIONAL_PROPERTIES) is not None,
             "additional_properties_type": schema.get(constants.SchemaKey.ADDITIONAL_PROPERTIES),
+            "descriptor": descriptor,
         }
 
     @staticmethod
@@ -259,13 +250,84 @@ class SchemaProcessor:
     def rename_mappings(self) -> tuple[dict[str, str], dict[str, str]]:
         return self._wire_to_canonical, self._camel_to_wire
 
-    @property
-    def stx_fields(self) -> dict[str, list[str]]:
-        return self._stx_fields_by_model
+    def _build_model_descriptor(self, name: str, schema: Schema, all_schemas: Schema) -> ModelDescriptor:
+        """Build a per-model descriptor from OAS schema and vendor extensions."""
+        model_name = ts_pascal_case(name)
 
-    @property
-    def bytes_fields(self) -> dict[str, list[str]]:
-        return self._bytes_fields_by_model
+        # Top-level array schema support
+        if isinstance(schema, dict) and schema.get(constants.SchemaKey.TYPE) == "array":
+            items = schema.get(constants.SchemaKey.ITEMS, {}) or {}
+            ref_model = None
+            if isinstance(items, dict) and "$ref" in items:
+                ref = items["$ref"].split("/")[-1]
+                ref_model = ts_pascal_case(ref)
+            fmt = items.get(constants.SchemaKey.FORMAT)
+            is_bytes = fmt == "byte" or items.get(constants.X_ALGOKIT_BYTES_BASE64) is True
+            is_bigint = bool(items.get(constants.X_ALGOKIT_BIGINT) is True)
+            is_signed_txn = bool(items.get(constants.X_ALGOKIT_SIGNED_TXN) is True)
+            return ModelDescriptor(
+                model_name=model_name,
+                fields=[],
+                is_object=False,
+                is_array=True,
+                array_item_ref=ref_model,
+                array_item_is_bytes=is_bytes,
+                array_item_is_bigint=is_bigint,
+                array_item_is_signed_txn=is_signed_txn,
+            )
+
+        # Object schema descriptor
+        fields: list[FieldDescriptor] = []
+        is_object = self._is_object_schema(schema)
+        required_fields = set(schema.get(constants.SchemaKey.REQUIRED, []) or [])
+        props = schema.get(constants.SchemaKey.PROPERTIES) or {}
+        for prop_name, prop_schema in props.items():
+            wire_name = prop_name
+            canonical = prop_schema.get(constants.X_ALGOKIT_FIELD_RENAME) or prop_name
+            name_camel = ts_camel_case(canonical)
+
+            ts_t = ts_type(prop_schema, all_schemas)
+            is_array = prop_schema.get(constants.SchemaKey.TYPE) == "array"
+            items = prop_schema.get(constants.SchemaKey.ITEMS, {}) if is_array else None
+            ref_model = None
+            signed_txn = False
+            bytes_flag = False
+            bigint_flag = False
+            if is_array and isinstance(items, dict):
+                if "$ref" in items:
+                    ref_model = ts_pascal_case(items["$ref"].split("/")[-1])
+                fmt = items.get(constants.SchemaKey.FORMAT)
+                bytes_flag = fmt == "byte" or items.get(constants.X_ALGOKIT_BYTES_BASE64) is True
+                bigint_flag = bool(items.get(constants.X_ALGOKIT_BIGINT) is True)
+                signed_txn = bool(items.get(constants.X_ALGOKIT_SIGNED_TXN) is True)
+            else:
+                if "$ref" in (prop_schema or {}):
+                    ref_model = ts_pascal_case(prop_schema["$ref"].split("/")[-1])
+                fmt = prop_schema.get(constants.SchemaKey.FORMAT)
+                bytes_flag = fmt == "byte" or prop_schema.get(constants.X_ALGOKIT_BYTES_BASE64) is True
+                bigint_flag = bool(prop_schema.get(constants.X_ALGOKIT_BIGINT) is True)
+                signed_txn = bool(prop_schema.get(constants.X_ALGOKIT_SIGNED_TXN) is True)
+
+            is_optional = prop_name not in required_fields
+            # Nullable per OpenAPI
+            is_nullable = bool(prop_schema.get(constants.SchemaKey.NULLABLE) is True)
+
+            fields.append(
+                FieldDescriptor(
+                    name=name_camel,
+                    wire_name=wire_name,
+                    ts_type=ts_t,
+                    is_array=is_array,
+                    ref_model=ref_model,
+                    is_bytes=bytes_flag,
+                    is_bigint=bigint_flag,
+                    is_signed_txn=signed_txn,
+                    is_optional=is_optional,
+                    is_nullable=is_nullable,
+                )
+            )
+
+        return ModelDescriptor(model_name=model_name, fields=fields, is_object=is_object)
 
 
 class OperationProcessor:
@@ -668,10 +730,6 @@ class CodeGenerator:
         files.update(self.schema_processor.generate_models(output_dir, all_schemas))
         files.update(self.operation_processor.generate_service(output_dir, ops_by_tag, tags, service_class))
         files.update(self._generate_client_files(output_dir, client_class, service_class))
-        files.update(self._generate_rename_map(output_dir))
-        files.update(self._generate_bytes_map(output_dir))
-        files.update(self._generate_stx_map(output_dir))
-        files.update(self._generate_transformers(output_dir))
 
         return files
 
@@ -726,62 +784,7 @@ class CodeGenerator:
 
         return self.renderer.render_batch(template_map)
 
-    def _generate_rename_map(self, output_dir: Path) -> FileMap:
-        """Render rename map supporting vendor rename extensions."""
-        wire_to_canonical, camel_to_wire = self.schema_processor.rename_mappings
-
-        core_dir = output_dir / constants.DirectoryName.SRC / constants.DirectoryName.CORE
-        return {
-            core_dir / "rename-map.ts": (
-                self.renderer.render(
-                    "base/src/core/rename-map.ts.j2",
-                    {
-                        "wire_to_canonical": wire_to_canonical,
-                        "camel_to_wire": camel_to_wire,
-                    },
-                )
-            )
-        }
-
-    def _generate_bytes_map(self, output_dir: Path) -> FileMap:
-        """Render bytes field metadata per model for JSON base64 <-> Uint8Array mapping."""
-        core_dir = output_dir / constants.DirectoryName.SRC / constants.DirectoryName.CORE
-        return {
-            core_dir / "bytes-map.ts": (
-                self.renderer.render(
-                    "base/src/core/bytes-map.ts.j2",
-                    {"bytes_fields": self.schema_processor.bytes_fields},
-                )
-            )
-        }
-
-    def _generate_stx_map(self, output_dir: Path) -> FileMap:
-        """Render stx field paths per model for nested SignedTransaction encoding/decoding in msgpack bodies."""
-        core_dir = output_dir / constants.DirectoryName.SRC / constants.DirectoryName.CORE
-        return {
-            core_dir / "stx-map.ts": (
-                self.renderer.render(
-                    "base/src/core/stx-map.ts.j2",
-                    {"stx_fields": self.schema_processor.stx_fields},
-                )
-            )
-        }
-
-    def _generate_transformers(self, output_dir: Path) -> FileMap:
-        """Render transformers after schemas so we can conditionally include SignedTransaction support."""
-        core_dir = output_dir / constants.DirectoryName.SRC / constants.DirectoryName.CORE
-        uses_stx = any(v for v in self.schema_processor.stx_fields.values())
-        context = {
-            "uses_stx": uses_stx,
-        }
-        return {
-            core_dir / "transformers.ts": (
-                self.renderer.render(
-                    "base/src/core/transformers.ts.j2",
-                    context,
-                )
-            )
-        }
+    # Centralized transformers/maps removed; per-model codecs handle all transforms.
 
     @staticmethod
     def _extract_class_names(package_name: str) -> tuple[str, str]:

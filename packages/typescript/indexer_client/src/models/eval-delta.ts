@@ -1,3 +1,6 @@
+import { encodeMsgPack, decodeMsgPack } from '../core/msgpack'
+import { toBase64 as _toBase64, fromBase64 as _fromBase64 } from '../core/json'
+
 /**
  * Represents a TEAL value delta.
  */
@@ -17,3 +20,187 @@ export type EvalDelta = {
    */
   uint?: bigint
 }
+
+// JSON DTO shape for EvalDelta with wire keys and JSON-safe primitives
+export type EvalDeltaDto = {
+  action: bigint
+  bytes?: string
+  uint?: string
+}
+
+// Helpers
+const toBase64 = _toBase64
+const fromBase64 = _fromBase64
+
+// toDto/fromDto
+export function toDto(value: EvalDelta): EvalDeltaDto {
+  const out: any = {}
+  {
+    const v = (value as any)['action']
+    if (v === undefined) {
+      // omit undefined
+    } else {
+      out['action'] = v
+    }
+  }
+  {
+    const v = (value as any)['bytes']
+    if (v === undefined) {
+      // omit undefined
+    } else {
+      out['bytes'] = v
+    }
+  }
+  {
+    const v = (value as any)['uint']
+    if (v === undefined) {
+      // omit undefined
+    } else {
+      out['uint'] = v === undefined ? v : typeof v === 'bigint' ? v.toString() : String(v)
+    }
+  }
+  return out as EvalDeltaDto
+}
+
+export function fromDto(dto: EvalDeltaDto): EvalDelta {
+  const out: any = {}
+  {
+    const v = (dto as any)['action']
+    if (v === undefined) {
+      // omit undefined
+    } else {
+      out['action'] = v as any
+    }
+  }
+  {
+    const v = (dto as any)['bytes']
+    if (v === undefined) {
+      // omit undefined
+    } else {
+      out['bytes'] = v as any
+    }
+  }
+  {
+    const v = (dto as any)['uint']
+    if (v === undefined) {
+      // omit undefined
+    } else {
+      out['uint'] = v === undefined ? v : typeof v === 'bigint' ? v : BigInt(v as any)
+    }
+  }
+  return out as EvalDelta
+}
+
+// Msgpack codecs
+export function encodeMsgpack(value: EvalDelta): Uint8Array {
+  const dto = toMsgpackDto(value)
+  return encodeMsgPack(dto)
+}
+
+export function decodeMsgpack(bytes: Uint8Array): EvalDelta {
+  const raw: any = decodeMsgPack(bytes)
+  // raw has wire keys and Uint8Array for bytes
+  return fromMsgpackDto(raw)
+}
+
+// JSON codecs
+export function encodeJson(value: EvalDelta): unknown {
+  return toDto(value)
+}
+
+export function decodeJson(raw: unknown): EvalDelta {
+  return fromDto(raw as EvalDeltaDto)
+}
+
+// Array helpers
+export function encodeMsgpackArray(values: EvalDelta[]): Uint8Array {
+  const dto = values.map((v) => toMsgpackDto(v))
+  return encodeMsgPack(dto)
+}
+
+export function decodeMsgpackArray(bytes: Uint8Array): EvalDelta[] {
+  const raw: any = decodeMsgPack(bytes)
+  return (raw as any[]).map((item) => fromMsgpackDto(item))
+}
+
+export function encodeJsonArray(values: EvalDelta[]): unknown {
+  return values.map((v) => toDto(v))
+}
+
+export function decodeJsonArray(raw: unknown): EvalDelta[] {
+  return (raw as any[]).map((item) => fromDto(item))
+}
+
+// Internal: msgpack DTO (wire keys, bytes kept as Uint8Array, signed txn encoded to bytes)
+type EvalDeltaMsgpackDto = {
+  action: bigint
+  bytes?: string
+  uint?: bigint
+}
+
+function toMsgpackDto(value: EvalDelta): EvalDeltaMsgpackDto {
+  const out: any = {}
+  {
+    const v = (value as any)['action']
+    if (v === undefined) {
+    } else {
+      out['action'] = v
+    }
+  }
+  {
+    const v = (value as any)['bytes']
+    if (v === undefined) {
+    } else {
+      out['bytes'] = v
+    }
+  }
+  {
+    const v = (value as any)['uint']
+    if (v === undefined) {
+    } else {
+      out['uint'] = v
+    }
+  }
+  return out as EvalDeltaMsgpackDto
+}
+
+function fromMsgpackDto(dto: EvalDeltaMsgpackDto): EvalDelta {
+  const out: any = {}
+  {
+    const v = (dto as any)['action']
+    if (v === undefined) {
+    } else {
+      out['action'] = v
+    }
+  }
+  {
+    const v = (dto as any)['bytes']
+    if (v === undefined) {
+    } else {
+      out['bytes'] = v
+    }
+  }
+  {
+    const v = (dto as any)['uint']
+    if (v === undefined) {
+    } else {
+      out['uint'] = v
+    }
+  }
+  return out as EvalDelta
+}
+
+export const EvalDelta = {
+  toDto,
+  fromDto,
+  encodeMsgpack,
+  decodeMsgpack,
+  encodeJson,
+  decodeJson,
+  toMsgpackDto,
+  fromMsgpackDto,
+  encodeMsgpackArray,
+  decodeMsgpackArray,
+  encodeJsonArray,
+  decodeJsonArray,
+} as const

@@ -42,6 +42,47 @@ import type {
   Version,
   WaitForBlock,
 } from '../models/index'
+import { AbortCatchup as AbortCatchupCodecs } from '../models/abort-catchup'
+import { Account as AccountCodecs } from '../models/account'
+import { AccountApplicationInformation as AccountApplicationInformationCodecs } from '../models/account-application-information'
+import { AccountAssetInformation as AccountAssetInformationCodecs } from '../models/account-asset-information'
+import { AccountAssetsInformation as AccountAssetsInformationCodecs } from '../models/account-assets-information'
+import { AddParticipationKey as AddParticipationKeyCodecs } from '../models/add-participation-key'
+import { Application as ApplicationCodecs } from '../models/application'
+import { Asset as AssetCodecs } from '../models/asset'
+import { Box as BoxCodecs } from '../models/box'
+import { DebugSettingsProf as DebugSettingsProfCodecs } from '../models/debug-settings-prof'
+import { DryrunRequest as DryrunRequestCodecs } from '../models/dryrun-request'
+import { Genesis as GenesisCodecs } from '../models/genesis'
+import { GetApplicationBoxes as GetApplicationBoxesCodecs } from '../models/get-application-boxes'
+import { GetBlock as GetBlockCodecs } from '../models/get-block'
+import { GetBlockHash as GetBlockHashCodecs } from '../models/get-block-hash'
+import { GetBlockLogs as GetBlockLogsCodecs } from '../models/get-block-logs'
+import { GetBlockTimeStampOffset as GetBlockTimeStampOffsetCodecs } from '../models/get-block-time-stamp-offset'
+import { GetBlockTxids as GetBlockTxidsCodecs } from '../models/get-block-txids'
+import { GetPendingTransactions as GetPendingTransactionsCodecs } from '../models/get-pending-transactions'
+import { GetPendingTransactionsByAddress as GetPendingTransactionsByAddressCodecs } from '../models/get-pending-transactions-by-address'
+import { GetStatus as GetStatusCodecs } from '../models/get-status'
+import { GetSupply as GetSupplyCodecs } from '../models/get-supply'
+import { GetSyncRound as GetSyncRoundCodecs } from '../models/get-sync-round'
+import { GetTransactionGroupLedgerStateDeltasForRound as GetTransactionGroupLedgerStateDeltasForRoundCodecs } from '../models/get-transaction-group-ledger-state-deltas-for-round'
+import { LedgerStateDelta as LedgerStateDeltaCodecs } from '../models/ledger-state-delta'
+import { LightBlockHeaderProof as LightBlockHeaderProofCodecs } from '../models/light-block-header-proof'
+import { ParticipationKey as ParticipationKeyCodecs } from '../models/participation-key'
+import { PendingTransactionResponse as PendingTransactionResponseCodecs } from '../models/pending-transaction-response'
+import { RawTransaction as RawTransactionCodecs } from '../models/raw-transaction'
+import { ShutdownNode as ShutdownNodeCodecs } from '../models/shutdown-node'
+import { SimulateRequest as SimulateRequestCodecs } from '../models/simulate-request'
+import { SimulateTransaction as SimulateTransactionCodecs } from '../models/simulate-transaction'
+import { StartCatchup as StartCatchupCodecs } from '../models/start-catchup'
+import { StateProof as StateProofCodecs } from '../models/state-proof'
+import { TealCompile as TealCompileCodecs } from '../models/teal-compile'
+import { TealDisassemble as TealDisassembleCodecs } from '../models/teal-disassemble'
+import { TealDryrun as TealDryrunCodecs } from '../models/teal-dryrun'
+import { TransactionParams as TransactionParamsCodecs } from '../models/transaction-params'
+import { TransactionProof as TransactionProofCodecs } from '../models/transaction-proof'
+import { Version as VersionCodecs } from '../models/version'
+import { WaitForBlock as WaitForBlockCodecs } from '../models/wait-for-block'
 
 export class AlgodApi {
   constructor(public readonly httpRequest: BaseHttpRequest) {}
@@ -49,13 +90,13 @@ export class AlgodApi {
   /**
    * Given a catchpoint, it aborts catching up to this catchpoint
    */
-  abortCatchup(catchpoint: string, requestOptions?: ApiRequestOptions): Promise<AbortCatchup> {
+  async abortCatchup(catchpoint: string, requestOptions?: ApiRequestOptions): Promise<AbortCatchup> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'DELETE',
       url: '/v2/catchup/{catchpoint}',
       path: { catchpoint: catchpoint },
@@ -64,14 +105,18 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'AbortCatchup',
     })
+    const parsed = (await rsp) as AbortCatchup
+    try {
+      return (AbortCatchupCodecs as any).decodeJson(parsed as any) as AbortCatchup
+    } catch {}
+    return parsed
   }
 
   /**
    * Given a specific account public key and application ID, this call returns the account's application local state and global state (AppLocalState and AppParams, if either exists). Global state will only be returned if the provided address is the application's creator.
    */
-  accountApplicationInformation(
+  async accountApplicationInformation(
     address: string,
     applicationId: number | bigint,
     params?: { format?: 'json' | 'msgpack' },
@@ -86,7 +131,7 @@ export class AlgodApi {
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/accounts/{address}/applications/{application-id}',
       path: { address: address, 'application-id': typeof applicationId === 'bigint' ? applicationId.toString() : applicationId },
@@ -95,14 +140,26 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'AccountApplicationInformation',
     })
+    if (params?.format === 'json') {
+      const parsed = (await rsp) as AccountApplicationInformation
+      try {
+        return (AccountApplicationInformationCodecs as any).decodeJson(parsed as any) as AccountApplicationInformation
+      } catch {}
+      return parsed
+    } else {
+      const buf = (await rsp) as unknown as Uint8Array
+      try {
+        return (AccountApplicationInformationCodecs as any).decodeMsgpack(buf) as AccountApplicationInformation
+      } catch {}
+      return buf as unknown as AccountApplicationInformation
+    }
   }
 
   /**
    * Given a specific account public key and asset ID, this call returns the account's asset holding and asset parameters (if either exist). Asset parameters will only be returned if the provided address is the asset's creator.
    */
-  accountAssetInformation(
+  async accountAssetInformation(
     address: string,
     assetId: number | bigint,
     params?: { format?: 'json' | 'msgpack' },
@@ -117,7 +174,7 @@ export class AlgodApi {
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/accounts/{address}/assets/{asset-id}',
       path: { address: address, 'asset-id': typeof assetId === 'bigint' ? assetId.toString() : assetId },
@@ -126,14 +183,26 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'AccountAssetInformation',
     })
+    if (params?.format === 'json') {
+      const parsed = (await rsp) as AccountAssetInformation
+      try {
+        return (AccountAssetInformationCodecs as any).decodeJson(parsed as any) as AccountAssetInformation
+      } catch {}
+      return parsed
+    } else {
+      const buf = (await rsp) as unknown as Uint8Array
+      try {
+        return (AccountAssetInformationCodecs as any).decodeMsgpack(buf) as AccountAssetInformation
+      } catch {}
+      return buf as unknown as AccountAssetInformation
+    }
   }
 
   /**
    * Lookup an account's asset holdings.
    */
-  accountAssetsInformation(
+  async accountAssetsInformation(
     address: string,
     params?: { limit?: number | bigint; next?: string },
     requestOptions?: ApiRequestOptions,
@@ -143,7 +212,7 @@ export class AlgodApi {
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/accounts/{address}/assets',
       path: { address: address },
@@ -152,14 +221,18 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'AccountAssetsInformation',
     })
+    const parsed = (await rsp) as AccountAssetsInformation
+    try {
+      return (AccountAssetsInformationCodecs as any).decodeJson(parsed as any) as AccountAssetsInformation
+    } catch {}
+    return parsed
   }
 
   /**
    * Given a specific account public key, this call returns the account's status, balance and spendable amounts
    */
-  accountInformation(
+  async accountInformation(
     address: string,
     params?: { exclude?: 'all' | 'none'; format?: 'json' | 'msgpack' },
     requestOptions?: ApiRequestOptions,
@@ -173,7 +246,7 @@ export class AlgodApi {
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/accounts/{address}',
       path: { address: address },
@@ -182,67 +255,97 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'Account',
     })
+    if (params?.format === 'json') {
+      const parsed = (await rsp) as Account
+      try {
+        return (AccountCodecs as any).decodeJson(parsed as any) as Account
+      } catch {}
+      return parsed
+    } else {
+      const buf = (await rsp) as unknown as Uint8Array
+      try {
+        return (AccountCodecs as any).decodeMsgpack(buf) as Account
+      } catch {}
+      return buf as unknown as Account
+    }
   }
 
-  addParticipationKey(params?: { body: string }, requestOptions?: ApiRequestOptions): Promise<AddParticipationKey> {
+  async addParticipationKey(params?: { body: string }, requestOptions?: ApiRequestOptions): Promise<AddParticipationKey> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
     headers['Content-Type'] = 'application/msgpack'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'POST',
       url: '/v2/participation',
       path: {},
       query: {},
       headers,
-      body: params?.body,
+      body: ((): any => {
+        const b = params?.body as any
+        if (b == null) return undefined
+        const t = 'string'
+        if (t in ModelCodecs) return (ModelCodecs as any)[t].encodeMsgpack(b)
+        return b instanceof Uint8Array ? b : b
+      })(),
       // Only msgpack supported for request body
       mediaType: 'application/msgpack',
       ...(requestOptions ?? {}),
-      bodyModelKey: 'string',
-      responseModelKey: 'AddParticipationKey',
     })
+    const parsed = (await rsp) as AddParticipationKey
+    try {
+      return (AddParticipationKeyCodecs as any).decodeJson(parsed as any) as AddParticipationKey
+    } catch {}
+    return parsed
   }
 
   /**
    * Given a participation ID, append state proof keys to a particular set of participation keys
    */
-  appendKeys(participationId: string, params?: { body: string }, requestOptions?: ApiRequestOptions): Promise<ParticipationKey> {
+  async appendKeys(participationId: string, params?: { body: string }, requestOptions?: ApiRequestOptions): Promise<ParticipationKey> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
     headers['Content-Type'] = 'application/msgpack'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'POST',
       url: '/v2/participation/{participation-id}',
       path: { 'participation-id': participationId },
       query: {},
       headers,
-      body: params?.body,
+      body: ((): any => {
+        const b = params?.body as any
+        if (b == null) return undefined
+        const t = 'string'
+        if (t in ModelCodecs) return (ModelCodecs as any)[t].encodeMsgpack(b)
+        return b instanceof Uint8Array ? b : b
+      })(),
       // Only msgpack supported for request body
       mediaType: 'application/msgpack',
       ...(requestOptions ?? {}),
-      bodyModelKey: 'string',
-      responseModelKey: 'ParticipationKey',
     })
+    const parsed = (await rsp) as ParticipationKey
+    try {
+      return (ParticipationKeyCodecs as any).decodeJson(parsed as any) as ParticipationKey
+    } catch {}
+    return parsed
   }
 
   /**
    * Delete a given participation key by ID
    */
-  deleteParticipationKeyById(participationId: string, requestOptions?: ApiRequestOptions): Promise<void> {
+  async deleteParticipationKeyById(participationId: string, requestOptions?: ApiRequestOptions): Promise<void> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'DELETE',
       url: '/v2/participation/{participation-id}',
       path: { 'participation-id': participationId },
@@ -251,17 +354,21 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'void',
     })
+    const parsed = (await rsp) as void
+    try {
+      return (voidCodecs as any).decodeJson(parsed as any) as void
+    } catch {}
+    return parsed
   }
 
-  experimentalCheck(requestOptions?: ApiRequestOptions): Promise<void> {
+  async experimentalCheck(requestOptions?: ApiRequestOptions): Promise<void> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/experimental',
       path: {},
@@ -270,11 +377,15 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'void',
     })
+    const parsed = (await rsp) as void
+    try {
+      return (voidCodecs as any).decodeJson(parsed as any) as void
+    } catch {}
+    return parsed
   }
 
-  generateParticipationKeys(
+  async generateParticipationKeys(
     address: string,
     params?: { dilution?: number | bigint; first: number | bigint; last: number | bigint },
     requestOptions?: ApiRequestOptions,
@@ -284,7 +395,7 @@ export class AlgodApi {
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'POST',
       url: '/v2/participation/generate/{address}',
       path: { address: address },
@@ -297,20 +408,28 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'string',
     })
+    const parsed = (await rsp) as string
+    try {
+      return (stringCodecs as any).decodeJson(parsed as any) as string
+    } catch {}
+    return parsed
   }
 
   /**
    * Given an application ID and box name, it returns the round, box name, and value (each base64 encoded). Box names must be in the goal app call arg encoding form 'encoding:value'. For ints, use the form 'int:1234'. For raw bytes, use the form 'b64:A=='. For printable strings, use the form 'str:hello'. For addresses, use the form 'addr:XYZ...'.
    */
-  getApplicationBoxByName(applicationId: number | bigint, params?: { name: string }, requestOptions?: ApiRequestOptions): Promise<Box> {
+  async getApplicationBoxByName(
+    applicationId: number | bigint,
+    params?: { name: string },
+    requestOptions?: ApiRequestOptions,
+  ): Promise<Box> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/applications/{application-id}/box',
       path: { 'application-id': typeof applicationId === 'bigint' ? applicationId.toString() : applicationId },
@@ -319,14 +438,18 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'Box',
     })
+    const parsed = (await rsp) as Box
+    try {
+      return (BoxCodecs as any).decodeJson(parsed as any) as Box
+    } catch {}
+    return parsed
   }
 
   /**
    * Given an application ID, return all Box names. No particular ordering is guaranteed. Request fails when client or server-side configured limits prevent returning all Box names.
    */
-  getApplicationBoxes(
+  async getApplicationBoxes(
     applicationId: number | bigint,
     params?: { max?: number | bigint },
     requestOptions?: ApiRequestOptions,
@@ -336,7 +459,7 @@ export class AlgodApi {
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/applications/{application-id}/boxes',
       path: { 'application-id': typeof applicationId === 'bigint' ? applicationId.toString() : applicationId },
@@ -345,20 +468,24 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'GetApplicationBoxes',
     })
+    const parsed = (await rsp) as GetApplicationBoxes
+    try {
+      return (GetApplicationBoxesCodecs as any).decodeJson(parsed as any) as GetApplicationBoxes
+    } catch {}
+    return parsed
   }
 
   /**
    * Given a application ID, it returns application information including creator, approval and clear programs, global and local schemas, and global state.
    */
-  getApplicationById(applicationId: number | bigint, requestOptions?: ApiRequestOptions): Promise<Application> {
+  async getApplicationById(applicationId: number | bigint, requestOptions?: ApiRequestOptions): Promise<Application> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/applications/{application-id}',
       path: { 'application-id': typeof applicationId === 'bigint' ? applicationId.toString() : applicationId },
@@ -367,20 +494,24 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'Application',
     })
+    const parsed = (await rsp) as Application
+    try {
+      return (ApplicationCodecs as any).decodeJson(parsed as any) as Application
+    } catch {}
+    return parsed
   }
 
   /**
    * Given a asset ID, it returns asset information including creator, name, total supply and special addresses.
    */
-  getAssetById(assetId: number | bigint, requestOptions?: ApiRequestOptions): Promise<Asset> {
+  async getAssetById(assetId: number | bigint, requestOptions?: ApiRequestOptions): Promise<Asset> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/assets/{asset-id}',
       path: { 'asset-id': typeof assetId === 'bigint' ? assetId.toString() : assetId },
@@ -389,11 +520,15 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'Asset',
     })
+    const parsed = (await rsp) as Asset
+    try {
+      return (AssetCodecs as any).decodeJson(parsed as any) as Asset
+    } catch {}
+    return parsed
   }
 
-  getBlock(
+  async getBlock(
     round: number | bigint,
     params?: { headerOnly?: boolean; format?: 'json' | 'msgpack' },
     requestOptions?: ApiRequestOptions,
@@ -407,7 +542,7 @@ export class AlgodApi {
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/blocks/{round}',
       path: { round: typeof round === 'bigint' ? round.toString() : round },
@@ -416,17 +551,29 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'GetBlock',
     })
+    if (params?.format === 'json') {
+      const parsed = (await rsp) as GetBlock
+      try {
+        return (GetBlockCodecs as any).decodeJson(parsed as any) as GetBlock
+      } catch {}
+      return parsed
+    } else {
+      const buf = (await rsp) as unknown as Uint8Array
+      try {
+        return (GetBlockCodecs as any).decodeMsgpack(buf) as GetBlock
+      } catch {}
+      return buf as unknown as GetBlock
+    }
   }
 
-  getBlockHash(round: number | bigint, requestOptions?: ApiRequestOptions): Promise<GetBlockHash> {
+  async getBlockHash(round: number | bigint, requestOptions?: ApiRequestOptions): Promise<GetBlockHash> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/blocks/{round}/hash',
       path: { round: typeof round === 'bigint' ? round.toString() : round },
@@ -435,20 +582,24 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'GetBlockHash',
     })
+    const parsed = (await rsp) as GetBlockHash
+    try {
+      return (GetBlockHashCodecs as any).decodeJson(parsed as any) as GetBlockHash
+    } catch {}
+    return parsed
   }
 
   /**
    * Get all of the logs from outer and inner app calls in the given round
    */
-  getBlockLogs(round: number | bigint, requestOptions?: ApiRequestOptions): Promise<GetBlockLogs> {
+  async getBlockLogs(round: number | bigint, requestOptions?: ApiRequestOptions): Promise<GetBlockLogs> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/blocks/{round}/logs',
       path: { round: typeof round === 'bigint' ? round.toString() : round },
@@ -457,20 +608,24 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'GetBlockLogs',
     })
+    const parsed = (await rsp) as GetBlockLogs
+    try {
+      return (GetBlockLogsCodecs as any).decodeJson(parsed as any) as GetBlockLogs
+    } catch {}
+    return parsed
   }
 
   /**
    * Gets the current timestamp offset.
    */
-  getBlockTimeStampOffset(requestOptions?: ApiRequestOptions): Promise<GetBlockTimeStampOffset> {
+  async getBlockTimeStampOffset(requestOptions?: ApiRequestOptions): Promise<GetBlockTimeStampOffset> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/devmode/blocks/offset',
       path: {},
@@ -479,17 +634,21 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'GetBlockTimeStampOffset',
     })
+    const parsed = (await rsp) as GetBlockTimeStampOffset
+    try {
+      return (GetBlockTimeStampOffsetCodecs as any).decodeJson(parsed as any) as GetBlockTimeStampOffset
+    } catch {}
+    return parsed
   }
 
-  getBlockTxids(round: number | bigint, requestOptions?: ApiRequestOptions): Promise<GetBlockTxids> {
+  async getBlockTxids(round: number | bigint, requestOptions?: ApiRequestOptions): Promise<GetBlockTxids> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/blocks/{round}/txids',
       path: { round: typeof round === 'bigint' ? round.toString() : round },
@@ -498,20 +657,24 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'GetBlockTxids',
     })
+    const parsed = (await rsp) as GetBlockTxids
+    try {
+      return (GetBlockTxidsCodecs as any).decodeJson(parsed as any) as GetBlockTxids
+    } catch {}
+    return parsed
   }
 
   /**
    * Returns the merged (defaults + overrides) config file in json.
    */
-  getConfig(requestOptions?: ApiRequestOptions): Promise<string> {
+  async getConfig(requestOptions?: ApiRequestOptions): Promise<string> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/debug/settings/config',
       path: {},
@@ -520,20 +683,24 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'string',
     })
+    const parsed = (await rsp) as string
+    try {
+      return (stringCodecs as any).decodeJson(parsed as any) as string
+    } catch {}
+    return parsed
   }
 
   /**
    * Retrieves the current settings for blocking and mutex profiles
    */
-  getDebugSettingsProf(requestOptions?: ApiRequestOptions): Promise<DebugSettingsProf> {
+  async getDebugSettingsProf(requestOptions?: ApiRequestOptions): Promise<DebugSettingsProf> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/debug/settings/pprof',
       path: {},
@@ -542,20 +709,24 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'DebugSettingsProf',
     })
+    const parsed = (await rsp) as DebugSettingsProf
+    try {
+      return (DebugSettingsProfCodecs as any).decodeJson(parsed as any) as DebugSettingsProf
+    } catch {}
+    return parsed
   }
 
   /**
    * Returns the entire genesis file in json.
    */
-  getGenesis(requestOptions?: ApiRequestOptions): Promise<Genesis> {
+  async getGenesis(requestOptions?: ApiRequestOptions): Promise<Genesis> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/genesis',
       path: {},
@@ -564,14 +735,18 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'Genesis',
     })
+    const parsed = (await rsp) as Genesis
+    try {
+      return (GenesisCodecs as any).decodeJson(parsed as any) as Genesis
+    } catch {}
+    return parsed
   }
 
   /**
    * Get ledger deltas for a round.
    */
-  getLedgerStateDelta(
+  async getLedgerStateDelta(
     round: number | bigint,
     params?: { format?: 'json' | 'msgpack' },
     requestOptions?: ApiRequestOptions,
@@ -585,7 +760,7 @@ export class AlgodApi {
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/deltas/{round}',
       path: { round: typeof round === 'bigint' ? round.toString() : round },
@@ -594,14 +769,26 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'LedgerStateDelta',
     })
+    if (params?.format === 'json') {
+      const parsed = (await rsp) as LedgerStateDelta
+      try {
+        return (LedgerStateDeltaCodecs as any).decodeJson(parsed as any) as LedgerStateDelta
+      } catch {}
+      return parsed
+    } else {
+      const buf = (await rsp) as unknown as Uint8Array
+      try {
+        return (LedgerStateDeltaCodecs as any).decodeMsgpack(buf) as LedgerStateDelta
+      } catch {}
+      return buf as unknown as LedgerStateDelta
+    }
   }
 
   /**
    * Get a ledger delta for a given transaction group.
    */
-  getLedgerStateDeltaForTransactionGroup(
+  async getLedgerStateDeltaForTransactionGroup(
     id: string,
     params?: { format?: 'json' | 'msgpack' },
     requestOptions?: ApiRequestOptions,
@@ -615,7 +802,7 @@ export class AlgodApi {
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/deltas/txn/group/{id}',
       path: { id: id },
@@ -624,17 +811,29 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'LedgerStateDelta',
     })
+    if (params?.format === 'json') {
+      const parsed = (await rsp) as LedgerStateDelta
+      try {
+        return (LedgerStateDeltaCodecs as any).decodeJson(parsed as any) as LedgerStateDelta
+      } catch {}
+      return parsed
+    } else {
+      const buf = (await rsp) as unknown as Uint8Array
+      try {
+        return (LedgerStateDeltaCodecs as any).decodeMsgpack(buf) as LedgerStateDelta
+      } catch {}
+      return buf as unknown as LedgerStateDelta
+    }
   }
 
-  getLightBlockHeaderProof(round: number | bigint, requestOptions?: ApiRequestOptions): Promise<LightBlockHeaderProof> {
+  async getLightBlockHeaderProof(round: number | bigint, requestOptions?: ApiRequestOptions): Promise<LightBlockHeaderProof> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/blocks/{round}/lightheader/proof',
       path: { round: typeof round === 'bigint' ? round.toString() : round },
@@ -643,20 +842,24 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'LightBlockHeaderProof',
     })
+    const parsed = (await rsp) as LightBlockHeaderProof
+    try {
+      return (LightBlockHeaderProofCodecs as any).decodeJson(parsed as any) as LightBlockHeaderProof
+    } catch {}
+    return parsed
   }
 
   /**
    * Given a participation ID, return information about that participation key
    */
-  getParticipationKeyById(participationId: string, requestOptions?: ApiRequestOptions): Promise<ParticipationKey> {
+  async getParticipationKeyById(participationId: string, requestOptions?: ApiRequestOptions): Promise<ParticipationKey> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/participation/{participation-id}',
       path: { 'participation-id': participationId },
@@ -665,20 +868,24 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'ParticipationKey',
     })
+    const parsed = (await rsp) as ParticipationKey
+    try {
+      return (ParticipationKeyCodecs as any).decodeJson(parsed as any) as ParticipationKey
+    } catch {}
+    return parsed
   }
 
   /**
    * Return a list of participation keys
    */
-  getParticipationKeys(requestOptions?: ApiRequestOptions): Promise<ParticipationKey[]> {
+  async getParticipationKeys(requestOptions?: ApiRequestOptions): Promise<ParticipationKey[]> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/participation',
       path: {},
@@ -687,14 +894,18 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'ParticipationKey[]',
     })
+    const parsed = (await rsp) as ParticipationKey[]
+    try {
+      return (ParticipationKeyCodecs as any).decodeJsonArray(parsed as any) as ParticipationKey[]
+    } catch {}
+    return parsed
   }
 
   /**
    * Get the list of pending transactions, sorted by priority, in decreasing order, truncated at the end at MAX. If MAX = 0, returns all pending transactions.
    */
-  getPendingTransactions(
+  async getPendingTransactions(
     params?: { max?: number | bigint; format?: 'json' | 'msgpack' },
     requestOptions?: ApiRequestOptions,
   ): Promise<GetPendingTransactions> {
@@ -707,7 +918,7 @@ export class AlgodApi {
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/transactions/pending',
       path: {},
@@ -716,14 +927,26 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'GetPendingTransactions',
     })
+    if (params?.format === 'json') {
+      const parsed = (await rsp) as GetPendingTransactions
+      try {
+        return (GetPendingTransactionsCodecs as any).decodeJson(parsed as any) as GetPendingTransactions
+      } catch {}
+      return parsed
+    } else {
+      const buf = (await rsp) as unknown as Uint8Array
+      try {
+        return (GetPendingTransactionsCodecs as any).decodeMsgpack(buf) as GetPendingTransactions
+      } catch {}
+      return buf as unknown as GetPendingTransactions
+    }
   }
 
   /**
    * Get the list of pending transactions by address, sorted by priority, in decreasing order, truncated at the end at MAX. If MAX = 0, returns all pending transactions.
    */
-  getPendingTransactionsByAddress(
+  async getPendingTransactionsByAddress(
     address: string,
     params?: { max?: number | bigint; format?: 'json' | 'msgpack' },
     requestOptions?: ApiRequestOptions,
@@ -737,7 +960,7 @@ export class AlgodApi {
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/accounts/{address}/transactions/pending',
       path: { address: address },
@@ -746,17 +969,29 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'GetPendingTransactionsByAddress',
     })
+    if (params?.format === 'json') {
+      const parsed = (await rsp) as GetPendingTransactionsByAddress
+      try {
+        return (GetPendingTransactionsByAddressCodecs as any).decodeJson(parsed as any) as GetPendingTransactionsByAddress
+      } catch {}
+      return parsed
+    } else {
+      const buf = (await rsp) as unknown as Uint8Array
+      try {
+        return (GetPendingTransactionsByAddressCodecs as any).decodeMsgpack(buf) as GetPendingTransactionsByAddress
+      } catch {}
+      return buf as unknown as GetPendingTransactionsByAddress
+    }
   }
 
-  getReady(requestOptions?: ApiRequestOptions): Promise<void> {
+  async getReady(requestOptions?: ApiRequestOptions): Promise<void> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/ready',
       path: {},
@@ -765,17 +1000,21 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'void',
     })
+    const parsed = (await rsp) as void
+    try {
+      return (voidCodecs as any).decodeJson(parsed as any) as void
+    } catch {}
+    return parsed
   }
 
-  getStateProof(round: number | bigint, requestOptions?: ApiRequestOptions): Promise<StateProof> {
+  async getStateProof(round: number | bigint, requestOptions?: ApiRequestOptions): Promise<StateProof> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/stateproofs/{round}',
       path: { round: typeof round === 'bigint' ? round.toString() : round },
@@ -784,17 +1023,21 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'StateProof',
     })
+    const parsed = (await rsp) as StateProof
+    try {
+      return (StateProofCodecs as any).decodeJson(parsed as any) as StateProof
+    } catch {}
+    return parsed
   }
 
-  getStatus(requestOptions?: ApiRequestOptions): Promise<GetStatus> {
+  async getStatus(requestOptions?: ApiRequestOptions): Promise<GetStatus> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/status',
       path: {},
@@ -803,17 +1046,21 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'GetStatus',
     })
+    const parsed = (await rsp) as GetStatus
+    try {
+      return (GetStatusCodecs as any).decodeJson(parsed as any) as GetStatus
+    } catch {}
+    return parsed
   }
 
-  getSupply(requestOptions?: ApiRequestOptions): Promise<GetSupply> {
+  async getSupply(requestOptions?: ApiRequestOptions): Promise<GetSupply> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/ledger/supply',
       path: {},
@@ -822,20 +1069,24 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'GetSupply',
     })
+    const parsed = (await rsp) as GetSupply
+    try {
+      return (GetSupplyCodecs as any).decodeJson(parsed as any) as GetSupply
+    } catch {}
+    return parsed
   }
 
   /**
    * Gets the minimum sync round for the ledger.
    */
-  getSyncRound(requestOptions?: ApiRequestOptions): Promise<GetSyncRound> {
+  async getSyncRound(requestOptions?: ApiRequestOptions): Promise<GetSyncRound> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/ledger/sync',
       path: {},
@@ -844,14 +1095,18 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'GetSyncRound',
     })
+    const parsed = (await rsp) as GetSyncRound
+    try {
+      return (GetSyncRoundCodecs as any).decodeJson(parsed as any) as GetSyncRound
+    } catch {}
+    return parsed
   }
 
   /**
    * Get ledger deltas for transaction groups in a given round.
    */
-  getTransactionGroupLedgerStateDeltasForRound(
+  async getTransactionGroupLedgerStateDeltasForRound(
     round: number | bigint,
     params?: { format?: 'json' | 'msgpack' },
     requestOptions?: ApiRequestOptions,
@@ -865,7 +1120,7 @@ export class AlgodApi {
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/deltas/{round}/txn/group',
       path: { round: typeof round === 'bigint' ? round.toString() : round },
@@ -874,11 +1129,27 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'GetTransactionGroupLedgerStateDeltasForRound',
     })
+    if (params?.format === 'json') {
+      const parsed = (await rsp) as GetTransactionGroupLedgerStateDeltasForRound
+      try {
+        return (GetTransactionGroupLedgerStateDeltasForRoundCodecs as any).decodeJson(
+          parsed as any,
+        ) as GetTransactionGroupLedgerStateDeltasForRound
+      } catch {}
+      return parsed
+    } else {
+      const buf = (await rsp) as unknown as Uint8Array
+      try {
+        return (GetTransactionGroupLedgerStateDeltasForRoundCodecs as any).decodeMsgpack(
+          buf,
+        ) as GetTransactionGroupLedgerStateDeltasForRound
+      } catch {}
+      return buf as unknown as GetTransactionGroupLedgerStateDeltasForRound
+    }
   }
 
-  getTransactionProof(
+  async getTransactionProof(
     round: number | bigint,
     txid: string,
     params?: { hashtype?: 'sha512_256' | 'sha256'; format?: 'json' | 'msgpack' },
@@ -889,7 +1160,7 @@ export class AlgodApi {
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/blocks/{round}/transactions/{txid}/proof',
       path: { round: typeof round === 'bigint' ? round.toString() : round, txid: txid },
@@ -898,20 +1169,24 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'TransactionProof',
     })
+    const parsed = (await rsp) as TransactionProof
+    try {
+      return (TransactionProofCodecs as any).decodeJson(parsed as any) as TransactionProof
+    } catch {}
+    return parsed
   }
 
   /**
    * Retrieves the supported API versions, binary build versions, and genesis information.
    */
-  getVersion(requestOptions?: ApiRequestOptions): Promise<Version> {
+  async getVersion(requestOptions?: ApiRequestOptions): Promise<Version> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/versions',
       path: {},
@@ -920,17 +1195,21 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'Version',
     })
+    const parsed = (await rsp) as Version
+    try {
+      return (VersionCodecs as any).decodeJson(parsed as any) as Version
+    } catch {}
+    return parsed
   }
 
-  healthCheck(requestOptions?: ApiRequestOptions): Promise<void> {
+  async healthCheck(requestOptions?: ApiRequestOptions): Promise<void> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/health',
       path: {},
@@ -939,17 +1218,21 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'void',
     })
+    const parsed = (await rsp) as void
+    try {
+      return (voidCodecs as any).decodeJson(parsed as any) as void
+    } catch {}
+    return parsed
   }
 
-  metrics(requestOptions?: ApiRequestOptions): Promise<void> {
+  async metrics(requestOptions?: ApiRequestOptions): Promise<void> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/metrics',
       path: {},
@@ -958,8 +1241,12 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'void',
     })
+    const parsed = (await rsp) as void
+    try {
+      return (voidCodecs as any).decodeJson(parsed as any) as void
+    } catch {}
+    return parsed
   }
 
   /**
@@ -969,7 +1256,7 @@ export class AlgodApi {
    * - transaction removed from pool due to error (committed round = 0, pool error != "")
    * Or the transaction may have happened sufficiently long ago that the node no longer remembers it, and this will return an error.
    */
-  pendingTransactionInformation(
+  async pendingTransactionInformation(
     txid: string,
     params?: { format?: 'json' | 'msgpack' },
     requestOptions?: ApiRequestOptions,
@@ -983,7 +1270,7 @@ export class AlgodApi {
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/transactions/pending/{txid}',
       path: { txid: txid },
@@ -992,20 +1279,32 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'PendingTransactionResponse',
     })
+    if (params?.format === 'json') {
+      const parsed = (await rsp) as PendingTransactionResponse
+      try {
+        return (PendingTransactionResponseCodecs as any).decodeJson(parsed as any) as PendingTransactionResponse
+      } catch {}
+      return parsed
+    } else {
+      const buf = (await rsp) as unknown as Uint8Array
+      try {
+        return (PendingTransactionResponseCodecs as any).decodeMsgpack(buf) as PendingTransactionResponse
+      } catch {}
+      return buf as unknown as PendingTransactionResponse
+    }
   }
 
   /**
    * Enables blocking and mutex profiles, and returns the old settings
    */
-  putDebugSettingsProf(requestOptions?: ApiRequestOptions): Promise<DebugSettingsProf> {
+  async putDebugSettingsProf(requestOptions?: ApiRequestOptions): Promise<DebugSettingsProf> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'PUT',
       url: '/debug/settings/pprof',
       path: {},
@@ -1014,18 +1313,22 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'DebugSettingsProf',
     })
+    const parsed = (await rsp) as DebugSettingsProf
+    try {
+      return (DebugSettingsProfCodecs as any).decodeJson(parsed as any) as DebugSettingsProf
+    } catch {}
+    return parsed
   }
 
-  rawTransaction(params?: { body: Uint8Array }, requestOptions?: ApiRequestOptions): Promise<RawTransaction> {
+  async rawTransaction(params?: { body: Uint8Array }, requestOptions?: ApiRequestOptions): Promise<RawTransaction> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
     headers['Content-Type'] = 'application/x-binary'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'POST',
       url: '/v2/transactions',
       path: {},
@@ -1034,19 +1337,22 @@ export class AlgodApi {
       body: params?.body,
       mediaType: 'application/x-binary',
       ...(requestOptions ?? {}),
-      bodyModelKey: 'Uint8Array',
-      responseModelKey: 'RawTransaction',
     })
+    const parsed = (await rsp) as RawTransaction
+    try {
+      return (RawTransactionCodecs as any).decodeJson(parsed as any) as RawTransaction
+    } catch {}
+    return parsed
   }
 
-  rawTransactionAsync(params?: { body: Uint8Array }, requestOptions?: ApiRequestOptions): Promise<void> {
+  async rawTransactionAsync(params?: { body: Uint8Array }, requestOptions?: ApiRequestOptions): Promise<void> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
     headers['Content-Type'] = 'application/x-binary'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'POST',
       url: '/v2/transactions/async',
       path: {},
@@ -1055,21 +1361,24 @@ export class AlgodApi {
       body: params?.body,
       mediaType: 'application/x-binary',
       ...(requestOptions ?? {}),
-      bodyModelKey: 'Uint8Array',
-      responseModelKey: 'void',
     })
+    const parsed = (await rsp) as void
+    try {
+      return (voidCodecs as any).decodeJson(parsed as any) as void
+    } catch {}
+    return parsed
   }
 
   /**
    * Sets the timestamp offset (seconds) for blocks in dev mode. Providing an offset of 0 will unset this value and try to use the real clock for the timestamp.
    */
-  setBlockTimeStampOffset(offset: number | bigint, requestOptions?: ApiRequestOptions): Promise<void> {
+  async setBlockTimeStampOffset(offset: number | bigint, requestOptions?: ApiRequestOptions): Promise<void> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'POST',
       url: '/v2/devmode/blocks/offset/{offset}',
       path: { offset: typeof offset === 'bigint' ? offset.toString() : offset },
@@ -1078,20 +1387,24 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'void',
     })
+    const parsed = (await rsp) as void
+    try {
+      return (voidCodecs as any).decodeJson(parsed as any) as void
+    } catch {}
+    return parsed
   }
 
   /**
    * Sets the minimum sync round on the ledger.
    */
-  setSyncRound(round: number | bigint, requestOptions?: ApiRequestOptions): Promise<void> {
+  async setSyncRound(round: number | bigint, requestOptions?: ApiRequestOptions): Promise<void> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'POST',
       url: '/v2/ledger/sync/{round}',
       path: { round: typeof round === 'bigint' ? round.toString() : round },
@@ -1100,20 +1413,24 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'void',
     })
+    const parsed = (await rsp) as void
+    try {
+      return (voidCodecs as any).decodeJson(parsed as any) as void
+    } catch {}
+    return parsed
   }
 
   /**
    * Special management endpoint to shutdown the node. Optionally provide a timeout parameter to indicate that the node should begin shutting down after a number of seconds.
    */
-  shutdownNode(params?: { timeout?: number | bigint }, requestOptions?: ApiRequestOptions): Promise<ShutdownNode> {
+  async shutdownNode(params?: { timeout?: number | bigint }, requestOptions?: ApiRequestOptions): Promise<ShutdownNode> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'POST',
       url: '/v2/shutdown',
       path: {},
@@ -1122,11 +1439,15 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'ShutdownNode',
     })
+    const parsed = (await rsp) as ShutdownNode
+    try {
+      return (ShutdownNodeCodecs as any).decodeJson(parsed as any) as ShutdownNode
+    } catch {}
+    return parsed
   }
 
-  simulateTransaction(
+  async simulateTransaction(
     params?: { format?: 'json' | 'msgpack'; body: SimulateRequest },
     requestOptions?: ApiRequestOptions,
   ): Promise<SimulateTransaction> {
@@ -1140,31 +1461,60 @@ export class AlgodApi {
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'POST',
       url: '/v2/transactions/simulate',
       path: {},
       query: { format: params?.format },
       headers,
-      body: params?.body,
+      body: ((): any => {
+        // eslint-disable-line @typescript-eslint/no-explicit-any
+        const b = params?.body as any
+        if (b == null) return undefined
+        if (params?.format === 'json') {
+          const t = 'SimulateRequest'
+          if (t === 'SignedTransaction') return b // JSON not supported for raw STX
+          try {
+            return (SimulateRequestCodecs as any).encodeJson(b)
+          } catch {}
+          return b
+        } else {
+          const t = 'SimulateRequest'
+          try {
+            return (SimulateRequestCodecs as any).encodeMsgpack(b)
+          } catch {}
+          return b instanceof Uint8Array ? b : b
+        }
+      })(),
       // Dynamic mediaType based on format parameter (prefer msgpack by default)
       mediaType: params?.format === 'json' ? 'application/json' : 'application/msgpack',
       ...(requestOptions ?? {}),
-      bodyModelKey: 'SimulateRequest',
-      responseModelKey: 'SimulateTransaction',
     })
+    if (params?.format === 'json') {
+      const parsed = (await rsp) as SimulateTransaction
+      try {
+        return (SimulateTransactionCodecs as any).decodeJson(parsed as any) as SimulateTransaction
+      } catch {}
+      return parsed
+    } else {
+      const buf = (await rsp) as unknown as Uint8Array
+      try {
+        return (SimulateTransactionCodecs as any).decodeMsgpack(buf) as SimulateTransaction
+      } catch {}
+      return buf as unknown as SimulateTransaction
+    }
   }
 
   /**
    * Given a catchpoint, it starts catching up to this catchpoint
    */
-  startCatchup(catchpoint: string, params?: { min?: number | bigint }, requestOptions?: ApiRequestOptions): Promise<StartCatchup> {
+  async startCatchup(catchpoint: string, params?: { min?: number | bigint }, requestOptions?: ApiRequestOptions): Promise<StartCatchup> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'POST',
       url: '/v2/catchup/{catchpoint}',
       path: { catchpoint: catchpoint },
@@ -1173,20 +1523,24 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'StartCatchup',
     })
+    const parsed = (await rsp) as StartCatchup
+    try {
+      return (StartCatchupCodecs as any).decodeJson(parsed as any) as StartCatchup
+    } catch {}
+    return parsed
   }
 
   /**
    * Returns the entire swagger spec in json.
    */
-  swaggerJson(requestOptions?: ApiRequestOptions): Promise<string> {
+  async swaggerJson(requestOptions?: ApiRequestOptions): Promise<string> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/swagger.json',
       path: {},
@@ -1195,21 +1549,25 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'string',
     })
+    const parsed = (await rsp) as string
+    try {
+      return (stringCodecs as any).decodeJson(parsed as any) as string
+    } catch {}
+    return parsed
   }
 
   /**
    * Given TEAL source code in plain text, return base64 encoded program bytes and base32 SHA512_256 hash of program bytes (Address style). This endpoint is only enabled when a node's configuration file sets EnableDeveloperAPI to true.
    */
-  tealCompile(params?: { sourcemap?: boolean; body: string }, requestOptions?: ApiRequestOptions): Promise<TealCompile> {
+  async tealCompile(params?: { sourcemap?: boolean; body: string }, requestOptions?: ApiRequestOptions): Promise<TealCompile> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
     headers['Content-Type'] = 'text/plain'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'POST',
       url: '/v2/teal/compile',
       path: {},
@@ -1218,22 +1576,25 @@ export class AlgodApi {
       body: params?.body,
       mediaType: 'text/plain',
       ...(requestOptions ?? {}),
-      bodyModelKey: 'string',
-      responseModelKey: 'TealCompile',
     })
+    const parsed = (await rsp) as TealCompile
+    try {
+      return (TealCompileCodecs as any).decodeJson(parsed as any) as TealCompile
+    } catch {}
+    return parsed
   }
 
   /**
    * Given the program bytes, return the TEAL source code in plain text. This endpoint is only enabled when a node's configuration file sets EnableDeveloperAPI to true.
    */
-  tealDisassemble(params?: { body: Uint8Array }, requestOptions?: ApiRequestOptions): Promise<TealDisassemble> {
+  async tealDisassemble(params?: { body: Uint8Array }, requestOptions?: ApiRequestOptions): Promise<TealDisassemble> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
     headers['Content-Type'] = 'application/x-binary'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'POST',
       url: '/v2/teal/disassemble',
       path: {},
@@ -1242,43 +1603,56 @@ export class AlgodApi {
       body: params?.body,
       mediaType: 'application/x-binary',
       ...(requestOptions ?? {}),
-      bodyModelKey: 'Uint8Array',
-      responseModelKey: 'TealDisassemble',
     })
+    const parsed = (await rsp) as TealDisassemble
+    try {
+      return (TealDisassembleCodecs as any).decodeJson(parsed as any) as TealDisassemble
+    } catch {}
+    return parsed
   }
 
   /**
    * Executes TEAL program(s) in context and returns debugging information about the execution. This endpoint is only enabled when a node's configuration file sets EnableDeveloperAPI to true.
    */
-  tealDryrun(params?: { body?: DryrunRequest }, requestOptions?: ApiRequestOptions): Promise<TealDryrun> {
+  async tealDryrun(params?: { body?: DryrunRequest }, requestOptions?: ApiRequestOptions): Promise<TealDryrun> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
     headers['Content-Type'] = 'application/msgpack'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'POST',
       url: '/v2/teal/dryrun',
       path: {},
       query: {},
       headers,
-      body: params?.body,
+      body: ((): any => {
+        const b = params?.body as any
+        if (b == null) return undefined
+        try {
+          return (DryrunRequestCodecs as any).encodeJson(b)
+        } catch {}
+        return b
+      })(),
       // Both supported, prefer msgpack for better performance
       mediaType: 'application/msgpack',
       ...(requestOptions ?? {}),
-      bodyModelKey: 'DryrunRequest',
-      responseModelKey: 'TealDryrun',
     })
+    const parsed = (await rsp) as TealDryrun
+    try {
+      return (TealDryrunCodecs as any).decodeJson(parsed as any) as TealDryrun
+    } catch {}
+    return parsed
   }
 
-  transactionParams(requestOptions?: ApiRequestOptions): Promise<TransactionParams> {
+  async transactionParams(requestOptions?: ApiRequestOptions): Promise<TransactionParams> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/transactions/params',
       path: {},
@@ -1287,20 +1661,24 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'TransactionParams',
     })
+    const parsed = (await rsp) as TransactionParams
+    try {
+      return (TransactionParamsCodecs as any).decodeJson(parsed as any) as TransactionParams
+    } catch {}
+    return parsed
   }
 
   /**
    * Unset the ledger sync round.
    */
-  unsetSyncRound(requestOptions?: ApiRequestOptions): Promise<void> {
+  async unsetSyncRound(requestOptions?: ApiRequestOptions): Promise<void> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'DELETE',
       url: '/v2/ledger/sync',
       path: {},
@@ -1309,20 +1687,24 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'void',
     })
+    const parsed = (await rsp) as void
+    try {
+      return (voidCodecs as any).decodeJson(parsed as any) as void
+    } catch {}
+    return parsed
   }
 
   /**
    * Waits for a block to appear after round {round} and returns the node's status at the time. There is a 1 minute timeout, when reached the current status is returned regardless of whether or not it is the round after the given round.
    */
-  waitForBlock(round: number | bigint, requestOptions?: ApiRequestOptions): Promise<WaitForBlock> {
+  async waitForBlock(round: number | bigint, requestOptions?: ApiRequestOptions): Promise<WaitForBlock> {
     const headers: Record<string, string> = {}
     headers['Accept'] = 'application/json'
 
     // Header parameters
 
-    return this.httpRequest.request({
+    const rsp = this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/status/wait-for-block-after/{round}',
       path: { round: typeof round === 'bigint' ? round.toString() : round },
@@ -1331,7 +1713,11 @@ export class AlgodApi {
       body: undefined,
       mediaType: undefined,
       ...(requestOptions ?? {}),
-      responseModelKey: 'WaitForBlock',
     })
+    const parsed = (await rsp) as WaitForBlock
+    try {
+      return (WaitForBlockCodecs as any).decodeJson(parsed as any) as WaitForBlock
+    } catch {}
+    return parsed
   }
 }

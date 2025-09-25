@@ -17,8 +17,6 @@ export interface ApiRequestOptions {
   body?: BodyValue
   mediaType?: string
   responseHeader?: string
-  bodyModelKey?: string
-  responseModelKey?: string
 }
 
 export abstract class BaseHttpRequest {

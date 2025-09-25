@@ -1,8 +1,4 @@
-import { CANONICAL_CAMEL_TO_WIRE, WIRE_TO_CANONICAL } from './rename-map'
-
 function toCamel(segmented: string): string {
-  const override = WIRE_TO_CANONICAL[segmented]
-  if (override) segmented = override
   if (!segmented) return segmented
   // Fast path: if no hyphen, return as-is but ensure typical camel conversion for underscores
   if (!segmented.includes('-')) return segmented.replace(/_([a-z0-9])/g, (_, c) => c.toUpperCase())
@@ -13,8 +9,6 @@ function toCamel(segmented: string): string {
 }
 
 function toKebab(camel: string): string {
-  const override = CANONICAL_CAMEL_TO_WIRE[camel]
-  if (override) return override
   if (!camel) return camel
   // Convert camelCase or mixedCase to kebab-case; leave existing hyphens and numbers intact
   return camel

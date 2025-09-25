@@ -2,9 +2,6 @@ import type { ClientConfig } from './ClientConfig';
 import { ApiError } from './ApiError';
 import { IntDecoding, parseJson, stringifyJson } from './json';
 import { decodeMsgPack, encodeMsgPack } from './msgpack';
- import { toCamelCaseKeysDeep } from './casing';
-import { toKebabCaseKeysDeep } from './casing';
-import { serialize, deserialize } from './transformers';
 import type { QueryParams, BodyValue } from './BaseHttpRequest';
 
 const encodeURIPath = (path: string): string => encodeURI(path).replace(/%5B/g, '[').replace(/%5D/g, ']');
@@ -58,17 +55,10 @@ export async function request<T>(config: ClientConfig, options: {
   let body: BodyValue | undefined = undefined;
   if (options.body != null) {
     if (options.mediaType?.includes('json')) {
-      const mapped = serialize(options.bodyModelKey, options.body, options.mediaType);
-      body = stringifyJson(mapped);
+      body = stringifyJson(options.body);
     } else if (options.mediaType?.includes('msgpack')) {
-      if (options.body instanceof Uint8Array) {
-        body = options.body;
-      } else {
-        const mapped = serialize(options.bodyModelKey, options.body, options.mediaType);
-        body = encodeMsgPack(mapped);
-      }
+      body = options.body instanceof Uint8Array ? options.body : encodeMsgPack(options.body);
     } else {
-      // For binary/text, pass through as-is
       body = options.body;
     }
   }
@@ -98,11 +88,10 @@ export async function request<T>(config: ClientConfig, options: {
   // Parse response by content-type
   const contentType = response.headers.get('content-type') || '';
 
-  // Handle msgpack responses - decode to typed models (preserve Uint8Array & BigInt)
+  // Handle msgpack responses - return raw bytes for model codecs to decode
   if (contentType.includes('application/msgpack')) {
     const buf = new Uint8Array(await response.arrayBuffer());
-    const decoded = decodeMsgPack(buf);
-    return deserialize<T>(options.responseModelKey, decoded, 'application/msgpack');
+    return buf as unknown as T;
   }
 
   // Handle raw binary responses (e.g., application/x-binary for raw transactions)
@@ -115,14 +104,14 @@ export async function request<T>(config: ClientConfig, options: {
   if (contentType.includes('application/json')) {
     const text = await response.text();
     const parsed = parseJson(text, config.intDecoding ?? IntDecoding.MIXED);
-    return deserialize<T>(options.responseModelKey, parsed, 'application/json');
+    return parsed as T;
   }
 
   // Fallback to text
   const text = await response.text();
   try {
     const parsed = JSON.parse(text);
-    return deserialize<T>(options.responseModelKey, parsed, 'application/json');
+    return parsed as T;
   } catch {
     return text as unknown as T;
   }
