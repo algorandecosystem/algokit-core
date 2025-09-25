@@ -19,7 +19,7 @@ export type StateProofTracking = {
   /**
    * \[n\] Next round for which we will accept a state proof transaction.
    */
-  nextRound?: bigint
+  nextRound?: number
 }
 
 export const StateProofTrackingMeta: ModelMetadata = {

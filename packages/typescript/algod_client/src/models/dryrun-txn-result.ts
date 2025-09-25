@@ -30,12 +30,12 @@ export type DryrunTxnResult = {
   /**
    * Budget added during execution of app call transaction.
    */
-  budgetAdded?: bigint
+  budgetAdded?: number
 
   /**
    * Budget consumed during execution of app call transaction.
    */
-  budgetConsumed?: bigint
+  budgetConsumed?: number
 }
 
 export const DryrunTxnResultMeta: ModelMetadata = {

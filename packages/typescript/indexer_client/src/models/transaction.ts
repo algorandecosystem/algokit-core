@@ -75,7 +75,7 @@ export type Transaction = {
   /**
    * \[fv\] First valid round for this transaction.
    */
-  firstValid: bigint
+  firstValid: number
 
   /**
    * \[gh\] Hash of genesis block.
@@ -106,7 +106,7 @@ export type Transaction = {
   /**
    * \[lv\] Last valid round for this transaction.
    */
-  lastValid: bigint
+  lastValid: number
 
   /**
    * \[lx\] Base64 encoded 32-byte array. Lease enforces mutual exclusion of transactions.  If this field is nonzero, then once the transaction is confirmed, it acquires the lease identified by the (Sender, Lease) pair of the transaction until the LastValid round passes.  While this transaction possesses the lease, no other transaction specifying this lease can be confirmed.
@@ -256,14 +256,14 @@ export const TransactionMeta: ModelMetadata = {
       wireKey: 'created-application-index',
       optional: true,
       nullable: false,
-      type: { kind: 'scalar' },
+      type: { kind: 'scalar', isBigint: true },
     },
     {
       name: 'createdAssetIndex',
       wireKey: 'created-asset-index',
       optional: true,
       nullable: false,
-      type: { kind: 'scalar' },
+      type: { kind: 'scalar', isBigint: true },
     },
     {
       name: 'fee',

@@ -15,12 +15,12 @@ export type SimulateTransactionResult = {
   /**
    * Budget used during execution of an app call transaction. This value includes budged used by inner app calls spawned by this transaction.
    */
-  appBudgetConsumed?: bigint
+  appBudgetConsumed?: number
 
   /**
    * Budget used during execution of a logic sig transaction.
    */
-  logicSigBudgetConsumed?: bigint
+  logicSigBudgetConsumed?: number
   execTrace?: SimulationTransactionExecTrace
   unnamedResourcesAccessed?: SimulateUnnamedResourcesAccessed
 

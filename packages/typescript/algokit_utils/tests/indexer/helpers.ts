@@ -12,6 +12,8 @@ import {
   encodeSignedTransaction,
   getTransactionId,
 } from '@algorandfoundation/algokit-transact'
+import { IndexerClient } from '@algorandfoundation/indexer-client'
+import { runWhenIndexerCaughtUp } from '../../src/testing/indexer'
 
 export interface IndexerTestConfig {
   indexerBaseUrl: string
@@ -37,6 +39,7 @@ export async function getSenderMnemonic(): Promise<string> {
   const server = `${url.protocol}//${url.hostname}`
   const port = Number(url.port || 4002)
 
+  // TODO: Replace with native KMD
   const kmd = new algosdk.Kmd(kmdToken, server, port)
   const wallets = await kmd.listWallets()
   const wallet = wallets.wallets.find((w: { name: string }) => w.name === 'unencrypted-default-wallet') ?? wallets.wallets[0]
@@ -201,4 +204,10 @@ export function getIndexerEnv(): IndexerTestConfig {
 
 export function maybeDescribe(name: string, fn: (env: IndexerTestConfig) => void) {
   describe(name, () => fn(getIndexerEnv()))
+}
+
+export async function waitForIndexerTransaction(indexer: IndexerClient, txId: string): Promise<void> {
+  await runWhenIndexerCaughtUp(async () => {
+    await indexer.lookupTransaction(txId)
+  })
 }

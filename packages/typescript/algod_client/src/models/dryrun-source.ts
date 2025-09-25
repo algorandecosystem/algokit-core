@@ -36,7 +36,7 @@ export const DryrunSourceMeta: ModelMetadata = {
       wireKey: 'txn-index',
       optional: false,
       nullable: false,
-      type: { kind: 'scalar' },
+      type: { kind: 'scalar', isBigint: true },
     },
     {
       name: 'appIndex',

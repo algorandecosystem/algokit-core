@@ -83,10 +83,12 @@ jobs:
             package_dir: packages/typescript/algod_client
             package_subdir: algod_client
             workspace: "@algorandfoundation/algod-client"
+            algokit_utils_test_filter: tests/algod
           - client: indexer
             package_dir: packages/typescript/indexer_client
             package_subdir: indexer_client
             workspace: "@algorandfoundation/indexer-client"
+            algokit_utils_test_filter: tests/indexer
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-api-tools
@@ -126,6 +128,11 @@ jobs:
         working-directory: packages/typescript
         run: npm run build --workspace ${{ matrix.workspace }}
 
+      - name: Build algokit utils ts
+        working-directory: packages/typescript
+        run: |
+          npm run build
+
       - name: Test generated client
         working-directory: packages/typescript
-        run: npm test --workspace ${{ matrix.workspace }}
+        run: npm test --workspace @algorandfoundation/algokit-utils -- ${{ matrix.algokit_utils_test_filter }}

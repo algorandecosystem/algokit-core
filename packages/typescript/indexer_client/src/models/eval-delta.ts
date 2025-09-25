@@ -7,7 +7,7 @@ export type EvalDelta = {
   /**
    * \[at\] delta action.
    */
-  action: bigint
+  action: number
 
   /**
    * \[bs\] bytes value.

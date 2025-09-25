@@ -3,9 +3,7 @@ import { encode as msgpackEncode, decode as msgpackDecode } from '@msgpack/msgpa
 export function encodeMsgPack(value: unknown): Uint8Array {
   return msgpackEncode(value, {
     sortKeys: true,
-    forceIntegerToFloat: false,
     ignoreUndefined: true,
-    initialBufferSize: 2048,
     useBigInt64: true,
   })
 }

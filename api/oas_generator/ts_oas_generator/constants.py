@@ -57,6 +57,8 @@ class SchemaKey(StrEnum):
     COMPONENTS = "components"
     COMPONENTS_SCHEMAS = "schemas"
     PATHS = "paths"
+    MAXIMUM = "maximum"
+    MINIMUM = "minimum"
 
 
 class OperationKey(StrEnum):

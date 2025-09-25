@@ -26,7 +26,7 @@ export type ApplicationParams = {
   /**
    * the number of extra program pages available to this app.
    */
-  extraProgramPages?: bigint
+  extraProgramPages?: number
   localStateSchema?: ApplicationStateSchema
   globalStateSchema?: ApplicationStateSchema
   globalState?: TealKeyValueStore

@@ -31,6 +31,8 @@ export async function getSenderMnemonic(): Promise<string> {
   const url = new URL(kmdBase)
   const server = `${url.protocol}//${url.hostname}`
   const port = Number(url.port || 4002)
+
+  // TODO: Replace with native KMD
   const kmd = new algosdk.Kmd(kmdToken, server, port)
   const wallets = await kmd.listWallets()
   const wallet = wallets.wallets.find((w: { name: string }) => w.name === 'unencrypted-default-wallet') ?? wallets.wallets[0]

@@ -302,6 +302,9 @@ function fixBigInt(spec: OpenAPISpec): number {
     { fieldName: "last-round" },
     { fieldName: "confirmed-round" },
     { fieldName: "asset-id" },
+    { fieldName: "created-application-index" },
+    { fieldName: "created-asset-index" },
+    { fieldName: "txn-index" },
     { fieldName: "application-index" },
     { fieldName: "asset-index" },
     { fieldName: "current_round" },
@@ -714,12 +717,12 @@ class OpenAPIProcessor {
         console.log(`ℹ️  Transformed ${transformedFieldsCount} required field states`);
       }
 
-       // 7. Transform properties if configured
-       let transformedPropertiesCount = 0;
-       if (this.config.fieldTransforms && this.config.fieldTransforms.length > 0) {
-         transformedPropertiesCount = transformProperties(spec, this.config.fieldTransforms);
-         console.log(`ℹ️  Applied ${transformedPropertiesCount} property transformations (additions/removals)`);
-       }
+      // 7. Transform properties if configured
+      let transformedPropertiesCount = 0;
+      if (this.config.fieldTransforms && this.config.fieldTransforms.length > 0) {
+        transformedPropertiesCount = transformProperties(spec, this.config.fieldTransforms);
+        console.log(`ℹ️  Applied ${transformedPropertiesCount} property transformations (additions/removals)`);
+      }
 
       // 8. Transform vendor extensions if configured
       if (this.config.vendorExtensionTransforms && this.config.vendorExtensionTransforms.length > 0) {

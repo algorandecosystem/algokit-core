@@ -1,6 +1,6 @@
 import { expect, it, describe } from 'vitest'
-import { AlgodClient } from '../src/client'
-import { getAlgodEnv } from './config'
+import { AlgodClient } from '@algorandfoundation/algod-client'
+import { getAlgodEnv } from './helpers'
 
 describe('transactionParams', () => {
   it('should fetch transaction params', async () => {

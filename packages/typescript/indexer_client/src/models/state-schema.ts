@@ -7,12 +7,12 @@ export type StateSchema = {
   /**
    * Maximum number of TEAL uints that may be stored in the key/value store.
    */
-  numUint: bigint
+  numUint: number
 
   /**
    * Maximum number of TEAL byte slices that may be stored in the key/value store.
    */
-  numByteSlice: bigint
+  numByteSlice: number
 }
 
 export const StateSchemaMeta: ModelMetadata = {

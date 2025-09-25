@@ -1,7 +1,7 @@
 import { expect, it, describe } from 'vitest'
-import { AlgodClient, ClientConfig, SimulateRequest } from '../src'
+import { AlgodClient, ClientConfig, SimulateRequest } from '@algorandfoundation/algod-client'
 import { TransactionType, type SignedTransaction, type Transaction } from '@algorandfoundation/algokit-transact'
-import { getAlgodEnv, getSenderAccount, groupTransactions, signTransaction } from './config'
+import { getAlgodEnv, getSenderAccount, groupTransactions, signTransaction } from './helpers'
 
 describe('simulateTransactions', () => {
   it('should simulate two transactions and decode msgpack response', async () => {

@@ -66,7 +66,7 @@ export type TransactionApplication = {
   /**
    * \[epp\] specifies the additional app program len requested in pages.
    */
-  extraProgramPages?: bigint
+  extraProgramPages?: number
 
   /**
    * \[aprv\] the lowest application version for which this transaction should immediately fail. 0 indicates that no version check should be performed.

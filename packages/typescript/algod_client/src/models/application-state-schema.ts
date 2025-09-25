@@ -7,12 +7,12 @@ export type ApplicationStateSchema = {
   /**
    * \[nui\] num of uints.
    */
-  numUint: bigint
+  numUint: number
 
   /**
    * \[nbs\] num of byte slices.
    */
-  numByteSlice: bigint
+  numByteSlice: number
 }
 
 export const ApplicationStateSchemaMeta: ModelMetadata = {

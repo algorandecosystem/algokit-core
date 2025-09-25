@@ -464,7 +464,6 @@ class OperationProcessor:
 
         return_types: list[str] = []
         returns_msgpack = False
-        supports_json = False
         schemas = self._get_schemas(spec)
 
         for status, response in responses.items():
@@ -475,13 +474,10 @@ class OperationProcessor:
             if constants.MediaType.MSGPACK in content:
                 returns_msgpack = True
 
-            for media_type, media_details in content.items():
+            for _, media_details in content.items():
                 schema = (media_details or {}).get("schema")
                 if not schema:
                     continue
-
-                if media_type == constants.MediaType.JSON:
-                    supports_json = True
 
                 type_name = self._resolve_response_type(schema, operation_id, schemas)
                 if type_name:

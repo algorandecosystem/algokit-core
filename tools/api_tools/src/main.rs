@@ -11,7 +11,6 @@ use once_cell::sync::OnceCell;
 const DEFAULT_TS_PRESERVE: &[&str] = &[
     "__tests__",
     "tests",
-    "node_modules",
     "eslint.config.mjs",
     "package.json",
     "README.md",
@@ -139,6 +138,50 @@ fn clean_ts_package(rel_dir: &str) -> Result<()> {
 }
 
 #[derive(Clone, Copy)]
+struct RsClientConfig {
+    spec: &'static str,
+    output_rel: &'static str,
+    package_name: &'static str,
+    description: &'static str,
+}
+
+const ALGOD_RS_CLIENT: RsClientConfig = RsClientConfig {
+    spec: "algod",
+    output_rel: "crates/algod_client",
+    package_name: "algod_client",
+    description: "API client for algod interaction.",
+};
+
+const INDEXER_RS_CLIENT: RsClientConfig = RsClientConfig {
+    spec: "indexer",
+    output_rel: "crates/indexer_client",
+    package_name: "indexer_client",
+    description: "API client for indexer interaction.",
+};
+
+fn generate_rs_client(config: &RsClientConfig) -> Result<()> {
+    run(
+        &format!(
+            "uv run python -m rust_oas_generator.cli ../specs/{}.oas3.json --output ../../{}/ --package-name {} --description \"{}\"",
+            config.spec, config.output_rel, config.package_name, config.description
+        ),
+        Some(Path::new("api/oas_generator")),
+        None,
+    )?;
+
+    run(
+        &format!(
+            "cargo fmt --manifest-path Cargo.toml -p {}",
+            config.package_name
+        ),
+        None,
+        None,
+    )?;
+
+    Ok(())
+}
+
+#[derive(Clone, Copy)]
 struct TsClientConfig {
     spec: &'static str,
     output_rel: &'static str,
@@ -160,16 +203,13 @@ const INDEXER_TS_CLIENT: TsClientConfig = TsClientConfig {
     description: "TypeScript client for indexer interaction.",
 };
 
-fn generate_ts_client(config: &TsClientConfig, verbose: bool) -> Result<()> {
+fn generate_ts_client(config: &TsClientConfig) -> Result<()> {
     clean_ts_package(config.output_rel)?;
 
-    let mut command = format!(
-        "uv run python -m ts_oas_generator.cli ../specs/{}.oas3.json --output ../../{}/ --package-name {} --description \"{}\"",
+    let command = format!(
+        "uv run python -m ts_oas_generator.cli ../specs/{}.oas3.json --output ../../{}/ --package-name {} --description \"{}\" --verbose",
         config.spec, config.output_rel, config.package_name, config.description
     );
-    if verbose {
-        command.push_str(" --verbose");
-    }
     run(&command, Some(Path::new("api/oas_generator")), None)?;
 
     run(
@@ -222,67 +262,24 @@ fn execute_command(command: &Commands) -> Result<()> {
             )?;
         }
         Commands::GenerateAlgod => {
-            // Generate the client
-            run(
-                "uv run python -m rust_oas_generator.cli ../specs/algod.oas3.json --output ../../crates/algod_client/ --package-name algod_client --description \"API client for algod interaction.\"",
-                Some(Path::new("api/oas_generator")),
-                None,
-            )?;
-            // Format the generated code
-            run(
-                "cargo fmt --manifest-path Cargo.toml -p algod_client",
-                None,
-                None,
-            )?;
+            generate_rs_client(&ALGOD_RS_CLIENT)?;
         }
         Commands::GenerateIndexer => {
-            // Generate the client
-            run(
-                "uv run python -m rust_oas_generator.cli ../specs/indexer.oas3.json --output ../../crates/indexer_client/ --package-name indexer_client --description \"API client for indexer interaction.\"",
-                Some(Path::new("api/oas_generator")),
-                None,
-            )?;
-            // Format the generated code
-            run(
-                "cargo fmt --manifest-path Cargo.toml -p indexer_client",
-                None,
-                None,
-            )?;
+            generate_rs_client(&INDEXER_RS_CLIENT)?;
         }
         Commands::GenerateAll => {
-            // Generate algod client
-            run(
-                "uv run python -m rust_oas_generator.cli ../specs/algod.oas3.json --output ../../crates/algod_client/ --package-name algod_client --description \"API client for algod interaction.\"",
-                Some(Path::new("api/oas_generator")),
-                None,
-            )?;
-            // Generate indexer client
-            run(
-                "uv run python -m rust_oas_generator.cli ../specs/indexer.oas3.json --output ../../crates/indexer_client/ --package-name indexer_client --description \"API client for indexer interaction.\"",
-                Some(Path::new("api/oas_generator")),
-                None,
-            )?;
-            // Format both generated codes
-            run(
-                "cargo fmt --manifest-path Cargo.toml -p algod_client",
-                None,
-                None,
-            )?;
-            run(
-                "cargo fmt --manifest-path Cargo.toml -p indexer_client",
-                None,
-                None,
-            )?;
+            generate_rs_client(&ALGOD_RS_CLIENT)?;
+            generate_rs_client(&INDEXER_RS_CLIENT)?;
         }
         Commands::GenerateTsAlgod => {
-            generate_ts_client(&ALGOD_TS_CLIENT, true)?;
+            generate_ts_client(&ALGOD_TS_CLIENT)?;
         }
         Commands::GenerateTsIndexer => {
-            generate_ts_client(&INDEXER_TS_CLIENT, true)?;
+            generate_ts_client(&INDEXER_TS_CLIENT)?;
         }
         Commands::GenerateTsAll => {
-            generate_ts_client(&ALGOD_TS_CLIENT, false)?;
-            generate_ts_client(&INDEXER_TS_CLIENT, false)?;
+            generate_ts_client(&ALGOD_TS_CLIENT)?;
+            generate_ts_client(&INDEXER_TS_CLIENT)?;
         }
         Commands::ConvertOpenapi => {
             run("npm run convert-openapi", Some(Path::new("api")), None)?;

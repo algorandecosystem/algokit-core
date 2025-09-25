@@ -47,6 +47,19 @@ def ts_array(type_str: str) -> str:
 _WORD_BOUNDARY_RE = re.compile(r"([a-z0-9])([A-Z])")
 _NON_ALNUM_RE = re.compile(r"[^A-Za-z0-9]+")
 
+_U32_MAX_VALUE = 4294967295
+_SMALL_INTEGER_MAX = 100
+_ENUM_KEYWORDS = (
+    "value `1`",
+    "value `2`",
+    "value 1",
+    "value 2",
+    "refers to",
+    "type.",
+    "action.",
+    "enum",
+)
+
 
 @cache
 def _split_words(name: str) -> tuple[str, ...]:
@@ -158,9 +171,30 @@ def _inline_object(schema: Schema, schemas: Schemas | None) -> str:
 def _map_primitive(schema_type: str, schema_format: str | None, schema: Schema) -> str:
     """Map OpenAPI primitive types to TypeScript types."""
     if schema_type == "integer":
-        description = str(schema.get("description", "")).lower()
-        is_control_value = schema_format == "int32" or "value type" in description
-        result = TypeScriptType.NUMBER if is_control_value else TypeScriptType.BIGINT
+        schema_format = schema.get(SchemaKey.FORMAT)
+        is_declared_bigint = schema.get(constants.X_ALGOKIT_BIGINT) is True
+        is_signed_32_bit = schema_format == "int32"
+        coerced_to_number = False
+
+        if not is_declared_bigint and not is_signed_32_bit:
+            maximum: int | None = schema.get(SchemaKey.MAXIMUM)
+            minimum: int | None = schema.get(SchemaKey.MINIMUM)
+            description = str(schema.get("description", "")).lower()
+
+            if (
+                (maximum is not None and maximum <= _U32_MAX_VALUE)
+                or (minimum is not None and minimum >= 0 and maximum is not None and maximum <= _SMALL_INTEGER_MAX)
+                or any(keyword in description for keyword in _ENUM_KEYWORDS)
+            ):
+                coerced_to_number = True
+
+        result = (
+            TypeScriptType.BIGINT
+            if is_declared_bigint
+            else TypeScriptType.NUMBER
+            if is_signed_32_bit or coerced_to_number
+            else TypeScriptType.BIGINT
+        )
     elif schema_type == "number":
         result = TypeScriptType.NUMBER
     elif schema_type == "string":

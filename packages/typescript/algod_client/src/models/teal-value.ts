@@ -7,7 +7,7 @@ export type TealValue = {
   /**
    * \[tt\] value type. Value `1` refers to **bytes**, value `2` refers to **uint**
    */
-  type: number
+  type: bigint
 
   /**
    * \[tb\] bytes value.
