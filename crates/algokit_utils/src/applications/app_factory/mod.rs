@@ -312,38 +312,6 @@ impl AppFactory {
         }
     }
 
-    fn resolve_compilation_params(
-        &self,
-        compilation_params: Option<CompilationParams>,
-    ) -> CompilationParams {
-        let mut resolved = compilation_params.unwrap_or_default();
-
-        // Merge factory params if available
-        if let Some(factory_params) = &self.compilation_params {
-            resolved.deploy_time_params = resolved
-                .deploy_time_params
-                .or_else(|| factory_params.deploy_time_params.clone());
-            resolved.updatable = resolved.updatable.or(factory_params.updatable);
-            resolved.deletable = resolved.deletable.or(factory_params.deletable);
-        }
-
-        // Auto-detect flags from spec if still unset
-        resolved.updatable = resolved.updatable.or_else(|| {
-            self.detect_deploy_time_control_flag(
-                UPDATABLE_TEMPLATE_NAME,
-                CallOnApplicationComplete::UpdateApplication,
-            )
-        });
-        resolved.deletable = resolved.deletable.or_else(|| {
-            self.detect_deploy_time_control_flag(
-                DELETABLE_TEMPLATE_NAME,
-                CallOnApplicationComplete::DeleteApplication,
-            )
-        });
-
-        resolved
-    }
-
     /// Idempotently deploys (create, update, or replace) an application using
     /// `AppDeployer` semantics.
     ///

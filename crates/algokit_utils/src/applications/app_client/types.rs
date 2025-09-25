@@ -1,5 +1,5 @@
 use crate::AlgorandClient;
-use crate::clients::app_manager::TealTemplateValue;
+use crate::clients::app_manager::{CompiledPrograms, TealTemplateValue};
 use crate::transactions::TransactionComposerConfig;
 use crate::transactions::TransactionSigner;
 use crate::transactions::app_call::AppMethodCallArg;
@@ -176,14 +176,8 @@ pub struct AppClientUpdateMethodCallResult {
     pub abi_returns: Vec<ABIReturn>,
     /// The group ID (optional)
     pub group: Option<Byte32>,
-    /// The compiled approval program (if provided)
-    pub compiled_approval: Option<Vec<u8>>,
-    /// The compiled clear state program (if provided)
-    pub compiled_clear: Option<Vec<u8>>,
-    /// The approval program source map (if available)
-    pub approval_source_map: Option<serde_json::Value>,
-    /// The clear program source map (if available)
-    pub clear_source_map: Option<serde_json::Value>,
+    /// The compiled programs (approval and clear state)
+    pub compiled_programs: CompiledPrograms,
 }
 
 #[derive(Clone, Debug)]
@@ -194,12 +188,6 @@ pub struct AppClientUpdateResult {
     pub confirmation: PendingTransactionResponse,
     /// The transaction ID of the primary transaction that has been sent
     pub transaction_id: String,
-    /// The compiled approval program (if provided)
-    pub compiled_approval: Option<Vec<u8>>,
-    /// The compiled clear state program (if provided)
-    pub compiled_clear: Option<Vec<u8>>,
-    /// The approval program source map (if available)
-    pub approval_source_map: Option<serde_json::Value>,
-    /// The clear program source map (if available)
-    pub clear_source_map: Option<serde_json::Value>,
+    /// The compiled programs (approval and clear state)
+    pub compiled_programs: CompiledPrograms,
 }

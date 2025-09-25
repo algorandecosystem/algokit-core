@@ -1034,18 +1034,22 @@ impl AppDeployer {
             .await
             .map_err(|e| AppDeployError::ComposerError { source: e })?;
 
-        let create_confirmation =
-            composer_result
-                .confirmations
-                .last()
-                .ok_or(AppDeployError::ComposerError {
-                    source: ComposerError::TransactionError {
-                        message: String::from("Could not get create confirmation"),
-                    },
-                })?;
-        let app_id = create_confirmation.app_id.unwrap();
+        let create_transaction_index = composer_result.confirmations.len() - 1;
+
+        let confirmation = composer_result.confirmations[create_transaction_index].clone();
+        let app_id = confirmation
+            .app_id
+            .ok_or_else(|| AppDeployError::DeploymentFailed {
+                message: "App creation confirmation missing application-index".to_string(),
+            })?;
+
         let app_address = Address::from_app_id(&app_id);
-        let confirmed_round = create_confirmation.confirmed_round.unwrap();
+        let confirmed_round =
+            confirmation
+                .confirmed_round
+                .ok_or_else(|| AppDeployError::DeploymentFailed {
+                    message: "App creation confirmation missing confirmed-round".to_string(),
+                })?;
 
         let app_metadata = AppMetadata {
             app_id,
@@ -1068,14 +1072,14 @@ impl AppDeployer {
         self.update_app_lookup(sender, &app_metadata);
 
         // Extract results from the last transaction in the group (the create transaction)
-        let last_idx = composer_result.confirmations.len() - 1;
-        let transaction = composer_result.transactions[last_idx].clone();
-        let confirmation = composer_result.confirmations[last_idx].clone();
-        let transaction_id = composer_result.transaction_ids[last_idx].clone();
-        let abi_return = if last_idx < composer_result.abi_returns.len() {
-            Some(composer_result.abi_returns[last_idx].clone())
-        } else {
-            None
+        let transaction = composer_result.transactions[create_transaction_index].clone();
+        let transaction_id = composer_result.transaction_ids[create_transaction_index].clone();
+        // Extract ABI return because the abi_returns from the composer isn't 1:1 with the transactions
+        let abi_return = match create_params {
+            CreateParams::AppCreateCall(_) => None,
+            CreateParams::AppCreateMethodCall(params) => Some(
+                Composer::extract_abi_return_from_logs(&confirmation, &params.method),
+            ),
         };
 
         let create_result = AppDeployerCreateResult {
@@ -1172,21 +1176,15 @@ impl AppDeployer {
             .await
             .map_err(|e| AppDeployError::ComposerError { source: e })?;
 
-        let update_confirmation =
-            composer_result
-                .confirmations
-                .last()
-                .ok_or(AppDeployError::ComposerError {
-                    source: ComposerError::TransactionError {
-                        message: String::from("Could not get create confirmation"),
-                    },
-                })?;
+        let update_transaction_index = composer_result.confirmations.len() - 1;
+
+        let confirmation = composer_result.confirmations[update_transaction_index].clone();
 
         let app_metadata = AppMetadata {
             app_id: existing_app_metadata.app_id,
             app_address: existing_app_metadata.app_address.clone(),
             created_round: existing_app_metadata.created_round,
-            updated_round: update_confirmation.confirmed_round.unwrap(),
+            updated_round: confirmation.confirmed_round.unwrap(),
             created_metadata: existing_app_metadata.created_metadata.clone(),
             deleted: false,
             name: metadata.name.clone(),
@@ -1202,15 +1200,14 @@ impl AppDeployer {
 
         self.update_app_lookup(sender, &app_metadata);
 
-        // Extract results from the last transaction in the group (the update transaction)
-        let last_idx = composer_result.confirmations.len() - 1;
-        let transaction = composer_result.transactions[last_idx].clone();
-        let confirmation = composer_result.confirmations[last_idx].clone();
-        let transaction_id = composer_result.transaction_ids[last_idx].clone();
-        let abi_return = if last_idx < composer_result.abi_returns.len() {
-            Some(composer_result.abi_returns[last_idx].clone())
-        } else {
-            None
+        let transaction = composer_result.transactions[update_transaction_index].clone();
+        let transaction_id = composer_result.transaction_ids[update_transaction_index].clone();
+        // Extract ABI return because the abi_returns from the composer isn't 1:1 with the transactions
+        let abi_return = match update_params {
+            UpdateParams::AppUpdateCall(_) => None,
+            UpdateParams::AppUpdateMethodCall(params) => Some(
+                Composer::extract_abi_return_from_logs(&confirmation, &params.method),
+            ),
         };
 
         let update_result = AppDeployerUpdateResult {

@@ -197,10 +197,7 @@ impl<'app_client> TransactionSender<'app_client> {
             transaction_ids: result.transaction_ids,
             abi_returns: result.abi_returns,
             group: result.group,
-            compiled_approval: Some(compiled_programs.approval.compiled_base64_to_bytes),
-            compiled_clear: Some(compiled_programs.clear.compiled_base64_to_bytes),
-            approval_source_map: compiled_programs.approval.source_map.clone(),
-            clear_source_map: compiled_programs.clear.source_map.clone(),
+            compiled_programs: compiled_programs,
         })
     }
 
@@ -324,10 +321,7 @@ impl BareTransactionSender<'_> {
             transaction: result.transaction,
             confirmation: result.confirmation,
             transaction_id: result.transaction_id,
-            compiled_approval: Some(compiled_programs.approval.compiled_base64_to_bytes),
-            compiled_clear: Some(compiled_programs.clear.compiled_base64_to_bytes),
-            approval_source_map: compiled_programs.approval.source_map.clone(),
-            clear_source_map: compiled_programs.clear.source_map.clone(),
+            compiled_programs: compiled_programs,
         })
     }
 }

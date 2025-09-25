@@ -37,7 +37,7 @@ impl<'a> ParamsBuilder<'a> {
     /// # Errors
     /// Returns [`AppFactoryError`] if the spec cannot be compiled, the method cannot be
     /// located, or the sender address is invalid.
-    pub async fn create(
+    pub fn create(
         &self,
         params: AppFactoryCreateMethodCallParams,
     ) -> Result<DeployAppCreateMethodCallParams, AppFactoryError> {
@@ -191,17 +191,16 @@ impl BareParamsBuilder<'_> {
     /// # Errors
     /// Returns [`AppFactoryError`] if the spec cannot be compiled or the sender address
     /// is invalid.
-    pub async fn create(
+    pub fn create(
         &self,
         params: Option<AppFactoryCreateParams>,
     ) -> Result<DeployAppCreateParams, AppFactoryError> {
+        let params = params.unwrap_or_default();
         let (approval_teal, clear_teal) = self.factory.app_spec().decoded_teal().map_err(|e| {
             AppFactoryError::CompilationError {
                 message: e.to_string(),
             }
         })?;
-
-        let params = params.unwrap_or_default();
         let sender = self
             .factory
             .get_sender_address(&params.sender)
