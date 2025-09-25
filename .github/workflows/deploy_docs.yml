@@ -23,6 +23,8 @@ jobs:
         uses: ./.github/actions/setup-rust
         with:
           toolchain: stable
+          install-sccache: true
+          install-nextest: false
 
       - name: Build documentation
         run: cargo run --bin build-docs --manifest-path docs/Cargo.toml

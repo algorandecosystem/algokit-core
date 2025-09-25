@@ -25,5 +25,7 @@ jobs:
       - uses: ./.github/actions/setup-rust
         with:
           toolchain: 1.85.0
+          install-sccache: true
+          install-nextest: false
       - name: Polytest Validate
         run: cd crates/${{ env.CRATE }}_ffi && cargo bin polytest validate

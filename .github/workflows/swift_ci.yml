@@ -31,6 +31,8 @@ jobs:
         with:
           toolchain: 1.85.0
           targets: aarch64-apple-ios, x86_64-apple-ios, aarch64-apple-ios-sim, x86_64-apple-ios, aarch64-apple-ios-macabi, x86_64-apple-ios-macabi, aarch64-apple-darwin, x86_64-apple-darwin
+          install-sccache: true
+          install-nextest: false
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest

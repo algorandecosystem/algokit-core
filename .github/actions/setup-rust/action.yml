@@ -26,6 +26,14 @@ inputs:
     description: "Skip configuring the Cargo cache when set to true"
     required: false
     default: "false"
+  install-sccache:
+    description: "Install and enable sccache (GitHub Actions backend)"
+    required: false
+    default: "true"
+  install-nextest:
+    description: "Install cargo-nextest test runner"
+    required: false
+    default: "true"
 
 runs:
   using: "composite"
@@ -37,6 +45,25 @@ runs:
         toolchain: ${{ inputs.toolchain }}
         components: ${{ inputs.components }}
         targets: ${{ inputs.targets }}
+
+    - name: Setup sccache
+      if: ${{ inputs.install-sccache == 'true' }}
+      uses: mozilla-actions/sccache-action@v0.0.9
+      with:
+        version: "v0.10.0"
+
+    - name: Export sccache env vars
+      if: ${{ inputs.install-sccache == 'true' }}
+      shell: bash
+      run: |
+        echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+        echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+
+    - name: Install cargo-nextest
+      if: ${{ inputs.install-nextest == 'true' }}
+      uses: taiki-e/install-action@v2
+      with:
+        tool: nextest
 
     - name: Compose cache key prefix
       id: cachekey
@@ -58,7 +85,6 @@ runs:
         path: |
           ~/.cargo/registry
           ~/.cargo/git
-          ${{ inputs['cache-target-dir'] }}
         key: ${{ steps.cachekey.outputs.prefix }}-${{ steps.toolchain.outputs.cachekey }}-${{ hashFiles('**/Cargo.lock') }}
         restore-keys: |
           ${{ steps.cachekey.outputs.prefix }}-${{ steps.toolchain.outputs.cachekey }}-
