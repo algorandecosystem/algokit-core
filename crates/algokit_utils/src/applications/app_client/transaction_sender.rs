@@ -197,7 +197,7 @@ impl<'app_client> TransactionSender<'app_client> {
             transaction_ids: result.transaction_ids,
             abi_returns: result.abi_returns,
             group: result.group,
-            compiled_programs: compiled_programs,
+            compiled_programs,
         })
     }
 
@@ -321,7 +321,7 @@ impl BareTransactionSender<'_> {
             transaction: result.transaction,
             confirmation: result.confirmation,
             transaction_id: result.transaction_id,
-            compiled_programs: compiled_programs,
+            compiled_programs,
         })
     }
 }

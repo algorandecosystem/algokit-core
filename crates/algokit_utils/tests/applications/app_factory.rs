@@ -526,10 +526,8 @@ async fn update_app_with_abi_direct(
     } else {
         return Err("expected string return".into());
     }
-    assert!(update_res.compiled_approval.is_some());
-    assert!(update_res.compiled_clear.is_some());
-    assert!(update_res.approval_source_map.is_some());
-    assert!(update_res.clear_source_map.is_some());
+    assert!(update_res.compiled_programs.approval.source_map.is_some());
+    assert!(update_res.compiled_programs.clear.source_map.is_some());
     Ok(())
 }
 

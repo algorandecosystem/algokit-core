@@ -4,7 +4,6 @@ use crate::applications::app_deployer::{AppLookup, OnSchemaBreak, OnUpdate};
 use crate::applications::{
     AppDeployMetadata, AppDeployParams, AppDeployResult, CreateParams, DeleteParams, UpdateParams,
 };
-use crate::clients::app_manager::{DELETABLE_TEMPLATE_NAME, UPDATABLE_TEMPLATE_NAME};
 use crate::transactions::{
     TransactionComposerConfig, TransactionSigner, composer::SendParams as ComposerSendParams,
 };
@@ -338,8 +337,8 @@ impl AppFactory {
         let compilation_params = self.resolve_compilation_params(compilation_params);
 
         let create_deploy_params = match args.create_params {
-            Some(cp) => CreateParams::AppCreateMethodCall(self.params().create(cp).await?),
-            None => CreateParams::AppCreateCall(self.params().bare().create(None).await?),
+            Some(cp) => CreateParams::AppCreateMethodCall(self.params().create(cp)?),
+            None => CreateParams::AppCreateCall(self.params().bare().create(None)?),
         };
 
         let update_deploy_params = match args.update_params {
