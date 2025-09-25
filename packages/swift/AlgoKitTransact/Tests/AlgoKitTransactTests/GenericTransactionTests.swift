@@ -26,7 +26,7 @@ func genericTransactionEncode0Bytes() throws {
   do {
     _ = try decodeTransaction(encodedTx: Data())
     #expect(Bool(false), "Expected DecodingError to be thrown")
-  } catch AlgoKitTransactError.DecodingError(let message) {
+  } catch AlgoKitTransactError.InputError(let message) {
     #expect(message == "attempted to decode 0 bytes")
   }
 }

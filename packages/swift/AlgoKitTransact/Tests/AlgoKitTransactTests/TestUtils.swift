@@ -3,13 +3,9 @@ import Foundation
 @testable import AlgoKitTransact
 
 struct TransactionTestData: Codable {
-  struct AddressData: Codable {
-    let address: String
-    let pubKey: [UInt8]
-  }
 
   struct TransactionData: Codable {
-    let sender: AddressData
+    let sender: String
     let fee: UInt64
     let transactionType: String
     let firstValid: UInt64
@@ -17,14 +13,14 @@ struct TransactionTestData: Codable {
     let genesisHash: [UInt8]
     let genesisId: String
     let note: [UInt8]?
-    let rekeyTo: AddressData?
+    let rekeyTo: String?
     let lease: [UInt8]?
     let group: [UInt8]?
     let payment: PaymentFieldsData
   }
 
   struct PaymentFieldsData: Codable {
-    let receiver: AddressData
+    let receiver: String
     let amount: UInt64
   }
 
@@ -50,7 +46,7 @@ func loadTestData() throws -> TestData {
 func makeTransaction(from testData: TransactionTestData) -> Transaction {
   return Transaction(
     transactionType: .payment,
-    sender: testData.transaction.sender.address,
+    sender: testData.transaction.sender,
     fee: testData.transaction.fee,
     firstValid: testData.transaction.firstValid,
     lastValid: testData.transaction.lastValid,
@@ -58,11 +54,11 @@ func makeTransaction(from testData: TransactionTestData) -> Transaction {
     genesisId: testData.transaction.genesisId,
     note: testData.transaction.note != nil ? Data(testData.transaction.note!) : nil,
     rekeyTo: testData.transaction.rekeyTo != nil
-      ? testData.transaction.rekeyTo!.address : nil,
+      ? testData.transaction.rekeyTo! : nil,
     lease: testData.transaction.lease != nil ? Data(testData.transaction.lease!) : nil,
     group: testData.transaction.group != nil ? Data(testData.transaction.group!) : nil,
     payment: PaymentTransactionFields(
-      receiver: testData.transaction.payment.receiver.address,
+      receiver: testData.transaction.payment.receiver,
       amount: testData.transaction.payment.amount,
       closeRemainderTo: nil
     ),
