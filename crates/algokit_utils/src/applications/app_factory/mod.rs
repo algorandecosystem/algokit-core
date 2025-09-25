@@ -306,10 +306,10 @@ impl AppFactory {
         };
 
         let logic_error = context.expose_logic_error(&error_str, is_clear_state_program);
-        return AppFactoryError::LogicError {
+        AppFactoryError::LogicError {
             message: logic_error.message.clone(),
             logic: Box::new(logic_error),
-        };
+        }
     }
 
     fn resolve_compilation_params(

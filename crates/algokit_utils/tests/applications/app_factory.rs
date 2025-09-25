@@ -57,7 +57,6 @@ pub async fn build_app_factory_with_spec(
             deploy_time_params: opts.deploy_time_params,
             updatable: opts.updatable,
             deletable: opts.deletable,
-            ..Default::default()
         })
     } else {
         None
@@ -81,8 +80,7 @@ async fn build_testing_app_factory(
     test_account: TestAccount,
     opts: AppFactoryOptions,
 ) -> AppFactory {
-    return build_app_factory_with_spec(algorand_client, test_account, testing_app_spec(), opts)
-        .await;
+    build_app_factory_with_spec(algorand_client, test_account, testing_app_spec(), opts).await
 }
 
 fn compilation_params(value: u64, updatable: bool, deletable: bool) -> CompilationParams {
@@ -92,7 +90,6 @@ fn compilation_params(value: u64, updatable: bool, deletable: bool) -> Compilati
         deploy_time_params: Some(t),
         updatable: Some(updatable),
         deletable: Some(deletable),
-        ..Default::default()
     }
 }
 
@@ -137,8 +134,8 @@ async fn bare_create_with_deploy_time_params(
         algokit_transact::Address::from_app_id(&client.app_id())
     );
     assert!(res.app_id > 0);
-    assert!(res.compiled_programs.approval.compiled.len() > 0);
-    assert!(res.compiled_programs.clear.compiled.len() > 0);
+    assert!(!res.compiled_programs.approval.compiled.is_empty());
+    assert!(!res.compiled_programs.clear.compiled.is_empty());
     assert!(res.confirmation.confirmed_round.is_some());
     Ok(())
 }
@@ -217,8 +214,8 @@ async fn oncomplete_override_on_create(
         client.app_address(),
         algokit_transact::Address::from_app_id(&client.app_id())
     );
-    assert!(result.compiled_programs.approval.compiled.len() > 0);
-    assert!(result.compiled_programs.clear.compiled.len() > 0);
+    assert!(!result.compiled_programs.approval.compiled.is_empty());
+    assert!(!result.compiled_programs.clear.compiled.is_empty());
     Ok(())
 }
 
@@ -264,8 +261,8 @@ async fn abi_based_create_returns_value(
         Some(ABIValue::String(s)) => assert_eq!(s, "string_io"),
         other => return Err(format!("expected string return, got {other:?}").into()),
     }
-    assert!(call_return.compiled_programs.approval.compiled.len() > 0);
-    assert!(call_return.compiled_programs.clear.compiled.len() > 0);
+    assert!(!call_return.compiled_programs.approval.compiled.is_empty());
+    assert!(!call_return.compiled_programs.clear.compiled.is_empty());
     Ok(())
 }
 
@@ -600,8 +597,8 @@ async fn deploy_app_create(#[future] algorand_fixture: AlgorandFixtureResult) ->
     };
     assert!(client.app_id() > 0);
     assert_eq!(client.app_id(), app_metadata.app_id);
-    assert!(create_result.compiled_programs.approval.compiled.len() > 0);
-    assert!(create_result.compiled_programs.clear.compiled.len() > 0);
+    assert!(!create_result.compiled_programs.approval.compiled.is_empty());
+    assert!(!create_result.compiled_programs.clear.compiled.is_empty());
     assert_eq!(
         create_result.confirmation.app_id.unwrap_or_default(),
         app_metadata.app_id
@@ -664,8 +661,8 @@ async fn deploy_app_create_abi(#[future] algorand_fixture: AlgorandFixtureResult
         other => return Err(format!("expected string abi return, got {other:?}").into()),
     };
     assert_eq!(abi_value, "arg_io");
-    assert!(create_result.compiled_programs.approval.compiled.len() > 0);
-    assert!(create_result.compiled_programs.clear.compiled.len() > 0);
+    assert!(!create_result.compiled_programs.approval.compiled.is_empty());
+    assert!(!create_result.compiled_programs.clear.compiled.is_empty());
     Ok(())
 }
 
@@ -735,10 +732,16 @@ async fn deploy_app_update(#[future] algorand_fixture: AlgorandFixtureResult) ->
         update_app_metadata.app_address
     );
     assert!(update_app_metadata.updated_round >= create_app_metadata.created_round);
-    assert!(initial_create.compiled_programs.approval.compiled.len() > 0);
-    assert!(initial_create.compiled_programs.clear.compiled.len() > 0);
-    assert!(updated.compiled_programs.approval.compiled.len() > 0);
-    assert!(updated.compiled_programs.clear.compiled.len() > 0);
+    assert!(
+        !initial_create
+            .compiled_programs
+            .approval
+            .compiled
+            .is_empty()
+    );
+    assert!(!initial_create.compiled_programs.clear.compiled.is_empty());
+    assert!(!updated.compiled_programs.approval.compiled.is_empty());
+    assert!(!updated.compiled_programs.clear.compiled.is_empty());
     assert!(updated.compiled_programs.approval.source_map.is_some());
     assert!(updated.compiled_programs.clear.source_map.is_some());
     assert_eq!(
@@ -813,10 +816,10 @@ async fn deploy_app_update_detects_extra_pages_as_breaking_change(
         )
         .await?;
 
-    let (large_app_metadata, _) = match &update_res {
-        AppDeployResult::Create { app, result } => (app, result),
+    match &update_res {
+        AppDeployResult::Create { .. } => {}
         _ => return Err("expected Create on schema break append".into()),
-    };
+    }
 
     // App id should differ between small and large
     assert_ne!(small_app_metadata.app_id, large_client.app_id());
@@ -955,8 +958,8 @@ async fn deploy_app_update_abi(#[future] algorand_fixture: AlgorandFixtureResult
         other => return Err(format!("expected string return, got {other:?}").into()),
     };
     assert_eq!(abi_return, "args_io");
-    assert!(update_result.compiled_programs.approval.compiled.len() > 0);
-    assert!(update_result.compiled_programs.clear.compiled.len() > 0);
+    assert!(!update_result.compiled_programs.approval.compiled.is_empty());
+    assert!(!update_result.compiled_programs.clear.compiled.is_empty());
     assert!(
         update_result
             .compiled_programs
@@ -1036,8 +1039,14 @@ async fn deploy_app_replace(#[future] algorand_fixture: AlgorandFixtureResult) -
         _ => return Err("expected Replace".into()),
     };
     assert!(replace_app_metadata.app_id > old_app_id);
-    assert!(replace_result.compiled_programs.approval.compiled.len() > 0);
-    assert!(replace_result.compiled_programs.clear.compiled.len() > 0);
+    assert!(
+        !replace_result
+            .compiled_programs
+            .approval
+            .compiled
+            .is_empty()
+    );
+    assert!(!replace_result.compiled_programs.clear.compiled.is_empty());
     assert!(replace_result.delete_confirmation.confirmed_round.is_some());
     // Ensure delete app call references old app id and correct onComplete
     match &replace_result.delete_transaction {
@@ -1150,14 +1159,12 @@ async fn deploy_app_replace_abi(#[future] algorand_fixture: AlgorandFixtureResul
     };
     assert_eq!(create_ret, "arg_io");
 
-    if let Some(abi_ret) = replace_result_2
+    if let Some(algokit_abi::ABIValue::String(s)) = replace_result_2
         .delete_abi_return
         .clone()
         .and_then(|r| r.return_value)
     {
-        if let algokit_abi::ABIValue::String(s) = abi_ret {
-            assert_eq!(s, "arg2_io");
-        }
+        assert_eq!(s, "arg2_io");
     }
     Ok(())
 }

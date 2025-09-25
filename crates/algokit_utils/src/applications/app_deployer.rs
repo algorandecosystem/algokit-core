@@ -1088,7 +1088,7 @@ impl AppDeployer {
             transactions: composer_result.transactions,
             confirmations: composer_result.confirmations,
             abi_returns: composer_result.abi_returns,
-            compiled_programs: compiled_programs,
+            compiled_programs,
         };
 
         Ok(AppDeployResult::Create {
@@ -1223,7 +1223,7 @@ impl AppDeployer {
             transactions: composer_result.transactions,
             confirmations: composer_result.confirmations,
             abi_returns: composer_result.abi_returns,
-            compiled_programs: compiled_programs,
+            compiled_programs,
         };
 
         Ok(AppDeployResult::Update {
@@ -1478,7 +1478,7 @@ impl AppDeployer {
             transactions: result.transactions,
             confirmations: result.confirmations,
             abi_returns: result.abi_returns,
-            compiled_programs: compiled_programs,
+            compiled_programs,
         };
 
         Ok(AppDeployResult::Replace {

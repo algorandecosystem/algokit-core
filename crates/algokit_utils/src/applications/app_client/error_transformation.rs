@@ -66,12 +66,12 @@ impl LogicErrorContext<'_> {
         error_message: &str,
         is_clear_state_program: bool,
     ) -> LogicError {
-        let parsed_logic_error_data = extract_logic_error_data(&error_message);
+        let parsed_logic_error_data = extract_logic_error_data(error_message);
         let (mut line_no_opt, mut listing) =
-            self.apply_source_map_for_message(&error_message, is_clear_state_program);
+            self.apply_source_map_for_message(error_message, is_clear_state_program);
         let source_map = self.get_source_map(is_clear_state_program).cloned();
-        let transaction_id = Self::extract_transaction_id(&error_message);
-        let pc_opt = Self::extract_pc(&error_message);
+        let transaction_id = Self::extract_transaction_id(error_message);
+        let pc_opt = Self::extract_pc(error_message);
 
         let mut logic = LogicError {
             message: error_message.to_string(),

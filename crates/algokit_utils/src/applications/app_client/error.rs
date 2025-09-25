@@ -1,5 +1,5 @@
-use crate::applications::app_client::types::LogicError;
 use crate::ComposerError;
+use crate::applications::app_client::types::LogicError;
 use crate::clients::app_manager::AppManagerError;
 use crate::clients::client_manager::ClientManagerError;
 use crate::transactions::TransactionSenderError;
