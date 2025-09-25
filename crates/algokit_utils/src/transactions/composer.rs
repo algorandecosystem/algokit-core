@@ -877,7 +877,7 @@ impl Composer {
         for (i, confirmation) in confirmations.iter().enumerate() {
             if let Some(transaction) = self.transactions.get(i) {
                 if let Some(method) = self.get_method_from_transaction(transaction) {
-                    let abi_return = self.extract_abi_return_from_logs(confirmation, method);
+                    let abi_return = Self::extract_abi_return_from_logs(confirmation, method);
                     abi_returns.push(abi_return);
                 }
             }
@@ -886,8 +886,7 @@ impl Composer {
         abi_returns
     }
 
-    fn extract_abi_return_from_logs(
-        &self,
+    pub(crate) fn extract_abi_return_from_logs(
         confirmation: &PendingTransactionResponse,
         method: &ABIMethod,
     ) -> ABIReturn {

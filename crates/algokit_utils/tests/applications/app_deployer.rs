@@ -1209,7 +1209,7 @@ async fn get_testing_app_create_params(
     })
 }
 
-async fn bar(
+async fn get_deploy_params_for_replacing_app_using_abi_methods(
     sender: &Address,
     metadata: &AppDeployMetadata,
     break_schema: bool,
@@ -1287,7 +1287,7 @@ async fn bar(
 
 #[rstest]
 #[tokio::test]
-async fn foo(#[future] fixture: FixtureResult) -> TestResult {
+async fn test_replacing_app_using_abi_methods(#[future] fixture: FixtureResult) -> TestResult {
     let Fixture {
         test_account,
         mut app_deployer,
@@ -1300,7 +1300,9 @@ async fn foo(#[future] fixture: FixtureResult) -> TestResult {
         deletable: Some(true),
         ..Default::default()
     });
-    let deployment_1 = bar(&test_account, &metadata, false).await?;
+    let deployment_1 =
+        get_deploy_params_for_replacing_app_using_abi_methods(&test_account, &metadata, false)
+            .await?;
 
     let result_1 = app_deployer.deploy(deployment_1).await?;
     let app_1_id = match &result_1 {
@@ -1321,7 +1323,9 @@ async fn foo(#[future] fixture: FixtureResult) -> TestResult {
         deletable: Some(true),
         ..Default::default()
     });
-    let deployment_2 = bar(&test_account, &metadata_2, true).await?;
+    let deployment_2 =
+        get_deploy_params_for_replacing_app_using_abi_methods(&test_account, &metadata_2, true)
+            .await?;
 
     let result_2 = app_deployer.deploy(deployment_2).await?;
     let (app_2, create_result) = match result_2 {
@@ -1341,6 +1345,25 @@ async fn foo(#[future] fixture: FixtureResult) -> TestResult {
     assert_eq!(app_2.updatable, metadata_2.updatable);
     assert_eq!(app_2.deletable, metadata_2.deletable);
     assert!(!app_2.deleted);
+
+    // Check ABI return values
+    assert!(create_result.create_abi_return.is_some());
+    let create_abi_return = create_result.create_abi_return.unwrap();
+    assert!(create_abi_return.return_value.is_some());
+    if let Some(algokit_abi::ABIValue::String(s)) = create_abi_return.return_value {
+        assert_eq!(s, "created");
+    } else {
+        panic!("Expected string return value from create method");
+    }
+
+    assert!(create_result.delete_abi_return.is_some());
+    let delete_abi_return = create_result.delete_abi_return.unwrap();
+    assert!(delete_abi_return.return_value.is_some());
+    if let Some(algokit_abi::ABIValue::String(s)) = delete_abi_return.return_value {
+        assert_eq!(s, "deleted");
+    } else {
+        panic!("Expected string return value from delete method");
+    }
 
     Ok(())
 }

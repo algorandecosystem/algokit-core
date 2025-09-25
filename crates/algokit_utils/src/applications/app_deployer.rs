@@ -5,11 +5,11 @@ use crate::clients::app_manager::{
 use crate::transactions::{TransactionSender, TransactionSenderError};
 use crate::{
     AppCreateMethodCallParams, AppCreateParams, AppDeleteMethodCallParams, AppDeleteParams,
-    AppMethodCallArg, AppUpdateMethodCallParams, AppUpdateParams, ComposerError, SendParams,
-    create_transaction_params,
+    AppMethodCallArg, AppUpdateMethodCallParams, AppUpdateParams, Composer, ComposerError,
+    SendParams, create_transaction_params,
 };
 use algod_client::models::PendingTransactionResponse;
-use algokit_abi::ABIReturn;
+use algokit_abi::{ABIError, ABIMethod, ABIReturn};
 use algokit_transact::{Address, Byte32, OnApplicationComplete, Transaction};
 use base64::{Engine as _, engine::general_purpose};
 use indexer_client::{IndexerClient, apis::Error as IndexerError};
@@ -20,6 +20,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 const APP_DEPLOY_NOTE_PREFIX: &str = "ALGOKIT_DEPLOYER";
+const ABI_RETURN_PREFIX: &[u8] = &[0x15, 0x1f, 0x7c, 0x75];
 
 /// Enum for app program variants - either TEAL source code or compiled bytecode
 #[derive(Debug, Clone, PartialEq)]
@@ -1281,7 +1282,7 @@ impl AppDeployer {
 
         let mut composer = self.transaction_sender.new_group(None);
 
-        // Add create transaction
+        // Add create transaction and track its index
         match create_params {
             CreateParams::AppCreateCall(params) => {
                 let computed_extra_pages = Self::calculate_extra_program_pages(
@@ -1350,7 +1351,9 @@ impl AppDeployer {
                     .add_app_create_method_call(app_create_method_params)
                     .map_err(|e| AppDeployError::ComposerError { source: e })?;
             }
-        }
+        };
+
+        let create_transaction_index = composer.count() - 1;
 
         // Add delete transaction
         match delete_params {
@@ -1408,25 +1411,26 @@ impl AppDeployer {
             .await
             .map_err(|e| AppDeployError::ComposerError { source: e })?;
 
-        // TODO: this logic is wrong
-        // The first confirmation is for the create, second is for delete
-        let create_confirmation =
-            result
-                .confirmations
-                .first()
-                .ok_or(AppDeployError::ComposerError {
-                    source: ComposerError::TransactionError {
-                        message: String::from("Could not get create confirmation"),
-                    },
+        // Get create confirmation from the tracked index
+        let create_confirmation = result.confirmations[create_transaction_index].clone();
+        let app_id =
+            create_confirmation
+                .app_id
+                .ok_or_else(|| AppDeployError::DeploymentFailed {
+                    message: "App creation confirmation missing application-index".to_string(),
                 })?;
-        let app_id = create_confirmation.app_id.unwrap();
+        let confirmed_round = create_confirmation.confirmed_round.ok_or_else(|| {
+            AppDeployError::DeploymentFailed {
+                message: "App creation confirmation missing confirmed-round".to_string(),
+            }
+        })?;
         let app_address = Address::from_app_id(&app_id);
 
         let app_metadata = AppMetadata {
             app_id,
             app_address,
-            created_round: create_confirmation.confirmed_round.unwrap(),
-            updated_round: create_confirmation.confirmed_round.unwrap(),
+            created_round: confirmed_round,
+            updated_round: confirmed_round,
             created_metadata: metadata.clone(),
             deleted: false,
             name: metadata.name.clone(),
@@ -1442,26 +1446,27 @@ impl AppDeployer {
 
         self.update_app_lookup(sender, &app_metadata);
 
-        // For replace: create results from first transaction, delete results from last transaction
-        let first_idx = 0;
-        let last_idx = result.confirmations.len() - 1;
+        let delete_transaction_index = result.confirmations.len() - 1;
 
-        let create_transaction = result.transactions[first_idx].clone();
-        let create_confirmation = result.confirmations[first_idx].clone();
-        let create_transaction_id = result.transaction_ids[first_idx].clone();
-        let create_abi_return = if first_idx < result.abi_returns.len() {
-            Some(result.abi_returns[first_idx].clone())
-        } else {
-            None
+        let create_transaction = result.transactions[create_transaction_index].clone();
+        let create_transaction_id = result.transaction_ids[create_transaction_index].clone();
+        // Extract ABI return for method calls because the abi_returns from the composer isn't 1:1 with the transactions
+        let create_abi_return = match create_params {
+            CreateParams::AppCreateCall(_) => None,
+            CreateParams::AppCreateMethodCall(params) => Some(
+                Composer::extract_abi_return_from_logs(&create_confirmation, &params.method),
+            ),
         };
 
-        let delete_transaction = result.transactions[last_idx].clone();
-        let delete_confirmation = result.confirmations[last_idx].clone();
-        let delete_transaction_id = result.transaction_ids[last_idx].clone();
-        let delete_abi_return = if last_idx < result.abi_returns.len() {
-            Some(result.abi_returns[last_idx].clone())
-        } else {
-            None
+        let delete_transaction = result.transactions[delete_transaction_index].clone();
+        let delete_confirmation = result.confirmations[delete_transaction_index].clone();
+        let delete_transaction_id = result.transaction_ids[delete_transaction_index].clone();
+        // Extract ABI return for method calls because the abi_returns from the composer isn't 1:1 with the transactions
+        let delete_abi_return = match delete_params {
+            DeleteParams::AppDeleteCall(_) => None,
+            DeleteParams::AppDeleteMethodCall(params) => Some(
+                Composer::extract_abi_return_from_logs(&delete_confirmation, &params.method),
+            ),
         };
 
         let replace_result = AppDeployerReplaceResult {
