@@ -1,3 +1,8 @@
+import {
+  encodeSignedTransaction as transactEncodeSignedTransaction,
+  decodeSignedTransaction as transactDecodeSignedTransaction,
+  type SignedTransaction,
+} from '@algorandfoundation/algokit-transact'
 import { encodeMsgPack, decodeMsgPack } from './codecs'
 import { toBase64, fromBase64 } from './serialization'
 
@@ -221,51 +226,39 @@ interface TransformContext {
   readonly format: BodyFormat
 }
 
-let encodeSignedTransactionImpl: ((value: unknown) => Uint8Array) | undefined
-let decodeSignedTransactionImpl: ((value: Uint8Array) => unknown) | undefined
+const encodeSignedTransactionImpl = (value: unknown): Uint8Array => transactEncodeSignedTransaction(value as SignedTransaction)
+const decodeSignedTransactionImpl = (value: Uint8Array): SignedTransaction => transactDecodeSignedTransaction(value)
 
 class SignedTransactionCodec implements TypeCodec<unknown> {
   encode(value: unknown, format: BodyFormat): unknown {
     if (value == null) return value
-    const encodeFn = encodeSignedTransactionImpl
-    if (!encodeFn) {
-      throw new Error('SignedTransaction codec is not registered')
-    }
     if (format === 'json') {
       if (value instanceof Uint8Array) return toBase64(value)
-      return toBase64(encodeFn(value))
+      return toBase64(encodeSignedTransactionImpl(value))
     }
     if (value instanceof Uint8Array) {
       // Already canonical bytes; decode to structured map so parent encoding keeps map semantics
       return decodeMsgPack(value)
     }
     // Convert signed transaction object into canonical map representation
-    return decodeMsgPack(encodeFn(value))
+    return decodeMsgPack(encodeSignedTransactionImpl(value))
   }
 
   decode(value: unknown, format: BodyFormat): unknown {
     if (value == null) return value
-    const decodeFn = decodeSignedTransactionImpl
-    if (!decodeFn) {
-      throw new Error('SignedTransaction codec is not registered')
-    }
     if (format === 'json') {
-      if (typeof value === 'string') return decodeFn(fromBase64(value))
-      if (value instanceof Uint8Array) return decodeFn(value)
+      if (typeof value === 'string') return decodeSignedTransactionImpl(fromBase64(value))
+      if (value instanceof Uint8Array) return decodeSignedTransactionImpl(value)
       return value
     }
-    if (value instanceof Uint8Array) return decodeFn(value)
+    if (value instanceof Uint8Array) return decodeSignedTransactionImpl(value)
     // Value is a decoded map; re-encode to bytes before handing to transact decoder
     try {
-      return decodeFn(encodeMsgPack(value))
+      return decodeSignedTransactionImpl(encodeMsgPack(value))
     } catch {
       return value
     }
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const transact = require('@algorandfoundation/algokit-transact')
-encodeSignedTransactionImpl = transact.encodeSignedTransaction as (value: unknown) => Uint8Array
-decodeSignedTransactionImpl = transact.decodeSignedTransaction as (value: Uint8Array) => unknown
 registerCodec('SignedTransaction', new SignedTransactionCodec())
