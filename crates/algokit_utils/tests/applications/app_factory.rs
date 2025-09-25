@@ -16,6 +16,7 @@ use algokit_utils::transactions::TransactionComposerConfig;
 use algokit_utils::{AlgorandClient, AppMethodCallArg};
 use rstest::*;
 use std::collections::HashMap;
+use std::rc::Rc;
 use std::sync::Arc;
 
 #[derive(Default)]
@@ -31,18 +32,18 @@ fn abi_str_arg(s: &str) -> AppMethodCallArg {
     AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from(s))
 }
 
-fn into_factory_inputs(fixture: AlgorandFixture) -> (Arc<AlgorandClient>, TestAccount) {
+fn into_factory_inputs(fixture: AlgorandFixture) -> (Rc<AlgorandClient>, TestAccount) {
     let AlgorandFixture {
         algorand_client,
         test_account,
         ..
     } = fixture;
-    (Arc::new(algorand_client), test_account)
+    (Rc::new(algorand_client), test_account)
 }
 
 /// Construct an `AppFactory` for a provided ARC-56 spec with common defaults.
 pub async fn build_app_factory_with_spec(
-    algorand_client: Arc<AlgorandClient>,
+    algorand_client: Rc<AlgorandClient>,
     test_account: TestAccount,
     app_spec: Arc56Contract,
     opts: AppFactoryOptions,
@@ -76,7 +77,7 @@ pub async fn build_app_factory_with_spec(
 }
 
 async fn build_testing_app_factory(
-    algorand_client: Arc<AlgorandClient>,
+    algorand_client: Rc<AlgorandClient>,
     test_account: TestAccount,
     opts: AppFactoryOptions,
 ) -> AppFactory {
@@ -377,7 +378,7 @@ async fn call_app_with_rekey(#[future] algorand_fixture: AlgorandFixtureResult) 
     let (algorand_client, test_account) = into_factory_inputs(fixture);
 
     let factory = build_testing_app_factory(
-        Arc::clone(&algorand_client),
+        Rc::clone(&algorand_client),
         test_account,
         AppFactoryOptions {
             deploy_time_params: Some(HashMap::from([(
@@ -671,7 +672,7 @@ async fn deploy_app_update(#[future] algorand_fixture: AlgorandFixtureResult) ->
     let (algorand_client, test_account) = into_factory_inputs(fixture);
 
     let factory = build_testing_app_factory(
-        Arc::clone(&algorand_client),
+        Rc::clone(&algorand_client),
         test_account.clone(),
         AppFactoryOptions {
             app_name: Some("APP_NAME".to_string()),
@@ -695,7 +696,7 @@ async fn deploy_app_update(#[future] algorand_fixture: AlgorandFixtureResult) ->
 
     // Update
     let factory2 = build_testing_app_factory(
-        Arc::clone(&algorand_client),
+        Rc::clone(&algorand_client),
         test_account,
         AppFactoryOptions {
             app_name: Some("APP_NAME".to_string()),
@@ -762,7 +763,7 @@ async fn deploy_app_update_detects_extra_pages_as_breaking_change(
     .expect("valid arc56");
     let (algorand_client, test_account) = into_factory_inputs(fixture);
     let factory = build_app_factory_with_spec(
-        Arc::clone(&algorand_client),
+        Rc::clone(&algorand_client),
         test_account.clone(),
         small_spec,
         AppFactoryOptions {
@@ -837,7 +838,7 @@ async fn deploy_app_update_detects_extra_pages_as_breaking_change_fail_case(
     .expect("valid arc56");
     let (algorand_client, test_account) = into_factory_inputs(fixture);
     let factory_small = build_app_factory_with_spec(
-        Arc::clone(&algorand_client),
+        Rc::clone(&algorand_client),
         test_account.clone(),
         small_spec,
         AppFactoryOptions {
@@ -891,7 +892,7 @@ async fn deploy_app_update_abi(#[future] algorand_fixture: AlgorandFixtureResult
     let (algorand_client, test_account) = into_factory_inputs(fixture);
 
     let factory = build_testing_app_factory(
-        Arc::clone(&algorand_client),
+        Rc::clone(&algorand_client),
         test_account.clone(),
         AppFactoryOptions {
             app_name: Some("APP_NAME".to_string()),
@@ -918,7 +919,7 @@ async fn deploy_app_update_abi(#[future] algorand_fixture: AlgorandFixtureResult
         ..Default::default()
     };
     let factory2 = build_testing_app_factory(
-        Arc::clone(&algorand_client),
+        Rc::clone(&algorand_client),
         test_account,
         AppFactoryOptions {
             app_name: Some("APP_NAME".to_string()),
@@ -986,7 +987,7 @@ async fn deploy_app_replace(#[future] algorand_fixture: AlgorandFixtureResult) -
     let (algorand_client, test_account) = into_factory_inputs(fixture);
 
     let factory = build_testing_app_factory(
-        Arc::clone(&algorand_client),
+        Rc::clone(&algorand_client),
         test_account.clone(),
         AppFactoryOptions {
             app_name: Some("APP_NAME".to_string()),
@@ -1009,7 +1010,7 @@ async fn deploy_app_replace(#[future] algorand_fixture: AlgorandFixtureResult) -
 
     // Replace
     let factory2 = build_testing_app_factory(
-        Arc::clone(&algorand_client),
+        Rc::clone(&algorand_client),
         test_account,
         AppFactoryOptions {
             app_name: Some("APP_NAME".to_string()),
@@ -1071,7 +1072,7 @@ async fn deploy_app_replace_abi(#[future] algorand_fixture: AlgorandFixtureResul
     let (algorand_client, test_account) = into_factory_inputs(fixture);
 
     let factory = build_testing_app_factory(
-        Arc::clone(&algorand_client),
+        Rc::clone(&algorand_client),
         test_account.clone(),
         AppFactoryOptions {
             app_name: Some("APP_NAME".to_string()),
@@ -1114,7 +1115,7 @@ async fn deploy_app_replace_abi(#[future] algorand_fixture: AlgorandFixtureResul
         ..Default::default()
     };
     let factory2 = build_testing_app_factory(
-        Arc::clone(&algorand_client),
+        Rc::clone(&algorand_client),
         test_account,
         AppFactoryOptions {
             app_name: Some("APP_NAME".to_string()),

@@ -14,6 +14,7 @@ use algokit_http_client::DefaultHttpClient;
 use base64::{Engine, engine::general_purpose};
 use indexer_client::IndexerClient;
 use snafu::Snafu;
+use std::rc::Rc;
 use std::{env, sync::Arc};
 use tokio::sync::RwLock;
 
@@ -299,7 +300,7 @@ impl ClientManager {
     #[allow(clippy::too_many_arguments)]
     pub fn get_app_factory(
         &self,
-        algorand: Arc<AlgorandClient>,
+        algorand: Rc<AlgorandClient>,
         app_spec: Arc56Contract,
         app_name: Option<String>,
         default_sender: Option<String>,
@@ -326,7 +327,7 @@ impl ClientManager {
     #[allow(clippy::too_many_arguments)]
     pub async fn get_app_client_by_creator_and_name(
         &self,
-        algorand: Arc<AlgorandClient>,
+        algorand: Rc<AlgorandClient>,
         creator_address: &str,
         app_name: &str,
         app_spec: Arc56Contract,
@@ -354,7 +355,7 @@ impl ClientManager {
     #[allow(clippy::too_many_arguments)]
     pub fn get_app_client_by_id(
         &self,
-        algorand: Arc<AlgorandClient>,
+        algorand: Rc<AlgorandClient>,
         app_spec: Arc56Contract,
         app_id: u64,
         app_name: Option<String>,
@@ -379,7 +380,7 @@ impl ClientManager {
     #[allow(clippy::too_many_arguments)]
     pub async fn get_app_client_by_network(
         &self,
-        algorand: Arc<AlgorandClient>,
+        algorand: Rc<AlgorandClient>,
         app_spec: Arc56Contract,
         app_name: Option<String>,
         default_sender: Option<String>,

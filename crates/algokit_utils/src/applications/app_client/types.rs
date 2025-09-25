@@ -11,6 +11,7 @@ use algokit_transact::Byte32;
 use algokit_transact::Transaction;
 use derive_more::Debug;
 use std::collections::HashMap;
+use std::rc::Rc;
 use std::sync::Arc;
 
 /// Container for source maps captured during compilation/simulation.
@@ -25,7 +26,7 @@ pub struct AppSourceMaps {
 pub struct AppClientParams {
     pub app_id: u64,
     pub app_spec: Arc56Contract,
-    pub algorand: Arc<AlgorandClient>,
+    pub algorand: Rc<AlgorandClient>,
     pub app_name: Option<String>,
     pub default_sender: Option<String>,
     pub default_signer: Option<Arc<dyn TransactionSigner>>,

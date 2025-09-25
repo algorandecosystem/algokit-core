@@ -10,6 +10,7 @@ use crate::transactions::{
 use crate::{AlgorandClient, AppClient, AppClientParams, AppSourceMaps, TransactionSenderError};
 use algokit_abi::Arc56Contract;
 use algokit_abi::arc56_contract::CallOnApplicationComplete;
+use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 
@@ -35,7 +36,7 @@ pub use types::*;
 /// substitutions.
 pub struct AppFactory {
     app_spec: Arc56Contract,
-    algorand: Arc<AlgorandClient>,
+    algorand: Rc<AlgorandClient>,
     app_name: String,
     version: String,
     default_sender: Option<String>,
@@ -102,7 +103,7 @@ impl AppFactory {
     }
 
     /// Returns the shared [`AlgorandClient`] configured for the factory.
-    pub fn algorand(&self) -> Arc<AlgorandClient> {
+    pub fn algorand(&self) -> Rc<AlgorandClient> {
         self.algorand.clone()
     }
 
