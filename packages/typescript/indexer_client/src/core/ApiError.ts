@@ -1,4 +1,4 @@
-export class ApiError<T = any> extends Error {
+export class ApiError<T = unknown> extends Error {
   public readonly url: string
   public readonly status: number
   public readonly body: T | undefined

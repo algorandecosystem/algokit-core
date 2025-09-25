@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass
-from enum import Enum
 from pathlib import Path
 from typing import Any
 
@@ -10,134 +10,34 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from ts_oas_generator import constants
 from ts_oas_generator.generator.filters import FILTERS, ts_camel_case, ts_kebab_case, ts_pascal_case, ts_type
+from ts_oas_generator.generator.models import (
+    FieldDescriptor,
+    ModelDescriptor,
+    OperationContext,
+    Parameter,
+    RequestBody,
+)
 from ts_oas_generator.parser.oas_parser import OASParser
 
 # Type aliases for clarity
-Schema = dict[str, Any]
-Operation = dict[str, Any]
-TemplateContext = dict[str, Any]
-FileMap = dict[Path, str]
+type Schema = dict[str, Any]
+type Schemas = Mapping[str, Schema]
+type TemplateContext = dict[str, Any]
+type FileMap = dict[Path, str]
 
-
-class ContentType(str, Enum):
-    """Supported content types."""
-
-    JSON = "application/json"
-    MSGPACK = "application/msgpack"
-    TEXT = "text/plain"
-    BINARY = "application/octet-stream"
+_TYPE_TOKEN_RE = re.compile(r"\b[A-Z][A-Za-z0-9_]*\b")
 
 
 @dataclass
-class Parameter:
-    """Represents an API parameter."""
-
-    name: str
-    var_name: str
-    location: str
-    required: bool
-    ts_type: str
-    description: str | None = None
-    stringify_bigint: bool = False
-
-
-@dataclass
-class RequestBody:
-    """Represents a request body specification."""
-
-    media_type: str
-    ts_type: str
-    required: bool
-    supports_msgpack: bool = False
-    supports_json: bool = False
-
-
-@dataclass
-class OperationContext:
-    """Complete context for an API operation."""
+class OperationInput:
+    """Inputs required to build an `OperationContext`."""
 
     operation_id: str
     method: str
     path: str
-    description: str | None
-    parameters: list[Parameter]
-    request_body: RequestBody | None
-    response_type: str
-    import_types: set[str]
-    tags: list[str] = None  # type: ignore[assignment]
-    # Content negotiation flags
-    returns_msgpack: bool = False
-    has_format_param: bool = False
-    format_var_name: str | None = None
-
-    def to_dict(self) -> dict[str, Any]:
-        """Convert to dictionary for template rendering."""
-        return {
-            "operationId": self.operation_id,
-            "method": self.method,
-            "path": self.path,
-            "description": self.description,
-            "parameters": [self._param_to_dict(p) for p in self.parameters],
-            "pathParameters": [self._param_to_dict(p) for p in self.parameters if p.location == "path"],
-            "otherParameters": [self._param_to_dict(p) for p in self.parameters if p.location in {"query", "header"}],
-            "requestBody": self._request_body_to_dict(self.request_body) if self.request_body else None,
-            "responseTsType": self.response_type,
-            "returnsMsgpack": self.returns_msgpack,
-            "hasFormatParam": self.has_format_param,
-            "formatVarName": self.format_var_name,
-        }
-
-    @staticmethod
-    def _param_to_dict(param: Parameter) -> dict[str, Any]:
-        return {
-            "name": param.name,
-            "varName": param.var_name,
-            "in": param.location,
-            "required": param.required,
-            "tsType": param.ts_type,
-            "description": param.description,
-            "stringifyBigInt": param.stringify_bigint,
-        }
-
-    @staticmethod
-    def _request_body_to_dict(body: RequestBody) -> dict[str, Any]:
-        return {
-            "mediaType": body.media_type,
-            "tsType": body.ts_type,
-            "required": body.required,
-            "supportsMsgpack": body.supports_msgpack,
-            "supportsJson": body.supports_json,
-        }
-
-
-@dataclass
-class FieldDescriptor:
-    """Descriptor for a single model field used by templates."""
-
-    name: str  # camelCase name used in TS domain type
-    wire_name: str  # wire name (kebab or original in OAS) used on the wire
-    ts_type: str  # TypeScript type string for the domain type
-    is_array: bool
-    ref_model: str | None
-    is_bytes: bool
-    is_bigint: bool
-    is_signed_txn: bool
-    is_optional: bool
-    is_nullable: bool
-
-
-@dataclass
-class ModelDescriptor:
-    """Descriptor for a schema model including field metadata."""
-
-    model_name: str
-    fields: list[FieldDescriptor]
-    is_object: bool
-    is_array: bool = False
-    array_item_ref: str | None = None
-    array_item_is_bytes: bool = False
-    array_item_is_bigint: bool = False
-    array_item_is_signed_txn: bool = False
+    operation: Schema
+    path_params: list[Schema]
+    spec: Schema
 
 
 class TemplateRenderer:
@@ -176,7 +76,7 @@ class SchemaProcessor:
         self._wire_to_canonical: dict[str, str] = {}
         self._camel_to_wire: dict[str, str] = {}
 
-    def generate_models(self, output_dir: Path, schemas: Schema) -> FileMap:
+    def generate_models(self, output_dir: Path, schemas: Schemas) -> FileMap:
         models_dir = output_dir / constants.DirectoryName.SRC / constants.DirectoryName.MODELS
         files: FileMap = {}
 
@@ -196,7 +96,7 @@ class SchemaProcessor:
         return files
 
     def _create_model_context(
-        self, name: str, schema: Schema, all_schemas: Schema, descriptor: ModelDescriptor
+        self, name: str, schema: Schema, all_schemas: Schemas, descriptor: ModelDescriptor
     ) -> TemplateContext:
         is_object = self._is_object_schema(schema)
         properties = self._extract_properties(schema) if is_object else []
@@ -237,7 +137,7 @@ class SchemaProcessor:
 
         return properties
 
-    def _register_rename(self, wire_name: str, schema: dict[str, Any]) -> None:
+    def _register_rename(self, wire_name: str, schema: Schema) -> None:
         rename_value = schema.get(constants.X_ALGOKIT_FIELD_RENAME)
         if not isinstance(rename_value, str) or not rename_value:
             return
@@ -250,7 +150,7 @@ class SchemaProcessor:
     def rename_mappings(self) -> tuple[dict[str, str], dict[str, str]]:
         return self._wire_to_canonical, self._camel_to_wire
 
-    def _build_model_descriptor(self, name: str, schema: Schema, all_schemas: Schema) -> ModelDescriptor:
+    def _build_model_descriptor(self, name: str, schema: Schema, all_schemas: Schemas) -> ModelDescriptor:
         """Build a per-model descriptor from OAS schema and vendor extensions."""
         model_name = ts_pascal_case(name)
 
@@ -336,9 +236,9 @@ class OperationProcessor:
     def __init__(self, renderer: TemplateRenderer) -> None:
         self.renderer = renderer
         self._model_names: set[str] = set()
-        self._synthetic_models: Schema = {}
+        self._synthetic_models: dict[str, Schema] = {}
 
-    def process_spec(self, spec: Schema) -> tuple[dict[str, list[OperationContext]], set[str], Schema]:
+    def process_spec(self, spec: Schema) -> tuple[dict[str, list[OperationContext]], set[str], dict[str, Schema]]:
         """Process entire OpenAPI spec and return operations by tag."""
         self._initialize_model_names(spec)
 
@@ -416,12 +316,11 @@ class OperationProcessor:
                 continue
 
             # Generate operation ID if missing
-            operation_id = operation.get(constants.OperationKey.OPERATION_ID)
-            if not operation_id:
-                operation_id = ts_camel_case(f"{method.lower()}_{path}")
+            operation_id = operation.get(constants.OperationKey.OPERATION_ID) or ts_camel_case(
+                f"{method.lower()}_{path}"
+            )
 
-            # Process operation
-            context = self._create_operation_context(
+            op_input = OperationInput(
                 operation_id=operation_id,
                 method=method.upper(),
                 path=path,
@@ -430,35 +329,39 @@ class OperationProcessor:
                 spec=spec,
             )
 
+            # Process operation
+            context = self._create_operation_context(op_input)
+
             context.tags = operation.get(constants.OperationKey.TAGS, [constants.DEFAULT_TAG])
             operations.append(context)
 
         return operations
 
-    def _create_operation_context(  # noqa: PLR0913
-        self, operation_id: str, method: str, path: str, operation: Schema, path_params: list[Schema], spec: Schema
-    ) -> OperationContext:
+    def _create_operation_context(self, op_input: OperationInput) -> OperationContext:
         """Create complete operation context."""
         # Merge path and operation parameters
-        all_params = [*path_params, *operation.get(constants.OperationKey.PARAMETERS, [])]
+        all_params = [*op_input.path_params, *op_input.operation.get(constants.OperationKey.PARAMETERS, [])]
 
         # Process components
-        parameters = self._process_parameters(all_params, spec)
-        request_body = self._process_request_body(operation.get(constants.OperationKey.REQUEST_BODY), spec)
+        parameters = self._process_parameters(all_params, op_input.spec)
+        request_body = self._process_request_body(
+            op_input.operation.get(constants.OperationKey.REQUEST_BODY), op_input.spec
+        )
         response_type, returns_msgpack = self._process_responses(
-            operation.get(constants.OperationKey.RESPONSES, {}), operation_id, spec
+            op_input.operation.get(constants.OperationKey.RESPONSES, {}), op_input.operation_id, op_input.spec
         )
 
         # Build context
         context = OperationContext(
-            operation_id=operation_id,
-            method=method,
-            path=path,
-            description=operation.get(constants.OperationKey.DESCRIPTION),
+            operation_id=op_input.operation_id,
+            method=op_input.method,
+            path=op_input.path,
+            description=op_input.operation.get(constants.OperationKey.DESCRIPTION),
             parameters=parameters,
             request_body=request_body,
             response_type=response_type,
             import_types=set(),
+            tags=[],
             returns_msgpack=returns_msgpack,
         )
 
@@ -569,29 +472,24 @@ class OperationProcessor:
                 continue
 
             content = (response or {}).get("content", {})
-            returns_msgpack = returns_msgpack or constants.MediaType.MSGPACK in content
+            if constants.MediaType.MSGPACK in content:
+                returns_msgpack = True
 
-            if json_content := content.get(constants.MediaType.JSON):
-                supports_json = True
-                schema = json_content.get("schema", {})
+            for media_type, media_details in content.items():
+                schema = (media_details or {}).get("schema")
+                if not schema:
+                    continue
 
-                if schema:
-                    if self._should_synthesize_model(schema):
-                        # Create synthetic model for inline object schemas
-                        model_name = ts_pascal_case(operation_id)
-                        if model_name not in self._model_names:
-                            self._synthetic_models[model_name] = schema
-                            self._model_names.add(model_name)
-                        return_types.append(model_name)
-                    else:
-                        return_types.append(ts_type(schema, schemas))
-            elif content and (schema := next(iter(content.values()), {}).get("schema")):
-                # Fallback to first content type with schema
-                return_types.append(ts_type(schema, schemas))
+                if media_type == constants.MediaType.JSON:
+                    supports_json = True
+
+                type_name = self._resolve_response_type(schema, operation_id, schemas)
+                if type_name:
+                    return_types.append(type_name)
 
         # Determine final response type
-        if supports_json and return_types:
-            response_type = " | ".join(dict.fromkeys(return_types))  # Deduplicate
+        if return_types:
+            response_type = " | ".join(dict.fromkeys(return_types))
         elif returns_msgpack:
             response_type = constants.TypeScriptType.UINT8ARRAY
         else:
@@ -609,13 +507,12 @@ class OperationProcessor:
 
     def _compute_import_types(self, context: OperationContext) -> None:
         """Collect model types that need importing."""
-        token_re = re.compile(r"\b[A-Z][A-Za-z0-9_]*\b")
         builtin_types = constants.TS_BUILTIN_TYPES
 
         def extract_types(type_str: str) -> set[str]:
             if not type_str:
                 return set()
-            tokens = set(token_re.findall(type_str))
+            tokens = set(_TYPE_TOKEN_RE.findall(type_str))
             types: set[str] = {tok for tok in tokens if tok in self._model_names and tok not in builtin_types}
             # Include synthetic models that aren't part of _model_names
             if "AlgokitSignedTransaction" in tokens:
@@ -655,6 +552,41 @@ class OperationProcessor:
             and "$ref" not in schema
             and (schema.get("type") == "object" or "properties" in schema or "additionalProperties" in schema)
         )
+
+    def _resolve_response_type(self, schema: Schema, operation_id: str, schemas: Schema) -> str:
+        """Ensure response schemas are represented by concrete TypeScript types."""
+        if "$ref" in schema:
+            return ts_type(schema, schemas)
+
+        if self._should_synthesize_model(schema):
+            base_name = ts_pascal_case(operation_id)
+            if base_name in self._model_names and base_name not in self._synthetic_models:
+                return base_name
+            if base_name in self._synthetic_models:
+                return base_name
+            model_name = self._allocate_synthetic_model_name(operation_id)
+            if model_name not in self._synthetic_models:
+                self._synthetic_models[model_name] = schema
+                self._model_names.add(model_name)
+            return model_name
+
+        return ts_type(schema, schemas)
+
+    def _allocate_synthetic_model_name(self, operation_id: str) -> str:
+        """Generate a unique model name for an inline response schema."""
+
+        base_name = ts_pascal_case(operation_id)
+        candidate = base_name
+
+        if candidate in self._model_names or candidate in self._synthetic_models:
+            candidate = f"{candidate}Response"
+
+        counter = 2
+        while candidate in self._model_names or candidate in self._synthetic_models:
+            candidate = f"{base_name}Response{counter}"
+            counter += 1
+
+        return candidate
 
     @staticmethod
     def _sanitize_variable_name(base_name: str, used_names: set[str]) -> str:
@@ -759,9 +691,9 @@ class CodeGenerator:
             core_dir / "FetchHttpRequest.ts": ("base/src/core/FetchHttpRequest.ts.j2", context),
             core_dir / "ApiError.ts": ("base/src/core/ApiError.ts.j2", context),
             core_dir / "request.ts": ("base/src/core/request.ts.j2", context),
-            core_dir / "json.ts": ("base/src/core/json.ts.j2", context),
-            core_dir / "msgpack.ts": ("base/src/core/msgpack.ts.j2", context),
-            core_dir / "casing.ts": ("base/src/core/casing.ts.j2", context),
+            core_dir / "serialization.ts": ("base/src/core/serialization.ts.j2", context),
+            core_dir / "codecs.ts": ("base/src/core/codecs.ts.j2", context),
+            core_dir / "model-runtime.ts": ("base/src/core/model-runtime.ts.j2", context),
             # Project files
             src_dir / "index.ts": ("base/src/index.ts.j2", context),
         }

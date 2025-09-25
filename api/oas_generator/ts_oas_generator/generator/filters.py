@@ -1,15 +1,20 @@
-"""
-TypeScript-specific Jinja2 filters and helpers.
+"""TypeScript-specific Jinja2 filters and helpers.
+
 Phase 2 adds OpenAPI -> TS type mapping and naming utilities.
 """
 
 from __future__ import annotations
 
 import re
+from collections.abc import Callable, Iterable, Mapping
+from functools import cache
 from typing import Any
 
 from ts_oas_generator import constants
 from ts_oas_generator.constants import MediaType, OperationKey, SchemaKey, TypeScriptType
+
+type Schema = Mapping[str, Any]
+type Schemas = Mapping[str, Schema]
 
 _IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
@@ -18,8 +23,8 @@ def ts_doc_comment(text: str | None) -> str:
     """Format text as a TypeScript doc comment."""
     if not text:
         return ""
-    lines = str(text).strip().split("\n")
-    body = "\n".join(f" * {line.strip()}" if line.strip() else " *" for line in lines)
+    lines = [line.strip() for line in str(text).strip().splitlines()]
+    body = "\n".join(f" * {line}" if line else " *" for line in lines)
     return f"/**\n{body}\n */"
 
 
@@ -39,29 +44,32 @@ def ts_array(type_str: str) -> str:
     return f"Array<{type_str}>"
 
 
-# ---------- Naming helpers ----------
+_WORD_BOUNDARY_RE = re.compile(r"([a-z0-9])([A-Z])")
+_NON_ALNUM_RE = re.compile(r"[^A-Za-z0-9]+")
 
 
-def _split_words(name: str) -> list[str]:
-    name = re.sub(r"([a-z0-9])([A-Z])", r"\1 \2", name)
-    name = re.sub(r"[^A-Za-z0-9]+", " ", name)
-    parts = [p for p in name.strip().split() if p]
-    return parts or [name]
+@cache
+def _split_words(name: str) -> tuple[str, ...]:
+    """Split name into words for case conversion."""
+    normalized = _NON_ALNUM_RE.sub(" ", _WORD_BOUNDARY_RE.sub(r"\1 \2", name)).strip()
+    parts = tuple(part for part in normalized.split() if part)
+    return parts or (name,)
 
 
 def ts_pascal_case(name: str) -> str:
-    parts = _split_words(name)
-    return "".join(p.capitalize() for p in parts)
+    """Convert name to PascalCase."""
+    return "".join(part.capitalize() for part in _split_words(name))
 
 
 def ts_camel_case(name: str) -> str:
-    pas = ts_pascal_case(name)
-    return pas[:1].lower() + pas[1:] if pas else pas
+    """Convert name to camelCase."""
+    pascal = ts_pascal_case(name)
+    return pascal[:1].lower() + pascal[1:] if pascal else pascal
 
 
 def ts_kebab_case(name: str) -> str:
-    parts = _split_words(name)
-    return "-".join(p.lower() for p in parts)
+    """Convert name to kebab-case."""
+    return "-".join(part.lower() for part in _split_words(name))
 
 
 def ts_property_name(name: str) -> str:
@@ -76,23 +84,22 @@ def _extract_ref_name(ref_string: str) -> str:
     return ref_string.split("/")[-1]
 
 
-def _union(types: list[str]) -> str:
-    uniq: list[str] = []
-    for t in types:
-        if t not in uniq:
-            uniq.append(t)
-    return " | ".join(uniq) if uniq else "never"
+def _union(types: Iterable[str]) -> str:
+    """Create TypeScript union type from list of types."""
+    uniqued = tuple(dict.fromkeys(t for t in types if t))
+    return " | ".join(uniqued) if uniqued else TypeScriptType.NEVER
 
 
-def _intersection(types: list[str]) -> str:
+def _intersection(types: Iterable[str]) -> str:
+    """Create TypeScript intersection type from list of types."""
     parts = [t for t in types if t and t != TypeScriptType.ANY]
     return " & ".join(parts) if parts else TypeScriptType.ANY
 
 
-def _nullable(type_str: str, schema: dict[str, Any]) -> str:
+def _nullable(type_str: str, schema: Schema, schemas: Schemas | None) -> str:
     # OpenAPI 3.0 nullable flag
     if schema.get(SchemaKey.NULLABLE) is True:
-        return _union([type_str, TypeScriptType.NULL])
+        return _union((type_str, TypeScriptType.NULL))
 
     # OpenAPI 3.1 union type with null
     t = schema.get(SchemaKey.TYPE)
@@ -100,14 +107,15 @@ def _nullable(type_str: str, schema: dict[str, Any]) -> str:
         non_nulls = [x for x in t if x != TypeScriptType.NULL]
         # If there's exactly one non-null type, union with null
         if len(non_nulls) == 1:
-            return _union([ts_type({SchemaKey.TYPE: non_nulls[0]}, None), TypeScriptType.NULL])
+            return _union((ts_type({SchemaKey.TYPE: non_nulls[0]}, schemas), TypeScriptType.NULL))
         # Else, build a union of all non-nulls + null
-        return _union([_union([ts_type({SchemaKey.TYPE: n}, None) for n in non_nulls]), TypeScriptType.NULL])
+        inner = _union(ts_type({SchemaKey.TYPE: n}, schemas) for n in non_nulls)
+        return _union((inner, TypeScriptType.NULL))
 
     return type_str
 
 
-def _inline_object(schema: dict[str, Any], schemas: dict[str, Any] | None) -> str:
+def _inline_object(schema: Schema, schemas: Schemas | None) -> str:
     properties: dict[str, Any] = schema.get(SchemaKey.PROPERTIES, {}) or {}
     required = set(schema.get(SchemaKey.REQUIRED, []) or [])
     parts: list[str] = []
@@ -118,7 +126,6 @@ def _inline_object(schema: dict[str, Any], schemas: dict[str, Any] | None) -> st
         description = prop_schema.get("description")
         if description:
             doc_comment = ts_doc_comment(description)
-            # Format docstring for inline object (indent each line)
             indented_doc = "\n  ".join(doc_comment.split("\n"))
             parts.append(f"\n  {indented_doc}")
 
@@ -132,7 +139,7 @@ def _inline_object(schema: dict[str, Any], schemas: dict[str, Any] | None) -> st
     if "additionalProperties" in schema:
         addl = schema["additionalProperties"]
         if addl is True:
-            parts.append("[key: string]: any;")
+            parts.append("[key: string]: unknown;")
         elif isinstance(addl, dict):
             parts.append(f"[key: string]: {ts_type(addl, schemas)};")
 
@@ -145,32 +152,29 @@ def _inline_object(schema: dict[str, Any], schemas: dict[str, Any] | None) -> st
             else:
                 formatted_parts.append(f"  {part}")
         return "{\n" + "\n".join(formatted_parts) + "\n}"
-    return "{}"
+    return "Record<string, unknown>"
 
 
-def _map_primitive(schema_type: str, _schema_format: str | None, _schema: dict[str, Any]) -> str:
+def _map_primitive(schema_type: str, schema_format: str | None, schema: Schema) -> str:
+    """Map OpenAPI primitive types to TypeScript types."""
     if schema_type == "integer":
-        # Keep small control integers as number when format suggests int32 or when description indicates small discriminator
-        if _schema_format == "int32" or "value type" in str(_schema.get("description", "")).lower():
-            return TypeScriptType.NUMBER
-        return TypeScriptType.BIGINT
+        description = str(schema.get("description", "")).lower()
+        is_control_value = schema_format == "int32" or "value type" in description
+        result = TypeScriptType.NUMBER if is_control_value else TypeScriptType.BIGINT
+    elif schema_type == "number":
+        result = TypeScriptType.NUMBER
+    elif schema_type == "string":
+        is_byte = schema_format == "byte" or schema.get(constants.X_ALGOKIT_BYTES_BASE64) is True
+        result = TypeScriptType.UINT8ARRAY if is_byte else TypeScriptType.STRING
+    elif schema_type == "boolean":
+        result = TypeScriptType.BOOLEAN
+    else:
+        result = TypeScriptType.ANY
 
-    if schema_type in ("number",):
-        return TypeScriptType.NUMBER
-
-    if schema_type == "string":
-        # bytes/base64 are represented as Uint8Array in domain model
-        if _schema_format == "byte" or _schema.get(constants.X_ALGOKIT_BYTES_BASE64) is True:
-            return TypeScriptType.UINT8ARRAY
-        return TypeScriptType.STRING
-
-    if schema_type == "boolean":
-        return TypeScriptType.BOOLEAN
-
-    return TypeScriptType.ANY
+    return result
 
 
-def ts_enum_type(schema: dict[str, Any]) -> str | None:
+def ts_enum_type(schema: Schema) -> str | None:
     if SchemaKey.ENUM not in schema:
         return None
 
@@ -192,63 +196,80 @@ def ts_enum_type(schema: dict[str, Any]) -> str | None:
     return " | ".join([f"'{v!s}'" for v in values])
 
 
-def ts_type(schema: dict[str, Any] | None, schemas: dict[str, Any] | None = None) -> str:  # noqa: C901, PLR0911
+def ts_type(schema: Schema | None, schemas: Schemas | None = None) -> str:
     """Map OpenAPI schema to a TypeScript type string."""
     if not schema:
         return TypeScriptType.ANY
 
-    # Vendor extension: x-algokit-signed-txn -> reference domain SignedTransaction type directly
     if isinstance(schema, dict) and schema.get(constants.X_ALGOKIT_SIGNED_TXN) is True:
         return "SignedTransaction"
 
-    # Handle references
     if "$ref" in schema:
-        ref_name = _extract_ref_name(schema["$ref"])  # e.g. #/components/schemas/Foo
+        ref_name = _extract_ref_name(schema["$ref"])
         return ts_pascal_case(ref_name)
 
-    # Handle composed schemas
-    if SchemaKey.ALL_OF in schema:
-        return _intersection([ts_type(s, schemas) for s in schema.get(SchemaKey.ALL_OF, [])])
+    return _ts_type_inner(schema, schemas)
 
-    if SchemaKey.ONE_OF in schema:
-        return _union([ts_type(s, schemas) for s in schema.get(SchemaKey.ONE_OF, [])])
 
-    if SchemaKey.ANY_OF in schema:
-        return _union([ts_type(s, schemas) for s in schema.get(SchemaKey.ANY_OF, [])])
+def _ts_type_inner(schema: Schema, schemas: Schemas | None) -> str:
+    processors: list[tuple[str, _TypeProcessor]] = [
+        (SchemaKey.ALL_OF, _process_all_of),
+        (SchemaKey.ONE_OF, _process_one_of),
+        (SchemaKey.ANY_OF, _process_any_of),
+    ]
 
-    # Enums
-    enum_t = ts_enum_type(schema)
-    if enum_t:
-        return enum_t
+    for key, handler in processors:
+        if key in schema:
+            return handler(schema, schemas)
 
+    enum_type = ts_enum_type(schema)
+    if enum_type:
+        return enum_type
+
+    return _map_non_composite(schema, schemas)
+
+
+def _map_non_composite(schema: Schema, schemas: Schemas | None) -> str:
     schema_type = schema.get(SchemaKey.TYPE)
 
-    # Handle array of items
     if schema_type == "array":
         items_schema = schema.get(SchemaKey.ITEMS, {})
-        # Apply vendor extension on nested items as well
-        if isinstance(items_schema, dict) and items_schema.get(constants.X_ALGOKIT_SIGNED_TXN) is True:
-            items_type = "SignedTransaction"
-        else:
-            items_type = ts_type(items_schema, schemas)
+        is_signed_txn = isinstance(items_schema, dict) and (items_schema.get(constants.X_ALGOKIT_SIGNED_TXN) is True)
+        items_type = "SignedTransaction" if is_signed_txn else ts_type(items_schema, schemas)
         return f"{items_type}[]"
 
-    # Object type
     if schema_type == TypeScriptType.OBJECT or (
         not schema_type and (SchemaKey.PROPERTIES in schema or SchemaKey.ADDITIONAL_PROPERTIES in schema)
     ):
-        type_str = _inline_object(schema, schemas)
-        return _nullable(type_str, schema)
+        object_type = _inline_object(schema, schemas)
+        return _nullable(object_type, schema, schemas)
 
-    # Primitive types
-    type_str = _map_primitive(str(schema_type), schema.get(SchemaKey.FORMAT), schema)
-    return _nullable(type_str, schema)
+    primitive_type = _map_primitive(str(schema_type), schema.get(SchemaKey.FORMAT), schema)
+    return _nullable(primitive_type, schema, schemas)
+
+
+_TypeProcessor = Callable[[Schema, Schemas | None], str]
+
+
+def _process_all_of(schema: Schema, schemas: Schemas | None) -> str:
+    parts = schema.get(SchemaKey.ALL_OF, [])
+    return _intersection(ts_type(part, schemas) for part in parts)
+
+
+def _process_one_of(schema: Schema, schemas: Schemas | None) -> str:
+    options = schema.get(SchemaKey.ONE_OF, [])
+    return _union(ts_type(option, schemas) for option in options)
+
+
+def _process_any_of(schema: Schema, schemas: Schemas | None) -> str:
+    options = schema.get(SchemaKey.ANY_OF, [])
+    return _union(ts_type(option, schemas) for option in options)
 
 
 # ---------- Response helpers ----------
 
 
-def has_msgpack_2xx(responses: dict[str, Any]) -> bool:
+def has_msgpack_2xx(responses: Schema) -> bool:
     for status, resp in (responses or {}).items():
         if not str(status).startswith(constants.SUCCESS_STATUS_PREFIX):
             continue
@@ -258,93 +279,83 @@ def has_msgpack_2xx(responses: dict[str, Any]) -> bool:
     return False
 
 
-def response_content_types(responses: dict[str, Any]) -> list[str]:
-    cts: set[str] = set()
+def response_content_types(responses: Schema) -> list[str]:
+    content_types: set[str] = set()
     for status, resp in (responses or {}).items():
         if not str(status).startswith(constants.SUCCESS_STATUS_PREFIX):
             continue
         content = (resp or {}).get(OperationKey.CONTENT, {})
-        for ct in content:
-            cts.add(ct)
-    return sorted(cts)
+        content_types.update(content)
+    return sorted(content_types)
 
 
-def collect_schema_refs(schema: dict[str, Any], current_schema_name: str | None = None) -> list[str]:  # noqa: C901
-    """Recursively collect all $ref model names from a schema, excluding self-references."""
+def collect_schema_refs(schema: Schema, current_schema_name: str | None = None) -> list[str]:
+    """Collect referenced schema names, excluding self-references."""
     refs: set[str] = set()
+    target_name = ts_pascal_case(current_schema_name) if current_schema_name else None
+    stack: list[Any] = [schema]
 
-    def _traverse(obj: dict[str, Any]) -> None:  # noqa: C901
-        if not obj or not isinstance(obj, dict):
-            return
-
-        # Do not include external domain types (e.g., SignedTransaction) in local refs
-
-        # Direct $ref
-        if "$ref" in obj:
-            ref_name = ts_pascal_case(_extract_ref_name(obj["$ref"]))
-            # Exclude self-references
-            if current_schema_name and ref_name != ts_pascal_case(current_schema_name):
+    while stack:
+        node = stack.pop()
+        if not isinstance(node, dict):
+            continue
+        if "$ref" in node:
+            ref_name = ts_pascal_case(_extract_ref_name(node["$ref"]))
+            if target_name is None or ref_name != target_name:
                 refs.add(ref_name)
-            return  # Don't traverse further if this is a ref
+            continue
 
-        # Properties
-        if SchemaKey.PROPERTIES in obj and isinstance(obj[SchemaKey.PROPERTIES], dict):
-            for prop_schema in obj[SchemaKey.PROPERTIES].values():
-                _traverse(prop_schema)
+        props = node.get(SchemaKey.PROPERTIES)
+        if isinstance(props, dict):
+            stack.extend(props.values())
 
-        # Array items
-        if SchemaKey.ITEMS in obj:
-            _traverse(obj[SchemaKey.ITEMS])
+        items = node.get(SchemaKey.ITEMS)
+        if isinstance(items, dict):
+            stack.append(items)
 
-        # Composed schemas
-        for key in [SchemaKey.ALL_OF, SchemaKey.ONE_OF, SchemaKey.ANY_OF]:
-            if key in obj and isinstance(obj[key], list):
-                for sub_schema in obj[key]:
-                    _traverse(sub_schema)
+        for key in (SchemaKey.ALL_OF, SchemaKey.ONE_OF, SchemaKey.ANY_OF):
+            collection = node.get(key)
+            if isinstance(collection, list):
+                stack.extend(child for child in collection if isinstance(child, dict))
 
-        # Additional properties
-        if SchemaKey.ADDITIONAL_PROPERTIES in obj and isinstance(obj[SchemaKey.ADDITIONAL_PROPERTIES], dict):
-            _traverse(obj[SchemaKey.ADDITIONAL_PROPERTIES])
+        additional = node.get(SchemaKey.ADDITIONAL_PROPERTIES)
+        if isinstance(additional, dict):
+            stack.append(additional)
 
-    _traverse(schema)
     return sorted(refs)
 
 
-def schema_uses_signed_txn(schema: dict[str, Any]) -> bool:  # noqa: C901
+def schema_uses_signed_txn(schema: Schema) -> bool:
     """Detect if a schema (recursively) uses the x-algokit-signed-txn vendor extension."""
-    found = False
+    stack: list[Any] = [schema]
 
-    def _traverse(obj: Any) -> None:  # noqa: C901
-        nonlocal found
-        if found:
-            return
-        if not isinstance(obj, dict):
-            return
-        if obj.get(constants.X_ALGOKIT_SIGNED_TXN) is True:
-            found = True
-            return
-        if "$ref" in obj:
-            return
-        # properties
-        props = obj.get(constants.SchemaKey.PROPERTIES)
+    while stack:
+        node = stack.pop()
+        if not isinstance(node, dict):
+            continue
+        if node.get(constants.X_ALGOKIT_SIGNED_TXN) is True:
+            return True
+        if "$ref" in node:
+            continue
+
+        props = node.get(constants.SchemaKey.PROPERTIES)
         if isinstance(props, dict):
-            for v in props.values():
-                _traverse(v)
-        # items
-        if constants.SchemaKey.ITEMS in obj:
-            _traverse(obj[constants.SchemaKey.ITEMS])
-        # composition
-        for key in [constants.SchemaKey.ALL_OF, constants.SchemaKey.ONE_OF, constants.SchemaKey.ANY_OF]:
-            if key in obj and isinstance(obj[key], list):
-                for sub in obj[key]:
-                    _traverse(sub)
-        # additionalProperties
-        addl = obj.get(constants.SchemaKey.ADDITIONAL_PROPERTIES)
-        if isinstance(addl, dict):
-            _traverse(addl)
+            stack.extend(props.values())
 
-    _traverse(schema)
-    return found
+        items = node.get(constants.SchemaKey.ITEMS)
+        if isinstance(items, dict):
+            stack.append(items)
+
+        for key in (constants.SchemaKey.ALL_OF, constants.SchemaKey.ONE_OF, constants.SchemaKey.ANY_OF):
+            collection = node.get(key)
+            if isinstance(collection, list):
+                stack.extend(child for child in collection if isinstance(child, dict))
+
+        addl = node.get(constants.SchemaKey.ADDITIONAL_PROPERTIES)
+        if isinstance(addl, dict):
+            stack.append(addl)
+
+    return False
 
 
 # ---------- Type string helpers for templates ----------

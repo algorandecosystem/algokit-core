@@ -1,7 +1,4 @@
-/*
-  Minimal client runtime config holder
-*/
-import type { IntDecoding } from './json'
+/* Minimal client runtime config holder */
 export type BaseURL = string
 
 export interface ClientConfig {
@@ -13,5 +10,4 @@ export interface ClientConfig {
   password?: string
   headers?: Record<string, string> | (() => Record<string, string> | Promise<Record<string, string>>)
   encodePath?: (path: string) => string
-  intDecoding?: IntDecoding
 }

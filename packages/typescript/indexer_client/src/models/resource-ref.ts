@@ -1,11 +1,10 @@
-import { encodeMsgPack, decodeMsgPack } from '../core/msgpack'
-import { toBase64 as _toBase64, fromBase64 as _fromBase64 } from '../core/json'
-import type { BoxReference, BoxReferenceDto } from './box-reference'
-import { BoxReference as BoxReferenceModel } from './box-reference'
-import type { HoldingRef, HoldingRefDto } from './holding-ref'
-import { HoldingRef as HoldingRefModel } from './holding-ref'
-import type { LocalsRef, LocalsRefDto } from './locals-ref'
-import { LocalsRef as LocalsRefModel } from './locals-ref'
+import type { ModelMetadata } from '../core/model-runtime'
+import type { BoxReference } from './box-reference'
+import { BoxReferenceMeta } from './box-reference'
+import type { HoldingRef } from './holding-ref'
+import { HoldingRefMeta } from './holding-ref'
+import type { LocalsRef } from './locals-ref'
+import { LocalsRefMeta } from './locals-ref'
 
 /**
  * ResourceRef names a single resource. Only one of the fields should be set.
@@ -32,282 +31,51 @@ export type ResourceRef = {
   local?: LocalsRef
 }
 
-// JSON DTO shape for ResourceRef with wire keys and JSON-safe primitives
-export type ResourceRefDto = {
-  address?: string
-  'application-id'?: bigint
-  'asset-id'?: string
-  box?: BoxReferenceDto
-  holding?: HoldingRefDto
-  local?: LocalsRefDto
+export const ResourceRefMeta: ModelMetadata = {
+  name: 'ResourceRef',
+  kind: 'object',
+  fields: [
+    {
+      name: 'address',
+      wireKey: 'address',
+      optional: true,
+      nullable: false,
+      type: { kind: 'scalar' },
+    },
+    {
+      name: 'applicationId',
+      wireKey: 'application-id',
+      optional: true,
+      nullable: false,
+      type: { kind: 'scalar' },
+    },
+    {
+      name: 'assetId',
+      wireKey: 'asset-id',
+      optional: true,
+      nullable: false,
+      type: { kind: 'scalar', isBigint: true },
+    },
+    {
+      name: 'box',
+      wireKey: 'box',
+      optional: true,
+      nullable: false,
+      type: { kind: 'model', meta: () => BoxReferenceMeta },
+    },
+    {
+      name: 'holding',
+      wireKey: 'holding',
+      optional: true,
+      nullable: false,
+      type: { kind: 'model', meta: () => HoldingRefMeta },
+    },
+    {
+      name: 'local',
+      wireKey: 'local',
+      optional: true,
+      nullable: false,
+      type: { kind: 'model', meta: () => LocalsRefMeta },
+    },
+  ],
 }
-
-// Helpers
-const toBase64 = _toBase64
-const fromBase64 = _fromBase64
-
-// toDto/fromDto
-export function toDto(value: ResourceRef): ResourceRefDto {
-  const out: any = {}
-  {
-    const v = (value as any)['address']
-    if (v === undefined) {
-      // omit undefined
-    } else {
-      out['address'] = v
-    }
-  }
-  {
-    const v = (value as any)['applicationId']
-    if (v === undefined) {
-      // omit undefined
-    } else {
-      out['application-id'] = v
-    }
-  }
-  {
-    const v = (value as any)['assetId']
-    if (v === undefined) {
-      // omit undefined
-    } else {
-      out['asset-id'] = v === undefined ? v : typeof v === 'bigint' ? v.toString() : String(v)
-    }
-  }
-  {
-    const v = (value as any)['box']
-    if (v === undefined) {
-      // omit undefined
-    } else {
-      out['box'] = v === undefined ? v : BoxReferenceModel.toDto(v)
-    }
-  }
-  {
-    const v = (value as any)['holding']
-    if (v === undefined) {
-      // omit undefined
-    } else {
-      out['holding'] = v === undefined ? v : HoldingRefModel.toDto(v)
-    }
-  }
-  {
-    const v = (value as any)['local']
-    if (v === undefined) {
-      // omit undefined
-    } else {
-      out['local'] = v === undefined ? v : LocalsRefModel.toDto(v)
-    }
-  }
-  return out as ResourceRefDto
-}
-
-export function fromDto(dto: ResourceRefDto): ResourceRef {
-  const out: any = {}
-  {
-    const v = (dto as any)['address']
-    if (v === undefined) {
-      // omit undefined
-    } else {
-      out['address'] = v as any
-    }
-  }
-  {
-    const v = (dto as any)['application-id']
-    if (v === undefined) {
-      // omit undefined
-    } else {
-      out['applicationId'] = v as any
-    }
-  }
-  {
-    const v = (dto as any)['asset-id']
-    if (v === undefined) {
-      // omit undefined
-    } else {
-      out['assetId'] = v === undefined ? v : typeof v === 'bigint' ? v : BigInt(v as any)
-    }
-  }
-  {
-    const v = (dto as any)['box']
-    if (v === undefined) {
-      // omit undefined
-    } else {
-      out['box'] = v === undefined ? v : BoxReferenceModel.fromDto(v)
-    }
-  }
-  {
-    const v = (dto as any)['holding']
-    if (v === undefined) {
-      // omit undefined
-    } else {
-      out['holding'] = v === undefined ? v : HoldingRefModel.fromDto(v)
-    }
-  }
-  {
-    const v = (dto as any)['local']
-    if (v === undefined) {
-      // omit undefined
-    } else {
-      out['local'] = v === undefined ? v : LocalsRefModel.fromDto(v)
-    }
-  }
-  return out as ResourceRef
-}
-
-// Msgpack codecs
-export function encodeMsgpack(value: ResourceRef): Uint8Array {
-  const dto = toMsgpackDto(value)
-  return encodeMsgPack(dto)
-}
-
-export function decodeMsgpack(bytes: Uint8Array): ResourceRef {
-  const raw: any = decodeMsgPack(bytes)
-  // raw has wire keys and Uint8Array for bytes
-  return fromMsgpackDto(raw)
-}
-
-// JSON codecs
-export function encodeJson(value: ResourceRef): unknown {
-  return toDto(value)
-}
-
-export function decodeJson(raw: unknown): ResourceRef {
-  return fromDto(raw as ResourceRefDto)
-}
-
-// Array helpers
-export function encodeMsgpackArray(values: ResourceRef[]): Uint8Array {
-  const dto = values.map((v) => toMsgpackDto(v))
-  return encodeMsgPack(dto)
-}
-
-export function decodeMsgpackArray(bytes: Uint8Array): ResourceRef[] {
-  const raw: any = decodeMsgPack(bytes)
-  return (raw as any[]).map((item) => fromMsgpackDto(item))
-}
-
-export function encodeJsonArray(values: ResourceRef[]): unknown {
-  return values.map((v) => toDto(v))
-}
-
-export function decodeJsonArray(raw: unknown): ResourceRef[] {
-  return (raw as any[]).map((item) => fromDto(item))
-}
-
-// Internal: msgpack DTO (wire keys, bytes kept as Uint8Array, signed txn encoded to bytes)
-type ResourceRefMsgpackDto = {
-  address?: string
-  'application-id'?: bigint
-  'asset-id'?: bigint
-  box?: ReturnType<(typeof BoxReferenceModel)['toMsgpackDto']>
-  holding?: ReturnType<(typeof HoldingRefModel)['toMsgpackDto']>
-  local?: ReturnType<(typeof LocalsRefModel)['toMsgpackDto']>
-}
-
-function toMsgpackDto(value: ResourceRef): ResourceRefMsgpackDto {
-  const out: any = {}
-  {
-    const v = (value as any)['address']
-    if (v === undefined) {
-    } else {
-      out['address'] = v
-    }
-  }
-  {
-    const v = (value as any)['applicationId']
-    if (v === undefined) {
-    } else {
-      out['application-id'] = v
-    }
-  }
-  {
-    const v = (value as any)['assetId']
-    if (v === undefined) {
-    } else {
-      out['asset-id'] = v
-    }
-  }
-  {
-    const v = (value as any)['box']
-    if (v === undefined) {
-    } else {
-      out['box'] = BoxReferenceModel.toMsgpackDto(v)
-    }
-  }
-  {
-    const v = (value as any)['holding']
-    if (v === undefined) {
-    } else {
-      out['holding'] = HoldingRefModel.toMsgpackDto(v)
-    }
-  }
-  {
-    const v = (value as any)['local']
-    if (v === undefined) {
-    } else {
-      out['local'] = LocalsRefModel.toMsgpackDto(v)
-    }
-  }
-  return out as ResourceRefMsgpackDto
-}
-
-function fromMsgpackDto(dto: ResourceRefMsgpackDto): ResourceRef {
-  const out: any = {}
-  {
-    const v = (dto as any)['address']
-    if (v === undefined) {
-    } else {
-      out['address'] = v
-    }
-  }
-  {
-    const v = (dto as any)['application-id']
-    if (v === undefined) {
-    } else {
-      out['applicationId'] = v
-    }
-  }
-  {
-    const v = (dto as any)['asset-id']
-    if (v === undefined) {
-    } else {
-      out['assetId'] = v
-    }
-  }
-  {
-    const v = (dto as any)['box']
-    if (v === undefined) {
-    } else {
-      out['box'] = BoxReferenceModel.fromMsgpackDto(v)
-    }
-  }
-  {
-    const v = (dto as any)['holding']
-    if (v === undefined) {
-    } else {
-      out['holding'] = HoldingRefModel.fromMsgpackDto(v)
-    }
-  }
-  {
-    const v = (dto as any)['local']
-    if (v === undefined) {
-    } else {
-      out['local'] = LocalsRefModel.fromMsgpackDto(v)
-    }
-  }
-  return out as ResourceRef
-}
-
-export const ResourceRef = {
-  toDto,
-  fromDto,
-  encodeMsgpack,
-  decodeMsgpack,
-  encodeJson,
-  decodeJson,
-  toMsgpackDto,
-  fromMsgpackDto,
-  encodeMsgpackArray,
-  decodeMsgpackArray,
-  encodeJsonArray,
-  decodeJsonArray,
-} as const

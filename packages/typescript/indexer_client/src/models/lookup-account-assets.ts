@@ -1,7 +1,6 @@
-import { encodeMsgPack, decodeMsgPack } from '../core/msgpack'
-import { toBase64 as _toBase64, fromBase64 as _fromBase64 } from '../core/json'
-import type { AssetHolding, AssetHoldingDto } from './asset-holding'
-import { AssetHolding as AssetHoldingModel } from './asset-holding'
+import type { ModelMetadata } from '../core/model-runtime'
+import type { AssetHolding } from './asset-holding'
+import { AssetHoldingMeta } from './asset-holding'
 
 export type LookupAccountAssets = {
   /**
@@ -16,186 +15,30 @@ export type LookupAccountAssets = {
   assets: AssetHolding[]
 }
 
-// JSON DTO shape for LookupAccountAssets with wire keys and JSON-safe primitives
-export type LookupAccountAssetsDto = {
-  'current-round': bigint
-  'next-token'?: string
-  assets: AssetHoldingDto[]
+export const LookupAccountAssetsMeta: ModelMetadata = {
+  name: 'LookupAccountAssets',
+  kind: 'object',
+  fields: [
+    {
+      name: 'currentRound',
+      wireKey: 'current-round',
+      optional: false,
+      nullable: false,
+      type: { kind: 'scalar' },
+    },
+    {
+      name: 'nextToken',
+      wireKey: 'next-token',
+      optional: true,
+      nullable: false,
+      type: { kind: 'scalar' },
+    },
+    {
+      name: 'assets',
+      wireKey: 'assets',
+      optional: false,
+      nullable: false,
+      type: { kind: 'array', item: { kind: 'model', meta: () => AssetHoldingMeta } },
+    },
+  ],
 }
-
-// Helpers
-const toBase64 = _toBase64
-const fromBase64 = _fromBase64
-
-// toDto/fromDto
-export function toDto(value: LookupAccountAssets): LookupAccountAssetsDto {
-  const out: any = {}
-  {
-    const v = (value as any)['currentRound']
-    if (v === undefined) {
-      // omit undefined
-    } else {
-      out['current-round'] = v
-    }
-  }
-  {
-    const v = (value as any)['nextToken']
-    if (v === undefined) {
-      // omit undefined
-    } else {
-      out['next-token'] = v
-    }
-  }
-  {
-    const v = (value as any)['assets']
-    if (v === undefined) {
-      // omit undefined
-    } else {
-      out['assets'] = (v as any[]).map((item) => AssetHoldingModel.toDto(item))
-    }
-  }
-  return out as LookupAccountAssetsDto
-}
-
-export function fromDto(dto: LookupAccountAssetsDto): LookupAccountAssets {
-  const out: any = {}
-  {
-    const v = (dto as any)['current-round']
-    if (v === undefined) {
-      // omit undefined
-    } else {
-      out['currentRound'] = v as any
-    }
-  }
-  {
-    const v = (dto as any)['next-token']
-    if (v === undefined) {
-      // omit undefined
-    } else {
-      out['nextToken'] = v as any
-    }
-  }
-  {
-    const v = (dto as any)['assets']
-    if (v === undefined) {
-      // omit undefined
-    } else {
-      out['assets'] = (v as any[]).map((item) => AssetHoldingModel.fromDto(item))
-    }
-  }
-  return out as LookupAccountAssets
-}
-
-// Msgpack codecs
-export function encodeMsgpack(value: LookupAccountAssets): Uint8Array {
-  const dto = toMsgpackDto(value)
-  return encodeMsgPack(dto)
-}
-
-export function decodeMsgpack(bytes: Uint8Array): LookupAccountAssets {
-  const raw: any = decodeMsgPack(bytes)
-  // raw has wire keys and Uint8Array for bytes
-  return fromMsgpackDto(raw)
-}
-
-// JSON codecs
-export function encodeJson(value: LookupAccountAssets): unknown {
-  return toDto(value)
-}
-
-export function decodeJson(raw: unknown): LookupAccountAssets {
-  return fromDto(raw as LookupAccountAssetsDto)
-}
-
-// Array helpers
-export function encodeMsgpackArray(values: LookupAccountAssets[]): Uint8Array {
-  const dto = values.map((v) => toMsgpackDto(v))
-  return encodeMsgPack(dto)
-}
-
-export function decodeMsgpackArray(bytes: Uint8Array): LookupAccountAssets[] {
-  const raw: any = decodeMsgPack(bytes)
-  return (raw as any[]).map((item) => fromMsgpackDto(item))
-}
-
-export function encodeJsonArray(values: LookupAccountAssets[]): unknown {
-  return values.map((v) => toDto(v))
-}
-
-export function decodeJsonArray(raw: unknown): LookupAccountAssets[] {
-  return (raw as any[]).map((item) => fromDto(item))
-}
-
-// Internal: msgpack DTO (wire keys, bytes kept as Uint8Array, signed txn encoded to bytes)
-type LookupAccountAssetsMsgpackDto = {
-  'current-round': bigint
-  'next-token'?: string
-  assets: ReturnType<(typeof AssetHoldingModel)['toMsgpackDto']>[]
-}
-
-function toMsgpackDto(value: LookupAccountAssets): LookupAccountAssetsMsgpackDto {
-  const out: any = {}
-  {
-    const v = (value as any)['currentRound']
-    if (v === undefined) {
-    } else {
-      out['current-round'] = v
-    }
-  }
-  {
-    const v = (value as any)['nextToken']
-    if (v === undefined) {
-    } else {
-      out['next-token'] = v
-    }
-  }
-  {
-    const v = (value as any)['assets']
-    if (v === undefined) {
-    } else {
-      out['assets'] = (v as any[]).map((item) => AssetHoldingModel.toMsgpackDto(item))
-    }
-  }
-  return out as LookupAccountAssetsMsgpackDto
-}
-
-function fromMsgpackDto(dto: LookupAccountAssetsMsgpackDto): LookupAccountAssets {
-  const out: any = {}
-  {
-    const v = (dto as any)['current-round']
-    if (v === undefined) {
-    } else {
-      out['currentRound'] = v
-    }
-  }
-  {
-    const v = (dto as any)['next-token']
-    if (v === undefined) {
-    } else {
-      out['nextToken'] = v
-    }
-  }
-  {
-    const v = (dto as any)['assets']
-    if (v === undefined) {
-    } else {
-      out['assets'] = (v as any[]).map((item) => AssetHoldingModel.fromMsgpackDto(item))
-    }
-  }
-  return out as LookupAccountAssets
-}
-
-export const LookupAccountAssets = {
-  toDto,
-  fromDto,
-  encodeMsgpack,
-  decodeMsgpack,
-  encodeJson,
-  decodeJson,
-  toMsgpackDto,
-  fromMsgpackDto,
-  encodeMsgpackArray,
-  decodeMsgpackArray,
-  encodeJsonArray,
-  decodeJsonArray,
-} as const

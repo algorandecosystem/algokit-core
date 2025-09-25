@@ -1,5 +1,4 @@
-"""
-File utilities for the TS OAS generator (Phase 1).
+"""File utilities for the TS OAS generator.
 
 Provides safe write operations similar to rust_oas_generator.utils.file_utils.
 """

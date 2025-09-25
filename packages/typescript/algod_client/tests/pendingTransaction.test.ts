@@ -1,8 +1,7 @@
 import { expect, it, describe } from 'vitest'
 import { AlgodClient } from '../src/client'
 import { getAlgodEnv, getSenderAccount, signTransaction } from './config'
-import { PendingTransactionResponse, PendingTransactionResponseCodecs } from '../src/models'
-import { IntDecoding } from '../src'
+import { PendingTransactionResponse } from '../src/models'
 import { encodeSignedTransaction, getTransactionId, TransactionType, type Transaction } from '@algorandfoundation/algokit-transact'
 
 describe('Algod pendingTransaction', () => {
@@ -10,7 +9,6 @@ describe('Algod pendingTransaction', () => {
     const env = getAlgodEnv()
     const client = new AlgodClient({
       baseUrl: env.algodBaseUrl,
-      intDecoding: IntDecoding.BIGINT,
       headers: env.algodApiToken ? { 'X-Algo-API-Token': env.algodApiToken } : undefined,
     })
     const acct = await getSenderAccount()
@@ -40,8 +38,7 @@ describe('Algod pendingTransaction', () => {
     let pending: PendingTransactionResponse | undefined
     const maxAttempts = 10
     for (let i = 0; i < maxAttempts; i++) {
-      const pendingBytes = await client.pendingTransactionInformation(txId, { format: 'msgpack' })
-      pending = PendingTransactionResponseCodecs.decodeMsgpack(pendingBytes)
+      pending = await client.pendingTransactionInformation(txId, { format: 'msgpack' })
       if (pending?.confirmedRound || pending?.poolError) {
         break
       }

@@ -1,4 +1,4 @@
-"""OpenAPI Specification parser for TypeScript generator."""
+"""Parser utilities exposed by ``ts_oas_generator.parser``."""
 
 from ts_oas_generator.parser.oas_parser import OASParser
 

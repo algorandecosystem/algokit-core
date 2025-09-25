@@ -1,17 +1,46 @@
 {% set modelName = schema_name | ts_pascal_case %}
 {% set descriptor = descriptor %}
 {% set isObject = descriptor.is_object %}
-{% set uses_stx = (descriptor.fields | selectattr('is_signed_txn') | list | length) > 0 or descriptor.array_item_is_signed_txn %}
+{% set isArray = descriptor.is_array %}
 {% set refTypes = schema | collect_schema_refs(schema_name) %}
+{% set uses_signed_txn = schema | schema_uses_signed_txn %}
+{% set schemaSignedTxn = schema.get('x-algokit-signed-txn') is true %}
+{% set schemaBytes = schema.get('format') == 'byte' or schema.get('x-algokit-bytes-base64') is true %}
+{% set schemaBigint = schema.get('x-algokit-bigint') is true %}
 
-{% if uses_stx %}
-import { encodeSignedTransaction, encodeSignedTransactions, decodeSignedTransaction } from '@algorandfoundation/algokit-transact';
+{% macro scalar_meta(is_bytes, is_bigint) -%}
+{ kind: 'scalar'{% if is_bytes %}, isBytes: true{% endif %}{% if is_bigint %}, isBigint: true{% endif %} }
+{%- endmacro %}
+
+{% macro base_type(ref_model, is_signed_txn, is_bytes, is_bigint) -%}
+{%- if is_signed_txn -%}
+{ kind: 'codec', codecKey: 'SignedTransaction' }
+{%- elif ref_model -%}
+{ kind: 'model', meta: () => {{ ref_model }}Meta }
+{%- else -%}
+{{ scalar_meta(is_bytes, is_bigint) }}
+{%- endif -%}
+{%- endmacro %}
+
+{% macro field_type(field) -%}
+{%- if field.is_array -%}
+{ kind: 'array', item: {{ base_type(field.ref_model, field.is_signed_txn, field.is_bytes, field.is_bigint) }} }
+{%- else -%}
+{{ base_type(field.ref_model, field.is_signed_txn, field.is_bytes, field.is_bigint) }}
+{%- endif -%}
+{%- endmacro %}
+
+{% macro array_item_meta(descriptor) -%}
+{{ base_type(descriptor.array_item_ref, descriptor.array_item_is_signed_txn, descriptor.array_item_is_bytes, descriptor.array_item_is_bigint) }}
+{%- endmacro %}
+
+import type { ModelMetadata } from '../core/model-runtime';
+{% if uses_signed_txn %}
+import type { SignedTransaction } from '@algorandfoundation/algokit-transact';
 {% endif %}
-import { encodeMsgPack, decodeMsgPack } from '../core/msgpack';
-import { toBase64 as _toBase64, fromBase64 as _fromBase64 } from '../core/json';
 {% for r in refTypes %}
-import type { {{ r }}, {{ r }}Dto } from './{{ r | ts_kebab_case }}';
-import { {{ r }} as {{ r }}Model } from './{{ r | ts_kebab_case }}';
+import type { {{ r }} } from './{{ r | ts_kebab_case }}';
+import { {{ r }}Meta } from './{{ r | ts_kebab_case }}';
 {% endfor %}
 
 {{ schema.description | ts_doc_comment }}
@@ -25,284 +54,31 @@ export interface {{ modelName }} {
 export type {{ modelName }} = {{ schema | ts_type(schemas) }};
 {% endif %}
 
-// JSON DTO shape for {{ modelName }} with wire keys and JSON-safe primitives
+export const {{ modelName }}Meta: ModelMetadata = {
+  name: '{{ modelName }}',
+  kind: {% if isObject %}'object'{% elif isArray %}'array'{% else %}'passthrough'{% endif %},
 {% if isObject %}
-export type {{ modelName }}Dto = {
+  fields: [
 {%   for f in descriptor.fields %}
-  '{{ f.wire_name }}'{{ '' if not f.is_optional else '?' }}: {% if f.is_array %}{% if f.ref_model %}{{ f.ref_model }}Dto[]{% else %}{% if f.is_bytes %}string[]{% elif f.is_bigint %}string[]{% elif f.is_signed_txn %}unknown[]{% else %}{{ f.ts_type }}{% endif %}{% endif %}{% else %}{% if f.ref_model %}{{ f.ref_model }}Dto{% else %}{% if f.is_bytes %}string{% elif f.is_bigint %}string{% elif f.is_signed_txn %}unknown{% else %}{{ f.ts_type }}{% endif %}{% endif %}{% endif %};
+    {
+      name: '{{ f.name }}',
+      wireKey: '{{ f.wire_name }}',
+      optional: {{ 'true' if f.is_optional else 'false' }},
+      nullable: {{ 'true' if f.is_nullable else 'false' }},
+      type: {{ field_type(f) }},
+    },
 {%   endfor %}
+  ],
+{%   if has_additional_properties %}
+  additionalProperties: {{ scalar_meta(false, false) }},
+{%   endif %}
+{% elif isArray %}
+  arrayItems: {{ array_item_meta(descriptor) }},
+{% else %}
+{%   if schemaSignedTxn %}
+  codecKey: 'SignedTransaction',
+{%   else %}
+  passThrough: {{ scalar_meta(schemaBytes, schemaBigint) }},
+{%   endif %}
+{% endif %}
 };
-{% else %}
-export type {{ modelName }}Dto = {{ modelName }};
-{% endif %}
-
-// Helpers
-const toBase64 = _toBase64;
-const fromBase64 = _fromBase64;
-
-// toDto/fromDto
-export function toDto(value: {{ modelName }}): {{ modelName }}Dto {
-{% if isObject %}
-  const out: any = {};
-{%   for f in descriptor.fields %}
-  {
-    const v = (value as any)['{{ f.name }}'];
-    if (v === undefined) {
-      // omit undefined
-    } else {
-      {% if f.is_array %}
-      {%   if f.ref_model %}
-      out['{{ f.wire_name }}'] = (v as any[]).map((item) => {{ f.ref_model }}Model.toDto(item));
-      {%   elif f.is_bytes %}
-      out['{{ f.wire_name }}'] = (v as Uint8Array[]).map(toBase64);
-      {%   elif f.is_bigint %}
-      out['{{ f.wire_name }}'] = (v as Array<number | bigint | string>).map((x) => (typeof x === 'bigint' ? x.toString() : String(x)));
-      {%   elif f.is_signed_txn %}
-      out['{{ f.wire_name }}'] = (v as any[]).map((item) => {
-        if (item && typeof item === 'object' && 'txn' in (item as any)) return item as any;
-        return toBase64(encodeSignedTransaction(item as any));
-      });
-      {%   else %}
-      out['{{ f.wire_name }}'] = v as any[];
-      {%   endif %}
-      {% else %}
-      {%   if f.ref_model %}
-      out['{{ f.wire_name }}'] = v === undefined ? v : {{ f.ref_model }}Model.toDto(v);
-      {%   elif f.is_bytes %}
-      out['{{ f.wire_name }}'] = v === undefined ? v : toBase64(v as Uint8Array);
-      {%   elif f.is_bigint %}
-      out['{{ f.wire_name }}'] = v === undefined ? v : (typeof v === 'bigint' ? v.toString() : String(v));
-      {%   elif f.is_signed_txn %}
-      out['{{ f.wire_name }}'] = ((): any => {
-        const item = v as any;
-        if (item && typeof item === 'object' && 'txn' in item) return item;
-        return toBase64(encodeSignedTransaction(item as any));
-      })();
-      {%   else %}
-      out['{{ f.wire_name }}'] = v;
-      {%   endif %}
-      {% endif %}
-    }
-  }
-{%   endfor %}
-  return out as {{ modelName }}Dto;
-{% else %}
-  return value as unknown as {{ modelName }}Dto;
-{% endif %}
-}
-
-export function fromDto(dto: {{ modelName }}Dto): {{ modelName }} {
-{% if isObject %}
-  const out: any = {};
-{%   for f in descriptor.fields %}
-  {
-    const v = (dto as any)['{{ f.wire_name }}'];
-    if (v === undefined) {
-      // omit undefined
-    } else {
-      {% if f.is_array %}
-      {%   if f.ref_model %}
-      out['{{ f.name }}'] = (v as any[]).map((item) => {{ f.ref_model }}Model.fromDto(item));
-      {%   elif f.is_bytes %}
-      out['{{ f.name }}'] = (v as string[]).map(fromBase64);
-      {%   elif f.is_bigint %}
-      out['{{ f.name }}'] = (v as Array<string | number | bigint>).map((x) => (typeof x === 'bigint' ? x : BigInt(x as any)));
-      {%   elif f.is_signed_txn %}
-      {%     if uses_stx %}
-      out['{{ f.name }}'] = (v as any[]).map((item) => {
-        if (item instanceof Uint8Array) return decodeSignedTransaction(item);
-        if (typeof item === 'string') { try { return decodeSignedTransaction(fromBase64(item)); } catch { return item; } }
-        if (typeof item === 'object' && item != null) { try { return decodeSignedTransaction(encodeMsgPack(item)); } catch { return item; } }
-        return item;
-      });
-      {%     else %}
-      out['{{ f.name }}'] = v as any[];
-      {%     endif %}
-      {%   else %}
-      out['{{ f.name }}'] = v as any[];
-      {%   endif %}
-      {% else %}
-      {%   if f.ref_model %}
-      out['{{ f.name }}'] = v === undefined ? v : {{ f.ref_model }}Model.fromDto(v);
-      {%   elif f.is_bytes %}
-      out['{{ f.name }}'] = v === undefined ? v : fromBase64(v as string);
-      {%   elif f.is_bigint %}
-      out['{{ f.name }}'] = v === undefined ? v : (typeof v === 'bigint' ? v : BigInt(v as any));
-      {%   elif f.is_signed_txn %}
-      {%     if uses_stx %}
-      out['{{ f.name }}'] = ((): any => {
-        const item = v as any;
-        if (item instanceof Uint8Array) return decodeSignedTransaction(item);
-        if (typeof item === 'string') { try { return decodeSignedTransaction(fromBase64(item)); } catch { return item; } }
-        if (typeof item === 'object' && item != null) { try { return decodeSignedTransaction(encodeMsgPack(item)); } catch { return item; } }
-        return item;
-      })();
-      {%     else %}
-      out['{{ f.name }}'] = v as any;
-      {%     endif %}
-      {%   else %}
-      out['{{ f.name }}'] = v as any;
-      {%   endif %}
-      {% endif %}
-    }
-  }
-{%   endfor %}
-  return out as {{ modelName }};
-{% else %}
-  return dto as unknown as {{ modelName }};
-{% endif %}
-}
-
-// Msgpack codecs
-export function encodeMsgpack(value: {{ modelName }}): Uint8Array {
-{% if isObject %}
-  const dto = toMsgpackDto(value);
-  return encodeMsgPack(dto);
-{% else %}
-  return encodeMsgPack(value as any);
-{% endif %}
-}
-
-export function decodeMsgpack(bytes: Uint8Array): {{ modelName }} {
-  const raw: any = decodeMsgPack(bytes);
-{% if isObject %}
-  // raw has wire keys and Uint8Array for bytes
-  return fromMsgpackDto(raw);
-{% else %}
-  return raw as {{ modelName }};
-{% endif %}
-}
-
-// JSON codecs
-export function encodeJson(value: {{ modelName }}): unknown {
-{% if isObject %}
-  return toDto(value);
-{% else %}
-  return value as unknown;
-{% endif %}
-}
-
-export function decodeJson(raw: unknown): {{ modelName }} {
-{% if isObject %}
-  return fromDto(raw as {{ modelName }}Dto);
-{% else %}
-  return raw as {{ modelName }};
-{% endif %}
-}
-
-// Array helpers
-{% if isObject %}
-export function encodeMsgpackArray(values: {{ modelName }}[]): Uint8Array {
-  const dto = values.map((v) => toMsgpackDto(v));
-  return encodeMsgPack(dto);
-}
-
-export function decodeMsgpackArray(bytes: Uint8Array): {{ modelName }}[] {
-  const raw: any = decodeMsgPack(bytes);
-  return (raw as any[]).map((item) => fromMsgpackDto(item));
-}
-
-export function encodeJsonArray(values: {{ modelName }}[]): unknown {
-  return values.map((v) => toDto(v));
-}
-
-export function decodeJsonArray(raw: unknown): {{ modelName }}[] {
-  return (raw as any[]).map((item) => fromDto(item));
-}
-{% endif %}
-
-// Internal: msgpack DTO (wire keys, bytes kept as Uint8Array, signed txn encoded to bytes)
-{% if isObject %}
-type {{ modelName }}MsgpackDto = {
-{%   for f in descriptor.fields %}
-  '{{ f.wire_name }}'{{ '' if not f.is_optional else '?' }}: {% if f.is_array %}{% if f.ref_model %}ReturnType<typeof {{ f.ref_model }}Model['toMsgpackDto']>[] {% else %}{% if f.is_signed_txn %}Uint8Array[]{% else %}{{ f.ts_type }}{% endif %}{% endif %}{% else %}{% if f.ref_model %}ReturnType<typeof {{ f.ref_model }}Model['toMsgpackDto']>{% else %}{% if f.is_signed_txn %}Uint8Array{% else %}{{ f.ts_type }}{% endif %}{% endif %}{% endif %};
-{%   endfor %}
-};
-
-function toMsgpackDto(value: {{ modelName }}): {{ modelName }}MsgpackDto {
-  const out: any = {};
-{%   for f in descriptor.fields %}
-  {
-    const v = (value as any)['{{ f.name }}'];
-    if (v === undefined) {
-    } else {
-      {% if f.is_array %}
-      {%   if f.ref_model %}
-      out['{{ f.wire_name }}'] = (v as any[]).map((item) => {{ f.ref_model }}Model.toMsgpackDto(item));
-      {%   elif f.is_signed_txn %}
-      out['{{ f.wire_name }}'] = (v as any[]).map((item) => encodeSignedTransaction(item as any));
-      {%   else %}
-      out['{{ f.wire_name }}'] = v as any[];
-      {%   endif %}
-      {% else %}
-      {%   if f.ref_model %}
-      out['{{ f.wire_name }}'] = {{ f.ref_model }}Model.toMsgpackDto(v);
-      {%   elif f.is_signed_txn %}
-      out['{{ f.wire_name }}'] = encodeSignedTransaction(v as any);
-      {%   else %}
-      out['{{ f.wire_name }}'] = v;
-      {%   endif %}
-      {% endif %}
-    }
-  }
-{%   endfor %}
-  return out as {{ modelName }}MsgpackDto;
-}
-
-function fromMsgpackDto(dto: {{ modelName }}MsgpackDto): {{ modelName }} {
-  const out: any = {};
-{%   for f in descriptor.fields %}
-  {
-    const v = (dto as any)['{{ f.wire_name }}'];
-    if (v === undefined) {
-    } else {
-      {% if f.is_array %}
-      {%   if f.ref_model %}
-      out['{{ f.name }}'] = (v as any[]).map((item) => {{ f.ref_model }}Model.fromMsgpackDto(item));
-      {%   elif f.is_signed_txn %}
-      out['{{ f.name }}'] = (v as any[]).map((item) => { // eslint-disable-line @typescript-eslint/no-explicit-any
-        if (item instanceof Uint8Array) return decodeSignedTransaction(item);
-        if (typeof item === 'object' && item != null) { try { return decodeSignedTransaction(encodeMsgPack(item)); } catch { return item as any; }
-        }
-        return item as any;
-      });
-      {%   else %}
-      out['{{ f.name }}'] = v as any[];
-      {%   endif %}
-      {% else %}
-      {%   if f.ref_model %}
-      out['{{ f.name }}'] = {{ f.ref_model }}Model.fromMsgpackDto(v);
-      {%   elif f.is_signed_txn %}
-      out['{{ f.name }}'] = ((): any => { // eslint-disable-line @typescript-eslint/no-explicit-any
-        const item = v as any;
-        if (item instanceof Uint8Array) return decodeSignedTransaction(item);
-        if (typeof item === 'object' && item != null) { try { return decodeSignedTransaction(encodeMsgPack(item)); } catch { return item; } }
-        return item;
-      })();
-      {%   else %}
-      out['{{ f.name }}'] = v;
-      {%   endif %}
-      {% endif %}
-    }
-  }
-{%   endfor %}
-  return out as {{ modelName }};
-}
-{% endif %}
-
-export const {{ modelName }} = {
-  toDto,
-  fromDto,
-  encodeMsgpack,
-  decodeMsgpack,
-  encodeJson,
-  decodeJson,
-{% if isObject %}
-  toMsgpackDto,
-  fromMsgpackDto,
-  encodeMsgpackArray,
-  decodeMsgpackArray,
-  encodeJsonArray,
-  decodeJsonArray,
-{% endif %}
-} as const;

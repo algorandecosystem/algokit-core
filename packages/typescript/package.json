@@ -8,7 +8,8 @@
     "algokit_abi",
     "algokit_transact",
     "algod_client",
-    "algokit_utils"
+    "algokit_utils",
+    "indexer_client"
   ],
   "scripts": {
     "build": "npm run build --workspaces --if-present",

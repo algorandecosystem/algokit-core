@@ -1,4 +1,5 @@
 import type { BaseHttpRequest, ApiRequestOptions } from '../core/BaseHttpRequest'
+import { AlgorandSerializer } from '../core/model-runtime'
 import type {
   Block,
   Box,
@@ -22,27 +23,29 @@ import type {
   SearchForBlockHeaders,
   SearchForTransactions,
 } from '../models/index'
-import { Block as BlockCodecs } from '../models/block'
-import { Box as BoxCodecs } from '../models/box'
-import { HealthCheck as HealthCheckCodecs } from '../models/health-check'
-import { LookupAccountAppLocalStates as LookupAccountAppLocalStatesCodecs } from '../models/lookup-account-app-local-states'
-import { LookupAccountAssets as LookupAccountAssetsCodecs } from '../models/lookup-account-assets'
-import { LookupAccountById as LookupAccountByIdCodecs } from '../models/lookup-account-by-id'
-import { LookupAccountCreatedApplications as LookupAccountCreatedApplicationsCodecs } from '../models/lookup-account-created-applications'
-import { LookupAccountCreatedAssets as LookupAccountCreatedAssetsCodecs } from '../models/lookup-account-created-assets'
-import { LookupAccountTransactions as LookupAccountTransactionsCodecs } from '../models/lookup-account-transactions'
-import { LookupApplicationById as LookupApplicationByIdCodecs } from '../models/lookup-application-by-id'
-import { LookupApplicationLogsById as LookupApplicationLogsByIdCodecs } from '../models/lookup-application-logs-by-id'
-import { LookupAssetBalances as LookupAssetBalancesCodecs } from '../models/lookup-asset-balances'
-import { LookupAssetById as LookupAssetByIdCodecs } from '../models/lookup-asset-by-id'
-import { LookupAssetTransactions as LookupAssetTransactionsCodecs } from '../models/lookup-asset-transactions'
-import { LookupTransaction as LookupTransactionCodecs } from '../models/lookup-transaction'
-import { SearchForAccounts as SearchForAccountsCodecs } from '../models/search-for-accounts'
-import { SearchForApplicationBoxes as SearchForApplicationBoxesCodecs } from '../models/search-for-application-boxes'
-import { SearchForApplications as SearchForApplicationsCodecs } from '../models/search-for-applications'
-import { SearchForAssets as SearchForAssetsCodecs } from '../models/search-for-assets'
-import { SearchForBlockHeaders as SearchForBlockHeadersCodecs } from '../models/search-for-block-headers'
-import { SearchForTransactions as SearchForTransactionsCodecs } from '../models/search-for-transactions'
+import {
+  BlockMeta,
+  BoxMeta,
+  HealthCheckMeta,
+  LookupAccountAppLocalStatesMeta,
+  LookupAccountAssetsMeta,
+  LookupAccountByIdMeta,
+  LookupAccountCreatedApplicationsMeta,
+  LookupAccountCreatedAssetsMeta,
+  LookupAccountTransactionsMeta,
+  LookupApplicationByIdMeta,
+  LookupApplicationLogsByIdMeta,
+  LookupAssetBalancesMeta,
+  LookupAssetByIdMeta,
+  LookupAssetTransactionsMeta,
+  LookupTransactionMeta,
+  SearchForAccountsMeta,
+  SearchForApplicationBoxesMeta,
+  SearchForApplicationsMeta,
+  SearchForAssetsMeta,
+  SearchForBlockHeadersMeta,
+  SearchForTransactionsMeta,
+} from '../models/index'
 
 export class IndexerApi {
   constructor(public readonly httpRequest: BaseHttpRequest) {}
@@ -56,11 +59,13 @@ export class IndexerApi {
     requestOptions?: ApiRequestOptions,
   ): Promise<LookupAccountAppLocalStates> {
     const headers: Record<string, string> = {}
-    headers['Accept'] = 'application/json'
+    const responseFormat: 'json' | 'msgpack' = 'json'
+    headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
 
-    // Header parameters
+    const serializedBody = undefined
+    const mediaType = undefined
 
-    const rsp = this.httpRequest.request<unknown>({
+    const payload = await this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/accounts/{account-id}/apps-local-state',
       path: { 'account-id': accountId },
@@ -71,15 +76,16 @@ export class IndexerApi {
         next: params?.next,
       },
       headers,
-      body: undefined,
-      mediaType: undefined,
+      body: serializedBody,
+      mediaType: mediaType,
       ...(requestOptions ?? {}),
     })
-    const parsed = (await rsp) as LookupAccountAppLocalStates
-    try {
-      return (LookupAccountAppLocalStatesCodecs as any).decodeJson(parsed as any) as LookupAccountAppLocalStates
-    } catch {}
-    return parsed
+
+    const responseMeta = LookupAccountAppLocalStatesMeta
+    if (responseMeta) {
+      return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
+    }
+    return payload as LookupAccountAppLocalStates
   }
 
   /**
@@ -91,11 +97,13 @@ export class IndexerApi {
     requestOptions?: ApiRequestOptions,
   ): Promise<LookupAccountAssets> {
     const headers: Record<string, string> = {}
-    headers['Accept'] = 'application/json'
+    const responseFormat: 'json' | 'msgpack' = 'json'
+    headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
 
-    // Header parameters
+    const serializedBody = undefined
+    const mediaType = undefined
 
-    const rsp = this.httpRequest.request<unknown>({
+    const payload = await this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/accounts/{account-id}/assets',
       path: { 'account-id': accountId },
@@ -106,15 +114,16 @@ export class IndexerApi {
         next: params?.next,
       },
       headers,
-      body: undefined,
-      mediaType: undefined,
+      body: serializedBody,
+      mediaType: mediaType,
       ...(requestOptions ?? {}),
     })
-    const parsed = (await rsp) as LookupAccountAssets
-    try {
-      return (LookupAccountAssetsCodecs as any).decodeJson(parsed as any) as LookupAccountAssets
-    } catch {}
-    return parsed
+
+    const responseMeta = LookupAccountAssetsMeta
+    if (responseMeta) {
+      return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
+    }
+    return payload as LookupAccountAssets
   }
 
   /**
@@ -130,11 +139,13 @@ export class IndexerApi {
     requestOptions?: ApiRequestOptions,
   ): Promise<LookupAccountById> {
     const headers: Record<string, string> = {}
-    headers['Accept'] = 'application/json'
+    const responseFormat: 'json' | 'msgpack' = 'json'
+    headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
 
-    // Header parameters
+    const serializedBody = undefined
+    const mediaType = undefined
 
-    const rsp = this.httpRequest.request<unknown>({
+    const payload = await this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/accounts/{account-id}',
       path: { 'account-id': accountId },
@@ -144,15 +155,16 @@ export class IndexerApi {
         exclude: params?.exclude,
       },
       headers,
-      body: undefined,
-      mediaType: undefined,
+      body: serializedBody,
+      mediaType: mediaType,
       ...(requestOptions ?? {}),
     })
-    const parsed = (await rsp) as LookupAccountById
-    try {
-      return (LookupAccountByIdCodecs as any).decodeJson(parsed as any) as LookupAccountById
-    } catch {}
-    return parsed
+
+    const responseMeta = LookupAccountByIdMeta
+    if (responseMeta) {
+      return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
+    }
+    return payload as LookupAccountById
   }
 
   /**
@@ -164,11 +176,13 @@ export class IndexerApi {
     requestOptions?: ApiRequestOptions,
   ): Promise<LookupAccountCreatedApplications> {
     const headers: Record<string, string> = {}
-    headers['Accept'] = 'application/json'
+    const responseFormat: 'json' | 'msgpack' = 'json'
+    headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
 
-    // Header parameters
+    const serializedBody = undefined
+    const mediaType = undefined
 
-    const rsp = this.httpRequest.request<unknown>({
+    const payload = await this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/accounts/{account-id}/created-applications',
       path: { 'account-id': accountId },
@@ -179,15 +193,16 @@ export class IndexerApi {
         next: params?.next,
       },
       headers,
-      body: undefined,
-      mediaType: undefined,
+      body: serializedBody,
+      mediaType: mediaType,
       ...(requestOptions ?? {}),
     })
-    const parsed = (await rsp) as LookupAccountCreatedApplications
-    try {
-      return (LookupAccountCreatedApplicationsCodecs as any).decodeJson(parsed as any) as LookupAccountCreatedApplications
-    } catch {}
-    return parsed
+
+    const responseMeta = LookupAccountCreatedApplicationsMeta
+    if (responseMeta) {
+      return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
+    }
+    return payload as LookupAccountCreatedApplications
   }
 
   /**
@@ -199,11 +214,13 @@ export class IndexerApi {
     requestOptions?: ApiRequestOptions,
   ): Promise<LookupAccountCreatedAssets> {
     const headers: Record<string, string> = {}
-    headers['Accept'] = 'application/json'
+    const responseFormat: 'json' | 'msgpack' = 'json'
+    headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
 
-    // Header parameters
+    const serializedBody = undefined
+    const mediaType = undefined
 
-    const rsp = this.httpRequest.request<unknown>({
+    const payload = await this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/accounts/{account-id}/created-assets',
       path: { 'account-id': accountId },
@@ -214,15 +231,16 @@ export class IndexerApi {
         next: params?.next,
       },
       headers,
-      body: undefined,
-      mediaType: undefined,
+      body: serializedBody,
+      mediaType: mediaType,
       ...(requestOptions ?? {}),
     })
-    const parsed = (await rsp) as LookupAccountCreatedAssets
-    try {
-      return (LookupAccountCreatedAssetsCodecs as any).decodeJson(parsed as any) as LookupAccountCreatedAssets
-    } catch {}
-    return parsed
+
+    const responseMeta = LookupAccountCreatedAssetsMeta
+    if (responseMeta) {
+      return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
+    }
+    return payload as LookupAccountCreatedAssets
   }
 
   /**
@@ -250,11 +268,13 @@ export class IndexerApi {
     requestOptions?: ApiRequestOptions,
   ): Promise<LookupAccountTransactions> {
     const headers: Record<string, string> = {}
-    headers['Accept'] = 'application/json'
+    const responseFormat: 'json' | 'msgpack' = 'json'
+    headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
 
-    // Header parameters
+    const serializedBody = undefined
+    const mediaType = undefined
 
-    const rsp = this.httpRequest.request<unknown>({
+    const payload = await this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/accounts/{account-id}/transactions',
       path: { 'account-id': accountId },
@@ -280,15 +300,16 @@ export class IndexerApi {
         'rekey-to': params?.rekeyTo,
       },
       headers,
-      body: undefined,
-      mediaType: undefined,
+      body: serializedBody,
+      mediaType: mediaType,
       ...(requestOptions ?? {}),
     })
-    const parsed = (await rsp) as LookupAccountTransactions
-    try {
-      return (LookupAccountTransactionsCodecs as any).decodeJson(parsed as any) as LookupAccountTransactions
-    } catch {}
-    return parsed
+
+    const responseMeta = LookupAccountTransactionsMeta
+    if (responseMeta) {
+      return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
+    }
+    return payload as LookupAccountTransactions
   }
 
   /**
@@ -300,25 +321,28 @@ export class IndexerApi {
     requestOptions?: ApiRequestOptions,
   ): Promise<Box> {
     const headers: Record<string, string> = {}
-    headers['Accept'] = 'application/json'
+    const responseFormat: 'json' | 'msgpack' = 'json'
+    headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
 
-    // Header parameters
+    const serializedBody = undefined
+    const mediaType = undefined
 
-    const rsp = this.httpRequest.request<unknown>({
+    const payload = await this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/applications/{application-id}/box',
       path: { 'application-id': typeof applicationId === 'bigint' ? applicationId.toString() : applicationId },
       query: { name: params?.name },
       headers,
-      body: undefined,
-      mediaType: undefined,
+      body: serializedBody,
+      mediaType: mediaType,
       ...(requestOptions ?? {}),
     })
-    const parsed = (await rsp) as Box
-    try {
-      return (BoxCodecs as any).decodeJson(parsed as any) as Box
-    } catch {}
-    return parsed
+
+    const responseMeta = BoxMeta
+    if (responseMeta) {
+      return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
+    }
+    return payload as Box
   }
 
   /**
@@ -330,25 +354,28 @@ export class IndexerApi {
     requestOptions?: ApiRequestOptions,
   ): Promise<LookupApplicationById> {
     const headers: Record<string, string> = {}
-    headers['Accept'] = 'application/json'
+    const responseFormat: 'json' | 'msgpack' = 'json'
+    headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
 
-    // Header parameters
+    const serializedBody = undefined
+    const mediaType = undefined
 
-    const rsp = this.httpRequest.request<unknown>({
+    const payload = await this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/applications/{application-id}',
       path: { 'application-id': typeof applicationId === 'bigint' ? applicationId.toString() : applicationId },
       query: { 'include-all': params?.includeAll },
       headers,
-      body: undefined,
-      mediaType: undefined,
+      body: serializedBody,
+      mediaType: mediaType,
       ...(requestOptions ?? {}),
     })
-    const parsed = (await rsp) as LookupApplicationById
-    try {
-      return (LookupApplicationByIdCodecs as any).decodeJson(parsed as any) as LookupApplicationById
-    } catch {}
-    return parsed
+
+    const responseMeta = LookupApplicationByIdMeta
+    if (responseMeta) {
+      return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
+    }
+    return payload as LookupApplicationById
   }
 
   /**
@@ -367,11 +394,13 @@ export class IndexerApi {
     requestOptions?: ApiRequestOptions,
   ): Promise<LookupApplicationLogsById> {
     const headers: Record<string, string> = {}
-    headers['Accept'] = 'application/json'
+    const responseFormat: 'json' | 'msgpack' = 'json'
+    headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
 
-    // Header parameters
+    const serializedBody = undefined
+    const mediaType = undefined
 
-    const rsp = this.httpRequest.request<unknown>({
+    const payload = await this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/applications/{application-id}/logs',
       path: { 'application-id': typeof applicationId === 'bigint' ? applicationId.toString() : applicationId },
@@ -384,15 +413,16 @@ export class IndexerApi {
         'sender-address': params?.senderAddress,
       },
       headers,
-      body: undefined,
-      mediaType: undefined,
+      body: serializedBody,
+      mediaType: mediaType,
       ...(requestOptions ?? {}),
     })
-    const parsed = (await rsp) as LookupApplicationLogsById
-    try {
-      return (LookupApplicationLogsByIdCodecs as any).decodeJson(parsed as any) as LookupApplicationLogsById
-    } catch {}
-    return parsed
+
+    const responseMeta = LookupApplicationLogsByIdMeta
+    if (responseMeta) {
+      return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
+    }
+    return payload as LookupApplicationLogsById
   }
 
   /**
@@ -410,11 +440,13 @@ export class IndexerApi {
     requestOptions?: ApiRequestOptions,
   ): Promise<LookupAssetBalances> {
     const headers: Record<string, string> = {}
-    headers['Accept'] = 'application/json'
+    const responseFormat: 'json' | 'msgpack' = 'json'
+    headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
 
-    // Header parameters
+    const serializedBody = undefined
+    const mediaType = undefined
 
-    const rsp = this.httpRequest.request<unknown>({
+    const payload = await this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/assets/{asset-id}/balances',
       path: { 'asset-id': typeof assetId === 'bigint' ? assetId.toString() : assetId },
@@ -430,15 +462,16 @@ export class IndexerApi {
           typeof params?.currencyLessThan === 'bigint' ? (params!.currencyLessThan as bigint).toString() : params?.currencyLessThan,
       },
       headers,
-      body: undefined,
-      mediaType: undefined,
+      body: serializedBody,
+      mediaType: mediaType,
       ...(requestOptions ?? {}),
     })
-    const parsed = (await rsp) as LookupAssetBalances
-    try {
-      return (LookupAssetBalancesCodecs as any).decodeJson(parsed as any) as LookupAssetBalances
-    } catch {}
-    return parsed
+
+    const responseMeta = LookupAssetBalancesMeta
+    if (responseMeta) {
+      return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
+    }
+    return payload as LookupAssetBalances
   }
 
   /**
@@ -450,25 +483,28 @@ export class IndexerApi {
     requestOptions?: ApiRequestOptions,
   ): Promise<LookupAssetById> {
     const headers: Record<string, string> = {}
-    headers['Accept'] = 'application/json'
+    const responseFormat: 'json' | 'msgpack' = 'json'
+    headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
 
-    // Header parameters
+    const serializedBody = undefined
+    const mediaType = undefined
 
-    const rsp = this.httpRequest.request<unknown>({
+    const payload = await this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/assets/{asset-id}',
       path: { 'asset-id': typeof assetId === 'bigint' ? assetId.toString() : assetId },
       query: { 'include-all': params?.includeAll },
       headers,
-      body: undefined,
-      mediaType: undefined,
+      body: serializedBody,
+      mediaType: mediaType,
       ...(requestOptions ?? {}),
     })
-    const parsed = (await rsp) as LookupAssetById
-    try {
-      return (LookupAssetByIdCodecs as any).decodeJson(parsed as any) as LookupAssetById
-    } catch {}
-    return parsed
+
+    const responseMeta = LookupAssetByIdMeta
+    if (responseMeta) {
+      return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
+    }
+    return payload as LookupAssetById
   }
 
   /**
@@ -498,11 +534,13 @@ export class IndexerApi {
     requestOptions?: ApiRequestOptions,
   ): Promise<LookupAssetTransactions> {
     const headers: Record<string, string> = {}
-    headers['Accept'] = 'application/json'
+    const responseFormat: 'json' | 'msgpack' = 'json'
+    headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
 
-    // Header parameters
+    const serializedBody = undefined
+    const mediaType = undefined
 
-    const rsp = this.httpRequest.request<unknown>({
+    const payload = await this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/assets/{asset-id}/transactions',
       path: { 'asset-id': typeof assetId === 'bigint' ? assetId.toString() : assetId },
@@ -530,15 +568,16 @@ export class IndexerApi {
         'rekey-to': params?.rekeyTo,
       },
       headers,
-      body: undefined,
-      mediaType: undefined,
+      body: serializedBody,
+      mediaType: mediaType,
       ...(requestOptions ?? {}),
     })
-    const parsed = (await rsp) as LookupAssetTransactions
-    try {
-      return (LookupAssetTransactionsCodecs as any).decodeJson(parsed as any) as LookupAssetTransactions
-    } catch {}
-    return parsed
+
+    const responseMeta = LookupAssetTransactionsMeta
+    if (responseMeta) {
+      return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
+    }
+    return payload as LookupAssetTransactions
   }
 
   /**
@@ -546,25 +585,28 @@ export class IndexerApi {
    */
   async lookupBlock(roundNumber: number | bigint, params?: { headerOnly?: boolean }, requestOptions?: ApiRequestOptions): Promise<Block> {
     const headers: Record<string, string> = {}
-    headers['Accept'] = 'application/json'
+    const responseFormat: 'json' | 'msgpack' = 'json'
+    headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
 
-    // Header parameters
+    const serializedBody = undefined
+    const mediaType = undefined
 
-    const rsp = this.httpRequest.request<unknown>({
+    const payload = await this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/blocks/{round-number}',
       path: { 'round-number': typeof roundNumber === 'bigint' ? roundNumber.toString() : roundNumber },
       query: { 'header-only': params?.headerOnly },
       headers,
-      body: undefined,
-      mediaType: undefined,
+      body: serializedBody,
+      mediaType: mediaType,
       ...(requestOptions ?? {}),
     })
-    const parsed = (await rsp) as Block
-    try {
-      return (BlockCodecs as any).decodeJson(parsed as any) as Block
-    } catch {}
-    return parsed
+
+    const responseMeta = BlockMeta
+    if (responseMeta) {
+      return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
+    }
+    return payload as Block
   }
 
   /**
@@ -572,48 +614,54 @@ export class IndexerApi {
    */
   async lookupTransaction(txid: string, requestOptions?: ApiRequestOptions): Promise<LookupTransaction> {
     const headers: Record<string, string> = {}
-    headers['Accept'] = 'application/json'
+    const responseFormat: 'json' | 'msgpack' = 'json'
+    headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
 
-    // Header parameters
+    const serializedBody = undefined
+    const mediaType = undefined
 
-    const rsp = this.httpRequest.request<unknown>({
+    const payload = await this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/transactions/{txid}',
       path: { txid: txid },
       query: {},
       headers,
-      body: undefined,
-      mediaType: undefined,
+      body: serializedBody,
+      mediaType: mediaType,
       ...(requestOptions ?? {}),
     })
-    const parsed = (await rsp) as LookupTransaction
-    try {
-      return (LookupTransactionCodecs as any).decodeJson(parsed as any) as LookupTransaction
-    } catch {}
-    return parsed
+
+    const responseMeta = LookupTransactionMeta
+    if (responseMeta) {
+      return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
+    }
+    return payload as LookupTransaction
   }
 
   async makeHealthCheck(requestOptions?: ApiRequestOptions): Promise<HealthCheck> {
     const headers: Record<string, string> = {}
-    headers['Accept'] = 'application/json'
+    const responseFormat: 'json' | 'msgpack' = 'json'
+    headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
 
-    // Header parameters
+    const serializedBody = undefined
+    const mediaType = undefined
 
-    const rsp = this.httpRequest.request<unknown>({
+    const payload = await this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/health',
       path: {},
       query: {},
       headers,
-      body: undefined,
-      mediaType: undefined,
+      body: serializedBody,
+      mediaType: mediaType,
       ...(requestOptions ?? {}),
     })
-    const parsed = (await rsp) as HealthCheck
-    try {
-      return (HealthCheckCodecs as any).decodeJson(parsed as any) as HealthCheck
-    } catch {}
-    return parsed
+
+    const responseMeta = HealthCheckMeta
+    if (responseMeta) {
+      return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
+    }
+    return payload as HealthCheck
   }
 
   /**
@@ -636,11 +684,13 @@ export class IndexerApi {
     requestOptions?: ApiRequestOptions,
   ): Promise<SearchForAccounts> {
     const headers: Record<string, string> = {}
-    headers['Accept'] = 'application/json'
+    const responseFormat: 'json' | 'msgpack' = 'json'
+    headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
 
-    // Header parameters
+    const serializedBody = undefined
+    const mediaType = undefined
 
-    const rsp = this.httpRequest.request<unknown>({
+    const payload = await this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/accounts',
       path: {},
@@ -662,15 +712,16 @@ export class IndexerApi {
         'online-only': params?.onlineOnly,
       },
       headers,
-      body: undefined,
-      mediaType: undefined,
+      body: serializedBody,
+      mediaType: mediaType,
       ...(requestOptions ?? {}),
     })
-    const parsed = (await rsp) as SearchForAccounts
-    try {
-      return (SearchForAccountsCodecs as any).decodeJson(parsed as any) as SearchForAccounts
-    } catch {}
-    return parsed
+
+    const responseMeta = SearchForAccountsMeta
+    if (responseMeta) {
+      return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
+    }
+    return payload as SearchForAccounts
   }
 
   /**
@@ -682,25 +733,28 @@ export class IndexerApi {
     requestOptions?: ApiRequestOptions,
   ): Promise<SearchForApplicationBoxes> {
     const headers: Record<string, string> = {}
-    headers['Accept'] = 'application/json'
+    const responseFormat: 'json' | 'msgpack' = 'json'
+    headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
 
-    // Header parameters
+    const serializedBody = undefined
+    const mediaType = undefined
 
-    const rsp = this.httpRequest.request<unknown>({
+    const payload = await this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/applications/{application-id}/boxes',
       path: { 'application-id': typeof applicationId === 'bigint' ? applicationId.toString() : applicationId },
       query: { limit: typeof params?.limit === 'bigint' ? (params!.limit as bigint).toString() : params?.limit, next: params?.next },
       headers,
-      body: undefined,
-      mediaType: undefined,
+      body: serializedBody,
+      mediaType: mediaType,
       ...(requestOptions ?? {}),
     })
-    const parsed = (await rsp) as SearchForApplicationBoxes
-    try {
-      return (SearchForApplicationBoxesCodecs as any).decodeJson(parsed as any) as SearchForApplicationBoxes
-    } catch {}
-    return parsed
+
+    const responseMeta = SearchForApplicationBoxesMeta
+    if (responseMeta) {
+      return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
+    }
+    return payload as SearchForApplicationBoxes
   }
 
   /**
@@ -711,11 +765,13 @@ export class IndexerApi {
     requestOptions?: ApiRequestOptions,
   ): Promise<SearchForApplications> {
     const headers: Record<string, string> = {}
-    headers['Accept'] = 'application/json'
+    const responseFormat: 'json' | 'msgpack' = 'json'
+    headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
 
-    // Header parameters
+    const serializedBody = undefined
+    const mediaType = undefined
 
-    const rsp = this.httpRequest.request<unknown>({
+    const payload = await this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/applications',
       path: {},
@@ -727,15 +783,16 @@ export class IndexerApi {
         next: params?.next,
       },
       headers,
-      body: undefined,
-      mediaType: undefined,
+      body: serializedBody,
+      mediaType: mediaType,
       ...(requestOptions ?? {}),
     })
-    const parsed = (await rsp) as SearchForApplications
-    try {
-      return (SearchForApplicationsCodecs as any).decodeJson(parsed as any) as SearchForApplications
-    } catch {}
-    return parsed
+
+    const responseMeta = SearchForApplicationsMeta
+    if (responseMeta) {
+      return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
+    }
+    return payload as SearchForApplications
   }
 
   /**
@@ -754,11 +811,13 @@ export class IndexerApi {
     requestOptions?: ApiRequestOptions,
   ): Promise<SearchForAssets> {
     const headers: Record<string, string> = {}
-    headers['Accept'] = 'application/json'
+    const responseFormat: 'json' | 'msgpack' = 'json'
+    headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
 
-    // Header parameters
+    const serializedBody = undefined
+    const mediaType = undefined
 
-    const rsp = this.httpRequest.request<unknown>({
+    const payload = await this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/assets',
       path: {},
@@ -772,15 +831,16 @@ export class IndexerApi {
         'asset-id': typeof params?.assetId === 'bigint' ? (params!.assetId as bigint).toString() : params?.assetId,
       },
       headers,
-      body: undefined,
-      mediaType: undefined,
+      body: serializedBody,
+      mediaType: mediaType,
       ...(requestOptions ?? {}),
     })
-    const parsed = (await rsp) as SearchForAssets
-    try {
-      return (SearchForAssetsCodecs as any).decodeJson(parsed as any) as SearchForAssets
-    } catch {}
-    return parsed
+
+    const responseMeta = SearchForAssetsMeta
+    if (responseMeta) {
+      return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
+    }
+    return payload as SearchForAssets
   }
 
   /**
@@ -801,11 +861,13 @@ export class IndexerApi {
     requestOptions?: ApiRequestOptions,
   ): Promise<SearchForBlockHeaders> {
     const headers: Record<string, string> = {}
-    headers['Accept'] = 'application/json'
+    const responseFormat: 'json' | 'msgpack' = 'json'
+    headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
 
-    // Header parameters
+    const serializedBody = undefined
+    const mediaType = undefined
 
-    const rsp = this.httpRequest.request<unknown>({
+    const payload = await this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/block-headers',
       path: {},
@@ -821,15 +883,16 @@ export class IndexerApi {
         absent: params?.absent,
       },
       headers,
-      body: undefined,
-      mediaType: undefined,
+      body: serializedBody,
+      mediaType: mediaType,
       ...(requestOptions ?? {}),
     })
-    const parsed = (await rsp) as SearchForBlockHeaders
-    try {
-      return (SearchForBlockHeadersCodecs as any).decodeJson(parsed as any) as SearchForBlockHeaders
-    } catch {}
-    return parsed
+
+    const responseMeta = SearchForBlockHeadersMeta
+    if (responseMeta) {
+      return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
+    }
+    return payload as SearchForBlockHeaders
   }
 
   /**
@@ -861,11 +924,13 @@ export class IndexerApi {
     requestOptions?: ApiRequestOptions,
   ): Promise<SearchForTransactions> {
     const headers: Record<string, string> = {}
-    headers['Accept'] = 'application/json'
+    const responseFormat: 'json' | 'msgpack' = 'json'
+    headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
 
-    // Header parameters
+    const serializedBody = undefined
+    const mediaType = undefined
 
-    const rsp = this.httpRequest.request<unknown>({
+    const payload = await this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/v2/transactions',
       path: {},
@@ -896,14 +961,15 @@ export class IndexerApi {
         'application-id': typeof params?.applicationId === 'bigint' ? (params!.applicationId as bigint).toString() : params?.applicationId,
       },
       headers,
-      body: undefined,
-      mediaType: undefined,
+      body: serializedBody,
+      mediaType: mediaType,
       ...(requestOptions ?? {}),
     })
-    const parsed = (await rsp) as SearchForTransactions
-    try {
-      return (SearchForTransactionsCodecs as any).decodeJson(parsed as any) as SearchForTransactions
-    } catch {}
-    return parsed
+
+    const responseMeta = SearchForTransactionsMeta
+    if (responseMeta) {
+      return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
+    }
+    return payload as SearchForTransactions
   }
 }

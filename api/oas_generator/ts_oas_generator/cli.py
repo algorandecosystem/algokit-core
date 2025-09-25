@@ -81,7 +81,7 @@ Examples:
 
     # Validate inputs
     if not parsed_args.spec_file.exists():
-        parser.error(f"Specification file not found: {parsed_args.spec_file}")
+        parser.error(f"Specification file not found: {parsed_args.spec_file!s}")
 
     return parsed_args
 
@@ -90,8 +90,8 @@ def print_generation_summary(*, file_count: int, files: dict[Path, str], output_
     """Print summary of generated files."""
     print(f"Generated {file_count} files:")
     for file_path in sorted(files.keys()):
-        print(f"  {file_path}")
-    print(f"\nTypeScript client generated successfully in {output_dir}")
+        print(f"  {file_path!s}")
+    print(f"\nTypeScript client generated successfully in {output_dir!s}")
 
 
 @contextlib.contextmanager
@@ -149,21 +149,21 @@ def main(args: list[str] | None = None) -> int:
                     output_dir=parsed_args.output_dir,
                 )
             else:
-                print(f"TypeScript client generated successfully in {parsed_args.output_dir}")
+                print(f"TypeScript client generated successfully in {parsed_args.output_dir!s}")
 
         return EXIT_SUCCESS
 
     except FileNotFoundError:
         print(
-            f"Error: Specification file not found: {parsed_args.spec_file}",
+            f"Error: Specification file not found: {parsed_args.spec_file!s}",
             file=sys.stderr,
         )
         return EXIT_FILE_NOT_FOUND
     except json.JSONDecodeError as e:
-        print(f"Error: Invalid JSON in specification file: {e}", file=sys.stderr)
+        print(f"Error: Invalid JSON in specification file: {e!s}", file=sys.stderr)
         return EXIT_INVALID_JSON
     except Exception as e:
-        print(f"Error: {e}", file=sys.stderr)
+        print(f"Error: {e!s}", file=sys.stderr)
         if parsed_args.verbose:
             traceback.print_exc()
         return EXIT_GENERATION_ERROR

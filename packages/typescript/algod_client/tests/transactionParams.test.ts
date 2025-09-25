@@ -1,7 +1,6 @@
 import { expect, it, describe } from 'vitest'
 import { AlgodClient } from '../src/client'
 import { getAlgodEnv } from './config'
-import { IntDecoding } from '../src'
 
 describe('transactionParams', () => {
   it('should fetch transaction params', async () => {
@@ -9,12 +8,10 @@ describe('transactionParams', () => {
     const client = new AlgodClient({
       baseUrl: env.algodBaseUrl,
       headers: { 'X-Algo-API-Token': env.algodApiToken ?? '' },
-      intDecoding: IntDecoding.BIGINT,
     })
     const sp = await client.transactionParams()
     expect(sp).toHaveProperty('genesisHash')
     expect(sp.genesisHash).toBeInstanceOf(Uint8Array)
     expect(sp).toHaveProperty('lastRound')
-    expect(typeof sp.lastRound).toBeInstanceOf(BigInt)
   })
 })

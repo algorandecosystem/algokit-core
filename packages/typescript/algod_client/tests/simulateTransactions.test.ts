@@ -1,5 +1,5 @@
 import { expect, it, describe } from 'vitest'
-import { AlgodClient, ClientConfig, IntDecoding, SimulateRequest } from '../src'
+import { AlgodClient, ClientConfig, SimulateRequest } from '../src'
 import { TransactionType, type SignedTransaction, type Transaction } from '@algorandfoundation/algokit-transact'
 import { getAlgodEnv, getSenderAccount, groupTransactions, signTransaction } from './config'
 
@@ -9,7 +9,6 @@ describe('simulateTransactions', () => {
     const client = new AlgodClient({
       baseUrl: env.algodBaseUrl,
       headers: { 'X-Algo-API-Token': env.algodApiToken ?? '' },
-      intDecoding: IntDecoding.BIGINT,
     } as ClientConfig)
     const acct = await getSenderAccount()
     const sp = await client.transactionParams()

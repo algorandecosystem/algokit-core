@@ -1,10 +1,11 @@
-"""
-Lightweight OpenAPI Specification Parser for TypeScript Client Generation.
+"""Lightweight OpenAPI Specification Parser for TypeScript Client Generation.
 
 This module provides a minimal parser that loads OpenAPI 3.x specifications
 for use by the TypeScript generator. It focuses only on loading the spec
 data, leaving all processing to the template engine.
 """
+
+from __future__ import annotations
 
 import json
 from pathlib import Path
@@ -19,8 +20,7 @@ class OASParser:
         self.spec_data: dict[str, Any] | None = None
 
     def parse_file(self, file_path: str | Path) -> None:
-        """
-        Parse OpenAPI specification from a JSON file.
+        """Parse OpenAPI specification from a JSON file.
 
         Args:
             file_path: Path to the OpenAPI specification file (JSON format)
@@ -31,14 +31,14 @@ class OASParser:
         """
         path = Path(file_path)
         if not path.exists():
-            raise FileNotFoundError(f"OpenAPI spec file not found: {file_path}")
+            msg = f"OpenAPI spec file not found: {file_path}"
+            raise FileNotFoundError(msg)
 
         with path.open(encoding="utf-8") as f:
             self.spec_data = json.load(f)
 
     def parse_dict(self, spec_dict: dict[str, Any]) -> None:
-        """
-        Parse OpenAPI specification from a dictionary.
+        """Parse OpenAPI specification from a dictionary.
 
         Args:
             spec_dict: The OpenAPI specification as a dictionary

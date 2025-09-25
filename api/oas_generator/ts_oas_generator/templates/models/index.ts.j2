@@ -1,5 +1,4 @@
-// Barrel file for models
 {% for name, _ in schemas.items() %}
-export type { {{ name | ts_pascal_case }}, {{ name | ts_pascal_case }}Dto } from './{{ name | ts_kebab_case }}';
-export { {{ name | ts_pascal_case }} as {{ name | ts_pascal_case }}Codecs } from './{{ name | ts_kebab_case }}';
+export type { {{ name | ts_pascal_case }} } from './{{ name | ts_kebab_case }}';
+export { {{ name | ts_pascal_case }}Meta } from './{{ name | ts_kebab_case }}';
 {% endfor %}

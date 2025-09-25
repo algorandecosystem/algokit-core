@@ -1,12 +1,25 @@
-use std::collections::HashMap;
-use std::env;
-use std::path::{Path, PathBuf};
-use std::process::Output;
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 use clap::{Parser, Subcommand};
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{Result, eyre};
 use duct::cmd;
-use std::fs;
+use once_cell::sync::OnceCell;
+
+const DEFAULT_TS_PRESERVE: &[&str] = &[
+    "__tests__",
+    "tests",
+    "node_modules",
+    "eslint.config.mjs",
+    "package.json",
+    "README.md",
+    "rolldown.config.ts",
+    "tsconfig.json",
+    "tsconfig.build.json",
+    "tsconfig.test.json",
+];
 
 #[derive(Parser, Debug)]
 #[command(author, version, about = "API development tools", long_about = None)]
@@ -62,80 +75,115 @@ enum Commands {
     ConvertIndexer,
 }
 
-fn get_repo_root() -> PathBuf {
-    let manifest_dir = env!("CARGO_MANIFEST_DIR");
-    let repo_root = Path::new(manifest_dir)
-        .parent() // tools/
-        .unwrap()
-        .parent() // repo root
-        .unwrap();
+fn repo_root() -> &'static Path {
+    static ROOT: OnceCell<PathBuf> = OnceCell::new();
 
-    PathBuf::from(repo_root)
+    ROOT.get_or_init(|| {
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(|dir| dir.parent())
+            .map(Path::to_path_buf)
+            .expect("invalid repository layout")
+    })
+    .as_path()
 }
 
-fn run(
-    command_str: &str,
-    dir: Option<&Path>,
-    env_vars: Option<HashMap<String, String>>,
-) -> Result<Output> {
-    let parsed_command: Vec<String> = shlex::Shlex::new(command_str).collect();
+fn run(command_str: &str, dir: Option<&Path>, env_vars: Option<&[(&str, &str)]>) -> Result<()> {
+    let mut tokens = shlex::Shlex::new(command_str);
+    let program = tokens
+        .next()
+        .ok_or_else(|| eyre!("command string must not be empty"))?;
+    let args: Vec<_> = tokens.collect();
 
-    let working_dir = get_repo_root().join(dir.unwrap_or(Path::new("")));
-    let mut command = cmd(&parsed_command[0], &parsed_command[1..])
-        .dir(&working_dir)
-        .stderr_to_stdout();
+    let working_dir = dir
+        .map(|path| repo_root().join(path))
+        .unwrap_or_else(|| repo_root().to_path_buf());
 
-    if let Some(env_vars) = env_vars {
-        for (key, value) in &env_vars {
-            command = command.env(key, value);
-        }
+    let mut expr = cmd(program, args).dir(&working_dir).stderr_to_stdout();
+
+    if let Some(vars) = env_vars {
+        expr = vars
+            .iter()
+            .fold(expr, |cmd, (key, value)| cmd.env(key, value));
     }
 
-    Ok(command.run()?)
+    expr.run()?;
+    Ok(())
+}
+
+fn clean_ts_package_with_preserve(rel_dir: &str, preserve: &[&str]) -> Result<()> {
+    let pkg_dir = repo_root().join(rel_dir);
+    if !pkg_dir.exists() {
+        return Ok(());
+    }
+
+    for entry in fs::read_dir(&pkg_dir)? {
+        let entry = entry?;
+        let name = entry.file_name();
+        let name_str = name.to_string_lossy();
+        if preserve.iter().any(|p| *p == name_str) {
+            continue;
+        }
+        let path = entry.path();
+        if path.is_dir() {
+            fs::remove_dir_all(&path)?;
+        } else {
+            fs::remove_file(&path)?;
+        }
+    }
+    Ok(())
+}
+
+fn clean_ts_package(rel_dir: &str) -> Result<()> {
+    clean_ts_package_with_preserve(rel_dir, DEFAULT_TS_PRESERVE)
+}
+
+#[derive(Clone, Copy)]
+struct TsClientConfig {
+    spec: &'static str,
+    output_rel: &'static str,
+    package_name: &'static str,
+    description: &'static str,
+}
+
+const ALGOD_TS_CLIENT: TsClientConfig = TsClientConfig {
+    spec: "algod",
+    output_rel: "packages/typescript/algod_client",
+    package_name: "algod_client",
+    description: "TypeScript client for algod interaction.",
+};
+
+const INDEXER_TS_CLIENT: TsClientConfig = TsClientConfig {
+    spec: "indexer",
+    output_rel: "packages/typescript/indexer_client",
+    package_name: "indexer_client",
+    description: "TypeScript client for indexer interaction.",
+};
+
+fn generate_ts_client(config: &TsClientConfig, verbose: bool) -> Result<()> {
+    clean_ts_package(config.output_rel)?;
+
+    let mut command = format!(
+        "uv run python -m ts_oas_generator.cli ../specs/{}.oas3.json --output ../../{}/ --package-name {} --description \"{}\"",
+        config.spec, config.output_rel, config.package_name, config.description
+    );
+    if verbose {
+        command.push_str(" --verbose");
+    }
+    run(&command, Some(Path::new("api/oas_generator")), None)?;
+
+    run(
+        "npx --yes prettier --write src",
+        Some(Path::new(config.output_rel)),
+        None,
+    )?;
+    run("npm run build", Some(Path::new(config.output_rel)), None)?;
+    run("npm run test", Some(Path::new(config.output_rel)), None)?;
+
+    Ok(())
 }
 
 fn execute_command(command: &Commands) -> Result<()> {
-    fn clean_ts_package_with_preserve(rel_dir: &str, preserve: &[&str]) -> Result<()> {
-        let root = get_repo_root();
-        let pkg_dir = root.join(rel_dir);
-        if !pkg_dir.exists() {
-            return Ok(());
-        }
-
-        for entry in fs::read_dir(&pkg_dir)? {
-            let entry = entry?;
-            let name = entry.file_name();
-            let name_str = name.to_string_lossy();
-            if preserve.iter().any(|p| *p == name_str) {
-                continue;
-            }
-            let path = entry.path();
-            if path.is_dir() {
-                // Remove entire directory tree
-                fs::remove_dir_all(&path)?;
-            } else {
-                // Remove file
-                fs::remove_file(&path)?;
-            }
-        }
-        Ok(())
-    }
-    fn clean_ts_package(rel_dir: &str) -> Result<()> {
-        // Preserve root files and __tests__/; generator will only write to src/
-        let default_preserve: &[&str] = &[
-            "__tests__",
-            "tests",
-            "node_modules",
-            "eslint.config.mjs",
-            "package.json",
-            "README.md",
-            "rolldown.config.ts",
-            "tsconfig.json",
-            "tsconfig.build.json",
-            "tsconfig.test.json",
-        ];
-        clean_ts_package_with_preserve(rel_dir, default_preserve)
-    }
     match command {
         Commands::TestOas => {
             run("uv run pytest", Some(Path::new("api/oas_generator")), None)?;
@@ -227,105 +275,14 @@ fn execute_command(command: &Commands) -> Result<()> {
             )?;
         }
         Commands::GenerateTsAlgod => {
-            // Clean package directory but preserve manual tests and node_modules
-            clean_ts_package("packages/typescript/algod_client")?;
-            // Generate the TypeScript client (algod)
-            run(
-                "uv run python -m ts_oas_generator.cli ../specs/algod.oas3.json --output ../../packages/typescript/algod_client/ --package-name algod_client --description \"TypeScript client for algod interaction.\" --verbose",
-                Some(Path::new("api/oas_generator")),
-                None,
-            )?;
-            // Format generated code
-            run(
-                "npx --yes prettier --write src",
-                Some(Path::new("packages/typescript/algod_client")),
-                None,
-            )?;
-            // Build and test using npm workspace scripts
-            run(
-                "npm run build",
-                Some(Path::new("packages/typescript/algod_client")),
-                None,
-            )?;
-            run(
-                "npm run test",
-                Some(Path::new("packages/typescript/algod_client")),
-                None,
-            )?;
+            generate_ts_client(&ALGOD_TS_CLIENT, true)?;
         }
         Commands::GenerateTsIndexer => {
-            // Clean package directory but preserve manual tests and node_modules
-            clean_ts_package("packages/typescript/indexer_client")?;
-            // Generate the TypeScript client (indexer)
-            run(
-                "uv run python -m ts_oas_generator.cli ../specs/indexer.oas3.json --output ../../packages/typescript/indexer_client/ --package-name indexer_client --description \"TypeScript client for indexer interaction.\" --verbose",
-                Some(Path::new("api/oas_generator")),
-                None,
-            )?;
-            // Format generated code
-            run(
-                "npx --yes prettier --write src",
-                Some(Path::new("packages/typescript/indexer_client")),
-                None,
-            )?;
-            run(
-                "npm run build",
-                Some(Path::new("packages/typescript/indexer_client")),
-                None,
-            )?;
-            run(
-                "npm run test",
-                Some(Path::new("packages/typescript/indexer_client")),
-                None,
-            )?;
+            generate_ts_client(&INDEXER_TS_CLIENT, true)?;
         }
         Commands::GenerateTsAll => {
-            // Clean package directories while preserving manual tests and node_modules
-            clean_ts_package("packages/typescript/algod_client")?;
-            clean_ts_package("packages/typescript/indexer_client")?;
-            // Generate both TypeScript clients
-            run(
-                "uv run python -m ts_oas_generator.cli ../specs/algod.oas3.json --output ../../packages/typescript/algod_client/ --package-name algod_client --description \"TypeScript client for algod interaction.\"",
-                Some(Path::new("api/oas_generator")),
-                None,
-            )?;
-            run(
-                "uv run python -m ts_oas_generator.cli ../specs/indexer.oas3.json --output ../../packages/typescript/indexer_client/ --package-name indexer_client --description \"TypeScript client for indexer interaction.\"",
-                Some(Path::new("api/oas_generator")),
-                None,
-            )?;
-            // Format both generated packages
-            run(
-                "npx --yes prettier --write src",
-                Some(Path::new("packages/typescript/algod_client")),
-                None,
-            )?;
-            run(
-                "npx --yes prettier --write src",
-                Some(Path::new("packages/typescript/indexer_client")),
-                None,
-            )?;
-            // Build and test both packages
-            run(
-                "npm run build",
-                Some(Path::new("packages/typescript/algod_client")),
-                None,
-            )?;
-            run(
-                "npm run build",
-                Some(Path::new("packages/typescript/indexer_client")),
-                None,
-            )?;
-            run(
-                "npm run test",
-                Some(Path::new("packages/typescript/algod_client")),
-                None,
-            )?;
-            run(
-                "npm run test",
-                Some(Path::new("packages/typescript/indexer_client")),
-                None,
-            )?;
+            generate_ts_client(&ALGOD_TS_CLIENT, false)?;
+            generate_ts_client(&INDEXER_TS_CLIENT, false)?;
         }
         Commands::ConvertOpenapi => {
             run("npm run convert-openapi", Some(Path::new("api")), None)?;

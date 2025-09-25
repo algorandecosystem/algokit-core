@@ -77,40 +77,55 @@ jobs:
     needs: oas_lint_and_test
     strategy:
       matrix:
-        pkg: [algod_client, indexer_client]
+        client: [algod, indexer]
+        include:
+          - client: algod
+            package_dir: packages/typescript/algod_client
+            package_subdir: algod_client
+            workspace: "@algorandfoundation/algod-client"
+          - client: indexer
+            package_dir: packages/typescript/indexer_client
+            package_subdir: indexer_client
+            workspace: "@algorandfoundation/indexer-client"
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-api-tools
         with:
-          setup_algokit: 'true'
-      - uses: actions/setup-node@v4
+          setup_algokit: "true"
+      - uses: actions/setup-node@v5
         with:
           node-version: "20"
+          cache: "npm"
+          cache-dependency-path: packages/typescript/package-lock.json
 
-      - name: Generate TypeScript API clients
-        run: cargo api generate-ts-all
+      - name: Install TypeScript workspace dependencies
+        working-directory: packages/typescript
+        run: npm ci
 
-      - name: Check output stability for ${{ matrix.pkg }}
+      - name: Generate ${{ matrix.client }} TypeScript API client
+        run: cargo api generate-ts-${{ matrix.client }}
+
+      - name: Check output stability
         run: |
-          git add -N packages/typescript/${{ matrix.pkg }}
-          if ! git diff --exit-code --minimal packages/typescript/${{ matrix.pkg }}; then
-            echo "❌ Generated ${{ matrix.pkg }} TS client differs from committed version!"
-            echo "🔧 To fix: Run 'cargo api generate-ts-all' locally and commit the changes"
+          git add -N ${{ matrix.package_dir }}
+          if ! git diff --exit-code --minimal ${{ matrix.package_dir }}; then
+            echo "❌ Generated ${{ matrix.client }} TypeScript client differs from committed version."
+            echo "🔧 To fix: run 'cargo api generate-ts-${{ matrix.client }}' locally and commit the changes."
             exit 1
           fi
 
-      - name: Install dependencies (${{ matrix.pkg }})
-        working-directory: packages/typescript/${{ matrix.pkg }}
-        run: bun install
+      - name: Prettier check
+        working-directory: packages/typescript
+        run: npx --yes prettier --check ${{ matrix.package_subdir }}
 
-      - name: Format check (${{ matrix.pkg }})
-        working-directory: packages/typescript/${{ matrix.pkg }}
-        run: npx prettier --check .
+      - name: Lint generated client
+        working-directory: packages/typescript
+        run: npm run lint --workspace ${{ matrix.workspace }}
 
-      - name: Build (tsc) ${{ matrix.pkg }}
-        working-directory: packages/typescript/${{ matrix.pkg }}
-        run: bun run build
+      - name: Build generated client
+        working-directory: packages/typescript
+        run: npm run build --workspace ${{ matrix.workspace }}
 
-      - name: Test (${{ matrix.pkg }})
-        working-directory: packages/typescript/${{ matrix.pkg }}
-        run: bun test
+      - name: Test generated client
+        working-directory: packages/typescript
+        run: npm test --workspace ${{ matrix.workspace }}
