@@ -75,6 +75,7 @@ export async function request<T>(config: ClientConfig, options: {
     try {
       const ct = response.headers.get('content-type');
       if (ct && ct.includes('application/json')) body = parseJson(await response.text(), config.intDecoding ?? IntDecoding.MIXED);
+      else if (ct && ct.includes('application/msgpack')) body = decodeMsgPack(new Uint8Array(await response.arrayBuffer()));
       else body = await response.text();
     } catch {}
     throw new ApiError(url.toString(), response.status, body);

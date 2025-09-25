@@ -49,7 +49,7 @@ export type SimulateUnnamedResourcesAccessed = {
 
 // JSON DTO shape for SimulateUnnamedResourcesAccessed with wire keys and JSON-safe primitives
 export type SimulateUnnamedResourcesAccessedDto = {
-  accounts?: string[][]
+  accounts?: string[]
   assets?: string[]
   apps?: string[]
   boxes?: BoxReferenceDto[]
@@ -227,9 +227,9 @@ export function decodeJsonArray(raw: unknown): SimulateUnnamedResourcesAccessed[
 
 // Internal: msgpack DTO (wire keys, bytes kept as Uint8Array, signed txn encoded to bytes)
 type SimulateUnnamedResourcesAccessedMsgpackDto = {
-  accounts?: string[][]
-  assets?: bigint[][]
-  apps?: bigint[][]
+  accounts?: string[]
+  assets?: bigint[]
+  apps?: bigint[]
   boxes?: ReturnType<(typeof BoxReferenceModel)['toMsgpackDto']>[]
   'extra-box-refs'?: bigint
   'asset-holdings'?: ReturnType<(typeof AssetHoldingReferenceModel)['toMsgpackDto']>[]

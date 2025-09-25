@@ -25,7 +25,7 @@ export type HealthCheckDto = {
   'is-migrating': boolean
   'db-available': boolean
   message: string
-  errors?: string[][]
+  errors?: string[]
 }
 
 // Helpers
@@ -203,7 +203,7 @@ type HealthCheckMsgpackDto = {
   'is-migrating': boolean
   'db-available': boolean
   message: string
-  errors?: string[][]
+  errors?: string[]
 }
 
 function toMsgpackDto(value: HealthCheck): HealthCheckMsgpackDto {

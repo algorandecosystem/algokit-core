@@ -30,7 +30,7 @@ export type TransactionSignatureLogicsig = {
 
 // JSON DTO shape for TransactionSignatureLogicsig with wire keys and JSON-safe primitives
 export type TransactionSignatureLogicsigDto = {
-  args?: string[][]
+  args?: string[]
   logic: string
   'multisig-signature'?: TransactionSignatureMultisigDto
   'logic-multisig-signature'?: TransactionSignatureMultisigDto
@@ -174,7 +174,7 @@ export function decodeJsonArray(raw: unknown): TransactionSignatureLogicsig[] {
 
 // Internal: msgpack DTO (wire keys, bytes kept as Uint8Array, signed txn encoded to bytes)
 type TransactionSignatureLogicsigMsgpackDto = {
-  args?: string[][]
+  args?: string[]
   logic: Uint8Array
   'multisig-signature'?: ReturnType<(typeof TransactionSignatureMultisigModel)['toMsgpackDto']>
   'logic-multisig-signature'?: ReturnType<(typeof TransactionSignatureMultisigModel)['toMsgpackDto']>

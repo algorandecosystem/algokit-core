@@ -409,7 +409,7 @@ type PendingTransactionResponseMsgpackDto = {
   'sender-rewards'?: bigint
   'local-state-delta'?: ReturnType<(typeof AccountStateDeltaModel)['toMsgpackDto']>[]
   'global-state-delta'?: ReturnType<(typeof StateDeltaModel)['toMsgpackDto']>
-  logs?: Uint8Array[][]
+  logs?: Uint8Array[]
   'inner-txns'?: ReturnType<(typeof PendingTransactionResponseModel)['toMsgpackDto']>[]
   txn: Uint8Array
 }

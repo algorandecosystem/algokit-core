@@ -10,7 +10,7 @@ export type GetBlockTxids = {
 
 // JSON DTO shape for GetBlockTxids with wire keys and JSON-safe primitives
 export type GetBlockTxidsDto = {
-  blockTxids: string[][]
+  blockTxids: string[]
 }
 
 // Helpers
@@ -86,7 +86,7 @@ export function decodeJsonArray(raw: unknown): GetBlockTxids[] {
 
 // Internal: msgpack DTO (wire keys, bytes kept as Uint8Array, signed txn encoded to bytes)
 type GetBlockTxidsMsgpackDto = {
-  blockTxids: string[][]
+  blockTxids: string[]
 }
 
 function toMsgpackDto(value: GetBlockTxids): GetBlockTxidsMsgpackDto {

@@ -112,7 +112,7 @@ export function decodeJsonArray(raw: unknown): ApplicationLogData[] {
 // Internal: msgpack DTO (wire keys, bytes kept as Uint8Array, signed txn encoded to bytes)
 type ApplicationLogDataMsgpackDto = {
   txid: string
-  logs: Uint8Array[][]
+  logs: Uint8Array[]
 }
 
 function toMsgpackDto(value: ApplicationLogData): ApplicationLogDataMsgpackDto {

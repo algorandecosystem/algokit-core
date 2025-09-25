@@ -18,8 +18,8 @@ export type ParticipationUpdates = {
 
 // JSON DTO shape for ParticipationUpdates with wire keys and JSON-safe primitives
 export type ParticipationUpdatesDto = {
-  'expired-participation-accounts'?: string[][]
-  'absent-participation-accounts'?: string[][]
+  'expired-participation-accounts'?: string[]
+  'absent-participation-accounts'?: string[]
 }
 
 // Helpers
@@ -111,8 +111,8 @@ export function decodeJsonArray(raw: unknown): ParticipationUpdates[] {
 
 // Internal: msgpack DTO (wire keys, bytes kept as Uint8Array, signed txn encoded to bytes)
 type ParticipationUpdatesMsgpackDto = {
-  'expired-participation-accounts'?: string[][]
-  'absent-participation-accounts'?: string[][]
+  'expired-participation-accounts'?: string[]
+  'absent-participation-accounts'?: string[]
 }
 
 function toMsgpackDto(value: ParticipationUpdates): ParticipationUpdatesMsgpackDto {

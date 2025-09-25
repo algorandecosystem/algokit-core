@@ -867,7 +867,7 @@ type TransactionMsgpackDto = {
   'tx-type': 'pay' | 'keyreg' | 'acfg' | 'axfer' | 'afrz' | 'appl' | 'stpf' | 'hb'
   'local-state-delta'?: ReturnType<(typeof AccountStateDeltaModel)['toMsgpackDto']>[]
   'global-state-delta'?: ReturnType<(typeof StateDeltaModel)['toMsgpackDto']>
-  logs?: Uint8Array[][]
+  logs?: Uint8Array[]
   'inner-txns'?: ReturnType<(typeof TransactionModel)['toMsgpackDto']>[]
 }
 

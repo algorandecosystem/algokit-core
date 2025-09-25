@@ -1,68 +1,68 @@
 import { expect, it, describe } from 'vitest'
 import { AlgodClient, ClientConfig, IntDecoding, SimulateRequest } from '../src'
-import { getAlgodEnv, getSenderMnemonic } from './config'
+import { TransactionType, type SignedTransaction, type Transaction } from '@algorandfoundation/algokit-transact'
+import { getAlgodEnv, getSenderAccount, groupTransactions, signTransaction } from './config'
 
 describe('simulateTransactions', () => {
   it('should simulate two transactions and decode msgpack response', async () => {
     const env = getAlgodEnv()
-    const algosdk = (await import('algosdk')).default
     const client = new AlgodClient({
       baseUrl: env.algodBaseUrl,
       headers: { 'X-Algo-API-Token': env.algodApiToken ?? '' },
       intDecoding: IntDecoding.BIGINT,
     } as ClientConfig)
+    const acct = await getSenderAccount()
+    const sp = await client.transactionParams()
 
-    const mnemonic = env.senderMnemonic ?? (await getSenderMnemonic())
-    const acct = algosdk.mnemonicToSecretKey(mnemonic)
-    let sp = await client.transactionParams()
+    const sender = acct.address
+    const fee = sp.minFee
+    const firstValid = sp.lastRound
+    const lastValid = sp.lastRound + 1000n
+    const genesisHash = sp.genesisHash
+    const genesisId = sp.genesisId
 
-    // Create two transactions similar to Rust test
-    // Transaction 1: Simple payment
-    const txn1 = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
-      sender: acct.addr,
-      receiver: acct.addr,
-      amount: 100000, // 0.1 ALGO
-      suggestedParams: {
-        minFee: Number(sp['minFee']),
-        fee: Number(sp['minFee']),
-        firstValid: Number(sp['lastRound']),
-        flatFee: true,
-        lastValid: Number(sp['lastRound']) + 1000,
-        genesisHash: sp['genesisHash'] as Uint8Array,
-        genesisID: sp['genesisId'] as string,
+    const unsignedGroup: Transaction[] = [
+      {
+        transactionType: TransactionType.Payment,
+        sender,
+        fee,
+        firstValid,
+        lastValid,
+        genesisHash,
+        genesisId,
+        payment: {
+          receiver: sender,
+          amount: 100000n, // 0.1 ALGO
+        },
       },
-    })
-
-    // Transaction 2: Payment with note (matching Rust test)
-    sp = await client.transactionParams()
-    const txn2 = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
-      sender: acct.addr,
-      receiver: acct.addr,
-      amount: 100000, // 0.1 ALGO
-      note: new TextEncoder().encode('0aa50d27-b8f7-4d77-a1fb-551fd55df2bc'),
-      suggestedParams: {
-        minFee: Number(sp['minFee']),
-        fee: Number(sp['minFee']),
-        firstValid: Number(sp['lastRound']),
-        flatFee: true,
-        lastValid: Number(sp['lastRound']) + 1000,
-        genesisHash: sp['genesisHash'] as Uint8Array,
-        genesisID: sp['genesisId'] as string,
+      {
+        transactionType: TransactionType.Payment,
+        sender,
+        fee,
+        firstValid,
+        lastValid,
+        genesisHash,
+        genesisId,
+        note: new TextEncoder().encode('0aa50d27-b8f7-4d77-a1fb-551fd55df2bc'),
+        payment: {
+          receiver: sender,
+          amount: 100000n, // 0.1 ALGO
+        },
       },
-    })
+    ]
+
+    const [groupedTxn1, groupedTxn2] = groupTransactions(unsignedGroup)
+    const signedTxns: SignedTransaction[] = []
+    for (const gtx of [groupedTxn1, groupedTxn2]) {
+      const signed = await signTransaction(gtx, acct.secretKey)
+      signedTxns.push(signed)
+    }
 
     // Create simulate request matching Rust structure
     const simulateRequest: SimulateRequest = {
       txnGroups: [
         {
-          txns: [
-            {
-              txn: JSON.parse(algosdk.encodeJSON(txn1)),
-            },
-            {
-              txn: JSON.parse(algosdk.encodeJSON(txn2)),
-            },
-          ],
+          txns: signedTxns,
         },
       ],
       allowEmptySignatures: true,
@@ -78,8 +78,16 @@ describe('simulateTransactions', () => {
       fixSigners: true,
     }
 
-    const res = await client.simulateTransaction({ format: 'json', body: simulateRequest })
+    // Try msgpack format (default and generally more reliable)
+    const res = await client.simulateTransaction({ format: 'msgpack', body: simulateRequest })
+
+    expect(res.txnGroups).toBeDefined()
     expect(res.txnGroups.length).toBe(1)
     expect(res.txnGroups[0].txnResults.length).toBe(2)
+
+    // Both transactions should have succeeded
+    for (const result of res.txnGroups[0].txnResults) {
+      expect(result.txnResult).toBeDefined()
+    }
   }, 20000)
 })

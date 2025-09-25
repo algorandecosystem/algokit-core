@@ -14,7 +14,7 @@ export type LedgerStateDeltaForTransactionGroup = {
 // JSON DTO shape for LedgerStateDeltaForTransactionGroup with wire keys and JSON-safe primitives
 export type LedgerStateDeltaForTransactionGroupDto = {
   Delta: LedgerStateDeltaDto
-  Ids: string[][]
+  Ids: string[]
 }
 
 // Helpers
@@ -107,7 +107,7 @@ export function decodeJsonArray(raw: unknown): LedgerStateDeltaForTransactionGro
 // Internal: msgpack DTO (wire keys, bytes kept as Uint8Array, signed txn encoded to bytes)
 type LedgerStateDeltaForTransactionGroupMsgpackDto = {
   Delta: ReturnType<(typeof LedgerStateDeltaModel)['toMsgpackDto']>
-  Ids: string[][]
+  Ids: string[]
 }
 
 function toMsgpackDto(value: LedgerStateDeltaForTransactionGroup): LedgerStateDeltaForTransactionGroupMsgpackDto {

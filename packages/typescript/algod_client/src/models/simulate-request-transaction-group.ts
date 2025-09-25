@@ -1,4 +1,9 @@
-import { encodeSignedTransaction, encodeSignedTransactions, decodeSignedTransaction } from '@algorandfoundation/algokit-transact'
+import {
+  encodeSignedTransaction,
+  encodeSignedTransactions,
+  decodeSignedTransaction,
+  SignedTransaction,
+} from '@algorandfoundation/algokit-transact'
 import { encodeMsgPack, decodeMsgPack } from '../core/msgpack'
 import { toBase64 as _toBase64, fromBase64 as _fromBase64 } from '../core/json'
 
@@ -132,7 +137,6 @@ function fromMsgpackDto(dto: SimulateRequestTransactionGroupMsgpackDto): Simulat
     if (v === undefined) {
     } else {
       out['txns'] = (v as any[]).map((item) => {
-        // eslint-disable-line @typescript-eslint/no-explicit-any
         if (item instanceof Uint8Array) return decodeSignedTransaction(item)
         if (typeof item === 'object' && item != null) {
           try {

@@ -1,47 +1,47 @@
 import { expect, it, describe } from 'vitest'
 import { AlgodClient } from '../src/client'
-import { getAlgodEnv, getSenderMnemonic } from './config'
-import { PendingTransactionResponse } from '../src/models'
+import { getAlgodEnv, getSenderAccount, signTransaction } from './config'
+import { PendingTransactionResponse, PendingTransactionResponseCodecs } from '../src/models'
 import { IntDecoding } from '../src'
+import { encodeSignedTransaction, getTransactionId, TransactionType, type Transaction } from '@algorandfoundation/algokit-transact'
 
 describe('Algod pendingTransaction', () => {
   it('submits a payment tx and queries pending info', async () => {
     const env = getAlgodEnv()
-    const algosdk = (await import('algosdk')).default
     const client = new AlgodClient({
       baseUrl: env.algodBaseUrl,
       intDecoding: IntDecoding.BIGINT,
       headers: env.algodApiToken ? { 'X-Algo-API-Token': env.algodApiToken } : undefined,
     })
-
-    const mnemonic = env.senderMnemonic ?? (await getSenderMnemonic())
-    const acct = algosdk.mnemonicToSecretKey(mnemonic)
+    const acct = await getSenderAccount()
     const sp = await client.transactionParams()
 
-    // Build simple self-payment of 0 microalgos (allowed) as a noop
-    const txn = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
-      sender: acct.addr,
-      receiver: acct.addr,
-      amount: 0,
-      suggestedParams: {
-        minFee: Number(sp['minFee']),
-        fee: Number(sp['minFee']),
-        firstValid: Number(sp['lastRound']),
-        flatFee: true,
-        lastValid: Number(sp['lastRound']) + 1000,
-        genesisHash: sp['genesisHash'] as Uint8Array,
-        genesisID: sp['genesisId'] as string,
+    const senderAddress = acct.address
+    const transaction: Transaction = {
+      transactionType: TransactionType.Payment,
+      sender: senderAddress,
+      fee: BigInt(sp['minFee']), // flat fee
+      firstValid: BigInt(sp['lastRound']),
+      lastValid: BigInt(sp['lastRound']) + 1000n,
+      genesisHash: sp['genesisHash'] as Uint8Array,
+      genesisId: sp['genesisId'] as string,
+      payment: {
+        receiver: senderAddress,
+        amount: 0n,
       },
-    })
+    }
 
-    const signed = txn.signTxn(acct.sk)
-    const sendResult = await client.rawTransaction({ body: signed })
-    const txId = sendResult.txId as string
+    const signedTransaction = await signTransaction(transaction, acct.secretKey)
+    const signedBytes = encodeSignedTransaction(signedTransaction)
+    const sendResult = await client.rawTransaction({ body: signedBytes })
+    const txId = getTransactionId(transaction)
+    expect(sendResult.txId).toBe(txId)
 
     let pending: PendingTransactionResponse | undefined
     const maxAttempts = 10
     for (let i = 0; i < maxAttempts; i++) {
-      pending = await client.pendingTransactionInformation(txId, { format: 'msgpack' })
+      const pendingBytes = await client.pendingTransactionInformation(txId, { format: 'msgpack' })
+      pending = PendingTransactionResponseCodecs.decodeMsgpack(pendingBytes)
       if (pending?.confirmedRound || pending?.poolError) {
         break
       }
@@ -51,7 +51,6 @@ describe('Algod pendingTransaction', () => {
       throw new Error('Transaction confirmation timeout')
     }
 
-    // Some nodes may omit 'txid' in pending response; require txn presence
     expect(pending).toHaveProperty('txn')
   }, 30_000)
 })

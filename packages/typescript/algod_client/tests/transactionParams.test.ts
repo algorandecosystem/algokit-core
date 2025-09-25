@@ -13,6 +13,8 @@ describe('transactionParams', () => {
     })
     const sp = await client.transactionParams()
     expect(sp).toHaveProperty('genesisHash')
+    expect(sp.genesisHash).toBeInstanceOf(Uint8Array)
     expect(sp).toHaveProperty('lastRound')
+    expect(typeof sp.lastRound).toBeInstanceOf(BigInt)
   })
 })

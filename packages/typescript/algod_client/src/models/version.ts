@@ -18,7 +18,7 @@ export type VersionDto = {
   build: BuildVersionDto
   genesis_hash_b64: string
   genesis_id: string
-  versions: string[][]
+  versions: string[]
 }
 
 // Helpers
@@ -145,7 +145,7 @@ type VersionMsgpackDto = {
   build: ReturnType<(typeof BuildVersionModel)['toMsgpackDto']>
   genesis_hash_b64: Uint8Array
   genesis_id: string
-  versions: string[][]
+  versions: string[]
 }
 
 function toMsgpackDto(value: Version): VersionMsgpackDto {

@@ -47,7 +47,7 @@ export type SimulationOpcodeTraceUnitDto = {
   pc: bigint
   'scratch-changes'?: ScratchChangeDto[]
   'state-changes'?: ApplicationStateOperationDto[]
-  'spawned-inners'?: bigint[][]
+  'spawned-inners'?: bigint[]
   'stack-pop-count'?: bigint
   'stack-additions'?: AvmValueDto[]
 }
@@ -208,7 +208,7 @@ type SimulationOpcodeTraceUnitMsgpackDto = {
   pc: bigint
   'scratch-changes'?: ReturnType<(typeof ScratchChangeModel)['toMsgpackDto']>[]
   'state-changes'?: ReturnType<(typeof ApplicationStateOperationModel)['toMsgpackDto']>[]
-  'spawned-inners'?: bigint[][]
+  'spawned-inners'?: bigint[]
   'stack-pop-count'?: bigint
   'stack-additions'?: ReturnType<(typeof AvmValueModel)['toMsgpackDto']>[]
 }

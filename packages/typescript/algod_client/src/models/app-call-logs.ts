@@ -133,7 +133,7 @@ export function decodeJsonArray(raw: unknown): AppCallLogs[] {
 
 // Internal: msgpack DTO (wire keys, bytes kept as Uint8Array, signed txn encoded to bytes)
 type AppCallLogsMsgpackDto = {
-  logs: Uint8Array[][]
+  logs: Uint8Array[]
   'application-index': bigint
   txId: string
 }

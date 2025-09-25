@@ -122,10 +122,6 @@ export type { AccountAssetsInformation, AccountAssetsInformationDto } from './ac
 export { AccountAssetsInformation as AccountAssetsInformationCodecs } from './account-assets-information'
 export type { AccountApplicationInformation, AccountApplicationInformationDto } from './account-application-information'
 export { AccountApplicationInformation as AccountApplicationInformationCodecs } from './account-application-information'
-export type { GetPendingTransactionsByAddress, GetPendingTransactionsByAddressDto } from './get-pending-transactions-by-address'
-export { GetPendingTransactionsByAddress as GetPendingTransactionsByAddressCodecs } from './get-pending-transactions-by-address'
-export type { GetBlock, GetBlockDto } from './get-block'
-export { GetBlock as GetBlockCodecs } from './get-block'
 export type { GetBlockTxids, GetBlockTxidsDto } from './get-block-txids'
 export { GetBlockTxids as GetBlockTxidsCodecs } from './get-block-txids'
 export type { GetBlockHash, GetBlockHashDto } from './get-block-hash'
@@ -148,13 +144,6 @@ export type { SimulateTransaction, SimulateTransactionDto } from './simulate-tra
 export { SimulateTransaction as SimulateTransactionCodecs } from './simulate-transaction'
 export type { TransactionParams, TransactionParamsDto } from './transaction-params'
 export { TransactionParams as TransactionParamsCodecs } from './transaction-params'
-export type { GetPendingTransactions, GetPendingTransactionsDto } from './get-pending-transactions'
-export { GetPendingTransactions as GetPendingTransactionsCodecs } from './get-pending-transactions'
-export type {
-  GetTransactionGroupLedgerStateDeltasForRound,
-  GetTransactionGroupLedgerStateDeltasForRoundDto,
-} from './get-transaction-group-ledger-state-deltas-for-round'
-export { GetTransactionGroupLedgerStateDeltasForRound as GetTransactionGroupLedgerStateDeltasForRoundCodecs } from './get-transaction-group-ledger-state-deltas-for-round'
 export type { GetApplicationBoxes, GetApplicationBoxesDto } from './get-application-boxes'
 export { GetApplicationBoxes as GetApplicationBoxesCodecs } from './get-application-boxes'
 export type { GetSyncRound, GetSyncRoundDto } from './get-sync-round'

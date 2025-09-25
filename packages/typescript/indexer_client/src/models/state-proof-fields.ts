@@ -226,7 +226,7 @@ type StateProofFieldsMsgpackDto = {
   'part-proofs'?: ReturnType<(typeof MerkleArrayProofModel)['toMsgpackDto']>
   'salt-version'?: bigint
   reveals?: ReturnType<(typeof StateProofRevealModel)['toMsgpackDto']>[]
-  'positions-to-reveal'?: bigint[][]
+  'positions-to-reveal'?: bigint[]
 }
 
 function toMsgpackDto(value: StateProofFields): StateProofFieldsMsgpackDto {

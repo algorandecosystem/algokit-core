@@ -1,3 +1,7 @@
+import { type Transaction, type SignedTransaction, encodeTransaction, encodeSignedTransaction, groupTransactions as groupTxns } from '@algorandfoundation/algokit-transact'
+import algosdk from 'algosdk'
+import * as ed from '@noble/ed25519'
+
 export interface AlgodTestConfig {
   algodBaseUrl: string
   algodApiToken?: string
@@ -40,4 +44,36 @@ export async function getSenderMnemonic(): Promise<string> {
   } finally {
     await kmd.releaseWalletHandle(handle.wallet_handle_token)
   }
+}
+
+/**
+ * Convenience helper: derive the sender account (address + keys) used for tests.
+ * Returns:
+ *  - address: Algorand address string
+ *  - secretKey: 64-byte Ed25519 secret key (private + public)
+ *  - mnemonic: the 25-word mnemonic
+ */
+export async function getSenderAccount(): Promise<{
+  address: string
+  secretKey: Uint8Array
+  mnemonic: string
+}> {
+  const mnemonic = await getSenderMnemonic()
+  const { addr, sk } = algosdk.mnemonicToSecretKey(mnemonic)
+  const secretKey = new Uint8Array(sk)
+  return { address: typeof addr === 'string' ? addr : addr.toString(), secretKey, mnemonic }
+}
+
+export async function signTransaction(transaction: Transaction, secretKey: Uint8Array): Promise<SignedTransaction> {
+  const encodedTxn = encodeTransaction(transaction)
+  const signature = await ed.signAsync(encodedTxn, secretKey.slice(0, 32))
+
+  return {
+    transaction,
+    signature,
+  }
+}
+
+export function groupTransactions(transactions: Transaction[]): Transaction[] {
+  return groupTxns(transactions)
 }

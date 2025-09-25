@@ -29,7 +29,7 @@ export type {{ modelName }} = {{ schema | ts_type(schemas) }};
 {% if isObject %}
 export type {{ modelName }}Dto = {
 {%   for f in descriptor.fields %}
-  '{{ f.wire_name }}'{{ '' if not f.is_optional else '?' }}: {% if f.is_array %}{% if f.ref_model %}{{ f.ref_model }}Dto[]{% else %}{% if f.is_bytes %}string[]{% elif f.is_bigint %}string[]{% elif f.is_signed_txn %}unknown[]{% else %}{{ f.ts_type }}[]{% endif %}{% endif %}{% else %}{% if f.ref_model %}{{ f.ref_model }}Dto{% else %}{% if f.is_bytes %}string{% elif f.is_bigint %}string{% elif f.is_signed_txn %}unknown{% else %}{{ f.ts_type }}{% endif %}{% endif %}{% endif %};
+  '{{ f.wire_name }}'{{ '' if not f.is_optional else '?' }}: {% if f.is_array %}{% if f.ref_model %}{{ f.ref_model }}Dto[]{% else %}{% if f.is_bytes %}string[]{% elif f.is_bigint %}string[]{% elif f.is_signed_txn %}unknown[]{% else %}{{ f.ts_type }}{% endif %}{% endif %}{% else %}{% if f.ref_model %}{{ f.ref_model }}Dto{% else %}{% if f.is_bytes %}string{% elif f.is_bigint %}string{% elif f.is_signed_txn %}unknown{% else %}{{ f.ts_type }}{% endif %}{% endif %}{% endif %};
 {%   endfor %}
 };
 {% else %}
@@ -215,7 +215,7 @@ export function decodeJsonArray(raw: unknown): {{ modelName }}[] {
 {% if isObject %}
 type {{ modelName }}MsgpackDto = {
 {%   for f in descriptor.fields %}
-  '{{ f.wire_name }}'{{ '' if not f.is_optional else '?' }}: {% if f.is_array %}{% if f.ref_model %}ReturnType<typeof {{ f.ref_model }}Model['toMsgpackDto']>[] {% else %}{% if f.is_signed_txn %}Uint8Array[]{% else %}{{ f.ts_type }}[]{% endif %}{% endif %}{% else %}{% if f.ref_model %}ReturnType<typeof {{ f.ref_model }}Model['toMsgpackDto']>{% else %}{% if f.is_signed_txn %}Uint8Array{% else %}{{ f.ts_type }}{% endif %}{% endif %}{% endif %};
+  '{{ f.wire_name }}'{{ '' if not f.is_optional else '?' }}: {% if f.is_array %}{% if f.ref_model %}ReturnType<typeof {{ f.ref_model }}Model['toMsgpackDto']>[] {% else %}{% if f.is_signed_txn %}Uint8Array[]{% else %}{{ f.ts_type }}{% endif %}{% endif %}{% else %}{% if f.ref_model %}ReturnType<typeof {{ f.ref_model }}Model['toMsgpackDto']>{% else %}{% if f.is_signed_txn %}Uint8Array{% else %}{{ f.ts_type }}{% endif %}{% endif %}{% endif %};
 {%   endfor %}
 };
 

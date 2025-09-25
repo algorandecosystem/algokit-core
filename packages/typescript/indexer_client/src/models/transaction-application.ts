@@ -79,12 +79,12 @@ export type TransactionApplication = {
 export type TransactionApplicationDto = {
   'application-id': bigint
   'on-completion': OnCompletionDto
-  'application-args'?: string[][]
+  'application-args'?: string[]
   access?: ResourceRefDto[]
-  accounts?: string[][]
+  accounts?: string[]
   'box-references'?: BoxReferenceDto[]
-  'foreign-apps'?: bigint[][]
-  'foreign-assets'?: bigint[][]
+  'foreign-apps'?: bigint[]
+  'foreign-assets'?: bigint[]
   'local-state-schema'?: StateSchemaDto
   'global-state-schema'?: StateSchemaDto
   'approval-program'?: string
@@ -376,12 +376,12 @@ export function decodeJsonArray(raw: unknown): TransactionApplication[] {
 type TransactionApplicationMsgpackDto = {
   'application-id': bigint
   'on-completion': ReturnType<(typeof OnCompletionModel)['toMsgpackDto']>
-  'application-args'?: string[][]
+  'application-args'?: string[]
   access?: ReturnType<(typeof ResourceRefModel)['toMsgpackDto']>[]
-  accounts?: string[][]
+  accounts?: string[]
   'box-references'?: ReturnType<(typeof BoxReferenceModel)['toMsgpackDto']>[]
-  'foreign-apps'?: bigint[][]
-  'foreign-assets'?: bigint[][]
+  'foreign-apps'?: bigint[]
+  'foreign-assets'?: bigint[]
   'local-state-schema'?: ReturnType<(typeof StateSchemaModel)['toMsgpackDto']>
   'global-state-schema'?: ReturnType<(typeof StateSchemaModel)['toMsgpackDto']>
   'approval-program'?: Uint8Array

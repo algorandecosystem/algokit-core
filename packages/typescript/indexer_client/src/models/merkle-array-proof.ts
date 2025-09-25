@@ -128,7 +128,7 @@ export function decodeJsonArray(raw: unknown): MerkleArrayProof[] {
 
 // Internal: msgpack DTO (wire keys, bytes kept as Uint8Array, signed txn encoded to bytes)
 type MerkleArrayProofMsgpackDto = {
-  path?: Uint8Array[][]
+  path?: Uint8Array[]
   'hash-factory'?: ReturnType<(typeof HashFactoryModel)['toMsgpackDto']>
   'tree-depth'?: bigint
 }

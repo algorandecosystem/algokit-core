@@ -110,7 +110,7 @@ export function toDto(value: SimulateRequest): SimulateRequestDto {
     if (v === undefined) {
       // omit undefined
     } else {
-      out['extra-opcode-budget'] = v
+      out['extra-opcode-budget'] = v === undefined ? v : typeof v === 'bigint' ? v.toString() : String(v)
     }
   }
   {
@@ -179,7 +179,7 @@ export function fromDto(dto: SimulateRequestDto): SimulateRequest {
     if (v === undefined) {
       // omit undefined
     } else {
-      out['extraOpcodeBudget'] = v as any
+      out['extraOpcodeBudget'] = v === undefined ? v : typeof v === 'bigint' ? v : BigInt(v as any)
     }
   }
   {

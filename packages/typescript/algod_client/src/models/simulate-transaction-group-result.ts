@@ -40,7 +40,7 @@ export type SimulateTransactionGroupResult = {
 export type SimulateTransactionGroupResultDto = {
   'txn-results': SimulateTransactionResultDto[]
   'failure-message'?: string
-  'failed-at'?: bigint[][]
+  'failed-at'?: bigint[]
   'app-budget-added'?: bigint
   'app-budget-consumed'?: bigint
   'unnamed-resources-accessed'?: SimulateUnnamedResourcesAccessedDto
@@ -201,7 +201,7 @@ export function decodeJsonArray(raw: unknown): SimulateTransactionGroupResult[] 
 type SimulateTransactionGroupResultMsgpackDto = {
   'txn-results': ReturnType<(typeof SimulateTransactionResultModel)['toMsgpackDto']>[]
   'failure-message'?: string
-  'failed-at'?: bigint[][]
+  'failed-at'?: bigint[]
   'app-budget-added'?: bigint
   'app-budget-consumed'?: bigint
   'unnamed-resources-accessed'?: ReturnType<(typeof SimulateUnnamedResourcesAccessedModel)['toMsgpackDto']>

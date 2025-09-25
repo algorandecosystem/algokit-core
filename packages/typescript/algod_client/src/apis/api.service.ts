@@ -13,21 +13,15 @@ import type {
   DryrunRequest,
   Genesis,
   GetApplicationBoxes,
-  GetBlock,
   GetBlockHash,
   GetBlockLogs,
   GetBlockTimeStampOffset,
   GetBlockTxids,
-  GetPendingTransactions,
-  GetPendingTransactionsByAddress,
   GetStatus,
   GetSupply,
   GetSyncRound,
-  GetTransactionGroupLedgerStateDeltasForRound,
-  LedgerStateDelta,
   LightBlockHeaderProof,
   ParticipationKey,
-  PendingTransactionResponse,
   RawTransaction,
   ShutdownNode,
   SimulateRequest,
@@ -55,21 +49,15 @@ import { DebugSettingsProf as DebugSettingsProfCodecs } from '../models/debug-se
 import { DryrunRequest as DryrunRequestCodecs } from '../models/dryrun-request'
 import { Genesis as GenesisCodecs } from '../models/genesis'
 import { GetApplicationBoxes as GetApplicationBoxesCodecs } from '../models/get-application-boxes'
-import { GetBlock as GetBlockCodecs } from '../models/get-block'
 import { GetBlockHash as GetBlockHashCodecs } from '../models/get-block-hash'
 import { GetBlockLogs as GetBlockLogsCodecs } from '../models/get-block-logs'
 import { GetBlockTimeStampOffset as GetBlockTimeStampOffsetCodecs } from '../models/get-block-time-stamp-offset'
 import { GetBlockTxids as GetBlockTxidsCodecs } from '../models/get-block-txids'
-import { GetPendingTransactions as GetPendingTransactionsCodecs } from '../models/get-pending-transactions'
-import { GetPendingTransactionsByAddress as GetPendingTransactionsByAddressCodecs } from '../models/get-pending-transactions-by-address'
 import { GetStatus as GetStatusCodecs } from '../models/get-status'
 import { GetSupply as GetSupplyCodecs } from '../models/get-supply'
 import { GetSyncRound as GetSyncRoundCodecs } from '../models/get-sync-round'
-import { GetTransactionGroupLedgerStateDeltasForRound as GetTransactionGroupLedgerStateDeltasForRoundCodecs } from '../models/get-transaction-group-ledger-state-deltas-for-round'
-import { LedgerStateDelta as LedgerStateDeltaCodecs } from '../models/ledger-state-delta'
 import { LightBlockHeaderProof as LightBlockHeaderProofCodecs } from '../models/light-block-header-proof'
 import { ParticipationKey as ParticipationKeyCodecs } from '../models/participation-key'
-import { PendingTransactionResponse as PendingTransactionResponseCodecs } from '../models/pending-transaction-response'
 import { RawTransaction as RawTransactionCodecs } from '../models/raw-transaction'
 import { ShutdownNode as ShutdownNodeCodecs } from '../models/shutdown-node'
 import { SimulateRequest as SimulateRequestCodecs } from '../models/simulate-request'
@@ -532,7 +520,7 @@ export class AlgodApi {
     round: number | bigint,
     params?: { headerOnly?: boolean; format?: 'json' | 'msgpack' },
     requestOptions?: ApiRequestOptions,
-  ): Promise<GetBlock> {
+  ): Promise<Uint8Array> {
     const headers: Record<string, string> = {}
     // Content negotiation (aligned with Rust behavior):
     // - Default to msgpack when available (better performance, smaller payload)
@@ -553,17 +541,17 @@ export class AlgodApi {
       ...(requestOptions ?? {}),
     })
     if (params?.format === 'json') {
-      const parsed = (await rsp) as GetBlock
+      const parsed = (await rsp) as Uint8Array
       try {
-        return (GetBlockCodecs as any).decodeJson(parsed as any) as GetBlock
+        return (Uint8ArrayCodecs as any).decodeJson(parsed as any) as Uint8Array
       } catch {}
       return parsed
     } else {
       const buf = (await rsp) as unknown as Uint8Array
       try {
-        return (GetBlockCodecs as any).decodeMsgpack(buf) as GetBlock
+        return (Uint8ArrayCodecs as any).decodeMsgpack(buf) as Uint8Array
       } catch {}
-      return buf as unknown as GetBlock
+      return buf as unknown as Uint8Array
     }
   }
 
@@ -750,7 +738,7 @@ export class AlgodApi {
     round: number | bigint,
     params?: { format?: 'json' | 'msgpack' },
     requestOptions?: ApiRequestOptions,
-  ): Promise<LedgerStateDelta> {
+  ): Promise<Uint8Array> {
     const headers: Record<string, string> = {}
     // Content negotiation (aligned with Rust behavior):
     // - Default to msgpack when available (better performance, smaller payload)
@@ -771,17 +759,17 @@ export class AlgodApi {
       ...(requestOptions ?? {}),
     })
     if (params?.format === 'json') {
-      const parsed = (await rsp) as LedgerStateDelta
+      const parsed = (await rsp) as Uint8Array
       try {
-        return (LedgerStateDeltaCodecs as any).decodeJson(parsed as any) as LedgerStateDelta
+        return (Uint8ArrayCodecs as any).decodeJson(parsed as any) as Uint8Array
       } catch {}
       return parsed
     } else {
       const buf = (await rsp) as unknown as Uint8Array
       try {
-        return (LedgerStateDeltaCodecs as any).decodeMsgpack(buf) as LedgerStateDelta
+        return (Uint8ArrayCodecs as any).decodeMsgpack(buf) as Uint8Array
       } catch {}
-      return buf as unknown as LedgerStateDelta
+      return buf as unknown as Uint8Array
     }
   }
 
@@ -792,7 +780,7 @@ export class AlgodApi {
     id: string,
     params?: { format?: 'json' | 'msgpack' },
     requestOptions?: ApiRequestOptions,
-  ): Promise<LedgerStateDelta> {
+  ): Promise<Uint8Array> {
     const headers: Record<string, string> = {}
     // Content negotiation (aligned with Rust behavior):
     // - Default to msgpack when available (better performance, smaller payload)
@@ -813,17 +801,17 @@ export class AlgodApi {
       ...(requestOptions ?? {}),
     })
     if (params?.format === 'json') {
-      const parsed = (await rsp) as LedgerStateDelta
+      const parsed = (await rsp) as Uint8Array
       try {
-        return (LedgerStateDeltaCodecs as any).decodeJson(parsed as any) as LedgerStateDelta
+        return (Uint8ArrayCodecs as any).decodeJson(parsed as any) as Uint8Array
       } catch {}
       return parsed
     } else {
       const buf = (await rsp) as unknown as Uint8Array
       try {
-        return (LedgerStateDeltaCodecs as any).decodeMsgpack(buf) as LedgerStateDelta
+        return (Uint8ArrayCodecs as any).decodeMsgpack(buf) as Uint8Array
       } catch {}
-      return buf as unknown as LedgerStateDelta
+      return buf as unknown as Uint8Array
     }
   }
 
@@ -908,7 +896,7 @@ export class AlgodApi {
   async getPendingTransactions(
     params?: { max?: number | bigint; format?: 'json' | 'msgpack' },
     requestOptions?: ApiRequestOptions,
-  ): Promise<GetPendingTransactions> {
+  ): Promise<Uint8Array> {
     const headers: Record<string, string> = {}
     // Content negotiation (aligned with Rust behavior):
     // - Default to msgpack when available (better performance, smaller payload)
@@ -929,17 +917,17 @@ export class AlgodApi {
       ...(requestOptions ?? {}),
     })
     if (params?.format === 'json') {
-      const parsed = (await rsp) as GetPendingTransactions
+      const parsed = (await rsp) as Uint8Array
       try {
-        return (GetPendingTransactionsCodecs as any).decodeJson(parsed as any) as GetPendingTransactions
+        return (Uint8ArrayCodecs as any).decodeJson(parsed as any) as Uint8Array
       } catch {}
       return parsed
     } else {
       const buf = (await rsp) as unknown as Uint8Array
       try {
-        return (GetPendingTransactionsCodecs as any).decodeMsgpack(buf) as GetPendingTransactions
+        return (Uint8ArrayCodecs as any).decodeMsgpack(buf) as Uint8Array
       } catch {}
-      return buf as unknown as GetPendingTransactions
+      return buf as unknown as Uint8Array
     }
   }
 
@@ -950,7 +938,7 @@ export class AlgodApi {
     address: string,
     params?: { max?: number | bigint; format?: 'json' | 'msgpack' },
     requestOptions?: ApiRequestOptions,
-  ): Promise<GetPendingTransactionsByAddress> {
+  ): Promise<Uint8Array> {
     const headers: Record<string, string> = {}
     // Content negotiation (aligned with Rust behavior):
     // - Default to msgpack when available (better performance, smaller payload)
@@ -971,17 +959,17 @@ export class AlgodApi {
       ...(requestOptions ?? {}),
     })
     if (params?.format === 'json') {
-      const parsed = (await rsp) as GetPendingTransactionsByAddress
+      const parsed = (await rsp) as Uint8Array
       try {
-        return (GetPendingTransactionsByAddressCodecs as any).decodeJson(parsed as any) as GetPendingTransactionsByAddress
+        return (Uint8ArrayCodecs as any).decodeJson(parsed as any) as Uint8Array
       } catch {}
       return parsed
     } else {
       const buf = (await rsp) as unknown as Uint8Array
       try {
-        return (GetPendingTransactionsByAddressCodecs as any).decodeMsgpack(buf) as GetPendingTransactionsByAddress
+        return (Uint8ArrayCodecs as any).decodeMsgpack(buf) as Uint8Array
       } catch {}
-      return buf as unknown as GetPendingTransactionsByAddress
+      return buf as unknown as Uint8Array
     }
   }
 
@@ -1110,7 +1098,7 @@ export class AlgodApi {
     round: number | bigint,
     params?: { format?: 'json' | 'msgpack' },
     requestOptions?: ApiRequestOptions,
-  ): Promise<GetTransactionGroupLedgerStateDeltasForRound> {
+  ): Promise<Uint8Array> {
     const headers: Record<string, string> = {}
     // Content negotiation (aligned with Rust behavior):
     // - Default to msgpack when available (better performance, smaller payload)
@@ -1131,21 +1119,17 @@ export class AlgodApi {
       ...(requestOptions ?? {}),
     })
     if (params?.format === 'json') {
-      const parsed = (await rsp) as GetTransactionGroupLedgerStateDeltasForRound
+      const parsed = (await rsp) as Uint8Array
       try {
-        return (GetTransactionGroupLedgerStateDeltasForRoundCodecs as any).decodeJson(
-          parsed as any,
-        ) as GetTransactionGroupLedgerStateDeltasForRound
+        return (Uint8ArrayCodecs as any).decodeJson(parsed as any) as Uint8Array
       } catch {}
       return parsed
     } else {
       const buf = (await rsp) as unknown as Uint8Array
       try {
-        return (GetTransactionGroupLedgerStateDeltasForRoundCodecs as any).decodeMsgpack(
-          buf,
-        ) as GetTransactionGroupLedgerStateDeltasForRound
+        return (Uint8ArrayCodecs as any).decodeMsgpack(buf) as Uint8Array
       } catch {}
-      return buf as unknown as GetTransactionGroupLedgerStateDeltasForRound
+      return buf as unknown as Uint8Array
     }
   }
 
@@ -1260,7 +1244,7 @@ export class AlgodApi {
     txid: string,
     params?: { format?: 'json' | 'msgpack' },
     requestOptions?: ApiRequestOptions,
-  ): Promise<PendingTransactionResponse> {
+  ): Promise<Uint8Array> {
     const headers: Record<string, string> = {}
     // Content negotiation (aligned with Rust behavior):
     // - Default to msgpack when available (better performance, smaller payload)
@@ -1281,17 +1265,17 @@ export class AlgodApi {
       ...(requestOptions ?? {}),
     })
     if (params?.format === 'json') {
-      const parsed = (await rsp) as PendingTransactionResponse
+      const parsed = (await rsp) as Uint8Array
       try {
-        return (PendingTransactionResponseCodecs as any).decodeJson(parsed as any) as PendingTransactionResponse
+        return (Uint8ArrayCodecs as any).decodeJson(parsed as any) as Uint8Array
       } catch {}
       return parsed
     } else {
       const buf = (await rsp) as unknown as Uint8Array
       try {
-        return (PendingTransactionResponseCodecs as any).decodeMsgpack(buf) as PendingTransactionResponse
+        return (Uint8ArrayCodecs as any).decodeMsgpack(buf) as Uint8Array
       } catch {}
-      return buf as unknown as PendingTransactionResponse
+      return buf as unknown as Uint8Array
     }
   }
 

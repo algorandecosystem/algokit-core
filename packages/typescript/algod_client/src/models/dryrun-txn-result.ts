@@ -41,12 +41,12 @@ export type DryrunTxnResult = {
 
 // JSON DTO shape for DryrunTxnResult with wire keys and JSON-safe primitives
 export type DryrunTxnResultDto = {
-  disassembly: string[][]
-  'logic-sig-disassembly'?: string[][]
+  disassembly: string[]
+  'logic-sig-disassembly'?: string[]
   'logic-sig-trace'?: DryrunStateDto[]
-  'logic-sig-messages'?: string[][]
+  'logic-sig-messages'?: string[]
   'app-call-trace'?: DryrunStateDto[]
-  'app-call-messages'?: string[][]
+  'app-call-messages'?: string[]
   'global-delta'?: StateDeltaDto
   'local-deltas'?: AccountStateDeltaDto[]
   logs?: string[]
@@ -287,15 +287,15 @@ export function decodeJsonArray(raw: unknown): DryrunTxnResult[] {
 
 // Internal: msgpack DTO (wire keys, bytes kept as Uint8Array, signed txn encoded to bytes)
 type DryrunTxnResultMsgpackDto = {
-  disassembly: string[][]
-  'logic-sig-disassembly'?: string[][]
+  disassembly: string[]
+  'logic-sig-disassembly'?: string[]
   'logic-sig-trace'?: ReturnType<(typeof DryrunStateModel)['toMsgpackDto']>[]
-  'logic-sig-messages'?: string[][]
+  'logic-sig-messages'?: string[]
   'app-call-trace'?: ReturnType<(typeof DryrunStateModel)['toMsgpackDto']>[]
-  'app-call-messages'?: string[][]
+  'app-call-messages'?: string[]
   'global-delta'?: ReturnType<(typeof StateDeltaModel)['toMsgpackDto']>
   'local-deltas'?: ReturnType<(typeof AccountStateDeltaModel)['toMsgpackDto']>[]
-  logs?: Uint8Array[][]
+  logs?: Uint8Array[]
   'budget-added'?: bigint
   'budget-consumed'?: bigint
 }
