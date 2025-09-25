@@ -1,0 +1,65 @@
+name: "Setup Rust"
+description: "Install a Rust toolchain and configure Cargo caching"
+
+inputs:
+  toolchain:
+    description: "Rust toolchain specifier to install"
+    required: false
+    default: "1.85.0"
+  components:
+    description: "Comma-separated list of rustup components to install"
+    required: false
+    default: ""
+  targets:
+    description: "Comma-separated list of additional targets to install"
+    required: false
+    default: ""
+  extra-cache-key:
+    description: "Suffix appended to the cache key to partition caches (e.g. per matrix entry)"
+    required: false
+    default: ""
+  cache-target-dir:
+    description: "Directory containing build artifacts to cache"
+    required: false
+    default: "target"
+  skip-cache:
+    description: "Skip configuring the Cargo cache when set to true"
+    required: false
+    default: "false"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install Rust toolchain
+      id: toolchain
+      uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: ${{ inputs.toolchain }}
+        components: ${{ inputs.components }}
+        targets: ${{ inputs.targets }}
+
+    - name: Compose cache key prefix
+      id: cachekey
+      if: ${{ inputs.skip-cache != 'true' }}
+      shell: bash
+      env:
+        EXTRA_KEY: ${{ inputs['extra-cache-key'] }}
+      run: |
+        prefix="${{ runner.os }}"
+        if [ -n "$EXTRA_KEY" ]; then
+          prefix="$prefix-$EXTRA_KEY"
+        fi
+        echo "prefix=$prefix" >> "$GITHUB_OUTPUT"
+
+    - name: Cache Cargo directories
+      if: ${{ inputs.skip-cache != 'true' }}
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          ${{ inputs['cache-target-dir'] }}
+        key: ${{ steps.cachekey.outputs.prefix }}-${{ steps.toolchain.outputs.cachekey }}-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ steps.cachekey.outputs.prefix }}-${{ steps.toolchain.outputs.cachekey }}-
+          ${{ steps.cachekey.outputs.prefix }}-

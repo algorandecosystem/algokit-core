@@ -52,6 +52,10 @@ jobs:
           ref: ${{ github.ref }}
           token: ${{ steps.app_token.outputs.token }}
         if: inputs.release
+      - if: inputs.release
+        uses: ./.github/actions/setup-rust
+        with:
+          toolchain: 1.85.0
       - uses: oven-sh/setup-bun@v2
         if: inputs.release
         with:
@@ -115,7 +119,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
-      - uses: dtolnay/rust-toolchain@master
+      - uses: ./.github/actions/setup-rust
         with:
           toolchain: 1.85.0
           targets: ${{ matrix.target.name }}
@@ -183,6 +187,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
+      - uses: ./.github/actions/setup-rust
+        with:
+          toolchain: 1.85.0
+          extra-cache-key: ${{ matrix.arch }}-${{ matrix.libc }}
 
       - name: Set up QEMU
         if: matrix.arch != 'aarch64' && matrix.arch != 'x86_64'
@@ -220,6 +228,9 @@ jobs:
         env:
           RUN: |
             cd /workspace/${{ env.PACKAGE_DIR }}
+            mkdir -p /workspace/.cargo
+            export CARGO_HOME=/workspace/.cargo
+            export CARGO_TARGET_DIR=/workspace/target
             poetry env use python${{ env.PYTHON_VERSION }}
             cargo pkg ${{ inputs.crate }} py
         run: docker exec build-container bash -c "$RUN"

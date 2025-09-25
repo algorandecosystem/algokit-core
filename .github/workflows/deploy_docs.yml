@@ -20,7 +20,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: ./.github/actions/setup-rust
+        with:
+          toolchain: stable
 
       - name: Build documentation
         run: cargo run --bin build-docs --manifest-path docs/Cargo.toml

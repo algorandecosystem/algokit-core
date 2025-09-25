@@ -2,9 +2,9 @@ name: 'Setup API Tools'
 description: 'Setup Rust, Bun, and Python dependencies for API tools'
 
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
-    - uses: dtolnay/rust-toolchain@master
+    - uses: ./.github/actions/setup-rust
       with:
         toolchain: 1.85.0
         components: rustfmt
