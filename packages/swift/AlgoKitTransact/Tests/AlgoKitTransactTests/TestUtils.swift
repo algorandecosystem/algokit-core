@@ -50,10 +50,7 @@ func loadTestData() throws -> TestData {
 func makeTransaction(from testData: TransactionTestData) -> Transaction {
   return Transaction(
     transactionType: .payment,
-    sender: Address(
-      address: testData.transaction.sender.address,
-      pubKey: Data(testData.transaction.sender.pubKey)
-    ),
+    sender: testData.transaction.sender.address,
     fee: testData.transaction.fee,
     firstValid: testData.transaction.firstValid,
     lastValid: testData.transaction.lastValid,
@@ -61,17 +58,11 @@ func makeTransaction(from testData: TransactionTestData) -> Transaction {
     genesisId: testData.transaction.genesisId,
     note: testData.transaction.note != nil ? Data(testData.transaction.note!) : nil,
     rekeyTo: testData.transaction.rekeyTo != nil
-      ? Address(
-        address: testData.transaction.rekeyTo!.address,
-        pubKey: Data(testData.transaction.rekeyTo!.pubKey)
-      ) : nil,
+      ? testData.transaction.rekeyTo!.address : nil,
     lease: testData.transaction.lease != nil ? Data(testData.transaction.lease!) : nil,
     group: testData.transaction.group != nil ? Data(testData.transaction.group!) : nil,
     payment: PaymentTransactionFields(
-      receiver: Address(
-        address: testData.transaction.payment.receiver.address,
-        pubKey: Data(testData.transaction.payment.receiver.pubKey)
-      ),
+      receiver: testData.transaction.payment.receiver.address,
       amount: testData.transaction.payment.amount,
       closeRemainderTo: nil
     ),
