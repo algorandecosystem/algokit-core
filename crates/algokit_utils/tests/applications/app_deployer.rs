@@ -1,17 +1,20 @@
-use algokit_test_artifacts::testing_app;
+use algokit_abi::ABIMethod;
+use algokit_test_artifacts::{abi_create_and_delete, testing_app};
 use algokit_transact::{Address, OnApplicationComplete};
 use algokit_utils::applications::{
     AppDeployMetadata, AppDeployParams, AppDeployResult, AppDeployer, AppProgram, CreateParams,
-    DeleteParams, DeployAppCreateParams, DeployAppDeleteParams, DeployAppUpdateParams,
-    OnSchemaBreak, OnUpdate, UpdateParams,
+    DeleteParams, DeployAppCreateMethodCallParams, DeployAppCreateParams,
+    DeployAppDeleteMethodCallParams, DeployAppDeleteParams, DeployAppUpdateParams, OnSchemaBreak,
+    OnUpdate, UpdateParams,
 };
 use algokit_utils::clients::app_manager::{AppManager, DeploymentMetadata, TealTemplateValue};
-use algokit_utils::{AppCreateParams, TransactionSender};
+use algokit_utils::{AppCreateParams, AppMethodCallArg, PaymentParams, TransactionSender};
 use algokit_utils::{AssetManager, SendParams};
 use base64::{Engine, prelude::BASE64_STANDARD};
 use rstest::*;
 use serde_json;
 use std::collections::HashMap;
+use std::str::FromStr;
 
 use crate::common::{AlgorandFixture, AlgorandFixtureResult, TestResult, algorand_fixture};
 
@@ -1204,4 +1207,140 @@ async fn get_testing_app_create_params(
         extra_program_pages: None,
         ..Default::default()
     })
+}
+
+async fn bar(
+    sender: &Address,
+    metadata: &AppDeployMetadata,
+    break_schema: bool,
+) -> Result<AppDeployParams, Box<dyn std::error::Error + Send + Sync>> {
+    let app_spec: serde_json::Value =
+        serde_json::from_str(abi_create_and_delete::APPLICATION_ARC56)?;
+
+    let approval_program_b64 = app_spec["source"]["approval"]
+        .as_str()
+        .ok_or("Missing approval program")?;
+    let clear_program_b64 = app_spec["source"]["clear"]
+        .as_str()
+        .ok_or("Missing clear program")?;
+
+    let approval_program = String::from_utf8(BASE64_STANDARD.decode(approval_program_b64)?)?;
+    let clear_program = String::from_utf8(BASE64_STANDARD.decode(clear_program_b64)?)?;
+
+    let global_schema = if break_schema {
+        algokit_transact::StateSchema {
+            num_byte_slices: 3, // +1 from default 2
+            num_uints: 3,
+        }
+    } else {
+        algokit_transact::StateSchema {
+            num_byte_slices: 2,
+            num_uints: 3,
+        }
+    };
+
+    Ok(AppDeployParams {
+        metadata: metadata.clone(),
+        deploy_time_params: None,
+        on_schema_break: Some(OnSchemaBreak::Replace),
+        on_update: Some(OnUpdate::Replace),
+        create_params: CreateParams::AppCreateMethodCall(DeployAppCreateMethodCallParams {
+            sender: sender.clone(),
+            method: ABIMethod::from_str("create(pay)string")?,
+            approval_program: AppProgram::Teal(approval_program),
+            clear_state_program: AppProgram::Teal(clear_program),
+            global_state_schema: Some(global_schema),
+            local_state_schema: Some(algokit_transact::StateSchema {
+                num_byte_slices: 2,
+                num_uints: 1,
+            }),
+            args: vec![AppMethodCallArg::Payment(PaymentParams {
+                sender: sender.clone(),
+                receiver: sender.clone(),
+                amount: 1000,
+                ..Default::default()
+            })],
+            ..Default::default()
+        }),
+        update_params: UpdateParams::AppUpdateCall(DeployAppUpdateParams {
+            sender: sender.clone(),
+            ..Default::default()
+        }),
+        delete_params: DeleteParams::AppDeleteMethodCall(DeployAppDeleteMethodCallParams {
+            sender: sender.clone(),
+            method: ABIMethod::from_str("delete(pay)string")?,
+            args: vec![AppMethodCallArg::Payment(PaymentParams {
+                sender: sender.clone(),
+                receiver: sender.clone(),
+                amount: 2000,
+                ..Default::default()
+            })],
+            ..Default::default()
+        }),
+        existing_deployments: None,
+        ignore_cache: None,
+        send_params: SendParams {
+            max_rounds_to_wait_for_confirmation: Some(100),
+        },
+    })
+}
+
+#[rstest]
+#[tokio::test]
+async fn foo(#[future] fixture: FixtureResult) -> TestResult {
+    let Fixture {
+        test_account,
+        mut app_deployer,
+        algorand_fixture,
+        ..
+    } = fixture.await?;
+
+    // Deploy initial app (deletable)
+    let metadata = get_metadata(AppDeployMetadataParams {
+        deletable: Some(true),
+        ..Default::default()
+    });
+    let deployment_1 = bar(&test_account, &metadata, false).await?;
+
+    let result_1 = app_deployer.deploy(deployment_1).await?;
+    let app_1_id = match &result_1 {
+        AppDeployResult::Create { app, .. } => app.app_id,
+        _ => return Err("Expected Create result".into()),
+    };
+
+    algorand_fixture
+        .wait_for_indexer_transaction(&match result_1 {
+            AppDeployResult::Create { result, .. } => result.transaction_ids[0].clone(),
+            _ => return Err("Expected Create result".into()),
+        })
+        .await?;
+
+    // Deploy replacement with different code
+    let metadata_2 = get_metadata(AppDeployMetadataParams {
+        version: Some(String::from("2.0")),
+        deletable: Some(true),
+        ..Default::default()
+    });
+    let deployment_2 = bar(&test_account, &metadata_2, true).await?;
+
+    let result_2 = app_deployer.deploy(deployment_2).await?;
+    let (app_2, create_result) = match result_2 {
+        AppDeployResult::Replace { app, result, .. } => (app, result),
+        _ => return Err("Expected Replace result".into()),
+    };
+
+    assert_ne!(app_2.app_id, app_1_id);
+    assert_eq!(app_2.created_metadata, metadata_2);
+    assert_eq!(app_2.created_round, app_2.updated_round);
+    assert_eq!(
+        app_2.created_round,
+        create_result.confirmations[0].confirmed_round.unwrap()
+    );
+    assert_eq!(app_2.name, metadata_2.name);
+    assert_eq!(app_2.version, metadata_2.version);
+    assert_eq!(app_2.updatable, metadata_2.updatable);
+    assert_eq!(app_2.deletable, metadata_2.deletable);
+    assert!(!app_2.deleted);
+
+    Ok(())
 }
