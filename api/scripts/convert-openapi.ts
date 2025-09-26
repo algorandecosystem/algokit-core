@@ -817,10 +817,10 @@ async function getLatestIndexerTag(): Promise<string> {
 }
 
 /**
- * Process specifications for both algod and indexer
+ * Process specifications for algod, indexer, and kmd
  */
 async function processAlgorandSpecs() {
-  await Promise.all([processAlgodSpec(), processIndexerSpec()]);
+  await Promise.all([processAlgodSpec(), processIndexerSpec(), processKmdSpec()]);
 }
 
 async function processAlgodSpec() {
@@ -900,6 +900,38 @@ async function processAlgodSpec() {
       { path: "/v2/deltas/{round}", methods: ["get"] },
       { path: "/v2/deltas/txn/group/{id}", methods: ["get"] },
       { path: "/v2/deltas/{round}/txn/group", methods: ["get"] },
+    ],
+  };
+
+  await processAlgorandSpec(config);
+}
+
+async function processKmdSpec() {
+  console.log("\n🔄 Processing KMD specification...");
+
+  const stableTag = await getLatestStableTag();
+
+  const config: ProcessingConfig = {
+    sourceUrl: `https://raw.githubusercontent.com/algorand/go-algorand/${stableTag}/daemon/kmd/api/swagger.json`,
+    outputPath: join(process.cwd(), "specs", "kmd.oas3.json"),
+    fieldTransforms: [
+      {
+        fieldName: "private_key",
+        removeItems: ["$ref"],
+        addItems: {
+          "type": "string",
+          "x-algokit-bytes-base64": true,
+        },
+      },
+    ],
+    vendorExtensionTransforms: [
+      {
+        sourceProperty: "format",
+        sourceValue: "uint64",
+        targetProperty: "x-algokit-bigint",
+        targetValue: true,
+        removeSource: false,
+      },
     ],
   };
 
@@ -988,13 +1020,15 @@ async function main() {
   try {
     const args = process.argv.slice(2);
 
-    // Support for individual spec processing or both
+    // Support for individual spec processing or all
     if (args.includes("--algod-only")) {
       await processAlgodSpec();
     } else if (args.includes("--indexer-only")) {
       await processIndexerSpec();
+    } else if (args.includes("--kmd-only")) {
+      await processKmdSpec();
     } else {
-      // Process both by default
+      // Process all by default
       await processAlgorandSpecs();
     }
   } catch (error) {
