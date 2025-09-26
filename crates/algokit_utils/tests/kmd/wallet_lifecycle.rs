@@ -45,7 +45,7 @@ async fn wallet_lifecycle() -> Result<(), Box<dyn std::error::Error + Send + Syn
     );
 
     // List wallets and ensure presence
-    let list_response = client.list_wallets(None).await?;
+    let list_response = client.list_wallets().await?;
     let wallets = list_response.wallets.unwrap_or_default();
     let found = wallets
         .iter()

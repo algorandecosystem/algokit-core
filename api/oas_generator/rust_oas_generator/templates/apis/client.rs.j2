@@ -116,7 +116,7 @@ impl {{ client_type }}Client {
     {% endif %}
     pub async fn {{ operation.rust_function_name }}(
         &self,
-    {% if has_request_body(operation) %}
+    {% if has_request_body(operation) and operation.method.upper() not in ['GET', 'HEAD', 'DELETE'] %}
         {% set request_body_name = get_request_body_name(operation) %}
         {% set request_body_type = get_request_body_type(operation) %}
         {% if is_request_body_required(operation) %}{{ request_body_name }}: {{ request_body_type }},
@@ -139,7 +139,7 @@ impl {{ client_type }}Client {
     get_success_response_type(operation) }}{% endif %}{% else %}(){% endif %}, Error> {
         let result = super::{{ operation.rust_function_name }}::{{ operation.rust_function_name }}(
             self.http_client.as_ref(),
-        {% if has_request_body(operation) %}
+        {% if has_request_body(operation) and operation.method.upper() not in ['GET', 'HEAD', 'DELETE'] %}
             {{ get_request_body_name(operation) }},
         {% endif %}
         {% for param in operation.parameters %}

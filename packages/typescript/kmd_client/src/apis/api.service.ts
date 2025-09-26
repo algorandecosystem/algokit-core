@@ -23,8 +23,6 @@ import type {
   Apiv1PostwalletRenewResponse,
   Apiv1PostwalletResponse,
   CreateWalletRequest,
-  DeleteKeyRequest,
-  DeleteMultisigRequest,
   ExportKeyRequest,
   ExportMasterKeyRequest,
   ExportMultisigRequest,
@@ -34,7 +32,6 @@ import type {
   InitWalletHandleTokenRequest,
   ListKeysRequest,
   ListMultisigRequest,
-  ListWalletsRequest,
   ReleaseWalletHandleTokenRequest,
   RenameWalletRequest,
   RenewWalletHandleTokenRequest,
@@ -42,7 +39,6 @@ import type {
   SignProgramMultisigRequest,
   SignProgramRequest,
   SignTransactionRequest,
-  VersionsRequest,
   VersionsResponse,
   WalletInfoRequest,
 } from '../models/index'
@@ -69,8 +65,6 @@ import {
   Apiv1PostwalletRenewResponseMeta,
   Apiv1PostwalletResponseMeta,
   CreateWalletRequestMeta,
-  DeleteKeyRequestMeta,
-  DeleteMultisigRequestMeta,
   ExportKeyRequestMeta,
   ExportMasterKeyRequestMeta,
   ExportMultisigRequestMeta,
@@ -80,7 +74,6 @@ import {
   InitWalletHandleTokenRequestMeta,
   ListKeysRequestMeta,
   ListMultisigRequestMeta,
-  ListWalletsRequestMeta,
   ReleaseWalletHandleTokenRequestMeta,
   RenameWalletRequestMeta,
   RenewWalletHandleTokenRequestMeta,
@@ -88,7 +81,6 @@ import {
   SignProgramMultisigRequestMeta,
   SignProgramRequestMeta,
   SignTransactionRequestMeta,
-  VersionsRequestMeta,
   VersionsResponseMeta,
   WalletInfoRequestMeta,
 } from '../models/index'
@@ -131,16 +123,10 @@ export class KmdApi {
   /**
    * Deletes the key with the passed public key from the wallet.
    */
-  async deleteKey(params?: { body: DeleteKeyRequest }, requestOptions?: ApiRequestOptions): Promise<Apiv1DeletekeyResponse> {
+  async deleteKey(requestOptions?: ApiRequestOptions): Promise<Apiv1DeletekeyResponse> {
     const headers: Record<string, string> = {}
     const responseFormat: 'json' | 'msgpack' = 'json'
     headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
-
-    const bodyMeta = DeleteKeyRequestMeta
-    const mediaType = bodyMeta ? (responseFormat === 'json' ? 'application/json' : 'application/msgpack') : undefined
-    if (mediaType) headers['Content-Type'] = mediaType
-    const serializedBody =
-      bodyMeta && params?.body !== undefined ? AlgorandSerializer.encode(params.body, bodyMeta, responseFormat) : params?.body
 
     const payload = await this.httpRequest.request<unknown>({
       method: 'DELETE',
@@ -148,8 +134,8 @@ export class KmdApi {
       path: {},
       query: {},
       headers,
-      body: serializedBody,
-      mediaType: mediaType,
+      body: undefined,
+      mediaType: undefined,
       ...(requestOptions ?? {}),
     })
 
@@ -163,16 +149,10 @@ export class KmdApi {
   /**
    * Deletes multisig preimage information for the passed address from the wallet.
    */
-  async deleteMultisig(params?: { body: DeleteMultisigRequest }, requestOptions?: ApiRequestOptions): Promise<Apiv1DeletemultisigResponse> {
+  async deleteMultisig(requestOptions?: ApiRequestOptions): Promise<Apiv1DeletemultisigResponse> {
     const headers: Record<string, string> = {}
     const responseFormat: 'json' | 'msgpack' = 'json'
     headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
-
-    const bodyMeta = DeleteMultisigRequestMeta
-    const mediaType = bodyMeta ? (responseFormat === 'json' ? 'application/json' : 'application/msgpack') : undefined
-    if (mediaType) headers['Content-Type'] = mediaType
-    const serializedBody =
-      bodyMeta && params?.body !== undefined ? AlgorandSerializer.encode(params.body, bodyMeta, responseFormat) : params?.body
 
     const payload = await this.httpRequest.request<unknown>({
       method: 'DELETE',
@@ -180,8 +160,8 @@ export class KmdApi {
       path: {},
       query: {},
       headers,
-      body: serializedBody,
-      mediaType: mediaType,
+      body: undefined,
+      mediaType: undefined,
       ...(requestOptions ?? {}),
     })
 
@@ -326,16 +306,10 @@ export class KmdApi {
     return payload as Apiv1PostkeyResponse
   }
 
-  async getVersion(params?: { body?: VersionsRequest }, requestOptions?: ApiRequestOptions): Promise<VersionsResponse> {
+  async getVersion(requestOptions?: ApiRequestOptions): Promise<VersionsResponse> {
     const headers: Record<string, string> = {}
     const responseFormat: 'json' | 'msgpack' = 'json'
     headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
-
-    const bodyMeta = VersionsRequestMeta
-    const mediaType = bodyMeta ? (responseFormat === 'json' ? 'application/json' : 'application/msgpack') : undefined
-    if (mediaType) headers['Content-Type'] = mediaType
-    const serializedBody =
-      bodyMeta && params?.body !== undefined ? AlgorandSerializer.encode(params.body, bodyMeta, responseFormat) : params?.body
 
     const payload = await this.httpRequest.request<unknown>({
       method: 'GET',
@@ -343,8 +317,8 @@ export class KmdApi {
       path: {},
       query: {},
       headers,
-      body: serializedBody,
-      mediaType: mediaType,
+      body: undefined,
+      mediaType: undefined,
       ...(requestOptions ?? {}),
     })
 
@@ -556,16 +530,10 @@ export class KmdApi {
   /**
    * Lists all of the wallets that kmd is aware of.
    */
-  async listWallets(params?: { body?: ListWalletsRequest }, requestOptions?: ApiRequestOptions): Promise<Apiv1GetwalletsResponse> {
+  async listWallets(requestOptions?: ApiRequestOptions): Promise<Apiv1GetwalletsResponse> {
     const headers: Record<string, string> = {}
     const responseFormat: 'json' | 'msgpack' = 'json'
     headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
-
-    const bodyMeta = ListWalletsRequestMeta
-    const mediaType = bodyMeta ? (responseFormat === 'json' ? 'application/json' : 'application/msgpack') : undefined
-    if (mediaType) headers['Content-Type'] = mediaType
-    const serializedBody =
-      bodyMeta && params?.body !== undefined ? AlgorandSerializer.encode(params.body, bodyMeta, responseFormat) : params?.body
 
     const payload = await this.httpRequest.request<unknown>({
       method: 'GET',
@@ -573,8 +541,8 @@ export class KmdApi {
       path: {},
       query: {},
       headers,
-      body: serializedBody,
-      mediaType: mediaType,
+      body: undefined,
+      mediaType: undefined,
       ...(requestOptions ?? {}),
     })
 
@@ -832,17 +800,14 @@ export class KmdApi {
     const responseFormat: 'json' | 'msgpack' = 'json'
     headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
 
-    const serializedBody = undefined
-    const mediaType = undefined
-
     const payload = await this.httpRequest.request<unknown>({
       method: 'GET',
       url: '/swagger.json',
       path: {},
       query: {},
       headers,
-      body: serializedBody,
-      mediaType: mediaType,
+      body: undefined,
+      mediaType: undefined,
       ...(requestOptions ?? {}),
     })
 

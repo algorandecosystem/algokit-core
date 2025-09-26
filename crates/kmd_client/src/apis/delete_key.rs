@@ -30,23 +30,15 @@ pub enum DeleteKeyError {
 }
 
 /// Deletes the key with the passed public key from the wallet.
-pub async fn delete_key(
-    http_client: &dyn HttpClient,
-    request: DeleteKeyRequest,
-) -> Result<Apiv1DeleteKeyResponse, Error> {
-    let p_request = request;
-
+pub async fn delete_key(http_client: &dyn HttpClient) -> Result<Apiv1DeleteKeyResponse, Error> {
     let path = "/v1/key".to_string();
 
     let query_params: HashMap<String, String> = HashMap::new();
 
     let mut headers: HashMap<String, String> = HashMap::new();
-    headers.insert("Content-Type".to_string(), "application/json".to_string());
     headers.insert("Accept".to_string(), "application/json".to_string());
 
-    let body = Some(serde_json::to_vec(&p_request).map_err(|e| Error::Serde {
-        message: e.to_string(),
-    })?);
+    let body = None;
 
     let response = http_client
         .request(

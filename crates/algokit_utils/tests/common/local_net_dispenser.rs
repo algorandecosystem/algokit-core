@@ -8,7 +8,7 @@ use algokit_utils::TransactionSigner;
 use kmd_client::KmdClient;
 use kmd_client::models::{
     ExportKeyRequest, GenerateKeyRequest, InitWalletHandleTokenRequest, ListKeysRequest,
-    ListWalletsRequest, ReleaseWalletHandleTokenRequest,
+    ReleaseWalletHandleTokenRequest,
 };
 
 use crate::common::TestAccount;
@@ -52,7 +52,7 @@ impl LocalNetDispenser {
     ) -> Result<TestAccount, Box<dyn std::error::Error + Send + Sync>> {
         let wallets_response = self
             .kmd_client
-            .list_wallets(Some(ListWalletsRequest::new()))
+            .list_wallets()
             .await
             .map_err(|e| format!("Failed to list KMD wallets: {:?}", e))?;
 

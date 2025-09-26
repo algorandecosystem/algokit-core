@@ -30,23 +30,15 @@ pub enum GetVersionError {
 }
 
 /// Retrieves the current version
-pub async fn get_version(
-    http_client: &dyn HttpClient,
-    request: Option<VersionsRequest>,
-) -> Result<VersionsResponse, Error> {
-    let p_request = request;
-
+pub async fn get_version(http_client: &dyn HttpClient) -> Result<VersionsResponse, Error> {
     let path = "/versions".to_string();
 
     let query_params: HashMap<String, String> = HashMap::new();
 
     let mut headers: HashMap<String, String> = HashMap::new();
-    headers.insert("Content-Type".to_string(), "application/json".to_string());
     headers.insert("Accept".to_string(), "application/json".to_string());
 
-    let body = Some(serde_json::to_vec(&p_request).map_err(|e| Error::Serde {
-        message: e.to_string(),
-    })?);
+    let body = None;
 
     let response = http_client
         .request(

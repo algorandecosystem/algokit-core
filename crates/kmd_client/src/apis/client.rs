@@ -97,11 +97,8 @@ impl KmdClient {
     }
 
     /// Delete a key
-    pub async fn delete_key(
-        &self,
-        request: DeleteKeyRequest,
-    ) -> Result<Apiv1DeleteKeyResponse, Error> {
-        let result = super::delete_key::delete_key(self.http_client.as_ref(), request).await;
+    pub async fn delete_key(&self) -> Result<Apiv1DeleteKeyResponse, Error> {
+        let result = super::delete_key::delete_key(self.http_client.as_ref()).await;
 
         result
     }
@@ -150,12 +147,8 @@ impl KmdClient {
     }
 
     /// Delete a multisig
-    pub async fn delete_multisig(
-        &self,
-        request: DeleteMultisigRequest,
-    ) -> Result<Apiv1DeleteMultisigResponse, Error> {
-        let result =
-            super::delete_multisig::delete_multisig(self.http_client.as_ref(), request).await;
+    pub async fn delete_multisig(&self) -> Result<Apiv1DeleteMultisigResponse, Error> {
+        let result = super::delete_multisig::delete_multisig(self.http_client.as_ref()).await;
 
         result
     }
@@ -313,21 +306,15 @@ impl KmdClient {
     }
 
     /// List wallets
-    pub async fn list_wallets(
-        &self,
-        request: Option<ListWalletsRequest>,
-    ) -> Result<Apiv1GetWalletsResponse, Error> {
-        let result = super::list_wallets::list_wallets(self.http_client.as_ref(), request).await;
+    pub async fn list_wallets(&self) -> Result<Apiv1GetWalletsResponse, Error> {
+        let result = super::list_wallets::list_wallets(self.http_client.as_ref()).await;
 
         result
     }
 
     /// Retrieves the current version
-    pub async fn get_version(
-        &self,
-        request: Option<VersionsRequest>,
-    ) -> Result<VersionsResponse, Error> {
-        let result = super::get_version::get_version(self.http_client.as_ref(), request).await;
+    pub async fn get_version(&self) -> Result<VersionsResponse, Error> {
+        let result = super::get_version::get_version(self.http_client.as_ref()).await;
 
         result
     }
