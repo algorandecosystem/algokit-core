@@ -4,7 +4,8 @@ use color_eyre::eyre::{Result, eyre};
 pub fn build(package: &Package) -> Result<()> {
     run(
         &format!(
-            r#"cargo --color always build --release --manifest-path "{}""#,
+            r#"cargo --color always build --release {} --manifest-path "{}""#,
+            package.cargo_build_flags(),
             package.crate_manifest().display()
         ),
         None,

@@ -49,12 +49,15 @@ impl Language {
 enum Package {
     #[value(alias = "algokit_transact")]
     Transact,
+    #[value(alias = "algod")]
+    AlgodClient,
 }
 
 impl Display for Package {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Package::Transact => f.write_str("algokit_transact"),
+            Package::AlgodClient => f.write_str("algod_client"),
         }
     }
 }
@@ -63,6 +66,7 @@ impl Package {
     fn crate_name(&self) -> String {
         match self {
             Self::Transact => "algokit_transact_ffi",
+            Self::AlgodClient => "algod_client",
         }
         .to_string()
     }
@@ -92,6 +96,13 @@ impl Package {
             self.crate_name(),
             ext
         ))
+    }
+
+    fn cargo_build_flags(&self) -> String {
+        match self {
+            Self::AlgodClient => "--no-default-features --features ffi_uniffi".to_string(),
+            _ => "".to_string(),
+        }
     }
 }
 

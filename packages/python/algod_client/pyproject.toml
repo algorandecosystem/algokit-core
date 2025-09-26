@@ -1,0 +1,30 @@
+[project]
+requires-python = ">=3.9,<4.0"
+name = "algod_client"
+version = "0.1.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0", "setuptools", "wheel"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "algod_client"
+version = "0.1.0"
+description = ""
+packages = [
+    { include = "algod_client" }
+]
+include = [
+    { path = "algod_client/*.so", format = "wheel" },
+    { path = "algod_client/*.dll", format = "wheel" },
+    { path = "algod_client/*.dylib", format = "wheel" }
+]
+
+[tool.poetry.group.test.dependencies]
+pytest = ">=7.4.4"
+requests = "^2.32.5"
+pytest-asyncio = "^1.2.0"
+
+[tool.poetry.group.build.dependencies]
+auditwheel = "^6.4.0"
+patchelf = { version = "^0.17.2.2", markers = "sys_platform == 'linux'" }
