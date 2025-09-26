@@ -40,41 +40,6 @@ impl IndexerClient {
     pub fn new(http_client: Arc<dyn HttpClient>) -> Self {
         Self { http_client }
     }
-
-    /// Create a new IndexerClient for Algorand TestNet.
-    #[cfg(feature = "default_client")]
-    #[cfg_attr(feature = "ffi_uniffi", uniffi::constructor)]
-    pub fn testnet() -> Self {
-        let http_client = Arc::new(DefaultHttpClient::new(
-            "https://testnet-idx.4160.nodely.dev",
-        ));
-        Self::new(http_client)
-    }
-
-    /// Create a new IndexerClient for Algorand MainNet.
-    #[cfg(feature = "default_client")]
-    #[cfg_attr(feature = "ffi_uniffi", uniffi::constructor)]
-    pub fn mainnet() -> Self {
-        let http_client = Arc::new(DefaultHttpClient::new(
-            "https://mainnet-idx.4160.nodely.dev",
-        ));
-        Self::new(http_client)
-    }
-
-    /// Create a new IndexerClient for a local localnet environment.
-    #[cfg(feature = "default_client")]
-    #[cfg_attr(feature = "ffi_uniffi", uniffi::constructor)]
-    pub fn localnet() -> Self {
-        let http_client = Arc::new(
-            DefaultHttpClient::with_header(
-                "http://localhost:8980",
-                "X-Indexer-API-Token",
-                "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-            )
-            .expect("Failed to create HTTP client with API token header"),
-        );
-        Self::new(http_client)
-    }
     /// Returns 200 if healthy.
     pub async fn make_health_check(&self) -> Result<HealthCheck, Error> {
         let result = super::make_health_check::make_health_check(self.http_client.as_ref()).await;
@@ -175,6 +140,37 @@ impl IndexerClient {
 
 #[cfg(not(feature = "ffi_uniffi"))]
 impl IndexerClient {
+    /// Create a new IndexerClient for Algorand TestNet.
+    #[cfg(feature = "default_client")]
+    pub fn testnet() -> Self {
+        let http_client = Arc::new(DefaultHttpClient::new(
+            "https://testnet-idx.4160.nodely.dev",
+        ));
+        Self::new(http_client)
+    }
+
+    /// Create a new IndexerClient for Algorand MainNet.
+    #[cfg(feature = "default_client")]
+    pub fn mainnet() -> Self {
+        let http_client = Arc::new(DefaultHttpClient::new(
+            "https://mainnet-idx.4160.nodely.dev",
+        ));
+        Self::new(http_client)
+    }
+
+    /// Create a new IndexerClient for a local localnet environment.
+    #[cfg(feature = "default_client")]
+    pub fn localnet() -> Self {
+        let http_client = Arc::new(
+            DefaultHttpClient::with_header(
+                "http://localhost:8980",
+                "X-Indexer-API-Token",
+                "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            )
+            .expect("Failed to create HTTP client with API token header"),
+        );
+        Self::new(http_client)
+    }
     /// Search for accounts.
     pub async fn search_for_accounts(
         &self,

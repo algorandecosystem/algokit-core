@@ -44,41 +44,6 @@ impl AlgodClient {
     pub fn new(http_client: Arc<dyn HttpClient>) -> Self {
         Self { http_client }
     }
-
-    /// Create a new AlgodClient for Algorand TestNet.
-    #[cfg(feature = "default_client")]
-    #[cfg_attr(feature = "ffi_uniffi", uniffi::constructor)]
-    pub fn testnet() -> Self {
-        let http_client = Arc::new(DefaultHttpClient::new(
-            "https://testnet-api.4160.nodely.dev",
-        ));
-        Self::new(http_client)
-    }
-
-    /// Create a new AlgodClient for Algorand MainNet.
-    #[cfg(feature = "default_client")]
-    #[cfg_attr(feature = "ffi_uniffi", uniffi::constructor)]
-    pub fn mainnet() -> Self {
-        let http_client = Arc::new(DefaultHttpClient::new(
-            "https://mainnet-api.4160.nodely.dev",
-        ));
-        Self::new(http_client)
-    }
-
-    /// Create a new AlgodClient for a local localnet environment.
-    #[cfg(feature = "default_client")]
-    #[cfg_attr(feature = "ffi_uniffi", uniffi::constructor)]
-    pub fn localnet() -> Self {
-        let http_client = Arc::new(
-            DefaultHttpClient::with_header(
-                "http://localhost:4001",
-                "X-Algo-API-Token",
-                "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-            )
-            .expect("Failed to create HTTP client with API token header"),
-        );
-        Self::new(http_client)
-    }
     /// Returns OK if healthy.
     pub async fn health_check(&self) -> Result<(), Error> {
         let result = super::health_check::health_check(self.http_client.as_ref()).await;
@@ -686,6 +651,37 @@ impl AlgodClient {
 
 #[cfg(not(feature = "ffi_uniffi"))]
 impl AlgodClient {
+    /// Create a new AlgodClient for Algorand TestNet.
+    #[cfg(feature = "default_client")]
+    pub fn testnet() -> Self {
+        let http_client = Arc::new(DefaultHttpClient::new(
+            "https://testnet-api.4160.nodely.dev",
+        ));
+        Self::new(http_client)
+    }
+
+    /// Create a new AlgodClient for Algorand MainNet.
+    #[cfg(feature = "default_client")]
+    pub fn mainnet() -> Self {
+        let http_client = Arc::new(DefaultHttpClient::new(
+            "https://mainnet-api.4160.nodely.dev",
+        ));
+        Self::new(http_client)
+    }
+
+    /// Create a new AlgodClient for a local localnet environment.
+    #[cfg(feature = "default_client")]
+    pub fn localnet() -> Self {
+        let http_client = Arc::new(
+            DefaultHttpClient::with_header(
+                "http://localhost:4001",
+                "X-Algo-API-Token",
+                "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            )
+            .expect("Failed to create HTTP client with API token header"),
+        );
+        Self::new(http_client)
+    }
     /// Get a list of assets held by an account, inclusive of asset params.
     pub async fn account_assets_information(
         &self,
