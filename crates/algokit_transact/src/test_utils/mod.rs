@@ -3,6 +3,7 @@ mod asset_config;
 mod asset_freeze;
 mod heartbeat;
 mod key_registration;
+mod state_proof;
 
 use crate::{
     ALGORAND_PUBLIC_KEY_BYTE_LENGTH, Address, AlgorandMsgpack, Byte32, EMPTY_SIGNATURE,

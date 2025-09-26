@@ -12,6 +12,9 @@ mod common;
 mod heartbeat;
 mod key_registration;
 mod payment;
+pub mod state_proof;
+
+use state_proof::StateProofTransactionFields;
 
 pub use app_call::{
     AppCallTransactionBuilder, AppCallTransactionFields, BoxReference, OnApplicationComplete,
@@ -73,6 +76,9 @@ pub enum Transaction {
     #[serde(deserialize_with = "heartbeat_deserializer")]
     #[serde(rename = "hb")]
     Heartbeat(HeartbeatTransactionFields),
+
+    #[serde(rename = "stpf")]
+    StateProof(StateProofTransactionFields),
 }
 
 #[derive(Default)]
@@ -93,6 +99,7 @@ impl Transaction {
             Transaction::KeyRegistration(k) => &k.header,
             Transaction::AssetFreeze(f) => &f.header,
             Transaction::Heartbeat(h) => &h.header,
+            Transaction::StateProof(s) => &s.header,
         }
     }
 
@@ -105,6 +112,7 @@ impl Transaction {
             Transaction::KeyRegistration(k) => &mut k.header,
             Transaction::AssetFreeze(f) => &mut f.header,
             Transaction::Heartbeat(h) => &mut h.header,
+            Transaction::StateProof(s) => &mut s.header,
         }
     }
 
@@ -156,6 +164,14 @@ impl TransactionId for Transaction {}
 impl EstimateTransactionSize for Transaction {
     fn estimate_size(&self) -> Result<usize, AlgoKitTransactError> {
         Ok(self.encode_raw()?.len() + ALGORAND_SIGNATURE_ENCODING_INCR)
+    }
+}
+
+impl TryFrom<state_proof::StateProofTransactionBuilder> for Transaction {
+    type Error = state_proof::StateProofTransactionBuilderError;
+
+    fn try_from(builder: state_proof::StateProofTransactionBuilder) -> Result<Self, Self::Error> {
+        builder.build()
     }
 }
 
