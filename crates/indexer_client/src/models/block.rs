@@ -38,18 +38,18 @@ pub struct Block {
     /// the actual amount transferred to the proposer from the fee sink.
     #[serde(rename = "proposer-payout", skip_serializing_if = "Option::is_none")]
     pub proposer_payout: Option<u64>,
-    /// \[gh\] hash to which this block belongs.
+    /// [gh] hash to which this block belongs.
     #[serde_as(as = "serde_with::base64::Base64")]
     #[serde(rename = "genesis-hash")]
     pub genesis_hash: Vec<u8>,
-    /// \[gen\] ID to which this block belongs.
+    /// [gen] ID to which this block belongs.
     #[serde(rename = "genesis-id")]
     pub genesis_id: String,
-    /// \[prev\] Previous block hash.
+    /// [prev] Previous block hash.
     #[serde_as(as = "serde_with::base64::Base64")]
     #[serde(rename = "previous-block-hash")]
     pub previous_block_hash: Vec<u8>,
-    /// \[prev512\] Previous block hash, using SHA-512.
+    /// [prev512] Previous block hash, using SHA-512.
     #[serde_as(as = "Option<serde_with::base64::Base64>")]
     #[serde(
         rename = "previous-block-hash-512",
@@ -58,10 +58,10 @@ pub struct Block {
     pub previous_block_hash_512: Option<Vec<u8>>,
     #[serde(rename = "rewards", skip_serializing_if = "Option::is_none")]
     pub rewards: Option<BlockRewards>,
-    /// \[rnd\] Current round on which this block was appended to the chain.
+    /// [rnd] Current round on which this block was appended to the chain.
     #[serde(rename = "round")]
     pub round: u64,
-    /// \[seed\] Sortition seed.
+    /// [seed] Sortition seed.
     #[serde_as(as = "serde_with::base64::Base64")]
     #[serde(rename = "seed")]
     pub seed: Vec<u8>,
@@ -71,28 +71,28 @@ pub struct Block {
         skip_serializing_if = "Option::is_none"
     )]
     pub state_proof_tracking: Option<Vec<StateProofTracking>>,
-    /// \[ts\] Block creation timestamp in seconds since epoch
+    /// [ts] Block creation timestamp in seconds since epoch
     #[serde(rename = "timestamp")]
     pub timestamp: u64,
-    /// \[txns\] list of transactions corresponding to a given round.
+    /// [txns] list of transactions corresponding to a given round.
     #[serde(rename = "transactions", skip_serializing_if = "Option::is_none")]
     pub transactions: Option<Vec<Transaction>>,
-    /// \[txn\] TransactionsRoot authenticates the set of transactions appearing in the block. More specifically, it's the root of a merkle tree whose leaves are the block's Txids, in lexicographic order. For the empty block, it's 0. Note that the TxnRoot does not authenticate the signatures on the transactions, only the transactions themselves. Two blocks with the same transactions but in a different order and with different signatures will have the same TxnRoot.
+    /// [txn] TransactionsRoot authenticates the set of transactions appearing in the block. More specifically, it's the root of a merkle tree whose leaves are the block's Txids, in lexicographic order. For the empty block, it's 0. Note that the TxnRoot does not authenticate the signatures on the transactions, only the transactions themselves. Two blocks with the same transactions but in a different order and with different signatures will have the same TxnRoot.
     #[serde_as(as = "serde_with::base64::Base64")]
     #[serde(rename = "transactions-root")]
     pub transactions_root: Vec<u8>,
-    /// \[txn256\] TransactionsRootSHA256 is an auxiliary TransactionRoot, built using a vector commitment instead of a merkle tree, and SHA256 hash function instead of the default SHA512_256. This commitment can be used on environments where only the SHA256 function exists.
+    /// [txn256] TransactionsRootSHA256 is an auxiliary TransactionRoot, built using a vector commitment instead of a merkle tree, and SHA256 hash function instead of the default SHA512_256. This commitment can be used on environments where only the SHA256 function exists.
     #[serde_as(as = "serde_with::base64::Base64")]
     #[serde(rename = "transactions-root-sha256")]
     pub transactions_root_sha256: Vec<u8>,
-    /// \[txn512\] TransactionsRootSHA512 is an auxiliary TransactionRoot, built using a vector commitment instead of a merkle tree, and SHA512 hash function instead of the default SHA512_256.
+    /// [txn512] TransactionsRootSHA512 is an auxiliary TransactionRoot, built using a vector commitment instead of a merkle tree, and SHA512 hash function instead of the default SHA512_256.
     #[serde_as(as = "Option<serde_with::base64::Base64>")]
     #[serde(
         rename = "transactions-root-sha512",
         skip_serializing_if = "Option::is_none"
     )]
     pub transactions_root_sha512: Option<Vec<u8>>,
-    /// \[tc\] TxnCounter counts the number of transactions committed in the ledger, from the time at which support for this feature was introduced.
+    /// [tc] TxnCounter counts the number of transactions committed in the ledger, from the time at which support for this feature was introduced.
     ///
     /// Specifically, TxnCounter is the number of the next transaction that will be committed after this block.  It is 0 when no transactions have ever been committed (since TxnCounter started being supported).
     #[serde(rename = "txn-counter", skip_serializing_if = "Option::is_none")]

@@ -15,27 +15,27 @@ use serde_with::{Bytes, serde_as};
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct IndexerStateProofMessage {
-    /// \[b\]
+    /// [b]
     #[serde_as(as = "Option<serde_with::base64::Base64>")]
     #[serde(
         rename = "block-headers-commitment",
         skip_serializing_if = "Option::is_none"
     )]
     pub block_headers_commitment: Option<Vec<u8>>,
-    /// \[v\]
+    /// [v]
     #[serde_as(as = "Option<serde_with::base64::Base64>")]
     #[serde(rename = "voters-commitment", skip_serializing_if = "Option::is_none")]
     pub voters_commitment: Option<Vec<u8>>,
-    /// \[P\]
+    /// [P]
     #[serde(rename = "ln-proven-weight", skip_serializing_if = "Option::is_none")]
     pub ln_proven_weight: Option<u64>,
-    /// \[f\]
+    /// [f]
     #[serde(
         rename = "first-attested-round",
         skip_serializing_if = "Option::is_none"
     )]
     pub first_attested_round: Option<u64>,
-    /// \[l\]
+    /// [l]
     #[serde(
         rename = "latest-attested-round",
         skip_serializing_if = "Option::is_none"

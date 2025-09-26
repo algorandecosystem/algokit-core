@@ -17,13 +17,13 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct TransactionAssetFreeze {
-    /// \[fadd\] Address of the account whose asset is being frozen or thawed.
+    /// [fadd] Address of the account whose asset is being frozen or thawed.
     #[serde(rename = "address")]
     pub address: String,
-    /// \[faid\] ID of the asset being frozen or thawed.
+    /// [faid] ID of the asset being frozen or thawed.
     #[serde(rename = "asset-id")]
     pub asset_id: u64,
-    /// \[afrz\] The new freeze status.
+    /// [afrz] The new freeze status.
     #[serde(rename = "new-freeze-status")]
     pub new_freeze_status: bool,
 }

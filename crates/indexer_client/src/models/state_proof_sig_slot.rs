@@ -17,7 +17,7 @@ use crate::models::StateProofSignature;
 pub struct StateProofSigSlot {
     #[serde(rename = "signature", skip_serializing_if = "Option::is_none")]
     pub signature: Option<StateProofSignature>,
-    /// \[l\] The total weight of signatures in the lower-numbered slots.
+    /// [l] The total weight of signatures in the lower-numbered slots.
     #[serde(rename = "lower-sig-weight", skip_serializing_if = "Option::is_none")]
     pub lower_sig_weight: Option<u64>,
 }

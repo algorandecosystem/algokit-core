@@ -13,7 +13,7 @@ use serde_with::{Bytes, serde_as};
 
 /// AssetParams specifies the parameters for an asset.
 ///
-/// \[apar\] when part of an AssetConfig transaction.
+/// [apar] when part of an AssetConfig transaction.
 ///
 /// Definition:
 /// data/transactions/asset.go : AssetParams

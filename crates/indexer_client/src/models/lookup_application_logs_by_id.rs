@@ -16,7 +16,7 @@ use crate::models::ApplicationLogData;
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct LookupApplicationLogsById {
-    /// \[appidx\] application index.
+    /// [appidx] application index.
     #[serde(rename = "application-id")]
     pub application_id: u64,
     /// Round at which the results were computed.

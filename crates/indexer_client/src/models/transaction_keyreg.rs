@@ -19,33 +19,33 @@ use serde_with::{Bytes, serde_as};
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct TransactionKeyreg {
-    /// \[nonpart\] Mark the account as participating or non-participating.
+    /// [nonpart] Mark the account as participating or non-participating.
     #[serde(rename = "non-participation", skip_serializing_if = "Option::is_none")]
     pub non_participation: Option<bool>,
-    /// \[selkey\] Public key used with the Verified Random Function (VRF) result during committee selection.
+    /// [selkey] Public key used with the Verified Random Function (VRF) result during committee selection.
     #[serde_as(as = "Option<serde_with::base64::Base64>")]
     #[serde(
         rename = "selection-participation-key",
         skip_serializing_if = "Option::is_none"
     )]
     pub selection_participation_key: Option<Vec<u8>>,
-    /// \[votefst\] First round this participation key is valid.
+    /// [votefst] First round this participation key is valid.
     #[serde(rename = "vote-first-valid", skip_serializing_if = "Option::is_none")]
     pub vote_first_valid: Option<u64>,
-    /// \[votekd\] Number of subkeys in each batch of participation keys.
+    /// [votekd] Number of subkeys in each batch of participation keys.
     #[serde(rename = "vote-key-dilution", skip_serializing_if = "Option::is_none")]
     pub vote_key_dilution: Option<u64>,
-    /// \[votelst\] Last round this participation key is valid.
+    /// [votelst] Last round this participation key is valid.
     #[serde(rename = "vote-last-valid", skip_serializing_if = "Option::is_none")]
     pub vote_last_valid: Option<u64>,
-    /// \[votekey\] Participation public key used in key registration transactions.
+    /// [votekey] Participation public key used in key registration transactions.
     #[serde_as(as = "Option<serde_with::base64::Base64>")]
     #[serde(
         rename = "vote-participation-key",
         skip_serializing_if = "Option::is_none"
     )]
     pub vote_participation_key: Option<Vec<u8>>,
-    /// \[sprfkey\] State proof key used in key registration transactions.
+    /// [sprfkey] State proof key used in key registration transactions.
     #[serde_as(as = "Option<serde_with::base64::Base64>")]
     #[serde(rename = "state-proof-key", skip_serializing_if = "Option::is_none")]
     pub state_proof_key: Option<Vec<u8>>,

@@ -24,7 +24,7 @@ pub struct StateProofSignature {
     pub merkle_array_index: Option<u64>,
     #[serde(rename = "proof", skip_serializing_if = "Option::is_none")]
     pub proof: Option<MerkleArrayProof>,
-    /// \[vkey\]
+    /// [vkey]
     #[serde_as(as = "Option<serde_with::base64::Base64>")]
     #[serde(rename = "verifying-key", skip_serializing_if = "Option::is_none")]
     pub verifying_key: Option<Vec<u8>>,

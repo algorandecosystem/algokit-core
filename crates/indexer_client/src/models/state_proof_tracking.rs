@@ -18,17 +18,17 @@ pub struct StateProofTracking {
     /// State Proof Type. Note the raw object uses map with this as key.
     #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
     pub r#type: Option<u64>,
-    /// \[v\] Root of a vector commitment containing online accounts that will help sign the proof.
+    /// [v] Root of a vector commitment containing online accounts that will help sign the proof.
     #[serde_as(as = "Option<serde_with::base64::Base64>")]
     #[serde(rename = "voters-commitment", skip_serializing_if = "Option::is_none")]
     pub voters_commitment: Option<Vec<u8>>,
-    /// \[t\] The total number of microalgos held by the online accounts during the StateProof round.
+    /// [t] The total number of microalgos held by the online accounts during the StateProof round.
     #[serde(
         rename = "online-total-weight",
         skip_serializing_if = "Option::is_none"
     )]
     pub online_total_weight: Option<u64>,
-    /// \[n\] Next round for which we will accept a state proof transaction.
+    /// [n] Next round for which we will accept a state proof transaction.
     #[serde(rename = "next-round", skip_serializing_if = "Option::is_none")]
     pub next_round: Option<u32>,
 }

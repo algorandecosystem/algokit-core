@@ -19,13 +19,13 @@ use crate::models::TransactionSignatureMultisigSubsignature;
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct TransactionSignatureMultisig {
-    /// \[subsig\] holds pairs of public key and signatures.
+    /// [subsig] holds pairs of public key and signatures.
     #[serde(rename = "subsignature", skip_serializing_if = "Option::is_none")]
     pub subsignature: Option<Vec<TransactionSignatureMultisigSubsignature>>,
-    /// \[thr\]
+    /// [thr]
     #[serde(rename = "threshold", skip_serializing_if = "Option::is_none")]
     pub threshold: Option<u64>,
-    /// \[v\]
+    /// [v]
     #[serde(rename = "version", skip_serializing_if = "Option::is_none")]
     pub version: Option<u64>,
 }

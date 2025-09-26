@@ -17,13 +17,13 @@ use crate::models::HashFactory;
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct MerkleArrayProof {
-    /// \[pth\]
+    /// [pth]
     #[serde_as(as = "Option<Vec<serde_with::base64::Base64>>")]
     #[serde(rename = "path", skip_serializing_if = "Option::is_none")]
     pub path: Option<Vec<Vec<u8>>>,
     #[serde(rename = "hash-factory", skip_serializing_if = "Option::is_none")]
     pub hash_factory: Option<HashFactory>,
-    /// \[td\]
+    /// [td]
     #[serde(rename = "tree-depth", skip_serializing_if = "Option::is_none")]
     pub tree_depth: Option<u64>,
 }

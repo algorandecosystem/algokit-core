@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::str::FromStr;
 
-/// \[apan\] defines the what additional actions occur with the transaction.
+/// [apan] defines the what additional actions occur with the transaction.
 ///
 /// Valid types:
 ///   * noop

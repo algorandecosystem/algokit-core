@@ -14,25 +14,25 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct BlockUpgradeState {
-    /// \[proto\] The current protocol version.
+    /// [proto] The current protocol version.
     #[serde(rename = "current-protocol")]
     pub current_protocol: String,
-    /// \[nextproto\] The next proposed protocol version.
+    /// [nextproto] The next proposed protocol version.
     #[serde(rename = "next-protocol", skip_serializing_if = "Option::is_none")]
     pub next_protocol: Option<String>,
-    /// \[nextyes\] Number of blocks which approved the protocol upgrade.
+    /// [nextyes] Number of blocks which approved the protocol upgrade.
     #[serde(
         rename = "next-protocol-approvals",
         skip_serializing_if = "Option::is_none"
     )]
     pub next_protocol_approvals: Option<u64>,
-    /// \[nextswitch\] Round on which the protocol upgrade will take effect.
+    /// [nextswitch] Round on which the protocol upgrade will take effect.
     #[serde(
         rename = "next-protocol-switch-on",
         skip_serializing_if = "Option::is_none"
     )]
     pub next_protocol_switch_on: Option<u64>,
-    /// \[nextbefore\] Deadline round for this protocol upgrade (No votes will be consider after this round).
+    /// [nextbefore] Deadline round for this protocol upgrade (No votes will be consider after this round).
     #[serde(
         rename = "next-protocol-vote-before",
         skip_serializing_if = "Option::is_none"

@@ -21,20 +21,20 @@ use crate::models::HbProofFields;
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct TransactionHeartbeat {
-    /// \[hbad\] HbAddress is the account this txn is proving onlineness for.
+    /// [hbad] HbAddress is the account this txn is proving onlineness for.
     #[serde(rename = "hb-address")]
     pub hb_address: String,
     #[serde(rename = "hb-proof")]
     pub hb_proof: HbProofFields,
-    /// \[hbsd\] HbSeed must be the block seed for the this transaction's firstValid block.
+    /// [hbsd] HbSeed must be the block seed for the this transaction's firstValid block.
     #[serde_as(as = "serde_with::base64::Base64")]
     #[serde(rename = "hb-seed")]
     pub hb_seed: Vec<u8>,
-    /// \[hbvid\] HbVoteID must match the HbAddress account's current VoteID.
+    /// [hbvid] HbVoteID must match the HbAddress account's current VoteID.
     #[serde_as(as = "serde_with::base64::Base64")]
     #[serde(rename = "hb-vote-id")]
     pub hb_vote_id: Vec<u8>,
-    /// \[hbkd\] HbKeyDilution must match HbAddress account's current KeyDilution.
+    /// [hbkd] HbKeyDilution must match HbAddress account's current KeyDilution.
     #[serde(rename = "hb-key-dilution")]
     pub hb_key_dilution: u64,
 }

@@ -17,7 +17,7 @@ use crate::models::StateProofVerifier;
 pub struct StateProofParticipant {
     #[serde(rename = "verifier", skip_serializing_if = "Option::is_none")]
     pub verifier: Option<StateProofVerifier>,
-    /// \[w\]
+    /// [w]
     #[serde(rename = "weight", skip_serializing_if = "Option::is_none")]
     pub weight: Option<u64>,
 }

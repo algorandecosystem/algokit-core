@@ -18,14 +18,14 @@ use crate::models::LocalsRef;
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct ResourceRef {
-    /// \[d\] Account whose balance record is accessible by the executing ApprovalProgram or ClearStateProgram.
+    /// [d] Account whose balance record is accessible by the executing ApprovalProgram or ClearStateProgram.
     #[serde(rename = "address", skip_serializing_if = "Option::is_none")]
     pub address: Option<String>,
-    /// \[p\] Application id whose GlobalState may be read by the executing
+    /// [p] Application id whose GlobalState may be read by the executing
     /// ApprovalProgram or ClearStateProgram.
     #[serde(rename = "application-id", skip_serializing_if = "Option::is_none")]
     pub application_id: Option<u64>,
-    /// \[s\] Asset whose AssetParams may be read by the executing
+    /// [s] Asset whose AssetParams may be read by the executing
     /// ApprovalProgram or ClearStateProgram.
     #[serde(rename = "asset-id", skip_serializing_if = "Option::is_none")]
     pub asset_id: Option<u64>,

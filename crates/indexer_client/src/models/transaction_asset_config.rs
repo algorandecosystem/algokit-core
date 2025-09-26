@@ -23,7 +23,7 @@ use crate::models::AssetParams;
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct TransactionAssetConfig {
-    /// \[xaid\] ID of the asset being configured or empty if creating.
+    /// [xaid] ID of the asset being configured or empty if creating.
     #[serde(rename = "asset-id", skip_serializing_if = "Option::is_none")]
     pub asset_id: Option<u64>,
     #[serde(rename = "params", skip_serializing_if = "Option::is_none")]

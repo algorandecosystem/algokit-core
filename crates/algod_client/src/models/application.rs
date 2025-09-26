@@ -24,7 +24,7 @@ use crate::models::ApplicationParams;
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct Application {
-    /// \[appidx\] application index.
+    /// [appidx] application index.
     #[serde(rename = "id")]
     pub id: u64,
     #[serde(rename = "params")]
