@@ -69,8 +69,7 @@ async fn build_testing_app_factory(
     test_account: TestAccount,
     opts: AppFactoryOptions,
 ) -> AppFactory {
-    build_app_factory_with_spec(algorand_client, test_account, testing_app_spec(), opts)
-        .await
+    build_app_factory_with_spec(algorand_client, test_account, testing_app_spec(), opts).await
 }
 
 fn compilation_params(value: u64, updatable: bool, deletable: bool) -> CompilationParams {
