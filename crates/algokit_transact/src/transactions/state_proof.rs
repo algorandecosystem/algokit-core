@@ -218,7 +218,7 @@ pub struct StateProofTransactionFields {
     pub state_proof: StateProof,
 
     /// State proof message.
-    #[serde(rename = "msg")]
+    #[serde(rename = "spmsg")]
     pub message: StateProofMessage,
 }
 
