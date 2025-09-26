@@ -13,9 +13,9 @@ pub use transactions::AppCallTransactionFields;
 pub use transactions::AssetConfigTransactionFields;
 pub use transactions::AssetFreezeTransactionFields;
 pub use transactions::AssetTransferTransactionFields;
-pub use transactions::HeartbeatTransactionFields;
 pub use transactions::KeyRegistrationTransactionFields;
 pub use transactions::PaymentTransactionFields;
+pub use transactions::{HeartbeatProof, HeartbeatTransactionFields};
 
 use snafu::Snafu;
 

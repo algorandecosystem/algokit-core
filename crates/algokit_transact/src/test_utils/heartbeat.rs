@@ -1,6 +1,4 @@
-use crate::{
-    Byte32, HeartbeatProofBuilder, HeartbeatTransactionBuilder, TransactionHeaderBuilder,
-};
+use crate::{Byte32, HeartbeatProofBuilder, HeartbeatTransactionBuilder, TransactionHeaderBuilder};
 use base64::{Engine, prelude::BASE64_STANDARD};
 
 pub struct HeartbeatTransactionMother {}
@@ -77,14 +75,14 @@ impl HeartbeatTransactionMother {
             .seed(
                 BASE64_STANDARD
                     .decode("4dAbkZxfEtTMdj8gz5pugXqtUamzKEpcKBj6KXWfb/g=")
-                    .unwrap()
+                    .unwrap(),
             )
             .vote_id(
                 BASE64_STANDARD
                     .decode("pNdTh3H82LwT7c0kMwyFox+fweCHBuLR6GBUetfF80c=")
                     .unwrap()
                     .try_into()
-                    .unwrap()
+                    .unwrap(),
             )
             .key_dilution(1419)
             .to_owned()

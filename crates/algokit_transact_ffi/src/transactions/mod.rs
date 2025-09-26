@@ -5,7 +5,7 @@ pub mod heartbeat;
 
 pub use app_call::AppCallTransactionFields;
 pub use asset_config::AssetConfigTransactionFields;
-pub use heartbeat::HeartbeatTransactionFields;
+pub use heartbeat::{HeartbeatProof, HeartbeatTransactionFields};
 
 pub mod key_registration;
 pub use asset_freeze::AssetFreezeTransactionFields;

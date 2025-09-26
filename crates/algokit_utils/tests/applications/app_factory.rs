@@ -69,8 +69,8 @@ async fn build_testing_app_factory(
     test_account: TestAccount,
     opts: AppFactoryOptions,
 ) -> AppFactory {
-    return build_app_factory_with_spec(algorand_client, test_account, testing_app_spec(), opts)
-        .await;
+    build_app_factory_with_spec(algorand_client, test_account, testing_app_spec(), opts)
+        .await
 }
 
 fn compilation_params(value: u64, updatable: bool, deletable: bool) -> CompilationParams {
@@ -205,7 +205,7 @@ async fn oncomplete_override_on_create(
         client.app_address(),
         algokit_transact::Address::from_app_id(&client.app_id())
     );
-    assert!(result.confirmations.first().is_some());
+    assert!(!result.confirmations.is_empty());
     assert!(result.compiled_approval.is_some());
     assert!(result.compiled_clear.is_some());
     Ok(())
