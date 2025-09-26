@@ -6,6 +6,10 @@ description = "API client for algod interaction."
 license = "MIT"
 edition = "2024"
 
+[lib]
+name = "algod_client"
+crate-type = ["lib", "cdylib"]
+
 [features]
 default = ["default_client"]
 default_client = ["algokit_http_client/default_client"]

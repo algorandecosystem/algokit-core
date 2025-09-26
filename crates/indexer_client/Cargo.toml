@@ -6,6 +6,10 @@ description = "API client for indexer interaction."
 license = "MIT"
 edition = "2024"
 
+[lib]
+name = "indexer_client"
+crate-type = ["lib", "cdylib"]
+
 [features]
 default = ["default_client"]
 default_client = ["algokit_http_client/default_client"]
