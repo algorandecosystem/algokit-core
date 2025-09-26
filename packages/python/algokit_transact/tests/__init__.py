@@ -13,6 +13,7 @@ from algokit_transact import (
     KeyRegistrationTransactionFields,
     OnApplicationComplete,
     StateSchema,
+    HeartbeatTransactionFields,
 )
 from nacl.signing import SigningKey
 
@@ -47,6 +48,7 @@ class TestData:
     online_key_registration: TransactionTestData
     offline_key_registration: TransactionTestData
     non_participation_key_registration: TransactionTestData
+    heartbeat: TransactionTestData
 
 
 def convert_values(obj: Any) -> Any:
@@ -145,6 +147,11 @@ def create_transaction_test_data(test_data: dict[str, Any]) -> TransactionTestDa
             "type": TransactionType.KEY_REGISTRATION,
             "field_name": "key_registration",
             "field_class": KeyRegistrationTransactionFields,
+        },
+        "Heartbeat": {
+            "type": TransactionType.HEARTBEAT,
+            "field_name": "heartbeat",
+            "field_class": HeartbeatTransactionFields,
         },
     }
 
