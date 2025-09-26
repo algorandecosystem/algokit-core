@@ -4,11 +4,5 @@
     "outDir": "dist",
     "tsBuildInfoFile": "build/.tsbuildinfo"
   },
-  "include": [
-    "src/**/*.ts",
-    "tests/**/*.ts",
-    "../algokit_utils/tests/algod/pendingTransaction.test.ts",
-    "../algokit_utils/tests/algod/simulateTransactions.test.ts",
-    "../algokit_utils/tests/algod/transactionParams.test.ts"
-  ]
+  "include": ["src/**/*.ts"]
 }

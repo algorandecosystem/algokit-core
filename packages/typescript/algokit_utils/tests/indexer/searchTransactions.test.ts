@@ -6,7 +6,7 @@ describe('Indexer search transactions', () => {
   it('should search for transactions', async () => {
     const { assetId, txId } = await createDummyAsset()
     const env = getIndexerEnv()
-    const client = new IndexerClient({ baseUrl: env.indexerBaseUrl, headers: { 'X-Algo-API-Token': env.indexerApiToken ?? '' } })
+    const client = new IndexerClient({ baseUrl: env.indexerBaseUrl, apiToken: env.indexerApiToken ?? undefined })
 
     await waitForIndexerTransaction(client, txId)
 

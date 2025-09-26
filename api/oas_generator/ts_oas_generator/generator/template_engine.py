@@ -682,10 +682,10 @@ class CodeGenerator:
 
         template_map = {
             # Core runtime
-            core_dir / "ClientConfig.ts": ("base/src/core/ClientConfig.ts.j2", context),
-            core_dir / "BaseHttpRequest.ts": ("base/src/core/BaseHttpRequest.ts.j2", context),
-            core_dir / "FetchHttpRequest.ts": ("base/src/core/FetchHttpRequest.ts.j2", context),
-            core_dir / "ApiError.ts": ("base/src/core/ApiError.ts.j2", context),
+            core_dir / "client-config.ts": ("base/src/core/client-config.ts.j2", context),
+            core_dir / "base-http-request.ts": ("base/src/core/base-http-request.ts.j2", context),
+            core_dir / "fetch-http-request.ts": ("base/src/core/fetch-http-request.ts.j2", context),
+            core_dir / "api-error.ts": ("base/src/core/api-error.ts.j2", context),
             core_dir / "request.ts": ("base/src/core/request.ts.j2", context),
             core_dir / "serialization.ts": ("base/src/core/serialization.ts.j2", context),
             core_dir / "codecs.ts": ("base/src/core/codecs.ts.j2", context),

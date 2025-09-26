@@ -1,4 +1,4 @@
-import type { ClientConfig } from './ClientConfig'
+import type { ClientConfig } from './client-config'
 
 export type QueryValue = string | number | bigint | boolean
 export type QueryParams = Record<string, QueryValue | QueryValue[] | undefined>

@@ -8,7 +8,7 @@ describe('Algod pendingTransaction', () => {
     const env = getAlgodEnv()
     const client = new AlgodClient({
       baseUrl: env.algodBaseUrl,
-      headers: env.algodApiToken ? { 'X-Algo-API-Token': env.algodApiToken } : undefined,
+      apiToken: env.algodApiToken,
     })
     const acct = await getSenderAccount()
     const sp = await client.transactionParams()

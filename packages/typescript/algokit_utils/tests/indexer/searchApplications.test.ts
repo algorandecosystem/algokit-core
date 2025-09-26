@@ -7,7 +7,7 @@ describe('Indexer search applications', () => {
     const { appId, txId } = await createDummyApp()
 
     const env = getIndexerEnv()
-    const client = new IndexerClient({ baseUrl: env.indexerBaseUrl, headers: { 'X-Algo-API-Token': env.indexerApiToken ?? '' } })
+    const client = new IndexerClient({ baseUrl: env.indexerBaseUrl, apiToken: env.indexerApiToken ?? undefined })
 
     await waitForIndexerTransaction(client, txId)
 

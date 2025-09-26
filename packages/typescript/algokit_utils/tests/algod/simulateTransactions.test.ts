@@ -8,7 +8,7 @@ describe('simulateTransactions', () => {
     const env = getAlgodEnv()
     const client = new AlgodClient({
       baseUrl: env.algodBaseUrl,
-      headers: { 'X-Algo-API-Token': env.algodApiToken ?? '' },
+      apiToken: env.algodApiToken,
     } as ClientConfig)
     const acct = await getSenderAccount()
     const sp = await client.transactionParams()

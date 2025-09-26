@@ -1,4 +1,4 @@
-import type { BaseHttpRequest, ApiRequestOptions } from '../core/BaseHttpRequest'
+import type { BaseHttpRequest, ApiRequestOptions } from '../core/base-http-request'
 import { AlgorandSerializer } from '../core/model-runtime'
 import type {
   AbortCatchup,

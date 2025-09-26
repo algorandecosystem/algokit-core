@@ -6,6 +6,7 @@ export interface ClientConfig {
   baseUrl: BaseURL;
   credentials?: 'include' | 'omit' | 'same-origin';
   token?: string | (() => string | Promise<string>);
+  apiToken?: string;
   username?: string;
   password?: string;
   headers?: Record<string, string> | (() => Record<string, string> | Promise<Record<string, string>>);

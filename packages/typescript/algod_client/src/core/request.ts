@@ -1,7 +1,7 @@
-import type { ClientConfig } from './ClientConfig'
-import { ApiError } from './ApiError'
+import type { ClientConfig } from './client-config'
+import { ApiError } from './api-error'
 import { decodeMsgPack, encodeMsgPack } from './codecs'
-import type { QueryParams, BodyValue } from './BaseHttpRequest'
+import type { QueryParams, BodyValue } from './base-http-request'
 
 const encodeURIPath = (path: string): string => encodeURI(path).replace(/%5B/g, '[').replace(/%5D/g, ']')
 
@@ -45,6 +45,11 @@ export async function request<T>(
   const headers: Record<string, string> = {
     ...(typeof config.headers === 'function' ? await config.headers() : (config.headers ?? {})),
     ...(options.headers ?? {}),
+  }
+
+  const apiToken = config.apiToken
+  if (apiToken) {
+    headers['X-Algo-API-Token'] = apiToken
   }
 
   const token = typeof config.token === 'function' ? await config.token() : config.token

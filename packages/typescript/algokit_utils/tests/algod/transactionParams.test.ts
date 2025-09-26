@@ -7,7 +7,7 @@ describe('transactionParams', () => {
     const env = getAlgodEnv()
     const client = new AlgodClient({
       baseUrl: env.algodBaseUrl,
-      headers: { 'X-Algo-API-Token': env.algodApiToken ?? '' },
+      apiToken: env.algodApiToken,
     })
     const sp = await client.transactionParams()
     expect(sp).toHaveProperty('genesisHash')
