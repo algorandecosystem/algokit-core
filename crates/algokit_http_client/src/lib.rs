@@ -54,7 +54,7 @@ pub struct HttpResponse {
 pub trait HttpClient: Send + Sync {
     async fn request(
         &self,
-        method: HttpMethod,
+        http_method: HttpMethod,
         path: String,
         query: Option<HashMap<String, String>>,
         body: Option<Vec<u8>>,
@@ -113,14 +113,14 @@ impl DefaultHttpClient {
 impl HttpClient for DefaultHttpClient {
     async fn request(
         &self,
-        method: HttpMethod,
+        http_method: HttpMethod,
         path: String,
         query: Option<HashMap<String, String>>,
         body: Option<Vec<u8>>,
         headers: Option<HashMap<String, String>>,
     ) -> Result<HttpResponse, HttpError> {
         let url = format!("{}{}", self.base_url, path);
-        let method = reqwest::Method::from_bytes(method.as_str().as_bytes()).map_err(|e| {
+        let method = reqwest::Method::from_bytes(http_method.as_str().as_bytes()).map_err(|e| {
             HttpError::RequestError {
                 message: e.to_string(),
             }
