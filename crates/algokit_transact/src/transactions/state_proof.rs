@@ -228,3 +228,17 @@ impl StateProofTransactionBuilder {
         self.build_fields().map(Transaction::StateProof)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::test_utils::TestDataMother;
+
+    #[test]
+    fn test_state_proof_snapshot() {
+        let data = TestDataMother::state_proof();
+        assert_eq!(
+            data.id,
+            String::from("6D3MLKOASKUXHFTTWYUG563UBKZ5RW3FFKN6ZUUWBCY47RZT3HIA")
+        );
+    }
+}

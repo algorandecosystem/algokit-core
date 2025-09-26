@@ -9,6 +9,7 @@ use crate::{
     ALGORAND_PUBLIC_KEY_BYTE_LENGTH, Address, AlgorandMsgpack, Byte32, EMPTY_SIGNATURE,
     HASH_BYTES_LENGTH, KeyPairAccount, MultisigSignature, MultisigSubsignature, SignedTransaction,
     Transaction, TransactionHeaderBuilder, TransactionId,
+    test_utils::state_proof::StateProofTransactionMother,
     transactions::{AssetTransferTransactionBuilder, PaymentTransactionBuilder},
 };
 use base64::{Engine, prelude::BASE64_STANDARD};
@@ -480,6 +481,11 @@ impl TestDataMother {
 
     pub fn heartbeat() -> TransactionTestData {
         let transaction = HeartbeatTransactionMother::heartbeat().build().unwrap();
+        TransactionTestData::new(transaction, SIGNING_PRIVATE_KEY)
+    }
+
+    pub fn state_proof() -> TransactionTestData {
+        let transaction = StateProofTransactionMother::state_proof().build().unwrap();
         TransactionTestData::new(transaction, SIGNING_PRIVATE_KEY)
     }
 

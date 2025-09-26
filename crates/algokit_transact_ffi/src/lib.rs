@@ -378,6 +378,7 @@ impl From<algokit_transact::Transaction> for Transaction {
                     Some(heartbeat_fields),
                 )
             }
+            algokit_transact::Transaction::StateProof(_) => todo!(),
         }
     }
 }
@@ -502,6 +503,7 @@ pub fn get_encoded_transaction_type(
         algokit_transact::Transaction::KeyRegistration(_) => Ok(TransactionType::KeyRegistration),
         algokit_transact::Transaction::AssetFreeze(_) => Ok(TransactionType::AssetFreeze),
         algokit_transact::Transaction::Heartbeat(_) => Ok(TransactionType::Heartbeat),
+        algokit_transact::Transaction::StateProof(_) => todo!(),
     }
 }
 
