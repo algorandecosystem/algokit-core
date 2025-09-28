@@ -1,5 +1,5 @@
 """
-AlgoKit Kit Transaction Library Python Bindings
+AlgoKit Algod Client Library Python Bindings
 """
 
 # Import all symbols from the Rust extension module and re-export them
