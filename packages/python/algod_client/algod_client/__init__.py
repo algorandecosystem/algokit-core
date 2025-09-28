@@ -13,7 +13,13 @@ import requests
 from .algod_client import AlgodClient as FfiAlgodClient
 
 class DefaultHttpClient(HttpClient):
-    def __init__(self, *, host: str, token: str, default_headers: typing.Optional[dict[str, str]] = {}):
+    def __init__(
+        self,
+        *,
+        host: str,
+        token: str,
+        default_headers: typing.Optional[dict[str, str]] = None,
+    ):
         self.host = host
         self.token = token
         self.default_headers = default_headers or {}
@@ -50,5 +56,11 @@ class DefaultHttpClient(HttpClient):
         )
 
 class AlgodClient(FfiAlgodClient):
-    def __init__(self, *, host: str, token: str, default_headers: typing.Optional[dict[str, str]] = {}):
+    def __init__(
+        self,
+        *,
+        host: str,
+        token: str,
+        default_headers: typing.Optional[dict[str, str]] = None,
+    ):
         super().__init__(DefaultHttpClient(host=host, token=token, default_headers=default_headers))
