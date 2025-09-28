@@ -5,6 +5,12 @@ import requests
 import pytest
 
 class HttpClientImpl(HttpClient):
+    def __init__(self, *, host: str, token: str, default_headers: typing.Optional[dict[str, str]] = {}):
+        self.host = host
+        self.token = token
+        self.default_headers = default_headers or {}
+        super().__init__()
+
     @typing.override
     async def request(  # type: ignore
         self,
@@ -14,13 +20,13 @@ class HttpClientImpl(HttpClient):
         body: typing.Optional[bytes],
         headers: typing.Optional[dict[str, str]],
     ) -> HttpResponse:
-        headers = headers or {}
-        headers["X-Algo-API-Token"] = "a" * 64
+        headers = (headers or {}) | self.default_headers
+        headers["X-Algo-API-Token"] = self.token
 
         if method == HttpMethod.GET:
-            res = requests.get(f"http://localhost:4001/{path}", params=query, headers=headers)
+            res = requests.get(f"{self.host}/{path}", params=query, headers=headers)
         elif method == HttpMethod.POST:
-            res = requests.post(f"http://localhost:4001/{path}", params=query, data=body, headers=headers)
+            res = requests.post(f"{self.host}/{path}", params=query, data=body, headers=headers)
         else:
             raise NotImplementedError(f"HTTP method {method} not implemented in test client")
 
@@ -37,7 +43,7 @@ class HttpClientImpl(HttpClient):
 
 @pytest.mark.asyncio
 async def test_algod_client():
-    client = AlgodClient(HttpClientImpl())
+    client = AlgodClient(HttpClientImpl(host="http://localhost:4001", token="a" * 64))
 
     status = await client.get_status()
 
