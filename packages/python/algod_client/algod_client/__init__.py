@@ -10,6 +10,8 @@ from .algokit_http_client import HttpClient, HttpMethod, HttpResponse
 import typing
 import requests
 
+from .algod_client import AlgodClient as FfiAlgodClient
+
 class DefaultHttpClient(HttpClient):
     def __init__(self, *, host: str, token: str, default_headers: typing.Optional[dict[str, str]] = {}):
         self.host = host
@@ -47,3 +49,6 @@ class DefaultHttpClient(HttpClient):
             headers=headers
         )
 
+class AlgodClient(FfiAlgodClient):
+    def __init__(self, *, host: str, token: str, default_headers: typing.Optional[dict[str, str]] = {}):
+        super().__init__(DefaultHttpClient(host=host, token=token, default_headers=default_headers))
