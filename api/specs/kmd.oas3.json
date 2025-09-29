@@ -63,7 +63,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/APIV1POSTKeyResponse"
+                  "$ref": "#/components/schemas/POSTKeyResponse"
                 }
               }
             }
@@ -91,7 +91,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/APIV1DELETEKeyResponse"
+                  "$ref": "#/components/schemas/DELETEKeyResponse"
                 }
               }
             }
@@ -121,7 +121,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/APIV1POSTKeyExportResponse"
+                  "$ref": "#/components/schemas/POSTKeyExportResponse"
                 }
               }
             }
@@ -151,7 +151,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/APIV1POSTKeyImportResponse"
+                  "$ref": "#/components/schemas/POSTKeyImportResponse"
                 }
               }
             }
@@ -181,7 +181,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/APIV1POSTKeyListResponse"
+                  "$ref": "#/components/schemas/POSTKeyListResponse"
                 }
               }
             }
@@ -211,7 +211,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/APIV1POSTMasterKeyExportResponse"
+                  "$ref": "#/components/schemas/POSTMasterKeyExportResponse"
                 }
               }
             }
@@ -241,7 +241,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/APIV1DELETEMultisigResponse"
+                  "$ref": "#/components/schemas/DELETEMultisigResponse"
                 }
               }
             }
@@ -271,7 +271,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/APIV1POSTMultisigExportResponse"
+                  "$ref": "#/components/schemas/POSTMultisigExportResponse"
                 }
               }
             }
@@ -301,7 +301,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/APIV1POSTMultisigImportResponse"
+                  "$ref": "#/components/schemas/POSTMultisigImportResponse"
                 }
               }
             }
@@ -331,7 +331,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/APIV1POSTMultisigListResponse"
+                  "$ref": "#/components/schemas/POSTMultisigListResponse"
                 }
               }
             }
@@ -361,7 +361,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/APIV1POSTMultisigTransactionSignResponse"
+                  "$ref": "#/components/schemas/POSTMultisigTransactionSignResponse"
                 }
               }
             }
@@ -391,7 +391,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/APIV1POSTMultisigProgramSignResponse"
+                  "$ref": "#/components/schemas/POSTMultisigProgramSignResponse"
                 }
               }
             }
@@ -421,7 +421,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/APIV1POSTProgramSignResponse"
+                  "$ref": "#/components/schemas/POSTProgramSignResponse"
                 }
               }
             }
@@ -451,7 +451,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/APIV1POSTTransactionSignResponse"
+                  "$ref": "#/components/schemas/POSTTransactionSignResponse"
                 }
               }
             }
@@ -481,7 +481,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/APIV1POSTWalletResponse"
+                  "$ref": "#/components/schemas/POSTWalletResponse"
                 }
               }
             }
@@ -511,7 +511,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/APIV1POSTWalletInfoResponse"
+                  "$ref": "#/components/schemas/POSTWalletInfoResponse"
                 }
               }
             }
@@ -541,7 +541,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/APIV1POSTWalletInitResponse"
+                  "$ref": "#/components/schemas/POSTWalletInitResponse"
                 }
               }
             }
@@ -571,7 +571,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/APIV1POSTWalletReleaseResponse"
+                  "$ref": "#/components/schemas/POSTWalletReleaseResponse"
                 }
               }
             }
@@ -601,7 +601,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/APIV1POSTWalletRenameResponse"
+                  "$ref": "#/components/schemas/POSTWalletRenameResponse"
                 }
               }
             }
@@ -631,7 +631,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/APIV1POSTWalletRenewResponse"
+                  "$ref": "#/components/schemas/POSTWalletRenewResponse"
                 }
               }
             }
@@ -661,7 +661,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/APIV1GETWalletsResponse"
+                  "$ref": "#/components/schemas/GETWalletsResponse"
                 }
               }
             }
@@ -702,7 +702,7 @@
   },
   "components": {
     "schemas": {
-      "APIV1DELETEKeyResponse": {
+      "DELETEKeyResponse": {
         "type": "object",
         "properties": {
           "error": {
@@ -715,9 +715,11 @@
           }
         },
         "description": "APIV1DELETEKeyResponse is the response to `DELETE /v1/key`\nfriendly:DeleteKeyResponse",
-        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi"
+        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi",
+        "x-algokit-original-name": "APIV1DELETEKeyResponse",
+        "x-algokit-kmd-api-version": 1
       },
-      "APIV1DELETEMultisigResponse": {
+      "DELETEMultisigResponse": {
         "type": "object",
         "properties": {
           "error": {
@@ -730,9 +732,11 @@
           }
         },
         "description": "APIV1DELETEMultisigResponse is the response to POST /v1/multisig/delete`\nfriendly:DeleteMultisigResponse",
-        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi"
+        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi",
+        "x-algokit-original-name": "APIV1DELETEMultisigResponse",
+        "x-algokit-kmd-api-version": 1
       },
-      "APIV1GETWalletsResponse": {
+      "GETWalletsResponse": {
         "type": "object",
         "properties": {
           "error": {
@@ -746,15 +750,17 @@
           "wallets": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/APIV1Wallet"
+              "$ref": "#/components/schemas/Wallet"
             },
             "x-go-name": "Wallets"
           }
         },
         "description": "APIV1GETWalletsResponse is the response to `GET /v1/wallets`\nfriendly:ListWalletsResponse",
-        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi"
+        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi",
+        "x-algokit-original-name": "APIV1GETWalletsResponse",
+        "x-algokit-kmd-api-version": 1
       },
-      "APIV1POSTKeyExportResponse": {
+      "POSTKeyExportResponse": {
         "type": "object",
         "properties": {
           "error": {
@@ -771,9 +777,11 @@
           }
         },
         "description": "APIV1POSTKeyExportResponse is the response to `POST /v1/key/export`\nfriendly:ExportKeyResponse",
-        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi"
+        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi",
+        "x-algokit-original-name": "APIV1POSTKeyExportResponse",
+        "x-algokit-kmd-api-version": 1
       },
-      "APIV1POSTKeyImportResponse": {
+      "POSTKeyImportResponse": {
         "type": "object",
         "properties": {
           "address": {
@@ -790,9 +798,11 @@
           }
         },
         "description": "APIV1POSTKeyImportResponse is the response to `POST /v1/key/import`\nfriendly:ImportKeyResponse",
-        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi"
+        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi",
+        "x-algokit-original-name": "APIV1POSTKeyImportResponse",
+        "x-algokit-kmd-api-version": 1
       },
-      "APIV1POSTKeyListResponse": {
+      "POSTKeyListResponse": {
         "type": "object",
         "properties": {
           "addresses": {
@@ -812,9 +822,11 @@
           }
         },
         "description": "APIV1POSTKeyListResponse is the response to `POST /v1/key/list`\nfriendly:ListKeysResponse",
-        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi"
+        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi",
+        "x-algokit-original-name": "APIV1POSTKeyListResponse",
+        "x-algokit-kmd-api-version": 1
       },
-      "APIV1POSTKeyResponse": {
+      "POSTKeyResponse": {
         "type": "object",
         "properties": {
           "address": {
@@ -831,9 +843,11 @@
           }
         },
         "description": "APIV1POSTKeyResponse is the response to `POST /v1/key`\nfriendly:GenerateKeyResponse",
-        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi"
+        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi",
+        "x-algokit-original-name": "APIV1POSTKeyResponse",
+        "x-algokit-kmd-api-version": 1
       },
-      "APIV1POSTMasterKeyExportResponse": {
+      "POSTMasterKeyExportResponse": {
         "type": "object",
         "properties": {
           "error": {
@@ -849,9 +863,11 @@
           }
         },
         "description": "APIV1POSTMasterKeyExportResponse is the response to `POST /v1/master-key/export`\nfriendly:ExportMasterKeyResponse",
-        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi"
+        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi",
+        "x-algokit-original-name": "APIV1POSTMasterKeyExportResponse",
+        "x-algokit-kmd-api-version": 1
       },
-      "APIV1POSTMultisigExportResponse": {
+      "POSTMultisigExportResponse": {
         "type": "object",
         "properties": {
           "error": {
@@ -881,9 +897,11 @@
           }
         },
         "description": "APIV1POSTMultisigExportResponse is the response to `POST /v1/multisig/export`\nfriendly:ExportMultisigResponse",
-        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi"
+        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi",
+        "x-algokit-original-name": "APIV1POSTMultisigExportResponse",
+        "x-algokit-kmd-api-version": 1
       },
-      "APIV1POSTMultisigImportResponse": {
+      "POSTMultisigImportResponse": {
         "type": "object",
         "properties": {
           "address": {
@@ -900,9 +918,11 @@
           }
         },
         "description": "APIV1POSTMultisigImportResponse is the response to `POST /v1/multisig/import`\nfriendly:ImportMultisigResponse",
-        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi"
+        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi",
+        "x-algokit-original-name": "APIV1POSTMultisigImportResponse",
+        "x-algokit-kmd-api-version": 1
       },
-      "APIV1POSTMultisigListResponse": {
+      "POSTMultisigListResponse": {
         "type": "object",
         "properties": {
           "addresses": {
@@ -922,9 +942,11 @@
           }
         },
         "description": "APIV1POSTMultisigListResponse is the response to `POST /v1/multisig/list`\nfriendly:ListMultisigResponse",
-        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi"
+        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi",
+        "x-algokit-original-name": "APIV1POSTMultisigListResponse",
+        "x-algokit-kmd-api-version": 1
       },
-      "APIV1POSTMultisigProgramSignResponse": {
+      "POSTMultisigProgramSignResponse": {
         "type": "object",
         "properties": {
           "error": {
@@ -943,9 +965,11 @@
           }
         },
         "description": "APIV1POSTMultisigProgramSignResponse is the response to `POST /v1/multisig/signdata`\nfriendly:SignProgramMultisigResponse",
-        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi"
+        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi",
+        "x-algokit-original-name": "APIV1POSTMultisigProgramSignResponse",
+        "x-algokit-kmd-api-version": 1
       },
-      "APIV1POSTMultisigTransactionSignResponse": {
+      "POSTMultisigTransactionSignResponse": {
         "type": "object",
         "properties": {
           "error": {
@@ -964,9 +988,11 @@
           }
         },
         "description": "APIV1POSTMultisigTransactionSignResponse is the response to `POST /v1/multisig/sign`\nfriendly:SignMultisigResponse",
-        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi"
+        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi",
+        "x-algokit-original-name": "APIV1POSTMultisigTransactionSignResponse",
+        "x-algokit-kmd-api-version": 1
       },
-      "APIV1POSTProgramSignResponse": {
+      "POSTProgramSignResponse": {
         "type": "object",
         "properties": {
           "error": {
@@ -985,9 +1011,11 @@
           }
         },
         "description": "APIV1POSTProgramSignResponse is the response to `POST /v1/data/sign`\nfriendly:SignProgramResponse",
-        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi"
+        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi",
+        "x-algokit-original-name": "APIV1POSTProgramSignResponse",
+        "x-algokit-kmd-api-version": 1
       },
-      "APIV1POSTTransactionSignResponse": {
+      "POSTTransactionSignResponse": {
         "type": "object",
         "properties": {
           "error": {
@@ -1006,9 +1034,11 @@
           }
         },
         "description": "APIV1POSTTransactionSignResponse is the response to `POST /v1/transaction/sign`\nfriendly:SignTransactionResponse",
-        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi"
+        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi",
+        "x-algokit-original-name": "APIV1POSTTransactionSignResponse",
+        "x-algokit-kmd-api-version": 1
       },
-      "APIV1POSTWalletInfoResponse": {
+      "POSTWalletInfoResponse": {
         "type": "object",
         "properties": {
           "error": {
@@ -1020,13 +1050,15 @@
             "x-go-name": "Message"
           },
           "wallet_handle": {
-            "$ref": "#/components/schemas/APIV1WalletHandle"
+            "$ref": "#/components/schemas/WalletHandle"
           }
         },
         "description": "APIV1POSTWalletInfoResponse is the response to `POST /v1/wallet/info`\nfriendly:WalletInfoResponse",
-        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi"
+        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi",
+        "x-algokit-original-name": "APIV1POSTWalletInfoResponse",
+        "x-algokit-kmd-api-version": 1
       },
-      "APIV1POSTWalletInitResponse": {
+      "POSTWalletInitResponse": {
         "type": "object",
         "properties": {
           "error": {
@@ -1043,9 +1075,11 @@
           }
         },
         "description": "APIV1POSTWalletInitResponse is the response to `POST /v1/wallet/init`\nfriendly:InitWalletHandleTokenResponse",
-        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi"
+        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi",
+        "x-algokit-original-name": "APIV1POSTWalletInitResponse",
+        "x-algokit-kmd-api-version": 1
       },
-      "APIV1POSTWalletReleaseResponse": {
+      "POSTWalletReleaseResponse": {
         "type": "object",
         "properties": {
           "error": {
@@ -1058,9 +1092,11 @@
           }
         },
         "description": "APIV1POSTWalletReleaseResponse is the response to `POST /v1/wallet/release`\nfriendly:ReleaseWalletHandleTokenResponse",
-        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi"
+        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi",
+        "x-algokit-original-name": "APIV1POSTWalletReleaseResponse",
+        "x-algokit-kmd-api-version": 1
       },
-      "APIV1POSTWalletRenameResponse": {
+      "POSTWalletRenameResponse": {
         "type": "object",
         "properties": {
           "error": {
@@ -1072,13 +1108,15 @@
             "x-go-name": "Message"
           },
           "wallet": {
-            "$ref": "#/components/schemas/APIV1Wallet"
+            "$ref": "#/components/schemas/Wallet"
           }
         },
         "description": "APIV1POSTWalletRenameResponse is the response to `POST /v1/wallet/rename`\nfriendly:RenameWalletResponse",
-        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi"
+        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi",
+        "x-algokit-original-name": "APIV1POSTWalletRenameResponse",
+        "x-algokit-kmd-api-version": 1
       },
-      "APIV1POSTWalletRenewResponse": {
+      "POSTWalletRenewResponse": {
         "type": "object",
         "properties": {
           "error": {
@@ -1090,13 +1128,15 @@
             "x-go-name": "Message"
           },
           "wallet_handle": {
-            "$ref": "#/components/schemas/APIV1WalletHandle"
+            "$ref": "#/components/schemas/WalletHandle"
           }
         },
         "description": "APIV1POSTWalletRenewResponse is the response to `POST /v1/wallet/renew`\nfriendly:RenewWalletHandleTokenResponse",
-        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi"
+        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi",
+        "x-algokit-original-name": "APIV1POSTWalletRenewResponse",
+        "x-algokit-kmd-api-version": 1
       },
-      "APIV1POSTWalletResponse": {
+      "POSTWalletResponse": {
         "type": "object",
         "properties": {
           "error": {
@@ -1108,13 +1148,15 @@
             "x-go-name": "Message"
           },
           "wallet": {
-            "$ref": "#/components/schemas/APIV1Wallet"
+            "$ref": "#/components/schemas/Wallet"
           }
         },
         "description": "APIV1POSTWalletResponse is the response to `POST /v1/wallet`\nfriendly:CreateWalletResponse",
-        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi"
+        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi",
+        "x-algokit-original-name": "APIV1POSTWalletResponse",
+        "x-algokit-kmd-api-version": 1
       },
-      "APIV1Wallet": {
+      "Wallet": {
         "type": "object",
         "properties": {
           "driver_name": {
@@ -1147,9 +1189,11 @@
           }
         },
         "description": "APIV1Wallet is the API's representation of a wallet",
-        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi"
+        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi",
+        "x-algokit-original-name": "APIV1Wallet",
+        "x-algokit-kmd-api-version": 1
       },
-      "APIV1WalletHandle": {
+      "WalletHandle": {
         "type": "object",
         "properties": {
           "expires_seconds": {
@@ -1158,11 +1202,13 @@
             "x-go-name": "ExpiresSeconds"
           },
           "wallet": {
-            "$ref": "#/components/schemas/APIV1Wallet"
+            "$ref": "#/components/schemas/Wallet"
           }
         },
         "description": "APIV1WalletHandle includes the wallet the handle corresponds to\nand the number of number of seconds to expiration",
-        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi"
+        "x-go-package": "github.com/algorand/go-algorand/daemon/kmd/lib/kmdapi",
+        "x-algokit-original-name": "APIV1WalletHandle",
+        "x-algokit-kmd-api-version": 1
       },
       "CreateWalletRequest": {
         "type": "object",
@@ -1678,7 +1724,7 @@
         "content": {
           "application/json": {
             "schema": {
-              "$ref": "#/components/schemas/APIV1POSTWalletResponse"
+              "$ref": "#/components/schemas/POSTWalletResponse"
             }
           }
         }
@@ -1688,7 +1734,7 @@
         "content": {
           "application/json": {
             "schema": {
-              "$ref": "#/components/schemas/APIV1DELETEKeyResponse"
+              "$ref": "#/components/schemas/DELETEKeyResponse"
             }
           }
         }
@@ -1698,7 +1744,7 @@
         "content": {
           "application/json": {
             "schema": {
-              "$ref": "#/components/schemas/APIV1DELETEMultisigResponse"
+              "$ref": "#/components/schemas/DELETEMultisigResponse"
             }
           }
         }
@@ -1708,7 +1754,7 @@
         "content": {
           "application/json": {
             "schema": {
-              "$ref": "#/components/schemas/APIV1POSTKeyExportResponse"
+              "$ref": "#/components/schemas/POSTKeyExportResponse"
             }
           }
         }
@@ -1718,7 +1764,7 @@
         "content": {
           "application/json": {
             "schema": {
-              "$ref": "#/components/schemas/APIV1POSTMasterKeyExportResponse"
+              "$ref": "#/components/schemas/POSTMasterKeyExportResponse"
             }
           }
         }
@@ -1728,7 +1774,7 @@
         "content": {
           "application/json": {
             "schema": {
-              "$ref": "#/components/schemas/APIV1POSTMultisigExportResponse"
+              "$ref": "#/components/schemas/POSTMultisigExportResponse"
             }
           }
         }
@@ -1738,7 +1784,7 @@
         "content": {
           "application/json": {
             "schema": {
-              "$ref": "#/components/schemas/APIV1POSTKeyResponse"
+              "$ref": "#/components/schemas/POSTKeyResponse"
             }
           }
         }
@@ -1748,7 +1794,7 @@
         "content": {
           "application/json": {
             "schema": {
-              "$ref": "#/components/schemas/APIV1POSTKeyImportResponse"
+              "$ref": "#/components/schemas/POSTKeyImportResponse"
             }
           }
         }
@@ -1758,7 +1804,7 @@
         "content": {
           "application/json": {
             "schema": {
-              "$ref": "#/components/schemas/APIV1POSTMultisigImportResponse"
+              "$ref": "#/components/schemas/POSTMultisigImportResponse"
             }
           }
         }
@@ -1768,7 +1814,7 @@
         "content": {
           "application/json": {
             "schema": {
-              "$ref": "#/components/schemas/APIV1POSTWalletInitResponse"
+              "$ref": "#/components/schemas/POSTWalletInitResponse"
             }
           }
         }
@@ -1778,7 +1824,7 @@
         "content": {
           "application/json": {
             "schema": {
-              "$ref": "#/components/schemas/APIV1POSTKeyListResponse"
+              "$ref": "#/components/schemas/POSTKeyListResponse"
             }
           }
         }
@@ -1788,7 +1834,7 @@
         "content": {
           "application/json": {
             "schema": {
-              "$ref": "#/components/schemas/APIV1POSTMultisigListResponse"
+              "$ref": "#/components/schemas/POSTMultisigListResponse"
             }
           }
         }
@@ -1798,7 +1844,7 @@
         "content": {
           "application/json": {
             "schema": {
-              "$ref": "#/components/schemas/APIV1GETWalletsResponse"
+              "$ref": "#/components/schemas/GETWalletsResponse"
             }
           }
         }
@@ -1808,7 +1854,7 @@
         "content": {
           "application/json": {
             "schema": {
-              "$ref": "#/components/schemas/APIV1POSTWalletReleaseResponse"
+              "$ref": "#/components/schemas/POSTWalletReleaseResponse"
             }
           }
         }
@@ -1818,7 +1864,7 @@
         "content": {
           "application/json": {
             "schema": {
-              "$ref": "#/components/schemas/APIV1POSTWalletRenameResponse"
+              "$ref": "#/components/schemas/POSTWalletRenameResponse"
             }
           }
         }
@@ -1828,7 +1874,7 @@
         "content": {
           "application/json": {
             "schema": {
-              "$ref": "#/components/schemas/APIV1POSTWalletRenewResponse"
+              "$ref": "#/components/schemas/POSTWalletRenewResponse"
             }
           }
         }
@@ -1838,7 +1884,7 @@
         "content": {
           "application/json": {
             "schema": {
-              "$ref": "#/components/schemas/APIV1POSTMultisigTransactionSignResponse"
+              "$ref": "#/components/schemas/POSTMultisigTransactionSignResponse"
             }
           }
         }
@@ -1848,7 +1894,7 @@
         "content": {
           "application/json": {
             "schema": {
-              "$ref": "#/components/schemas/APIV1POSTMultisigProgramSignResponse"
+              "$ref": "#/components/schemas/POSTMultisigProgramSignResponse"
             }
           }
         }
@@ -1858,7 +1904,7 @@
         "content": {
           "application/json": {
             "schema": {
-              "$ref": "#/components/schemas/APIV1POSTProgramSignResponse"
+              "$ref": "#/components/schemas/POSTProgramSignResponse"
             }
           }
         }
@@ -1868,7 +1914,7 @@
         "content": {
           "application/json": {
             "schema": {
-              "$ref": "#/components/schemas/APIV1POSTTransactionSignResponse"
+              "$ref": "#/components/schemas/POSTTransactionSignResponse"
             }
           }
         }
@@ -1888,7 +1934,7 @@
         "content": {
           "application/json": {
             "schema": {
-              "$ref": "#/components/schemas/APIV1POSTWalletInfoResponse"
+              "$ref": "#/components/schemas/POSTWalletInfoResponse"
             }
           }
         }

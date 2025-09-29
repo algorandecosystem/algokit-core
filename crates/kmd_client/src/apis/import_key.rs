@@ -15,7 +15,7 @@ use std::collections::HashMap;
 use super::{ContentType, Error, KmdApiError};
 
 // Import all custom types used by this endpoint
-use crate::models::Apiv1PostKeyImportResponse;
+use crate::models::PostKeyImportResponse;
 
 // Import request body type if needed
 use crate::models::ImportKeyRequest;
@@ -33,7 +33,7 @@ pub enum ImportKeyError {
 pub async fn import_key(
     http_client: &dyn HttpClient,
     request: ImportKeyRequest,
-) -> Result<Apiv1PostKeyImportResponse, Error> {
+) -> Result<PostKeyImportResponse, Error> {
     let p_request = request;
 
     let path = "/v1/key/import".to_string();

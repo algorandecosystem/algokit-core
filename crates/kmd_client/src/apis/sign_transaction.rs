@@ -15,7 +15,7 @@ use std::collections::HashMap;
 use super::{ContentType, Error, KmdApiError};
 
 // Import all custom types used by this endpoint
-use crate::models::Apiv1PostTransactionSignResponse;
+use crate::models::PostTransactionSignResponse;
 
 // Import request body type if needed
 use crate::models::SignTransactionRequest;
@@ -33,7 +33,7 @@ pub enum SignTransactionError {
 pub async fn sign_transaction(
     http_client: &dyn HttpClient,
     request: SignTransactionRequest,
-) -> Result<Apiv1PostTransactionSignResponse, Error> {
+) -> Result<PostTransactionSignResponse, Error> {
     let p_request = request;
 
     let path = "/v1/transaction/sign".to_string();

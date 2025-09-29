@@ -12,17 +12,16 @@
 
 use super::Error;
 use crate::models::{
-    Apiv1DeleteKeyResponse, Apiv1DeleteMultisigResponse, Apiv1GetWalletsResponse,
-    Apiv1PostKeyExportResponse, Apiv1PostKeyImportResponse, Apiv1PostKeyListResponse,
-    Apiv1PostKeyResponse, Apiv1PostMasterKeyExportResponse, Apiv1PostMultisigExportResponse,
-    Apiv1PostMultisigImportResponse, Apiv1PostMultisigListResponse,
-    Apiv1PostMultisigProgramSignResponse, Apiv1PostMultisigTransactionSignResponse,
-    Apiv1PostProgramSignResponse, Apiv1PostTransactionSignResponse, Apiv1PostWalletInfoResponse,
-    Apiv1PostWalletInitResponse, Apiv1PostWalletReleaseResponse, Apiv1PostWalletRenameResponse,
-    Apiv1PostWalletRenewResponse, Apiv1PostWalletResponse, CreateWalletRequest, DeleteKeyRequest,
-    DeleteMultisigRequest, ExportKeyRequest, ExportMasterKeyRequest, ExportMultisigRequest,
-    GenerateKeyRequest, ImportKeyRequest, ImportMultisigRequest, InitWalletHandleTokenRequest,
-    ListKeysRequest, ListMultisigRequest, ListWalletsRequest, ReleaseWalletHandleTokenRequest,
+    CreateWalletRequest, DeleteKeyRequest, DeleteKeyResponse, DeleteMultisigRequest,
+    DeleteMultisigResponse, ExportKeyRequest, ExportMasterKeyRequest, ExportMultisigRequest,
+    GenerateKeyRequest, GetWalletsResponse, ImportKeyRequest, ImportMultisigRequest,
+    InitWalletHandleTokenRequest, ListKeysRequest, ListMultisigRequest, ListWalletsRequest,
+    PostKeyExportResponse, PostKeyImportResponse, PostKeyListResponse, PostKeyResponse,
+    PostMasterKeyExportResponse, PostMultisigExportResponse, PostMultisigImportResponse,
+    PostMultisigListResponse, PostMultisigProgramSignResponse, PostMultisigTransactionSignResponse,
+    PostProgramSignResponse, PostTransactionSignResponse, PostWalletInfoResponse,
+    PostWalletInitResponse, PostWalletReleaseResponse, PostWalletRenameResponse,
+    PostWalletRenewResponse, PostWalletResponse, ReleaseWalletHandleTokenRequest,
     RenameWalletRequest, RenewWalletHandleTokenRequest, SignMultisigRequest,
     SignProgramMultisigRequest, SignProgramRequest, SignTransactionRequest, VersionsRequest,
     VersionsResponse, WalletInfoRequest,
@@ -90,14 +89,14 @@ impl KmdClient {
     pub async fn generate_key(
         &self,
         request: GenerateKeyRequest,
-    ) -> Result<Apiv1PostKeyResponse, Error> {
+    ) -> Result<PostKeyResponse, Error> {
         let result = super::generate_key::generate_key(self.http_client.as_ref(), request).await;
 
         result
     }
 
     /// Delete a key
-    pub async fn delete_key(&self) -> Result<Apiv1DeleteKeyResponse, Error> {
+    pub async fn delete_key(&self) -> Result<DeleteKeyResponse, Error> {
         let result = super::delete_key::delete_key(self.http_client.as_ref()).await;
 
         result
@@ -107,7 +106,7 @@ impl KmdClient {
     pub async fn export_key(
         &self,
         request: ExportKeyRequest,
-    ) -> Result<Apiv1PostKeyExportResponse, Error> {
+    ) -> Result<PostKeyExportResponse, Error> {
         let result = super::export_key::export_key(self.http_client.as_ref(), request).await;
 
         result
@@ -117,7 +116,7 @@ impl KmdClient {
     pub async fn import_key(
         &self,
         request: ImportKeyRequest,
-    ) -> Result<Apiv1PostKeyImportResponse, Error> {
+    ) -> Result<PostKeyImportResponse, Error> {
         let result = super::import_key::import_key(self.http_client.as_ref(), request).await;
 
         result
@@ -127,7 +126,7 @@ impl KmdClient {
     pub async fn list_keys_in_wallet(
         &self,
         request: ListKeysRequest,
-    ) -> Result<Apiv1PostKeyListResponse, Error> {
+    ) -> Result<PostKeyListResponse, Error> {
         let result =
             super::list_keys_in_wallet::list_keys_in_wallet(self.http_client.as_ref(), request)
                 .await;
@@ -139,7 +138,7 @@ impl KmdClient {
     pub async fn export_master_key(
         &self,
         request: ExportMasterKeyRequest,
-    ) -> Result<Apiv1PostMasterKeyExportResponse, Error> {
+    ) -> Result<PostMasterKeyExportResponse, Error> {
         let result =
             super::export_master_key::export_master_key(self.http_client.as_ref(), request).await;
 
@@ -147,7 +146,7 @@ impl KmdClient {
     }
 
     /// Delete a multisig
-    pub async fn delete_multisig(&self) -> Result<Apiv1DeleteMultisigResponse, Error> {
+    pub async fn delete_multisig(&self) -> Result<DeleteMultisigResponse, Error> {
         let result = super::delete_multisig::delete_multisig(self.http_client.as_ref()).await;
 
         result
@@ -157,7 +156,7 @@ impl KmdClient {
     pub async fn export_multisig(
         &self,
         request: ExportMultisigRequest,
-    ) -> Result<Apiv1PostMultisigExportResponse, Error> {
+    ) -> Result<PostMultisigExportResponse, Error> {
         let result =
             super::export_multisig::export_multisig(self.http_client.as_ref(), request).await;
 
@@ -168,7 +167,7 @@ impl KmdClient {
     pub async fn import_multisig(
         &self,
         request: ImportMultisigRequest,
-    ) -> Result<Apiv1PostMultisigImportResponse, Error> {
+    ) -> Result<PostMultisigImportResponse, Error> {
         let result =
             super::import_multisig::import_multisig(self.http_client.as_ref(), request).await;
 
@@ -179,7 +178,7 @@ impl KmdClient {
     pub async fn list_multisg(
         &self,
         request: ListMultisigRequest,
-    ) -> Result<Apiv1PostMultisigListResponse, Error> {
+    ) -> Result<PostMultisigListResponse, Error> {
         let result = super::list_multisg::list_multisg(self.http_client.as_ref(), request).await;
 
         result
@@ -189,7 +188,7 @@ impl KmdClient {
     pub async fn sign_multisig_transaction(
         &self,
         request: SignMultisigRequest,
-    ) -> Result<Apiv1PostMultisigTransactionSignResponse, Error> {
+    ) -> Result<PostMultisigTransactionSignResponse, Error> {
         let result = super::sign_multisig_transaction::sign_multisig_transaction(
             self.http_client.as_ref(),
             request,
@@ -203,7 +202,7 @@ impl KmdClient {
     pub async fn sign_multisig_program(
         &self,
         request: SignProgramMultisigRequest,
-    ) -> Result<Apiv1PostMultisigProgramSignResponse, Error> {
+    ) -> Result<PostMultisigProgramSignResponse, Error> {
         let result =
             super::sign_multisig_program::sign_multisig_program(self.http_client.as_ref(), request)
                 .await;
@@ -215,7 +214,7 @@ impl KmdClient {
     pub async fn sign_program(
         &self,
         request: SignProgramRequest,
-    ) -> Result<Apiv1PostProgramSignResponse, Error> {
+    ) -> Result<PostProgramSignResponse, Error> {
         let result = super::sign_program::sign_program(self.http_client.as_ref(), request).await;
 
         result
@@ -225,7 +224,7 @@ impl KmdClient {
     pub async fn sign_transaction(
         &self,
         request: SignTransactionRequest,
-    ) -> Result<Apiv1PostTransactionSignResponse, Error> {
+    ) -> Result<PostTransactionSignResponse, Error> {
         let result =
             super::sign_transaction::sign_transaction(self.http_client.as_ref(), request).await;
 
@@ -236,7 +235,7 @@ impl KmdClient {
     pub async fn create_wallet(
         &self,
         request: CreateWalletRequest,
-    ) -> Result<Apiv1PostWalletResponse, Error> {
+    ) -> Result<PostWalletResponse, Error> {
         let result = super::create_wallet::create_wallet(self.http_client.as_ref(), request).await;
 
         result
@@ -246,7 +245,7 @@ impl KmdClient {
     pub async fn get_wallet_info(
         &self,
         request: WalletInfoRequest,
-    ) -> Result<Apiv1PostWalletInfoResponse, Error> {
+    ) -> Result<PostWalletInfoResponse, Error> {
         let result =
             super::get_wallet_info::get_wallet_info(self.http_client.as_ref(), request).await;
 
@@ -257,7 +256,7 @@ impl KmdClient {
     pub async fn init_wallet_handle_token(
         &self,
         request: InitWalletHandleTokenRequest,
-    ) -> Result<Apiv1PostWalletInitResponse, Error> {
+    ) -> Result<PostWalletInitResponse, Error> {
         let result = super::init_wallet_handle_token::init_wallet_handle_token(
             self.http_client.as_ref(),
             request,
@@ -271,7 +270,7 @@ impl KmdClient {
     pub async fn release_wallet_handle_token(
         &self,
         request: ReleaseWalletHandleTokenRequest,
-    ) -> Result<Apiv1PostWalletReleaseResponse, Error> {
+    ) -> Result<PostWalletReleaseResponse, Error> {
         let result = super::release_wallet_handle_token::release_wallet_handle_token(
             self.http_client.as_ref(),
             request,
@@ -285,7 +284,7 @@ impl KmdClient {
     pub async fn rename_wallet(
         &self,
         request: RenameWalletRequest,
-    ) -> Result<Apiv1PostWalletRenameResponse, Error> {
+    ) -> Result<PostWalletRenameResponse, Error> {
         let result = super::rename_wallet::rename_wallet(self.http_client.as_ref(), request).await;
 
         result
@@ -295,7 +294,7 @@ impl KmdClient {
     pub async fn renew_wallet_handle_token(
         &self,
         request: RenewWalletHandleTokenRequest,
-    ) -> Result<Apiv1PostWalletRenewResponse, Error> {
+    ) -> Result<PostWalletRenewResponse, Error> {
         let result = super::renew_wallet_handle_token::renew_wallet_handle_token(
             self.http_client.as_ref(),
             request,
@@ -306,7 +305,7 @@ impl KmdClient {
     }
 
     /// List wallets
-    pub async fn list_wallets(&self) -> Result<Apiv1GetWalletsResponse, Error> {
+    pub async fn list_wallets(&self) -> Result<GetWalletsResponse, Error> {
         let result = super::list_wallets::list_wallets(self.http_client.as_ref()).await;
 
         result

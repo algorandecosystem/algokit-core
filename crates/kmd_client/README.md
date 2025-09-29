@@ -164,50 +164,50 @@ This client provides access to 23 API operations:
 
 The following data models are available:
 
-- `Apiv1DeleteKeyResponse` - APIV1DELETEKeyResponse is the response to `DELETE /v1/key`
+- `DeleteKeyResponse` - APIV1DELETEKeyResponse is the response to `DELETE /v1/key`
 friendly:DeleteKeyResponse
-- `Apiv1DeleteMultisigResponse` - APIV1DELETEMultisigResponse is the response to POST /v1/multisig/delete`
+- `DeleteMultisigResponse` - APIV1DELETEMultisigResponse is the response to POST /v1/multisig/delete`
 friendly:DeleteMultisigResponse
-- `Apiv1GetWalletsResponse` - APIV1GETWalletsResponse is the response to `GET /v1/wallets`
+- `GetWalletsResponse` - APIV1GETWalletsResponse is the response to `GET /v1/wallets`
 friendly:ListWalletsResponse
-- `Apiv1PostKeyExportResponse` - APIV1POSTKeyExportResponse is the response to `POST /v1/key/export`
+- `PostKeyExportResponse` - APIV1POSTKeyExportResponse is the response to `POST /v1/key/export`
 friendly:ExportKeyResponse
-- `Apiv1PostKeyImportResponse` - APIV1POSTKeyImportResponse is the response to `POST /v1/key/import`
+- `PostKeyImportResponse` - APIV1POSTKeyImportResponse is the response to `POST /v1/key/import`
 friendly:ImportKeyResponse
-- `Apiv1PostKeyListResponse` - APIV1POSTKeyListResponse is the response to `POST /v1/key/list`
+- `PostKeyListResponse` - APIV1POSTKeyListResponse is the response to `POST /v1/key/list`
 friendly:ListKeysResponse
-- `Apiv1PostKeyResponse` - APIV1POSTKeyResponse is the response to `POST /v1/key`
+- `PostKeyResponse` - APIV1POSTKeyResponse is the response to `POST /v1/key`
 friendly:GenerateKeyResponse
-- `Apiv1PostMasterKeyExportResponse` - APIV1POSTMasterKeyExportResponse is the response to `POST /v1/master-key/export`
+- `PostMasterKeyExportResponse` - APIV1POSTMasterKeyExportResponse is the response to `POST /v1/master-key/export`
 friendly:ExportMasterKeyResponse
-- `Apiv1PostMultisigExportResponse` - APIV1POSTMultisigExportResponse is the response to `POST /v1/multisig/export`
+- `PostMultisigExportResponse` - APIV1POSTMultisigExportResponse is the response to `POST /v1/multisig/export`
 friendly:ExportMultisigResponse
-- `Apiv1PostMultisigImportResponse` - APIV1POSTMultisigImportResponse is the response to `POST /v1/multisig/import`
+- `PostMultisigImportResponse` - APIV1POSTMultisigImportResponse is the response to `POST /v1/multisig/import`
 friendly:ImportMultisigResponse
-- `Apiv1PostMultisigListResponse` - APIV1POSTMultisigListResponse is the response to `POST /v1/multisig/list`
+- `PostMultisigListResponse` - APIV1POSTMultisigListResponse is the response to `POST /v1/multisig/list`
 friendly:ListMultisigResponse
-- `Apiv1PostMultisigProgramSignResponse` - APIV1POSTMultisigProgramSignResponse is the response to `POST /v1/multisig/signdata`
+- `PostMultisigProgramSignResponse` - APIV1POSTMultisigProgramSignResponse is the response to `POST /v1/multisig/signdata`
 friendly:SignProgramMultisigResponse
-- `Apiv1PostMultisigTransactionSignResponse` - APIV1POSTMultisigTransactionSignResponse is the response to `POST /v1/multisig/sign`
+- `PostMultisigTransactionSignResponse` - APIV1POSTMultisigTransactionSignResponse is the response to `POST /v1/multisig/sign`
 friendly:SignMultisigResponse
-- `Apiv1PostProgramSignResponse` - APIV1POSTProgramSignResponse is the response to `POST /v1/data/sign`
+- `PostProgramSignResponse` - APIV1POSTProgramSignResponse is the response to `POST /v1/data/sign`
 friendly:SignProgramResponse
-- `Apiv1PostTransactionSignResponse` - APIV1POSTTransactionSignResponse is the response to `POST /v1/transaction/sign`
+- `PostTransactionSignResponse` - APIV1POSTTransactionSignResponse is the response to `POST /v1/transaction/sign`
 friendly:SignTransactionResponse
-- `Apiv1PostWalletInfoResponse` - APIV1POSTWalletInfoResponse is the response to `POST /v1/wallet/info`
+- `PostWalletInfoResponse` - APIV1POSTWalletInfoResponse is the response to `POST /v1/wallet/info`
 friendly:WalletInfoResponse
-- `Apiv1PostWalletInitResponse` - APIV1POSTWalletInitResponse is the response to `POST /v1/wallet/init`
+- `PostWalletInitResponse` - APIV1POSTWalletInitResponse is the response to `POST /v1/wallet/init`
 friendly:InitWalletHandleTokenResponse
-- `Apiv1PostWalletReleaseResponse` - APIV1POSTWalletReleaseResponse is the response to `POST /v1/wallet/release`
+- `PostWalletReleaseResponse` - APIV1POSTWalletReleaseResponse is the response to `POST /v1/wallet/release`
 friendly:ReleaseWalletHandleTokenResponse
-- `Apiv1PostWalletRenameResponse` - APIV1POSTWalletRenameResponse is the response to `POST /v1/wallet/rename`
+- `PostWalletRenameResponse` - APIV1POSTWalletRenameResponse is the response to `POST /v1/wallet/rename`
 friendly:RenameWalletResponse
-- `Apiv1PostWalletRenewResponse` - APIV1POSTWalletRenewResponse is the response to `POST /v1/wallet/renew`
+- `PostWalletRenewResponse` - APIV1POSTWalletRenewResponse is the response to `POST /v1/wallet/renew`
 friendly:RenewWalletHandleTokenResponse
-- `Apiv1PostWalletResponse` - APIV1POSTWalletResponse is the response to `POST /v1/wallet`
+- `PostWalletResponse` - APIV1POSTWalletResponse is the response to `POST /v1/wallet`
 friendly:CreateWalletResponse
-- `Apiv1Wallet` - APIV1Wallet is the API's representation of a wallet
-- `Apiv1WalletHandle` - APIV1WalletHandle includes the wallet the handle corresponds to
+- `Wallet` - APIV1Wallet is the API's representation of a wallet
+- `WalletHandle` - APIV1WalletHandle includes the wallet the handle corresponds to
 and the number of number of seconds to expiration
 - `CreateWalletRequest` - APIV1POSTWalletRequest is the request for `POST /v1/wallet`
 - `DeleteKeyRequest` - APIV1DELETEKeyRequest is the request for `DELETE /v1/key`

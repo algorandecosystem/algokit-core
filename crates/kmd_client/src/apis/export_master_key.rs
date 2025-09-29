@@ -15,7 +15,7 @@ use std::collections::HashMap;
 use super::{ContentType, Error, KmdApiError};
 
 // Import all custom types used by this endpoint
-use crate::models::Apiv1PostMasterKeyExportResponse;
+use crate::models::PostMasterKeyExportResponse;
 
 // Import request body type if needed
 use crate::models::ExportMasterKeyRequest;
@@ -33,7 +33,7 @@ pub enum ExportMasterKeyError {
 pub async fn export_master_key(
     http_client: &dyn HttpClient,
     request: ExportMasterKeyRequest,
-) -> Result<Apiv1PostMasterKeyExportResponse, Error> {
+) -> Result<PostMasterKeyExportResponse, Error> {
     let p_request = request;
 
     let path = "/v1/master-key/export".to_string();

@@ -55,6 +55,8 @@ interface ProcessingConfig {
   requiredFieldTransforms?: RequiredFieldTransform[];
   fieldTransforms?: FieldTransform[];
   msgpackOnlyEndpoints?: MsgpackOnlyEndpoint[];
+  // If true, strip APIVn prefixes from component schemas and update refs (KMD)
+  stripKmdApiVersionPrefixes?: boolean;
 }
 
 // ===== TRANSFORMATIONS =====
@@ -584,6 +586,88 @@ function resolveRef(spec: OpenAPISpec, ref: string): any {
   return current;
 }
 
+/**
+ * Strip APIVn prefix from component schema names and update all $ref usages (KMD-specific)
+ * Adds x-algokit-original-name and x-algokit-version metadata for traceability.
+ */
+function stripKmdApiVersionPrefixes(spec: OpenAPISpec): { renamed: number; collisions: number } {
+  let renamed = 0;
+  let collisions = 0;
+
+  const components = spec.components;
+  if (!components || !components.schemas) {
+    return { renamed, collisions };
+  }
+
+  const schemas = components.schemas as Record<string, any>;
+  const oldToNewName: Record<string, string> = {};
+  const newSchemas: Record<string, any> = {};
+
+  const versionPrefix = /^APIV(\d+)(.+)$/; // e.g., APIV1DELETEMultisigResponse
+
+  // 1) Build rename map and new schemas object
+  for (const [name, schema] of Object.entries(schemas)) {
+    const match = name.match(versionPrefix);
+    if (!match) {
+      if (newSchemas[name]) {
+        collisions++;
+        newSchemas[`${name}__DUP`] = schema;
+      } else {
+        newSchemas[name] = schema;
+      }
+      continue;
+    }
+
+    const version = Number(match[1]);
+    const base = match[2]; // e.g., DELETEMultisigResponse
+    let target = base;
+
+    // Avoid collisions: if target already exists, suffix with V<version>
+    if (newSchemas[target] || Object.values(oldToNewName).includes(target)) {
+      target = `${base}V${version}`;
+      collisions++;
+    }
+
+    // Record mapping and add metadata (in case in future new versions of the spec are added)
+    oldToNewName[name] = target;
+    const schemaCopy = { ...(schema as any) };
+    schemaCopy["x-algokit-original-name"] = name;
+    schemaCopy["x-algokit-kmd-api-version"] = version;
+    newSchemas[target] = schemaCopy;
+    renamed++;
+  }
+
+  // Apply renamed schemas
+  components.schemas = newSchemas as any;
+
+  if (renamed === 0) {
+    return { renamed, collisions };
+  }
+
+  // 2) Update all $ref occurrences pointing to old schema names
+  const updateRefs = (obj: any): void => {
+    if (!obj || typeof obj !== "object") return;
+    if (Array.isArray(obj)) {
+      for (const item of obj) updateRefs(item);
+      return;
+    }
+
+    if (typeof obj.$ref === "string" && obj.$ref.startsWith("#/components/schemas/")) {
+      const refName = obj.$ref.substring("#/components/schemas/".length);
+      const newName = oldToNewName[refName];
+      if (newName) {
+        obj.$ref = `#/components/schemas/${newName}`;
+      }
+    }
+
+    for (const value of Object.values(obj)) updateRefs(value);
+  };
+
+  updateRefs(spec);
+
+  return { renamed, collisions };
+}
+
 // ===== MAIN PROCESSOR =====
 
 class OpenAPIProcessor {
@@ -689,6 +773,13 @@ class OpenAPIProcessor {
 
       // Apply transformations
       console.log("ℹ️  Applying transformations...");
+      // 0. KMD-only: strip APIVn prefixes before other transforms if requested
+      if (this.config.stripKmdApiVersionPrefixes) {
+        const { renamed, collisions } = stripKmdApiVersionPrefixes(spec);
+        if (renamed > 0) {
+          console.log(`ℹ️  Stripped APIVn prefix from ${renamed} schemas (collisions resolved: ${collisions})`);
+        }
+      }
 
       // 1. Fix missing descriptions
       const descriptionCount = fixMissingDescriptions(spec);
@@ -834,32 +925,32 @@ async function processAlgodSpec() {
     fieldTransforms: [
       {
         fieldName: "action",
-        removeItems: ["format"]
+        removeItems: ["format"],
       },
       {
         fieldName: "num-uint",
         removeItems: ["format"],
         addItems: {
-          "minimum": 0,
-          "maximum": 64,
-        }
+          minimum: 0,
+          maximum: 64,
+        },
       },
       {
         fieldName: "num-byte-slice",
         removeItems: ["format"],
         addItems: {
-          "minimum": 0,
-          "maximum": 64,
-        }
+          minimum: 0,
+          maximum: 64,
+        },
       },
       {
         fieldName: "extra-program-pages",
         removeItems: ["format"],
         addItems: {
-          "minimum": 0,
-          "maximum": 3,
-        }
-      }
+          minimum: 0,
+          maximum: 3,
+        },
+      },
     ],
     vendorExtensionTransforms: [
       {
@@ -914,12 +1005,13 @@ async function processKmdSpec() {
   const config: ProcessingConfig = {
     sourceUrl: `https://raw.githubusercontent.com/algorand/go-algorand/${stableTag}/daemon/kmd/api/swagger.json`,
     outputPath: join(process.cwd(), "specs", "kmd.oas3.json"),
+    stripKmdApiVersionPrefixes: true,
     fieldTransforms: [
       {
         fieldName: "private_key",
         removeItems: ["$ref"],
         addItems: {
-          "type": "string",
+          type: "string",
           "x-algokit-bytes-base64": true,
         },
       },
@@ -955,25 +1047,25 @@ async function processIndexerSpec() {
         fieldName: "num-uint",
         removeItems: ["x-algorand-format"],
         addItems: {
-          "minimum": 0,
-          "maximum": 64,
-        }
+          minimum: 0,
+          maximum: 64,
+        },
       },
       {
         fieldName: "num-byte-slice",
         removeItems: ["x-algorand-format"],
         addItems: {
-          "minimum": 0,
-          "maximum": 64,
-        }
+          minimum: 0,
+          maximum: 64,
+        },
       },
       {
         fieldName: "extra-program-pages",
         addItems: {
-          "minimum": 0,
-          "maximum": 3,
-        }
-      }
+          minimum: 0,
+          maximum: 3,
+        },
+      },
     ],
     vendorExtensionTransforms: [
       {

@@ -15,7 +15,7 @@ use std::collections::HashMap;
 use super::{ContentType, Error, KmdApiError};
 
 // Import all custom types used by this endpoint
-use crate::models::Apiv1PostMultisigExportResponse;
+use crate::models::PostMultisigExportResponse;
 
 // Import request body type if needed
 use crate::models::ExportMultisigRequest;
@@ -33,7 +33,7 @@ pub enum ExportMultisigError {
 pub async fn export_multisig(
     http_client: &dyn HttpClient,
     request: ExportMultisigRequest,
-) -> Result<Apiv1PostMultisigExportResponse, Error> {
+) -> Result<PostMultisigExportResponse, Error> {
     let p_request = request;
 
     let path = "/v1/multisig/export".to_string();

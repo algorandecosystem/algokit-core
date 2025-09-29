@@ -15,7 +15,7 @@ use std::collections::HashMap;
 use super::{ContentType, Error, KmdApiError};
 
 // Import all custom types used by this endpoint
-use crate::models::Apiv1DeleteMultisigResponse;
+use crate::models::DeleteMultisigResponse;
 
 // Import request body type if needed
 use crate::models::DeleteMultisigRequest;
@@ -32,7 +32,7 @@ pub enum DeleteMultisigError {
 /// Deletes multisig preimage information for the passed address from the wallet.
 pub async fn delete_multisig(
     http_client: &dyn HttpClient,
-) -> Result<Apiv1DeleteMultisigResponse, Error> {
+) -> Result<DeleteMultisigResponse, Error> {
     let path = "/v1/multisig".to_string();
 
     let query_params: HashMap<String, String> = HashMap::new();

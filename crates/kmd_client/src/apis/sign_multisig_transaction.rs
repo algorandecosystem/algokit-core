@@ -15,7 +15,7 @@ use std::collections::HashMap;
 use super::{ContentType, Error, KmdApiError};
 
 // Import all custom types used by this endpoint
-use crate::models::Apiv1PostMultisigTransactionSignResponse;
+use crate::models::PostMultisigTransactionSignResponse;
 
 // Import request body type if needed
 use crate::models::SignMultisigRequest;
@@ -33,7 +33,7 @@ pub enum SignMultisigTransactionError {
 pub async fn sign_multisig_transaction(
     http_client: &dyn HttpClient,
     request: SignMultisigRequest,
-) -> Result<Apiv1PostMultisigTransactionSignResponse, Error> {
+) -> Result<PostMultisigTransactionSignResponse, Error> {
     let p_request = request;
 
     let path = "/v1/multisig/sign".to_string();

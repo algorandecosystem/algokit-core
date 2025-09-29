@@ -15,7 +15,7 @@ use std::collections::HashMap;
 use super::{ContentType, Error, KmdApiError};
 
 // Import all custom types used by this endpoint
-use crate::models::Apiv1DeleteKeyResponse;
+use crate::models::DeleteKeyResponse;
 
 // Import request body type if needed
 use crate::models::DeleteKeyRequest;
@@ -30,7 +30,7 @@ pub enum DeleteKeyError {
 }
 
 /// Deletes the key with the passed public key from the wallet.
-pub async fn delete_key(http_client: &dyn HttpClient) -> Result<Apiv1DeleteKeyResponse, Error> {
+pub async fn delete_key(http_client: &dyn HttpClient) -> Result<DeleteKeyResponse, Error> {
     let path = "/v1/key".to_string();
 
     let query_params: HashMap<String, String> = HashMap::new();

@@ -15,7 +15,7 @@ use std::collections::HashMap;
 use super::{ContentType, Error, KmdApiError};
 
 // Import all custom types used by this endpoint
-use crate::models::Apiv1PostWalletInitResponse;
+use crate::models::PostWalletInitResponse;
 
 // Import request body type if needed
 use crate::models::InitWalletHandleTokenRequest;
@@ -33,7 +33,7 @@ pub enum InitWalletHandleTokenError {
 pub async fn init_wallet_handle_token(
     http_client: &dyn HttpClient,
     request: InitWalletHandleTokenRequest,
-) -> Result<Apiv1PostWalletInitResponse, Error> {
+) -> Result<PostWalletInitResponse, Error> {
     let p_request = request;
 
     let path = "/v1/wallet/init".to_string();

@@ -15,7 +15,7 @@ use std::collections::HashMap;
 use super::{ContentType, Error, KmdApiError};
 
 // Import all custom types used by this endpoint
-use crate::models::Apiv1PostMultisigListResponse;
+use crate::models::PostMultisigListResponse;
 
 // Import request body type if needed
 use crate::models::ListMultisigRequest;
@@ -33,7 +33,7 @@ pub enum ListMultisgError {
 pub async fn list_multisg(
     http_client: &dyn HttpClient,
     request: ListMultisigRequest,
-) -> Result<Apiv1PostMultisigListResponse, Error> {
+) -> Result<PostMultisigListResponse, Error> {
     let p_request = request;
 
     let path = "/v1/multisig/list".to_string();
