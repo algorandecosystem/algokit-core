@@ -1,11 +1,20 @@
 use std::sync::Arc;
 
-use crate::transactions::common::{
-    RustTransactionSignerGetterFromFfi, TransactionSignerGetter, UtilsError,
+use crate::{
+    clients::algod_client::AlgodClientTrait,
+    transactions::{
+        asset_config::{AssetCreateParams, AssetDestroyParams, AssetReconfigureParams},
+        asset_freeze::{AssetFreezeParams, AssetUnfreezeParams},
+        asset_transfer::{
+            AssetClawbackParams, AssetOptInParams, AssetOptOutParams, AssetTransferParams,
+        },
+        common::{RustTransactionSignerGetterFromFfi, TransactionSignerGetter, UtilsError},
+    },
 };
 use algod_client::AlgodClient as RustAlgodClient;
 use algokit_http_client::HttpClient;
-use algokit_utils::transactions::{ComposerParams, composer::Composer as RustComposer};
+use algokit_utils::transactions::{composer::Composer as RustComposer, ComposerParams};
+use async_trait::async_trait;
 use tokio::sync::Mutex;
 
 #[derive(uniffi::Object)]
@@ -36,20 +45,6 @@ pub struct Composer {
     inner_composer: Mutex<RustComposer>,
 }
 
-#[uniffi::export(with_foreign)]
-#[async_trait::async_trait]
-pub trait ComposerTrait: Send + Sync {
-    fn add_payment(&self, params: super::payment::PaymentParams) -> Result<(), UtilsError>;
-    fn add_app_create(&self, params: super::app_call::AppCreateParams) -> Result<(), UtilsError>;
-    fn add_app_call(&self, params: super::app_call::AppCallParams) -> Result<(), UtilsError>;
-    fn add_app_call_method_call(
-        &self,
-        params: super::app_call::AppCallMethodCallParams,
-    ) -> Result<(), UtilsError>;
-    async fn send(&self) -> Result<TempSendResponse, UtilsError>;
-    async fn build(&self) -> Result<(), UtilsError>;
-}
-
 #[uniffi::export]
 impl Composer {
     #[uniffi::constructor]
@@ -73,12 +68,8 @@ impl Composer {
             inner_composer: Mutex::new(rust_composer),
         }
     }
-}
 
-#[uniffi::export]
-#[async_trait::async_trait]
-impl ComposerTrait for Composer {
-    fn add_payment(&self, params: super::payment::PaymentParams) -> Result<(), UtilsError> {
+    pub fn add_payment(&self, params: super::payment::PaymentParams) -> Result<(), UtilsError> {
         let mut composer = self.inner_composer.blocking_lock();
         composer
             .add_payment(params.try_into()?)
@@ -87,7 +78,7 @@ impl ComposerTrait for Composer {
             })
     }
 
-    async fn send(&self) -> Result<TempSendResponse, UtilsError> {
+    pub async fn send(&self) -> Result<TempSendResponse, UtilsError> {
         let mut composer = self.inner_composer.blocking_lock();
         let result = composer
             .send(None)
@@ -101,7 +92,7 @@ impl ComposerTrait for Composer {
         })
     }
 
-    async fn build(&self) -> Result<(), UtilsError> {
+    pub async fn build(&self) -> Result<(), UtilsError> {
         let mut composer = self.inner_composer.blocking_lock();
         composer.build().await.map_err(|e| UtilsError::UtilsError {
             message: e.to_string(),
@@ -110,33 +101,178 @@ impl ComposerTrait for Composer {
         Ok(())
     }
 
-    fn add_app_create(&self, params: super::app_call::AppCreateParams) -> Result<(), UtilsError> {
+    pub fn add_asset_create(&self, params: AssetCreateParams) -> Result<(), UtilsError> {
         let mut composer = self.inner_composer.blocking_lock();
         composer
-            .add_app_create(params.try_into()?)
+            .add_asset_create(params.try_into()?)
             .map_err(|e| UtilsError::UtilsError {
                 message: e.to_string(),
             })
     }
 
-    fn add_app_call(&self, params: super::app_call::AppCallParams) -> Result<(), UtilsError> {
+    pub fn add_asset_reconfigure(&self, params: AssetReconfigureParams) -> Result<(), UtilsError> {
         let mut composer = self.inner_composer.blocking_lock();
         composer
-            .add_app_call(params.try_into()?)
+            .add_asset_config(params.try_into()?)
             .map_err(|e| UtilsError::UtilsError {
                 message: e.to_string(),
             })
     }
 
-    fn add_app_call_method_call(
+    pub fn add_asset_destroy(&self, params: AssetDestroyParams) -> Result<(), UtilsError> {
+        let mut composer = self.inner_composer.blocking_lock();
+        composer
+            .add_asset_destroy(params.try_into()?)
+            .map_err(|e| UtilsError::UtilsError {
+                message: e.to_string(),
+            })
+    }
+
+    pub fn add_asset_freeze(&self, params: AssetFreezeParams) -> Result<(), UtilsError> {
+        let mut composer = self.inner_composer.blocking_lock();
+        composer
+            .add_asset_freeze(params.try_into()?)
+            .map_err(|e| UtilsError::UtilsError {
+                message: e.to_string(),
+            })
+    }
+
+    pub fn add_asset_unfreeze(&self, params: AssetUnfreezeParams) -> Result<(), UtilsError> {
+        let mut composer = self.inner_composer.blocking_lock();
+        composer
+            .add_asset_unfreeze(params.try_into()?)
+            .map_err(|e| UtilsError::UtilsError {
+                message: e.to_string(),
+            })
+    }
+
+    pub fn add_asset_transfer(&self, params: AssetTransferParams) -> Result<(), UtilsError> {
+        let mut composer = self.inner_composer.blocking_lock();
+        composer
+            .add_asset_transfer(params.try_into()?)
+            .map_err(|e| UtilsError::UtilsError {
+                message: e.to_string(),
+            })
+    }
+
+    pub fn add_asset_opt_in(&self, params: AssetOptInParams) -> Result<(), UtilsError> {
+        let mut composer = self.inner_composer.blocking_lock();
+        composer
+            .add_asset_opt_in(params.try_into()?)
+            .map_err(|e| UtilsError::UtilsError {
+                message: e.to_string(),
+            })
+    }
+
+    pub fn add_asset_opt_out(&self, params: AssetOptOutParams) -> Result<(), UtilsError> {
+        let mut composer = self.inner_composer.blocking_lock();
+        composer
+            .add_asset_opt_out(params.try_into()?)
+            .map_err(|e| UtilsError::UtilsError {
+                message: e.to_string(),
+            })
+    }
+
+    pub fn add_asset_clawback(&self, params: AssetClawbackParams) -> Result<(), UtilsError> {
+        let mut composer = self.inner_composer.blocking_lock();
+        composer
+            .add_asset_clawback(params.try_into()?)
+            .map_err(|e| UtilsError::UtilsError {
+                message: e.to_string(),
+            })
+    }
+}
+
+//
+// Foreign trait for target language testing
+// This trait is implemented by Python to enable async test orchestration
+// where Python controls the async context and Rust handles business logic
+//
+#[uniffi::export(with_foreign)]
+#[async_trait]
+pub trait ComposerTrait: Send + Sync {
+    async fn build(&self, algod_client: Arc<dyn AlgodClientTrait>) -> Result<(), UtilsError>;
+    async fn send(
         &self,
-        params: super::app_call::AppCallMethodCallParams,
-    ) -> Result<(), UtilsError> {
-        let mut composer = self.inner_composer.blocking_lock();
-        composer
-            .add_app_call_method_call(params.try_into()?)
-            .map_err(|e| UtilsError::UtilsError {
-                message: e.to_string(),
-            })
-    }
+        algod_client: Arc<dyn AlgodClientTrait>,
+    ) -> Result<Vec<String>, UtilsError>;
+
+    async fn add_payment(
+        &self,
+        params: super::payment::PaymentParams,
+        algod_client: Arc<dyn AlgodClientTrait>,
+        signer_getter: Arc<dyn TransactionSignerGetter>,
+    ) -> Result<(), UtilsError>;
+
+    async fn add_asset_create(
+        &self,
+        params: AssetCreateParams,
+        algod_client: Arc<dyn AlgodClientTrait>,
+        signer_getter: Arc<dyn TransactionSignerGetter>,
+    ) -> Result<(), UtilsError>;
+
+    async fn add_asset_reconfigure(
+        &self,
+        params: AssetReconfigureParams,
+        algod_client: Arc<dyn AlgodClientTrait>,
+        signer_getter: Arc<dyn TransactionSignerGetter>,
+    ) -> Result<(), UtilsError>;
+
+    async fn add_asset_destroy(
+        &self,
+        params: AssetDestroyParams,
+        algod_client: Arc<dyn AlgodClientTrait>,
+        signer_getter: Arc<dyn TransactionSignerGetter>,
+    ) -> Result<(), UtilsError>;
+
+    async fn add_asset_freeze(
+        &self,
+        params: AssetFreezeParams,
+        algod_client: Arc<dyn AlgodClientTrait>,
+        signer_getter: Arc<dyn TransactionSignerGetter>,
+    ) -> Result<(), UtilsError>;
+
+    async fn add_asset_unfreeze(
+        &self,
+        params: AssetUnfreezeParams,
+        algod_client: Arc<dyn AlgodClientTrait>,
+        signer_getter: Arc<dyn TransactionSignerGetter>,
+    ) -> Result<(), UtilsError>;
+
+    async fn add_asset_transfer(
+        &self,
+        params: AssetTransferParams,
+        algod_client: Arc<dyn AlgodClientTrait>,
+        signer_getter: Arc<dyn TransactionSignerGetter>,
+    ) -> Result<(), UtilsError>;
+
+    async fn add_asset_opt_in(
+        &self,
+        params: AssetOptInParams,
+        algod_client: Arc<dyn AlgodClientTrait>,
+        signer_getter: Arc<dyn TransactionSignerGetter>,
+    ) -> Result<(), UtilsError>;
+
+    async fn add_asset_opt_out(
+        &self,
+        params: AssetOptOutParams,
+        algod_client: Arc<dyn AlgodClientTrait>,
+        signer_getter: Arc<dyn TransactionSignerGetter>,
+    ) -> Result<(), UtilsError>;
+
+    async fn add_asset_clawback(
+        &self,
+        params: AssetClawbackParams,
+        algod_client: Arc<dyn AlgodClientTrait>,
+        signer_getter: Arc<dyn TransactionSignerGetter>,
+    ) -> Result<(), UtilsError>;
+}
+
+//
+// Foreign trait for creating fresh composer instances
+// This enables proper composer lifecycle management for multi-operation tests
+//
+#[uniffi::export(with_foreign)]
+pub trait ComposerFactory: Send + Sync {
+    fn create_composer(&self) -> Arc<dyn ComposerTrait>;
 }
