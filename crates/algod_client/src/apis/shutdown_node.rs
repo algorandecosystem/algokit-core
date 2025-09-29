@@ -20,8 +20,9 @@ use crate::models::UnknownJsonValue;
 // Import request body type if needed
 
 /// struct for typed errors of method [`shutdown_node`]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 #[serde(untagged)]
+#[derive(Serialize, Deserialize)]
 pub enum ShutdownNodeError {
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),

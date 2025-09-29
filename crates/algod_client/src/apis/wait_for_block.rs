@@ -20,8 +20,9 @@ use crate::models::{ErrorResponse, WaitForBlock};
 // Import request body type if needed
 
 /// struct for typed errors of method [`wait_for_block`]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 #[serde(untagged)]
+#[derive(Serialize, Deserialize)]
 pub enum WaitForBlockError {
     Status400(ErrorResponse),
     Status401(ErrorResponse),

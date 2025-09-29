@@ -24,6 +24,7 @@ pub mod {{ operation.rust_function_name }};
 {% endfor %}
 {% if ffi %}
 use algod_client::apis::Error as RustError;
+use algod_client::apis::{{ client_type }}ApiError as RustApiError;
 {% endif %}
 
 use snafu::Snafu;
@@ -39,6 +40,21 @@ pub enum {{ client_type }}ApiError {
     #[snafu(display("Unknown API error: {message}"))]
     Unknown { message: String },
 }
+
+{% if ffi %}
+impl From<RustApiError> for {{ client_type }}ApiError {
+    fn from(err: RustApiError) -> Self {
+      match err {
+          {% for operation in operations %}
+          RustApiError::{{ operation.rust_function_name | pascal_case }} { error } => {{ client_type }}ApiError::{{ operation.rust_function_name | pascal_case }} { error: error.into() },
+          {% endfor %}
+          RustApiError::Unknown { message } => {{ client_type }}ApiError::Unknown { message },
+      }
+    }
+}
+
+
+{% endif %}
 
 {% for operation in operations %}
 impl From<{{ operation.rust_function_name }}::{{ operation.rust_error_enum }}> for {{ client_type }}ApiError {

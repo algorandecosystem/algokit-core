@@ -22,8 +22,9 @@ use crate::models::{ErrorResponse, TealDryrun};
 use crate::models::DryrunRequest;
 
 /// struct for typed errors of method [`teal_dryrun`]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 #[serde(untagged)]
+#[derive(Serialize, Deserialize)]
 pub enum TealDryrunError {
     Status400(ErrorResponse),
     Status401(ErrorResponse),

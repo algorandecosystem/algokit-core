@@ -20,8 +20,9 @@ use crate::models::Genesis;
 // Import request body type if needed
 
 /// struct for typed errors of method [`get_genesis`]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 #[serde(untagged)]
+#[derive(Serialize, Deserialize)]
 pub enum GetGenesisError {
     Statusdefault(),
     DefaultResponse(),

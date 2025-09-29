@@ -21,8 +21,9 @@ use crate::models::{ErrorResponse, TealDisassemble};
 // Import request body type if needed
 
 /// struct for typed errors of method [`teal_disassemble`]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 #[serde(untagged)]
+#[derive(Serialize, Deserialize)]
 pub enum TealDisassembleError {
     Status400(ErrorResponse),
     Status401(ErrorResponse),

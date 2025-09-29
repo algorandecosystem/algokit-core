@@ -20,8 +20,9 @@ use crate::models::{ErrorResponse, GetStatus};
 // Import request body type if needed
 
 /// struct for typed errors of method [`get_status`]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 #[serde(untagged)]
+#[derive(Serialize, Deserialize)]
 pub enum GetStatusError {
     Status401(ErrorResponse),
     Status500(String),

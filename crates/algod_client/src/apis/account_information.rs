@@ -22,8 +22,9 @@ use crate::models::{Account, ErrorResponse};
 // Import request body type if needed
 
 /// struct for typed errors of method [`account_information`]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 #[serde(untagged)]
+#[derive(Serialize, Deserialize)]
 pub enum AccountInformationError {
     Status400(ErrorResponse),
     Status401(ErrorResponse),

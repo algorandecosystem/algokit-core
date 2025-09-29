@@ -9,7 +9,7 @@
  */
 
 use reqwest;
-use serde::{Deserialize, Serialize, de::Error as _};
+{% if not ffi %} use serde::{Deserialize, Serialize, de::Error as _}; {% endif %}
 use crate::{apis::ResponseContent, models};
 use super::{Error, configuration, ContentType};
 
@@ -25,10 +25,11 @@ use crate::models::{
 
 {% for operation in operations %}
 /// struct for typed errors of method [`{{ operation.rust_function_name }}`]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 {% if ffi %}
 #[derive(uniffi::Error)]
 {% else %}
+#[derive(Serialize, Deserialize)]
 #[serde(untagged)]
 {% endif %}
 pub enum {{ operation.rust_error_enum }} {
@@ -39,6 +40,7 @@ pub enum {{ operation.rust_error_enum }} {
 
 {% endfor %}
 
+{% if not ffi %}
 {% for operation in operations %}
 {% if operation.description %}
 {{ operation.description | rust_doc_comment }}
@@ -120,4 +122,4 @@ pub async fn {{ operation.rust_function_name }}(
 }
 
 {% endfor %}
-
+{% endif %}

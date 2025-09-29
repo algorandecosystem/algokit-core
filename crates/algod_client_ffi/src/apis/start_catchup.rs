@@ -9,7 +9,6 @@
  */
 
 use algokit_http_client::{HttpClient, HttpMethod};
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
@@ -20,9 +19,7 @@ use crate::models::{ErrorResponse, StartCatchup};
 // Import request body type if needed
 
 /// struct for typed errors of method [`start_catchup`]
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(uniffi::Error)]
+#[derive(Debug, Clone, uniffi::Error)]
 pub enum StartCatchupError {
     Status400(ErrorResponse),
     Status401(ErrorResponse),
@@ -31,67 +28,4 @@ pub enum StartCatchupError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
-}
-
-/// Given a catchpoint, it starts catching up to this catchpoint
-pub async fn start_catchup(
-    http_client: &dyn HttpClient,
-    catchpoint: &str,
-    min: Option<u64>,
-) -> Result<StartCatchup, Error> {
-    let p_catchpoint = catchpoint;
-    let p_min = min;
-
-    let path = format!(
-        "/v2/catchup/{catchpoint}",
-        catchpoint = crate::apis::urlencode(p_catchpoint)
-    );
-
-    let mut query_params: HashMap<String, String> = HashMap::new();
-    if let Some(value) = p_min {
-        query_params.insert("min".to_string(), value.to_string());
-    }
-
-    let mut headers: HashMap<String, String> = HashMap::new();
-    headers.insert("Content-Type".to_string(), "application/json".to_string());
-    headers.insert("Accept".to_string(), "application/json".to_string());
-
-    let body = None;
-
-    let response = http_client
-        .request(
-            HttpMethod::Post,
-            path,
-            Some(query_params),
-            body,
-            Some(headers),
-        )
-        .await
-        .map_err(|e| Error::Http { source: e })?;
-
-    let content_type = response
-        .headers
-        .get("content-type")
-        .map(|s| s.as_str())
-        .unwrap_or("application/json");
-
-    match ContentType::from(content_type) {
-        ContentType::Json => serde_json::from_slice(&response.body).map_err(|e| Error::Serde {
-            message: e.to_string(),
-        }),
-        ContentType::MsgPack => Err(Error::Serde {
-            message: "MsgPack not supported".to_string(),
-        }),
-        ContentType::Text => {
-            let text = String::from_utf8(response.body).map_err(|e| Error::Serde {
-                message: e.to_string(),
-            })?;
-            Err(Error::Serde {
-                message: format!("Unexpected text response: {}", text),
-            })
-        }
-        ContentType::Unsupported(ct) => Err(Error::Serde {
-            message: format!("Unsupported content type: {}", ct),
-        }),
-    }
 }

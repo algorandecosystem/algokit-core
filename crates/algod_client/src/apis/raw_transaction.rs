@@ -21,8 +21,9 @@ use crate::models::{ErrorResponse, RawTransaction};
 // Import request body type if needed
 
 /// struct for typed errors of method [`raw_transaction`]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 #[serde(untagged)]
+#[derive(Serialize, Deserialize)]
 pub enum RawTransactionError {
     Status400(ErrorResponse),
     Status401(ErrorResponse),

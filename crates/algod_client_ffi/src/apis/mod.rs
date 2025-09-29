@@ -70,6 +70,7 @@ pub mod teal_dryrun;
 pub mod transaction_params;
 pub mod unset_sync_round;
 pub mod wait_for_block;
+use algod_client::apis::AlgodApiError as RustApiError;
 use algod_client::apis::Error as RustError;
 
 use snafu::Snafu;
@@ -189,6 +190,209 @@ pub enum AlgodApiError {
     SetBlockTimeStampOffset { error: set_block_time_stamp_offset::SetBlockTimeStampOffsetError },
     #[snafu(display("Unknown API error: {message}"))]
     Unknown { message: String },
+}
+
+impl From<RustApiError> for AlgodApiError {
+    fn from(err: RustApiError) -> Self {
+        match err {
+            RustApiError::HealthCheck { error } => AlgodApiError::HealthCheck {
+                error: error.into(),
+            },
+            RustApiError::GetReady { error } => AlgodApiError::GetReady {
+                error: error.into(),
+            },
+            RustApiError::Metrics { error } => AlgodApiError::Metrics {
+                error: error.into(),
+            },
+            RustApiError::GetGenesis { error } => AlgodApiError::GetGenesis {
+                error: error.into(),
+            },
+            RustApiError::SwaggerJson { error } => AlgodApiError::SwaggerJson {
+                error: error.into(),
+            },
+            RustApiError::GetVersion { error } => AlgodApiError::GetVersion {
+                error: error.into(),
+            },
+            RustApiError::GetDebugSettingsProf { error } => AlgodApiError::GetDebugSettingsProf {
+                error: error.into(),
+            },
+            RustApiError::PutDebugSettingsProf { error } => AlgodApiError::PutDebugSettingsProf {
+                error: error.into(),
+            },
+            RustApiError::GetConfig { error } => AlgodApiError::GetConfig {
+                error: error.into(),
+            },
+            RustApiError::AccountInformation { error } => AlgodApiError::AccountInformation {
+                error: error.into(),
+            },
+            RustApiError::AccountAssetInformation { error } => {
+                AlgodApiError::AccountAssetInformation {
+                    error: error.into(),
+                }
+            }
+            RustApiError::AccountAssetsInformation { error } => {
+                AlgodApiError::AccountAssetsInformation {
+                    error: error.into(),
+                }
+            }
+            RustApiError::AccountApplicationInformation { error } => {
+                AlgodApiError::AccountApplicationInformation {
+                    error: error.into(),
+                }
+            }
+            RustApiError::GetPendingTransactionsByAddress { error } => {
+                AlgodApiError::GetPendingTransactionsByAddress {
+                    error: error.into(),
+                }
+            }
+            RustApiError::GetBlock { error } => AlgodApiError::GetBlock {
+                error: error.into(),
+            },
+            RustApiError::GetBlockTxids { error } => AlgodApiError::GetBlockTxids {
+                error: error.into(),
+            },
+            RustApiError::GetBlockHash { error } => AlgodApiError::GetBlockHash {
+                error: error.into(),
+            },
+            RustApiError::GetTransactionProof { error } => AlgodApiError::GetTransactionProof {
+                error: error.into(),
+            },
+            RustApiError::GetBlockLogs { error } => AlgodApiError::GetBlockLogs {
+                error: error.into(),
+            },
+            RustApiError::GetSupply { error } => AlgodApiError::GetSupply {
+                error: error.into(),
+            },
+            RustApiError::GetParticipationKeys { error } => AlgodApiError::GetParticipationKeys {
+                error: error.into(),
+            },
+            RustApiError::AddParticipationKey { error } => AlgodApiError::AddParticipationKey {
+                error: error.into(),
+            },
+            RustApiError::GenerateParticipationKeys { error } => {
+                AlgodApiError::GenerateParticipationKeys {
+                    error: error.into(),
+                }
+            }
+            RustApiError::GetParticipationKeyById { error } => {
+                AlgodApiError::GetParticipationKeyById {
+                    error: error.into(),
+                }
+            }
+            RustApiError::AppendKeys { error } => AlgodApiError::AppendKeys {
+                error: error.into(),
+            },
+            RustApiError::DeleteParticipationKeyById { error } => {
+                AlgodApiError::DeleteParticipationKeyById {
+                    error: error.into(),
+                }
+            }
+            RustApiError::ShutdownNode { error } => AlgodApiError::ShutdownNode {
+                error: error.into(),
+            },
+            RustApiError::GetStatus { error } => AlgodApiError::GetStatus {
+                error: error.into(),
+            },
+            RustApiError::WaitForBlock { error } => AlgodApiError::WaitForBlock {
+                error: error.into(),
+            },
+            RustApiError::RawTransaction { error } => AlgodApiError::RawTransaction {
+                error: error.into(),
+            },
+            RustApiError::RawTransactionAsync { error } => AlgodApiError::RawTransactionAsync {
+                error: error.into(),
+            },
+            RustApiError::SimulateTransaction { error } => AlgodApiError::SimulateTransaction {
+                error: error.into(),
+            },
+            RustApiError::TransactionParams { error } => AlgodApiError::TransactionParams {
+                error: error.into(),
+            },
+            RustApiError::GetPendingTransactions { error } => {
+                AlgodApiError::GetPendingTransactions {
+                    error: error.into(),
+                }
+            }
+            RustApiError::PendingTransactionInformation { error } => {
+                AlgodApiError::PendingTransactionInformation {
+                    error: error.into(),
+                }
+            }
+            RustApiError::GetLedgerStateDelta { error } => AlgodApiError::GetLedgerStateDelta {
+                error: error.into(),
+            },
+            RustApiError::GetTransactionGroupLedgerStateDeltasForRound { error } => {
+                AlgodApiError::GetTransactionGroupLedgerStateDeltasForRound {
+                    error: error.into(),
+                }
+            }
+            RustApiError::GetLedgerStateDeltaForTransactionGroup { error } => {
+                AlgodApiError::GetLedgerStateDeltaForTransactionGroup {
+                    error: error.into(),
+                }
+            }
+            RustApiError::GetStateProof { error } => AlgodApiError::GetStateProof {
+                error: error.into(),
+            },
+            RustApiError::GetLightBlockHeaderProof { error } => {
+                AlgodApiError::GetLightBlockHeaderProof {
+                    error: error.into(),
+                }
+            }
+            RustApiError::GetApplicationById { error } => AlgodApiError::GetApplicationById {
+                error: error.into(),
+            },
+            RustApiError::GetApplicationBoxes { error } => AlgodApiError::GetApplicationBoxes {
+                error: error.into(),
+            },
+            RustApiError::GetApplicationBoxByName { error } => {
+                AlgodApiError::GetApplicationBoxByName {
+                    error: error.into(),
+                }
+            }
+            RustApiError::GetAssetById { error } => AlgodApiError::GetAssetById {
+                error: error.into(),
+            },
+            RustApiError::GetSyncRound { error } => AlgodApiError::GetSyncRound {
+                error: error.into(),
+            },
+            RustApiError::UnsetSyncRound { error } => AlgodApiError::UnsetSyncRound {
+                error: error.into(),
+            },
+            RustApiError::SetSyncRound { error } => AlgodApiError::SetSyncRound {
+                error: error.into(),
+            },
+            RustApiError::TealCompile { error } => AlgodApiError::TealCompile {
+                error: error.into(),
+            },
+            RustApiError::TealDisassemble { error } => AlgodApiError::TealDisassemble {
+                error: error.into(),
+            },
+            RustApiError::StartCatchup { error } => AlgodApiError::StartCatchup {
+                error: error.into(),
+            },
+            RustApiError::AbortCatchup { error } => AlgodApiError::AbortCatchup {
+                error: error.into(),
+            },
+            RustApiError::TealDryrun { error } => AlgodApiError::TealDryrun {
+                error: error.into(),
+            },
+            RustApiError::ExperimentalCheck { error } => AlgodApiError::ExperimentalCheck {
+                error: error.into(),
+            },
+            RustApiError::GetBlockTimeStampOffset { error } => {
+                AlgodApiError::GetBlockTimeStampOffset {
+                    error: error.into(),
+                }
+            }
+            RustApiError::SetBlockTimeStampOffset { error } => {
+                AlgodApiError::SetBlockTimeStampOffset {
+                    error: error.into(),
+                }
+            }
+            RustApiError::Unknown { message } => AlgodApiError::Unknown { message },
+        }
+    }
 }
 
 impl From<health_check::HealthCheckError> for AlgodApiError {

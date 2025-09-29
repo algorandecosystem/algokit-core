@@ -9,7 +9,6 @@
  */
 
 use algokit_http_client::{HttpClient, HttpMethod};
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
@@ -20,9 +19,7 @@ use crate::models::{ErrorResponse, ParticipationKey};
 // Import request body type if needed
 
 /// struct for typed errors of method [`get_participation_keys`]
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(uniffi::Error)]
+#[derive(Debug, Clone, uniffi::Error)]
 pub enum GetParticipationKeysError {
     Status400(ErrorResponse),
     Status401(ErrorResponse),
@@ -31,56 +28,4 @@ pub enum GetParticipationKeysError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
-}
-
-/// Return a list of participation keys
-pub async fn get_participation_keys(
-    http_client: &dyn HttpClient,
-) -> Result<Vec<ParticipationKey>, Error> {
-    let path = "/v2/participation".to_string();
-
-    let query_params: HashMap<String, String> = HashMap::new();
-
-    let mut headers: HashMap<String, String> = HashMap::new();
-    headers.insert("Content-Type".to_string(), "application/json".to_string());
-    headers.insert("Accept".to_string(), "application/json".to_string());
-
-    let body = None;
-
-    let response = http_client
-        .request(
-            HttpMethod::Get,
-            path,
-            Some(query_params),
-            body,
-            Some(headers),
-        )
-        .await
-        .map_err(|e| Error::Http { source: e })?;
-
-    let content_type = response
-        .headers
-        .get("content-type")
-        .map(|s| s.as_str())
-        .unwrap_or("application/json");
-
-    match ContentType::from(content_type) {
-        ContentType::Json => serde_json::from_slice(&response.body).map_err(|e| Error::Serde {
-            message: e.to_string(),
-        }),
-        ContentType::MsgPack => Err(Error::Serde {
-            message: "MsgPack not supported".to_string(),
-        }),
-        ContentType::Text => {
-            let text = String::from_utf8(response.body).map_err(|e| Error::Serde {
-                message: e.to_string(),
-            })?;
-            Err(Error::Serde {
-                message: format!("Unexpected text response: {}", text),
-            })
-        }
-        ContentType::Unsupported(ct) => Err(Error::Serde {
-            message: format!("Unsupported content type: {}", ct),
-        }),
-    }
 }

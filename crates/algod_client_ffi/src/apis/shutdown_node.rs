@@ -9,7 +9,6 @@
  */
 
 use algokit_http_client::{HttpClient, HttpMethod};
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
@@ -20,68 +19,8 @@ use crate::models::UnknownJsonValue;
 // Import request body type if needed
 
 /// struct for typed errors of method [`shutdown_node`]
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(uniffi::Error)]
+#[derive(Debug, Clone, uniffi::Error)]
 pub enum ShutdownNodeError {
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
-}
-
-/// Special management endpoint to shutdown the node. Optionally provide a timeout parameter to indicate that the node should begin shutting down after a number of seconds.
-pub async fn shutdown_node(
-    http_client: &dyn HttpClient,
-    timeout: Option<u64>,
-) -> Result<UnknownJsonValue, Error> {
-    let p_timeout = timeout;
-
-    let path = "/v2/shutdown".to_string();
-
-    let mut query_params: HashMap<String, String> = HashMap::new();
-    if let Some(value) = p_timeout {
-        query_params.insert("timeout".to_string(), value.to_string());
-    }
-
-    let mut headers: HashMap<String, String> = HashMap::new();
-    headers.insert("Content-Type".to_string(), "application/json".to_string());
-    headers.insert("Accept".to_string(), "application/json".to_string());
-
-    let body = None;
-
-    let response = http_client
-        .request(
-            HttpMethod::Post,
-            path,
-            Some(query_params),
-            body,
-            Some(headers),
-        )
-        .await
-        .map_err(|e| Error::Http { source: e })?;
-
-    let content_type = response
-        .headers
-        .get("content-type")
-        .map(|s| s.as_str())
-        .unwrap_or("application/json");
-
-    match ContentType::from(content_type) {
-        ContentType::Json => serde_json::from_slice(&response.body).map_err(|e| Error::Serde {
-            message: e.to_string(),
-        }),
-        ContentType::MsgPack => Err(Error::Serde {
-            message: "MsgPack not supported".to_string(),
-        }),
-        ContentType::Text => {
-            let text = String::from_utf8(response.body).map_err(|e| Error::Serde {
-                message: e.to_string(),
-            })?;
-            Err(Error::Serde {
-                message: format!("Unexpected text response: {}", text),
-            })
-        }
-        ContentType::Unsupported(ct) => Err(Error::Serde {
-            message: format!("Unsupported content type: {}", ct),
-        }),
-    }
 }

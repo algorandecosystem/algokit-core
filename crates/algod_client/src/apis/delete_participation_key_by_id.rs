@@ -20,8 +20,9 @@ use crate::models::ErrorResponse;
 // Import request body type if needed
 
 /// struct for typed errors of method [`delete_participation_key_by_id`]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 #[serde(untagged)]
+#[derive(Serialize, Deserialize)]
 pub enum DeleteParticipationKeyByIdError {
     Status400(ErrorResponse),
     Status401(ErrorResponse),

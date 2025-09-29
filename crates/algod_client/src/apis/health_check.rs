@@ -19,8 +19,9 @@ use super::{AlgodApiError, ContentType, Error};
 // Import request body type if needed
 
 /// struct for typed errors of method [`health_check`]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 #[serde(untagged)]
+#[derive(Serialize, Deserialize)]
 pub enum HealthCheckError {
     Statusdefault(),
     DefaultResponse(),

@@ -20,8 +20,9 @@ use crate::models::{ErrorResponse, GetBlockTimeStampOffset};
 // Import request body type if needed
 
 /// struct for typed errors of method [`get_block_time_stamp_offset`]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 #[serde(untagged)]
+#[derive(Serialize, Deserialize)]
 pub enum GetBlockTimeStampOffsetError {
     Status400(ErrorResponse),
     Statusdefault(),

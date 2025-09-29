@@ -9,12 +9,10 @@
  */
 
 use algokit_http_client::{HttpClient, HttpMethod};
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use super::parameter_enums::*;
 use super::{AlgodApiError, ContentType, Error};
-use algokit_transact::AlgorandMsgpack;
 
 // Import all custom types used by this endpoint
 use crate::models::{ErrorResponse, LedgerStateDelta};
@@ -22,9 +20,7 @@ use crate::models::{ErrorResponse, LedgerStateDelta};
 // Import request body type if needed
 
 /// struct for typed errors of method [`get_ledger_state_delta`]
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(uniffi::Error)]
+#[derive(Debug, Clone, uniffi::Error)]
 pub enum GetLedgerStateDeltaError {
     Status401(ErrorResponse),
     Status404(ErrorResponse),
@@ -34,74 +30,4 @@ pub enum GetLedgerStateDeltaError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
-}
-
-/// Get ledger deltas for a round.
-pub async fn get_ledger_state_delta(
-    http_client: &dyn HttpClient,
-    round: u64,
-    format: Option<Format>,
-) -> Result<LedgerStateDelta, Error> {
-    let p_round = round;
-    let p_format = format;
-
-    let path = format!("/v2/deltas/{round}", round = p_round);
-
-    let mut query_params: HashMap<String, String> = HashMap::new();
-    if let Some(value) = p_format {
-        query_params.insert("format".to_string(), value.to_string());
-    }
-
-    let use_msgpack = p_format.map(|f| f != Format::Json).unwrap_or(true);
-
-    let mut headers: HashMap<String, String> = HashMap::new();
-    if use_msgpack {
-        headers.insert(
-            "Content-Type".to_string(),
-            "application/msgpack".to_string(),
-        );
-        headers.insert("Accept".to_string(), "application/msgpack".to_string());
-    } else {
-        headers.insert("Content-Type".to_string(), "application/json".to_string());
-        headers.insert("Accept".to_string(), "application/json".to_string());
-    }
-
-    let body = None;
-
-    let response = http_client
-        .request(
-            HttpMethod::Get,
-            path,
-            Some(query_params),
-            body,
-            Some(headers),
-        )
-        .await
-        .map_err(|e| Error::Http { source: e })?;
-
-    let content_type = response
-        .headers
-        .get("content-type")
-        .map(|s| s.as_str())
-        .unwrap_or("application/json");
-
-    match ContentType::from(content_type) {
-        ContentType::Json => serde_json::from_slice(&response.body).map_err(|e| Error::Serde {
-            message: e.to_string(),
-        }),
-        ContentType::MsgPack => rmp_serde::from_slice(&response.body).map_err(|e| Error::Serde {
-            message: e.to_string(),
-        }),
-        ContentType::Text => {
-            let text = String::from_utf8(response.body).map_err(|e| Error::Serde {
-                message: e.to_string(),
-            })?;
-            Err(Error::Serde {
-                message: format!("Unexpected text response: {}", text),
-            })
-        }
-        ContentType::Unsupported(ct) => Err(Error::Serde {
-            message: format!("Unsupported content type: {}", ct),
-        }),
-    }
 }

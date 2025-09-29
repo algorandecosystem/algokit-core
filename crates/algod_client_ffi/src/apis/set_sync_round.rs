@@ -9,7 +9,6 @@
  */
 
 use algokit_http_client::{HttpClient, HttpMethod};
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
@@ -20,9 +19,7 @@ use crate::models::ErrorResponse;
 // Import request body type if needed
 
 /// struct for typed errors of method [`set_sync_round`]
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(uniffi::Error)]
+#[derive(Debug, Clone, uniffi::Error)]
 pub enum SetSyncRoundError {
     Status400(ErrorResponse),
     Status401(ErrorResponse),
@@ -31,33 +28,4 @@ pub enum SetSyncRoundError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
-}
-
-/// Sets the minimum sync round on the ledger.
-pub async fn set_sync_round(http_client: &dyn HttpClient, round: u64) -> Result<(), Error> {
-    let p_round = round;
-
-    let path = format!("/v2/ledger/sync/{round}", round = p_round);
-
-    let query_params: HashMap<String, String> = HashMap::new();
-
-    let mut headers: HashMap<String, String> = HashMap::new();
-    headers.insert("Content-Type".to_string(), "application/json".to_string());
-    headers.insert("Accept".to_string(), "application/json".to_string());
-
-    let body = None;
-
-    let response = http_client
-        .request(
-            HttpMethod::Post,
-            path,
-            Some(query_params),
-            body,
-            Some(headers),
-        )
-        .await
-        .map_err(|e| Error::Http { source: e })?;
-
-    let _ = response;
-    Ok(())
 }

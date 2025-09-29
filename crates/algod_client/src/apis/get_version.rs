@@ -20,8 +20,9 @@ use crate::models::Version;
 // Import request body type if needed
 
 /// struct for typed errors of method [`get_version`]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 #[serde(untagged)]
+#[derive(Serialize, Deserialize)]
 pub enum GetVersionError {
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),

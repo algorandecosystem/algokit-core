@@ -20,8 +20,9 @@ use crate::models::{Application, ErrorResponse};
 // Import request body type if needed
 
 /// struct for typed errors of method [`get_application_by_id`]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 #[serde(untagged)]
+#[derive(Serialize, Deserialize)]
 pub enum GetApplicationByIdError {
     Status400(ErrorResponse),
     Status401(ErrorResponse),

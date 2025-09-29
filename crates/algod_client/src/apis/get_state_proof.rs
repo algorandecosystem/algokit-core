@@ -20,8 +20,9 @@ use crate::models::{ErrorResponse, StateProof};
 // Import request body type if needed
 
 /// struct for typed errors of method [`get_state_proof`]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 #[serde(untagged)]
+#[derive(Serialize, Deserialize)]
 pub enum GetStateProofError {
     Status401(ErrorResponse),
     Status404(ErrorResponse),
