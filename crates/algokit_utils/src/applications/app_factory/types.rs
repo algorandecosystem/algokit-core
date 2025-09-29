@@ -7,7 +7,6 @@ use algod_client::models::PendingTransactionResponse;
 use algokit_abi::{ABIReturn, Arc56Contract};
 use algokit_transact::Byte32;
 use algokit_transact::{Address, Transaction};
-use std::rc::Rc;
 use std::sync::Arc;
 
 /// Result from sending an app create call via AppFactory.
@@ -57,7 +56,7 @@ pub struct AppFactoryCreateMethodCallResult {
 }
 
 pub struct AppFactoryParams {
-    pub algorand: Rc<AlgorandClient>,
+    pub algorand: Arc<AlgorandClient>,
     pub app_spec: Arc56Contract,
     pub app_name: Option<String>,
     pub default_sender: Option<String>,
