@@ -42,6 +42,9 @@ use crate::models::{
 };
 {% endif %}
 {% endif %}
+{% if ffi %}
+use algod_client::AlgodClient as RustAlgodClient;
+{% endif %}
 
 /// The main {{ client_type }} API client.
 ///
@@ -49,32 +52,35 @@ use crate::models::{
 /// It wraps the lower-level endpoint functions with a more ergonomic interface.
 /// All methods return a unified `Error` type that can represent any endpoint error.
 #[derive(Clone)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Object))]
+{% if ffi %}
+#[derive(uniffi::Object)]
+{% endif %}
 pub struct {{ client_type }}Client {
+    {% if ffi %}
+    inner_algod_client: Arc<RustAlgodClient>,
+    {% else %}
     http_client: Arc<dyn HttpClient>,
+    {% endif %}
 }
 
-{% for impl_block in ["common", "rust", "ffi"] %}
-{% if impl_block in ["common", "ffi"] %}
-#[cfg_attr(feature = "ffi_uniffi", uniffi::export)]
-{% endif %}
-{% if impl_block == "rust" %}
-#[cfg(not(feature = "ffi_uniffi"))]
-{% endif %}
-{% if impl_block == "ffi" %}
-#[cfg(feature = "ffi_uniffi")]
+{% if ffi %}
+#[uniffi::export]
 {% endif %}
 impl {{ client_type }}Client {
-{% if impl_block == "common" %}
     /// Create a new {{ client_type }}Client with a custom http client.
-    #[cfg_attr(feature = "ffi_uniffi", uniffi::constructor)]
+    {% if ffi %}#[uniffi::constructor]{% endif %}
     pub fn new(http_client: Arc<dyn HttpClient>) -> Self {
+        {% if ffi %}
+        let inner_algod_client = Arc::new(RustAlgodClient::new(http_client.clone()));
+        Self { inner_algod_client }
+        {% else %}
         Self { http_client }
+        {% endif %}
     }
 
+    {% if not ffi %}
     /// Create a new {{ client_type }}Client for Algorand TestNet.
     #[cfg(feature = "default_client")]
-    #[cfg_attr(feature = "ffi_uniffi", uniffi::constructor)]
     pub fn testnet() -> Self {
         let http_client = Arc::new(DefaultHttpClient::new(
             {% if client_type == "Indexer" %}"https://testnet-idx.4160.nodely.dev"{% else %}"https://testnet-api.4160.nodely.dev"{% endif %}
@@ -84,7 +90,6 @@ impl {{ client_type }}Client {
 
     /// Create a new {{ client_type }}Client for Algorand MainNet.
     #[cfg(feature = "default_client")]
-    #[cfg_attr(feature = "ffi_uniffi", uniffi::constructor)]
     pub fn mainnet() -> Self {
         let http_client = Arc::new(DefaultHttpClient::new(
             {% if client_type == "Indexer" %}"https://mainnet-idx.4160.nodely.dev"{% else %}"https://mainnet-api.4160.nodely.dev"{% endif %}
@@ -94,7 +99,6 @@ impl {{ client_type }}Client {
 
     /// Create a new {{ client_type }}Client for a local localnet environment.
     #[cfg(feature = "default_client")]
-    #[cfg_attr(feature = "ffi_uniffi", uniffi::constructor)]
     pub fn localnet() -> Self {
         let http_client = Arc::new(DefaultHttpClient::with_header(
             {% if client_type == "Indexer" %}"http://localhost:8980"{% else %}"http://localhost:4001"{% endif %},
@@ -103,9 +107,8 @@ impl {{ client_type }}Client {
         ).expect("Failed to create HTTP client with API token header"));
         Self::new(http_client)
     }
-{% endif %}
+    {% endif %}
 {% for operation in operations %}
-{% if (impl_block == "common" and not operation.has_optional_string) or (impl_block != "common" and operation.has_optional_string) %}
     {% if operation.summary %}
     /// {{ operation.summary }}
     {% elif operation.description %}
@@ -130,48 +133,34 @@ impl {{ client_type }}Client {
         {% endif %}
         {% else %}
         {% if param.required %}{{ param.rust_name }}: {% if param.rust_type == "String" %}&str{% else %}{{ param.rust_type }}{% endif %},
-        {% else %}{{ param.rust_name }}: Option<{% if param.rust_type == "String" %}{% if impl_block == "ffi" %}String{% else %}&str{% endif %}{% else %}{{ param.rust_type }}{% endif %}>,
+        {% else %}{{ param.rust_name }}: Option<{% if param.rust_type == "String" %}{% if ffi %}String{% else %}&str{% endif %}{% else %}{{ param.rust_type }}{% endif %}>,
         {% endif %}
         {% endif %}
     {% endfor %}
     ) -> Result<{% if get_success_response_type(operation) %}{% if get_success_response_type(operation) == "UnknownJsonValue"
     %}UnknownJsonValue{% else %}{{
     get_success_response_type(operation) }}{% endif %}{% else %}(){% endif %}, Error> {
-        let result = super::{{ operation.rust_function_name }}::{{ operation.rust_function_name }}(
+        {% if not ffi %}
+        super::{{ operation.rust_function_name }}::{{ operation.rust_function_name }}(
             self.http_client.as_ref(),
         {% if has_request_body(operation) %}
             {{ get_request_body_name(operation) }},
         {% endif %}
         {% for param in operation.parameters %}
-            {% if impl_block == "ffi" and (not param.required) and (not param.is_enum_parameter) and (param.rust_type == "String") %}
-            {{ param.rust_name }}.as_deref(),
-            {% else %}
             {{ param.rust_name }},
-            {% endif %}
         {% endfor %}
-        ).await;
-
-        {% if get_success_response_type(operation) == "UnknownJsonValue" %}
-        #[cfg(feature = "ffi_uniffi")]
-        {
-          result.map(|v| {
-            serde_json::to_string(&v).map_err(|e| Error::Serde {
-                message: e.to_string(),
-            })
-          })?
-        }
-
-        #[cfg(not(feature = "ffi_uniffi"))]
-        {
-          result
-        }
+        ).await
         {% else %}
-          result
+        self.inner_algod_client.{{ operation.rust_function_name }}(
+        {% if has_request_body(operation) %}
+            {{ get_request_body_name(operation) }},
+        {% endif %}
+        {% for param in operation.parameters %}
+            {{ param.rust_name }},
+        {% endfor %}
+        ).await.into()
         {% endif %}
     }
 
-{% endif %}
 {% endfor %}
 }
-
-{% endfor %}

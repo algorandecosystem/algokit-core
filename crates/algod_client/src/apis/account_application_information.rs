@@ -24,7 +24,6 @@ use crate::models::{AccountApplicationInformation, ErrorResponse};
 /// struct for typed errors of method [`account_application_information`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum AccountApplicationInformationError {
     Status400(ErrorResponse),
     Status401(ErrorResponse),

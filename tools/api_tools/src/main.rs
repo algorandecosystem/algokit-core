@@ -160,23 +160,34 @@ const INDEXER_RS_CLIENT: RsClientConfig = RsClientConfig {
 };
 
 fn generate_rs_client(config: &RsClientConfig) -> Result<()> {
-    run(
-        &format!(
-            "uv run python -m rust_oas_generator.cli ../specs/{}.oas3.json --output ../../{}/ --package-name {} --description \"{}\"",
-            config.spec, config.output_rel, config.package_name, config.description
-        ),
-        Some(Path::new("api/oas_generator")),
-        None,
-    )?;
+    for ffi in [true, false] {
+        let output_rel = if ffi {
+            format!("{}_ffi", config.output_rel)
+        } else {
+            config.output_rel.to_string()
+        };
 
-    run(
-        &format!(
-            "cargo fmt --manifest-path Cargo.toml -p {}",
-            config.package_name
-        ),
-        None,
-        None,
-    )?;
+        let package_name = if ffi {
+            format!("{}_ffi", config.package_name)
+        } else {
+            config.package_name.to_string()
+        };
+
+        run(
+            &format!(
+                "uv run python -m rust_oas_generator.cli ../specs/{}.oas3.json --output ../../{}/ --package-name {} --description \"{}\"",
+                config.spec, output_rel, package_name, config.description
+            ),
+            Some(Path::new("api/oas_generator")),
+            None,
+        )?;
+
+        run(
+            &format!("cargo fmt --manifest-path Cargo.toml -p {}", package_name),
+            None,
+            None,
+        )?;
+    }
 
     Ok(())
 }

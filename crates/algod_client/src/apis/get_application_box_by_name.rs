@@ -22,7 +22,6 @@ use crate::models::{Box, ErrorResponse};
 /// struct for typed errors of method [`get_application_box_by_name`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum GetApplicationBoxByNameError {
     Status400(ErrorResponse),
     Status401(ErrorResponse),

@@ -22,7 +22,6 @@ use crate::models::{ErrorResponse, GetBlockHash};
 /// struct for typed errors of method [`get_block_hash`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum GetBlockHashError {
     Status400(ErrorResponse),
     Status401(ErrorResponse),

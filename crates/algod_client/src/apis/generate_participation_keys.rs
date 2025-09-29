@@ -22,7 +22,6 @@ use crate::models::ErrorResponse;
 /// struct for typed errors of method [`generate_participation_keys`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum GenerateParticipationKeysError {
     Status400(ErrorResponse),
     Status401(ErrorResponse),

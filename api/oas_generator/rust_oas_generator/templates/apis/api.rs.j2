@@ -26,8 +26,11 @@ use crate::models::{
 {% for operation in operations %}
 /// struct for typed errors of method [`{{ operation.rust_function_name }}`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
+{% if ffi %}
+#[derive(uniffi::Error)]
+{% else %}
 #[serde(untagged)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
+{% endif %}
 pub enum {{ operation.rust_error_enum }} {
 {% for error_type in get_error_types(operation) %}
     {{ error_type }},

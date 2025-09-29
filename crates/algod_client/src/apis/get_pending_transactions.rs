@@ -24,7 +24,6 @@ use crate::models::{ErrorResponse, GetPendingTransactions};
 /// struct for typed errors of method [`get_pending_transactions`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum GetPendingTransactionsError {
     Status401(ErrorResponse),
     Status500(ErrorResponse),

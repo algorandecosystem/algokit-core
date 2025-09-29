@@ -21,7 +21,6 @@ use super::{AlgodApiError, ContentType, Error};
 /// struct for typed errors of method [`get_config`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum GetConfigError {
     Statusdefault(),
     DefaultResponse(),

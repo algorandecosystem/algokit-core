@@ -9,6 +9,7 @@ members = [
   "crates/algokit_test_artifacts",
   "crates/ffi_macros",
   "crates/algod_client",
+  "crates/algod_client_ffi",
   "crates/indexer_client",
   "tools/build_pkgs",
   "crates/uniffi-bindgen",

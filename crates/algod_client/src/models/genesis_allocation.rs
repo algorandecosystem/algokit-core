@@ -14,7 +14,6 @@ use serde::{Deserialize, Serialize};
 use crate::models::UnknownJsonValue;
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct GenesisAllocation {
     #[serde(rename = "addr")]
     pub addr: String,

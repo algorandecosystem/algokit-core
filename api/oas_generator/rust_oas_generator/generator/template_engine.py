@@ -434,6 +434,7 @@ class RustCodeGenerator:
             "schemas": spec.schemas,
             "content_types": spec.content_types,
             "custom_description": custom_description,
+            "ffi": "ffi" in package_name.lower(),
         }
 
         files = {}

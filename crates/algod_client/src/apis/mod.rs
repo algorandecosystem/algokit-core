@@ -75,7 +75,6 @@ use snafu::Snafu;
 
 /// Unified error type that can represent any API error from any endpoint
 #[derive(Debug, Snafu)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum AlgodApiError {
     #[snafu(display("Health_check error: {error:?}"))]
     HealthCheck { error: health_check::HealthCheckError },
@@ -531,7 +530,6 @@ impl From<set_block_time_stamp_offset::SetBlockTimeStampOffsetError> for AlgodAp
 
 /// The main error type for all algod client operations
 #[derive(Debug, Snafu)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum Error {
     #[snafu(display("HTTP error: {source}"))]
     Http {

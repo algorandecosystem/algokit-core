@@ -6,12 +6,14 @@ description = "{{ custom_description or spec.info.description or spec.info.title
 license = "MIT"
 edition = "2024"
 
+{% if not "ffi" in package_name %}
 [features]
 default = ["default_client"]
 default_client = ["algokit_http_client/default_client"]
-ffi_uniffi = ["dep:uniffi", "algokit_http_client/ffi_uniffi", "dep:algokit_transact_ffi"]
+{% endif %}
 
 [dependencies]
+{% if not "ffi" in package_name %}
 # Core serialization
 serde = { version = "^1.0", features = ["derive"] }
 serde_with = { version = "^3.8", default-features = false, features = [
@@ -24,12 +26,8 @@ serde_repr = "^0.1"
 serde_bytes = "^0.11"
 
 # HTTP client
-algokit_http_client = { path = "../algokit_http_client", features = ["ffi_uniffi"] }
+algokit_http_client = { path = "../algokit_http_client" }
 url = "^2.5"
-
-# Uniffi for FFI bindings
-uniffi = { workspace = true, optional = true }
-algokit_transact_ffi = { optional = true, version = "0.1.0", path = "../algokit_transact_ffi" }
 
 {% if spec.has_msgpack_operations %}
 # AlgoKit dependencies for msgpack and signed transactions
@@ -44,7 +42,15 @@ snafu = { workspace = true }
 # Utilities
 base64 = "^0.22"
 uuid = { version = "^1.0", features = ["v4"] }
-
+{% else %}
+{% if spec.has_msgpack_operations %}
+algokit_transact_ffi = { path = "../algokit_transact_ffi" }
+{% endif %}
+snafu = { workspace = true }
+uniffi = { workspace = true }
+algokit_http_client = { path = "../algokit_http_client", default-features = false, features = ["ffi_uniffi"] }
+{{ package_name | snake_case | replace("_ffi", "") }} = { path = "../{{ package_name | snake_case | replace("_ffi", "") }}" }
+{% endif %}
 [dev-dependencies]
 tokio = { version = "1.0", features = ["full"] }
 tokio-test = "^0.4"

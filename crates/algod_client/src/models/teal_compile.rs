@@ -17,7 +17,6 @@ use crate::models::UnknownJsonValue;
 /// Teal compile Result
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct TealCompile {
     /// base32 SHA512_256 of program bytes (Address style)
     #[serde(rename = "hash")]

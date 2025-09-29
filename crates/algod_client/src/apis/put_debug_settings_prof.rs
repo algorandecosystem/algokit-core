@@ -22,7 +22,6 @@ use crate::models::DebugSettingsProf;
 /// struct for typed errors of method [`put_debug_settings_prof`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum PutDebugSettingsProfError {
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),

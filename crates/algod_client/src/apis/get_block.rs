@@ -24,7 +24,6 @@ use crate::models::{ErrorResponse, GetBlock};
 /// struct for typed errors of method [`get_block`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum GetBlockError {
     Status400(ErrorResponse),
     Status401(ErrorResponse),

@@ -9,15 +9,11 @@
  */
 
 use crate::models;
-#[cfg(not(feature = "ffi_uniffi"))]
-use algokit_transact::SignedTransaction as AlgokitSignedTransaction;
 use serde::{Deserialize, Serialize};
 use serde_with::{Bytes, serde_as};
 
-#[cfg(feature = "ffi_uniffi")]
-use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
-
 use algokit_transact::AlgorandMsgpack;
+use algokit_transact::SignedTransaction as AlgokitSignedTransaction;
 
 use crate::models::ApplicationStateSchema;
 use crate::models::TealKeyValueStore;
@@ -25,7 +21,6 @@ use crate::models::TealKeyValueStore;
 /// Stores the global information associated with an application.
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct ApplicationParams {
     /// The address that created this application. This is the address where the parameters and global state for this application can be found.
     #[serde(rename = "creator")]

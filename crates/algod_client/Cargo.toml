@@ -9,7 +9,6 @@ edition = "2024"
 [features]
 default = ["default_client"]
 default_client = ["algokit_http_client/default_client"]
-ffi_uniffi = ["dep:uniffi", "algokit_http_client/ffi_uniffi", "dep:algokit_transact_ffi"]
 
 [dependencies]
 # Core serialization
@@ -24,12 +23,8 @@ serde_repr = "^0.1"
 serde_bytes = "^0.11"
 
 # HTTP client
-algokit_http_client = { path = "../algokit_http_client", features = ["ffi_uniffi"] }
+algokit_http_client = { path = "../algokit_http_client" }
 url = "^2.5"
-
-# Uniffi for FFI bindings
-uniffi = { workspace = true, optional = true }
-algokit_transact_ffi = { optional = true, version = "0.1.0", path = "../algokit_transact_ffi" }
 
 # AlgoKit dependencies for msgpack and signed transactions
 algokit_transact = { path = "../algokit_transact" }
@@ -42,7 +37,6 @@ snafu = { workspace = true }
 # Utilities
 base64 = "^0.22"
 uuid = { version = "^1.0", features = ["v4"] }
-
 [dev-dependencies]
 tokio = { version = "1.0", features = ["full"] }
 tokio-test = "^0.4"

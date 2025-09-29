@@ -13,7 +13,6 @@ use std::str::FromStr;
 /// When set to `all` will exclude asset holdings, application local state, created asset parameters, any created application parameters. Defaults to `none`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Enum))]
 pub enum Exclude {
     /// all
     All,
@@ -46,7 +45,6 @@ impl FromStr for Exclude {
 /// Configures whether the response object is JSON or MessagePack encoded. If not provided, defaults to JSON.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Enum))]
 pub enum Format {
     /// json
     Json,
@@ -81,7 +79,6 @@ impl FromStr for Format {
 ///   * sha256
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Enum))]
 pub enum Hashtype {
     /// sha512_256
     Sha512256,

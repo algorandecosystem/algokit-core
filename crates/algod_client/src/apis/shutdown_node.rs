@@ -22,7 +22,6 @@ use crate::models::UnknownJsonValue;
 /// struct for typed errors of method [`shutdown_node`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum ShutdownNodeError {
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),

@@ -24,7 +24,6 @@ use crate::models::{ErrorResponse, GetTransactionGroupLedgerStateDeltasForRound}
 /// struct for typed errors of method [`get_transaction_group_ledger_state_deltas_for_round`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum GetTransactionGroupLedgerStateDeltasForRoundError {
     Status401(ErrorResponse),
     Status404(ErrorResponse),

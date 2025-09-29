@@ -22,12 +22,15 @@ pub mod parameter_enums;
 {% for operation in operations %}
 pub mod {{ operation.rust_function_name }};
 {% endfor %}
+{% if ffi %}
+use algod_client::apis::Error as RustError;
+{% endif %}
 
 use snafu::Snafu;
 
 /// Unified error type that can represent any API error from any endpoint
 #[derive(Debug, Snafu)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
+{% if ffi %} #[derive(uniffi::Error)] {% endif %}
 pub enum {{ client_type }}ApiError {
 {% for operation in operations %}
     #[snafu(display("{{ operation.rust_function_name | title }} error: {error:?}"))]
@@ -48,7 +51,7 @@ impl From<{{ operation.rust_function_name }}::{{ operation.rust_error_enum }}> f
 
 /// The main error type for all {{ client_type | lower }} client operations
 #[derive(Debug, Snafu)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
+{% if ffi %} #[derive(uniffi::Error)] {% endif %}
 pub enum Error {
     #[snafu(display("HTTP error: {source}"))]
     Http { source: algokit_http_client::HttpError },
@@ -57,6 +60,28 @@ pub enum Error {
     #[snafu(display("API error: {source}"))]
     Api { source: {{ client_type }}ApiError },
 }
+
+{% if ffi %}
+impl From<RustError> for Error {
+    fn from(err: RustError) -> Self {
+      match err {
+          RustError::Http { source } => Error::Http { source },
+          RustError::Serde { message } => Error::Serde { message },
+          RustError::Api { source } => Error::Api { source: source.into() },
+      }
+    }
+}
+
+impl From<Error> for RustError {
+    fn from(err: Error) -> Self {
+      match err {
+          Error::Http { source } => RustError::Http { source },
+          Error::Serde { message } => RustError::Serde { message },
+          Error::Api { source } => RustError::Api { source: source.into() },
+      }
+    }
+}
+{% endif %}
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ContentType {
@@ -80,6 +105,7 @@ impl From<&str> for ContentType {
     }
 }
 
+{% if not ffi %}
 pub fn urlencode<T: AsRef<str>>(s: T) -> String {
     ::url::form_urlencoded::byte_serialize(s.as_ref().as_bytes()).collect()
 }
@@ -99,3 +125,4 @@ pub use {{ operation.rust_function_name }}::{
     {{ operation.rust_error_enum }},
 };
 {% endfor %}
+{% endif %}

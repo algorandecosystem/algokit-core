@@ -19,7 +19,6 @@ use crate::models::StateDelta;
 /// DryrunTxnResult contains any LogicSig or ApplicationCall program debug information and state updates from a dryrun.
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct DryrunTxnResult {
     /// Disassembled program line by line.
     #[serde(rename = "disassembly")]
