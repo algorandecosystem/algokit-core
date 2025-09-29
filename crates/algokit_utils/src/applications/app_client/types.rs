@@ -1,10 +1,14 @@
 use crate::AlgorandClient;
-use crate::clients::app_manager::TealTemplateValue;
+use crate::clients::app_manager::{CompiledPrograms, TealTemplateValue};
 use crate::transactions::TransactionComposerConfig;
 use crate::transactions::TransactionSigner;
 use crate::transactions::app_call::AppMethodCallArg;
+use algod_client::models::PendingTransactionResponse;
+use algokit_abi::ABIReturn;
 use algokit_abi::Arc56Contract;
 use algokit_transact::BoxReference;
+use algokit_transact::Byte32;
+use algokit_transact::Transaction;
 use derive_more::Debug;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -17,17 +21,11 @@ pub struct AppSourceMaps {
 }
 
 /// Parameters required to construct an AppClient instance.
-// Important: do NOT derive Clone for this struct while it contains `AlgorandClient`.
-// `AlgorandClient` is intentionally non-Clone: it owns live HTTP clients, internal caches,
-// and shared mutable state (e.g., signer registry via Arc<Mutex<_>>). Forcing Clone here
-// would either require making `AlgorandClient` Clone or wrapping it in Arc implicitly,
-// which encourages accidental copying of a process-wide client and confusing ownership/
-// lifetime semantics. If you need to share the client, wrap it in Arc at the call site
-// and pass that explicitly, rather than deriving Clone on this params type.
+#[derive(Clone)]
 pub struct AppClientParams {
     pub app_id: u64,
     pub app_spec: Arc56Contract,
-    pub algorand: AlgorandClient,
+    pub algorand: Arc<AlgorandClient>,
     pub app_name: Option<String>,
     pub default_sender: Option<String>,
     pub default_signer: Option<Arc<dyn TransactionSigner>>,
@@ -41,7 +39,7 @@ pub struct FundAppAccountParams {
     pub amount: u64,
     pub sender: Option<String>,
     #[debug(skip)]
-    pub signer: Option<std::sync::Arc<dyn TransactionSigner>>,
+    pub signer: Option<Arc<dyn TransactionSigner>>,
     pub rekey_to: Option<String>,
     pub note: Option<Vec<u8>>,
     pub lease: Option<[u8; 32]>,
@@ -61,7 +59,7 @@ pub struct AppClientMethodCallParams {
     pub args: Vec<AppMethodCallArg>,
     pub sender: Option<String>,
     #[debug(skip)]
-    pub signer: Option<std::sync::Arc<dyn TransactionSigner>>,
+    pub signer: Option<Arc<dyn TransactionSigner>>,
     pub rekey_to: Option<String>,
     pub note: Option<Vec<u8>>,
     pub lease: Option<[u8; 32]>,
@@ -83,7 +81,7 @@ pub struct AppClientBareCallParams {
     pub args: Option<Vec<Vec<u8>>>,
     pub sender: Option<String>,
     #[debug(skip)]
-    pub signer: Option<std::sync::Arc<dyn TransactionSigner>>,
+    pub signer: Option<Arc<dyn TransactionSigner>>,
     pub rekey_to: Option<String>,
     pub note: Option<Vec<u8>>,
     pub lease: Option<[u8; 32]>,
@@ -156,4 +154,40 @@ pub struct CompilationParams {
     pub deploy_time_params: Option<HashMap<String, TealTemplateValue>>,
     pub updatable: Option<bool>,
     pub deletable: Option<bool>,
+}
+
+#[derive(Clone, Debug)]
+pub struct AppClientUpdateMethodCallResult {
+    /// The primary transaction that has been sent
+    pub transaction: Transaction,
+    /// The response from sending and waiting for the primary transaction
+    pub confirmation: PendingTransactionResponse,
+    /// The transaction ID of the primary transaction that has been sent
+    pub transaction_id: String,
+    /// The ABI return value from the primary method call (optional)
+    pub abi_return: Option<ABIReturn>,
+    /// The transactions that were sent
+    pub transactions: Vec<Transaction>,
+    /// The responses from sending and waiting for the transactions
+    pub confirmations: Vec<PendingTransactionResponse>,
+    /// The transaction IDs that have been sent
+    pub transaction_ids: Vec<String>,
+    /// The returned values of ABI methods
+    pub abi_returns: Vec<ABIReturn>,
+    /// The group ID (optional)
+    pub group: Option<Byte32>,
+    /// The compiled programs (approval and clear state)
+    pub compiled_programs: CompiledPrograms,
+}
+
+#[derive(Clone, Debug)]
+pub struct AppClientUpdateResult {
+    /// The primary transaction that has been sent
+    pub transaction: Transaction,
+    /// The response from sending and waiting for the primary transaction
+    pub confirmation: PendingTransactionResponse,
+    /// The transaction ID of the primary transaction that has been sent
+    pub transaction_id: String,
+    /// The compiled programs (approval and clear state)
+    pub compiled_programs: CompiledPrograms,
 }

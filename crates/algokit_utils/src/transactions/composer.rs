@@ -1,4 +1,4 @@
-use crate::config::Config;
+use crate::config::{Config, EventData, EventType, TxnGroupSimulatedEventData};
 use crate::{
     genesis_id_is_localnet,
     transactions::{
@@ -102,6 +102,75 @@ impl Default for ResourcePopulation {
     }
 }
 
+trait HasTxnSigner {
+    fn signer_mut(&mut self) -> &mut Option<Arc<dyn TransactionSigner>>;
+}
+
+fn set_method_signer_if_missing(
+    params: &mut impl HasTxnSigner,
+    method_signer: &Option<Arc<dyn TransactionSigner>>,
+) {
+    if params.signer_mut().is_none() {
+        *params.signer_mut() = method_signer.clone();
+    }
+}
+
+impl HasTxnSigner for PaymentParams {
+    fn signer_mut(&mut self) -> &mut Option<Arc<dyn TransactionSigner>> {
+        &mut self.signer
+    }
+}
+impl HasTxnSigner for AccountCloseParams {
+    fn signer_mut(&mut self) -> &mut Option<Arc<dyn TransactionSigner>> {
+        &mut self.signer
+    }
+}
+impl HasTxnSigner for AssetTransferParams {
+    fn signer_mut(&mut self) -> &mut Option<Arc<dyn TransactionSigner>> {
+        &mut self.signer
+    }
+}
+impl HasTxnSigner for AssetOptInParams {
+    fn signer_mut(&mut self) -> &mut Option<Arc<dyn TransactionSigner>> {
+        &mut self.signer
+    }
+}
+impl HasTxnSigner for AssetOptOutParams {
+    fn signer_mut(&mut self) -> &mut Option<Arc<dyn TransactionSigner>> {
+        &mut self.signer
+    }
+}
+impl HasTxnSigner for AssetClawbackParams {
+    fn signer_mut(&mut self) -> &mut Option<Arc<dyn TransactionSigner>> {
+        &mut self.signer
+    }
+}
+impl HasTxnSigner for AssetCreateParams {
+    fn signer_mut(&mut self) -> &mut Option<Arc<dyn TransactionSigner>> {
+        &mut self.signer
+    }
+}
+impl HasTxnSigner for AssetConfigParams {
+    fn signer_mut(&mut self) -> &mut Option<Arc<dyn TransactionSigner>> {
+        &mut self.signer
+    }
+}
+impl HasTxnSigner for AssetDestroyParams {
+    fn signer_mut(&mut self) -> &mut Option<Arc<dyn TransactionSigner>> {
+        &mut self.signer
+    }
+}
+impl HasTxnSigner for AssetFreezeParams {
+    fn signer_mut(&mut self) -> &mut Option<Arc<dyn TransactionSigner>> {
+        &mut self.signer
+    }
+}
+impl HasTxnSigner for AssetUnfreezeParams {
+    fn signer_mut(&mut self) -> &mut Option<Arc<dyn TransactionSigner>> {
+        &mut self.signer
+    }
+}
+
 /// Types of resources that can be populated at the group level
 #[derive(Debug, Clone)]
 enum GroupResourceToPopulate {
@@ -155,6 +224,7 @@ impl From<AlgoKitTransactError> for ComposerError {
 #[derive(Debug)]
 pub struct SendTransactionComposerResults {
     pub group: Option<Byte32>,
+    pub transactions: Vec<Transaction>,
     pub transaction_ids: Vec<String>,
     pub confirmations: Vec<PendingTransactionResponse>,
     pub abi_returns: Vec<ABIReturn>,
@@ -174,6 +244,7 @@ pub struct SimulateParams {
 #[derive(Debug, Clone)]
 pub struct SimulateComposerResults {
     pub group: Option<Byte32>,
+    pub transactions: Vec<Transaction>,
     pub transaction_ids: Vec<String>,
     pub confirmations: Vec<PendingTransactionResponse>,
     pub abi_returns: Vec<ABIReturn>,
@@ -350,8 +421,8 @@ impl ComposerTransaction {
     );
     get_composer_transaction_field!(
         signer,
-        Option<std::sync::Arc<dyn crate::transactions::common::TransactionSigner>>,
-        |x: &Option<std::sync::Arc<dyn crate::transactions::common::TransactionSigner>>| x.clone(),
+        Option<Arc<dyn crate::transactions::common::TransactionSigner>>,
+        |x: &Option<Arc<dyn crate::transactions::common::TransactionSigner>>| x.clone(),
         None
     );
     get_composer_transaction_field!(
@@ -531,14 +602,24 @@ impl Composer {
 
     fn extract_composer_transactions_from_app_method_call_params(
         method_call_args: &[AppMethodCallArg],
+        method_signer: Option<Arc<dyn TransactionSigner>>,
     ) -> Vec<ComposerTransaction> {
         let mut composer_transactions: Vec<ComposerTransaction> = vec![];
 
         for arg in method_call_args.iter() {
             match arg {
                 AppMethodCallArg::Transaction(transaction) => {
-                    composer_transactions
-                        .push(ComposerTransaction::Transaction(transaction.clone()));
+                    if let Some(ref signer) = method_signer {
+                        composer_transactions.push(ComposerTransaction::TransactionWithSigner(
+                            TransactionWithSigner {
+                                transaction: transaction.clone(),
+                                signer: signer.clone(),
+                            },
+                        ));
+                    } else {
+                        composer_transactions
+                            .push(ComposerTransaction::Transaction(transaction.clone()));
+                    }
                 }
                 AppMethodCallArg::TransactionWithSigner(transaction) => {
                     composer_transactions.push(ComposerTransaction::TransactionWithSigner(
@@ -546,37 +627,59 @@ impl Composer {
                     ));
                 }
                 AppMethodCallArg::Payment(params) => {
-                    composer_transactions.push(ComposerTransaction::Payment(params.clone()));
+                    let mut p = params.clone();
+                    set_method_signer_if_missing(&mut p, &method_signer);
+                    composer_transactions.push(ComposerTransaction::Payment(p));
                 }
                 AppMethodCallArg::AccountClose(params) => {
-                    composer_transactions.push(ComposerTransaction::AccountClose(params.clone()));
+                    let mut p = params.clone();
+                    set_method_signer_if_missing(&mut p, &method_signer);
+                    composer_transactions.push(ComposerTransaction::AccountClose(p));
                 }
                 AppMethodCallArg::AssetTransfer(params) => {
-                    composer_transactions.push(ComposerTransaction::AssetTransfer(params.clone()));
+                    let mut p = params.clone();
+                    set_method_signer_if_missing(&mut p, &method_signer);
+                    composer_transactions.push(ComposerTransaction::AssetTransfer(p));
                 }
                 AppMethodCallArg::AssetOptIn(params) => {
-                    composer_transactions.push(ComposerTransaction::AssetOptIn(params.clone()));
+                    let mut p = params.clone();
+                    set_method_signer_if_missing(&mut p, &method_signer);
+                    composer_transactions.push(ComposerTransaction::AssetOptIn(p));
                 }
                 AppMethodCallArg::AssetOptOut(params) => {
-                    composer_transactions.push(ComposerTransaction::AssetOptOut(params.clone()));
+                    let mut p = params.clone();
+                    set_method_signer_if_missing(&mut p, &method_signer);
+                    composer_transactions.push(ComposerTransaction::AssetOptOut(p));
                 }
                 AppMethodCallArg::AssetClawback(params) => {
-                    composer_transactions.push(ComposerTransaction::AssetClawback(params.clone()));
+                    let mut p = params.clone();
+                    set_method_signer_if_missing(&mut p, &method_signer);
+                    composer_transactions.push(ComposerTransaction::AssetClawback(p));
                 }
                 AppMethodCallArg::AssetCreate(params) => {
-                    composer_transactions.push(ComposerTransaction::AssetCreate(params.clone()));
+                    let mut p = params.clone();
+                    set_method_signer_if_missing(&mut p, &method_signer);
+                    composer_transactions.push(ComposerTransaction::AssetCreate(p));
                 }
                 AppMethodCallArg::AssetConfig(params) => {
-                    composer_transactions.push(ComposerTransaction::AssetConfig(params.clone()));
+                    let mut p = params.clone();
+                    set_method_signer_if_missing(&mut p, &method_signer);
+                    composer_transactions.push(ComposerTransaction::AssetConfig(p));
                 }
                 AppMethodCallArg::AssetDestroy(params) => {
-                    composer_transactions.push(ComposerTransaction::AssetDestroy(params.clone()));
+                    let mut p = params.clone();
+                    set_method_signer_if_missing(&mut p, &method_signer);
+                    composer_transactions.push(ComposerTransaction::AssetDestroy(p));
                 }
                 AppMethodCallArg::AssetFreeze(params) => {
-                    composer_transactions.push(ComposerTransaction::AssetFreeze(params.clone()));
+                    let mut p = params.clone();
+                    set_method_signer_if_missing(&mut p, &method_signer);
+                    composer_transactions.push(ComposerTransaction::AssetFreeze(p));
                 }
                 AppMethodCallArg::AssetUnfreeze(params) => {
-                    composer_transactions.push(ComposerTransaction::AssetUnfreeze(params.clone()));
+                    let mut p = params.clone();
+                    set_method_signer_if_missing(&mut p, &method_signer);
+                    composer_transactions.push(ComposerTransaction::AssetUnfreeze(p));
                 }
                 AppMethodCallArg::AppCall(params) => {
                     composer_transactions.push(ComposerTransaction::AppCall(params.clone()));
@@ -594,6 +697,7 @@ impl Composer {
                     let nested_composer_transactions =
                         Self::extract_composer_transactions_from_app_method_call_params(
                             &params.args,
+                            params.signer.clone(),
                         );
                     composer_transactions.extend(nested_composer_transactions);
 
@@ -604,6 +708,7 @@ impl Composer {
                     let nested_composer_transactions =
                         Self::extract_composer_transactions_from_app_method_call_params(
                             &params.args,
+                            params.signer.clone(),
                         );
                     composer_transactions.extend(nested_composer_transactions);
 
@@ -614,6 +719,7 @@ impl Composer {
                     let nested_composer_transactions =
                         Self::extract_composer_transactions_from_app_method_call_params(
                             &params.args,
+                            params.signer.clone(),
                         );
                     composer_transactions.extend(nested_composer_transactions);
 
@@ -624,6 +730,7 @@ impl Composer {
                     let nested_composer_transactions =
                         Self::extract_composer_transactions_from_app_method_call_params(
                             &params.args,
+                            params.signer.clone(),
                         );
                     composer_transactions.extend(nested_composer_transactions);
 
@@ -641,10 +748,11 @@ impl Composer {
         &mut self,
         args: &[AppMethodCallArg],
         transaction: ComposerTransaction,
+        method_signer: Option<Arc<dyn TransactionSigner>>,
     ) -> Result<(), ComposerError> {
         let starting_index = self.transactions.len();
         let mut composer_transactions =
-            Self::extract_composer_transactions_from_app_method_call_params(args);
+            Self::extract_composer_transactions_from_app_method_call_params(args, method_signer);
         composer_transactions.push(transaction);
 
         if self.transactions.len() + composer_transactions.len() > MAX_TX_GROUP_SIZE {
@@ -723,6 +831,7 @@ impl Composer {
         self.add_app_method_call_internal(
             &params.args,
             ComposerTransaction::AppCallMethodCall((&params).into()),
+            params.signer.clone(),
         )
     }
 
@@ -733,6 +842,7 @@ impl Composer {
         self.add_app_method_call_internal(
             &params.args,
             ComposerTransaction::AppCreateMethodCall((&params).into()),
+            params.signer.clone(),
         )
     }
 
@@ -743,6 +853,7 @@ impl Composer {
         self.add_app_method_call_internal(
             &params.args,
             ComposerTransaction::AppUpdateMethodCall((&params).into()),
+            params.signer.clone(),
         )
     }
 
@@ -753,6 +864,7 @@ impl Composer {
         self.add_app_method_call_internal(
             &params.args,
             ComposerTransaction::AppDeleteMethodCall((&params).into()),
+            params.signer.clone(),
         )
     }
 
@@ -765,7 +877,7 @@ impl Composer {
         for (i, confirmation) in confirmations.iter().enumerate() {
             if let Some(transaction) = self.transactions.get(i) {
                 if let Some(method) = self.get_method_from_transaction(transaction) {
-                    let abi_return = self.extract_abi_return_from_logs(confirmation, method);
+                    let abi_return = Self::extract_abi_return_from_logs(confirmation, method);
                     abi_returns.push(abi_return);
                 }
             }
@@ -774,8 +886,7 @@ impl Composer {
         abi_returns
     }
 
-    fn extract_abi_return_from_logs(
-        &self,
+    pub(crate) fn extract_abi_return_from_logs(
         confirmation: &PendingTransactionResponse,
         method: &ABIMethod,
     ) -> ABIReturn {
@@ -2113,41 +2224,28 @@ impl Composer {
     ) -> Result<SendTransactionComposerResults, ComposerError> {
         self.gather_signatures().await?;
 
-        let (group, signed_transactions) = {
-            let stxns = self
-                .signed_group
-                .as_ref()
-                .filter(|&stxns| !stxns.is_empty())
-                .ok_or(ComposerError::StateError {
-                    message: "No transactions available".to_string(),
-                })?;
-            (stxns[0].transaction.header().group, stxns)
-        };
+        let signed_transactions = self
+            .signed_group
+            .as_ref()
+            .filter(|&stxns| !stxns.is_empty())
+            .ok_or(ComposerError::StateError {
+                message: "No transactions available".to_string(),
+            })?;
 
-        let wait_rounds = if let Some(max_rounds_to_wait_for_confirmation) =
-            params.and_then(|p| p.max_rounds_to_wait_for_confirmation)
-        {
-            max_rounds_to_wait_for_confirmation
-        } else {
-            let suggested_params = self.get_suggested_params().await?;
-            let first_round: u64 = suggested_params.last_round; // The last round seen, so is the first round valid
-            let last_round: u64 = signed_transactions
-                .iter()
-                .map(|signed_transaction| signed_transaction.transaction.header().last_valid)
-                .max()
-                .ok_or(ComposerError::StateError {
-                    message: "Failed to calculate last valid round".to_string(),
-                })?;
-            ((last_round - first_round) + 1).try_into().map_err(|e| {
-                ComposerError::TransactionError {
-                    message: format!("Failed to calculate rounds to wait: {}", e),
-                }
-            })?
-        };
+        let transactions: Vec<Transaction> = signed_transactions
+            .iter()
+            .map(|txn| txn.transaction.clone())
+            .collect::<Vec<Transaction>>();
+
+        let transaction_ids: Vec<String> = transactions
+            .iter()
+            .map(|txn| txn.id())
+            .collect::<Result<Vec<String>, _>>()?;
+
+        let group = signed_transactions[0].transaction.header().group;
 
         // Encode each signed transaction and concatenate them
         let mut encoded_bytes = Vec::new();
-
         for signed_txn in signed_transactions {
             let encoded_txn = signed_txn
                 .encode()
@@ -2157,6 +2255,59 @@ impl Composer {
             encoded_bytes.extend_from_slice(&encoded_txn);
         }
 
+        let last_valid_max = signed_transactions
+            .iter()
+            .map(|signed_transaction| signed_transaction.transaction.header().last_valid)
+            .max()
+            .ok_or(ComposerError::StateError {
+                message: "Failed to calculate last valid round".to_string(),
+            })?;
+
+        let wait_rounds = if let Some(max_rounds_to_wait_for_confirmation) =
+            params.and_then(|p| p.max_rounds_to_wait_for_confirmation)
+        {
+            max_rounds_to_wait_for_confirmation
+        } else {
+            let suggested_params = self.get_suggested_params().await?;
+            let first_round: u64 = suggested_params.last_round; // The last round seen, so is the first round valid
+            ((last_valid_max - first_round) + 1)
+                .try_into()
+                .map_err(|e| ComposerError::TransactionError {
+                    message: format!("Failed to calculate rounds to wait: {}", e),
+                })?
+        };
+
+        // If debugging with full tracing enabled, emit a simulate event before submission for AVM debugging
+        if Config::debug() && Config::trace_all() {
+            let simulate_params = SimulateParams {
+                allow_more_logging: Some(true),
+                allow_empty_signatures: Some(true),
+                allow_unnamed_resources: Some(true),
+                extra_opcode_budget: None,
+                exec_trace_config: Some(algod_client::models::SimulateTraceConfig {
+                    enable: Some(true),
+                    stack_change: Some(true),
+                    scratch_change: Some(true),
+                    state_change: Some(true),
+                }),
+                simulation_round: None,
+                skip_signatures: true,
+            };
+
+            if let Ok(simulated) = self.simulate(Some(simulate_params)).await {
+                let payload = serde_json::to_value(&simulated.simulate_response)
+                    .unwrap_or_else(|_| serde_json::json!({}));
+                Config::events()
+                    .emit(
+                        EventType::TxnGroupSimulated,
+                        EventData::TxnGroupSimulated(TxnGroupSimulatedEventData {
+                            simulate_response: payload,
+                        }),
+                    )
+                    .await;
+            }
+        }
+
         let _ = self
             .algod_client
             .raw_transaction(encoded_bytes)
@@ -2164,11 +2315,6 @@ impl Composer {
             .map_err(|e| ComposerError::TransactionError {
                 message: format!("Failed to submit transaction(s): {:?}", e),
             })?;
-
-        let transaction_ids: Vec<String> = signed_transactions
-            .iter()
-            .map(|txn| txn.id())
-            .collect::<Result<Vec<String>, _>>()?;
 
         let mut confirmations = Vec::new();
         for id in &transaction_ids {
@@ -2181,6 +2327,7 @@ impl Composer {
 
         Ok(SendTransactionComposerResults {
             group,
+            transactions,
             transaction_ids,
             confirmations,
             abi_returns,
@@ -2219,7 +2366,11 @@ impl Composer {
             false => self.gather_signatures().await?.to_vec(),
         };
 
-        let transaction_ids: Vec<String> = signed_transactions
+        let transactions: Vec<Transaction> = signed_transactions
+            .iter()
+            .map(|txn| txn.transaction.clone())
+            .collect::<Vec<Transaction>>();
+        let transaction_ids: Vec<String> = transactions
             .iter()
             .map(|txn| txn.id())
             .collect::<Result<Vec<String>, _>>()?;
@@ -2262,6 +2413,18 @@ impl Composer {
                         .join(", ")
                 })
                 .unwrap_or_else(|| "unknown".to_string());
+            if Config::debug() {
+                let payload = serde_json::to_value(&simulate_response)
+                    .unwrap_or_else(|_| serde_json::json!({}));
+                Config::events()
+                    .emit(
+                        EventType::TxnGroupSimulated,
+                        EventData::TxnGroupSimulated(TxnGroupSimulatedEventData {
+                            simulate_response: payload,
+                        }),
+                    )
+                    .await;
+            }
             return Err(ComposerError::TransactionError {
                 message: format!(
                     "Transaction failed at transaction(s) {} in the group. {}",
@@ -2279,8 +2442,22 @@ impl Composer {
 
         let abi_returns = self.parse_abi_return_values(&confirmations);
 
+        if Config::debug() && Config::trace_all() {
+            let payload =
+                serde_json::to_value(&simulate_response).unwrap_or_else(|_| serde_json::json!({}));
+            Config::events()
+                .emit(
+                    EventType::TxnGroupSimulated,
+                    EventData::TxnGroupSimulated(TxnGroupSimulatedEventData {
+                        simulate_response: payload,
+                    }),
+                )
+                .await;
+        }
+
         Ok(SimulateComposerResults {
             group,
+            transactions,
             transaction_ids,
             confirmations,
             abi_returns,

@@ -1,8 +1,9 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 
 import { writeFileSync, mkdirSync } from "fs";
 import { join, dirname } from "path";
 import SwaggerParser from "@apidevtools/swagger-parser";
+import { fileURLToPath } from "node:url";
 
 // ===== TYPES =====
 
@@ -40,6 +41,11 @@ interface FieldTransform {
   addItems?: Record<string, any>; // properties to add to the target property, e.g., {"x-custom": true}
 }
 
+interface MsgpackOnlyEndpoint {
+  path: string; // Exact path to match (e.g., "/v2/blocks/{round}")
+  methods?: string[]; // HTTP methods to apply to (default: ["get"])
+}
+
 interface ProcessingConfig {
   sourceUrl: string;
   outputPath: string;
@@ -48,6 +54,9 @@ interface ProcessingConfig {
   vendorExtensionTransforms?: VendorExtensionTransform[];
   requiredFieldTransforms?: RequiredFieldTransform[];
   fieldTransforms?: FieldTransform[];
+  msgpackOnlyEndpoints?: MsgpackOnlyEndpoint[];
+  // If true, strip APIVn prefixes from component schemas and update refs (KMD)
+  stripKmdApiVersionPrefixes?: boolean;
 }
 
 // ===== TRANSFORMATIONS =====
@@ -295,6 +304,9 @@ function fixBigInt(spec: OpenAPISpec): number {
     { fieldName: "last-round" },
     { fieldName: "confirmed-round" },
     { fieldName: "asset-id" },
+    { fieldName: "created-application-index" },
+    { fieldName: "created-asset-index" },
+    { fieldName: "txn-index" },
     { fieldName: "application-index" },
     { fieldName: "asset-index" },
     { fieldName: "current_round" },
@@ -467,6 +479,195 @@ function transformRequiredFields(spec: OpenAPISpec, requiredFieldTransforms: Req
   return transformedCount;
 }
 
+/**
+ * Enforce msgpack-only format for specific endpoints by removing JSON support
+ *
+ * This function modifies endpoints to only support msgpack format, aligning with
+ * Go and JavaScript SDK implementations that hardcode these endpoints to msgpack.
+ */
+function enforceMsgpackOnlyEndpoints(spec: OpenAPISpec, endpoints: MsgpackOnlyEndpoint[]): number {
+  let modifiedCount = 0;
+
+  if (!spec.paths || !endpoints?.length) {
+    return modifiedCount;
+  }
+
+  for (const endpoint of endpoints) {
+    const pathObj = spec.paths[endpoint.path];
+    if (!pathObj) {
+      console.warn(`⚠️  Path ${endpoint.path} not found in spec`);
+      continue;
+    }
+
+    const methods = endpoint.methods || ["get"];
+
+    for (const method of methods) {
+      const operation = pathObj[method];
+      if (!operation) {
+        continue;
+      }
+
+      // Look for format parameter in query parameters
+      if (operation.parameters && Array.isArray(operation.parameters)) {
+        for (const param of operation.parameters) {
+          // Handle both inline parameters and $ref parameters
+          const paramObj = param.$ref ? resolveRef(spec, param.$ref) : param;
+
+          if (paramObj && paramObj.name === "format" && paramObj.in === "query") {
+            // OpenAPI 3.0 has schema property containing the type information
+            const schemaObj = paramObj.schema || paramObj;
+
+            // Check if it has an enum with both json and msgpack
+            if (schemaObj.enum && Array.isArray(schemaObj.enum)) {
+              if (schemaObj.enum.includes("json") && schemaObj.enum.includes("msgpack")) {
+                // Remove json from enum, keep only msgpack
+                schemaObj.enum = ["msgpack"];
+                // Update default if it was json
+                if (schemaObj.default === "json") {
+                  schemaObj.default = "msgpack";
+                }
+                // Don't modify the description - preserve original documentation
+                modifiedCount++;
+                console.log(`ℹ️  Enforced msgpack-only for ${endpoint.path} (${method}) parameter`);
+              }
+            } else if (schemaObj.type === "string" && !schemaObj.enum) {
+              // If no enum is specified, add one with only msgpack
+              schemaObj.enum = ["msgpack"];
+              schemaObj.default = "msgpack";
+              // Don't modify the description - preserve original documentation
+              modifiedCount++;
+              console.log(`ℹ️  Enforced msgpack-only for ${endpoint.path} (${method}) parameter`);
+            }
+          }
+        }
+      }
+
+      // Also check for format in response content types
+      if (operation.responses) {
+        for (const [statusCode, response] of Object.entries(operation.responses)) {
+          if (response && typeof response === "object") {
+            const responseObj = response as any;
+
+            // If response has content with both json and msgpack, remove json
+            if (responseObj.content) {
+              if (responseObj.content["application/json"] && responseObj.content["application/msgpack"]) {
+                delete responseObj.content["application/json"];
+                modifiedCount++;
+                console.log(`ℹ️  Removed JSON response content-type for ${endpoint.path} (${method}) - ${statusCode}`);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return modifiedCount;
+}
+
+/**
+ * Helper function to resolve $ref references in the spec
+ */
+function resolveRef(spec: OpenAPISpec, ref: string): any {
+  if (!ref.startsWith("#/")) {
+    return null;
+  }
+
+  const parts = ref.substring(2).split("/");
+  let current: any = spec;
+
+  for (const part of parts) {
+    current = current?.[part];
+    if (!current) {
+      return null;
+    }
+  }
+
+  return current;
+}
+
+/**
+ * Strip APIVn prefix from component schema names and update all $ref usages (KMD-specific)
+ * Adds x-algokit-original-name and x-algokit-version metadata for traceability.
+ */
+function stripKmdApiVersionPrefixes(spec: OpenAPISpec): { renamed: number; collisions: number } {
+  let renamed = 0;
+  let collisions = 0;
+
+  const components = spec.components;
+  if (!components || !components.schemas) {
+    return { renamed, collisions };
+  }
+
+  const schemas = components.schemas as Record<string, any>;
+  const oldToNewName: Record<string, string> = {};
+  const newSchemas: Record<string, any> = {};
+
+  const versionPrefix = /^APIV(\d+)(.+)$/; // e.g., APIV1DELETEMultisigResponse
+
+  // 1) Build rename map and new schemas object
+  for (const [name, schema] of Object.entries(schemas)) {
+    const match = name.match(versionPrefix);
+    if (!match) {
+      if (newSchemas[name]) {
+        collisions++;
+        newSchemas[`${name}__DUP`] = schema;
+      } else {
+        newSchemas[name] = schema;
+      }
+      continue;
+    }
+
+    const version = Number(match[1]);
+    const base = match[2]; // e.g., DELETEMultisigResponse
+    let target = base;
+
+    // Avoid collisions: if target already exists, suffix with V<version>
+    if (newSchemas[target] || Object.values(oldToNewName).includes(target)) {
+      target = `${base}V${version}`;
+      collisions++;
+    }
+
+    // Record mapping and add metadata (in case in future new versions of the spec are added)
+    oldToNewName[name] = target;
+    const schemaCopy = { ...(schema as any) };
+    schemaCopy["x-algokit-original-name"] = name;
+    schemaCopy["x-algokit-kmd-api-version"] = version;
+    newSchemas[target] = schemaCopy;
+    renamed++;
+  }
+
+  // Apply renamed schemas
+  components.schemas = newSchemas as any;
+
+  if (renamed === 0) {
+    return { renamed, collisions };
+  }
+
+  // 2) Update all $ref occurrences pointing to old schema names
+  const updateRefs = (obj: any): void => {
+    if (!obj || typeof obj !== "object") return;
+    if (Array.isArray(obj)) {
+      for (const item of obj) updateRefs(item);
+      return;
+    }
+
+    if (typeof obj.$ref === "string" && obj.$ref.startsWith("#/components/schemas/")) {
+      const refName = obj.$ref.substring("#/components/schemas/".length);
+      const newName = oldToNewName[refName];
+      if (newName) {
+        obj.$ref = `#/components/schemas/${newName}`;
+      }
+    }
+
+    for (const value of Object.values(obj)) updateRefs(value);
+  };
+
+  updateRefs(spec);
+
+  return { renamed, collisions };
+}
+
 // ===== MAIN PROCESSOR =====
 
 class OpenAPIProcessor {
@@ -572,6 +773,13 @@ class OpenAPIProcessor {
 
       // Apply transformations
       console.log("ℹ️  Applying transformations...");
+      // 0. KMD-only: strip APIVn prefixes before other transforms if requested
+      if (this.config.stripKmdApiVersionPrefixes) {
+        const { renamed, collisions } = stripKmdApiVersionPrefixes(spec);
+        if (renamed > 0) {
+          console.log(`ℹ️  Stripped APIVn prefix from ${renamed} schemas (collisions resolved: ${collisions})`);
+        }
+      }
 
       // 1. Fix missing descriptions
       const descriptionCount = fixMissingDescriptions(spec);
@@ -600,12 +808,12 @@ class OpenAPIProcessor {
         console.log(`ℹ️  Transformed ${transformedFieldsCount} required field states`);
       }
 
-       // 7. Transform properties if configured
-       let transformedPropertiesCount = 0;
-       if (this.config.fieldTransforms && this.config.fieldTransforms.length > 0) {
-         transformedPropertiesCount = transformProperties(spec, this.config.fieldTransforms);
-         console.log(`ℹ️  Applied ${transformedPropertiesCount} property transformations (additions/removals)`);
-       }
+      // 7. Transform properties if configured
+      let transformedPropertiesCount = 0;
+      if (this.config.fieldTransforms && this.config.fieldTransforms.length > 0) {
+        transformedPropertiesCount = transformProperties(spec, this.config.fieldTransforms);
+        console.log(`ℹ️  Applied ${transformedPropertiesCount} property transformations (additions/removals)`);
+      }
 
       // 8. Transform vendor extensions if configured
       if (this.config.vendorExtensionTransforms && this.config.vendorExtensionTransforms.length > 0) {
@@ -620,6 +828,12 @@ class OpenAPIProcessor {
             console.log(`ℹ️  Transformed ${count} ${sourceProperty}: ${sourceValue} to ${transform.targetProperty}`);
           }
         }
+      }
+
+      // 9. Enforce msgpack-only endpoints if configured
+      if (this.config.msgpackOnlyEndpoints && this.config.msgpackOnlyEndpoints.length > 0) {
+        const msgpackCount = enforceMsgpackOnlyEndpoints(spec, this.config.msgpackOnlyEndpoints);
+        console.log(`ℹ️  Enforced msgpack-only format for ${msgpackCount} endpoint parameters/responses`);
       }
 
       // Save the processed spec
@@ -694,10 +908,10 @@ async function getLatestIndexerTag(): Promise<string> {
 }
 
 /**
- * Process specifications for both algod and indexer
+ * Process specifications for algod, indexer, and kmd
  */
 async function processAlgorandSpecs() {
-  await Promise.all([processAlgodSpec(), processIndexerSpec()]);
+  await Promise.all([processAlgodSpec(), processIndexerSpec(), processKmdSpec()]);
 }
 
 async function processAlgodSpec() {
@@ -711,32 +925,32 @@ async function processAlgodSpec() {
     fieldTransforms: [
       {
         fieldName: "action",
-        removeItems: ["format"]
+        removeItems: ["format"],
       },
       {
         fieldName: "num-uint",
         removeItems: ["format"],
         addItems: {
-          "minimum": 0,
-          "maximum": 64,
-        }
+          minimum: 0,
+          maximum: 64,
+        },
       },
       {
         fieldName: "num-byte-slice",
         removeItems: ["format"],
         addItems: {
-          "minimum": 0,
-          "maximum": 64,
-        }
+          minimum: 0,
+          maximum: 64,
+        },
       },
       {
         fieldName: "extra-program-pages",
         removeItems: ["format"],
         addItems: {
-          "minimum": 0,
-          "maximum": 3,
-        }
-      }
+          minimum: 0,
+          maximum: 3,
+        },
+      },
     ],
     vendorExtensionTransforms: [
       {
@@ -768,6 +982,49 @@ async function processAlgodSpec() {
         removeSource: true,
       },
     ],
+    msgpackOnlyEndpoints: [
+      // Align with Go and JS SDKs that hardcode these to msgpack
+      { path: "/v2/blocks/{round}", methods: ["get"] },
+      { path: "/v2/transactions/pending", methods: ["get"] },
+      { path: "/v2/transactions/pending/{txid}", methods: ["get"] },
+      { path: "/v2/accounts/{address}/transactions/pending", methods: ["get"] },
+      { path: "/v2/deltas/{round}", methods: ["get"] },
+      { path: "/v2/deltas/txn/group/{id}", methods: ["get"] },
+      { path: "/v2/deltas/{round}/txn/group", methods: ["get"] },
+    ],
+  };
+
+  await processAlgorandSpec(config);
+}
+
+async function processKmdSpec() {
+  console.log("\n🔄 Processing KMD specification...");
+
+  const stableTag = await getLatestStableTag();
+
+  const config: ProcessingConfig = {
+    sourceUrl: `https://raw.githubusercontent.com/algorand/go-algorand/${stableTag}/daemon/kmd/api/swagger.json`,
+    outputPath: join(process.cwd(), "specs", "kmd.oas3.json"),
+    stripKmdApiVersionPrefixes: true,
+    fieldTransforms: [
+      {
+        fieldName: "private_key",
+        removeItems: ["$ref"],
+        addItems: {
+          type: "string",
+          "x-algokit-bytes-base64": true,
+        },
+      },
+    ],
+    vendorExtensionTransforms: [
+      {
+        sourceProperty: "format",
+        sourceValue: "uint64",
+        targetProperty: "x-algokit-bigint",
+        targetValue: true,
+        removeSource: false,
+      },
+    ],
   };
 
   await processAlgorandSpec(config);
@@ -790,25 +1047,25 @@ async function processIndexerSpec() {
         fieldName: "num-uint",
         removeItems: ["x-algorand-format"],
         addItems: {
-          "minimum": 0,
-          "maximum": 64,
-        }
+          minimum: 0,
+          maximum: 64,
+        },
       },
       {
         fieldName: "num-byte-slice",
         removeItems: ["x-algorand-format"],
         addItems: {
-          "minimum": 0,
-          "maximum": 64,
-        }
+          minimum: 0,
+          maximum: 64,
+        },
       },
       {
         fieldName: "extra-program-pages",
         addItems: {
-          "minimum": 0,
-          "maximum": 3,
-        }
-      }
+          minimum: 0,
+          maximum: 3,
+        },
+      },
     ],
     vendorExtensionTransforms: [
       {
@@ -855,13 +1112,15 @@ async function main() {
   try {
     const args = process.argv.slice(2);
 
-    // Support for individual spec processing or both
+    // Support for individual spec processing or all
     if (args.includes("--algod-only")) {
       await processAlgodSpec();
     } else if (args.includes("--indexer-only")) {
       await processIndexerSpec();
+    } else if (args.includes("--kmd-only")) {
+      await processKmdSpec();
     } else {
-      // Process both by default
+      // Process all by default
       await processAlgorandSpecs();
     }
   } catch (error) {
@@ -871,6 +1130,7 @@ async function main() {
 }
 
 // Run if this is the main module
-if (import.meta.main) {
-  main();
+const isMain = process.argv[1] && process.argv[1] === fileURLToPath(import.meta.url);
+if (isMain) {
+  void main();
 }
