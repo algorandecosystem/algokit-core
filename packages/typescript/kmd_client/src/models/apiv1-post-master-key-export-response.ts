@@ -6,14 +6,14 @@ import { MasterDerivationKeyMeta } from './master-derivation-key'
  * APIV1POSTMasterKeyExportResponse is the response to `POST /v1/master-key/export`
  * friendly:ExportMasterKeyResponse
  */
-export type Apiv1PostmasterKeyExportResponse = {
+export type Apiv1PostMasterKeyExportResponse = {
   error?: boolean
   masterDerivationKey?: MasterDerivationKey
   message?: string
 }
 
-export const Apiv1PostmasterKeyExportResponseMeta: ModelMetadata = {
-  name: 'Apiv1PostmasterKeyExportResponse',
+export const Apiv1PostMasterKeyExportResponseMeta: ModelMetadata = {
+  name: 'Apiv1PostMasterKeyExportResponse',
   kind: 'object',
   fields: [
     {

@@ -1,19 +1,17 @@
 import type { ModelMetadata } from '../core/model-runtime'
-import type { Apiv1Wallet } from './apiv1-wallet'
-import { Apiv1WalletMeta } from './apiv1-wallet'
 
 /**
- * APIV1POSTWalletResponse is the response to `POST /v1/wallet`
- * friendly:CreateWalletResponse
+ * APIV1POSTWalletInitResponse is the response to `POST /v1/wallet/init`
+ * friendly:InitWalletHandleTokenResponse
  */
-export type Apiv1PostwalletResponse = {
+export type Apiv1PostWalletInitResponse = {
   error?: boolean
   message?: string
-  wallet?: Apiv1Wallet
+  walletHandleToken?: string
 }
 
-export const Apiv1PostwalletResponseMeta: ModelMetadata = {
-  name: 'Apiv1PostwalletResponse',
+export const Apiv1PostWalletInitResponseMeta: ModelMetadata = {
+  name: 'Apiv1PostWalletInitResponse',
   kind: 'object',
   fields: [
     {
@@ -31,11 +29,11 @@ export const Apiv1PostwalletResponseMeta: ModelMetadata = {
       type: { kind: 'scalar' },
     },
     {
-      name: 'wallet',
-      wireKey: 'wallet',
+      name: 'walletHandleToken',
+      wireKey: 'wallet_handle_token',
       optional: true,
       nullable: false,
-      type: { kind: 'model', meta: () => Apiv1WalletMeta },
+      type: { kind: 'scalar' },
     },
   ],
 }

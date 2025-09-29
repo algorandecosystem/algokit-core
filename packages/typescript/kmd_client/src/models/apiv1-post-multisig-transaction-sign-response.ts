@@ -1,17 +1,17 @@
 import type { ModelMetadata } from '../core/model-runtime'
 
 /**
- * APIV1POSTWalletInitResponse is the response to `POST /v1/wallet/init`
- * friendly:InitWalletHandleTokenResponse
+ * APIV1POSTMultisigTransactionSignResponse is the response to `POST /v1/multisig/sign`
+ * friendly:SignMultisigResponse
  */
-export type Apiv1PostwalletInitResponse = {
+export type Apiv1PostMultisigTransactionSignResponse = {
   error?: boolean
   message?: string
-  walletHandleToken?: string
+  multisig?: Uint8Array
 }
 
-export const Apiv1PostwalletInitResponseMeta: ModelMetadata = {
-  name: 'Apiv1PostwalletInitResponse',
+export const Apiv1PostMultisigTransactionSignResponseMeta: ModelMetadata = {
+  name: 'Apiv1PostMultisigTransactionSignResponse',
   kind: 'object',
   fields: [
     {
@@ -29,11 +29,11 @@ export const Apiv1PostwalletInitResponseMeta: ModelMetadata = {
       type: { kind: 'scalar' },
     },
     {
-      name: 'walletHandleToken',
-      wireKey: 'wallet_handle_token',
+      name: 'multisig',
+      wireKey: 'multisig',
       optional: true,
       nullable: false,
-      type: { kind: 'scalar' },
+      type: { kind: 'scalar', isBytes: true },
     },
   ],
 }

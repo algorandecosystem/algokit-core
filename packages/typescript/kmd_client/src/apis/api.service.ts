@@ -1,27 +1,27 @@
 import type { BaseHttpRequest, ApiRequestOptions } from '../core/base-http-request'
 import { AlgorandSerializer } from '../core/model-runtime'
 import type {
-  Apiv1DeletekeyResponse,
-  Apiv1DeletemultisigResponse,
-  Apiv1GetwalletsResponse,
-  Apiv1PostkeyExportResponse,
-  Apiv1PostkeyImportResponse,
-  Apiv1PostkeyListResponse,
-  Apiv1PostkeyResponse,
-  Apiv1PostmasterKeyExportResponse,
-  Apiv1PostmultisigExportResponse,
-  Apiv1PostmultisigImportResponse,
-  Apiv1PostmultisigListResponse,
-  Apiv1PostmultisigProgramSignResponse,
-  Apiv1PostmultisigTransactionSignResponse,
-  Apiv1PostprogramSignResponse,
-  Apiv1PosttransactionSignResponse,
-  Apiv1PostwalletInfoResponse,
-  Apiv1PostwalletInitResponse,
-  Apiv1PostwalletReleaseResponse,
-  Apiv1PostwalletRenameResponse,
-  Apiv1PostwalletRenewResponse,
-  Apiv1PostwalletResponse,
+  Apiv1DeleteKeyResponse,
+  Apiv1DeleteMultisigResponse,
+  Apiv1GetWalletsResponse,
+  Apiv1PostKeyExportResponse,
+  Apiv1PostKeyImportResponse,
+  Apiv1PostKeyListResponse,
+  Apiv1PostKeyResponse,
+  Apiv1PostMasterKeyExportResponse,
+  Apiv1PostMultisigExportResponse,
+  Apiv1PostMultisigImportResponse,
+  Apiv1PostMultisigListResponse,
+  Apiv1PostMultisigProgramSignResponse,
+  Apiv1PostMultisigTransactionSignResponse,
+  Apiv1PostProgramSignResponse,
+  Apiv1PostTransactionSignResponse,
+  Apiv1PostWalletInfoResponse,
+  Apiv1PostWalletInitResponse,
+  Apiv1PostWalletReleaseResponse,
+  Apiv1PostWalletRenameResponse,
+  Apiv1PostWalletRenewResponse,
+  Apiv1PostWalletResponse,
   CreateWalletRequest,
   ExportKeyRequest,
   ExportMasterKeyRequest,
@@ -43,27 +43,27 @@ import type {
   WalletInfoRequest,
 } from '../models/index'
 import {
-  Apiv1DeletekeyResponseMeta,
-  Apiv1DeletemultisigResponseMeta,
-  Apiv1GetwalletsResponseMeta,
-  Apiv1PostkeyExportResponseMeta,
-  Apiv1PostkeyImportResponseMeta,
-  Apiv1PostkeyListResponseMeta,
-  Apiv1PostkeyResponseMeta,
-  Apiv1PostmasterKeyExportResponseMeta,
-  Apiv1PostmultisigExportResponseMeta,
-  Apiv1PostmultisigImportResponseMeta,
-  Apiv1PostmultisigListResponseMeta,
-  Apiv1PostmultisigProgramSignResponseMeta,
-  Apiv1PostmultisigTransactionSignResponseMeta,
-  Apiv1PostprogramSignResponseMeta,
-  Apiv1PosttransactionSignResponseMeta,
-  Apiv1PostwalletInfoResponseMeta,
-  Apiv1PostwalletInitResponseMeta,
-  Apiv1PostwalletReleaseResponseMeta,
-  Apiv1PostwalletRenameResponseMeta,
-  Apiv1PostwalletRenewResponseMeta,
-  Apiv1PostwalletResponseMeta,
+  Apiv1DeleteKeyResponseMeta,
+  Apiv1DeleteMultisigResponseMeta,
+  Apiv1GetWalletsResponseMeta,
+  Apiv1PostKeyExportResponseMeta,
+  Apiv1PostKeyImportResponseMeta,
+  Apiv1PostKeyListResponseMeta,
+  Apiv1PostKeyResponseMeta,
+  Apiv1PostMasterKeyExportResponseMeta,
+  Apiv1PostMultisigExportResponseMeta,
+  Apiv1PostMultisigImportResponseMeta,
+  Apiv1PostMultisigListResponseMeta,
+  Apiv1PostMultisigProgramSignResponseMeta,
+  Apiv1PostMultisigTransactionSignResponseMeta,
+  Apiv1PostProgramSignResponseMeta,
+  Apiv1PostTransactionSignResponseMeta,
+  Apiv1PostWalletInfoResponseMeta,
+  Apiv1PostWalletInitResponseMeta,
+  Apiv1PostWalletReleaseResponseMeta,
+  Apiv1PostWalletRenameResponseMeta,
+  Apiv1PostWalletRenewResponseMeta,
+  Apiv1PostWalletResponseMeta,
   CreateWalletRequestMeta,
   ExportKeyRequestMeta,
   ExportMasterKeyRequestMeta,
@@ -91,7 +91,7 @@ export class KmdApi {
   /**
    * Create a new wallet (collection of keys) with the given parameters.
    */
-  async createWallet(params?: { body: CreateWalletRequest }, requestOptions?: ApiRequestOptions): Promise<Apiv1PostwalletResponse> {
+  async createWallet(params?: { body: CreateWalletRequest }, requestOptions?: ApiRequestOptions): Promise<Apiv1PostWalletResponse> {
     const headers: Record<string, string> = {}
     const responseFormat: 'json' | 'msgpack' = 'json'
     headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
@@ -113,17 +113,17 @@ export class KmdApi {
       ...(requestOptions ?? {}),
     })
 
-    const responseMeta = Apiv1PostwalletResponseMeta
+    const responseMeta = Apiv1PostWalletResponseMeta
     if (responseMeta) {
       return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
     }
-    return payload as Apiv1PostwalletResponse
+    return payload as Apiv1PostWalletResponse
   }
 
   /**
    * Deletes the key with the passed public key from the wallet.
    */
-  async deleteKey(requestOptions?: ApiRequestOptions): Promise<Apiv1DeletekeyResponse> {
+  async deleteKey(requestOptions?: ApiRequestOptions): Promise<Apiv1DeleteKeyResponse> {
     const headers: Record<string, string> = {}
     const responseFormat: 'json' | 'msgpack' = 'json'
     headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
@@ -139,17 +139,17 @@ export class KmdApi {
       ...(requestOptions ?? {}),
     })
 
-    const responseMeta = Apiv1DeletekeyResponseMeta
+    const responseMeta = Apiv1DeleteKeyResponseMeta
     if (responseMeta) {
       return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
     }
-    return payload as Apiv1DeletekeyResponse
+    return payload as Apiv1DeleteKeyResponse
   }
 
   /**
    * Deletes multisig preimage information for the passed address from the wallet.
    */
-  async deleteMultisig(requestOptions?: ApiRequestOptions): Promise<Apiv1DeletemultisigResponse> {
+  async deleteMultisig(requestOptions?: ApiRequestOptions): Promise<Apiv1DeleteMultisigResponse> {
     const headers: Record<string, string> = {}
     const responseFormat: 'json' | 'msgpack' = 'json'
     headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
@@ -165,17 +165,17 @@ export class KmdApi {
       ...(requestOptions ?? {}),
     })
 
-    const responseMeta = Apiv1DeletemultisigResponseMeta
+    const responseMeta = Apiv1DeleteMultisigResponseMeta
     if (responseMeta) {
       return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
     }
-    return payload as Apiv1DeletemultisigResponse
+    return payload as Apiv1DeleteMultisigResponse
   }
 
   /**
    * Export the secret key associated with the passed public key.
    */
-  async exportKey(params?: { body: ExportKeyRequest }, requestOptions?: ApiRequestOptions): Promise<Apiv1PostkeyExportResponse> {
+  async exportKey(params?: { body: ExportKeyRequest }, requestOptions?: ApiRequestOptions): Promise<Apiv1PostKeyExportResponse> {
     const headers: Record<string, string> = {}
     const responseFormat: 'json' | 'msgpack' = 'json'
     headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
@@ -197,11 +197,11 @@ export class KmdApi {
       ...(requestOptions ?? {}),
     })
 
-    const responseMeta = Apiv1PostkeyExportResponseMeta
+    const responseMeta = Apiv1PostKeyExportResponseMeta
     if (responseMeta) {
       return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
     }
-    return payload as Apiv1PostkeyExportResponse
+    return payload as Apiv1PostKeyExportResponse
   }
 
   /**
@@ -210,7 +210,7 @@ export class KmdApi {
   async exportMasterKey(
     params?: { body: ExportMasterKeyRequest },
     requestOptions?: ApiRequestOptions,
-  ): Promise<Apiv1PostmasterKeyExportResponse> {
+  ): Promise<Apiv1PostMasterKeyExportResponse> {
     const headers: Record<string, string> = {}
     const responseFormat: 'json' | 'msgpack' = 'json'
     headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
@@ -232,11 +232,11 @@ export class KmdApi {
       ...(requestOptions ?? {}),
     })
 
-    const responseMeta = Apiv1PostmasterKeyExportResponseMeta
+    const responseMeta = Apiv1PostMasterKeyExportResponseMeta
     if (responseMeta) {
       return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
     }
-    return payload as Apiv1PostmasterKeyExportResponse
+    return payload as Apiv1PostMasterKeyExportResponse
   }
 
   /**
@@ -245,7 +245,7 @@ export class KmdApi {
   async exportMultisig(
     params?: { body: ExportMultisigRequest },
     requestOptions?: ApiRequestOptions,
-  ): Promise<Apiv1PostmultisigExportResponse> {
+  ): Promise<Apiv1PostMultisigExportResponse> {
     const headers: Record<string, string> = {}
     const responseFormat: 'json' | 'msgpack' = 'json'
     headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
@@ -267,17 +267,17 @@ export class KmdApi {
       ...(requestOptions ?? {}),
     })
 
-    const responseMeta = Apiv1PostmultisigExportResponseMeta
+    const responseMeta = Apiv1PostMultisigExportResponseMeta
     if (responseMeta) {
       return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
     }
-    return payload as Apiv1PostmultisigExportResponse
+    return payload as Apiv1PostMultisigExportResponse
   }
 
   /**
    * Generates the next key in the deterministic key sequence (as determined by the master derivation key) and adds it to the wallet, returning the public key.
    */
-  async generateKey(params?: { body: GenerateKeyRequest }, requestOptions?: ApiRequestOptions): Promise<Apiv1PostkeyResponse> {
+  async generateKey(params?: { body: GenerateKeyRequest }, requestOptions?: ApiRequestOptions): Promise<Apiv1PostKeyResponse> {
     const headers: Record<string, string> = {}
     const responseFormat: 'json' | 'msgpack' = 'json'
     headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
@@ -299,11 +299,11 @@ export class KmdApi {
       ...(requestOptions ?? {}),
     })
 
-    const responseMeta = Apiv1PostkeyResponseMeta
+    const responseMeta = Apiv1PostKeyResponseMeta
     if (responseMeta) {
       return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
     }
-    return payload as Apiv1PostkeyResponse
+    return payload as Apiv1PostKeyResponse
   }
 
   async getVersion(requestOptions?: ApiRequestOptions): Promise<VersionsResponse> {
@@ -332,7 +332,7 @@ export class KmdApi {
   /**
    * Returns information about the wallet associated with the passed wallet handle token. Additionally returns expiration information about the token itself.
    */
-  async getWalletInfo(params?: { body: WalletInfoRequest }, requestOptions?: ApiRequestOptions): Promise<Apiv1PostwalletInfoResponse> {
+  async getWalletInfo(params?: { body: WalletInfoRequest }, requestOptions?: ApiRequestOptions): Promise<Apiv1PostWalletInfoResponse> {
     const headers: Record<string, string> = {}
     const responseFormat: 'json' | 'msgpack' = 'json'
     headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
@@ -354,17 +354,17 @@ export class KmdApi {
       ...(requestOptions ?? {}),
     })
 
-    const responseMeta = Apiv1PostwalletInfoResponseMeta
+    const responseMeta = Apiv1PostWalletInfoResponseMeta
     if (responseMeta) {
       return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
     }
-    return payload as Apiv1PostwalletInfoResponse
+    return payload as Apiv1PostWalletInfoResponse
   }
 
   /**
    * Import an externally generated key into the wallet. Note that if you wish to back up the imported key, you must do so by backing up the entire wallet database, because imported keys were not derived from the wallet's master derivation key.
    */
-  async importKey(params?: { body: ImportKeyRequest }, requestOptions?: ApiRequestOptions): Promise<Apiv1PostkeyImportResponse> {
+  async importKey(params?: { body: ImportKeyRequest }, requestOptions?: ApiRequestOptions): Promise<Apiv1PostKeyImportResponse> {
     const headers: Record<string, string> = {}
     const responseFormat: 'json' | 'msgpack' = 'json'
     headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
@@ -386,11 +386,11 @@ export class KmdApi {
       ...(requestOptions ?? {}),
     })
 
-    const responseMeta = Apiv1PostkeyImportResponseMeta
+    const responseMeta = Apiv1PostKeyImportResponseMeta
     if (responseMeta) {
       return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
     }
-    return payload as Apiv1PostkeyImportResponse
+    return payload as Apiv1PostKeyImportResponse
   }
 
   /**
@@ -399,7 +399,7 @@ export class KmdApi {
   async importMultisig(
     params?: { body: ImportMultisigRequest },
     requestOptions?: ApiRequestOptions,
-  ): Promise<Apiv1PostmultisigImportResponse> {
+  ): Promise<Apiv1PostMultisigImportResponse> {
     const headers: Record<string, string> = {}
     const responseFormat: 'json' | 'msgpack' = 'json'
     headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
@@ -421,11 +421,11 @@ export class KmdApi {
       ...(requestOptions ?? {}),
     })
 
-    const responseMeta = Apiv1PostmultisigImportResponseMeta
+    const responseMeta = Apiv1PostMultisigImportResponseMeta
     if (responseMeta) {
       return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
     }
-    return payload as Apiv1PostmultisigImportResponse
+    return payload as Apiv1PostMultisigImportResponse
   }
 
   /**
@@ -434,7 +434,7 @@ export class KmdApi {
   async initWalletHandleToken(
     params?: { body: InitWalletHandleTokenRequest },
     requestOptions?: ApiRequestOptions,
-  ): Promise<Apiv1PostwalletInitResponse> {
+  ): Promise<Apiv1PostWalletInitResponse> {
     const headers: Record<string, string> = {}
     const responseFormat: 'json' | 'msgpack' = 'json'
     headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
@@ -456,17 +456,17 @@ export class KmdApi {
       ...(requestOptions ?? {}),
     })
 
-    const responseMeta = Apiv1PostwalletInitResponseMeta
+    const responseMeta = Apiv1PostWalletInitResponseMeta
     if (responseMeta) {
       return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
     }
-    return payload as Apiv1PostwalletInitResponse
+    return payload as Apiv1PostWalletInitResponse
   }
 
   /**
    * Lists all of the public keys in this wallet. All of them have a stored private key.
    */
-  async listKeysInWallet(params?: { body: ListKeysRequest }, requestOptions?: ApiRequestOptions): Promise<Apiv1PostkeyListResponse> {
+  async listKeysInWallet(params?: { body: ListKeysRequest }, requestOptions?: ApiRequestOptions): Promise<Apiv1PostKeyListResponse> {
     const headers: Record<string, string> = {}
     const responseFormat: 'json' | 'msgpack' = 'json'
     headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
@@ -488,17 +488,17 @@ export class KmdApi {
       ...(requestOptions ?? {}),
     })
 
-    const responseMeta = Apiv1PostkeyListResponseMeta
+    const responseMeta = Apiv1PostKeyListResponseMeta
     if (responseMeta) {
       return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
     }
-    return payload as Apiv1PostkeyListResponse
+    return payload as Apiv1PostKeyListResponse
   }
 
   /**
    * Lists all of the multisig accounts whose preimages this wallet stores
    */
-  async listMultisg(params?: { body: ListMultisigRequest }, requestOptions?: ApiRequestOptions): Promise<Apiv1PostmultisigListResponse> {
+  async listMultisg(params?: { body: ListMultisigRequest }, requestOptions?: ApiRequestOptions): Promise<Apiv1PostMultisigListResponse> {
     const headers: Record<string, string> = {}
     const responseFormat: 'json' | 'msgpack' = 'json'
     headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
@@ -520,17 +520,17 @@ export class KmdApi {
       ...(requestOptions ?? {}),
     })
 
-    const responseMeta = Apiv1PostmultisigListResponseMeta
+    const responseMeta = Apiv1PostMultisigListResponseMeta
     if (responseMeta) {
       return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
     }
-    return payload as Apiv1PostmultisigListResponse
+    return payload as Apiv1PostMultisigListResponse
   }
 
   /**
    * Lists all of the wallets that kmd is aware of.
    */
-  async listWallets(requestOptions?: ApiRequestOptions): Promise<Apiv1GetwalletsResponse> {
+  async listWallets(requestOptions?: ApiRequestOptions): Promise<Apiv1GetWalletsResponse> {
     const headers: Record<string, string> = {}
     const responseFormat: 'json' | 'msgpack' = 'json'
     headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
@@ -546,11 +546,11 @@ export class KmdApi {
       ...(requestOptions ?? {}),
     })
 
-    const responseMeta = Apiv1GetwalletsResponseMeta
+    const responseMeta = Apiv1GetWalletsResponseMeta
     if (responseMeta) {
       return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
     }
-    return payload as Apiv1GetwalletsResponse
+    return payload as Apiv1GetWalletsResponse
   }
 
   /**
@@ -559,7 +559,7 @@ export class KmdApi {
   async releaseWalletHandleToken(
     params?: { body: ReleaseWalletHandleTokenRequest },
     requestOptions?: ApiRequestOptions,
-  ): Promise<Apiv1PostwalletReleaseResponse> {
+  ): Promise<Apiv1PostWalletReleaseResponse> {
     const headers: Record<string, string> = {}
     const responseFormat: 'json' | 'msgpack' = 'json'
     headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
@@ -581,17 +581,17 @@ export class KmdApi {
       ...(requestOptions ?? {}),
     })
 
-    const responseMeta = Apiv1PostwalletReleaseResponseMeta
+    const responseMeta = Apiv1PostWalletReleaseResponseMeta
     if (responseMeta) {
       return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
     }
-    return payload as Apiv1PostwalletReleaseResponse
+    return payload as Apiv1PostWalletReleaseResponse
   }
 
   /**
    * Rename the underlying wallet to something else
    */
-  async renameWallet(params?: { body: RenameWalletRequest }, requestOptions?: ApiRequestOptions): Promise<Apiv1PostwalletRenameResponse> {
+  async renameWallet(params?: { body: RenameWalletRequest }, requestOptions?: ApiRequestOptions): Promise<Apiv1PostWalletRenameResponse> {
     const headers: Record<string, string> = {}
     const responseFormat: 'json' | 'msgpack' = 'json'
     headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
@@ -613,11 +613,11 @@ export class KmdApi {
       ...(requestOptions ?? {}),
     })
 
-    const responseMeta = Apiv1PostwalletRenameResponseMeta
+    const responseMeta = Apiv1PostWalletRenameResponseMeta
     if (responseMeta) {
       return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
     }
-    return payload as Apiv1PostwalletRenameResponse
+    return payload as Apiv1PostWalletRenameResponse
   }
 
   /**
@@ -626,7 +626,7 @@ export class KmdApi {
   async renewWalletHandleToken(
     params?: { body: RenewWalletHandleTokenRequest },
     requestOptions?: ApiRequestOptions,
-  ): Promise<Apiv1PostwalletRenewResponse> {
+  ): Promise<Apiv1PostWalletRenewResponse> {
     const headers: Record<string, string> = {}
     const responseFormat: 'json' | 'msgpack' = 'json'
     headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
@@ -648,11 +648,11 @@ export class KmdApi {
       ...(requestOptions ?? {}),
     })
 
-    const responseMeta = Apiv1PostwalletRenewResponseMeta
+    const responseMeta = Apiv1PostWalletRenewResponseMeta
     if (responseMeta) {
       return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
     }
-    return payload as Apiv1PostwalletRenewResponse
+    return payload as Apiv1PostWalletRenewResponse
   }
 
   /**
@@ -661,7 +661,7 @@ export class KmdApi {
   async signMultisigProgram(
     params?: { body: SignProgramMultisigRequest },
     requestOptions?: ApiRequestOptions,
-  ): Promise<Apiv1PostmultisigProgramSignResponse> {
+  ): Promise<Apiv1PostMultisigProgramSignResponse> {
     const headers: Record<string, string> = {}
     const responseFormat: 'json' | 'msgpack' = 'json'
     headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
@@ -683,11 +683,11 @@ export class KmdApi {
       ...(requestOptions ?? {}),
     })
 
-    const responseMeta = Apiv1PostmultisigProgramSignResponseMeta
+    const responseMeta = Apiv1PostMultisigProgramSignResponseMeta
     if (responseMeta) {
       return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
     }
-    return payload as Apiv1PostmultisigProgramSignResponse
+    return payload as Apiv1PostMultisigProgramSignResponse
   }
 
   /**
@@ -696,7 +696,7 @@ export class KmdApi {
   async signMultisigTransaction(
     params?: { body: SignMultisigRequest },
     requestOptions?: ApiRequestOptions,
-  ): Promise<Apiv1PostmultisigTransactionSignResponse> {
+  ): Promise<Apiv1PostMultisigTransactionSignResponse> {
     const headers: Record<string, string> = {}
     const responseFormat: 'json' | 'msgpack' = 'json'
     headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
@@ -718,17 +718,17 @@ export class KmdApi {
       ...(requestOptions ?? {}),
     })
 
-    const responseMeta = Apiv1PostmultisigTransactionSignResponseMeta
+    const responseMeta = Apiv1PostMultisigTransactionSignResponseMeta
     if (responseMeta) {
       return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
     }
-    return payload as Apiv1PostmultisigTransactionSignResponse
+    return payload as Apiv1PostMultisigTransactionSignResponse
   }
 
   /**
    * Signs the passed program with a key from the wallet, determined by the account named in the request.
    */
-  async signProgram(params?: { body: SignProgramRequest }, requestOptions?: ApiRequestOptions): Promise<Apiv1PostprogramSignResponse> {
+  async signProgram(params?: { body: SignProgramRequest }, requestOptions?: ApiRequestOptions): Promise<Apiv1PostProgramSignResponse> {
     const headers: Record<string, string> = {}
     const responseFormat: 'json' | 'msgpack' = 'json'
     headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
@@ -750,11 +750,11 @@ export class KmdApi {
       ...(requestOptions ?? {}),
     })
 
-    const responseMeta = Apiv1PostprogramSignResponseMeta
+    const responseMeta = Apiv1PostProgramSignResponseMeta
     if (responseMeta) {
       return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
     }
-    return payload as Apiv1PostprogramSignResponse
+    return payload as Apiv1PostProgramSignResponse
   }
 
   /**
@@ -763,7 +763,7 @@ export class KmdApi {
   async signTransaction(
     params?: { body: SignTransactionRequest },
     requestOptions?: ApiRequestOptions,
-  ): Promise<Apiv1PosttransactionSignResponse> {
+  ): Promise<Apiv1PostTransactionSignResponse> {
     const headers: Record<string, string> = {}
     const responseFormat: 'json' | 'msgpack' = 'json'
     headers['Accept'] = responseFormat === 'json' ? 'application/json' : 'application/msgpack'
@@ -785,11 +785,11 @@ export class KmdApi {
       ...(requestOptions ?? {}),
     })
 
-    const responseMeta = Apiv1PosttransactionSignResponseMeta
+    const responseMeta = Apiv1PostTransactionSignResponseMeta
     if (responseMeta) {
       return AlgorandSerializer.decode(payload, responseMeta, responseFormat)
     }
-    return payload as Apiv1PosttransactionSignResponse
+    return payload as Apiv1PostTransactionSignResponse
   }
 
   /**

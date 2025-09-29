@@ -1,17 +1,16 @@
 import type { ModelMetadata } from '../core/model-runtime'
 
 /**
- * APIV1POSTProgramSignResponse is the response to `POST /v1/data/sign`
- * friendly:SignProgramResponse
+ * APIV1POSTWalletReleaseResponse is the response to `POST /v1/wallet/release`
+ * friendly:ReleaseWalletHandleTokenResponse
  */
-export type Apiv1PostprogramSignResponse = {
+export type Apiv1PostWalletReleaseResponse = {
   error?: boolean
   message?: string
-  sig?: Uint8Array
 }
 
-export const Apiv1PostprogramSignResponseMeta: ModelMetadata = {
-  name: 'Apiv1PostprogramSignResponse',
+export const Apiv1PostWalletReleaseResponseMeta: ModelMetadata = {
+  name: 'Apiv1PostWalletReleaseResponse',
   kind: 'object',
   fields: [
     {
@@ -27,13 +26,6 @@ export const Apiv1PostprogramSignResponseMeta: ModelMetadata = {
       optional: true,
       nullable: false,
       type: { kind: 'scalar' },
-    },
-    {
-      name: 'sig',
-      wireKey: 'sig',
-      optional: true,
-      nullable: false,
-      type: { kind: 'scalar', isBytes: true },
     },
   ],
 }

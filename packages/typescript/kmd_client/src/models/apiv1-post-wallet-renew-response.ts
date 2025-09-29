@@ -6,14 +6,14 @@ import { Apiv1WalletHandleMeta } from './apiv1-wallet-handle'
  * APIV1POSTWalletRenewResponse is the response to `POST /v1/wallet/renew`
  * friendly:RenewWalletHandleTokenResponse
  */
-export type Apiv1PostwalletRenewResponse = {
+export type Apiv1PostWalletRenewResponse = {
   error?: boolean
   message?: string
   walletHandle?: Apiv1WalletHandle
 }
 
-export const Apiv1PostwalletRenewResponseMeta: ModelMetadata = {
-  name: 'Apiv1PostwalletRenewResponse',
+export const Apiv1PostWalletRenewResponseMeta: ModelMetadata = {
+  name: 'Apiv1PostWalletRenewResponse',
   kind: 'object',
   fields: [
     {

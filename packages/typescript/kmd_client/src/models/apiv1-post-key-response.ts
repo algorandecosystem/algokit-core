@@ -1,18 +1,26 @@
 import type { ModelMetadata } from '../core/model-runtime'
 
 /**
- * APIV1POSTWalletReleaseResponse is the response to `POST /v1/wallet/release`
- * friendly:ReleaseWalletHandleTokenResponse
+ * APIV1POSTKeyResponse is the response to `POST /v1/key`
+ * friendly:GenerateKeyResponse
  */
-export type Apiv1PostwalletReleaseResponse = {
+export type Apiv1PostKeyResponse = {
+  address?: string
   error?: boolean
   message?: string
 }
 
-export const Apiv1PostwalletReleaseResponseMeta: ModelMetadata = {
-  name: 'Apiv1PostwalletReleaseResponse',
+export const Apiv1PostKeyResponseMeta: ModelMetadata = {
+  name: 'Apiv1PostKeyResponse',
   kind: 'object',
   fields: [
+    {
+      name: 'address',
+      wireKey: 'address',
+      optional: true,
+      nullable: false,
+      type: { kind: 'scalar' },
+    },
     {
       name: 'error',
       wireKey: 'error',

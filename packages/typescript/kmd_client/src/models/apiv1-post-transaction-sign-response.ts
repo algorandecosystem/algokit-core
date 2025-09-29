@@ -1,17 +1,17 @@
 import type { ModelMetadata } from '../core/model-runtime'
 
 /**
- * APIV1POSTKeyExportResponse is the response to `POST /v1/key/export`
- * friendly:ExportKeyResponse
+ * APIV1POSTTransactionSignResponse is the response to `POST /v1/transaction/sign`
+ * friendly:SignTransactionResponse
  */
-export type Apiv1PostkeyExportResponse = {
+export type Apiv1PostTransactionSignResponse = {
   error?: boolean
   message?: string
-  privateKey?: Uint8Array
+  signedTransaction?: Uint8Array
 }
 
-export const Apiv1PostkeyExportResponseMeta: ModelMetadata = {
-  name: 'Apiv1PostkeyExportResponse',
+export const Apiv1PostTransactionSignResponseMeta: ModelMetadata = {
+  name: 'Apiv1PostTransactionSignResponse',
   kind: 'object',
   fields: [
     {
@@ -29,8 +29,8 @@ export const Apiv1PostkeyExportResponseMeta: ModelMetadata = {
       type: { kind: 'scalar' },
     },
     {
-      name: 'privateKey',
-      wireKey: 'private_key',
+      name: 'signedTransaction',
+      wireKey: 'signed_transaction',
       optional: true,
       nullable: false,
       type: { kind: 'scalar', isBytes: true },

@@ -6,7 +6,7 @@ import { PublicKeyMeta } from './public-key'
  * APIV1POSTMultisigExportResponse is the response to `POST /v1/multisig/export`
  * friendly:ExportMultisigResponse
  */
-export type Apiv1PostmultisigExportResponse = {
+export type Apiv1PostMultisigExportResponse = {
   error?: boolean
   message?: string
   multisigVersion?: bigint
@@ -14,8 +14,8 @@ export type Apiv1PostmultisigExportResponse = {
   threshold?: bigint
 }
 
-export const Apiv1PostmultisigExportResponseMeta: ModelMetadata = {
-  name: 'Apiv1PostmultisigExportResponse',
+export const Apiv1PostMultisigExportResponseMeta: ModelMetadata = {
+  name: 'Apiv1PostMultisigExportResponse',
   kind: 'object',
   fields: [
     {

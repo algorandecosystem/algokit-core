@@ -4,13 +4,13 @@ import type { ModelMetadata } from '../core/model-runtime'
  * APIV1DELETEKeyResponse is the response to `DELETE /v1/key`
  * friendly:DeleteKeyResponse
  */
-export type Apiv1DeletekeyResponse = {
+export type Apiv1DeleteKeyResponse = {
   error?: boolean
   message?: string
 }
 
-export const Apiv1DeletekeyResponseMeta: ModelMetadata = {
-  name: 'Apiv1DeletekeyResponse',
+export const Apiv1DeleteKeyResponseMeta: ModelMetadata = {
+  name: 'Apiv1DeleteKeyResponse',
   kind: 'object',
   fields: [
     {

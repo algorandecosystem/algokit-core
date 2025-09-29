@@ -1,25 +1,25 @@
 import type { ModelMetadata } from '../core/model-runtime'
 
 /**
- * APIV1POSTKeyResponse is the response to `POST /v1/key`
- * friendly:GenerateKeyResponse
+ * APIV1POSTMultisigListResponse is the response to `POST /v1/multisig/list`
+ * friendly:ListMultisigResponse
  */
-export type Apiv1PostkeyResponse = {
-  address?: string
+export type Apiv1PostMultisigListResponse = {
+  addresses?: string[]
   error?: boolean
   message?: string
 }
 
-export const Apiv1PostkeyResponseMeta: ModelMetadata = {
-  name: 'Apiv1PostkeyResponse',
+export const Apiv1PostMultisigListResponseMeta: ModelMetadata = {
+  name: 'Apiv1PostMultisigListResponse',
   kind: 'object',
   fields: [
     {
-      name: 'address',
-      wireKey: 'address',
+      name: 'addresses',
+      wireKey: 'addresses',
       optional: true,
       nullable: false,
-      type: { kind: 'scalar' },
+      type: { kind: 'array', item: { kind: 'scalar' } },
     },
     {
       name: 'error',

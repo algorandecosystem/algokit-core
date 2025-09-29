@@ -4,14 +4,14 @@ import type { ModelMetadata } from '../core/model-runtime'
  * APIV1POSTMultisigProgramSignResponse is the response to `POST /v1/multisig/signdata`
  * friendly:SignProgramMultisigResponse
  */
-export type Apiv1PostmultisigProgramSignResponse = {
+export type Apiv1PostMultisigProgramSignResponse = {
   error?: boolean
   message?: string
   multisig?: Uint8Array
 }
 
-export const Apiv1PostmultisigProgramSignResponseMeta: ModelMetadata = {
-  name: 'Apiv1PostmultisigProgramSignResponse',
+export const Apiv1PostMultisigProgramSignResponseMeta: ModelMetadata = {
+  name: 'Apiv1PostMultisigProgramSignResponse',
   kind: 'object',
   fields: [
     {

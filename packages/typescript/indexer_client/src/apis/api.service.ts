@@ -297,7 +297,7 @@ export class IndexerApi {
   /**
    * Given an application ID and box name, returns base64 encoded box name and value. Box names must be in the goal app call arg form 'encoding:value'. For ints, use the form 'int:1234'. For raw bytes, encode base 64 and use 'b64' prefix as in 'b64:A=='. For printable strings, use the form 'str:hello'. For addresses, use the form 'addr:XYZ...'.
    */
-  async lookupApplicationBoxByIdandName(
+  async lookupApplicationBoxByIdAndName(
     applicationId: number | bigint,
     params?: { name: string },
     requestOptions?: ApiRequestOptions,

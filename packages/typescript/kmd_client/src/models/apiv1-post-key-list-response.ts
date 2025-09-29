@@ -1,25 +1,25 @@
 import type { ModelMetadata } from '../core/model-runtime'
 
 /**
- * APIV1POSTKeyImportResponse is the response to `POST /v1/key/import`
- * friendly:ImportKeyResponse
+ * APIV1POSTKeyListResponse is the response to `POST /v1/key/list`
+ * friendly:ListKeysResponse
  */
-export type Apiv1PostkeyImportResponse = {
-  address?: string
+export type Apiv1PostKeyListResponse = {
+  addresses?: string[]
   error?: boolean
   message?: string
 }
 
-export const Apiv1PostkeyImportResponseMeta: ModelMetadata = {
-  name: 'Apiv1PostkeyImportResponse',
+export const Apiv1PostKeyListResponseMeta: ModelMetadata = {
+  name: 'Apiv1PostKeyListResponse',
   kind: 'object',
   fields: [
     {
-      name: 'address',
-      wireKey: 'address',
+      name: 'addresses',
+      wireKey: 'addresses',
       optional: true,
       nullable: false,
-      type: { kind: 'scalar' },
+      type: { kind: 'array', item: { kind: 'scalar' } },
     },
     {
       name: 'error',

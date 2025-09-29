@@ -1,16 +1,17 @@
 import type { ModelMetadata } from '../core/model-runtime'
 
 /**
- * APIV1DELETEMultisigResponse is the response to POST /v1/multisig/delete`
- * friendly:DeleteMultisigResponse
+ * APIV1POSTProgramSignResponse is the response to `POST /v1/data/sign`
+ * friendly:SignProgramResponse
  */
-export type Apiv1DeletemultisigResponse = {
+export type Apiv1PostProgramSignResponse = {
   error?: boolean
   message?: string
+  sig?: Uint8Array
 }
 
-export const Apiv1DeletemultisigResponseMeta: ModelMetadata = {
-  name: 'Apiv1DeletemultisigResponse',
+export const Apiv1PostProgramSignResponseMeta: ModelMetadata = {
+  name: 'Apiv1PostProgramSignResponse',
   kind: 'object',
   fields: [
     {
@@ -26,6 +27,13 @@ export const Apiv1DeletemultisigResponseMeta: ModelMetadata = {
       optional: true,
       nullable: false,
       type: { kind: 'scalar' },
+    },
+    {
+      name: 'sig',
+      wireKey: 'sig',
+      optional: true,
+      nullable: false,
+      type: { kind: 'scalar', isBytes: true },
     },
   ],
 }

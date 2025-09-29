@@ -6,14 +6,14 @@ import { Apiv1WalletHandleMeta } from './apiv1-wallet-handle'
  * APIV1POSTWalletInfoResponse is the response to `POST /v1/wallet/info`
  * friendly:WalletInfoResponse
  */
-export type Apiv1PostwalletInfoResponse = {
+export type Apiv1PostWalletInfoResponse = {
   error?: boolean
   message?: string
   walletHandle?: Apiv1WalletHandle
 }
 
-export const Apiv1PostwalletInfoResponseMeta: ModelMetadata = {
-  name: 'Apiv1PostwalletInfoResponse',
+export const Apiv1PostWalletInfoResponseMeta: ModelMetadata = {
+  name: 'Apiv1PostWalletInfoResponse',
   kind: 'object',
   fields: [
     {

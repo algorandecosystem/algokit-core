@@ -3,17 +3,17 @@ import type { Apiv1Wallet } from './apiv1-wallet'
 import { Apiv1WalletMeta } from './apiv1-wallet'
 
 /**
- * APIV1GETWalletsResponse is the response to `GET /v1/wallets`
- * friendly:ListWalletsResponse
+ * APIV1POSTWalletResponse is the response to `POST /v1/wallet`
+ * friendly:CreateWalletResponse
  */
-export type Apiv1GetwalletsResponse = {
+export type Apiv1PostWalletResponse = {
   error?: boolean
   message?: string
-  wallets?: Apiv1Wallet[]
+  wallet?: Apiv1Wallet
 }
 
-export const Apiv1GetwalletsResponseMeta: ModelMetadata = {
-  name: 'Apiv1GetwalletsResponse',
+export const Apiv1PostWalletResponseMeta: ModelMetadata = {
+  name: 'Apiv1PostWalletResponse',
   kind: 'object',
   fields: [
     {
@@ -31,11 +31,11 @@ export const Apiv1GetwalletsResponseMeta: ModelMetadata = {
       type: { kind: 'scalar' },
     },
     {
-      name: 'wallets',
-      wireKey: 'wallets',
+      name: 'wallet',
+      wireKey: 'wallet',
       optional: true,
       nullable: false,
-      type: { kind: 'array', item: { kind: 'model', meta: () => Apiv1WalletMeta } },
+      type: { kind: 'model', meta: () => Apiv1WalletMeta },
     },
   ],
 }
