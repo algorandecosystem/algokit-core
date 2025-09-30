@@ -18,10 +18,39 @@ use algokit_abi::ABIMethodArg as RustABIMethodArg;
 use algokit_abi::ABIMethodArgType as RustABIMethodArgType;
 
 #[derive(uniffi::Enum, Debug)]
+pub enum ABIReferenceType {
+    /// Reference to an account in the Accounts reference array
+    Account,
+    /// Reference to an application in the Applications reference array
+    Application,
+    /// Reference to an asset in the Assets reference array
+    Asset,
+}
+
+#[derive(uniffi::Enum, Debug)]
+pub enum ABITransactionType {
+    /// Any transaction type
+    Txn,
+    /// Payment (algo transfer)
+    Payment,
+    /// Key registration (configure consensus participation)
+    KeyRegistration,
+    /// Asset configuration (create, configure, or destroy ASAs)
+    AssetConfig,
+    /// Asset transfer (ASA transfer)
+    AssetTransfer,
+    /// Asset freeze (freeze or unfreeze ASAs)
+    AssetFreeze,
+    /// App call (create, update, delete and call an app)
+    AppCall,
+}
+
+#[derive(uniffi::Enum, Debug)]
 pub enum ABIMethodArgType {
     /// A value that is directly encoded in the app arguments.
     Value(Arc<ABIType>),
-    // TODO: txn and ref
+    Transaction(ABITransactionType),
+    Reference(ABIReferenceType),
 }
 
 impl From<ABIMethodArgType> for RustABIMethodArgType {
@@ -29,6 +58,30 @@ impl From<ABIMethodArgType> for RustABIMethodArgType {
         match value {
             ABIMethodArgType::Value(abi_type) => {
                 RustABIMethodArgType::Value(abi_type.abi_type.clone())
+            }
+            ABIMethodArgType::Transaction(txn_type) => {
+                let rust_txn_type = match txn_type {
+                    ABITransactionType::Txn => algokit_abi::ABITransactionType::Txn,
+                    ABITransactionType::Payment => algokit_abi::ABITransactionType::Payment,
+                    ABITransactionType::KeyRegistration => {
+                        algokit_abi::ABITransactionType::KeyRegistration
+                    }
+                    ABITransactionType::AssetConfig => algokit_abi::ABITransactionType::AssetConfig,
+                    ABITransactionType::AssetTransfer => {
+                        algokit_abi::ABITransactionType::AssetTransfer
+                    }
+                    ABITransactionType::AssetFreeze => algokit_abi::ABITransactionType::AssetFreeze,
+                    ABITransactionType::AppCall => algokit_abi::ABITransactionType::AppCall,
+                };
+                RustABIMethodArgType::Transaction(rust_txn_type)
+            }
+            ABIMethodArgType::Reference(ref_type) => {
+                let rust_ref_type = match ref_type {
+                    ABIReferenceType::Account => algokit_abi::ABIReferenceType::Account,
+                    ABIReferenceType::Application => algokit_abi::ABIReferenceType::Application,
+                    ABIReferenceType::Asset => algokit_abi::ABIReferenceType::Asset,
+                };
+                RustABIMethodArgType::Reference(rust_ref_type)
             }
         }
     }
@@ -40,7 +93,30 @@ impl From<RustABIMethodArgType> for ABIMethodArgType {
             RustABIMethodArgType::Value(abi_type) => {
                 ABIMethodArgType::Value(Arc::new(ABIType { abi_type }))
             }
-            _ => todo!(),
+            RustABIMethodArgType::Transaction(txn_type) => {
+                let ffi_txn_type = match txn_type {
+                    algokit_abi::ABITransactionType::Txn => ABITransactionType::Txn,
+                    algokit_abi::ABITransactionType::Payment => ABITransactionType::Payment,
+                    algokit_abi::ABITransactionType::KeyRegistration => {
+                        ABITransactionType::KeyRegistration
+                    }
+                    algokit_abi::ABITransactionType::AssetConfig => ABITransactionType::AssetConfig,
+                    algokit_abi::ABITransactionType::AssetTransfer => {
+                        ABITransactionType::AssetTransfer
+                    }
+                    algokit_abi::ABITransactionType::AssetFreeze => ABITransactionType::AssetFreeze,
+                    algokit_abi::ABITransactionType::AppCall => ABITransactionType::AppCall,
+                };
+                ABIMethodArgType::Transaction(ffi_txn_type)
+            }
+            RustABIMethodArgType::Reference(ref_type) => {
+                let ffi_ref_type = match ref_type {
+                    algokit_abi::ABIReferenceType::Account => ABIReferenceType::Account,
+                    algokit_abi::ABIReferenceType::Application => ABIReferenceType::Application,
+                    algokit_abi::ABIReferenceType::Asset => ABIReferenceType::Asset,
+                };
+                ABIMethodArgType::Reference(ffi_ref_type)
+            }
         }
     }
 }
