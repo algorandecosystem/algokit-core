@@ -5,6 +5,7 @@
 
 use crate::Transaction;
 use crate::transactions::common::TransactionHeader;
+use crate::utils::{is_zero, is_zero_opt};
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 use serde_with::{Bytes, serde_as};
@@ -44,6 +45,7 @@ pub struct MerkleArrayProof {
 
     /// Tree depth for the proof.
     #[serde(rename = "td")]
+    #[serde(skip_serializing_if = "is_zero")]
     pub tree_depth: u64,
 }
 
@@ -58,6 +60,7 @@ pub struct MerkleSignatureVerifier {
 
     /// Key lifetime.
     #[serde(rename = "lf")]
+    #[serde(skip_serializing_if = "is_zero")]
     pub key_lifetime: u64,
 }
 
@@ -70,6 +73,7 @@ pub struct Participant {
 
     /// Participant weight in microalgos.
     #[serde(rename = "w")]
+    #[serde(skip_serializing_if = "is_zero")]
     pub weight: u64,
 }
 
@@ -94,6 +98,7 @@ pub struct FalconSignatureStruct {
 
     /// Index within the vector commitment.
     #[serde(rename = "idx")]
+    #[serde(skip_serializing_if = "is_zero")]
     pub vector_commitment_index: u64,
 
     /// Merkle proof associated with the signature.
@@ -114,6 +119,7 @@ pub struct SigslotCommit {
 
     /// Total weight of signatures in lower-numbered slots.
     #[serde(rename = "l")]
+    #[serde(skip_serializing_if = "is_zero")]
     pub lower_sig_weight: u64,
 }
 
@@ -140,6 +146,7 @@ pub struct StateProof {
 
     /// Signed weight.
     #[serde(rename = "w")]
+    #[serde(skip_serializing_if = "is_zero")]
     pub signed_weight: u64,
 
     /// Signature Merkle proofs.
@@ -152,6 +159,7 @@ pub struct StateProof {
 
     /// Merkle signature salt version.
     #[serde(rename = "v")]
+    #[serde(skip_serializing_if = "is_zero")]
     pub merkle_signature_salt_version: u64,
 
     /// Revealed positions mapping.
@@ -187,10 +195,12 @@ pub struct StateProofMessage {
 
     /// First attested round.
     #[serde(rename = "f")]
+    #[serde(skip_serializing_if = "is_zero")]
     pub first_attested_round: u64,
 
     /// Last attested round.
     #[serde(rename = "l")]
+    #[serde(skip_serializing_if = "is_zero")]
     pub last_attested_round: u64,
 }
 
@@ -208,22 +218,27 @@ pub struct StateProofTransactionFields {
 
     /// Type of the state proof.
     #[serde(rename = "sptype")]
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "is_zero_opt")]
     #[serde(default)]
     #[builder(default)]
     pub state_proof_type: Option<u64>,
 
     /// State proof payload.
     #[serde(rename = "sp")]
-    pub state_proof: StateProof,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    #[builder(default)]
+    pub state_proof: Option<StateProof>,
 
     /// State proof message.
     #[serde(rename = "spmsg")]
-    pub message: StateProofMessage,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    #[builder(default)]
+    pub message: Option<StateProofMessage>,
 }
 
 impl StateProofTransactionBuilder {
-    /// Builds the transaction fields and wraps them in a [`Transaction::StateProof`].
     pub fn build(&self) -> Result<Transaction, StateProofTransactionBuilderError> {
         self.build_fields().map(Transaction::StateProof)
     }

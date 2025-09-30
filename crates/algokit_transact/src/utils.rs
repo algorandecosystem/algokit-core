@@ -17,17 +17,40 @@ pub fn sort_msgpack_value(value: rmpv::Value) -> rmpv::Value {
 
             // Convert and sort all key-value pairs
             for (k, v) in m {
-                if let rmpv::Value::String(key) = k {
-                    let key_str = key.into_str().unwrap_or_default();
-                    sorted_map.insert(key_str, sort_msgpack_value(v));
-                }
+                let key_str = match k {
+                    rmpv::Value::String(ref key) => key.as_str().unwrap_or_default().to_string(),
+                    rmpv::Value::Integer(int_key) => {
+                        // Convert integer keys to strings for sorting
+                        // Use the integer value as the sort key
+                        if let Some(u) = int_key.as_u64() {
+                            u.to_string()
+                        } else if let Some(i) = int_key.as_i64() {
+                            i.to_string()
+                        } else {
+                            // Fallback for very large integers
+                            format!("{:?}", int_key)
+                        }
+                    }
+                    // For any other key type, try to format it as a string
+                    _ => format!("{:?}", k),
+                };
+                sorted_map.insert(key_str, sort_msgpack_value(v));
             }
 
-            // Convert back to rmpv::Value::Map
+            // Convert back to rmpv::Value::Map, preserving original key types
             rmpv::Value::Map(
                 sorted_map
                     .into_iter()
-                    .map(|(k, v)| (rmpv::Value::String(k.into()), v))
+                    .map(|(k, v)| {
+                        // Try to parse back as integer if it looks like one
+                        if let Ok(u) = k.parse::<u64>() {
+                            (rmpv::Value::from(u), v)
+                        } else if let Ok(i) = k.parse::<i64>() {
+                            (rmpv::Value::from(i), v)
+                        } else {
+                            (rmpv::Value::String(k.into()), v)
+                        }
+                    })
                     .collect(),
             )
         }
