@@ -53,16 +53,17 @@ impl Composer {
         signer_getter: Arc<dyn TransactionSignerGetter>,
     ) -> Self {
         let rust_signer_getter = RustTransactionSignerGetterFromFfi {
-            ffi_signer_getter: signer_getter,
+            ffi_signer_getter: signer_getter.clone(),
         };
 
-        let rust_algod_client = algod_client.inner_algod_client.blocking_lock();
-
-        let rust_composer = RustComposer::new(ComposerParams {
-            algod_client: Arc::new(rust_algod_client.clone()),
-            signer_getter: Arc::new(rust_signer_getter),
-            composer_config: None,
-        });
+        let rust_composer = {
+            let rust_algod_client = algod_client.inner_algod_client.blocking_lock();
+            RustComposer::new(ComposerParams {
+                algod_client: Arc::new(rust_algod_client.clone()),
+                signer_getter: Arc::new(rust_signer_getter),
+                composer_config: None,
+            })
+        };
 
         Composer {
             inner_composer: Mutex::new(rust_composer),
@@ -180,6 +181,112 @@ impl Composer {
             .map_err(|e| UtilsError::UtilsError {
                 message: e.to_string(),
             })
+    }
+}
+
+// Implement ComposerTrait for Composer to keep them in sync
+#[async_trait]
+impl ComposerTrait for Composer {
+    async fn build(&self, _algod_client: Arc<dyn AlgodClientTrait>) -> Result<(), UtilsError> {
+        Composer::build(self).await
+    }
+
+    async fn send(
+        &self,
+        _algod_client: Arc<dyn AlgodClientTrait>,
+    ) -> Result<Vec<String>, UtilsError> {
+        let response = Composer::send(self).await?;
+        Ok(response.transaction_ids)
+    }
+
+    async fn add_payment(
+        &self,
+        params: super::payment::PaymentParams,
+        _algod_client: Arc<dyn AlgodClientTrait>,
+        _signer_getter: Arc<dyn TransactionSignerGetter>,
+    ) -> Result<(), UtilsError> {
+        Composer::add_payment(self, params)
+    }
+
+    async fn add_asset_create(
+        &self,
+        params: AssetCreateParams,
+        _algod_client: Arc<dyn AlgodClientTrait>,
+        _signer_getter: Arc<dyn TransactionSignerGetter>,
+    ) -> Result<(), UtilsError> {
+        Composer::add_asset_create(self, params)
+    }
+
+    async fn add_asset_reconfigure(
+        &self,
+        params: AssetReconfigureParams,
+        _algod_client: Arc<dyn AlgodClientTrait>,
+        _signer_getter: Arc<dyn TransactionSignerGetter>,
+    ) -> Result<(), UtilsError> {
+        Composer::add_asset_reconfigure(self, params)
+    }
+
+    async fn add_asset_destroy(
+        &self,
+        params: AssetDestroyParams,
+        _algod_client: Arc<dyn AlgodClientTrait>,
+        _signer_getter: Arc<dyn TransactionSignerGetter>,
+    ) -> Result<(), UtilsError> {
+        Composer::add_asset_destroy(self, params)
+    }
+
+    async fn add_asset_freeze(
+        &self,
+        params: AssetFreezeParams,
+        _algod_client: Arc<dyn AlgodClientTrait>,
+        _signer_getter: Arc<dyn TransactionSignerGetter>,
+    ) -> Result<(), UtilsError> {
+        Composer::add_asset_freeze(self, params)
+    }
+
+    async fn add_asset_unfreeze(
+        &self,
+        params: AssetUnfreezeParams,
+        _algod_client: Arc<dyn AlgodClientTrait>,
+        _signer_getter: Arc<dyn TransactionSignerGetter>,
+    ) -> Result<(), UtilsError> {
+        Composer::add_asset_unfreeze(self, params)
+    }
+
+    async fn add_asset_transfer(
+        &self,
+        params: AssetTransferParams,
+        _algod_client: Arc<dyn AlgodClientTrait>,
+        _signer_getter: Arc<dyn TransactionSignerGetter>,
+    ) -> Result<(), UtilsError> {
+        Composer::add_asset_transfer(self, params)
+    }
+
+    async fn add_asset_opt_in(
+        &self,
+        params: AssetOptInParams,
+        _algod_client: Arc<dyn AlgodClientTrait>,
+        _signer_getter: Arc<dyn TransactionSignerGetter>,
+    ) -> Result<(), UtilsError> {
+        Composer::add_asset_opt_in(self, params)
+    }
+
+    async fn add_asset_opt_out(
+        &self,
+        params: AssetOptOutParams,
+        _algod_client: Arc<dyn AlgodClientTrait>,
+        _signer_getter: Arc<dyn TransactionSignerGetter>,
+    ) -> Result<(), UtilsError> {
+        Composer::add_asset_opt_out(self, params)
+    }
+
+    async fn add_asset_clawback(
+        &self,
+        params: AssetClawbackParams,
+        _algod_client: Arc<dyn AlgodClientTrait>,
+        _signer_getter: Arc<dyn TransactionSignerGetter>,
+    ) -> Result<(), UtilsError> {
+        Composer::add_asset_clawback(self, params)
     }
 }
 
