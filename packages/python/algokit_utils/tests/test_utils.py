@@ -110,6 +110,22 @@ async def test_composer():
     print(response.transaction_ids)
 
 bool_type = AbiType("bool")
+uint_tuple_type = AbiType("(uint64)")
+uint_dynamic_array_type = AbiType("uint64[]")
+
+def test_abi_uint_tuple():
+    expected_encoding = b'\x00\x00\x00\x00\x00\x00\x00\x07'
+    uint_tuple_val: AbiValue = AbiValue.array([AbiValue.uint(7)])
+    assert uint_tuple_type.encode(uint_tuple_val) == expected_encoding
+    assert uint_tuple_type.decode(expected_encoding).get_array() == [AbiValue.uint(7)]
+
+
+def test_abi_uint_dynamic_array():
+    expected_encoding = b'\x00\x01\x00\x00\x00\x00\x00\x00\x00\x07'
+    uint_dynamic_array_val: AbiValue = AbiValue.array([AbiValue.uint(7)])
+
+    assert uint_dynamic_array_type.encode(uint_dynamic_array_val) == expected_encoding
+    assert uint_dynamic_array_type.decode(expected_encoding).get_array() == [AbiValue.uint(7)]
 
 def test_abi_bool():
     bool_val: AbiValue = AbiValue.bool(True)
