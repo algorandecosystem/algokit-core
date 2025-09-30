@@ -1,5 +1,5 @@
-use async_trait::async_trait;
 use crate::transactions::common::UtilsError;
+use async_trait::async_trait;
 
 #[derive(uniffi::Record)]
 pub struct AccountInfo {

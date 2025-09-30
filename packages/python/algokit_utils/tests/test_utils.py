@@ -1,7 +1,12 @@
 from typing import override
 import typing
 from algokit_utils.algokit_http_client import HttpClient, HttpMethod, HttpResponse
-from algokit_transact import OnApplicationComplete, SignedTransaction, Transaction, encode_transaction
+from algokit_transact import (
+    OnApplicationComplete,
+    SignedTransaction,
+    Transaction,
+    encode_transaction,
+)
 from algokit_utils import AlgodClient, TransactionSigner
 from algokit_utils.algokit_utils_ffi import (
     AbiMethod,
@@ -15,7 +20,7 @@ from algokit_utils.algokit_utils_ffi import (
     Composer,
     PaymentParams,
     TransactionSignerGetter,
-    AbiValue
+    AbiValue,
 )
 from algosdk.mnemonic import to_private_key
 from nacl.signing import SigningKey
@@ -39,7 +44,9 @@ class TestSigner(TransactionSigner):
         for transaction in transactions:
             tx_for_signing = encode_transaction(transaction)
             sig = KEY.sign(tx_for_signing)
-            stxns.append(SignedTransaction(transaction=transaction, signature=sig.signature))
+            stxns.append(
+                SignedTransaction(transaction=transaction, signature=sig.signature)
+            )
 
         return stxns
 
@@ -68,11 +75,20 @@ class HttpClientImpl(HttpClient):
         headers["X-Algo-API-Token"] = "a" * 64
 
         if method == HttpMethod.GET:
-            res = requests.get(f"http://localhost:4001/{path}", params=query, headers=headers)
+            res = requests.get(
+                f"http://localhost:4001/{path}", params=query, headers=headers
+            )
         elif method == HttpMethod.POST:
-            res = requests.post(f"http://localhost:4001/{path}", params=query, data=body, headers=headers)
+            res = requests.post(
+                f"http://localhost:4001/{path}",
+                params=query,
+                data=body,
+                headers=headers,
+            )
         else:
-            raise NotImplementedError(f"HTTP method {method} not implemented in test client")
+            raise NotImplementedError(
+                f"HTTP method {method} not implemented in test client"
+            )
 
         if res.status_code != 200:
             raise Exception(f"HTTP request failed: {res.status_code} {res.text}")
@@ -80,10 +96,7 @@ class HttpClientImpl(HttpClient):
         # NOTE: Headers needing to be lowercase was a bit surprising, so we need to make sure we document that
         headers = {k.lower(): v for k, v in res.headers.items()}
 
-        return HttpResponse(
-            body=res.content,
-            headers=headers
-        )
+        return HttpResponse(body=res.content, headers=headers)
 
 
 @pytest.mark.asyncio
@@ -105,30 +118,35 @@ async def test_composer():
 
     await composer.build()
     response = await composer.send()
-    assert(len(response.transaction_ids) == 1)
-    assert(len(response.transaction_ids[0]) == 52)
+    assert len(response.transaction_ids) == 1
+    assert len(response.transaction_ids[0]) == 52
     print(response.transaction_ids)
+
 
 bool_type = AbiType("bool")
 
+
 def test_abi_bool():
     bool_val: AbiValue = AbiValue.bool(True)
-    assert bool_type.encode(bool_val) == b'\x80'
-    assert bool_type.decode(b'\x80').get_bool() == True
+    assert bool_type.encode(bool_val) == b"\x80"
+    assert bool_type.decode(b"\x80").get_bool() == True
+
 
 bool_array_type = AbiType("bool[]")
+
+
 def test_abi_bool_array():
-
     bool_array_val: AbiValue = AbiValue.array([AbiValue.bool(True)])
-    assert bool_array_type.encode(bool_array_val) == b'\x00\x01\x80'
-    assert bool_array_type.decode(b'\x00\x01\x80').get_array() == [AbiValue.bool(True)]
+    assert bool_array_type.encode(bool_array_val) == b"\x00\x01\x80"
+    assert bool_array_type.decode(b"\x00\x01\x80").get_array() == [AbiValue.bool(True)]
 
-INT_1_PROG = bytes.fromhex('0b810143')
+
+INT_1_PROG = bytes.fromhex("0b810143")
+
 
 @pytest.mark.asyncio
 async def test_app_create_and_call():
     algod = AlgodClient(HttpClientImpl())
-
 
     create_composer = Composer(
         algod_client=algod,
@@ -146,8 +164,8 @@ async def test_app_create_and_call():
 
     await create_composer.build()
     response = await create_composer.send()
-    assert(len(response.transaction_ids) == 1)
-    assert(len(response.transaction_ids[0]) == 52)
+    assert len(response.transaction_ids) == 1
+    assert len(response.transaction_ids[0]) == 52
 
     app_id = response.app_ids[0]
     assert app_id
@@ -167,8 +185,8 @@ async def test_app_create_and_call():
 
     await call_composer.build()
     response = await call_composer.send()
-    assert(len(response.transaction_ids) == 1)
-    assert(len(response.transaction_ids[0]) == 52)
+    assert len(response.transaction_ids) == 1
+    assert len(response.transaction_ids[0]) == 52
 
     method_composer = Composer(
         algod_client=algod,
@@ -177,16 +195,25 @@ async def test_app_create_and_call():
 
     method_composer.add_app_call_method_call(
         params=AppCallMethodCallParams(
-                sender=ADDR,
-                app_id=app_id,
-                args=[AppMethodCallArg.ABI_VALUE(AbiValue.bool(True))],
-                on_complete=OnApplicationComplete.NO_OP,
-                method=AbiMethod(name="myMethod", args=[AbiMethodArg(arg_type=AbiMethodArgType.VALUE(bool_type), name="a", description="")], returns=None, description="")
+            sender=ADDR,
+            app_id=app_id,
+            args=[AppMethodCallArg.ABI_VALUE(AbiValue.bool(True))],
+            on_complete=OnApplicationComplete.NO_OP,
+            method=AbiMethod(
+                name="myMethod",
+                args=[
+                    AbiMethodArg(
+                        arg_type=AbiMethodArgType.VALUE(bool_type),
+                        name="a",
+                        description="",
+                    )
+                ],
+                returns=None,
+                description="",
+            ),
         )
     )
 
     method_response = await method_composer.send()
-    assert(len(method_response.transaction_ids) == 1)
-    assert(len(method_response.transaction_ids[0]) == 52)
-
-
+    assert len(method_response.transaction_ids) == 1
+    assert len(method_response.transaction_ids[0]) == 52

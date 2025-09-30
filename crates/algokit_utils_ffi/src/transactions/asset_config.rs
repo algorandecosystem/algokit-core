@@ -2,8 +2,8 @@ use crate::create_transaction_params;
 use crate::transactions::common::UtilsError;
 
 use algokit_utils::transactions::{
-    AssetCreateParams as RustAssetCreateParams, AssetDestroyParams as RustAssetDestroyParams,
-    AssetConfigParams as RustAssetConfigParams,
+    AssetConfigParams as RustAssetConfigParams, AssetCreateParams as RustAssetCreateParams,
+    AssetDestroyParams as RustAssetDestroyParams,
 };
 
 create_transaction_params! {

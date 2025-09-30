@@ -13,7 +13,7 @@ use crate::{
 };
 use algod_client::AlgodClient as RustAlgodClient;
 use algokit_http_client::HttpClient;
-use algokit_utils::transactions::{composer::Composer as RustComposer, ComposerParams};
+use algokit_utils::transactions::{ComposerParams, composer::Composer as RustComposer};
 use async_trait::async_trait;
 use tokio::sync::Mutex;
 

@@ -1,7 +1,9 @@
 use crate::create_transaction_params;
 use crate::transactions::common::UtilsError;
 
-use algokit_utils::transactions::{AssetFreezeParams as RustAssetFreezeParams, AssetUnfreezeParams as RustAssetUnfreezeParams};
+use algokit_utils::transactions::{
+    AssetFreezeParams as RustAssetFreezeParams, AssetUnfreezeParams as RustAssetUnfreezeParams,
+};
 
 create_transaction_params! {
     #[derive(uniffi::Record)]
