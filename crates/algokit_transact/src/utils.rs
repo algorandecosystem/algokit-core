@@ -10,53 +10,76 @@ use serde_with::{Bytes, serde_as, skip_serializing_none};
 use sha2::{Digest, Sha512_256};
 use std::collections::BTreeMap;
 
-pub fn sort_msgpack_value(value: rmpv::Value) -> rmpv::Value {
+pub fn sort_msgpack_value(value: rmpv::Value) -> Result<rmpv::Value, AlgoKitTransactError> {
     match value {
         rmpv::Value::Map(m) => {
-            // Separate integer keys from string keys
-            let mut string_keys: BTreeMap<String, rmpv::Value> = BTreeMap::new();
-            let mut integer_keys: Vec<(rmpv::Value, rmpv::Value)> = Vec::new();
-            let mut other_keys: Vec<(rmpv::Value, rmpv::Value)> = Vec::new();
+            if m.is_empty() {
+                return Ok(rmpv::Value::Map(Vec::new()));
+            }
 
-            for (k, v) in m {
+            // First, determine the key type by checking all keys
+            let mut has_string_keys = false;
+            let mut has_integer_keys = false;
+            let mut has_other_keys = false;
+
+            for (k, _) in &m {
                 match k {
-                    rmpv::Value::String(ref key) => {
-                        string_keys.insert(
-                            key.as_str().unwrap_or_default().to_string(),
-                            sort_msgpack_value(v),
-                        );
-                    }
-                    rmpv::Value::Integer(_) => {
-                        // Keep integer keys in their original order, just recursively sort values
-                        integer_keys.push((k, sort_msgpack_value(v)));
-                    }
-                    _ => {
-                        other_keys.push((k, sort_msgpack_value(v)));
-                    }
+                    rmpv::Value::String(_) => has_string_keys = true,
+                    rmpv::Value::Integer(_) => has_integer_keys = true,
+                    _ => has_other_keys = true,
                 }
             }
 
-            // Combine all keys: sorted string keys, then integer keys in original order, then other keys
-            let mut result: Vec<(rmpv::Value, rmpv::Value)> = Vec::new();
+            // Check for mixed key types or unsupported key types
+            let key_type_count = [has_string_keys, has_integer_keys, has_other_keys]
+                .iter()
+                .filter(|&&x| x)
+                .count();
 
-            // Add sorted string keys
-            for (k, v) in string_keys {
-                result.push((rmpv::Value::String(k.into()), v));
+            if key_type_count > 1 || has_other_keys {
+                return Err(AlgoKitTransactError::InputError {
+                    message: "MessagePack map must have all keys of the same type (either all strings or all integers)".to_string(),
+                });
             }
 
-            // Add integer keys in their original order
-            result.extend(integer_keys);
+            if has_string_keys {
+                // Use BTreeMap for string keys (sorted)
+                let mut sorted_map: BTreeMap<String, rmpv::Value> = BTreeMap::new();
+                for (k, v) in m {
+                    if let rmpv::Value::String(key) = k {
+                        sorted_map.insert(
+                            key.as_str().unwrap_or_default().to_string(),
+                            sort_msgpack_value(v)?,
+                        );
+                    }
+                }
 
-            // Add other keys
-            result.extend(other_keys);
+                let result: Vec<(rmpv::Value, rmpv::Value)> = sorted_map
+                    .into_iter()
+                    .map(|(k, v)| (rmpv::Value::String(k.into()), v))
+                    .collect();
 
-            rmpv::Value::Map(result)
+                Ok(rmpv::Value::Map(result))
+            } else if has_integer_keys {
+                // Use Vec for integer keys (preserve order)
+                let result: Result<Vec<(rmpv::Value, rmpv::Value)>, AlgoKitTransactError> = m
+                    .into_iter()
+                    .map(|(k, v)| Ok((k, sort_msgpack_value(v)?)))
+                    .collect();
+
+                Ok(rmpv::Value::Map(result?))
+            } else {
+                // Empty map was already handled above, this shouldn't be reached
+                Ok(rmpv::Value::Map(Vec::new()))
+            }
         }
         rmpv::Value::Array(arr) => {
-            rmpv::Value::Array(arr.into_iter().map(sort_msgpack_value).collect())
+            let result: Result<Vec<rmpv::Value>, AlgoKitTransactError> =
+                arr.into_iter().map(sort_msgpack_value).collect();
+            Ok(rmpv::Value::Array(result?))
         }
         // For all other types, return as-is
-        v => v,
+        v => Ok(v),
     }
 }
 
