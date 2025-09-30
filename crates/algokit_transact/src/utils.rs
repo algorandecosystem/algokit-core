@@ -13,46 +13,44 @@ use std::collections::BTreeMap;
 pub fn sort_msgpack_value(value: rmpv::Value) -> rmpv::Value {
     match value {
         rmpv::Value::Map(m) => {
-            let mut sorted_map: BTreeMap<String, rmpv::Value> = BTreeMap::new();
+            // Separate integer keys from string keys
+            let mut string_keys: BTreeMap<String, rmpv::Value> = BTreeMap::new();
+            let mut integer_keys: Vec<(rmpv::Value, rmpv::Value)> = Vec::new();
+            let mut other_keys: Vec<(rmpv::Value, rmpv::Value)> = Vec::new();
 
-            // Convert and sort all key-value pairs
             for (k, v) in m {
-                let key_str = match k {
-                    rmpv::Value::String(ref key) => key.as_str().unwrap_or_default().to_string(),
-                    rmpv::Value::Integer(int_key) => {
-                        // Convert integer keys to strings for sorting
-                        // Use the integer value as the sort key
-                        if let Some(u) = int_key.as_u64() {
-                            u.to_string()
-                        } else if let Some(i) = int_key.as_i64() {
-                            i.to_string()
-                        } else {
-                            // Fallback for very large integers
-                            format!("{:?}", int_key)
-                        }
+                match k {
+                    rmpv::Value::String(ref key) => {
+                        string_keys.insert(
+                            key.as_str().unwrap_or_default().to_string(),
+                            sort_msgpack_value(v),
+                        );
                     }
-                    // For any other key type, try to format it as a string
-                    _ => format!("{:?}", k),
-                };
-                sorted_map.insert(key_str, sort_msgpack_value(v));
+                    rmpv::Value::Integer(_) => {
+                        // Keep integer keys in their original order, just recursively sort values
+                        integer_keys.push((k, sort_msgpack_value(v)));
+                    }
+                    _ => {
+                        other_keys.push((k, sort_msgpack_value(v)));
+                    }
+                }
             }
 
-            // Convert back to rmpv::Value::Map, preserving original key types
-            rmpv::Value::Map(
-                sorted_map
-                    .into_iter()
-                    .map(|(k, v)| {
-                        // Try to parse back as integer if it looks like one
-                        if let Ok(u) = k.parse::<u64>() {
-                            (rmpv::Value::from(u), v)
-                        } else if let Ok(i) = k.parse::<i64>() {
-                            (rmpv::Value::from(i), v)
-                        } else {
-                            (rmpv::Value::String(k.into()), v)
-                        }
-                    })
-                    .collect(),
-            )
+            // Combine all keys: sorted string keys, then integer keys in original order, then other keys
+            let mut result: Vec<(rmpv::Value, rmpv::Value)> = Vec::new();
+
+            // Add sorted string keys
+            for (k, v) in string_keys {
+                result.push((rmpv::Value::String(k.into()), v));
+            }
+
+            // Add integer keys in their original order
+            result.extend(integer_keys);
+
+            // Add other keys
+            result.extend(other_keys);
+
+            rmpv::Value::Map(result)
         }
         rmpv::Value::Array(arr) => {
             rmpv::Value::Array(arr.into_iter().map(sort_msgpack_value).collect())
