@@ -14,8 +14,6 @@ mod key_registration;
 mod payment;
 pub mod state_proof;
 
-use state_proof::StateProofTransactionFields;
-
 pub use app_call::{
     AppCallTransactionBuilder, AppCallTransactionFields, BoxReference, OnApplicationComplete,
     StateSchema,
@@ -34,6 +32,11 @@ pub use heartbeat::{
 };
 pub use key_registration::{KeyRegistrationTransactionBuilder, KeyRegistrationTransactionFields};
 pub use payment::{PaymentTransactionBuilder, PaymentTransactionFields};
+pub use state_proof::{
+    FalconSignatureStruct, FalconVerifier, HashFactory, MerkleArrayProof,
+    MerkleSignatureVerifier, Participant, Reveal, SigslotCommit, StateProof, StateProofMessage,
+    StateProofTransactionBuilder, StateProofTransactionFields,
+};
 
 use crate::constants::{
     ALGORAND_SIGNATURE_BYTE_LENGTH, ALGORAND_SIGNATURE_ENCODING_INCR, HASH_BYTES_LENGTH,
