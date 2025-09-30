@@ -33,8 +33,8 @@ pub use heartbeat::{
 pub use key_registration::{KeyRegistrationTransactionBuilder, KeyRegistrationTransactionFields};
 pub use payment::{PaymentTransactionBuilder, PaymentTransactionFields};
 pub use state_proof::{
-    FalconSignatureStruct, FalconVerifier, HashFactory, MerkleArrayProof,
-    MerkleSignatureVerifier, Participant, Reveal, SigslotCommit, StateProof, StateProofMessage,
+    FalconSignatureStruct, FalconVerifier, HashFactory, MerkleArrayProof, MerkleSignatureVerifier,
+    Participant, Reveal, SigslotCommit, StateProof, StateProofMessage,
     StateProofTransactionBuilder, StateProofTransactionFields,
 };
 

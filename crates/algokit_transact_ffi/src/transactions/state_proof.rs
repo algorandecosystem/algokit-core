@@ -284,64 +284,84 @@ impl TryFrom<Transaction> for algokit_transact::StateProofTransactionFields {
         let header: algokit_transact::TransactionHeader = tx.try_into()?;
 
         // Convert state proof if present
-        let state_proof = data.state_proof.map(|sp| {
-            let reveals = sp
-                .reveals
-                .into_iter()
-                .map(|entry| {
-                    let reveal = algokit_transact::Reveal {
-                        sigslot: algokit_transact::SigslotCommit {
-                            sig: algokit_transact::FalconSignatureStruct {
-                                signature: entry.reveal.sigslot.sig.signature,
-                                vector_commitment_index: entry.reveal.sigslot.sig.vector_commitment_index,
-                                proof: algokit_transact::MerkleArrayProof {
-                                    path: entry.reveal.sigslot.sig.proof.path,
-                                    hash_factory: algokit_transact::HashFactory {
-                                        hash_type: entry.reveal.sigslot.sig.proof.hash_factory.hash_type,
+        let state_proof = data
+            .state_proof
+            .map(|sp| {
+                let reveals = sp
+                    .reveals
+                    .into_iter()
+                    .map(|entry| {
+                        let reveal = algokit_transact::Reveal {
+                            sigslot: algokit_transact::SigslotCommit {
+                                sig: algokit_transact::FalconSignatureStruct {
+                                    signature: entry.reveal.sigslot.sig.signature,
+                                    vector_commitment_index: entry
+                                        .reveal
+                                        .sigslot
+                                        .sig
+                                        .vector_commitment_index,
+                                    proof: algokit_transact::MerkleArrayProof {
+                                        path: entry.reveal.sigslot.sig.proof.path,
+                                        hash_factory: algokit_transact::HashFactory {
+                                            hash_type: entry
+                                                .reveal
+                                                .sigslot
+                                                .sig
+                                                .proof
+                                                .hash_factory
+                                                .hash_type,
+                                        },
+                                        tree_depth: entry.reveal.sigslot.sig.proof.tree_depth,
                                     },
-                                    tree_depth: entry.reveal.sigslot.sig.proof.tree_depth,
+                                    verifying_key: algokit_transact::FalconVerifier {
+                                        public_key: entry
+                                            .reveal
+                                            .sigslot
+                                            .sig
+                                            .verifying_key
+                                            .public_key,
+                                    },
                                 },
-                                verifying_key: algokit_transact::FalconVerifier {
-                                    public_key: entry.reveal.sigslot.sig.verifying_key.public_key,
+                                lower_sig_weight: entry.reveal.sigslot.lower_sig_weight,
+                            },
+                            participant: algokit_transact::Participant {
+                                verifier: algokit_transact::MerkleSignatureVerifier {
+                                    commitment: vec_to_array::<64>(
+                                        &entry.reveal.participant.verifier.commitment,
+                                        "participant verifier commitment",
+                                    )?,
+                                    key_lifetime: entry.reveal.participant.verifier.key_lifetime,
                                 },
+                                weight: entry.reveal.participant.weight,
                             },
-                            lower_sig_weight: entry.reveal.sigslot.lower_sig_weight,
-                        },
-                        participant: algokit_transact::Participant {
-                            verifier: algokit_transact::MerkleSignatureVerifier {
-                                commitment: vec_to_array::<64>(&entry.reveal.participant.verifier.commitment, "participant verifier commitment")?,
-                                key_lifetime: entry.reveal.participant.verifier.key_lifetime,
-                            },
-                            weight: entry.reveal.participant.weight,
-                        },
-                    };
-                    Ok((entry.position, reveal))
-                })
-                .collect::<Result<std::collections::BTreeMap<_, _>, Self::Error>>()?;
+                        };
+                        Ok((entry.position, reveal))
+                    })
+                    .collect::<Result<std::collections::BTreeMap<_, _>, Self::Error>>()?;
 
-            Ok::<_, Self::Error>(algokit_transact::StateProof {
-                sig_commit: sp.sig_commit,
-                signed_weight: sp.signed_weight,
-                sig_proofs: algokit_transact::MerkleArrayProof {
-                    path: sp.sig_proofs.path,
-                    hash_factory: algokit_transact::HashFactory {
-                        hash_type: sp.sig_proofs.hash_factory.hash_type,
+                Ok::<_, Self::Error>(algokit_transact::StateProof {
+                    sig_commit: sp.sig_commit,
+                    signed_weight: sp.signed_weight,
+                    sig_proofs: algokit_transact::MerkleArrayProof {
+                        path: sp.sig_proofs.path,
+                        hash_factory: algokit_transact::HashFactory {
+                            hash_type: sp.sig_proofs.hash_factory.hash_type,
+                        },
+                        tree_depth: sp.sig_proofs.tree_depth,
                     },
-                    tree_depth: sp.sig_proofs.tree_depth,
-                },
-                part_proofs: algokit_transact::MerkleArrayProof {
-                    path: sp.part_proofs.path,
-                    hash_factory: algokit_transact::HashFactory {
-                        hash_type: sp.part_proofs.hash_factory.hash_type,
+                    part_proofs: algokit_transact::MerkleArrayProof {
+                        path: sp.part_proofs.path,
+                        hash_factory: algokit_transact::HashFactory {
+                            hash_type: sp.part_proofs.hash_factory.hash_type,
+                        },
+                        tree_depth: sp.part_proofs.tree_depth,
                     },
-                    tree_depth: sp.part_proofs.tree_depth,
-                },
-                merkle_signature_salt_version: sp.merkle_signature_salt_version,
-                reveals,
-                positions_to_reveal: sp.positions_to_reveal,
+                    merkle_signature_salt_version: sp.merkle_signature_salt_version,
+                    reveals,
+                    positions_to_reveal: sp.positions_to_reveal,
+                })
             })
-        })
-        .transpose()?;
+            .transpose()?;
 
         // Convert message if present
         let message = data.message.map(|msg| algokit_transact::StateProofMessage {

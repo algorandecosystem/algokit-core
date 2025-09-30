@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::{Bytes, serde_as};
 use std::collections::BTreeMap;
 
-fn vec_is_empty<T>(value: &Vec<T>) -> bool {
+fn vec_is_empty<T>(value: &[T]) -> bool {
     value.is_empty()
 }
 

@@ -19,7 +19,7 @@ fn convert_to_bytes(str: &str) -> Vec<u8> {
 impl StateProofTransactionMother {
     pub fn state_proof() -> StateProofTransactionBuilder {
         // Load state proof data from JSON file
-        let json_data = include_str!("state_proof.json");
+        let json_data = algokit_test_artifacts::msgpack::TESTNET_STATE_PROOF_TX;
         let json_value: serde_json::Value = serde_json::from_str(json_data).unwrap();
 
         let genesis_hash: Byte32 = convert_to_bytes(json_value["genesis-hash"].as_str().unwrap())
@@ -43,16 +43,12 @@ impl StateProofTransactionMother {
                 StateProofMessage {
                     block_headers_commitment: BASE64_STANDARD
                         .decode(msg["block-headers-commitment"].as_str().unwrap())
-                        .unwrap()
-                        .try_into()
                         .unwrap(),
                     first_attested_round: msg["first-attested-round"].as_u64().unwrap(),
                     last_attested_round: msg["latest-attested-round"].as_u64().unwrap(),
                     ln_proven_weight: msg["ln-proven-weight"].as_u64().unwrap(),
                     voters_commitment: BASE64_STANDARD
                         .decode(msg["voters-commitment"].as_str().unwrap())
-                        .unwrap()
-                        .try_into()
                         .unwrap(),
                 }
             })
@@ -134,20 +130,12 @@ impl StateProofTransactionMother {
                             .as_array()
                             .unwrap()
                             .iter()
-                            .map(|p| {
-                                BASE64_STANDARD
-                                    .decode(p.as_str().unwrap())
-                                    .unwrap()
-                                    .try_into()
-                                    .unwrap()
-                            })
+                            .map(|p| BASE64_STANDARD.decode(p.as_str().unwrap()).unwrap())
                             .collect(),
                         tree_depth: sp["part-proofs"]["tree-depth"].as_u64().unwrap(),
                     },
                     sig_commit: BASE64_STANDARD
                         .decode(sp["sig-commit"].as_str().unwrap())
-                        .unwrap()
-                        .try_into()
                         .unwrap(),
                     signed_weight: sp["signed-weight"].as_u64().unwrap(),
                     sig_proofs: MerkleArrayProof {
@@ -156,13 +144,7 @@ impl StateProofTransactionMother {
                             .as_array()
                             .unwrap()
                             .iter()
-                            .map(|p| {
-                                BASE64_STANDARD
-                                    .decode(p.as_str().unwrap())
-                                    .unwrap()
-                                    .try_into()
-                                    .unwrap()
-                            })
+                            .map(|p| BASE64_STANDARD.decode(p.as_str().unwrap()).unwrap())
                             .collect(),
                         tree_depth: sp["sig-proofs"]["tree-depth"].as_u64().unwrap(),
                     },
