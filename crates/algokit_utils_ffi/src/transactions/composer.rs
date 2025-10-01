@@ -183,7 +183,7 @@ impl Composer {
             })
     }
 
-    fn add_app_create(&self, params: super::app_call::AppCreateParams) -> Result<(), UtilsError> {
+    pub fn add_app_create(&self, params: super::app_call::AppCreateParams) -> Result<(), UtilsError> {
         let mut composer = self.inner_composer.blocking_lock();
         composer
             .add_app_create(params.try_into()?)
@@ -192,7 +192,7 @@ impl Composer {
             })
     }
 
-    fn add_app_call(&self, params: super::app_call::AppCallParams) -> Result<(), UtilsError> {
+    pub fn add_app_call(&self, params: super::app_call::AppCallParams) -> Result<(), UtilsError> {
         let mut composer = self.inner_composer.blocking_lock();
         composer
             .add_app_call(params.try_into()?)
@@ -201,13 +201,67 @@ impl Composer {
             })
     }
 
-    fn add_app_call_method_call(
+    pub fn add_app_update(&self, params: super::app_call::AppUpdateParams) -> Result<(), UtilsError> {
+        let mut composer = self.inner_composer.blocking_lock();
+        composer
+            .add_app_update(params.try_into()?)
+            .map_err(|e| UtilsError::UtilsError {
+                message: e.to_string(),
+            })
+    }
+
+    pub fn add_app_delete(&self, params: super::app_call::AppDeleteParams) -> Result<(), UtilsError> {
+        let mut composer = self.inner_composer.blocking_lock();
+        composer
+            .add_app_delete(params.try_into()?)
+            .map_err(|e| UtilsError::UtilsError {
+                message: e.to_string(),
+            })
+    }
+
+    pub fn add_app_call_method_call(
         &self,
         params: super::app_call::AppCallMethodCallParams,
     ) -> Result<(), UtilsError> {
         let mut composer = self.inner_composer.blocking_lock();
         composer
             .add_app_call_method_call(params.try_into()?)
+            .map_err(|e| UtilsError::UtilsError {
+                message: e.to_string(),
+            })
+    }
+
+    pub fn add_app_create_method_call(
+        &self,
+        params: super::app_call::AppCreateMethodCallParams,
+    ) -> Result<(), UtilsError> {
+        let mut composer = self.inner_composer.blocking_lock();
+        composer
+            .add_app_create_method_call(params.try_into()?)
+            .map_err(|e| UtilsError::UtilsError {
+                message: e.to_string(),
+            })
+    }
+
+    pub fn add_app_update_method_call(
+        &self,
+        params: super::app_call::AppUpdateMethodCallParams,
+    ) -> Result<(), UtilsError> {
+        let mut composer = self.inner_composer.blocking_lock();
+        composer
+            .add_app_update_method_call(params.try_into()?)
+            .map_err(|e| UtilsError::UtilsError {
+                message: e.to_string(),
+            })
+    }
+
+    pub fn add_app_delete_method_call(
+        &self,
+        params: super::app_call::AppDeleteMethodCallParams,
+    ) -> Result<(), UtilsError> {
+        let mut composer = self.inner_composer.blocking_lock();
+        composer
+            .add_app_delete_method_call(params.try_into()?)
             .map_err(|e| UtilsError::UtilsError {
                 message: e.to_string(),
             })
@@ -318,6 +372,78 @@ impl ComposerTrait for Composer {
     ) -> Result<(), UtilsError> {
         Composer::add_asset_clawback(self, params)
     }
+
+    async fn add_app_create(
+        &self,
+        params: super::app_call::AppCreateParams,
+        _algod_client: Arc<dyn AlgodClientTrait>,
+        _signer_getter: Arc<dyn TransactionSignerGetter>,
+    ) -> Result<(), UtilsError> {
+        Composer::add_app_create(self, params)
+    }
+
+    async fn add_app_call(
+        &self,
+        params: super::app_call::AppCallParams,
+        _algod_client: Arc<dyn AlgodClientTrait>,
+        _signer_getter: Arc<dyn TransactionSignerGetter>,
+    ) -> Result<(), UtilsError> {
+        Composer::add_app_call(self, params)
+    }
+
+    async fn add_app_update(
+        &self,
+        params: super::app_call::AppUpdateParams,
+        _algod_client: Arc<dyn AlgodClientTrait>,
+        _signer_getter: Arc<dyn TransactionSignerGetter>,
+    ) -> Result<(), UtilsError> {
+        Composer::add_app_update(self, params)
+    }
+
+    async fn add_app_delete(
+        &self,
+        params: super::app_call::AppDeleteParams,
+        _algod_client: Arc<dyn AlgodClientTrait>,
+        _signer_getter: Arc<dyn TransactionSignerGetter>,
+    ) -> Result<(), UtilsError> {
+        Composer::add_app_delete(self, params)
+    }
+
+    async fn add_app_call_method_call(
+        &self,
+        params: super::app_call::AppCallMethodCallParams,
+        _algod_client: Arc<dyn AlgodClientTrait>,
+        _signer_getter: Arc<dyn TransactionSignerGetter>,
+    ) -> Result<(), UtilsError> {
+        Composer::add_app_call_method_call(self, params)
+    }
+
+    async fn add_app_create_method_call(
+        &self,
+        params: super::app_call::AppCreateMethodCallParams,
+        _algod_client: Arc<dyn AlgodClientTrait>,
+        _signer_getter: Arc<dyn TransactionSignerGetter>,
+    ) -> Result<(), UtilsError> {
+        Composer::add_app_create_method_call(self, params)
+    }
+
+    async fn add_app_update_method_call(
+        &self,
+        params: super::app_call::AppUpdateMethodCallParams,
+        _algod_client: Arc<dyn AlgodClientTrait>,
+        _signer_getter: Arc<dyn TransactionSignerGetter>,
+    ) -> Result<(), UtilsError> {
+        Composer::add_app_update_method_call(self, params)
+    }
+
+    async fn add_app_delete_method_call(
+        &self,
+        params: super::app_call::AppDeleteMethodCallParams,
+        _algod_client: Arc<dyn AlgodClientTrait>,
+        _signer_getter: Arc<dyn TransactionSignerGetter>,
+    ) -> Result<(), UtilsError> {
+        Composer::add_app_delete_method_call(self, params)
+    }
 }
 
 //
@@ -400,6 +526,62 @@ pub trait ComposerTrait: Send + Sync {
     async fn add_asset_clawback(
         &self,
         params: AssetClawbackParams,
+        algod_client: Arc<dyn AlgodClientTrait>,
+        signer_getter: Arc<dyn TransactionSignerGetter>,
+    ) -> Result<(), UtilsError>;
+
+    async fn add_app_create(
+        &self,
+        params: super::app_call::AppCreateParams,
+        algod_client: Arc<dyn AlgodClientTrait>,
+        signer_getter: Arc<dyn TransactionSignerGetter>,
+    ) -> Result<(), UtilsError>;
+
+    async fn add_app_call(
+        &self,
+        params: super::app_call::AppCallParams,
+        algod_client: Arc<dyn AlgodClientTrait>,
+        signer_getter: Arc<dyn TransactionSignerGetter>,
+    ) -> Result<(), UtilsError>;
+
+    async fn add_app_update(
+        &self,
+        params: super::app_call::AppUpdateParams,
+        algod_client: Arc<dyn AlgodClientTrait>,
+        signer_getter: Arc<dyn TransactionSignerGetter>,
+    ) -> Result<(), UtilsError>;
+
+    async fn add_app_delete(
+        &self,
+        params: super::app_call::AppDeleteParams,
+        algod_client: Arc<dyn AlgodClientTrait>,
+        signer_getter: Arc<dyn TransactionSignerGetter>,
+    ) -> Result<(), UtilsError>;
+
+    async fn add_app_call_method_call(
+        &self,
+        params: super::app_call::AppCallMethodCallParams,
+        algod_client: Arc<dyn AlgodClientTrait>,
+        signer_getter: Arc<dyn TransactionSignerGetter>,
+    ) -> Result<(), UtilsError>;
+
+    async fn add_app_create_method_call(
+        &self,
+        params: super::app_call::AppCreateMethodCallParams,
+        algod_client: Arc<dyn AlgodClientTrait>,
+        signer_getter: Arc<dyn TransactionSignerGetter>,
+    ) -> Result<(), UtilsError>;
+
+    async fn add_app_update_method_call(
+        &self,
+        params: super::app_call::AppUpdateMethodCallParams,
+        algod_client: Arc<dyn AlgodClientTrait>,
+        signer_getter: Arc<dyn TransactionSignerGetter>,
+    ) -> Result<(), UtilsError>;
+
+    async fn add_app_delete_method_call(
+        &self,
+        params: super::app_call::AppDeleteMethodCallParams,
         algod_client: Arc<dyn AlgodClientTrait>,
         signer_getter: Arc<dyn TransactionSignerGetter>,
     ) -> Result<(), UtilsError>;
