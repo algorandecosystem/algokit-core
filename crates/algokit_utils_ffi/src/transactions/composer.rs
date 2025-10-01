@@ -182,6 +182,36 @@ impl Composer {
                 message: e.to_string(),
             })
     }
+
+    fn add_app_create(&self, params: super::app_call::AppCreateParams) -> Result<(), UtilsError> {
+        let mut composer = self.inner_composer.blocking_lock();
+        composer
+            .add_app_create(params.try_into()?)
+            .map_err(|e| UtilsError::UtilsError {
+                message: e.to_string(),
+            })
+    }
+
+    fn add_app_call(&self, params: super::app_call::AppCallParams) -> Result<(), UtilsError> {
+        let mut composer = self.inner_composer.blocking_lock();
+        composer
+            .add_app_call(params.try_into()?)
+            .map_err(|e| UtilsError::UtilsError {
+                message: e.to_string(),
+            })
+    }
+
+    fn add_app_call_method_call(
+        &self,
+        params: super::app_call::AppCallMethodCallParams,
+    ) -> Result<(), UtilsError> {
+        let mut composer = self.inner_composer.blocking_lock();
+        composer
+            .add_app_call_method_call(params.try_into()?)
+            .map_err(|e| UtilsError::UtilsError {
+                message: e.to_string(),
+            })
+    }
 }
 
 // Implement ComposerTrait for Composer to keep them in sync
