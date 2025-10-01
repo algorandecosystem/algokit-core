@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use crate::*;
 
 #[ffi_record]
@@ -7,6 +9,14 @@ pub struct HashFactory {
 
 impl From<algokit_transact::HashFactory> for HashFactory {
     fn from(hf: algokit_transact::HashFactory) -> Self {
+        Self {
+            hash_type: hf.hash_type,
+        }
+    }
+}
+
+impl From<HashFactory> for algokit_transact::HashFactory {
+    fn from(hf: HashFactory) -> Self {
         Self {
             hash_type: hf.hash_type,
         }
@@ -30,6 +40,16 @@ impl From<algokit_transact::MerkleArrayProof> for MerkleArrayProof {
     }
 }
 
+impl From<MerkleArrayProof> for algokit_transact::MerkleArrayProof {
+    fn from(proof: MerkleArrayProof) -> Self {
+        Self {
+            path: proof.path,
+            hash_factory: proof.hash_factory.into(),
+            tree_depth: proof.tree_depth,
+        }
+    }
+}
+
 #[ffi_record]
 pub struct MerkleSignatureVerifier {
     commitment: Vec<u8>,
@@ -42,6 +62,17 @@ impl From<algokit_transact::MerkleSignatureVerifier> for MerkleSignatureVerifier
             commitment: verifier.commitment.to_vec(),
             key_lifetime: verifier.key_lifetime,
         }
+    }
+}
+
+impl TryFrom<MerkleSignatureVerifier> for algokit_transact::MerkleSignatureVerifier {
+    type Error = AlgoKitTransactError;
+
+    fn try_from(verifier: MerkleSignatureVerifier) -> Result<Self, Self::Error> {
+        Ok(Self {
+            commitment: vec_to_array::<64>(&verifier.commitment, "commitment")?,
+            key_lifetime: verifier.key_lifetime,
+        })
     }
 }
 
@@ -67,6 +98,17 @@ impl From<algokit_transact::Participant> for Participant {
     }
 }
 
+impl TryFrom<Participant> for algokit_transact::Participant {
+    type Error = AlgoKitTransactError;
+
+    fn try_from(participant: Participant) -> Result<Self, Self::Error> {
+        Ok(Self {
+            verifier: participant.verifier.try_into()?,
+            weight: participant.weight,
+        })
+    }
+}
+
 #[ffi_record]
 pub struct FalconVerifier {
     public_key: Vec<u8>,
@@ -74,6 +116,14 @@ pub struct FalconVerifier {
 
 impl From<algokit_transact::FalconVerifier> for FalconVerifier {
     fn from(verifier: algokit_transact::FalconVerifier) -> Self {
+        Self {
+            public_key: verifier.public_key,
+        }
+    }
+}
+
+impl From<FalconVerifier> for algokit_transact::FalconVerifier {
+    fn from(verifier: FalconVerifier) -> Self {
         Self {
             public_key: verifier.public_key,
         }
@@ -105,6 +155,17 @@ impl From<algokit_transact::FalconSignatureStruct> for FalconSignatureStruct {
     }
 }
 
+impl From<FalconSignatureStruct> for algokit_transact::FalconSignatureStruct {
+    fn from(sig: FalconSignatureStruct) -> Self {
+        Self {
+            signature: sig.signature,
+            vector_commitment_index: sig.vector_commitment_index,
+            proof: sig.proof.into(),
+            verifying_key: sig.verifying_key.into(),
+        }
+    }
+}
+
 #[ffi_record]
 pub struct SigslotCommit {
     sig: FalconSignatureStruct,
@@ -120,20 +181,35 @@ impl From<algokit_transact::SigslotCommit> for SigslotCommit {
     }
 }
 
+impl From<SigslotCommit> for algokit_transact::SigslotCommit {
+    fn from(commit: SigslotCommit) -> Self {
+        Self {
+            sig: commit.sig.into(),
+            lower_sig_weight: commit.lower_sig_weight,
+        }
+    }
+}
+
 /// A single array position revealed as part of a state proof. It reveals an element of the
 /// signature array and the corresponding element of the participants array.
 #[ffi_record]
 pub struct Reveal {
+    position: u64,
     sigslot: SigslotCommit,
     participant: Participant,
 }
 
-impl From<algokit_transact::Reveal> for Reveal {
-    fn from(reveal: algokit_transact::Reveal) -> Self {
-        Self {
-            sigslot: reveal.sigslot.into(),
-            participant: reveal.participant.into(),
-        }
+impl TryFrom<Reveal> for (u64, algokit_transact::Reveal) {
+    type Error = AlgoKitTransactError;
+
+    fn try_from(reveal: Reveal) -> Result<Self, Self::Error> {
+        Ok((
+            reveal.position,
+            algokit_transact::Reveal {
+                sigslot: reveal.sigslot.into(),
+                participant: reveal.participant.try_into()?,
+            },
+        ))
     }
 }
 
@@ -144,15 +220,8 @@ pub struct StateProof {
     sig_proofs: MerkleArrayProof,
     part_proofs: MerkleArrayProof,
     merkle_signature_salt_version: u64,
-    reveals: Vec<RevealEntry>,
+    reveals: Vec<Reveal>,
     positions_to_reveal: Vec<u64>,
-}
-
-/// Helper struct for reveals map entries since FFI doesn't support maps directly.
-#[ffi_record]
-pub struct RevealEntry {
-    position: u64,
-    reveal: Reveal,
 }
 
 impl From<algokit_transact::StateProof> for StateProof {
@@ -160,9 +229,10 @@ impl From<algokit_transact::StateProof> for StateProof {
         let reveals = proof
             .reveals
             .into_iter()
-            .map(|(position, reveal)| RevealEntry {
+            .map(|(position, reveal)| Reveal {
                 position,
-                reveal: reveal.into(),
+                sigslot: reveal.sigslot.into(),
+                participant: reveal.participant.into(),
             })
             .collect();
 
@@ -175,6 +245,28 @@ impl From<algokit_transact::StateProof> for StateProof {
             reveals,
             positions_to_reveal: proof.positions_to_reveal,
         }
+    }
+}
+
+impl TryFrom<StateProof> for algokit_transact::StateProof {
+    type Error = AlgoKitTransactError;
+
+    fn try_from(proof: StateProof) -> Result<Self, Self::Error> {
+        let reveals = proof
+            .reveals
+            .into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<BTreeMap<_, _>, _>>()?;
+
+        Ok(Self {
+            sig_commit: proof.sig_commit,
+            signed_weight: proof.signed_weight,
+            sig_proofs: proof.sig_proofs.into(),
+            part_proofs: proof.part_proofs.into(),
+            merkle_signature_salt_version: proof.merkle_signature_salt_version,
+            reveals,
+            positions_to_reveal: proof.positions_to_reveal,
+        })
     }
 }
 
@@ -199,9 +291,18 @@ impl From<algokit_transact::StateProofMessage> for StateProofMessage {
     }
 }
 
-/// Parameters to define a state proof transaction.
-///
-/// Used to submit Algorand state proofs on-chain.
+impl From<StateProofMessage> for algokit_transact::StateProofMessage {
+    fn from(msg: StateProofMessage) -> Self {
+        Self {
+            block_headers_commitment: msg.block_headers_commitment,
+            voters_commitment: msg.voters_commitment,
+            ln_proven_weight: msg.ln_proven_weight,
+            first_attested_round: msg.first_attested_round,
+            last_attested_round: msg.last_attested_round,
+        }
+    }
+}
+
 #[ffi_record]
 pub struct StateProofTransactionFields {
     state_proof_type: Option<u64>,
@@ -232,94 +333,8 @@ impl TryFrom<Transaction> for algokit_transact::StateProofTransactionFields {
         let data = tx.clone().state_proof.unwrap();
         let header: algokit_transact::TransactionHeader = tx.try_into()?;
 
-        // Convert state proof if present
-        let state_proof = data
-            .state_proof
-            .map(|sp| {
-                let reveals = sp
-                    .reveals
-                    .into_iter()
-                    .map(|entry| {
-                        let reveal = algokit_transact::Reveal {
-                            sigslot: algokit_transact::SigslotCommit {
-                                sig: algokit_transact::FalconSignatureStruct {
-                                    signature: entry.reveal.sigslot.sig.signature,
-                                    vector_commitment_index: entry
-                                        .reveal
-                                        .sigslot
-                                        .sig
-                                        .vector_commitment_index,
-                                    proof: algokit_transact::MerkleArrayProof {
-                                        path: entry.reveal.sigslot.sig.proof.path,
-                                        hash_factory: algokit_transact::HashFactory {
-                                            hash_type: entry
-                                                .reveal
-                                                .sigslot
-                                                .sig
-                                                .proof
-                                                .hash_factory
-                                                .hash_type,
-                                        },
-                                        tree_depth: entry.reveal.sigslot.sig.proof.tree_depth,
-                                    },
-                                    verifying_key: algokit_transact::FalconVerifier {
-                                        public_key: entry
-                                            .reveal
-                                            .sigslot
-                                            .sig
-                                            .verifying_key
-                                            .public_key,
-                                    },
-                                },
-                                lower_sig_weight: entry.reveal.sigslot.lower_sig_weight,
-                            },
-                            participant: algokit_transact::Participant {
-                                verifier: algokit_transact::MerkleSignatureVerifier {
-                                    commitment: vec_to_array::<64>(
-                                        &entry.reveal.participant.verifier.commitment,
-                                        "participant verifier commitment",
-                                    )?,
-                                    key_lifetime: entry.reveal.participant.verifier.key_lifetime,
-                                },
-                                weight: entry.reveal.participant.weight,
-                            },
-                        };
-                        Ok((entry.position, reveal))
-                    })
-                    .collect::<Result<std::collections::BTreeMap<_, _>, Self::Error>>()?;
-
-                Ok::<_, Self::Error>(algokit_transact::StateProof {
-                    sig_commit: sp.sig_commit,
-                    signed_weight: sp.signed_weight,
-                    sig_proofs: algokit_transact::MerkleArrayProof {
-                        path: sp.sig_proofs.path,
-                        hash_factory: algokit_transact::HashFactory {
-                            hash_type: sp.sig_proofs.hash_factory.hash_type,
-                        },
-                        tree_depth: sp.sig_proofs.tree_depth,
-                    },
-                    part_proofs: algokit_transact::MerkleArrayProof {
-                        path: sp.part_proofs.path,
-                        hash_factory: algokit_transact::HashFactory {
-                            hash_type: sp.part_proofs.hash_factory.hash_type,
-                        },
-                        tree_depth: sp.part_proofs.tree_depth,
-                    },
-                    merkle_signature_salt_version: sp.merkle_signature_salt_version,
-                    reveals,
-                    positions_to_reveal: sp.positions_to_reveal,
-                })
-            })
-            .transpose()?;
-
-        // Convert message if present
-        let message = data.message.map(|msg| algokit_transact::StateProofMessage {
-            block_headers_commitment: msg.block_headers_commitment,
-            voters_commitment: msg.voters_commitment,
-            ln_proven_weight: msg.ln_proven_weight,
-            first_attested_round: msg.first_attested_round,
-            last_attested_round: msg.last_attested_round,
-        });
+        let state_proof = data.state_proof.map(TryInto::try_into).transpose()?;
+        let message = data.message.map(Into::into);
 
         let transaction_fields = algokit_transact::StateProofTransactionFields {
             header,
