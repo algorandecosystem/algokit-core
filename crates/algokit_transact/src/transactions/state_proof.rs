@@ -43,6 +43,7 @@ pub struct MerkleSignatureVerifier {
     pub commitment: [u8; 64],
 
     #[serde(rename = "lf")]
+    #[serde(default)]
     #[serde(skip_serializing_if = "is_zero")]
     pub key_lifetime: u64,
 }
@@ -60,6 +61,7 @@ pub struct Participant {
     pub verifier: MerkleSignatureVerifier,
 
     #[serde(rename = "w")]
+    #[serde(default)]
     #[serde(skip_serializing_if = "is_zero")]
     pub weight: u64,
 }
@@ -86,6 +88,7 @@ pub struct FalconSignatureStruct {
     pub signature: Vec<u8>,
 
     #[serde(rename = "idx")]
+    #[serde(default)]
     #[serde(skip_serializing_if = "is_zero")]
     pub vector_commitment_index: u64,
 
@@ -102,6 +105,7 @@ pub struct SigslotCommit {
     pub sig: FalconSignatureStruct,
 
     #[serde(rename = "l")]
+    #[serde(default)]
     #[serde(skip_serializing_if = "is_zero")]
     pub lower_sig_weight: u64,
 }
@@ -125,6 +129,7 @@ pub struct StateProof {
     pub sig_commit: Vec<u8>,
 
     #[serde(rename = "w")]
+    #[serde(default)]
     #[serde(skip_serializing_if = "is_zero")]
     pub signed_weight: u64,
 
@@ -135,6 +140,7 @@ pub struct StateProof {
     pub part_proofs: MerkleArrayProof,
 
     #[serde(rename = "v")]
+    #[serde(default)]
     #[serde(skip_serializing_if = "is_zero")]
     pub merkle_signature_salt_version: u64,
 
@@ -166,10 +172,12 @@ pub struct StateProofMessage {
     pub ln_proven_weight: u64,
 
     #[serde(rename = "f")]
+    #[serde(default)]
     #[serde(skip_serializing_if = "is_zero")]
     pub first_attested_round: u64,
 
     #[serde(rename = "l")]
+    #[serde(default)]
     #[serde(skip_serializing_if = "is_zero")]
     pub last_attested_round: u64,
 }

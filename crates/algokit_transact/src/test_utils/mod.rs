@@ -528,7 +528,7 @@ impl TestDataMother {
             "heartbeat": Self::heartbeat().as_json(&transform),
             "asset_freeze": Self::asset_freeze().as_json(&transform),
             "asset_unfreeze": Self::asset_unfreeze().as_json(&transform),
-            // "state_proof": Self::state_proof().as_json(&transform),
+            "state_proof": Self::state_proof().as_json(&transform),
         }));
 
         let file = File::create(path).expect("Failed to create export file");

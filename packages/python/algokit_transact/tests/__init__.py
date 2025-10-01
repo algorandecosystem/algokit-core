@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 import json
-import inspect
+import re
 from typing import Any
 from algokit_transact import (
     PaymentTransactionFields,
@@ -14,8 +14,22 @@ from algokit_transact import (
     KeyRegistrationTransactionFields,
     OnApplicationComplete,
     HeartbeatTransactionFields,
+    StateSchema,
+    HeartbeatProof,
 )
-from algokit_transact.algokit_transact_ffi import StateProofTransactionFields
+from algokit_transact.algokit_transact_ffi import (
+    StateProofTransactionFields,
+    StateProof,
+    MerkleArrayProof,
+    Reveal,
+    StateProofMessage,
+    HashFactory,
+    SigslotCommit,
+    Participant,
+    FalconSignatureStruct,
+    FalconVerifier,
+    MerkleSignatureVerifier,
+)
 from nacl.signing import SigningKey
 
 
@@ -50,109 +64,157 @@ class TestData:
     offline_key_registration: TransactionTestData
     non_participation_key_registration: TransactionTestData
     heartbeat: TransactionTestData
-    # state_proof: TransactionTestData
-
-
-def is_ffi_record_class(cls: type) -> bool:
-    """
-    Check if a class is a uniffi-generated Record type.
-
-    uniffi Record classes are defined in the algokit_transact_ffi module
-    and have __init__ with type-annotated parameters.
-    """
-    return (
-        hasattr(cls, "__module__")
-        and "algokit_transact_ffi" in cls.__module__
-        and hasattr(cls, "__init__")
-        and cls not in (list, dict, str, int, bool, bytes, type(None))
-    )
-
-
-def auto_convert_dict_to_record(data: dict) -> Any:
-    """
-    Automatically convert a dictionary to a uniffi Record object if possible.
-
-    This is necessary because uniffi-generated Python bindings don't automatically
-    convert dictionaries to Record objects when storing them in object attributes.
-    When you pass a dict to a constructor parameter that expects a Record type,
-    uniffi stores it as-is (as a dict). Later, when the object needs to be
-    serialized or validated, the check_lower() method expects an actual object
-    with attributes, not a dict, causing AttributeError.
-
-    This function uses type introspection to automatically detect which Record
-    class matches the dictionary keys and instantiates it. This approach is
-    sustainable and will automatically work for new Record types like StateProof
-    which has many nested Record types.
-
-    Only converts simple nested Record types (not transaction field types).
-    Transaction field types are handled separately in create_transaction_test_data.
-    """
-    import algokit_transact.algokit_transact_ffi as ffi
-
-    # Don't convert empty dicts
-    if not data:
-        return data
-
-    # Skip conversion for transaction field dictionaries
-    # These have common keys like 'sender', 'fee', 'genesis_hash', etc.
-    transaction_indicators = {
-        "sender",
-        "fee",
-        "genesis_hash",
-        "genesis_id",
-        "transaction_type",
-        "payment",
-        "asset_transfer",
-        "asset_config",
-        "asset_freeze",
-        "app_call",
-        "key_registration",
-        "heartbeat",
-        "state_proof",
-    }
-    if any(key in data for key in transaction_indicators):
-        # This looks like transaction data, don't auto-convert
-        return {key: convert_values(value) for key, value in data.items()}
-
-    # Get all classes from the FFI module, excluding transaction field types
-    ffi_classes = [
-        cls
-        for name, cls in inspect.getmembers(ffi, inspect.isclass)
-        if is_ffi_record_class(cls) and not name.endswith("TransactionFields")
-    ]
-
-    # Try to find a matching class by checking if all dict keys match init parameters
-    for cls in ffi_classes:
-        try:
-            sig = inspect.signature(cls.__init__)
-            params = {name for name, param in sig.parameters.items() if name != "self"}
-            dict_keys = set(data.keys())
-
-            # Check if the dictionary keys match the class parameters exactly
-            if dict_keys == params:
-                # Recursively convert nested dicts/lists
-                converted_kwargs = {
-                    key: convert_values(value) for key, value in data.items()
-                }
-                return cls(**converted_kwargs)
-        except (ValueError, TypeError):
-            # This class doesn't match, continue
-            continue
-
-    # No matching Record class found, return as dict with converted values
-    return {key: convert_values(value) for key, value in data.items()}
+    state_proof: TransactionTestData
 
 
 def convert_values(obj: Any) -> Any:
-    """Recursively convert values in the data structure to appropriate types"""
+    """
+    Recursively convert values in the data structure to appropriate types.
+
+    This manually converts nested Record types that uniffi doesn't automatically
+    handle when passed as dict parameters. When a dict is passed to a constructor
+    expecting a Record type, uniffi stores it as-is, but later serialization
+    expects actual objects with attributes.
+
+    Types handled:
+    - StateSchema: num_uints, num_byte_slices
+    - HeartbeatProof: sig, pk, pk2, pk1_sig, pk2_sig
+    - StateProof nested types:
+      * HashFactory: hash_type
+      * MerkleArrayProof: hash_factory, path, tree_depth
+      * FalconVerifier: public_key
+      * FalconSignatureStruct: signature, vector_commitment_index, proof, verifying_key
+      * SigslotCommit: sig, lower_sig_weight (defaults to 0 if missing)
+      * MerkleSignatureVerifier: commitment, key_lifetime
+      * Participant: verifier, weight
+      * Reveal: position (defaults to 0 if missing), sigslot, participant
+      * StateProofMessage: block_headers_commitment, voters_commitment, etc.
+      * StateProof: sig_commit, signed_weight, sig_proofs, part_proofs, etc.
+    - OnApplicationComplete enum conversion
+    - Byte array conversion (list of 0-255 ints -> bytes)
+    """
     if isinstance(obj, dict):
+        # Convert StateSchema objects
+        if "num_uints" in obj and "num_byte_slices" in obj and len(obj) == 2:
+            return StateSchema(
+                num_uints=obj["num_uints"], num_byte_slices=obj["num_byte_slices"]
+            )
+
+        # Convert HeartbeatProof objects
+        if set(obj.keys()) == {"sig", "pk", "pk2", "pk1_sig", "pk2_sig"}:
+            return HeartbeatProof(
+                sig=convert_values(obj["sig"]),
+                pk=convert_values(obj["pk"]),
+                pk2=convert_values(obj["pk2"]),
+                pk1_sig=convert_values(obj["pk1_sig"]),
+                pk2_sig=convert_values(obj["pk2_sig"]),
+            )
+
+        # Convert HashFactory objects
+        if set(obj.keys()) == {"hash_type"}:
+            return HashFactory(hash_type=obj["hash_type"])
+
+        # Convert MerkleArrayProof objects
+        if set(obj.keys()) == {"hash_factory", "path", "tree_depth"}:
+            return MerkleArrayProof(
+                hash_factory=convert_values(obj["hash_factory"]),
+                path=convert_values(obj["path"]),
+                tree_depth=obj["tree_depth"],
+            )
+
+        # Convert FalconVerifier objects
+        if set(obj.keys()) == {"public_key"}:
+            return FalconVerifier(public_key=convert_values(obj["public_key"]))
+
+        # Convert FalconSignatureStruct objects
+        if set(obj.keys()) == {
+            "signature",
+            "vector_commitment_index",
+            "proof",
+            "verifying_key",
+        }:
+            return FalconSignatureStruct(
+                signature=convert_values(obj["signature"]),
+                vector_commitment_index=obj["vector_commitment_index"],
+                proof=convert_values(obj["proof"]),
+                verifying_key=convert_values(obj["verifying_key"]),
+            )
+
+        # Convert SigslotCommit objects - handle missing lower_sig_weight
+        if "sig" in obj and isinstance(obj["sig"], dict):
+            return SigslotCommit(
+                sig=convert_values(obj["sig"]),
+                lower_sig_weight=obj.get("lower_sig_weight", 0),
+            )
+
+        # Convert MerkleSignatureVerifier objects
+        if set(obj.keys()) == {"commitment", "key_lifetime"}:
+            return MerkleSignatureVerifier(
+                commitment=convert_values(obj["commitment"]),
+                key_lifetime=obj["key_lifetime"],
+            )
+
+        # Convert Participant objects
+        if set(obj.keys()) == {"verifier", "weight"}:
+            return Participant(
+                verifier=convert_values(obj["verifier"]),
+                weight=obj["weight"],
+            )
+
+        # Convert Reveal objects - handle missing position field
+        if {"sigslot", "participant"}.issubset(obj.keys()):
+            return Reveal(
+                position=obj.get("position", 0),  # Default to 0 if missing
+                sigslot=convert_values(obj["sigslot"]),
+                participant=convert_values(obj["participant"]),
+            )
+
+        # Convert StateProofMessage objects
+        if set(obj.keys()) == {
+            "block_headers_commitment",
+            "first_attested_round",
+            "last_attested_round",
+            "ln_proven_weight",
+            "voters_commitment",
+        }:
+            return StateProofMessage(
+                block_headers_commitment=convert_values(
+                    obj["block_headers_commitment"]
+                ),
+                first_attested_round=obj["first_attested_round"],
+                last_attested_round=obj["last_attested_round"],
+                ln_proven_weight=obj["ln_proven_weight"],
+                voters_commitment=convert_values(obj["voters_commitment"]),
+            )
+
+        # Convert StateProof objects - handle missing merkle_signature_salt_version
+        state_proof_keys = {
+            "sig_commit",
+            "signed_weight",
+            "sig_proofs",
+            "part_proofs",
+            "reveals",
+            "positions_to_reveal",
+        }
+        if state_proof_keys.issubset(obj.keys()):
+            return StateProof(
+                sig_commit=convert_values(obj["sig_commit"]),
+                signed_weight=obj["signed_weight"],
+                sig_proofs=convert_values(obj["sig_proofs"]),
+                part_proofs=convert_values(obj["part_proofs"]),
+                merkle_signature_salt_version=obj.get(
+                    "merkle_signature_salt_version", 0
+                ),
+                reveals=convert_values(obj["reveals"]),
+                positions_to_reveal=obj["positions_to_reveal"],
+            )
+
         # Convert on_complete field if present
         if "on_complete" in obj:
             obj = obj.copy()
             obj["on_complete"] = convert_on_complete(obj["on_complete"])
 
-        # Try to auto-convert dict to Record type
-        return auto_convert_dict_to_record(obj)
+        return {key: convert_values(value) for key, value in obj.items()}
 
     elif isinstance(obj, list) and all(
         isinstance(x, int) and 0 <= x <= 255 for x in obj
@@ -165,8 +227,6 @@ def convert_values(obj: Any) -> Any:
 
 
 def camel_to_snake(name: str) -> str:
-    import re
-
     name = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
     return re.sub("([a-z0-9])([A-Z])", r"\1_\2", name).lower()
 
@@ -241,11 +301,11 @@ def create_transaction_test_data(test_data: dict[str, Any]) -> TransactionTestDa
             "field_name": "heartbeat",
             "field_class": HeartbeatTransactionFields,
         },
-        # "StateProof": {
-        #     "type": TransactionType.STATE_PROOF,
-        #     "field_name": "state_proof",
-        #     "field_class": StateProofTransactionFields,
-        # },
+        "StateProof": {
+            "type": TransactionType.STATE_PROOF,
+            "field_name": "state_proof",
+            "field_class": StateProofTransactionFields,
+        },
     }
 
     # Get the transaction type configuration
