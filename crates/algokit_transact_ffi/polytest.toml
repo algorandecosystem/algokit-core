@@ -27,6 +27,14 @@ groups = ["Transaction Group Tests"]
 desc = "Tests for key registration transactions"
 groups = ["Transaction Tests"]
 
+[suite.Heartbeat]
+desc = "Tests for heartbeat transactions"
+groups = ["Transaction Tests"]
+
+[suite."State Proof"]
+desc = "Tests for state proof transactions"
+groups = ["Transaction Tests"]
+
 # Test Group: Generic Transaction Tests
 
 [group."Generic Transaction Tests"]

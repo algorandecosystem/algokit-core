@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 import json
+import inspect
 from typing import Any
 from algokit_transact import (
     PaymentTransactionFields,
@@ -12,9 +13,9 @@ from algokit_transact import (
     AppCallTransactionFields,
     KeyRegistrationTransactionFields,
     OnApplicationComplete,
-    StateSchema,
     HeartbeatTransactionFields,
 )
+from algokit_transact.algokit_transact_ffi import StateProofTransactionFields
 from nacl.signing import SigningKey
 
 
@@ -49,23 +50,110 @@ class TestData:
     offline_key_registration: TransactionTestData
     non_participation_key_registration: TransactionTestData
     heartbeat: TransactionTestData
+    # state_proof: TransactionTestData
+
+
+def is_ffi_record_class(cls: type) -> bool:
+    """
+    Check if a class is a uniffi-generated Record type.
+
+    uniffi Record classes are defined in the algokit_transact_ffi module
+    and have __init__ with type-annotated parameters.
+    """
+    return (
+        hasattr(cls, "__module__")
+        and "algokit_transact_ffi" in cls.__module__
+        and hasattr(cls, "__init__")
+        and cls not in (list, dict, str, int, bool, bytes, type(None))
+    )
+
+
+def auto_convert_dict_to_record(data: dict) -> Any:
+    """
+    Automatically convert a dictionary to a uniffi Record object if possible.
+
+    This is necessary because uniffi-generated Python bindings don't automatically
+    convert dictionaries to Record objects when storing them in object attributes.
+    When you pass a dict to a constructor parameter that expects a Record type,
+    uniffi stores it as-is (as a dict). Later, when the object needs to be
+    serialized or validated, the check_lower() method expects an actual object
+    with attributes, not a dict, causing AttributeError.
+
+    This function uses type introspection to automatically detect which Record
+    class matches the dictionary keys and instantiates it. This approach is
+    sustainable and will automatically work for new Record types like StateProof
+    which has many nested Record types.
+
+    Only converts simple nested Record types (not transaction field types).
+    Transaction field types are handled separately in create_transaction_test_data.
+    """
+    import algokit_transact.algokit_transact_ffi as ffi
+
+    # Don't convert empty dicts
+    if not data:
+        return data
+
+    # Skip conversion for transaction field dictionaries
+    # These have common keys like 'sender', 'fee', 'genesis_hash', etc.
+    transaction_indicators = {
+        "sender",
+        "fee",
+        "genesis_hash",
+        "genesis_id",
+        "transaction_type",
+        "payment",
+        "asset_transfer",
+        "asset_config",
+        "asset_freeze",
+        "app_call",
+        "key_registration",
+        "heartbeat",
+        "state_proof",
+    }
+    if any(key in data for key in transaction_indicators):
+        # This looks like transaction data, don't auto-convert
+        return {key: convert_values(value) for key, value in data.items()}
+
+    # Get all classes from the FFI module, excluding transaction field types
+    ffi_classes = [
+        cls
+        for name, cls in inspect.getmembers(ffi, inspect.isclass)
+        if is_ffi_record_class(cls) and not name.endswith("TransactionFields")
+    ]
+
+    # Try to find a matching class by checking if all dict keys match init parameters
+    for cls in ffi_classes:
+        try:
+            sig = inspect.signature(cls.__init__)
+            params = {name for name, param in sig.parameters.items() if name != "self"}
+            dict_keys = set(data.keys())
+
+            # Check if the dictionary keys match the class parameters exactly
+            if dict_keys == params:
+                # Recursively convert nested dicts/lists
+                converted_kwargs = {
+                    key: convert_values(value) for key, value in data.items()
+                }
+                return cls(**converted_kwargs)
+        except (ValueError, TypeError):
+            # This class doesn't match, continue
+            continue
+
+    # No matching Record class found, return as dict with converted values
+    return {key: convert_values(value) for key, value in data.items()}
 
 
 def convert_values(obj: Any) -> Any:
     """Recursively convert values in the data structure to appropriate types"""
     if isinstance(obj, dict):
-        # Convert StateSchema objects
-        if "num_uints" in obj and "num_byte_slices" in obj and len(obj) == 2:
-            return StateSchema(
-                num_uints=obj["num_uints"], num_byte_slices=obj["num_byte_slices"]
-            )
-
         # Convert on_complete field if present
         if "on_complete" in obj:
             obj = obj.copy()
             obj["on_complete"] = convert_on_complete(obj["on_complete"])
 
-        return {key: convert_values(value) for key, value in obj.items()}
+        # Try to auto-convert dict to Record type
+        return auto_convert_dict_to_record(obj)
+
     elif isinstance(obj, list) and all(
         isinstance(x, int) and 0 <= x <= 255 for x in obj
     ):
@@ -153,6 +241,11 @@ def create_transaction_test_data(test_data: dict[str, Any]) -> TransactionTestDa
             "field_name": "heartbeat",
             "field_class": HeartbeatTransactionFields,
         },
+        # "StateProof": {
+        #     "type": TransactionType.STATE_PROOF,
+        #     "field_name": "state_proof",
+        #     "field_class": StateProofTransactionFields,
+        # },
     }
 
     # Get the transaction type configuration

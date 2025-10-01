@@ -490,25 +490,17 @@ impl TestDataMother {
     }
 
     pub fn asset_freeze() -> TransactionTestData {
-        let signing_private_key: Byte32 = [
-            2, 205, 103, 33, 67, 14, 82, 196, 115, 196, 206, 254, 50, 110, 63, 182, 149, 229, 184,
-            216, 93, 11, 13, 99, 69, 213, 218, 165, 134, 118, 47, 44,
-        ];
         let transaction = AssetFreezeTransactionMother::asset_freeze()
             .build()
             .unwrap();
-        TransactionTestData::new(transaction, signing_private_key)
+        TransactionTestData::new(transaction, SIGNING_PRIVATE_KEY)
     }
 
     pub fn asset_unfreeze() -> TransactionTestData {
-        let signing_private_key: Byte32 = [
-            2, 205, 103, 33, 67, 14, 82, 196, 115, 196, 206, 254, 50, 110, 63, 182, 149, 229, 184,
-            216, 93, 11, 13, 99, 69, 213, 218, 165, 134, 118, 47, 44,
-        ];
         let transaction = AssetFreezeTransactionMother::asset_unfreeze()
             .build()
             .unwrap();
-        TransactionTestData::new(transaction, signing_private_key)
+        TransactionTestData::new(transaction, SIGNING_PRIVATE_KEY)
     }
 
     pub fn export<F, T>(path: &std::path::Path, transform: Option<F>)
@@ -536,6 +528,7 @@ impl TestDataMother {
             "heartbeat": Self::heartbeat().as_json(&transform),
             "asset_freeze": Self::asset_freeze().as_json(&transform),
             "asset_unfreeze": Self::asset_unfreeze().as_json(&transform),
+            // "state_proof": Self::state_proof().as_json(&transform),
         }));
 
         let file = File::create(path).expect("Failed to create export file");
