@@ -14,6 +14,8 @@ from algokit_utils.algokit_utils_ffi import (
     AppMethodCallArg,
     Composer,
     PaymentParams,
+    StructField,
+    StructFieldType,
     TransactionSignerGetter,
     AbiValue
 )
@@ -112,6 +114,13 @@ async def test_composer():
 bool_type = AbiType.bool()
 uint_tuple_type = AbiType.tuple([AbiType.uint(64)])
 uint_dynamic_array_type = AbiType.dynamic_array(AbiType.uint(64))
+uint_in_struct_type = AbiType.struct_fields(name="uint_struct", fields=[StructField(name="uint_field", field_type=StructFieldType.TYPE(AbiType.uint(64)))])
+
+def test_abi_uint_in_struct():
+    expected_encoding = b'\x00\x00\x00\x00\x00\x00\x00\x07'
+    uint_struct_val: AbiValue = AbiValue.struct_fields(fields={"uint_field": AbiValue.uint(7)})
+    assert uint_in_struct_type.encode(uint_struct_val) == expected_encoding
+    assert uint_in_struct_type.decode(expected_encoding).get_struct_fields() == {"uint_field": AbiValue.uint(7)}
 
 def test_abi_uint_tuple():
     expected_encoding = b'\x00\x00\x00\x00\x00\x00\x00\x07'

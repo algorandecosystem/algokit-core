@@ -1,8 +1,112 @@
 use std::{str::FromStr, sync::Arc};
 
 use algokit_abi::ABIType as RustABIType;
+use algokit_abi::types::r#struct::ABIStruct as RustABIStruct;
+use algokit_abi::types::r#struct::StructField as RustStructField;
+use algokit_abi::types::r#struct::StructFieldType as RustStructFieldType;
 
 use crate::transactions::common::UtilsError;
+
+#[derive(Debug, Clone, uniffi::Enum)]
+pub enum StructFieldType {
+    Type(Arc<ABIType>),
+    Fields(Vec<Arc<StructField>>),
+}
+
+impl From<RustStructFieldType> for StructFieldType {
+    fn from(value: RustStructFieldType) -> Self {
+        match value {
+            RustStructFieldType::Type(t) => {
+                StructFieldType::Type(Arc::new(ABIType { abi_type: t }))
+            }
+            RustStructFieldType::Fields(f) => StructFieldType::Fields(
+                f.into_iter()
+                    .map(|sf| {
+                        Arc::new(StructField {
+                            name: sf.name,
+                            field_type: sf.field_type.into(),
+                        })
+                    })
+                    .collect(),
+            ),
+        }
+    }
+}
+
+impl From<StructFieldType> for RustStructFieldType {
+    fn from(value: StructFieldType) -> Self {
+        match value {
+            StructFieldType::Type(t) => RustStructFieldType::Type(t.abi_type.clone()),
+            StructFieldType::Fields(f) => RustStructFieldType::Fields(
+                f.iter()
+                    .map(|sf| RustStructField {
+                        name: sf.name.clone(),
+                        field_type: sf.field_type.clone().into(),
+                    })
+                    .collect(),
+            ),
+        }
+    }
+}
+
+/// Represents a field in a struct
+#[derive(Debug, uniffi::Object)]
+pub struct StructField {
+    pub name: String,
+    pub field_type: StructFieldType,
+}
+
+#[uniffi::export]
+impl StructField {
+    #[uniffi::constructor]
+    pub fn new(name: String, field_type: StructFieldType) -> Self {
+        StructField { name, field_type }
+    }
+}
+
+impl From<RustStructField> for StructField {
+    fn from(value: RustStructField) -> Self {
+        StructField {
+            name: value.name,
+            field_type: value.field_type.into(),
+        }
+    }
+}
+
+impl From<&StructField> for RustStructField {
+    fn from(value: &StructField) -> Self {
+        RustStructField {
+            name: value.name.clone(),
+            field_type: value.field_type.clone().into(),
+        }
+    }
+}
+
+#[derive(uniffi::Object)]
+pub struct ABIStruct {
+    /// The name of the struct type
+    pub name: String,
+    /// The fields of the struct in order
+    pub fields: Vec<StructField>,
+}
+
+impl From<RustABIStruct> for ABIStruct {
+    fn from(value: RustABIStruct) -> Self {
+        ABIStruct {
+            name: value.name,
+            fields: value.fields.into_iter().map(|f| f.into()).collect(),
+        }
+    }
+}
+
+impl From<ABIStruct> for RustABIStruct {
+    fn from(value: ABIStruct) -> Self {
+        RustABIStruct {
+            name: value.name,
+            fields: value.fields.into_iter().map(|f| (&f).into()).collect(),
+        }
+    }
+}
 
 #[derive(uniffi::Object, Debug)]
 pub struct ABIType {
@@ -119,7 +223,15 @@ impl ABIType {
         ABIType { abi_type }
     }
 
-    // TODO: Struct
+    #[uniffi::constructor]
+    pub fn struct_fields(name: String, fields: Vec<Arc<StructField>>) -> Self {
+        let rust_fields = fields.into_iter().map(|f| f.as_ref().into()).collect();
+        let abi_type = RustABIType::Struct(RustABIStruct {
+            name,
+            fields: rust_fields,
+        });
+        ABIType { abi_type }
+    }
 
     #[uniffi::constructor]
     pub fn avm_bytes() -> Self {
