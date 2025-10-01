@@ -170,14 +170,6 @@ impl EstimateTransactionSize for Transaction {
     }
 }
 
-impl TryFrom<state_proof::StateProofTransactionBuilder> for Transaction {
-    type Error = state_proof::StateProofTransactionBuilderError;
-
-    fn try_from(builder: state_proof::StateProofTransactionBuilder) -> Result<Self, Self::Error> {
-        builder.build()
-    }
-}
-
 /// A signed transaction.
 #[serde_as]
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]

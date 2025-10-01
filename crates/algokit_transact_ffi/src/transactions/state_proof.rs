@@ -1,9 +1,7 @@
 use crate::*;
 
-/// Represents the hash factory used within a Merkle array proof.
 #[ffi_record]
 pub struct HashFactory {
-    /// Hash type.
     hash_type: u64,
 }
 
@@ -15,16 +13,10 @@ impl From<algokit_transact::HashFactory> for HashFactory {
     }
 }
 
-/// Represents a Merkle array proof used in state proofs.
 #[ffi_record]
 pub struct MerkleArrayProof {
-    /// Merkle proof path.
     path: Vec<Vec<u8>>,
-
-    /// Hash factory.
     hash_factory: HashFactory,
-
-    /// Tree depth for the proof.
     tree_depth: u64,
 }
 
@@ -38,13 +30,9 @@ impl From<algokit_transact::MerkleArrayProof> for MerkleArrayProof {
     }
 }
 
-/// Represents a Merkle signature verifier used for participants.
 #[ffi_record]
 pub struct MerkleSignatureVerifier {
-    /// Commitment used in the verifier (64 bytes).
     commitment: Vec<u8>,
-
-    /// Key lifetime.
     key_lifetime: u64,
 }
 
@@ -57,13 +45,16 @@ impl From<algokit_transact::MerkleSignatureVerifier> for MerkleSignatureVerifier
     }
 }
 
-/// Represents a participant in the state proof.
+/// A Participant corresponds to an account whose AccountData.Status is Online, and for which the
+/// expected sigRound satisfies AccountData.VoteFirstValid <= sigRound <= AccountData.VoteLastValid.
+///
+/// In the Algorand ledger, it is possible for multiple accounts to have the same PK. Thus, the PK is
+/// not necessarily unique among Participants. However, each account will produce a unique Participant
+/// struct, to avoid potential DoS attacks where one account claims to have the same VoteID PK as
+/// another account.
 #[ffi_record]
 pub struct Participant {
-    /// Merkle signature verifier information.
     verifier: MerkleSignatureVerifier,
-
-    /// Participant weight in microalgos.
     weight: u64,
 }
 
@@ -76,10 +67,8 @@ impl From<algokit_transact::Participant> for Participant {
     }
 }
 
-/// Represents a Falcon verifier containing a public key.
 #[ffi_record]
 pub struct FalconVerifier {
-    /// Falcon public key.
     public_key: Vec<u8>,
 }
 
@@ -91,19 +80,17 @@ impl From<algokit_transact::FalconVerifier> for FalconVerifier {
     }
 }
 
-/// Represents a Falcon signature structure within the state proof.
+/// Represents a signature in the merkle signature scheme using falcon signatures
+/// as an underlying crypto scheme. It consists of an ephemeral public key, a signature, a merkle
+/// verification path and an index. The merkle signature considered valid only if the Signature is
+/// verified under the ephemeral public key and the Merkle verification path verifies that the
+/// ephemeral public key is located at the given index of the tree (for the root given in the
+/// long-term public key). More details can be found on Algorand's spec
 #[ffi_record]
 pub struct FalconSignatureStruct {
-    /// Falcon signature bytes.
     signature: Vec<u8>,
-
-    /// Index within the vector commitment.
     vector_commitment_index: u64,
-
-    /// Merkle proof associated with the signature.
     proof: MerkleArrayProof,
-
-    /// Falcon verifying key.
     verifying_key: FalconVerifier,
 }
 
@@ -118,13 +105,9 @@ impl From<algokit_transact::FalconSignatureStruct> for FalconSignatureStruct {
     }
 }
 
-/// Represents a signature slot commitment in the state proof.
 #[ffi_record]
 pub struct SigslotCommit {
-    /// Signature slot information.
     sig: FalconSignatureStruct,
-
-    /// Total weight of signatures in lower-numbered slots.
     lower_sig_weight: u64,
 }
 
@@ -137,13 +120,11 @@ impl From<algokit_transact::SigslotCommit> for SigslotCommit {
     }
 }
 
-/// Represents a reveal entry in the state proof.
+/// A single array position revealed as part of a state proof. It reveals an element of the
+/// signature array and the corresponding element of the participants array.
 #[ffi_record]
 pub struct Reveal {
-    /// Signature slot commitment.
     sigslot: SigslotCommit,
-
-    /// Participant information.
     participant: Participant,
 }
 
@@ -156,38 +137,21 @@ impl From<algokit_transact::Reveal> for Reveal {
     }
 }
 
-/// Represents the core state proof payload included in a transaction.
 #[ffi_record]
 pub struct StateProof {
-    /// Signature commitment.
     sig_commit: Vec<u8>,
-
-    /// Signed weight.
     signed_weight: u64,
-
-    /// Signature Merkle proofs.
     sig_proofs: MerkleArrayProof,
-
-    /// Participant Merkle proofs.
     part_proofs: MerkleArrayProof,
-
-    /// Merkle signature salt version.
     merkle_signature_salt_version: u64,
-
-    /// Revealed positions mapping (position -> Reveal).
     reveals: Vec<RevealEntry>,
-
-    /// Positions to reveal.
     positions_to_reveal: Vec<u64>,
 }
 
 /// Helper struct for reveals map entries since FFI doesn't support maps directly.
 #[ffi_record]
 pub struct RevealEntry {
-    /// Position key.
     position: u64,
-
-    /// Reveal value.
     reveal: Reveal,
 }
 
@@ -214,22 +178,12 @@ impl From<algokit_transact::StateProof> for StateProof {
     }
 }
 
-/// Represents the state proof message included in the transaction.
 #[ffi_record]
 pub struct StateProofMessage {
-    /// Block headers commitment.
     block_headers_commitment: Vec<u8>,
-
-    /// Voters commitment.
     voters_commitment: Vec<u8>,
-
-    /// Natural logarithm of the proven weight.
     ln_proven_weight: u64,
-
-    /// First attested round.
     first_attested_round: u64,
-
-    /// Last attested round.
     last_attested_round: u64,
 }
 
@@ -250,13 +204,8 @@ impl From<algokit_transact::StateProofMessage> for StateProofMessage {
 /// Used to submit Algorand state proofs on-chain.
 #[ffi_record]
 pub struct StateProofTransactionFields {
-    /// Type of the state proof.
     state_proof_type: Option<u64>,
-
-    /// State proof payload.
     state_proof: Option<StateProof>,
-
-    /// State proof message.
     message: Option<StateProofMessage>,
 }
 
