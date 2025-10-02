@@ -88,8 +88,16 @@ impl Composer {
                 message: e.to_string(),
             })?;
         Ok(TempSendResponse {
-            transaction_ids: result.transaction_ids,
-            app_ids: result.confirmations.iter().map(|c| c.app_id).collect(),
+            transaction_ids: result
+                .results
+                .iter()
+                .map(|r| r.transaction_id.clone())
+                .collect(),
+            app_ids: result
+                .results
+                .iter()
+                .map(|r| r.confirmation.app_id)
+                .collect(),
         })
     }
 

@@ -317,8 +317,7 @@ async fn test_alters_fee_all_inner_fees_covered(
 
     assert_eq!(result.results.len(), 1);
     let actual_fees = result
-        .confirmations
-        .iter()
+        .results.iter().map(|r| &r.confirmation)
         .map(|c| c.txn.transaction.header().fee.unwrap_or(0))
         .collect::<Vec<_>>();
     assert_eq!(actual_fees[0], expected_fee);
@@ -376,8 +375,7 @@ async fn test_alters_fee_some_inner_fees_covered(
 
     assert_eq!(result.results.len(), 1);
     let actual_fees = result
-        .confirmations
-        .iter()
+        .results.iter().map(|r| &r.confirmation)
         .map(|c| c.txn.transaction.header().fee.unwrap_or(0))
         .collect::<Vec<_>>();
     assert_eq!(actual_fees[0], expected_fee);
@@ -435,8 +433,7 @@ async fn test_alters_fee_some_inner_fees_surplus(
 
     assert_eq!(result.results.len(), 1);
     let actual_fees = result
-        .confirmations
-        .iter()
+        .results.iter().map(|r| &r.confirmation)
         .map(|c| c.txn.transaction.header().fee.unwrap_or(0))
         .collect::<Vec<_>>();
     assert_eq!(actual_fees[0], expected_fee);
@@ -488,8 +485,7 @@ async fn test_alters_fee_expensive_abi_method_calls(
 
     assert_eq!(result.results.len(), 1);
     let actual_fees: Vec<u64> = result
-        .confirmations
-        .iter()
+        .results.iter().map(|r| &r.confirmation)
         .map(|c| c.txn.transaction.header().fee.unwrap_or(0))
         .collect();
     assert_eq!(actual_fees[0], expected_fee);
@@ -655,8 +651,7 @@ async fn test_does_not_alter_static_fee_with_surplus(
 
     assert_eq!(result.results.len(), 1);
     let actual_fees: Vec<u64> = result
-        .confirmations
-        .iter()
+        .results.iter().map(|r| &r.confirmation)
         .map(|c| c.txn.transaction.header().fee.unwrap_or(0))
         .collect();
     assert_eq!(actual_fees[0], expected_fee);
@@ -726,8 +721,7 @@ async fn test_alters_fee_multiple_app_calls_in_group(
 
     assert_eq!(result.results.len(), 2);
     let actual_fees: Vec<u64> = result
-        .confirmations
-        .iter()
+        .results.iter().map(|r| &r.confirmation)
         .map(|c| c.txn.transaction.header().fee.unwrap_or(0))
         .collect();
     assert_eq!(actual_fees[0], txn_1_expected_fee);
@@ -792,8 +786,7 @@ async fn test_does_not_alter_fee_when_group_covers_inner_fees(
 
     assert_eq!(result.results.len(), 2);
     let actual_fees: Vec<u64> = result
-        .confirmations
-        .iter()
+        .results.iter().map(|r| &r.confirmation)
         .map(|c| c.txn.transaction.header().fee.unwrap_or(0))
         .collect();
     assert_eq!(actual_fees[0], txn_1_expected_fee);
@@ -866,8 +859,7 @@ async fn test_alters_fee_nested_abi_method_call(
 
     assert_eq!(result.results.len(), 3);
     let actual_fees = result
-        .confirmations
-        .iter()
+        .results.iter().map(|r| &r.confirmation)
         .map(|c| c.txn.transaction.header().fee.unwrap_or(0))
         .collect::<Vec<_>>();
     assert_eq!(actual_fees[0], 1500);
@@ -1015,8 +1007,7 @@ async fn test_alters_fee_allocating_surplus_to_most_constrained(
 
     assert_eq!(result.results.len(), 3);
     let actual_fees = result
-        .confirmations
-        .iter()
+        .results.iter().map(|r| &r.confirmation)
         .map(|c| c.txn.transaction.header().fee.unwrap_or(0))
         .collect::<Vec<_>>();
     assert_eq!(actual_fees[0], 1500);
@@ -1068,8 +1059,7 @@ async fn test_alters_fee_large_surplus_pooling_to_lower_siblings(
 
     assert_eq!(result.results.len(), 1);
     let actual_fees = result
-        .confirmations
-        .iter()
+        .results.iter().map(|r| &r.confirmation)
         .map(|c| c.txn.transaction.header().fee.unwrap_or(0))
         .collect::<Vec<_>>();
     assert_eq!(actual_fees[0], expected_fee);
@@ -1125,8 +1115,7 @@ async fn test_alters_fee_surplus_pooling_to_some_siblings(
 
     assert_eq!(result.results.len(), 1);
     let actual_fees = result
-        .confirmations
-        .iter()
+        .results.iter().map(|r| &r.confirmation)
         .map(|c| c.txn.transaction.header().fee.unwrap_or(0))
         .collect::<Vec<_>>();
     assert_eq!(actual_fees[0], expected_fee);
@@ -1182,8 +1171,7 @@ async fn test_alters_fee_large_surplus_no_pooling(
 
     assert_eq!(result.results.len(), 1);
     let actual_fees = result
-        .confirmations
-        .iter()
+        .results.iter().map(|r| &r.confirmation)
         .map(|c| c.txn.transaction.header().fee.unwrap_or(0))
         .collect::<Vec<_>>();
     assert_eq!(actual_fees[0], expected_fee);
@@ -1260,8 +1248,7 @@ async fn test_alters_fee_multiple_surplus_poolings(
 
     assert_eq!(result.results.len(), 1);
     let actual_fees = result
-        .confirmations
-        .iter()
+        .results.iter().map(|r| &r.confirmation)
         .map(|c| c.txn.transaction.header().fee.unwrap_or(0))
         .collect::<Vec<_>>();
     assert_eq!(actual_fees[0], expected_fee);
@@ -1529,8 +1516,7 @@ async fn test_readonly_fixed_opcode_budget(
 
     assert_eq!(result.results.len(), 1);
     let actual_fees = result
-        .confirmations
-        .iter()
+        .results.iter().map(|r| &r.confirmation)
         .map(|c| c.txn.transaction.header().fee.unwrap_or(0))
         .collect::<Vec<_>>();
     assert_eq!(actual_fees[0], 1000);
@@ -1585,8 +1571,7 @@ async fn test_readonly_alters_fee_handling_inners(
 
     assert_eq!(result.results.len(), 1);
     let actual_fees = result
-        .confirmations
-        .iter()
+        .results.iter().map(|r| &r.confirmation)
         .map(|c| c.txn.transaction.header().fee.unwrap_or(0))
         .collect::<Vec<_>>();
     assert_eq!(actual_fees[0], expected_fee);
@@ -1867,4 +1852,5 @@ fn create_fees_tuple(
         ABIValue::Array(nested_fees.into_iter().map(ABIValue::from).collect()),
     ])
 }
+
 

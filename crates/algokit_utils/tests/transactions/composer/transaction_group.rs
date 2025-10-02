@@ -47,7 +47,7 @@ async fn test_payment_and_asset_create_group(
 
     // Verify group properties
     assert_eq!(
-        result.transaction_ids.len(),
+        result.results.len(),
         2,
         "Should have 2 transaction IDs in the group"
     );

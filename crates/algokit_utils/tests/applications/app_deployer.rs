@@ -1347,8 +1347,8 @@ async fn test_replacing_app_using_abi_methods(#[future] fixture: FixtureResult) 
     assert!(!app_2.deleted);
 
     // Check ABI return values
-    assert!(create_result.create_abi_return.is_some());
-    let create_abi_return = create_result.create_abi_return.unwrap();
+    assert!(create_result.create_result.abi_return.is_some());
+    let create_abi_return = create_result.create_result.abi_return.unwrap();
     assert!(create_abi_return.return_value.is_some());
     if let Some(algokit_abi::ABIValue::String(s)) = create_abi_return.return_value {
         assert_eq!(s, "created");
@@ -1356,8 +1356,8 @@ async fn test_replacing_app_using_abi_methods(#[future] fixture: FixtureResult) 
         panic!("Expected string return value from create method");
     }
 
-    assert!(create_result.delete_abi_return.is_some());
-    let delete_abi_return = create_result.delete_abi_return.unwrap();
+    assert!(create_result.delete_result.abi_return.is_some());
+    let delete_abi_return = create_result.delete_result.abi_return.unwrap();
     assert!(delete_abi_return.return_value.is_some());
     if let Some(algokit_abi::ABIValue::String(s)) = delete_abi_return.return_value {
         assert_eq!(s, "deleted");
@@ -1367,4 +1367,5 @@ async fn test_replacing_app_using_abi_methods(#[future] fixture: FixtureResult) 
 
     Ok(())
 }
+
 

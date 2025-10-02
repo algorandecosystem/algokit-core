@@ -184,8 +184,8 @@ async fn test_abi_method_returns_enhanced_processing(
         .await?;
 
     // Validate enhanced ABI return processing with AppManager - Sender's orchestration value
-    assert!(!result.transaction_ids.is_empty());
-    assert!(result.confirmation.confirmed_round.is_some());
+    assert!(!result.results.is_empty());
+    assert!(result.primary_result.confirmation.confirmed_round.is_some());
 
     Ok(())
 }

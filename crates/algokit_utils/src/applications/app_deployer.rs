@@ -2,15 +2,15 @@ use crate::clients::app_manager::{
     AppInformation, AppManager, AppManagerError, CompiledPrograms, CompiledTeal,
     DeploymentMetadata, TealTemplateParams,
 };
-use crate::transactions::{TransactionSender, TransactionSenderError};
+use crate::transactions::{
+    SendTransactionComposerResult, TransactionSender, TransactionSenderError,
+};
 use crate::{
     AppCreateMethodCallParams, AppCreateParams, AppDeleteMethodCallParams, AppDeleteParams,
     AppMethodCallArg, AppUpdateMethodCallParams, AppUpdateParams, ComposerError, SendParams,
     create_transaction_params,
 };
-use algod_client::models::PendingTransactionResponse;
-use algokit_abi::ABIReturn;
-use algokit_transact::{Address, Byte32, OnApplicationComplete, Transaction};
+use algokit_transact::{Address, Byte32, OnApplicationComplete};
 use base64::{Engine as _, engine::general_purpose};
 use indexer_client::{IndexerClient, apis::Error as IndexerError};
 use log::{debug, info, warn};
@@ -250,82 +250,40 @@ pub struct AppDeployParams {
 
 #[derive(Clone, Debug)]
 pub struct AppDeployerCreateResult {
-    /// The create transaction
-    pub transaction: Transaction,
-    /// The response from sending and waiting for the create transaction
-    pub confirmation: PendingTransactionResponse,
-    /// The create transaction ID
-    pub transaction_id: String,
-    /// The ABI return value of the create
-    pub abi_return: Option<ABIReturn>,
+    /// The result of the primary (last) transaction
+    pub primary_result: SendTransactionComposerResult,
+    /// All transaction results from the composer
+    pub results: Vec<SendTransactionComposerResult>,
     /// The group ID for the transaction group (if any)
     pub group: Option<Byte32>,
-    /// All transaction IDs in the group
-    pub transaction_ids: Vec<String>,
-    /// All transactions in the group
-    pub transactions: Vec<Transaction>,
-    /// All confirmations in the group
-    pub confirmations: Vec<PendingTransactionResponse>,
     /// The compiled approval and clear programs
     pub compiled_programs: CompiledPrograms,
-    /// The ABI return values
-    pub abi_returns: Vec<ABIReturn>,
 }
 
 #[derive(Clone, Debug)]
 pub struct AppDeployerUpdateResult {
-    /// The update transaction
-    pub transaction: Transaction,
-    /// The response from sending and waiting for the update transaction
-    pub confirmation: PendingTransactionResponse,
-    /// The update transaction ID
-    pub transaction_id: String,
-    /// The ABI return value of the update transaction
-    pub abi_return: Option<ABIReturn>,
+    /// The result of the primary (last) transaction
+    pub primary_result: SendTransactionComposerResult,
+    /// All transaction results from the composer
+    pub results: Vec<SendTransactionComposerResult>,
     /// The group ID for the transaction group (if any)
     pub group: Option<Byte32>,
-    /// All transaction IDs in the group
-    pub transaction_ids: Vec<String>,
-    /// All transactions in the group
-    pub transactions: Vec<Transaction>,
-    /// All confirmations in the group
-    pub confirmations: Vec<PendingTransactionResponse>,
     /// The compiled approval and clear programs
     pub compiled_programs: CompiledPrograms,
-    /// The ABI return values
-    pub abi_returns: Vec<ABIReturn>,
 }
 
 #[derive(Clone, Debug)]
 pub struct AppDeployerReplaceResult {
-    /// The create transaction
-    pub create_transaction: Transaction,
-    /// The response from sending and waiting for the create transaction
-    pub create_confirmation: PendingTransactionResponse,
-    /// The create transaction ID
-    pub create_transaction_id: String,
-    /// The ABI return value of the create transaction
-    pub create_abi_return: Option<ABIReturn>,
-    /// The delete transaction
-    pub delete_transaction: Transaction,
-    /// The response from sending and waiting for the delete transaction
-    pub delete_confirmation: PendingTransactionResponse,
-    /// The delete transaction ID
-    pub delete_transaction_id: String,
-    /// The ABI return value of the delete transaction
-    pub delete_abi_return: Option<ABIReturn>,
+    /// The result of the delete transaction
+    pub delete_result: SendTransactionComposerResult,
+    /// The result of the create transaction
+    pub create_result: SendTransactionComposerResult,
+    /// All transaction results from the composer
+    pub results: Vec<SendTransactionComposerResult>,
     /// The group ID for the transaction group (if any)
     pub group: Option<Byte32>,
-    /// All transaction IDs in the group
-    pub transaction_ids: Vec<String>,
-    /// All transactions in the group
-    pub transactions: Vec<Transaction>,
-    /// All confirmations in the group
-    pub confirmations: Vec<PendingTransactionResponse>,
     /// The compiled approval and clear programs
     pub compiled_programs: CompiledPrograms,
-    /// The ABI return values
-    pub abi_returns: Vec<ABIReturn>,
 }
 
 /// The result of an app deployment operation
@@ -1076,38 +1034,10 @@ impl AppDeployer {
         // Extract results from the create transaction
         let create_result_data = &composer_result.results[create_transaction_index];
 
-        // Extract all data from results
-        let transactions: Vec<_> = composer_result
-            .results
-            .iter()
-            .map(|r| r.transaction.clone())
-            .collect();
-        let transaction_ids: Vec<_> = composer_result
-            .results
-            .iter()
-            .map(|r| r.transaction_id.clone())
-            .collect();
-        let confirmations: Vec<_> = composer_result
-            .results
-            .iter()
-            .map(|r| r.confirmation.clone())
-            .collect();
-        let abi_returns: Vec<_> = composer_result
-            .results
-            .iter()
-            .filter_map(|r| r.abi_return.clone())
-            .collect();
-
         let create_result = AppDeployerCreateResult {
-            transaction: create_result_data.transaction.clone(),
-            confirmation: create_result_data.confirmation.clone(),
-            transaction_id: create_result_data.transaction_id.clone(),
-            abi_return: create_result_data.abi_return.clone(),
+            primary_result: create_result_data.clone(),
+            results: composer_result.results,
             group: composer_result.group,
-            transaction_ids,
-            transactions,
-            confirmations,
-            abi_returns,
             compiled_programs,
         };
 
@@ -1221,38 +1151,10 @@ impl AppDeployer {
         // Extract results from the update transaction
         let update_result_data = &composer_result.results[update_transaction_index];
 
-        // Extract all data from results
-        let transactions: Vec<_> = composer_result
-            .results
-            .iter()
-            .map(|r| r.transaction.clone())
-            .collect();
-        let transaction_ids: Vec<_> = composer_result
-            .results
-            .iter()
-            .map(|r| r.transaction_id.clone())
-            .collect();
-        let confirmations: Vec<_> = composer_result
-            .results
-            .iter()
-            .map(|r| r.confirmation.clone())
-            .collect();
-        let abi_returns: Vec<_> = composer_result
-            .results
-            .iter()
-            .filter_map(|r| r.abi_return.clone())
-            .collect();
-
         let update_result = AppDeployerUpdateResult {
-            transaction: update_result_data.transaction.clone(),
-            confirmation: update_result_data.confirmation.clone(),
-            transaction_id: update_result_data.transaction_id.clone(),
-            abi_return: update_result_data.abi_return.clone(),
+            primary_result: update_result_data.clone(),
+            results: composer_result.results,
             group: composer_result.group,
-            transaction_ids,
-            transactions,
-            confirmations,
-            abi_returns,
             compiled_programs,
         };
 
@@ -1483,42 +1385,11 @@ impl AppDeployer {
         let create_result_data = &result.results[create_transaction_index];
         let delete_result_data = &result.results[delete_transaction_index];
 
-        // Extract all data from results
-        let transactions: Vec<_> = result
-            .results
-            .iter()
-            .map(|r| r.transaction.clone())
-            .collect();
-        let transaction_ids: Vec<_> = result
-            .results
-            .iter()
-            .map(|r| r.transaction_id.clone())
-            .collect();
-        let confirmations: Vec<_> = result
-            .results
-            .iter()
-            .map(|r| r.confirmation.clone())
-            .collect();
-        let abi_returns: Vec<_> = result
-            .results
-            .iter()
-            .filter_map(|r| r.abi_return.clone())
-            .collect();
-
         let replace_result = AppDeployerReplaceResult {
-            create_transaction: create_result_data.transaction.clone(),
-            create_confirmation: create_result_data.confirmation.clone(),
-            create_transaction_id: create_result_data.transaction_id.clone(),
-            create_abi_return: create_result_data.abi_return.clone(),
-            delete_transaction: delete_result_data.transaction.clone(),
-            delete_confirmation: delete_result_data.confirmation.clone(),
-            delete_transaction_id: delete_result_data.transaction_id.clone(),
-            delete_abi_return: delete_result_data.abi_return.clone(),
+            delete_result: delete_result_data.clone(),
+            create_result: create_result_data.clone(),
+            results: result.results,
             group: result.group,
-            transaction_ids,
-            transactions,
-            confirmations,
-            abi_returns,
             compiled_programs,
         };
 

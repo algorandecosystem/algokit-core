@@ -1279,6 +1279,16 @@ fn get_abi_return_legacy(
     }
 }
 
+fn get_abi_return(
+    abi_return: &Option<ABIReturn>,
+) -> Result<&ABIReturn, Box<dyn std::error::Error + Send + Sync>> {
+    let abi_return = abi_return.as_ref().ok_or("No ABI return value")?;
+    match &abi_return.decode_error {
+        Some(err) => Err(format!("Failed to parse ABI result: {}", err).into()),
+        None => Ok(abi_return),
+    }
+}
+
 #[rstest]
 #[tokio::test]
 async fn test_double_nested(#[future] algorand_fixture: AlgorandFixtureResult) -> TestResult {
