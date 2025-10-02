@@ -1,14 +1,27 @@
 use crate::abi::{abi_type::ABIType, abi_value::ABIValue};
 use crate::create_transaction_params;
 use algokit_transact::Address;
+use algokit_transact_ffi::Transaction;
 use algokit_transact_ffi::transactions::app_call::{
     BoxReference, OnApplicationComplete, StateSchema,
 };
+use derive_more::Debug;
 use std::sync::Arc;
 
-use super::common::{
-    FfiTransactionSignerFromRust, RustTransactionSignerFromFfi, TransactionSigner, UtilsError,
+use super::asset_config::{AssetCreateParams, AssetDestroyParams};
+use super::asset_freeze::{AssetFreezeParams, AssetUnfreezeParams};
+use super::asset_transfer::{
+    AssetClawbackParams, AssetOptInParams, AssetOptOutParams, AssetTransferParams,
 };
+use super::common::{
+    FfiTransactionSignerFromRust, RustTransactionSignerFromFfi, TransactionSigner,
+    TransactionWithSigner, UtilsError,
+};
+use super::key_registration::{
+    NonParticipationKeyRegistrationParams, OfflineKeyRegistrationParams,
+    OnlineKeyRegistrationParams,
+};
+use super::payment::PaymentParams;
 
 use algokit_utils::transactions::app_call::{
     AppCallParams as RustAppCallParams, AppCreateParams as RustAppCreateParams,
@@ -191,6 +204,12 @@ impl From<RustABIMethod> for ABIMethod {
 #[derive(uniffi::Enum, Debug)]
 #[allow(clippy::large_enum_variant)]
 pub enum AppMethodCallArg {
+    // TODO: ABIReference(ABIReferenceValue),
+    /// Sentinel to request ARC-56 default resolution for this argument (handled by AppClient params builder)
+    DefaultValue,
+    /// Placeholder for a transaction-typed argument. Not encoded; satisfied by a transaction
+    /// included in the same group (extracted from other method call arguments).
+    TransactionPlaceHolder,
     ABIValue(Arc<ABIValue>),
     AppCreateCall(AppCreateParams),
     AppUpdateCall(AppUpdateParams),
@@ -199,6 +218,24 @@ pub enum AppMethodCallArg {
     AppCreateMethodCall(AppCreateMethodCallParams),
     AppUpdateMethodCall(AppUpdateMethodCallParams),
     AppDeleteMethodCall(AppDeleteMethodCallParams),
+    Transaction(Transaction),
+    #[debug("TransactionWithSigner")]
+    TransactionWithSigner(TransactionWithSigner),
+    Payment(PaymentParams),
+    // TODO: AccountClose(AccountCloseParams),
+    AssetTransfer(AssetTransferParams),
+    AssetOptIn(AssetOptInParams),
+    AssetOptOut(AssetOptOutParams),
+    AssetClawback(AssetClawbackParams),
+    AssetCreate(AssetCreateParams),
+    // TODO: AssetConfig(AssetConfigParam),
+    AssetDestroy(AssetDestroyParams),
+    AssetFreeze(AssetFreezeParams),
+    AssetUnfreeze(AssetUnfreezeParams),
+    AppCall(AppCallParams),
+    OnlineKeyRegistration(OnlineKeyRegistrationParams),
+    OfflineKeyRegistration(OfflineKeyRegistrationParams),
+    NonParticipationKeyRegistration(NonParticipationKeyRegistrationParams),
 }
 
 impl From<AppMethodCallArg> for algokit_utils::transactions::app_call::AppMethodCallArg {
@@ -243,7 +280,89 @@ impl From<AppMethodCallArg> for algokit_utils::transactions::app_call::AppMethod
                 algokit_utils::transactions::app_call::AppMethodCallArg::AppDeleteMethodCall(
                     app_delete_method_params.try_into().unwrap(),
                 )
-            }
+            },
+            AppMethodCallArg::Transaction(txn) => {
+                algokit_utils::transactions::app_call::AppMethodCallArg::Transaction(txn.try_into().unwrap())
+            },
+            AppMethodCallArg::TransactionWithSigner(txn_with_signer) => {
+                algokit_utils::transactions::app_call::AppMethodCallArg::TransactionWithSigner(
+                    txn_with_signer.try_into().unwrap(),
+                )
+            },
+            AppMethodCallArg::Payment(payment_params) => {
+                algokit_utils::transactions::app_call::AppMethodCallArg::Payment(
+                    payment_params.try_into().unwrap(),
+                )
+            },
+            AppMethodCallArg::AssetTransfer(asset_transfer_params) => {
+                algokit_utils::transactions::app_call::AppMethodCallArg::AssetTransfer(
+                    asset_transfer_params.try_into().unwrap(),
+                )
+            },
+            AppMethodCallArg::AssetOptIn(asset_opt_in_params) => {
+                algokit_utils::transactions::app_call::AppMethodCallArg::AssetOptIn(
+                    asset_opt_in_params.try_into().unwrap(),
+                )
+            },
+            AppMethodCallArg::AssetOptOut(asset_opt_out_params) => {
+                algokit_utils::transactions::app_call::AppMethodCallArg::AssetOptOut(
+                    asset_opt_out_params.try_into().unwrap(),
+                )
+            },
+            AppMethodCallArg::AssetClawback(asset_clawback_params) => {
+                algokit_utils::transactions::app_call::AppMethodCallArg::AssetClawback(
+                    asset_clawback_params.try_into().unwrap(),
+                )
+            },
+            AppMethodCallArg::AssetCreate(asset_create_params) => {
+                algokit_utils::transactions::app_call::AppMethodCallArg::AssetCreate(
+                    asset_create_params.try_into().unwrap(),
+                )
+            },
+            AppMethodCallArg::AssetDestroy(asset_destroy_params) => {
+                algokit_utils::transactions::app_call::AppMethodCallArg::AssetDestroy(
+                    asset_destroy_params.try_into().unwrap(),
+                )
+            },
+            AppMethodCallArg::AssetFreeze(asset_freeze_params) => {
+                algokit_utils::transactions::app_call::AppMethodCallArg::AssetFreeze(
+                    asset_freeze_params.try_into().unwrap(),
+                )
+            },
+            AppMethodCallArg::AssetUnfreeze(asset_unfreeze_params) => {
+                algokit_utils::transactions::app_call::AppMethodCallArg::AssetUnfreeze(
+                    asset_unfreeze_params.try_into().unwrap(),
+                )
+            },
+            AppMethodCallArg::AppCall(app_call_params) => {
+                algokit_utils::transactions::app_call::AppMethodCallArg::AppCall(
+                    app_call_params.try_into().unwrap(),
+                )
+            },
+            AppMethodCallArg::OnlineKeyRegistration(online_key_registration_params) => {
+                algokit_utils::transactions::app_call::AppMethodCallArg::OnlineKeyRegistration(
+                    online_key_registration_params.try_into().unwrap(),
+                )
+            },
+            AppMethodCallArg::OfflineKeyRegistration(offline_key_registration_params) => {
+                algokit_utils::transactions::app_call::AppMethodCallArg::OfflineKeyRegistration(
+                    offline_key_registration_params.try_into().unwrap(),
+                )
+            },
+            AppMethodCallArg::NonParticipationKeyRegistration(
+                non_participation_key_registration_params,
+            ) => {
+                algokit_utils::transactions::app_call::AppMethodCallArg::NonParticipationKeyRegistration(
+                    non_participation_key_registration_params.try_into().unwrap(),
+                )
+            },
+            AppMethodCallArg::DefaultValue => {
+                algokit_utils::transactions::app_call::AppMethodCallArg::DefaultValue
+            },
+            AppMethodCallArg::TransactionPlaceHolder => {
+                algokit_utils::transactions::app_call::AppMethodCallArg::TransactionPlaceholder
+            },
+
         }
     }
 }
@@ -275,11 +394,66 @@ impl From<algokit_utils::transactions::app_call::AppMethodCallArg> for AppMethod
             algokit_utils::transactions::app_call::AppMethodCallArg::AppDeleteMethodCall(
                 app_delete_method_params,
             ) => AppMethodCallArg::AppDeleteMethodCall(app_delete_method_params.into()),
-            _ => {
-                // For variants we don't support in FFI, we need to handle them somehow
-                // For now, let's just panic with a descriptive error
-                panic!("Unsupported AppMethodCallArg variant for FFI conversion")
-            }
+            algokit_utils::transactions::app_call::AppMethodCallArg::Transaction(txn) => {
+                AppMethodCallArg::Transaction(txn.into())
+            },
+            algokit_utils::transactions::app_call::AppMethodCallArg::TransactionWithSigner(
+                txn_with_signer,
+            ) => AppMethodCallArg::TransactionWithSigner(txn_with_signer.try_into().unwrap()),
+            algokit_utils::transactions::app_call::AppMethodCallArg::Payment(payment_params) => {
+                AppMethodCallArg::Payment(payment_params.into())
+            },
+            algokit_utils::transactions::app_call::AppMethodCallArg::AssetTransfer(
+                asset_transfer_params,
+            ) => AppMethodCallArg::AssetTransfer(asset_transfer_params.into()),
+            algokit_utils::transactions::app_call::AppMethodCallArg::AssetOptIn(
+                asset_opt_in_params,
+            ) => AppMethodCallArg::AssetOptIn(asset_opt_in_params.into()),
+            algokit_utils::transactions::app_call::AppMethodCallArg::AssetOptOut(
+                asset_opt_out_params,
+            ) => AppMethodCallArg::AssetOptOut(asset_opt_out_params.into()),
+            algokit_utils::transactions::app_call::AppMethodCallArg::AssetClawback(
+                asset_clawback_params,
+            ) => AppMethodCallArg::AssetClawback(asset_clawback_params.into()),
+            algokit_utils::transactions::app_call::AppMethodCallArg::AssetCreate(
+                asset_create_params,
+            ) => AppMethodCallArg::AssetCreate(asset_create_params.into()),
+            algokit_utils::transactions::app_call::AppMethodCallArg::AssetDestroy(
+                asset_destroy_params,
+            ) => AppMethodCallArg::AssetDestroy(asset_destroy_params.into()),
+            algokit_utils::transactions::app_call::AppMethodCallArg::AssetFreeze(
+                asset_freeze_params,
+            ) => AppMethodCallArg::AssetFreeze(asset_freeze_params.into()),
+            algokit_utils::transactions::app_call::AppMethodCallArg::AssetUnfreeze(
+                asset_unfreeze_params,
+            ) => AppMethodCallArg::AssetUnfreeze(asset_unfreeze_params.into()),
+            algokit_utils::transactions::app_call::AppMethodCallArg::AppCall(app_call_params) => {
+                AppMethodCallArg::AppCall(app_call_params.into())
+            },
+            algokit_utils::transactions::app_call::AppMethodCallArg::OnlineKeyRegistration(
+                online_key_registration_params,
+            ) => AppMethodCallArg::OnlineKeyRegistration(online_key_registration_params.into()),
+            algokit_utils::transactions::app_call::AppMethodCallArg::OfflineKeyRegistration(
+                offline_key_registration_params,
+            ) => AppMethodCallArg::OfflineKeyRegistration(offline_key_registration_params.into()),
+            algokit_utils::transactions::app_call::AppMethodCallArg::NonParticipationKeyRegistration(
+                non_participation_key_registration_params,
+            ) => AppMethodCallArg::NonParticipationKeyRegistration(non_participation_key_registration_params.into()),
+            algokit_utils::transactions::app_call::AppMethodCallArg::DefaultValue => {
+                AppMethodCallArg::DefaultValue
+            },
+            algokit_utils::transactions::app_call::AppMethodCallArg::ABIReference(_) => {
+                todo!()
+            },
+            algokit_utils::transactions::app_call::AppMethodCallArg::TransactionPlaceholder => {
+                AppMethodCallArg::TransactionPlaceHolder
+            },
+            algokit_utils::transactions::app_call::AppMethodCallArg::AccountClose(_) => {
+                todo!()
+            },
+            algokit_utils::transactions::app_call::AppMethodCallArg::AssetConfig(_) => {
+                todo!()
+            },
         }
     }
 }

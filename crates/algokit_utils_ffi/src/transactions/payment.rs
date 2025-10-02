@@ -1,7 +1,11 @@
+use std::sync::Arc;
+
 use crate::create_transaction_params;
 use crate::transactions::common::UtilsError;
 
 use algokit_utils::transactions::PaymentParams as RustPaymentParams;
+
+use super::common::{FfiTransactionSignerFromRust, TransactionSigner};
 
 create_transaction_params! {
     #[derive(uniffi::Record)]
@@ -55,5 +59,29 @@ impl TryFrom<PaymentParams> for RustPaymentParams {
                 })?,
             amount: params.amount,
         })
+    }
+}
+
+impl From<RustPaymentParams> for PaymentParams {
+    fn from(params: RustPaymentParams) -> Self {
+        PaymentParams {
+            sender: params.sender.to_string(),
+            signer: params.signer.map(|s| {
+                Arc::new(FfiTransactionSignerFromRust { rust_signer: s })
+                    as Arc<dyn TransactionSigner>
+            }),
+
+            rekey_to: params.rekey_to.map(|r| r.to_string()),
+            note: params.note,
+            lease: params.lease.map(|l| l.to_vec()),
+            static_fee: params.static_fee,
+            extra_fee: params.extra_fee,
+            max_fee: params.max_fee,
+            validity_window: params.validity_window,
+            first_valid_round: params.first_valid_round,
+            last_valid_round: params.last_valid_round,
+            receiver: params.receiver.to_string(),
+            amount: params.amount,
+        }
     }
 }

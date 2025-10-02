@@ -239,3 +239,83 @@ impl TryFrom<AssetDestroyParams> for RustAssetDestroyParams {
         })
     }
 }
+
+impl From<RustAssetCreateParams> for AssetCreateParams {
+    fn from(params: RustAssetCreateParams) -> Self {
+        AssetCreateParams {
+            sender: params.sender.to_string(),
+            signer: params.signer.map(|s| {
+                std::sync::Arc::new(super::common::FfiTransactionSignerFromRust { rust_signer: s })
+                    as std::sync::Arc<dyn super::common::TransactionSigner>
+            }),
+            rekey_to: params.rekey_to.map(|r| r.to_string()),
+            note: params.note,
+            lease: params.lease.map(|l| l.to_vec()),
+            static_fee: params.static_fee,
+            extra_fee: params.extra_fee,
+            max_fee: params.max_fee,
+            validity_window: params.validity_window,
+            first_valid_round: params.first_valid_round,
+            last_valid_round: params.last_valid_round,
+            total: params.total,
+            decimals: params.decimals,
+            default_frozen: params.default_frozen,
+            asset_name: params.asset_name,
+            unit_name: params.unit_name,
+            url: params.url,
+            metadata_hash: params.metadata_hash.map(|h| h.to_vec()),
+            manager: params.manager.map(|m| m.to_string()),
+            reserve: params.reserve.map(|r| r.to_string()),
+            freeze: params.freeze.map(|f| f.to_string()),
+            clawback: params.clawback.map(|c| c.to_string()),
+        }
+    }
+}
+
+impl From<RustAssetConfigParams> for AssetReconfigureParams {
+    fn from(params: RustAssetConfigParams) -> Self {
+        AssetReconfigureParams {
+            sender: params.sender.to_string(),
+            signer: params.signer.map(|s| {
+                std::sync::Arc::new(super::common::FfiTransactionSignerFromRust { rust_signer: s })
+                    as std::sync::Arc<dyn super::common::TransactionSigner>
+            }),
+            rekey_to: params.rekey_to.map(|r| r.to_string()),
+            note: params.note,
+            lease: params.lease.map(|l| l.to_vec()),
+            static_fee: params.static_fee,
+            extra_fee: params.extra_fee,
+            max_fee: params.max_fee,
+            validity_window: params.validity_window,
+            first_valid_round: params.first_valid_round,
+            last_valid_round: params.last_valid_round,
+            asset_id: params.asset_id,
+            manager: params.manager.map(|m| m.to_string()),
+            reserve: params.reserve.map(|r| r.to_string()),
+            freeze: params.freeze.map(|f| f.to_string()),
+            clawback: params.clawback.map(|c| c.to_string()),
+        }
+    }
+}
+
+impl From<RustAssetDestroyParams> for AssetDestroyParams {
+    fn from(params: RustAssetDestroyParams) -> Self {
+        AssetDestroyParams {
+            sender: params.sender.to_string(),
+            signer: params.signer.map(|s| {
+                std::sync::Arc::new(super::common::FfiTransactionSignerFromRust { rust_signer: s })
+                    as std::sync::Arc<dyn super::common::TransactionSigner>
+            }),
+            rekey_to: params.rekey_to.map(|r| r.to_string()),
+            note: params.note,
+            lease: params.lease.map(|l| l.to_vec()),
+            static_fee: params.static_fee,
+            extra_fee: params.extra_fee,
+            max_fee: params.max_fee,
+            validity_window: params.validity_window,
+            first_valid_round: params.first_valid_round,
+            last_valid_round: params.last_valid_round,
+            asset_id: params.asset_id,
+        }
+    }
+}
