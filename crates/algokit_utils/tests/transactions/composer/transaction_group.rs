@@ -52,7 +52,7 @@ async fn test_payment_and_asset_create_group(
         "Should have 2 transaction IDs in the group"
     );
     assert_eq!(
-        result.confirmations.len(),
+        result.results.len(),
         2,
         "Should have 2 confirmations in the group"
     );
@@ -60,7 +60,7 @@ async fn test_payment_and_asset_create_group(
     assert!(result.group.is_some(), "Group ID should be set");
 
     // Verify payment transaction
-    let payment_confirmation = &result.confirmations[0];
+    let payment_confirmation = &result.results[0].confirmation;
     assert!(
         payment_confirmation.confirmed_round.is_some(),
         "Payment transaction should be confirmed"
@@ -81,7 +81,7 @@ async fn test_payment_and_asset_create_group(
     }
 
     // Verify asset creation transaction
-    let asset_confirmation = &result.confirmations[1];
+    let asset_confirmation = &result.results[1].confirmation;
     assert!(
         asset_confirmation.confirmed_round.is_some(),
         "Asset creation transaction should be confirmed"
@@ -213,3 +213,5 @@ async fn test_add_transaction_to_group_too_big(
 
     Ok(())
 }
+
+

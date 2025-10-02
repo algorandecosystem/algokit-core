@@ -221,13 +221,18 @@ impl From<AlgoKitTransactError> for ComposerError {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct SendTransactionComposerResult {
+    pub transaction: Transaction,
+    pub transaction_id: String,
+    pub confirmation: PendingTransactionResponse,
+    pub abi_return: Option<ABIReturn>,
+}
+
 #[derive(Debug)]
 pub struct SendTransactionComposerResults {
     pub group: Option<Byte32>,
-    pub transactions: Vec<Transaction>,
-    pub transaction_ids: Vec<String>,
-    pub confirmations: Vec<PendingTransactionResponse>,
-    pub abi_returns: Vec<ABIReturn>,
+    pub results: Vec<SendTransactionComposerResult>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -244,10 +249,7 @@ pub struct SimulateParams {
 #[derive(Debug, Clone)]
 pub struct SimulateComposerResults {
     pub group: Option<Byte32>,
-    pub transactions: Vec<Transaction>,
-    pub transaction_ids: Vec<String>,
-    pub confirmations: Vec<PendingTransactionResponse>,
-    pub abi_returns: Vec<ABIReturn>,
+    pub results: Vec<SendTransactionComposerResult>,
     pub simulate_response: SimulateTransaction,
 }
 
@@ -871,19 +873,17 @@ impl Composer {
     fn parse_abi_return_values(
         &self,
         confirmations: &[PendingTransactionResponse],
-    ) -> Vec<ABIReturn> {
-        let mut abi_returns = Vec::new();
-
-        for (i, confirmation) in confirmations.iter().enumerate() {
-            if let Some(transaction) = self.transactions.get(i) {
-                if let Some(method) = self.get_method_from_transaction(transaction) {
-                    let abi_return = Self::extract_abi_return_from_logs(confirmation, method);
-                    abi_returns.push(abi_return);
-                }
-            }
-        }
-
-        abi_returns
+    ) -> Vec<Option<ABIReturn>> {
+        confirmations
+            .iter()
+            .enumerate()
+            .map(|(i, confirmation)| {
+                self.transactions
+                    .get(i)
+                    .and_then(|transaction| self.get_method_from_transaction(transaction))
+                    .map(|method| Self::extract_abi_return_from_logs(confirmation, method))
+            })
+            .collect()
     }
 
     pub(crate) fn extract_abi_return_from_logs(
@@ -2325,13 +2325,25 @@ impl Composer {
         // Parse ABI return values from the confirmations
         let abi_returns = self.parse_abi_return_values(&confirmations);
 
-        Ok(SendTransactionComposerResults {
-            group,
-            transactions,
-            transaction_ids,
-            confirmations,
-            abi_returns,
-        })
+        // Build results with 1:1 correspondence
+        let results = transactions
+            .into_iter()
+            .zip(transaction_ids)
+            .zip(confirmations)
+            .zip(abi_returns)
+            .map(
+                |(((transaction, transaction_id), confirmation), abi_return)| {
+                    SendTransactionComposerResult {
+                        transaction,
+                        transaction_id,
+                        confirmation,
+                        abi_return,
+                    }
+                },
+            )
+            .collect();
+
+        Ok(SendTransactionComposerResults { group, results })
     }
 
     pub fn count(&self) -> usize {
@@ -2442,6 +2454,24 @@ impl Composer {
 
         let abi_returns = self.parse_abi_return_values(&confirmations);
 
+        // Build results with 1:1 correspondence
+        let results = transactions
+            .into_iter()
+            .zip(transaction_ids)
+            .zip(confirmations)
+            .zip(abi_returns)
+            .map(
+                |(((transaction, transaction_id), confirmation), abi_return)| {
+                    SendTransactionComposerResult {
+                        transaction,
+                        transaction_id,
+                        confirmation,
+                        abi_return,
+                    }
+                },
+            )
+            .collect();
+
         if Config::debug() && Config::trace_all() {
             let payload =
                 serde_json::to_value(&simulate_response).unwrap_or_else(|_| serde_json::json!({}));
@@ -2457,10 +2487,7 @@ impl Composer {
 
         Ok(SimulateComposerResults {
             group,
-            transactions,
-            transaction_ids,
-            confirmations,
-            abi_returns,
+            results,
             simulate_response,
         })
     }

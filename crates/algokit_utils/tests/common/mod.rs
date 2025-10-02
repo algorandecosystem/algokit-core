@@ -89,7 +89,8 @@ pub async fn deploy_arc56_contract(
 
     let result = composer.send(None).await?;
 
-    let app_id = result.confirmations[0].app_id.expect("No app ID returned");
+    let app_id = result.results[0].confirmation.app_id.expect("No app ID returned");
 
     Ok(app_id)
 }
+

@@ -226,10 +226,10 @@ impl AssetManager {
         // Map transaction IDs back to assets
         let bulk_results: Vec<BulkAssetOptInOutResult> = asset_ids
             .iter()
-            .zip(results.transaction_ids.iter())
-            .map(|(&asset_id, transaction_id)| BulkAssetOptInOutResult {
+            .zip(results.results.iter())
+            .map(|(&asset_id, result)| BulkAssetOptInOutResult {
                 asset_id,
-                transaction_id: transaction_id.clone(),
+                transaction_id: result.transaction_id.clone(),
             })
             .collect();
 
@@ -301,10 +301,10 @@ impl AssetManager {
         // Map transaction IDs back to assets
         let bulk_results: Vec<BulkAssetOptInOutResult> = asset_ids
             .iter()
-            .zip(results.transaction_ids.iter())
-            .map(|(&asset_id, transaction_id)| BulkAssetOptInOutResult {
+            .zip(results.results.iter())
+            .map(|(&asset_id, result)| BulkAssetOptInOutResult {
                 asset_id,
-                transaction_id: transaction_id.clone(),
+                transaction_id: result.transaction_id.clone(),
             })
             .collect();
 

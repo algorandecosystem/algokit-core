@@ -198,8 +198,8 @@ async fn test_does_not_alter_fee_when_no_inners(
 
     let result = composer.send(None).await?;
 
-    assert_eq!(result.confirmations.len(), 1);
-    let transaction_fee = result.confirmations[0]
+    assert_eq!(result.results.len(), 1);
+    let transaction_fee = result.results[0].confirmation
         .txn
         .transaction
         .header()
@@ -256,8 +256,8 @@ async fn test_alters_fee_no_inner_fees_covered(
 
     let result = composer.send(None).await?;
 
-    assert_eq!(result.confirmations.len(), 1);
-    let transaction_fee = result.confirmations[0]
+    assert_eq!(result.results.len(), 1);
+    let transaction_fee = result.results[0].confirmation
         .txn
         .transaction
         .header()
@@ -315,7 +315,7 @@ async fn test_alters_fee_all_inner_fees_covered(
 
     let result = composer.send(None).await?;
 
-    assert_eq!(result.confirmations.len(), 1);
+    assert_eq!(result.results.len(), 1);
     let actual_fees = result
         .confirmations
         .iter()
@@ -374,7 +374,7 @@ async fn test_alters_fee_some_inner_fees_covered(
 
     let result = composer.send(None).await?;
 
-    assert_eq!(result.confirmations.len(), 1);
+    assert_eq!(result.results.len(), 1);
     let actual_fees = result
         .confirmations
         .iter()
@@ -433,7 +433,7 @@ async fn test_alters_fee_some_inner_fees_surplus(
 
     let result = composer.send(None).await?;
 
-    assert_eq!(result.confirmations.len(), 1);
+    assert_eq!(result.results.len(), 1);
     let actual_fees = result
         .confirmations
         .iter()
@@ -486,7 +486,7 @@ async fn test_alters_fee_expensive_abi_method_calls(
 
     let result = composer.send(None).await?;
 
-    assert_eq!(result.confirmations.len(), 1);
+    assert_eq!(result.results.len(), 1);
     let actual_fees: Vec<u64> = result
         .confirmations
         .iter()
@@ -653,7 +653,7 @@ async fn test_does_not_alter_static_fee_with_surplus(
 
     let result = composer.send(None).await?;
 
-    assert_eq!(result.confirmations.len(), 1);
+    assert_eq!(result.results.len(), 1);
     let actual_fees: Vec<u64> = result
         .confirmations
         .iter()
@@ -724,7 +724,7 @@ async fn test_alters_fee_multiple_app_calls_in_group(
 
     let result = composer.send(None).await?;
 
-    assert_eq!(result.confirmations.len(), 2);
+    assert_eq!(result.results.len(), 2);
     let actual_fees: Vec<u64> = result
         .confirmations
         .iter()
@@ -790,7 +790,7 @@ async fn test_does_not_alter_fee_when_group_covers_inner_fees(
 
     let result = composer.send(None).await?;
 
-    assert_eq!(result.confirmations.len(), 2);
+    assert_eq!(result.results.len(), 2);
     let actual_fees: Vec<u64> = result
         .confirmations
         .iter()
@@ -864,7 +864,7 @@ async fn test_alters_fee_nested_abi_method_call(
 
     let result = composer.send(None).await?;
 
-    assert_eq!(result.confirmations.len(), 3);
+    assert_eq!(result.results.len(), 3);
     let actual_fees = result
         .confirmations
         .iter()
@@ -1013,7 +1013,7 @@ async fn test_alters_fee_allocating_surplus_to_most_constrained(
 
     let result = composer.send(None).await?;
 
-    assert_eq!(result.confirmations.len(), 3);
+    assert_eq!(result.results.len(), 3);
     let actual_fees = result
         .confirmations
         .iter()
@@ -1066,7 +1066,7 @@ async fn test_alters_fee_large_surplus_pooling_to_lower_siblings(
 
     let result = composer.send(None).await?;
 
-    assert_eq!(result.confirmations.len(), 1);
+    assert_eq!(result.results.len(), 1);
     let actual_fees = result
         .confirmations
         .iter()
@@ -1123,7 +1123,7 @@ async fn test_alters_fee_surplus_pooling_to_some_siblings(
 
     let result = composer.send(None).await?;
 
-    assert_eq!(result.confirmations.len(), 1);
+    assert_eq!(result.results.len(), 1);
     let actual_fees = result
         .confirmations
         .iter()
@@ -1180,7 +1180,7 @@ async fn test_alters_fee_large_surplus_no_pooling(
 
     let result = composer.send(None).await?;
 
-    assert_eq!(result.confirmations.len(), 1);
+    assert_eq!(result.results.len(), 1);
     let actual_fees = result
         .confirmations
         .iter()
@@ -1258,7 +1258,7 @@ async fn test_alters_fee_multiple_surplus_poolings(
 
     let result = composer.send(None).await?;
 
-    assert_eq!(result.confirmations.len(), 1);
+    assert_eq!(result.results.len(), 1);
     let actual_fees = result
         .confirmations
         .iter()
@@ -1527,14 +1527,14 @@ async fn test_readonly_fixed_opcode_budget(
 
     let result = composer.send(None).await?;
 
-    assert_eq!(result.confirmations.len(), 1);
+    assert_eq!(result.results.len(), 1);
     let actual_fees = result
         .confirmations
         .iter()
         .map(|c| c.txn.transaction.header().fee.unwrap_or(0))
         .collect::<Vec<_>>();
     assert_eq!(actual_fees[0], 1000);
-    assert!(result.confirmations[0].inner_txns.is_none()); // No op-up inner transactions needed
+    assert!(result.results[0].confirmation.inner_txns.is_none()); // No op-up inner transactions needed
 
     Ok(())
 }
@@ -1583,16 +1583,16 @@ async fn test_readonly_alters_fee_handling_inners(
 
     let result = composer.send(None).await?;
 
-    assert_eq!(result.confirmations.len(), 1);
+    assert_eq!(result.results.len(), 1);
     let actual_fees = result
         .confirmations
         .iter()
         .map(|c| c.txn.transaction.header().fee.unwrap_or(0))
         .collect::<Vec<_>>();
     assert_eq!(actual_fees[0], expected_fee);
-    println!("TxnId: {}", result.confirmations[0].txn.transaction.id()?);
+    println!("TxnId: {}", result.results[0].confirmation.txn.transaction.id()?);
     assert_eq!(
-        result.confirmations[0].inner_txns.as_ref().unwrap().len(),
+        result.results[0].confirmation.inner_txns.as_ref().unwrap().len(),
         4
     );
 
@@ -1791,7 +1791,7 @@ async fn deploy_app(
 
     let result = composer.send(None).await?;
 
-    result.confirmations[0]
+    result.results[0].confirmation
         .app_id
         .ok_or_else(|| "No app id returned".into())
 }
@@ -1867,3 +1867,4 @@ fn create_fees_tuple(
         ABIValue::Array(nested_fees.into_iter().map(ABIValue::from).collect()),
     ])
 }
+

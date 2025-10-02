@@ -5,8 +5,8 @@ use crate::clients::app_manager::{
 use crate::transactions::{TransactionSender, TransactionSenderError};
 use crate::{
     AppCreateMethodCallParams, AppCreateParams, AppDeleteMethodCallParams, AppDeleteParams,
-    AppMethodCallArg, AppUpdateMethodCallParams, AppUpdateParams, Composer, ComposerError,
-    SendParams, create_transaction_params,
+    AppMethodCallArg, AppUpdateMethodCallParams, AppUpdateParams, ComposerError, SendParams,
+    create_transaction_params,
 };
 use algod_client::models::PendingTransactionResponse;
 use algokit_abi::ABIReturn;
@@ -1034,9 +1034,11 @@ impl AppDeployer {
             .await
             .map_err(|e| AppDeployError::ComposerError { source: e })?;
 
-        let create_transaction_index = composer_result.confirmations.len() - 1;
+        let create_transaction_index = composer_result.results.len() - 1;
 
-        let confirmation = composer_result.confirmations[create_transaction_index].clone();
+        let confirmation = composer_result.results[create_transaction_index]
+            .confirmation
+            .clone();
         let app_id = confirmation
             .app_id
             .ok_or_else(|| AppDeployError::DeploymentFailed {
@@ -1071,27 +1073,41 @@ impl AppDeployer {
 
         self.update_app_lookup(sender, &app_metadata);
 
-        // Extract results from the last transaction in the group (the create transaction)
-        let transaction = composer_result.transactions[create_transaction_index].clone();
-        let transaction_id = composer_result.transaction_ids[create_transaction_index].clone();
-        // Extract ABI return because the abi_returns from the composer isn't 1:1 with the transactions
-        let abi_return = match create_params {
-            CreateParams::AppCreateCall(_) => None,
-            CreateParams::AppCreateMethodCall(params) => Some(
-                Composer::extract_abi_return_from_logs(&confirmation, &params.method),
-            ),
-        };
+        // Extract results from the create transaction
+        let create_result_data = &composer_result.results[create_transaction_index];
+
+        // Extract all data from results
+        let transactions: Vec<_> = composer_result
+            .results
+            .iter()
+            .map(|r| r.transaction.clone())
+            .collect();
+        let transaction_ids: Vec<_> = composer_result
+            .results
+            .iter()
+            .map(|r| r.transaction_id.clone())
+            .collect();
+        let confirmations: Vec<_> = composer_result
+            .results
+            .iter()
+            .map(|r| r.confirmation.clone())
+            .collect();
+        let abi_returns: Vec<_> = composer_result
+            .results
+            .iter()
+            .filter_map(|r| r.abi_return.clone())
+            .collect();
 
         let create_result = AppDeployerCreateResult {
-            transaction,
-            confirmation,
-            transaction_id,
-            abi_return,
+            transaction: create_result_data.transaction.clone(),
+            confirmation: create_result_data.confirmation.clone(),
+            transaction_id: create_result_data.transaction_id.clone(),
+            abi_return: create_result_data.abi_return.clone(),
             group: composer_result.group,
-            transaction_ids: composer_result.transaction_ids,
-            transactions: composer_result.transactions,
-            confirmations: composer_result.confirmations,
-            abi_returns: composer_result.abi_returns,
+            transaction_ids,
+            transactions,
+            confirmations,
+            abi_returns,
             compiled_programs,
         };
 
@@ -1176,9 +1192,11 @@ impl AppDeployer {
             .await
             .map_err(|e| AppDeployError::ComposerError { source: e })?;
 
-        let update_transaction_index = composer_result.confirmations.len() - 1;
+        let update_transaction_index = composer_result.results.len() - 1;
 
-        let confirmation = composer_result.confirmations[update_transaction_index].clone();
+        let confirmation = composer_result.results[update_transaction_index]
+            .confirmation
+            .clone();
 
         let app_metadata = AppMetadata {
             app_id: existing_app_metadata.app_id,
@@ -1200,26 +1218,41 @@ impl AppDeployer {
 
         self.update_app_lookup(sender, &app_metadata);
 
-        let transaction = composer_result.transactions[update_transaction_index].clone();
-        let transaction_id = composer_result.transaction_ids[update_transaction_index].clone();
-        // Extract ABI return because the abi_returns from the composer isn't 1:1 with the transactions
-        let abi_return = match update_params {
-            UpdateParams::AppUpdateCall(_) => None,
-            UpdateParams::AppUpdateMethodCall(params) => Some(
-                Composer::extract_abi_return_from_logs(&confirmation, &params.method),
-            ),
-        };
+        // Extract results from the update transaction
+        let update_result_data = &composer_result.results[update_transaction_index];
+
+        // Extract all data from results
+        let transactions: Vec<_> = composer_result
+            .results
+            .iter()
+            .map(|r| r.transaction.clone())
+            .collect();
+        let transaction_ids: Vec<_> = composer_result
+            .results
+            .iter()
+            .map(|r| r.transaction_id.clone())
+            .collect();
+        let confirmations: Vec<_> = composer_result
+            .results
+            .iter()
+            .map(|r| r.confirmation.clone())
+            .collect();
+        let abi_returns: Vec<_> = composer_result
+            .results
+            .iter()
+            .filter_map(|r| r.abi_return.clone())
+            .collect();
 
         let update_result = AppDeployerUpdateResult {
-            transaction,
-            confirmation,
-            transaction_id,
-            abi_return,
+            transaction: update_result_data.transaction.clone(),
+            confirmation: update_result_data.confirmation.clone(),
+            transaction_id: update_result_data.transaction_id.clone(),
+            abi_return: update_result_data.abi_return.clone(),
             group: composer_result.group,
-            transaction_ids: composer_result.transaction_ids,
-            transactions: composer_result.transactions,
-            confirmations: composer_result.confirmations,
-            abi_returns: composer_result.abi_returns,
+            transaction_ids,
+            transactions,
+            confirmations,
+            abi_returns,
             compiled_programs,
         };
 
@@ -1408,7 +1441,9 @@ impl AppDeployer {
             .map_err(|e| AppDeployError::ComposerError { source: e })?;
 
         // Get create confirmation from the tracked index
-        let create_confirmation = result.confirmations[create_transaction_index].clone();
+        let create_confirmation = result.results[create_transaction_index]
+            .confirmation
+            .clone();
         let app_id =
             create_confirmation
                 .app_id
@@ -1442,43 +1477,48 @@ impl AppDeployer {
 
         self.update_app_lookup(sender, &app_metadata);
 
-        let delete_transaction_index = result.confirmations.len() - 1;
+        let delete_transaction_index = result.results.len() - 1;
 
-        let create_transaction = result.transactions[create_transaction_index].clone();
-        let create_transaction_id = result.transaction_ids[create_transaction_index].clone();
-        // Extract ABI return for method calls because the abi_returns from the composer isn't 1:1 with the transactions
-        let create_abi_return = match create_params {
-            CreateParams::AppCreateCall(_) => None,
-            CreateParams::AppCreateMethodCall(params) => Some(
-                Composer::extract_abi_return_from_logs(&create_confirmation, &params.method),
-            ),
-        };
+        // Extract create and delete results directly
+        let create_result_data = &result.results[create_transaction_index];
+        let delete_result_data = &result.results[delete_transaction_index];
 
-        let delete_transaction = result.transactions[delete_transaction_index].clone();
-        let delete_confirmation = result.confirmations[delete_transaction_index].clone();
-        let delete_transaction_id = result.transaction_ids[delete_transaction_index].clone();
-        // Extract ABI return for method calls because the abi_returns from the composer isn't 1:1 with the transactions
-        let delete_abi_return = match delete_params {
-            DeleteParams::AppDeleteCall(_) => None,
-            DeleteParams::AppDeleteMethodCall(params) => Some(
-                Composer::extract_abi_return_from_logs(&delete_confirmation, &params.method),
-            ),
-        };
+        // Extract all data from results
+        let transactions: Vec<_> = result
+            .results
+            .iter()
+            .map(|r| r.transaction.clone())
+            .collect();
+        let transaction_ids: Vec<_> = result
+            .results
+            .iter()
+            .map(|r| r.transaction_id.clone())
+            .collect();
+        let confirmations: Vec<_> = result
+            .results
+            .iter()
+            .map(|r| r.confirmation.clone())
+            .collect();
+        let abi_returns: Vec<_> = result
+            .results
+            .iter()
+            .filter_map(|r| r.abi_return.clone())
+            .collect();
 
         let replace_result = AppDeployerReplaceResult {
-            create_transaction,
-            create_confirmation,
-            create_transaction_id,
-            create_abi_return,
-            delete_transaction,
-            delete_confirmation,
-            delete_transaction_id,
-            delete_abi_return,
+            create_transaction: create_result_data.transaction.clone(),
+            create_confirmation: create_result_data.confirmation.clone(),
+            create_transaction_id: create_result_data.transaction_id.clone(),
+            create_abi_return: create_result_data.abi_return.clone(),
+            delete_transaction: delete_result_data.transaction.clone(),
+            delete_confirmation: delete_result_data.confirmation.clone(),
+            delete_transaction_id: delete_result_data.transaction_id.clone(),
+            delete_abi_return: delete_result_data.abi_return.clone(),
             group: result.group,
-            transaction_ids: result.transaction_ids,
-            transactions: result.transactions,
-            confirmations: result.confirmations,
-            abi_returns: result.abi_returns,
+            transaction_ids,
+            transactions,
+            confirmations,
+            abi_returns,
             compiled_programs,
         };
 

@@ -79,33 +79,38 @@ impl<'app_client> TransactionSender<'app_client> {
                 .await
                 .map_err(|e| AppClientError::ComposerError { source: e })?;
 
+            let last_result = simulate_results
+                .results
+                .last()
+                .ok_or(AppClientError::ValidationError {
+                    message: "No transaction returned".to_string(),
+                })?;
+
             Ok(SendAppMethodCallResult {
-                transaction: simulate_results
-                    .transactions
-                    .last()
-                    .ok_or(AppClientError::ValidationError {
-                        message: "No transaction returned".to_string(),
-                    })?
-                    .clone(),
-                confirmation: simulate_results
-                    .confirmations
-                    .last()
-                    .ok_or(AppClientError::ValidationError {
-                        message: "No confirmation returned".to_string(),
-                    })?
-                    .clone(),
-                transaction_id: simulate_results
-                    .transaction_ids
-                    .last()
-                    .ok_or(AppClientError::ValidationError {
-                        message: "No transaction Id returned".to_string(),
-                    })?
-                    .clone(),
-                abi_return: simulate_results.abi_returns.last().cloned(),
-                transactions: simulate_results.transactions,
-                abi_returns: simulate_results.abi_returns,
-                confirmations: simulate_results.confirmations,
-                transaction_ids: simulate_results.transaction_ids,
+                transaction: last_result.transaction.clone(),
+                confirmation: last_result.confirmation.clone(),
+                transaction_id: last_result.transaction_id.clone(),
+                abi_return: last_result.abi_return.clone(),
+                transactions: simulate_results
+                    .results
+                    .iter()
+                    .map(|r| r.transaction.clone())
+                    .collect(),
+                abi_returns: simulate_results
+                    .results
+                    .iter()
+                    .filter_map(|r| r.abi_return.clone())
+                    .collect(),
+                confirmations: simulate_results
+                    .results
+                    .iter()
+                    .map(|r| r.confirmation.clone())
+                    .collect(),
+                transaction_ids: simulate_results
+                    .results
+                    .iter()
+                    .map(|r| r.transaction_id.clone())
+                    .collect(),
                 group: simulate_results.group,
             })
         } else {

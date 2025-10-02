@@ -45,7 +45,7 @@ async fn create_app(algorand_fixture: &AlgorandFixture) -> Option<u64> {
     let mut composer = algorand_fixture.algorand_client.new_group(None);
     composer.add_app_create(params).unwrap();
     let result = composer.send(None).await.unwrap();
-    result.confirmations[0].app_id
+    result.results[0].confirmation.app_id
 }
 
 #[rstest]
@@ -112,3 +112,4 @@ async fn handles_invalid_indexer() {
 
     assert!(result.is_err());
 }
+

@@ -26,7 +26,7 @@ async fn test_basic_payment_transaction(
     composer.add_payment(payment_params)?;
 
     let result = composer.send(None).await?;
-    let transaction = &result.confirmations[0].txn.transaction;
+    let transaction = &result.results[0].confirmation.txn.transaction;
 
     match transaction {
         algokit_transact::Transaction::Payment(payment_fields) => {
@@ -62,7 +62,7 @@ async fn test_basic_account_close_transaction(
     composer.add_account_close(account_close_params)?;
 
     let result = composer.send(None).await?;
-    let transaction = result.confirmations[0].txn.transaction.clone();
+    let transaction = result.results[0].confirmation.txn.transaction.clone();
 
     match transaction {
         algokit_transact::Transaction::Payment(payment_fields) => {
@@ -117,7 +117,7 @@ async fn test_payment_transactions_with_signers(
     let result = composer.send(None).await?;
 
     // Verify the transaction was processed successfully
-    let transaction = &result.confirmations[0].txn.transaction;
+    let transaction = &result.results[0].confirmation.txn.transaction;
     match transaction {
         algokit_transact::Transaction::Payment(payment_fields) => {
             // This will be the first transaction in the group
@@ -135,3 +135,5 @@ async fn test_payment_transactions_with_signers(
 
     Ok(())
 }
+
+

@@ -22,7 +22,7 @@ async fn test_asset_transfer_transaction(
     })?;
 
     let asset_create_result = composer.send(None).await?;
-    let asset_id = asset_create_result.confirmations[0]
+    let asset_id = asset_create_result.results[0].confirmation
         .asset_id
         .ok_or("Failed to get asset ID")?;
 
@@ -46,8 +46,8 @@ async fn test_asset_transfer_transaction(
 
     let send_result = composer.send(None).await?;
 
-    let asset_opt_in_transaction = &send_result.confirmations[0].txn.transaction;
-    let asset_transfer_transaction = &send_result.confirmations[1].txn.transaction;
+    let asset_opt_in_transaction = &send_result.results[0].confirmation.txn.transaction;
+    let asset_transfer_transaction = &send_result.results[1].confirmation.txn.transaction;
 
     match asset_opt_in_transaction {
         algokit_transact::Transaction::AssetTransfer(asset_opt_in_fields) => {
@@ -94,3 +94,4 @@ async fn test_asset_transfer_transaction(
 
     Ok(())
 }
+

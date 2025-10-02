@@ -23,7 +23,7 @@ async fn test_offline_key_registration_transaction(
     composer.add_offline_key_registration(offline_key_reg_params)?;
 
     let result = composer.send(None).await?;
-    let confirmation = &result.confirmations[0];
+    let confirmation = &result.results[0].confirmation;
     // Assert transaction was confirmed
     assert!(
         confirmation.confirmed_round.is_some(),
@@ -121,7 +121,7 @@ async fn test_non_participation_key_registration_transaction(
     let online_result = composer.send(None).await?;
 
     assert!(
-        online_result.confirmations[0].confirmed_round.is_some(),
+        online_result.results[0].confirmation.confirmed_round.is_some(),
         "Online transaction should be confirmed"
     );
 
@@ -146,7 +146,7 @@ async fn test_non_participation_key_registration_transaction(
     composer2.add_non_participation_key_registration(non_participation_params)?;
 
     let result = composer2.send(None).await?;
-    let confirmation = &result.confirmations[0];
+    let confirmation = &result.results[0].confirmation;
 
     // Assert transaction was confirmed
     assert!(
@@ -284,7 +284,7 @@ async fn test_online_key_registration_transaction(
 
     // Submit the transaction - should succeed with proper keys and voting rounds
     let result = composer.send(None).await?;
-    let confirmation = &result.confirmations[0];
+    let confirmation = &result.results[0].confirmation;
 
     // Assert transaction was confirmed
     assert!(
@@ -365,3 +365,4 @@ async fn test_online_key_registration_transaction(
 
     Ok(())
 }
+
