@@ -29,6 +29,7 @@ use algokit_utils::transactions::app_call::{
 
 use algokit_abi::ABIMethodArg as RustABIMethodArg;
 use algokit_abi::ABIMethodArgType as RustABIMethodArgType;
+use algokit_abi::abi_method::ABIReferenceValue as RustABIReferenceValue;
 
 #[derive(uniffi::Enum, Debug)]
 pub enum ABIReferenceType {
@@ -202,9 +203,48 @@ impl From<RustABIMethod> for ABIMethod {
 }
 
 #[derive(uniffi::Enum, Debug)]
+pub enum ABIReferenceValue {
+    /// The address to an Algorand account.
+    Account(String),
+    /// An Algorand asset ID.
+    Asset(u64),
+    /// An Algorand app ID.
+    Application(u64),
+}
+
+impl TryFrom<ABIReferenceValue> for RustABIReferenceValue {
+    type Error = UtilsError;
+    fn try_from(value: ABIReferenceValue) -> Result<Self, Self::Error> {
+        Ok(match value {
+            ABIReferenceValue::Account(address) => {
+                RustABIReferenceValue::Account(address.parse().map_err(|e| {
+                    UtilsError::UtilsError {
+                        message: format!("Invalid account address: {}", e),
+                    }
+                })?)
+            }
+            ABIReferenceValue::Asset(asset_id) => RustABIReferenceValue::Asset(asset_id),
+            ABIReferenceValue::Application(app_id) => RustABIReferenceValue::Application(app_id),
+        })
+    }
+}
+
+impl From<RustABIReferenceValue> for ABIReferenceValue {
+    fn from(value: RustABIReferenceValue) -> Self {
+        match value {
+            RustABIReferenceValue::Account(address) => {
+                ABIReferenceValue::Account(address.to_string())
+            }
+            RustABIReferenceValue::Asset(asset_id) => ABIReferenceValue::Asset(asset_id),
+            RustABIReferenceValue::Application(app_id) => ABIReferenceValue::Application(app_id),
+        }
+    }
+}
+
+#[derive(uniffi::Enum, Debug)]
 #[allow(clippy::large_enum_variant)]
 pub enum AppMethodCallArg {
-    // TODO: ABIReference(ABIReferenceValue),
+    ABIReference(ABIReferenceValue),
     /// Sentinel to request ARC-56 default resolution for this argument (handled by AppClient params builder)
     DefaultValue,
     /// Placeholder for a transaction-typed argument. Not encoded; satisfied by a transaction
@@ -366,6 +406,11 @@ impl TryFrom<AppMethodCallArg> for algokit_utils::transactions::app_call::AppMet
             AppMethodCallArg::TransactionPlaceHolder => {
                 algokit_utils::transactions::app_call::AppMethodCallArg::TransactionPlaceholder
             },
+            AppMethodCallArg::ABIReference(abi_reference) => {
+                algokit_utils::transactions::app_call::AppMethodCallArg::ABIReference(
+                    abi_reference.try_into()?,
+                )
+            }
 
         })
     }
