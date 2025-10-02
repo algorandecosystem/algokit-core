@@ -56,7 +56,7 @@ create_transaction_params! {
 
 create_transaction_params! {
     #[derive(uniffi::Record)]
-    pub struct AssetReconfigureParams {
+    pub struct AssetConfigParams {
         /// ID of the existing asset to be reconfigured.
         pub asset_id: u64,
 
@@ -164,10 +164,10 @@ impl TryFrom<AssetCreateParams> for RustAssetCreateParams {
     }
 }
 
-impl TryFrom<AssetReconfigureParams> for RustAssetConfigParams {
+impl TryFrom<AssetConfigParams> for RustAssetConfigParams {
     type Error = UtilsError;
 
-    fn try_from(params: AssetReconfigureParams) -> Result<Self, Self::Error> {
+    fn try_from(params: AssetConfigParams) -> Result<Self, Self::Error> {
         Ok(RustAssetConfigParams {
             sender: params.sender.parse().map_err(|e| UtilsError::UtilsError {
                 message: format!("Invalid sender address: {}", e),
@@ -272,9 +272,9 @@ impl From<RustAssetCreateParams> for AssetCreateParams {
     }
 }
 
-impl From<RustAssetConfigParams> for AssetReconfigureParams {
+impl From<RustAssetConfigParams> for AssetConfigParams {
     fn from(params: RustAssetConfigParams) -> Self {
-        AssetReconfigureParams {
+        AssetConfigParams {
             sender: params.sender.to_string(),
             signer: params.signer.map(|s| {
                 std::sync::Arc::new(super::common::FfiTransactionSignerFromRust { rust_signer: s })

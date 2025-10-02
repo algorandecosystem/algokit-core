@@ -8,7 +8,7 @@ use algokit_transact_ffi::transactions::app_call::{
 use derive_more::Debug;
 use std::sync::Arc;
 
-use super::asset_config::{AssetCreateParams, AssetDestroyParams};
+use super::asset_config::{AssetCreateParams, AssetDestroyParams, AssetConfigParams};
 use super::asset_freeze::{AssetFreezeParams, AssetUnfreezeParams};
 use super::asset_transfer::{
     AssetClawbackParams, AssetOptInParams, AssetOptOutParams, AssetTransferParams,
@@ -21,7 +21,7 @@ use super::key_registration::{
     NonParticipationKeyRegistrationParams, OfflineKeyRegistrationParams,
     OnlineKeyRegistrationParams,
 };
-use super::payment::PaymentParams;
+use super::payment::{PaymentParams, AccountCloseParams};
 
 use algokit_utils::transactions::app_call::{
     AppCallParams as RustAppCallParams, AppCreateParams as RustAppCreateParams,
@@ -259,13 +259,13 @@ pub enum AppMethodCallArg {
     #[debug("TransactionWithSigner")]
     TransactionWithSigner(TransactionWithSigner),
     Payment(PaymentParams),
-    // TODO: AccountClose(AccountCloseParams),
+    AccountClose(AccountCloseParams),
     AssetTransfer(AssetTransferParams),
     AssetOptIn(AssetOptInParams),
     AssetOptOut(AssetOptOutParams),
     AssetClawback(AssetClawbackParams),
     AssetCreate(AssetCreateParams),
-    // TODO: AssetConfig(AssetConfigParam),
+    AssetConfig(AssetConfigParams),
     AssetDestroy(AssetDestroyParams),
     AssetFreeze(AssetFreezeParams),
     AssetUnfreeze(AssetUnfreezeParams),
@@ -316,6 +316,9 @@ impl TryFrom<AppMethodCallArg> for RustAppMethodCallArg {
             AppMethodCallArg::Payment(payment_params) => {
                 RustAppMethodCallArg::Payment(payment_params.try_into()?)
             }
+            AppMethodCallArg::AccountClose(account_close_params) => {
+                RustAppMethodCallArg::AccountClose(account_close_params.try_into()?)
+            }
             AppMethodCallArg::AssetTransfer(asset_transfer_params) => {
                 RustAppMethodCallArg::AssetTransfer(asset_transfer_params.try_into()?)
             }
@@ -330,6 +333,9 @@ impl TryFrom<AppMethodCallArg> for RustAppMethodCallArg {
             }
             AppMethodCallArg::AssetCreate(asset_create_params) => {
                 RustAppMethodCallArg::AssetCreate(asset_create_params.try_into()?)
+            }
+            AppMethodCallArg::AssetConfig(asset_config_params) => {
+                RustAppMethodCallArg::AssetConfig(asset_config_params.try_into()?)
             }
             AppMethodCallArg::AssetDestroy(asset_destroy_params) => {
                 RustAppMethodCallArg::AssetDestroy(asset_destroy_params.try_into()?)
@@ -405,6 +411,9 @@ impl TryFrom<RustAppMethodCallArg> for AppMethodCallArg {
             RustAppMethodCallArg::Payment(payment_params) => {
                 AppMethodCallArg::Payment(payment_params.into())
             }
+            RustAppMethodCallArg::AccountClose(account_close_params) => {
+                AppMethodCallArg::AccountClose(account_close_params.into())
+            }
             RustAppMethodCallArg::AssetTransfer(asset_transfer_params) => {
                 AppMethodCallArg::AssetTransfer(asset_transfer_params.into())
             }
@@ -419,6 +428,9 @@ impl TryFrom<RustAppMethodCallArg> for AppMethodCallArg {
             }
             RustAppMethodCallArg::AssetCreate(asset_create_params) => {
                 AppMethodCallArg::AssetCreate(asset_create_params.into())
+            }
+            RustAppMethodCallArg::AssetConfig(asset_config_params) => {
+                AppMethodCallArg::AssetConfig(asset_config_params.into())
             }
             RustAppMethodCallArg::AssetDestroy(asset_destroy_params) => {
                 AppMethodCallArg::AssetDestroy(asset_destroy_params.into())
@@ -450,12 +462,7 @@ impl TryFrom<RustAppMethodCallArg> for AppMethodCallArg {
             RustAppMethodCallArg::TransactionPlaceholder => {
                 AppMethodCallArg::TransactionPlaceHolder
             }
-            RustAppMethodCallArg::AccountClose(_) => {
-                todo!()
-            }
-            RustAppMethodCallArg::AssetConfig(_) => {
-                todo!()
-            }
+
         })
     }
 }
