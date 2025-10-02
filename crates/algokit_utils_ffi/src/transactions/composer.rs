@@ -611,3 +611,36 @@ pub trait ComposerTrait: Send + Sync {
 pub trait ComposerFactory: Send + Sync {
     fn create_composer(&self) -> Arc<dyn ComposerTrait>;
 }
+
+//
+// Concrete ComposerFactory implementation for Rust-side usage
+// Creates fresh Composer instances (the FFI concrete type)
+//
+#[derive(uniffi::Object)]
+pub struct DefaultComposerFactory {
+    algod_client: Arc<AlgodClient>,
+    signer_getter: Arc<dyn TransactionSignerGetter>,
+}
+
+#[uniffi::export]
+impl DefaultComposerFactory {
+    #[uniffi::constructor]
+    pub fn new(
+        algod_client: Arc<AlgodClient>,
+        signer_getter: Arc<dyn TransactionSignerGetter>,
+    ) -> Self {
+        DefaultComposerFactory {
+            algod_client,
+            signer_getter,
+        }
+    }
+}
+
+impl ComposerFactory for DefaultComposerFactory {
+    fn create_composer(&self) -> Arc<dyn ComposerTrait> {
+        Arc::new(Composer::new(
+            self.algod_client.clone(),
+            self.signer_getter.clone(),
+        ))
+    }
+}
