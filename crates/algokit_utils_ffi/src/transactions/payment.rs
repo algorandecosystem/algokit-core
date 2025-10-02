@@ -3,7 +3,9 @@ use std::sync::Arc;
 use crate::create_transaction_params;
 use crate::transactions::common::UtilsError;
 
-use algokit_utils::transactions::{PaymentParams as RustPaymentParams, AccountCloseParams as RustAccountCloseParams};
+use algokit_utils::transactions::{
+    AccountCloseParams as RustAccountCloseParams, PaymentParams as RustPaymentParams,
+};
 
 use super::common::{FfiTransactionSignerFromRust, TransactionSigner};
 
@@ -127,8 +129,10 @@ impl TryFrom<AccountCloseParams> for RustAccountCloseParams {
             validity_window: params.validity_window,
             first_valid_round: params.first_valid_round,
             last_valid_round: params.last_valid_round,
-            close_remainder_to: params.close_remainder_to.parse().map_err(|_| UtilsError::UtilsError {
-                message: "Invalid close_remainder_to address".to_string(),
+            close_remainder_to: params.close_remainder_to.parse().map_err(|_| {
+                UtilsError::UtilsError {
+                    message: "Invalid close_remainder_to address".to_string(),
+                }
             })?,
         })
     }

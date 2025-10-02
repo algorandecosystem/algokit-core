@@ -39,10 +39,7 @@ async fn wallet_lifecycle() -> Result<(), Box<dyn std::error::Error + Send + Syn
         .wallet
         .as_ref()
         .expect("Expected created wallet in response");
-    assert_eq!(
-        created_wallet.name.as_deref(),
-        Some(wallet_name.as_str())
-    );
+    assert_eq!(created_wallet.name.as_deref(), Some(wallet_name.as_str()));
 
     // List wallets and ensure presence
     let list_response = client.list_wallets().await?;

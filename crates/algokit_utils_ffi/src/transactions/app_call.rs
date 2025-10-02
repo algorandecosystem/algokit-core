@@ -8,7 +8,7 @@ use algokit_transact_ffi::transactions::app_call::{
 use derive_more::Debug;
 use std::sync::Arc;
 
-use super::asset_config::{AssetCreateParams, AssetDestroyParams, AssetConfigParams};
+use super::asset_config::{AssetConfigParams, AssetCreateParams, AssetDestroyParams};
 use super::asset_freeze::{AssetFreezeParams, AssetUnfreezeParams};
 use super::asset_transfer::{
     AssetClawbackParams, AssetOptInParams, AssetOptOutParams, AssetTransferParams,
@@ -21,7 +21,7 @@ use super::key_registration::{
     NonParticipationKeyRegistrationParams, OfflineKeyRegistrationParams,
     OnlineKeyRegistrationParams,
 };
-use super::payment::{PaymentParams, AccountCloseParams};
+use super::payment::{AccountCloseParams, PaymentParams};
 
 use algokit_utils::transactions::app_call::{
     AppCallParams as RustAppCallParams, AppCreateParams as RustAppCreateParams,
@@ -462,7 +462,6 @@ impl TryFrom<RustAppMethodCallArg> for AppMethodCallArg {
             RustAppMethodCallArg::TransactionPlaceholder => {
                 AppMethodCallArg::TransactionPlaceHolder
             }
-
         })
     }
 }
