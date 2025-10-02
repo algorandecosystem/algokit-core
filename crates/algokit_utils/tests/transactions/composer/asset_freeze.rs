@@ -63,7 +63,8 @@ async fn test_asset_freeze_unfreeze(
     composer.add_asset_create(asset_create_params)?;
 
     let create_result = composer.send(None).await?;
-    let asset_id = create_result.results[0].confirmation
+    let asset_id = create_result.results[0]
+        .confirmation
         .asset_id
         .expect("Failed to get asset ID");
 
@@ -80,7 +81,10 @@ async fn test_asset_freeze_unfreeze(
     let opt_in_result = composer.send(None).await?;
 
     assert!(
-        opt_in_result.results[0].confirmation.confirmed_round.is_some(),
+        opt_in_result.results[0]
+            .confirmation
+            .confirmed_round
+            .is_some(),
         "Asset opt-in should be confirmed"
     );
 
@@ -99,7 +103,10 @@ async fn test_asset_freeze_unfreeze(
     let transfer_result = composer.send(None).await?;
 
     assert!(
-        transfer_result.results[0].confirmation.confirmed_round.is_some(),
+        transfer_result.results[0]
+            .confirmation
+            .confirmed_round
+            .is_some(),
         "Asset transfer should be confirmed"
     );
 
@@ -252,7 +259,8 @@ async fn test_asset_freeze_unfreeze(
     let test_transfer_result = composer.send(None).await?;
 
     assert!(
-        test_transfer_result.results[0].confirmation
+        test_transfer_result.results[0]
+            .confirmation
             .confirmed_round
             .is_some(),
         "Test asset transfer should be confirmed, proving asset is unfrozen"
@@ -260,4 +268,3 @@ async fn test_asset_freeze_unfreeze(
 
     Ok(())
 }
-

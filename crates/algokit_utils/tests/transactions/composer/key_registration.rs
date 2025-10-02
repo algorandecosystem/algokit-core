@@ -121,7 +121,10 @@ async fn test_non_participation_key_registration_transaction(
     let online_result = composer.send(None).await?;
 
     assert!(
-        online_result.results[0].confirmation.confirmed_round.is_some(),
+        online_result.results[0]
+            .confirmation
+            .confirmed_round
+            .is_some(),
         "Online transaction should be confirmed"
     );
 
@@ -365,4 +368,3 @@ async fn test_online_key_registration_transaction(
 
     Ok(())
 }
-

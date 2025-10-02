@@ -314,12 +314,18 @@ async fn test_deploy_new_app(#[future] fixture: FixtureResult) -> TestResult {
         _ => return Err("Expected Create result".into()),
     };
 
-    assert_eq!(app.app_id, create_result.results[0].confirmation.app_id.unwrap());
+    assert_eq!(
+        app.app_id,
+        create_result.results[0].confirmation.app_id.unwrap()
+    );
     assert_eq!(app.app_address, Address::from_app_id(&app.app_id));
     assert_eq!(app.created_metadata, metadata);
     assert_eq!(
         app.created_round,
-        create_result.results[0].confirmation.confirmed_round.unwrap()
+        create_result.results[0]
+            .confirmation
+            .confirmed_round
+            .unwrap()
     );
     assert_eq!(app.updated_round, app.created_round);
     assert_eq!(app.name, metadata.name);
@@ -459,7 +465,10 @@ async fn test_deploy_update_to_updatable_app(#[future] fixture: FixtureResult) -
     assert_ne!(app_2.updated_round, app_2.created_round);
     assert_eq!(
         app_2.updated_round,
-        update_result.results[0].confirmation.confirmed_round.unwrap()
+        update_result.results[0]
+            .confirmation
+            .confirmed_round
+            .unwrap()
     );
     assert_eq!(app_2.name, metadata_2.name);
     assert_eq!(app_2.version, metadata_2.version);
@@ -630,7 +639,10 @@ async fn test_deploy_replacement_to_deletable_updated_app(
     assert_eq!(app_2.created_round, app_2.updated_round);
     assert_eq!(
         app_2.created_round,
-        create_result.results[0].confirmation.confirmed_round.unwrap()
+        create_result.results[0]
+            .confirmation
+            .confirmed_round
+            .unwrap()
     );
     assert_eq!(app_2.name, metadata_2.name);
     assert_eq!(app_2.version, metadata_2.version);
@@ -753,7 +765,10 @@ async fn test_deploy_replacement_of_deletable_schema_broken_app(
     assert_eq!(app_2.created_round, app_2.updated_round);
     assert_eq!(
         app_2.created_round,
-        create_result.results[0].confirmation.confirmed_round.unwrap()
+        create_result.results[0]
+            .confirmation
+            .confirmed_round
+            .unwrap()
     );
     assert_eq!(app_2.name, metadata_2.name);
     assert_eq!(app_2.version, metadata_2.version);
@@ -966,7 +981,10 @@ async fn test_deploy_append_for_schema_broken_app_when_on_schema_break_append_ap
     assert_ne!(app_2.created_round, app_1.created_round);
     assert_eq!(
         app_2.created_round,
-        create_result.results[0].confirmation.confirmed_round.unwrap()
+        create_result.results[0]
+            .confirmation
+            .confirmed_round
+            .unwrap()
     );
     assert_eq!(app_2.created_round, app_2.updated_round);
     assert_eq!(app_2.name, metadata.name);
@@ -1030,7 +1048,10 @@ async fn test_deploy_append_for_update_app_when_on_update_append_app(
     assert_ne!(app_2.created_round, app_1.created_round);
     assert_eq!(
         app_2.created_round,
-        create_result.results[0].confirmation.confirmed_round.unwrap()
+        create_result.results[0]
+            .confirmation
+            .confirmed_round
+            .unwrap()
     );
     assert_eq!(app_2.created_metadata, metadata_2);
     assert_eq!(app_2.name, metadata_2.name);
@@ -1338,7 +1359,10 @@ async fn test_replacing_app_using_abi_methods(#[future] fixture: FixtureResult) 
     assert_eq!(app_2.created_round, app_2.updated_round);
     assert_eq!(
         app_2.created_round,
-        create_result.results[0].confirmation.confirmed_round.unwrap()
+        create_result.results[0]
+            .confirmation
+            .confirmed_round
+            .unwrap()
     );
     assert_eq!(app_2.name, metadata_2.name);
     assert_eq!(app_2.version, metadata_2.version);
@@ -1367,5 +1391,3 @@ async fn test_replacing_app_using_abi_methods(#[future] fixture: FixtureResult) 
 
     Ok(())
 }
-
-

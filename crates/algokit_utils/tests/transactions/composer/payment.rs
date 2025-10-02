@@ -135,5 +135,3 @@ async fn test_payment_transactions_with_signers(
 
     Ok(())
 }
-
-

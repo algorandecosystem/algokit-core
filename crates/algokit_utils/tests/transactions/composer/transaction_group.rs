@@ -213,5 +213,3 @@ async fn test_add_transaction_to_group_too_big(
 
     Ok(())
 }
-
-

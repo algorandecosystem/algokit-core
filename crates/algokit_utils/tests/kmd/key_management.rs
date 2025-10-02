@@ -45,17 +45,13 @@ async fn key_management_flow() -> Result<(), Box<dyn std::error::Error + Send + 
         .id
         .as_ref()
         .expect("Wallet id should be present");
-    assert_eq!(
-        created_wallet.name.as_ref().map(|s| s.as_str()),
-        Some(wallet_name.as_str())
-    );
+    assert_eq!(created_wallet.name.as_deref(), Some(wallet_name.as_str()));
 
     // Init wallet handle token
     let init_response = client
         .init_wallet_handle_token(InitWalletHandleTokenRequest {
             wallet_id: Some(wallet_id.clone()),
             wallet_password: Some("testpass".to_string()),
-            ..Default::default()
         })
         .await?;
     let wallet_handle_token = init_response
@@ -68,7 +64,6 @@ async fn key_management_flow() -> Result<(), Box<dyn std::error::Error + Send + 
     let list_before = client
         .list_keys_in_wallet(ListKeysRequest {
             wallet_handle_token: Some(wallet_handle_token.clone()),
-            ..Default::default()
         })
         .await?;
     let before_addresses = list_before.addresses.unwrap_or_default();
@@ -78,7 +73,6 @@ async fn key_management_flow() -> Result<(), Box<dyn std::error::Error + Send + 
         .generate_key(GenerateKeyRequest {
             wallet_handle_token: Some(wallet_handle_token.clone()),
             display_mnemonic: Some(false),
-            ..Default::default()
         })
         .await?;
 
@@ -86,7 +80,6 @@ async fn key_management_flow() -> Result<(), Box<dyn std::error::Error + Send + 
     let list_after = client
         .list_keys_in_wallet(ListKeysRequest {
             wallet_handle_token: Some(wallet_handle_token.clone()),
-            ..Default::default()
         })
         .await?;
     let after_addresses = list_after.addresses.unwrap_or_default();
@@ -101,7 +94,6 @@ async fn key_management_flow() -> Result<(), Box<dyn std::error::Error + Send + 
     let _release_response = client
         .release_wallet_handle_token(ReleaseWalletHandleTokenRequest {
             wallet_handle_token: Some(wallet_handle_token.clone()),
-            ..Default::default()
         })
         .await?;
 

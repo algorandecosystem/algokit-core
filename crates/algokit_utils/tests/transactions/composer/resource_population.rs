@@ -1143,7 +1143,8 @@ async fn deploy_resource_population_app(
     })?;
     let result = composer.send(None).await?;
 
-    result.results[0].confirmation
+    result.results[0]
+        .confirmation
         .app_id
         .ok_or_else(|| "No app id returned".into())
 }
@@ -1196,5 +1197,3 @@ async fn get_resource_population_programs(
     let clear_state_bytes = BASE64_STANDARD.decode(teal_source.clear)?;
     Ok((approval_bytes, clear_state_bytes))
 }
-
-

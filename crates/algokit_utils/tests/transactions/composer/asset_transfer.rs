@@ -22,7 +22,8 @@ async fn test_asset_transfer_transaction(
     })?;
 
     let asset_create_result = composer.send(None).await?;
-    let asset_id = asset_create_result.results[0].confirmation
+    let asset_id = asset_create_result.results[0]
+        .confirmation
         .asset_id
         .ok_or("Failed to get asset ID")?;
 
@@ -94,4 +95,3 @@ async fn test_asset_transfer_transaction(
 
     Ok(())
 }
-

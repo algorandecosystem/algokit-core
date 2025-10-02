@@ -879,13 +879,23 @@ async fn group_simulate_matches_send(
     let send = composer.send(None).await?;
 
     // Extract transaction_ids from results for comparison
-    let simulate_tx_ids: Vec<_> = simulate.results.iter().map(|r| r.transaction_id.clone()).collect();
-    let send_tx_ids: Vec<_> = send.results.iter().map(|r| r.transaction_id.clone()).collect();
+    let simulate_tx_ids: Vec<_> = simulate
+        .results
+        .iter()
+        .map(|r| r.transaction_id.clone())
+        .collect();
+    let send_tx_ids: Vec<_> = send
+        .results
+        .iter()
+        .map(|r| r.transaction_id.clone())
+        .collect();
     assert_eq!(simulate_tx_ids, send_tx_ids);
 
     // Compare all ABI returns in order where both sides have a value
     for (simulate_result, send_result) in simulate.results.iter().zip(send.results.iter()) {
-        if let (Some(simulate_abi), Some(send_abi)) = (&simulate_result.abi_return, &send_result.abi_return) {
+        if let (Some(simulate_abi), Some(send_abi)) =
+            (&simulate_result.abi_return, &send_result.abi_return)
+        {
             assert_eq!(simulate_abi.return_value, send_abi.return_value);
         }
     }
@@ -960,7 +970,8 @@ async fn create_test_app(
 
     let result = composer.send(None).await?;
 
-    Ok(result.results[0].confirmation
+    Ok(result.results[0]
+        .confirmation
         .app_id
         .expect("App Id must be returned"))
 }
@@ -1005,7 +1016,8 @@ async fn test_more_than_15_args_with_ref_types_app_call_method_call(
     asset_composer.add_asset_create(asset_create_params)?;
 
     let asset_result = asset_composer.send(None).await?;
-    let asset_id = asset_result.results[0].confirmation
+    let asset_id = asset_result.results[0]
+        .confirmation
         .asset_id
         .expect("No asset ID returned");
 
@@ -1418,8 +1430,8 @@ async fn deploy_nested_app(
 
     let result = composer.send(None).await?;
 
-    result.results[0].confirmation
+    result.results[0]
+        .confirmation
         .app_id
         .ok_or_else(|| "No app id returned".into())
 }
-

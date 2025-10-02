@@ -104,4 +104,3 @@ async fn handles_invalid_indexer() {
 
     assert!(result.is_err());
 }
-

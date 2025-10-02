@@ -111,7 +111,8 @@ async fn test_asset_config_transaction(
     composer.add_asset_create(asset_create_params)?;
 
     let create_result = composer.send(None).await?;
-    let asset_id = create_result.results[0].confirmation
+    let asset_id = create_result.results[0]
+        .confirmation
         .asset_id
         .ok_or("Failed to get asset ID")?;
 
@@ -186,7 +187,8 @@ async fn test_asset_destroy_transaction(
     composer.add_asset_create(asset_create_params)?;
 
     let create_result = composer.send(None).await?;
-    let asset_id = create_result.results[0].confirmation
+    let asset_id = create_result.results[0]
+        .confirmation
         .asset_id
         .ok_or("Failed to get asset ID")?;
 
@@ -266,5 +268,3 @@ async fn test_asset_create_validation_errors(
         }
     }
 }
-
-
