@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::{
     clients::algod_client::AlgodClientTrait,
     transactions::{
-        asset_config::{AssetCreateParams, AssetDestroyParams, AssetReconfigureParams},
+        asset_config::{AssetConfigParams, AssetCreateParams, AssetDestroyParams},
         asset_freeze::{AssetFreezeParams, AssetUnfreezeParams},
         asset_transfer::{
             AssetClawbackParams, AssetOptInParams, AssetOptOutParams, AssetTransferParams,
@@ -111,7 +111,7 @@ impl Composer {
             })
     }
 
-    pub fn add_asset_reconfigure(&self, params: AssetReconfigureParams) -> Result<(), UtilsError> {
+    pub fn add_asset_config(&self, params: AssetConfigParams) -> Result<(), UtilsError> {
         let mut composer = self.inner_composer.blocking_lock();
         composer
             .add_asset_config(params.try_into()?)
@@ -310,13 +310,13 @@ impl ComposerTrait for Composer {
         Composer::add_asset_create(self, params)
     }
 
-    async fn add_asset_reconfigure(
+    async fn add_asset_config(
         &self,
-        params: AssetReconfigureParams,
+        params: AssetConfigParams,
         _algod_client: Arc<dyn AlgodClientTrait>,
         _signer_getter: Arc<dyn TransactionSignerGetter>,
     ) -> Result<(), UtilsError> {
-        Composer::add_asset_reconfigure(self, params)
+        Composer::add_asset_config(self, params)
     }
 
     async fn add_asset_destroy(
@@ -483,9 +483,9 @@ pub trait ComposerTrait: Send + Sync {
         signer_getter: Arc<dyn TransactionSignerGetter>,
     ) -> Result<(), UtilsError>;
 
-    async fn add_asset_reconfigure(
+    async fn add_asset_config(
         &self,
-        params: AssetReconfigureParams,
+        params: AssetConfigParams,
         algod_client: Arc<dyn AlgodClientTrait>,
         signer_getter: Arc<dyn TransactionSignerGetter>,
     ) -> Result<(), UtilsError>;
