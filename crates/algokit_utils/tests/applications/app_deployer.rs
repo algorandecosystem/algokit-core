@@ -310,22 +310,18 @@ async fn test_deploy_new_app(#[future] fixture: FixtureResult) -> TestResult {
 
     let result = app_deployer.deploy(deployment).await?;
     let (app, create_result) = match &result {
-        AppDeployResult::Create { app, result } => (app, result),
+        AppDeployResult::Create {
+            app, create_result, ..
+        } => (app, create_result),
         _ => return Err("Expected Create result".into()),
     };
 
-    assert_eq!(
-        app.app_id,
-        create_result.results[0].confirmation.app_id.unwrap()
-    );
+    assert_eq!(app.app_id, create_result.confirmation.app_id.unwrap());
     assert_eq!(app.app_address, Address::from_app_id(&app.app_id));
     assert_eq!(app.created_metadata, metadata);
     assert_eq!(
         app.created_round,
-        create_result.results[0]
-            .confirmation
-            .confirmed_round
-            .unwrap()
+        create_result.confirmation.confirmed_round.unwrap()
     );
     assert_eq!(app.updated_round, app.created_round);
     assert_eq!(app.name, metadata.name);
@@ -428,9 +424,9 @@ async fn test_deploy_update_to_updatable_app(#[future] fixture: FixtureResult) -
         get_testing_app_deploy_params(&test_account, &metadata, None, None, None, None).await?;
     let result_1 = app_deployer.deploy(deployment_1).await?;
     let (app_1, app_1_id, tx_id) = match &result_1 {
-        AppDeployResult::Create { app, result } => {
-            (app, app.app_id, result.results[0].transaction_id.clone())
-        }
+        AppDeployResult::Create {
+            app, create_result, ..
+        } => (app, app.app_id, create_result.transaction_id.clone()),
         _ => return Err("Expected Create result".into()),
     };
 
@@ -455,7 +451,9 @@ async fn test_deploy_update_to_updatable_app(#[future] fixture: FixtureResult) -
 
     let result_2 = app_deployer.deploy(deployment_2).await?;
     let (app_2, update_result) = match result_2 {
-        AppDeployResult::Update { app, result } => (app, result),
+        AppDeployResult::Update {
+            app, update_result, ..
+        } => (app, update_result),
         _ => return Err("Expected Update result".into()),
     };
 
@@ -465,10 +463,7 @@ async fn test_deploy_update_to_updatable_app(#[future] fixture: FixtureResult) -
     assert_ne!(app_2.updated_round, app_2.created_round);
     assert_eq!(
         app_2.updated_round,
-        update_result.results[0]
-            .confirmation
-            .confirmed_round
-            .unwrap()
+        update_result.confirmation.confirmed_round.unwrap()
     );
     assert_eq!(app_2.name, metadata_2.name);
     assert_eq!(app_2.version, metadata_2.version);
@@ -501,7 +496,7 @@ async fn test_deploy_update_to_immutable_app_fails(#[future] fixture: FixtureRes
 
     algorand_fixture
         .wait_for_indexer_transaction(&match result_1 {
-            AppDeployResult::Create { result, .. } => result.results[0].transaction_id.clone(),
+            AppDeployResult::Create { create_result, .. } => create_result.transaction_id.clone(),
             _ => return Err("Expected Create result".into()),
         })
         .await?;
@@ -554,7 +549,7 @@ async fn test_deploy_failure_for_updated_app_when_on_update_fail(
 
     algorand_fixture
         .wait_for_indexer_transaction(&match result_1 {
-            AppDeployResult::Create { result, .. } => result.results[0].transaction_id.clone(),
+            AppDeployResult::Create { create_result, .. } => create_result.transaction_id.clone(),
             _ => return Err("Expected Create result".into()),
         })
         .await?;
@@ -607,7 +602,7 @@ async fn test_deploy_replacement_to_deletable_updated_app(
 
     algorand_fixture
         .wait_for_indexer_transaction(&match result_1 {
-            AppDeployResult::Create { result, .. } => result.results[0].transaction_id.clone(),
+            AppDeployResult::Create { create_result, .. } => create_result.transaction_id.clone(),
             _ => return Err("Expected Create result".into()),
         })
         .await?;
@@ -630,7 +625,9 @@ async fn test_deploy_replacement_to_deletable_updated_app(
 
     let result_2 = app_deployer.deploy(deployment_2).await?;
     let (app_2, create_result) = match result_2 {
-        AppDeployResult::Replace { app, result, .. } => (app, result),
+        AppDeployResult::Replace {
+            app, create_result, ..
+        } => (app, create_result),
         _ => return Err("Expected Replace result".into()),
     };
 
@@ -639,10 +636,7 @@ async fn test_deploy_replacement_to_deletable_updated_app(
     assert_eq!(app_2.created_round, app_2.updated_round);
     assert_eq!(
         app_2.created_round,
-        create_result.results[0]
-            .confirmation
-            .confirmed_round
-            .unwrap()
+        create_result.confirmation.confirmed_round.unwrap()
     );
     assert_eq!(app_2.name, metadata_2.name);
     assert_eq!(app_2.version, metadata_2.version);
@@ -677,7 +671,7 @@ async fn test_deploy_failure_for_replacement_of_permanent_updated_app(
 
     algorand_fixture
         .wait_for_indexer_transaction(&match result_1 {
-            AppDeployResult::Create { result, .. } => result.results[0].transaction_id.clone(),
+            AppDeployResult::Create { create_result, .. } => create_result.transaction_id.clone(),
             _ => return Err("Expected Create result".into()),
         })
         .await?;
@@ -729,7 +723,9 @@ async fn test_deploy_replacement_of_deletable_schema_broken_app(
 
     let result_1 = app_deployer.deploy(deployment_1).await?;
     let (app_1, tx_id) = match result_1 {
-        AppDeployResult::Create { app, result } => (app, result.results[0].transaction_id.clone()),
+        AppDeployResult::Create {
+            app, create_result, ..
+        } => (app, create_result.transaction_id.clone()),
         _ => return Err("Expected Create result".into()),
     };
 
@@ -755,7 +751,9 @@ async fn test_deploy_replacement_of_deletable_schema_broken_app(
 
     let result_2 = app_deployer.deploy(deployment_2).await?;
     let (app_2, create_result) = match result_2 {
-        AppDeployResult::Replace { app, result, .. } => (app, result),
+        AppDeployResult::Replace {
+            app, create_result, ..
+        } => (app, create_result),
         _ => return Err("Expected Replace result".into()),
     };
 
@@ -765,10 +763,7 @@ async fn test_deploy_replacement_of_deletable_schema_broken_app(
     assert_eq!(app_2.created_round, app_2.updated_round);
     assert_eq!(
         app_2.created_round,
-        create_result.results[0]
-            .confirmation
-            .confirmed_round
-            .unwrap()
+        create_result.confirmation.confirmed_round.unwrap()
     );
     assert_eq!(app_2.name, metadata_2.name);
     assert_eq!(app_2.version, metadata_2.version);
@@ -801,7 +796,7 @@ async fn test_deploy_replacement_to_schema_broken_permanent_app_fails(
 
     algorand_fixture
         .wait_for_indexer_transaction(&match result_1 {
-            AppDeployResult::Create { result, .. } => result.results[0].transaction_id.clone(),
+            AppDeployResult::Create { create_result, .. } => create_result.transaction_id.clone(),
             _ => return Err("Expected Create result".into()),
         })
         .await?;
@@ -854,7 +849,7 @@ async fn test_deploy_failure_for_replacement_of_schema_broken_app_when_on_schema
 
     algorand_fixture
         .wait_for_indexer_transaction(&match result_1 {
-            AppDeployResult::Create { result, .. } => result.results[0].transaction_id.clone(),
+            AppDeployResult::Create { create_result, .. } => create_result.transaction_id.clone(),
             _ => return Err("Expected Create result".into()),
         })
         .await?;
@@ -902,7 +897,9 @@ async fn test_do_nothing_if_deploying_app_with_no_changes(
 
     let result_1 = app_deployer.deploy(deployment.clone()).await?;
     let (app_1, tx_id) = match result_1 {
-        AppDeployResult::Create { app, result } => (app, result.results[0].transaction_id.clone()),
+        AppDeployResult::Create {
+            app, create_result, ..
+        } => (app, create_result.transaction_id.clone()),
         _ => return Err("Expected Create result".into()),
     };
 
@@ -952,7 +949,9 @@ async fn test_deploy_append_for_schema_broken_app_when_on_schema_break_append_ap
 
     let result_1 = app_deployer.deploy(deployment_1).await?;
     let (app_1, tx_id) = match result_1 {
-        AppDeployResult::Create { app, result } => (app, result.results[0].transaction_id.clone()),
+        AppDeployResult::Create {
+            app, create_result, ..
+        } => (app, create_result.transaction_id.clone()),
         _ => return Err("Expected Create result".into()),
     };
 
@@ -973,7 +972,9 @@ async fn test_deploy_append_for_schema_broken_app_when_on_schema_break_append_ap
 
     let result_2 = app_deployer.deploy(deployment_2).await?;
     let (app_2, create_result) = match result_2 {
-        AppDeployResult::Create { app, result } => (app, result),
+        AppDeployResult::Create {
+            app, create_result, ..
+        } => (app, create_result),
         _ => return Err("Expected Create result".into()),
     };
 
@@ -981,10 +982,7 @@ async fn test_deploy_append_for_schema_broken_app_when_on_schema_break_append_ap
     assert_ne!(app_2.created_round, app_1.created_round);
     assert_eq!(
         app_2.created_round,
-        create_result.results[0]
-            .confirmation
-            .confirmed_round
-            .unwrap()
+        create_result.confirmation.confirmed_round.unwrap()
     );
     assert_eq!(app_2.created_round, app_2.updated_round);
     assert_eq!(app_2.name, metadata.name);
@@ -1015,7 +1013,9 @@ async fn test_deploy_append_for_update_app_when_on_update_append_app(
 
     let result_1 = app_deployer.deploy(deployment_1).await?;
     let (app_1, tx_id) = match result_1 {
-        AppDeployResult::Create { app, result } => (app, result.results[0].transaction_id.clone()),
+        AppDeployResult::Create {
+            app, create_result, ..
+        } => (app, create_result.transaction_id.clone()),
         _ => return Err("Expected Create result".into()),
     };
 
@@ -1040,7 +1040,9 @@ async fn test_deploy_append_for_update_app_when_on_update_append_app(
 
     let result_2 = app_deployer.deploy(deployment_2).await?;
     let (app_2, create_result) = match result_2 {
-        AppDeployResult::Create { app, result } => (app, result),
+        AppDeployResult::Create {
+            app, create_result, ..
+        } => (app, create_result),
         _ => return Err("Expected Create result".into()),
     };
 
@@ -1048,10 +1050,7 @@ async fn test_deploy_append_for_update_app_when_on_update_append_app(
     assert_ne!(app_2.created_round, app_1.created_round);
     assert_eq!(
         app_2.created_round,
-        create_result.results[0]
-            .confirmation
-            .confirmed_round
-            .unwrap()
+        create_result.confirmation.confirmed_round.unwrap()
     );
     assert_eq!(app_2.created_metadata, metadata_2);
     assert_eq!(app_2.name, metadata_2.name);
@@ -1333,7 +1332,7 @@ async fn test_replacing_app_using_abi_methods(#[future] fixture: FixtureResult) 
 
     algorand_fixture
         .wait_for_indexer_transaction(&match result_1 {
-            AppDeployResult::Create { result, .. } => result.results[0].transaction_id.clone(),
+            AppDeployResult::Create { create_result, .. } => create_result.transaction_id.clone(),
             _ => return Err("Expected Create result".into()),
         })
         .await?;
@@ -1349,8 +1348,13 @@ async fn test_replacing_app_using_abi_methods(#[future] fixture: FixtureResult) 
             .await?;
 
     let result_2 = app_deployer.deploy(deployment_2).await?;
-    let (app_2, create_result) = match result_2 {
-        AppDeployResult::Replace { app, result, .. } => (app, result),
+    let (app_2, create_result, delete_result) = match result_2 {
+        AppDeployResult::Replace {
+            app,
+            create_result,
+            delete_result,
+            ..
+        } => (app, create_result, delete_result),
         _ => return Err("Expected Replace result".into()),
     };
 
@@ -1359,10 +1363,7 @@ async fn test_replacing_app_using_abi_methods(#[future] fixture: FixtureResult) 
     assert_eq!(app_2.created_round, app_2.updated_round);
     assert_eq!(
         app_2.created_round,
-        create_result.results[0]
-            .confirmation
-            .confirmed_round
-            .unwrap()
+        create_result.confirmation.confirmed_round.unwrap()
     );
     assert_eq!(app_2.name, metadata_2.name);
     assert_eq!(app_2.version, metadata_2.version);
@@ -1371,8 +1372,8 @@ async fn test_replacing_app_using_abi_methods(#[future] fixture: FixtureResult) 
     assert!(!app_2.deleted);
 
     // Check ABI return values
-    assert!(create_result.create_result.abi_return.is_some());
-    let create_abi_return = create_result.create_result.abi_return.unwrap();
+    assert!(create_result.abi_return.is_some());
+    let create_abi_return = create_result.abi_return.unwrap();
     assert!(create_abi_return.return_value.is_some());
     if let Some(algokit_abi::ABIValue::String(s)) = create_abi_return.return_value {
         assert_eq!(s, "created");
@@ -1380,8 +1381,8 @@ async fn test_replacing_app_using_abi_methods(#[future] fixture: FixtureResult) 
         panic!("Expected string return value from create method");
     }
 
-    assert!(create_result.delete_result.abi_return.is_some());
-    let delete_abi_return = create_result.delete_result.abi_return.unwrap();
+    assert!(delete_result.abi_return.is_some());
+    let delete_abi_return = delete_result.abi_return.unwrap();
     assert!(delete_abi_return.return_value.is_some());
     if let Some(algokit_abi::ABIValue::String(s)) = delete_abi_return.return_value {
         assert_eq!(s, "deleted");

@@ -218,7 +218,7 @@ impl AssetManager {
         }
 
         // Send the transaction group
-        let results = composer
+        let composer_result = composer
             .send(Default::default())
             .await
             .map_err(|e| AssetManagerError::ComposerError { source: e })?;
@@ -226,7 +226,7 @@ impl AssetManager {
         // Map transaction IDs back to assets
         let bulk_results: Vec<BulkAssetOptInOutResult> = asset_ids
             .iter()
-            .zip(results.results.iter())
+            .zip(composer_result.results.iter())
             .map(|(&asset_id, result)| BulkAssetOptInOutResult {
                 asset_id,
                 transaction_id: result.transaction_id.clone(),
@@ -293,7 +293,7 @@ impl AssetManager {
         }
 
         // Send the transaction group
-        let results = composer
+        let composer_result = composer
             .send(Default::default())
             .await
             .map_err(|e| AssetManagerError::ComposerError { source: e })?;
@@ -301,7 +301,7 @@ impl AssetManager {
         // Map transaction IDs back to assets
         let bulk_results: Vec<BulkAssetOptInOutResult> = asset_ids
             .iter()
-            .zip(results.results.iter())
+            .zip(composer_result.results.iter())
             .map(|(&asset_id, result)| BulkAssetOptInOutResult {
                 asset_id,
                 transaction_id: result.transaction_id.clone(),

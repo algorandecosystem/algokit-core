@@ -8,7 +8,7 @@ use super::{
     asset_transfer::{
         AssetClawbackParams, AssetOptInParams, AssetOptOutParams, AssetTransferParams,
     },
-    composer::{Composer, ComposerError, SendParams, SendTransactionComposerResult},
+    composer::{Composer, ComposerError, SendParams, TransactionResult},
     key_registration::{
         NonParticipationKeyRegistrationParams, OfflineKeyRegistrationParams,
         OnlineKeyRegistrationParams,
@@ -107,9 +107,9 @@ pub struct SendAppCreateResult {
 #[derive(Debug, Clone)]
 pub struct SendAppMethodCallResult {
     /// The result of the primary (last) transaction
-    pub primary_result: SendTransactionComposerResult,
+    pub primary_result: TransactionResult,
     /// All transaction results from the composer
-    pub results: Vec<SendTransactionComposerResult>,
+    pub results: Vec<TransactionResult>,
     /// The group ID (optional)
     pub group: Option<Byte32>,
 }
@@ -118,9 +118,9 @@ pub struct SendAppMethodCallResult {
 #[derive(Debug, Clone)]
 pub struct SendAppCreateMethodCallResult {
     /// The result of the primary (last) transaction
-    pub primary_result: SendTransactionComposerResult,
+    pub primary_result: TransactionResult,
     /// All transaction results from the composer
-    pub results: Vec<SendTransactionComposerResult>,
+    pub results: Vec<TransactionResult>,
     /// The group ID (optional)
     pub group: Option<Byte32>,
     /// The ID of the created app

@@ -1,6 +1,6 @@
 use crate::AlgorandClient;
 use crate::clients::app_manager::{CompiledPrograms, TealTemplateValue};
-use crate::transactions::SendTransactionComposerResult;
+use crate::transactions::TransactionResult;
 use crate::transactions::TransactionComposerConfig;
 use crate::transactions::TransactionSigner;
 use crate::transactions::app_call::AppMethodCallArg;
@@ -159,9 +159,9 @@ pub struct CompilationParams {
 #[derive(Clone, Debug)]
 pub struct AppClientUpdateMethodCallResult {
     /// The result of the primary (last) transaction
-    pub primary_result: SendTransactionComposerResult,
-    /// All transaction results from the composer
-    pub results: Vec<SendTransactionComposerResult>,
+    pub primary_result: TransactionResult,
+    /// All transaction results
+    pub results: Vec<TransactionResult>,
     /// The group ID (optional)
     pub group: Option<Byte32>,
     /// The compiled programs (approval and clear state)

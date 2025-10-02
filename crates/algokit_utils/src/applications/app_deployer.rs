@@ -2,9 +2,7 @@ use crate::clients::app_manager::{
     AppInformation, AppManager, AppManagerError, CompiledPrograms, CompiledTeal,
     DeploymentMetadata, TealTemplateParams,
 };
-use crate::transactions::{
-    SendTransactionComposerResult, TransactionSender, TransactionSenderError,
-};
+use crate::transactions::{TransactionResult, TransactionSender, TransactionSenderError};
 use crate::{
     AppCreateMethodCallParams, AppCreateParams, AppDeleteMethodCallParams, AppDeleteParams,
     AppMethodCallArg, AppUpdateMethodCallParams, AppUpdateParams, ComposerError, SendParams,
@@ -248,61 +246,46 @@ pub struct AppDeployParams {
     pub send_params: SendParams,
 }
 
-#[derive(Clone, Debug)]
-pub struct AppDeployerCreateResult {
-    /// The result of the primary (last) transaction
-    pub primary_result: SendTransactionComposerResult,
-    /// All transaction results from the composer
-    pub results: Vec<SendTransactionComposerResult>,
-    /// The group ID for the transaction group (if any)
-    pub group: Option<Byte32>,
-    /// The compiled approval and clear programs
-    pub compiled_programs: CompiledPrograms,
-}
-
-#[derive(Clone, Debug)]
-pub struct AppDeployerUpdateResult {
-    /// The result of the primary (last) transaction
-    pub primary_result: SendTransactionComposerResult,
-    /// All transaction results from the composer
-    pub results: Vec<SendTransactionComposerResult>,
-    /// The group ID for the transaction group (if any)
-    pub group: Option<Byte32>,
-    /// The compiled approval and clear programs
-    pub compiled_programs: CompiledPrograms,
-}
-
-#[derive(Clone, Debug)]
-pub struct AppDeployerReplaceResult {
-    /// The result of the delete transaction
-    pub delete_result: SendTransactionComposerResult,
-    /// The result of the create transaction
-    pub create_result: SendTransactionComposerResult,
-    /// All transaction results from the composer
-    pub results: Vec<SendTransactionComposerResult>,
-    /// The group ID for the transaction group (if any)
-    pub group: Option<Byte32>,
-    /// The compiled approval and clear programs
-    pub compiled_programs: CompiledPrograms,
-}
-
 /// The result of an app deployment operation
 #[derive(Debug)]
 pub enum AppDeployResult {
     /// Application was created
     Create {
         app: AppMetadata,
-        result: AppDeployerCreateResult,
+        /// The result of create transaction
+        create_result: TransactionResult,
+        /// All transaction results
+        results: Vec<TransactionResult>,
+        /// The group ID for the transaction group (if any)
+        group: Option<Byte32>,
+        /// The compiled approval and clear programs
+        compiled_programs: CompiledPrograms,
     },
     /// Application was updated
     Update {
         app: AppMetadata,
-        result: AppDeployerUpdateResult,
+        /// The result of the update transaction
+        update_result: TransactionResult,
+        /// All transaction results
+        results: Vec<TransactionResult>,
+        /// The group ID for the transaction group (if any)
+        group: Option<Byte32>,
+        /// The compiled approval and clear programs
+        compiled_programs: CompiledPrograms,
     },
     /// Application was replaced (deleted and recreated)
     Replace {
         app: AppMetadata,
-        result: AppDeployerReplaceResult,
+        /// The result of the delete transaction
+        delete_result: TransactionResult,
+        /// The result of the create transaction
+        create_result: TransactionResult,
+        /// All transaction results
+        results: Vec<TransactionResult>,
+        /// The group ID for the transaction group (if any)
+        group: Option<Byte32>,
+        /// The compiled approval and clear programs
+        compiled_programs: CompiledPrograms,
     },
     /// No operation was performed
     Nothing { app: AppMetadata },
@@ -994,9 +977,10 @@ impl AppDeployer {
 
         let create_transaction_index = composer_result.results.len() - 1;
 
-        let confirmation = composer_result.results[create_transaction_index]
-            .confirmation
-            .clone();
+        // Extract results from the create transaction
+        let create_result = composer_result.results[create_transaction_index].clone();
+
+        let confirmation = create_result.confirmation.clone();
         let app_id = confirmation
             .app_id
             .ok_or_else(|| AppDeployError::DeploymentFailed {
@@ -1031,19 +1015,12 @@ impl AppDeployer {
 
         self.update_app_lookup(sender, &app_metadata);
 
-        // Extract results from the create transaction
-        let create_result_data = &composer_result.results[create_transaction_index];
-
-        let create_result = AppDeployerCreateResult {
-            primary_result: create_result_data.clone(),
+        Ok(AppDeployResult::Create {
+            app: app_metadata,
+            create_result: create_result,
             results: composer_result.results,
             group: composer_result.group,
             compiled_programs,
-        };
-
-        Ok(AppDeployResult::Create {
-            app: app_metadata,
-            result: create_result,
         })
     }
 
@@ -1124,15 +1101,20 @@ impl AppDeployer {
 
         let update_transaction_index = composer_result.results.len() - 1;
 
-        let confirmation = composer_result.results[update_transaction_index]
-            .confirmation
-            .clone();
+        // Extract results from the update transaction
+        let update_result = composer_result.results[update_transaction_index].clone();
+
+        let confirmed_round = update_result.confirmation.confirmed_round.ok_or_else(|| {
+            AppDeployError::DeploymentFailed {
+                message: "App update confirmation missing confirmed-round".to_string(),
+            }
+        })?;
 
         let app_metadata = AppMetadata {
             app_id: existing_app_metadata.app_id,
             app_address: existing_app_metadata.app_address.clone(),
             created_round: existing_app_metadata.created_round,
-            updated_round: confirmation.confirmed_round.unwrap(),
+            updated_round: confirmed_round,
             created_metadata: existing_app_metadata.created_metadata.clone(),
             deleted: false,
             name: metadata.name.clone(),
@@ -1148,19 +1130,12 @@ impl AppDeployer {
 
         self.update_app_lookup(sender, &app_metadata);
 
-        // Extract results from the update transaction
-        let update_result_data = &composer_result.results[update_transaction_index];
-
-        let update_result = AppDeployerUpdateResult {
-            primary_result: update_result_data.clone(),
+        Ok(AppDeployResult::Update {
+            app: app_metadata,
+            update_result: update_result,
             results: composer_result.results,
             group: composer_result.group,
             compiled_programs,
-        };
-
-        Ok(AppDeployResult::Update {
-            app: app_metadata,
-            result: update_result,
         })
     }
 
@@ -1342,10 +1317,13 @@ impl AppDeployer {
             .await
             .map_err(|e| AppDeployError::ComposerError { source: e })?;
 
+        // Extract create and delete results directly
+        let delete_transaction_index = result.results.len() - 1;
+        let create_result = result.results[create_transaction_index].clone();
+        let delete_result = result.results[delete_transaction_index].clone();
+
         // Get create confirmation from the tracked index
-        let create_confirmation = result.results[create_transaction_index]
-            .confirmation
-            .clone();
+        let create_confirmation = create_result.confirmation.clone();
         let app_id =
             create_confirmation
                 .app_id
@@ -1379,23 +1357,13 @@ impl AppDeployer {
 
         self.update_app_lookup(sender, &app_metadata);
 
-        let delete_transaction_index = result.results.len() - 1;
-
-        // Extract create and delete results directly
-        let create_result_data = &result.results[create_transaction_index];
-        let delete_result_data = &result.results[delete_transaction_index];
-
-        let replace_result = AppDeployerReplaceResult {
-            delete_result: delete_result_data.clone(),
-            create_result: create_result_data.clone(),
+        Ok(AppDeployResult::Replace {
+            app: app_metadata,
+            delete_result: delete_result,
+            create_result: create_result,
             results: result.results,
             group: result.group,
             compiled_programs,
-        };
-
-        Ok(AppDeployResult::Replace {
-            app: app_metadata,
-            result: replace_result,
         })
     }
 

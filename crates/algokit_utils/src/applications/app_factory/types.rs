@@ -3,7 +3,7 @@ use crate::AppSourceMaps;
 use crate::applications::app_client::CompilationParams;
 use crate::clients::app_manager::CompiledPrograms;
 use crate::transactions::{
-    AppMethodCallArg, SendTransactionComposerResult, TransactionComposerConfig, TransactionSigner,
+    AppMethodCallArg, TransactionResult, TransactionComposerConfig, TransactionSigner,
 };
 use algod_client::models::PendingTransactionResponse;
 use algokit_abi::Arc56Contract;
@@ -32,9 +32,9 @@ pub struct AppFactoryCreateResult {
 #[derive(Clone, Debug)]
 pub struct AppFactoryCreateMethodCallResult {
     /// The result of the primary (last) transaction
-    pub primary_result: SendTransactionComposerResult,
-    /// All transaction results from the composer
-    pub results: Vec<SendTransactionComposerResult>,
+    pub primary_result: TransactionResult,
+    /// All transaction results
+    pub results: Vec<TransactionResult>,
     /// The group ID for the transaction group (if any)
     pub group: Option<Byte32>,
     /// The ID of the created app

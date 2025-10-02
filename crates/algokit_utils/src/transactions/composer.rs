@@ -222,7 +222,7 @@ impl From<AlgoKitTransactError> for ComposerError {
 }
 
 #[derive(Debug, Clone)]
-pub struct SendTransactionComposerResult {
+pub struct TransactionResult {
     pub transaction: Transaction,
     pub transaction_id: String,
     pub confirmation: PendingTransactionResponse,
@@ -230,9 +230,9 @@ pub struct SendTransactionComposerResult {
 }
 
 #[derive(Debug)]
-pub struct SendTransactionComposerResults {
+pub struct SendTransactionComposerResult {
     pub group: Option<Byte32>,
-    pub results: Vec<SendTransactionComposerResult>,
+    pub results: Vec<TransactionResult>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -247,9 +247,9 @@ pub struct SimulateParams {
 }
 
 #[derive(Debug, Clone)]
-pub struct SimulateComposerResults {
+pub struct TransactionComposerSimulateResult {
     pub group: Option<Byte32>,
-    pub results: Vec<SendTransactionComposerResult>,
+    pub results: Vec<TransactionResult>,
     pub simulate_response: SimulateTransaction,
 }
 
@@ -2221,7 +2221,7 @@ impl Composer {
     pub async fn send(
         &mut self,
         params: Option<SendParams>,
-    ) -> Result<SendTransactionComposerResults, ComposerError> {
+    ) -> Result<SendTransactionComposerResult, ComposerError> {
         self.gather_signatures().await?;
 
         let signed_transactions = self
@@ -2332,18 +2332,16 @@ impl Composer {
             .zip(confirmations)
             .zip(abi_returns)
             .map(
-                |(((transaction, transaction_id), confirmation), abi_return)| {
-                    SendTransactionComposerResult {
-                        transaction,
-                        transaction_id,
-                        confirmation,
-                        abi_return,
-                    }
+                |(((transaction, transaction_id), confirmation), abi_return)| TransactionResult {
+                    transaction,
+                    transaction_id,
+                    confirmation,
+                    abi_return,
                 },
             )
             .collect();
 
-        Ok(SendTransactionComposerResults { group, results })
+        Ok(SendTransactionComposerResult { group, results })
     }
 
     pub fn count(&self) -> usize {
@@ -2353,7 +2351,7 @@ impl Composer {
     pub async fn simulate(
         &mut self,
         simulate_params: Option<SimulateParams>,
-    ) -> Result<SimulateComposerResults, ComposerError> {
+    ) -> Result<TransactionComposerSimulateResult, ComposerError> {
         let simulate_params = simulate_params.unwrap_or_default();
 
         self.build().await?;
@@ -2461,13 +2459,11 @@ impl Composer {
             .zip(confirmations)
             .zip(abi_returns)
             .map(
-                |(((transaction, transaction_id), confirmation), abi_return)| {
-                    SendTransactionComposerResult {
-                        transaction,
-                        transaction_id,
-                        confirmation,
-                        abi_return,
-                    }
+                |(((transaction, transaction_id), confirmation), abi_return)| TransactionResult {
+                    transaction,
+                    transaction_id,
+                    confirmation,
+                    abi_return,
                 },
             )
             .collect();
@@ -2485,7 +2481,7 @@ impl Composer {
                 .await;
         }
 
-        Ok(SimulateComposerResults {
+        Ok(TransactionComposerSimulateResult {
             group,
             results,
             simulate_response,
