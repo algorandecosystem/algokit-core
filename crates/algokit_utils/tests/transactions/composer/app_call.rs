@@ -878,26 +878,23 @@ async fn group_simulate_matches_send(
         .await?;
     let send = composer.send(None).await?;
 
-    // Extract transaction_ids from results for comparison
-    let simulate_tx_ids: Vec<_> = simulate
-        .results
-        .iter()
-        .map(|r| r.transaction_id.clone())
-        .collect();
-    let send_tx_ids: Vec<_> = send
-        .results
-        .iter()
-        .map(|r| r.transaction_id.clone())
-        .collect();
-    assert_eq!(simulate_tx_ids, send_tx_ids);
-
-    // Compare all ABI returns in order where both sides have a value
     for (simulate_result, send_result) in simulate.results.iter().zip(send.results.iter()) {
-        if let (Some(simulate_abi), Some(send_abi)) =
-            (&simulate_result.abi_return, &send_result.abi_return)
-        {
-            assert_eq!(simulate_abi.return_value, send_abi.return_value);
+        // Compare ABI return values
+        match (&simulate_result.abi_return, &send_result.abi_return) {
+            (Some(sim_return), Some(send_return)) => {
+                assert_eq!(
+                    sim_return.return_value, send_return.return_value,
+                    "ABI return values should match between simulate and send"
+                );
+            }
+            (None, None) => {
+                // Both are None, which is fine
+            }
+            _ => {
+                return Err("One result has ABI return while the other doesn't".into());
+            }
         }
+        assert_eq!(simulate_result.transaction_id, send_result.transaction_id);
     }
     Ok(())
 }
