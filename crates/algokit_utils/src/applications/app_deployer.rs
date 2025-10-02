@@ -898,7 +898,7 @@ impl AppDeployer {
         compiled_programs: CompiledPrograms,
         send_params: &SendParams,
     ) -> Result<AppDeployResult, AppDeployError> {
-        let mut composer = self.transaction_sender.new_group(None);
+        let mut composer = self.transaction_sender.new_composer(None);
 
         match create_params {
             CreateParams::AppCreateCall(params) => {
@@ -1036,7 +1036,7 @@ impl AppDeployer {
             "Updating existing {} app to version {}.",
             metadata.name, metadata.version
         );
-        let mut composer = self.transaction_sender.new_group(None);
+        let mut composer = self.transaction_sender.new_composer(None);
 
         match update_params {
             UpdateParams::AppUpdateCall(params) => {
@@ -1186,7 +1186,7 @@ impl AppDeployer {
             metadata.name, existing_app_metadata.app_id
         );
 
-        let mut composer = self.transaction_sender.new_group(None);
+        let mut composer = self.transaction_sender.new_composer(None);
 
         // Add create transaction and track its index
         match create_params {

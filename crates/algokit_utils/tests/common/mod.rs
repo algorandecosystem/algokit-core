@@ -84,7 +84,7 @@ pub async fn deploy_arc56_contract(
         ..Default::default()
     };
 
-    let mut composer = fixture.algorand_client.new_group(None);
+    let mut composer = fixture.algorand_client.new_composer(None);
     composer.add_app_create(app_create_params)?;
 
     let result = composer.send(None).await?;

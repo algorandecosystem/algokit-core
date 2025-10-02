@@ -13,7 +13,9 @@ use crate::{
 };
 use algod_client::AlgodClient as RustAlgodClient;
 use algokit_http_client::HttpClient;
-use algokit_utils::transactions::{ComposerParams, composer::Composer as RustComposer};
+use algokit_utils::transactions::{
+    TransactionComposerParams, composer::TransactionComposer as RustComposer,
+};
 use async_trait::async_trait;
 use tokio::sync::Mutex;
 
@@ -58,7 +60,7 @@ impl Composer {
 
         let rust_composer = {
             let rust_algod_client = algod_client.inner_algod_client.blocking_lock();
-            RustComposer::new(ComposerParams {
+            RustComposer::new(TransactionComposerParams {
                 algod_client: Arc::new(rust_algod_client.clone()),
                 signer_getter: Arc::new(rust_signer_getter),
                 composer_config: None,

@@ -25,7 +25,7 @@ async fn fixture(#[future] algorand_fixture: AlgorandFixtureResult) -> FixtureRe
     let algod_client = algorand_fixture.algod.clone();
     let indexer_client = algorand_fixture.indexer.clone();
 
-    let composer = algorand_fixture.algorand_client.new_group(None);
+    let composer = algorand_fixture.algorand_client.new_composer(None);
     let asset_manager = AssetManager::new(algod_client.clone(), {
         let new_composer = composer.clone();
         move |_params| new_composer.clone()

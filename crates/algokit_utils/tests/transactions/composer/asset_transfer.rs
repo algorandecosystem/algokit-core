@@ -11,7 +11,7 @@ async fn test_asset_transfer_transaction(
     let mut algorand_fixture = algorand_fixture.await?;
     let asset_creator_address = algorand_fixture.test_account.account().address();
 
-    let mut composer = algorand_fixture.algorand_client.new_group(None);
+    let mut composer = algorand_fixture.algorand_client.new_composer(None);
 
     composer.add_asset_create(AssetCreateParams {
         sender: asset_creator_address.clone(),
@@ -27,7 +27,7 @@ async fn test_asset_transfer_transaction(
         .asset_id
         .ok_or("Failed to get asset ID")?;
 
-    let mut composer = algorand_fixture.algorand_client.new_group(None);
+    let mut composer = algorand_fixture.algorand_client.new_composer(None);
 
     let asset_receiver = algorand_fixture.generate_account(None).await?;
     let asset_receive_address = asset_receiver.account().address();

@@ -260,7 +260,7 @@ pub struct TransactionComposerConfig {
 }
 
 #[derive(Clone)]
-pub struct ComposerParams {
+pub struct TransactionComposerParams {
     pub algod_client: Arc<AlgodClient>,
     pub signer_getter: Arc<dyn TransactionSignerGetter>,
     pub composer_config: Option<TransactionComposerConfig>,
@@ -473,7 +473,7 @@ impl ComposerTransaction {
 }
 
 #[derive(Clone)]
-pub struct Composer {
+pub struct TransactionComposer {
     algod_client: Arc<AlgodClient>,
     signer_getter: Arc<dyn TransactionSignerGetter>,
     composer_config: TransactionComposerConfig,
@@ -482,9 +482,9 @@ pub struct Composer {
     signed_group: Option<Vec<SignedTransaction>>,
 }
 
-impl Composer {
-    pub fn new(params: ComposerParams) -> Self {
-        Composer {
+impl TransactionComposer {
+    pub fn new(params: TransactionComposerParams) -> Self {
+        TransactionComposer {
             algod_client: params.algod_client,
             signer_getter: params.signer_getter,
             composer_config: params.composer_config.unwrap_or_default(),
@@ -1548,7 +1548,7 @@ impl Composer {
 
             // Apply the group level resource population logic
             if let Some(group_resources) = group_analysis.unnamed_resources_accessed.take() {
-                Composer::populate_group_resources(&mut transactions, group_resources)?;
+                TransactionComposer::populate_group_resources(&mut transactions, group_resources)?;
             }
         }
 
@@ -1580,7 +1580,7 @@ impl Composer {
                 let app_local_app = app_local.app;
                 let app_local_account = app_local.account.clone();
 
-                Composer::populate_group_resource(
+                TransactionComposer::populate_group_resource(
                     transactions,
                     &GroupResourceToPopulate::AppLocal(app_local),
                 )?;
@@ -1596,7 +1596,7 @@ impl Composer {
                 let asset_holding_asset = asset_holding.asset;
                 let asset_holding_account = asset_holding.account.clone();
 
-                Composer::populate_group_resource(
+                TransactionComposer::populate_group_resource(
                     transactions,
                     &GroupResourceToPopulate::AssetHolding(asset_holding),
                 )?;
@@ -1609,7 +1609,7 @@ impl Composer {
 
         // Process accounts next because account limit is 4
         for account in remaining_accounts {
-            Composer::populate_group_resource(
+            TransactionComposer::populate_group_resource(
                 transactions,
                 &GroupResourceToPopulate::Account(account),
             )?;
@@ -1619,7 +1619,7 @@ impl Composer {
         for box_ref in remaining_boxes {
             let box_ref_app = box_ref.app;
 
-            Composer::populate_group_resource(
+            TransactionComposer::populate_group_resource(
                 transactions,
                 &GroupResourceToPopulate::Box(box_ref),
             )?;
@@ -1630,7 +1630,7 @@ impl Composer {
 
         // Process assets
         for asset in remaining_assets {
-            Composer::populate_group_resource(
+            TransactionComposer::populate_group_resource(
                 transactions,
                 &GroupResourceToPopulate::Asset(asset),
             )?;
@@ -1638,13 +1638,16 @@ impl Composer {
 
         // Process remaining apps
         for app in remaining_apps {
-            Composer::populate_group_resource(transactions, &GroupResourceToPopulate::App(app))?;
+            TransactionComposer::populate_group_resource(
+                transactions,
+                &GroupResourceToPopulate::App(app),
+            )?;
         }
 
         // Handle extra box refs
         if let Some(extra_box_refs) = group_resources.extra_box_refs {
             for _ in 0..extra_box_refs {
-                Composer::populate_group_resource(
+                TransactionComposer::populate_group_resource(
                     transactions,
                     &GroupResourceToPopulate::ExtraBoxRef,
                 )?;
@@ -1700,7 +1703,7 @@ impl Composer {
 
                 // Try to find a transaction that already has the account available
                 let group_index = transactions.iter().position(|txn| {
-                    if !Composer::is_app_call_below_resource_limit(txn) {
+                    if !TransactionComposer::is_app_call_below_resource_limit(txn) {
                         return false;
                     }
 
@@ -1755,7 +1758,7 @@ impl Composer {
 
                 // Try to find a transaction that already has the asset/app available and space for account
                 let group_index = transactions.iter().position(|txn| {
-                    if !Composer::is_app_call_below_resource_limit(txn) {
+                    if !TransactionComposer::is_app_call_below_resource_limit(txn) {
                         return false;
                     }
 
@@ -1808,7 +1811,7 @@ impl Composer {
             GroupResourceToPopulate::Box(box_ref) => {
                 // For boxes, first try to find a transaction that already has the app available
                 let group_index = transactions.iter().position(|txn| {
-                    if !Composer::is_app_call_below_resource_limit(txn) {
+                    if !TransactionComposer::is_app_call_below_resource_limit(txn) {
                         return false;
                     }
 
@@ -2496,8 +2499,8 @@ mod tests {
     use algokit_transact::test_utils::{AccountMother, TransactionMother};
     use base64::{Engine, prelude::BASE64_STANDARD};
 
-    fn test_composer_params() -> ComposerParams {
-        ComposerParams {
+    fn test_composer_params() -> TransactionComposerParams {
+        TransactionComposerParams {
             algod_client: Arc::new(AlgodClient::testnet()),
             signer_getter: Arc::new(EmptySigner {}),
             composer_config: Some(TransactionComposerConfig {
@@ -2509,14 +2512,14 @@ mod tests {
 
     #[test]
     fn test_add_transaction() {
-        let mut composer = Composer::new(test_composer_params());
+        let mut composer = TransactionComposer::new(test_composer_params());
         let txn = TransactionMother::simple_payment().build().unwrap();
         assert!(composer.add_transaction(txn, None).is_ok());
     }
 
     #[test]
     fn test_add_too_many_transactions() {
-        let mut composer = Composer::new(test_composer_params());
+        let mut composer = TransactionComposer::new(test_composer_params());
         for _ in 0..16 {
             let txn = TransactionMother::simple_payment().build().unwrap();
             assert!(composer.add_transaction(txn, None).is_ok());
@@ -2527,7 +2530,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_suggested_params() {
-        let composer = Composer::new(test_composer_params());
+        let composer = TransactionComposer::new(test_composer_params());
         let response = composer.get_suggested_params().await.unwrap();
 
         assert_eq!(
@@ -2540,7 +2543,7 @@ mod tests {
 
     #[test]
     fn test_add_payment() {
-        let mut composer = Composer::new(test_composer_params());
+        let mut composer = TransactionComposer::new(test_composer_params());
         let payment_params = PaymentParams {
             sender: AccountMother::account().address(),
             signer: None,
@@ -2561,7 +2564,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_gather_signatures() {
-        let mut composer = Composer::new(test_composer_params());
+        let mut composer = TransactionComposer::new(test_composer_params());
 
         let payment_params = PaymentParams {
             sender: AccountMother::account().address(),
@@ -2586,7 +2589,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_single_transaction_no_group() {
-        let mut composer = Composer::new(test_composer_params());
+        let mut composer = TransactionComposer::new(test_composer_params());
         let payment_params = PaymentParams {
             sender: AccountMother::account().address(),
             signer: None,
@@ -2615,7 +2618,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_multiple_transactions_have_group() {
-        let mut composer = Composer::new(test_composer_params());
+        let mut composer = TransactionComposer::new(test_composer_params());
 
         for _ in 0..2 {
             let payment_params = PaymentParams {
@@ -2747,7 +2750,7 @@ mod tests {
 
     #[test]
     fn test_add_transaction_with_non_empty_group_fails() {
-        let mut composer = Composer::new(test_composer_params());
+        let mut composer = TransactionComposer::new(test_composer_params());
 
         // Create a transaction with a non-empty group
         let mut txn = TransactionMother::simple_payment().build().unwrap();
@@ -2764,7 +2767,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_add_transaction_after_build_fails() {
-        let mut composer = Composer::new(test_composer_params());
+        let mut composer = TransactionComposer::new(test_composer_params());
 
         // Add a transaction and build the composer
         let txn = TransactionMother::simple_payment().build().unwrap();

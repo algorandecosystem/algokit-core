@@ -94,7 +94,7 @@ async fn from_creator_and_name_resolves_and_can_call(
         ..Default::default()
     };
 
-    let mut composer = fixture.algorand_client.new_group(None);
+    let mut composer = fixture.algorand_client.new_composer(None);
     composer.add_app_create(create_params)?;
     let create_group = composer.send(None).await?;
     let app_id = create_group.results[0]

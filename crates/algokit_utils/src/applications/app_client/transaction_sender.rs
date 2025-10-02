@@ -48,7 +48,7 @@ impl<'app_client> TransactionSender<'app_client> {
             let mut composer = self
                 .client
                 .algorand()
-                .new_group(transaction_composer_config.clone());
+                .new_composer(transaction_composer_config.clone());
 
             if transaction_composer_config
                 .clone()

@@ -43,7 +43,7 @@ async fn test_app_call_transaction(
         ..Default::default()
     };
 
-    let mut composer = algorand_fixture.algorand_client.new_group(None);
+    let mut composer = algorand_fixture.algorand_client.new_composer(None);
     composer.add_app_call(app_call_params)?;
 
     let result = composer.send(None).await?;
@@ -90,7 +90,7 @@ async fn test_app_create_transaction(
         ..Default::default()
     };
 
-    let mut composer = algorand_fixture.algorand_client.new_group(None);
+    let mut composer = algorand_fixture.algorand_client.new_composer(None);
     composer.add_app_create(app_create_params)?;
 
     let result = composer.send(None).await?;
@@ -151,7 +151,7 @@ async fn test_app_delete_transaction(
         ..Default::default()
     };
 
-    let mut composer = algorand_fixture.algorand_client.new_group(None);
+    let mut composer = algorand_fixture.algorand_client.new_composer(None);
     composer.add_app_delete(app_delete_params)?;
 
     let result = composer.send(None).await?;
@@ -204,7 +204,7 @@ async fn test_app_update_transaction(
         ..Default::default()
     };
 
-    let mut composer = algorand_fixture.algorand_client.new_group(None);
+    let mut composer = algorand_fixture.algorand_client.new_composer(None);
     composer.add_app_update(app_update_params)?;
 
     let result = composer.send(None).await?;
@@ -274,7 +274,7 @@ async fn test_hello_world_app_method_call(
         ..Default::default()
     };
 
-    let mut composer = algorand_fixture.algorand_client.new_group(None);
+    let mut composer = algorand_fixture.algorand_client.new_composer(None);
     composer.add_app_call_method_call(method_call_params)?;
 
     let result = composer.send(None).await?;
@@ -316,7 +316,7 @@ async fn test_add_app_call_method_call(
         ..Default::default()
     };
 
-    let mut composer = algorand_fixture.algorand_client.new_group(None);
+    let mut composer = algorand_fixture.algorand_client.new_composer(None);
     composer.add_app_call_method_call(method_call_params)?;
 
     let result = composer.send(None).await?;
@@ -364,7 +364,7 @@ async fn test_echo_byte_app_call_method_call(
         ..Default::default()
     };
 
-    let mut composer = algorand_fixture.algorand_client.new_group(None);
+    let mut composer = algorand_fixture.algorand_client.new_composer(None);
     composer.add_app_call_method_call(method_call_params)?;
 
     let result = composer.send(None).await?;
@@ -412,7 +412,7 @@ async fn test_echo_static_array_app_call_method_call(
         ..Default::default()
     };
 
-    let mut composer = algorand_fixture.algorand_client.new_group(None);
+    let mut composer = algorand_fixture.algorand_client.new_composer(None);
     composer.add_app_call_method_call(method_call_params)?;
 
     let result = composer.send(None).await?;
@@ -459,7 +459,7 @@ async fn test_echo_dynamic_array_app_call_method_call(
         ..Default::default()
     };
 
-    let mut composer = algorand_fixture.algorand_client.new_group(None);
+    let mut composer = algorand_fixture.algorand_client.new_composer(None);
     composer.add_app_call_method_call(method_call_params)?;
 
     let result = composer.send(None).await?;
@@ -522,7 +522,7 @@ async fn test_nest_array_and_tuple_app_call_method_call(
         ..Default::default()
     };
 
-    let mut composer = algorand_fixture.algorand_client.new_group(None);
+    let mut composer = algorand_fixture.algorand_client.new_composer(None);
     composer.add_app_call_method_call(method_call_params)?;
 
     let result = composer.send(None).await?;
@@ -599,7 +599,7 @@ async fn test_get_pay_txn_amount_app_call_method_call(
         ..Default::default()
     };
 
-    let mut composer = algorand_fixture.algorand_client.new_group(None);
+    let mut composer = algorand_fixture.algorand_client.new_composer(None);
     composer.add_app_call_method_call(method_call_params)?;
 
     let result = composer.send(None).await?;
@@ -658,7 +658,7 @@ async fn test_get_pay_txn_amount_app_call_method_call_using_a_different_signer(
         ..Default::default()
     };
 
-    let mut composer = algorand_fixture.algorand_client.new_group(None);
+    let mut composer = algorand_fixture.algorand_client.new_composer(None);
     composer.add_app_call_method_call(method_call_params)?;
 
     let result = composer.send(None).await?;
@@ -700,7 +700,7 @@ async fn test_get_returned_value_of_app_call_txn_app_call_method_call(
         get_abi_method(&arc56_contract, "get_returned_value_of_app_call_txn")?;
 
     let payment_amount = 2_500_000u64;
-    let mut composer = algorand_fixture.algorand_client.new_group(None);
+    let mut composer = algorand_fixture.algorand_client.new_composer(None);
 
     let first_method_call_params = AppCallMethodCallParams {
         sender: sender_address.clone(),
@@ -766,7 +766,7 @@ async fn test_get_returned_value_of_nested_app_call_method_calls(
         get_abi_method(&arc56_contract, "get_pay_txns_amount_sum")?;
 
     let payment_amount = 5_000u64;
-    let mut composer = algorand_fixture.algorand_client.new_group(None);
+    let mut composer = algorand_fixture.algorand_client.new_composer(None);
 
     let get_pay_txn_amount_method_call_params = AppCallMethodCallParams {
         sender: sender_address.clone(),
@@ -832,7 +832,7 @@ async fn group_simulate_matches_send(
     } = arc56_algorand_fixture.await?;
 
     // Compose group: add(uint64,uint64)uint64 + payment + hello_world(string)string
-    let mut composer = algorand_fixture.algorand_client.new_group(None);
+    let mut composer = algorand_fixture.algorand_client.new_composer(None);
 
     // 1) add(uint64,uint64)uint64
     let method_add = get_abi_method(&arc56_contract, "add")?;
@@ -961,7 +961,7 @@ async fn create_test_app(
         ..Default::default()
     };
 
-    let mut composer = algorand_fixture.algorand_client.new_group(None);
+    let mut composer = algorand_fixture.algorand_client.new_composer(None);
 
     composer.add_app_create(app_create_params)?;
 
@@ -1009,7 +1009,7 @@ async fn test_more_than_15_args_with_ref_types_app_call_method_call(
         ..Default::default()
     };
 
-    let mut asset_composer = algorand_fixture.algorand_client.new_group(None);
+    let mut asset_composer = algorand_fixture.algorand_client.new_composer(None);
     asset_composer.add_asset_create(asset_create_params)?;
 
     let asset_result = asset_composer.send(None).await?;
@@ -1076,7 +1076,7 @@ async fn test_more_than_15_args_with_ref_types_app_call_method_call(
         ..Default::default()
     };
 
-    let mut composer = algorand_fixture.algorand_client.new_group(None);
+    let mut composer = algorand_fixture.algorand_client.new_composer(None);
     composer.add_app_call_method_call(method_call_params)?;
 
     let result = composer.send(None).await?;
@@ -1189,7 +1189,7 @@ async fn test_more_than_15_args_app_call_method_call(
         ..Default::default()
     };
 
-    let mut composer = algorand_fixture.algorand_client.new_group(None);
+    let mut composer = algorand_fixture.algorand_client.new_composer(None);
     composer.add_app_call_method_call(method_call_params)?;
 
     let result = composer.send(None).await?;
@@ -1240,7 +1240,7 @@ async fn test_app_call_validation_errors(
         ..Default::default()
     };
 
-    let mut composer = algorand_fixture.algorand_client.new_group(None);
+    let mut composer = algorand_fixture.algorand_client.new_composer(None);
     composer
         .add_app_call(invalid_app_call_params)
         .expect("Adding invalid app call should succeed at composer level");
@@ -1294,7 +1294,7 @@ fn get_abi_return(
 #[tokio::test]
 async fn test_double_nested(#[future] algorand_fixture: AlgorandFixtureResult) -> TestResult {
     let mut algorand_fixture = algorand_fixture.await?;
-    let mut composer = algorand_fixture.algorand_client.new_group(None);
+    let mut composer = algorand_fixture.algorand_client.new_composer(None);
 
     let sender_address = algorand_fixture.test_account.account().address();
     let receiver = algorand_fixture.generate_account(None).await?;
@@ -1422,7 +1422,7 @@ async fn deploy_nested_app(
         ..Default::default()
     };
 
-    let mut composer = algorand_fixture.algorand_client.new_group(None);
+    let mut composer = algorand_fixture.algorand_client.new_composer(None);
     composer.add_app_create(app_create_params)?;
 
     let result = composer.send(None).await?;

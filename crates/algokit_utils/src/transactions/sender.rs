@@ -8,7 +8,7 @@ use super::{
     asset_transfer::{
         AssetClawbackParams, AssetOptInParams, AssetOptOutParams, AssetTransferParams,
     },
-    composer::{Composer, ComposerError, SendParams, TransactionResult},
+    composer::{ComposerError, SendParams, TransactionComposer, TransactionResult},
     key_registration::{
         NonParticipationKeyRegistrationParams, OfflineKeyRegistrationParams,
         OnlineKeyRegistrationParams,
@@ -133,25 +133,25 @@ pub struct SendAppCreateMethodCallResult {
 #[derive(Clone)]
 pub struct TransactionSender {
     asset_manager: AssetManager,
-    new_group: Arc<dyn Fn(Option<TransactionComposerConfig>) -> Composer>,
+    new_composer: Arc<dyn Fn(Option<TransactionComposerConfig>) -> TransactionComposer>,
 }
 
 impl TransactionSender {
     /// Create a new transaction sender.
     ///
     /// # Arguments
-    /// * `new_group` - Factory function for creating new transaction composers
+    /// * `new_composer` - Factory function for creating new transaction composers
     /// * `asset_manager` - Asset manager for handling asset operations
     ///
     /// # Returns
     /// A new `TransactionSender` instance
     pub fn new(
-        new_group: impl Fn(Option<TransactionComposerConfig>) -> Composer + 'static,
+        new_composer: impl Fn(Option<TransactionComposerConfig>) -> TransactionComposer + 'static,
         asset_manager: AssetManager,
     ) -> Self {
         Self {
             asset_manager,
-            new_group: Arc::new(new_group),
+            new_composer: Arc::new(new_composer),
         }
     }
 
@@ -162,8 +162,8 @@ impl TransactionSender {
     ///
     /// # Returns
     /// A new `Composer` instance
-    pub fn new_group(&self, params: Option<TransactionComposerConfig>) -> Composer {
-        (self.new_group)(params)
+    pub fn new_composer(&self, params: Option<TransactionComposerConfig>) -> TransactionComposer {
+        (self.new_composer)(params)
     }
 
     async fn send_single_transaction<F>(
@@ -172,9 +172,9 @@ impl TransactionSender {
         send_params: Option<SendParams>,
     ) -> Result<SendResult, TransactionSenderError>
     where
-        F: FnOnce(&mut Composer) -> Result<(), ComposerError>,
+        F: FnOnce(&mut TransactionComposer) -> Result<(), ComposerError>,
     {
-        let mut composer = self.new_group(None);
+        let mut composer = self.new_composer(None);
         add_transaction(&mut composer)?;
         let composer_results = composer.send(send_params).await?;
 
@@ -200,7 +200,7 @@ impl TransactionSender {
         send_params: Option<SendParams>,
     ) -> Result<R, TransactionSenderError>
     where
-        F: FnOnce(&mut Composer) -> Result<(), ComposerError>,
+        F: FnOnce(&mut TransactionComposer) -> Result<(), ComposerError>,
         T: FnOnce(SendResult) -> Result<R, TransactionSenderError>,
     {
         let base_result = self
@@ -215,9 +215,9 @@ impl TransactionSender {
         send_params: Option<SendParams>,
     ) -> Result<SendAppMethodCallResult, TransactionSenderError>
     where
-        F: FnOnce(&mut Composer) -> Result<(), ComposerError>,
+        F: FnOnce(&mut TransactionComposer) -> Result<(), ComposerError>,
     {
-        let mut composer = self.new_group(None);
+        let mut composer = self.new_composer(None);
         add_transaction(&mut composer)?;
         let composer_results = composer.send(send_params).await?;
 
@@ -243,7 +243,7 @@ impl TransactionSender {
         send_params: Option<SendParams>,
     ) -> Result<R, TransactionSenderError>
     where
-        F: FnOnce(&mut Composer) -> Result<(), ComposerError>,
+        F: FnOnce(&mut TransactionComposer) -> Result<(), ComposerError>,
         T: FnOnce(SendAppMethodCallResult) -> Result<R, TransactionSenderError>,
     {
         let base_result = self.send_method_call(add_transaction, send_params).await?;
