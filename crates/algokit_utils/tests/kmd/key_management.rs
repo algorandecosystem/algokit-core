@@ -46,7 +46,7 @@ async fn key_management_flow() -> Result<(), Box<dyn std::error::Error + Send + 
         .as_ref()
         .expect("Wallet id should be present");
     assert_eq!(
-        created_wallet.name.as_ref().map(|s| s.as_str()),
+        created_wallet.name.as_deref(),
         Some(wallet_name.as_str())
     );
 

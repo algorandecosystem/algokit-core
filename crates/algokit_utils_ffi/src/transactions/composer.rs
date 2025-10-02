@@ -183,7 +183,10 @@ impl Composer {
             })
     }
 
-    pub fn add_app_create(&self, params: super::app_call::AppCreateParams) -> Result<(), UtilsError> {
+    pub fn add_app_create(
+        &self,
+        params: super::app_call::AppCreateParams,
+    ) -> Result<(), UtilsError> {
         let mut composer = self.inner_composer.blocking_lock();
         composer
             .add_app_create(params.try_into()?)
@@ -201,7 +204,10 @@ impl Composer {
             })
     }
 
-    pub fn add_app_update(&self, params: super::app_call::AppUpdateParams) -> Result<(), UtilsError> {
+    pub fn add_app_update(
+        &self,
+        params: super::app_call::AppUpdateParams,
+    ) -> Result<(), UtilsError> {
         let mut composer = self.inner_composer.blocking_lock();
         composer
             .add_app_update(params.try_into()?)
@@ -210,7 +216,10 @@ impl Composer {
             })
     }
 
-    pub fn add_app_delete(&self, params: super::app_call::AppDeleteParams) -> Result<(), UtilsError> {
+    pub fn add_app_delete(
+        &self,
+        params: super::app_call::AppDeleteParams,
+    ) -> Result<(), UtilsError> {
         let mut composer = self.inner_composer.blocking_lock();
         composer
             .add_app_delete(params.try_into()?)
