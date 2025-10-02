@@ -89,18 +89,34 @@ impl<'app_factory> TransactionSender<'app_factory> {
         let app_address = Address::from_app_id(&app_id);
 
         let factory_result = AppFactoryCreateMethodCallResult {
-            transaction: result.transaction,
-            confirmation: result.confirmation,
-            transaction_id: result.transaction_id,
+            transaction: result.primary_result.transaction,
+            confirmation: result.primary_result.confirmation,
+            transaction_id: result.primary_result.transaction_id,
             group: result.group,
-            abi_return: result.abi_return,
-            transaction_ids: result.transaction_ids,
-            transactions: result.transactions,
-            confirmations: result.confirmations,
+            abi_return: result.primary_result.abi_return,
+            transaction_ids: result
+                .results
+                .iter()
+                .map(|r| r.transaction_id.clone())
+                .collect(),
+            transactions: result
+                .results
+                .iter()
+                .map(|r| r.transaction.clone())
+                .collect(),
+            confirmations: result
+                .results
+                .iter()
+                .map(|r| r.confirmation.clone())
+                .collect(),
             app_id,
             app_address,
             compiled_programs: compiled,
-            abi_returns: result.abi_returns,
+            abi_returns: result
+                .results
+                .iter()
+                .filter_map(|r| r.abi_return.clone())
+                .collect(),
         };
 
         Ok((app_client, factory_result))

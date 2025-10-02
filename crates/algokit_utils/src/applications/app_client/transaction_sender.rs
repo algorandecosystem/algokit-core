@@ -84,33 +84,12 @@ impl<'app_client> TransactionSender<'app_client> {
                 .last()
                 .ok_or(AppClientError::ValidationError {
                     message: "No transaction returned".to_string(),
-                })?;
+                })?
+                .clone();
 
             Ok(SendAppMethodCallResult {
-                transaction: last_result.transaction.clone(),
-                confirmation: last_result.confirmation.clone(),
-                transaction_id: last_result.transaction_id.clone(),
-                abi_return: last_result.abi_return.clone(),
-                transactions: simulate_results
-                    .results
-                    .iter()
-                    .map(|r| r.transaction.clone())
-                    .collect(),
-                abi_returns: simulate_results
-                    .results
-                    .iter()
-                    .filter_map(|r| r.abi_return.clone())
-                    .collect(),
-                confirmations: simulate_results
-                    .results
-                    .iter()
-                    .map(|r| r.confirmation.clone())
-                    .collect(),
-                transaction_ids: simulate_results
-                    .results
-                    .iter()
-                    .map(|r| r.transaction_id.clone())
-                    .collect(),
+                primary_result: last_result,
+                results: simulate_results.results,
                 group: simulate_results.group,
             })
         } else {
@@ -193,14 +172,30 @@ impl<'app_client> TransactionSender<'app_client> {
             .map_err(|e| self.client.transform_transaction_error(e, false))?;
 
         Ok(AppClientUpdateMethodCallResult {
-            transaction: result.transaction,
-            confirmation: result.confirmation,
-            transaction_id: result.transaction_id,
-            abi_return: result.abi_return,
-            transactions: result.transactions,
-            confirmations: result.confirmations,
-            transaction_ids: result.transaction_ids,
-            abi_returns: result.abi_returns,
+            transaction: result.primary_result.transaction,
+            confirmation: result.primary_result.confirmation,
+            transaction_id: result.primary_result.transaction_id,
+            abi_return: result.primary_result.abi_return,
+            transactions: result
+                .results
+                .iter()
+                .map(|r| r.transaction.clone())
+                .collect(),
+            confirmations: result
+                .results
+                .iter()
+                .map(|r| r.confirmation.clone())
+                .collect(),
+            transaction_ids: result
+                .results
+                .iter()
+                .map(|r| r.transaction_id.clone())
+                .collect(),
+            abi_returns: result
+                .results
+                .iter()
+                .filter_map(|r| r.abi_return.clone())
+                .collect(),
             group: result.group,
             compiled_programs,
         })

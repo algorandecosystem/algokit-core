@@ -8,7 +8,7 @@ use super::{
     asset_transfer::{
         AssetClawbackParams, AssetOptInParams, AssetOptOutParams, AssetTransferParams,
     },
-    composer::{Composer, ComposerError, SendParams},
+    composer::{Composer, ComposerError, SendParams, SendTransactionComposerResult},
     key_registration::{
         NonParticipationKeyRegistrationParams, OfflineKeyRegistrationParams,
         OnlineKeyRegistrationParams,
@@ -19,7 +19,6 @@ use crate::clients::asset_manager::{AssetManager, AssetManagerError};
 use crate::{clients::app_manager::AppManagerError, transactions::TransactionComposerConfig};
 use algod_client::apis::AlgodApiError;
 use algod_client::models::PendingTransactionResponse;
-use algokit_abi::ABIReturn;
 use algokit_transact::{Address, Byte32, Transaction};
 use snafu::Snafu;
 
@@ -107,22 +106,10 @@ pub struct SendAppCreateResult {
 /// Result from sending an app method call transaction.
 #[derive(Debug, Clone)]
 pub struct SendAppMethodCallResult {
-    /// The primary transaction that has been sent
-    pub transaction: Transaction,
-    /// The response from sending and waiting for the primary transaction
-    pub confirmation: PendingTransactionResponse,
-    /// The transaction ID of the primary transaction that has been sent
-    pub transaction_id: String,
-    /// The ABI return value from the primary method call (optional)
-    pub abi_return: Option<ABIReturn>,
-    /// The transactions that were sent
-    pub transactions: Vec<Transaction>,
-    /// The responses from sending and waiting for the transactions
-    pub confirmations: Vec<PendingTransactionResponse>,
-    /// The transaction IDs that have been sent
-    pub transaction_ids: Vec<String>,
-    /// The returned values of ABI methods
-    pub abi_returns: Vec<ABIReturn>,
+    /// The result of the primary (last) transaction
+    pub primary_result: SendTransactionComposerResult,
+    /// All transaction results from the composer
+    pub results: Vec<SendTransactionComposerResult>,
     /// The group ID (optional)
     pub group: Option<Byte32>,
 }
@@ -130,22 +117,10 @@ pub struct SendAppMethodCallResult {
 /// Result from sending an app create method call transaction.
 #[derive(Debug, Clone)]
 pub struct SendAppCreateMethodCallResult {
-    /// The primary transaction that has been sent
-    pub transaction: Transaction,
-    /// The response from sending and waiting for the primary transaction
-    pub confirmation: PendingTransactionResponse,
-    /// The transaction ID of the primary transaction that has been sent
-    pub transaction_id: String,
-    /// The ABI return value from the primary method call (optional)
-    pub abi_return: Option<ABIReturn>,
-    /// The transactions that were sent
-    pub transactions: Vec<Transaction>,
-    /// The responses from sending and waiting for the transactions
-    pub confirmations: Vec<PendingTransactionResponse>,
-    /// The transaction IDs that have been sent
-    pub transaction_ids: Vec<String>,
-    /// The returned values of ABI methods
-    pub abi_returns: Vec<ABIReturn>,
+    /// The result of the primary (last) transaction
+    pub primary_result: SendTransactionComposerResult,
+    /// All transaction results from the composer
+    pub results: Vec<SendTransactionComposerResult>,
     /// The group ID (optional)
     pub group: Option<Byte32>,
     /// The ID of the created app
@@ -246,45 +221,17 @@ impl TransactionSender {
         add_transaction(&mut composer)?;
         let composer_results = composer.send(send_params).await?;
 
-        let last_result =
-            composer_results
-                .results
-                .last()
-                .ok_or(TransactionSenderError::ValidationError {
-                    message: "No transaction returned".to_string(),
-                })?;
-
-        // Extract all data from results
-        let transactions: Vec<_> = composer_results
+        let primary_result = composer_results
             .results
-            .iter()
-            .map(|r| r.transaction.clone())
-            .collect();
-        let transaction_ids: Vec<_> = composer_results
-            .results
-            .iter()
-            .map(|r| r.transaction_id.clone())
-            .collect();
-        let confirmations: Vec<_> = composer_results
-            .results
-            .iter()
-            .map(|r| r.confirmation.clone())
-            .collect();
-        let abi_returns: Vec<_> = composer_results
-            .results
-            .iter()
-            .filter_map(|r| r.abi_return.clone())
-            .collect();
+            .last()
+            .ok_or(TransactionSenderError::ValidationError {
+                message: "No transaction returned".to_string(),
+            })?
+            .clone();
 
         Ok(SendAppMethodCallResult {
-            transaction: last_result.transaction.clone(),
-            confirmation: last_result.confirmation.clone(),
-            transaction_id: last_result.transaction_id.clone(),
-            abi_return: last_result.abi_return.clone(),
-            transactions,
-            abi_returns,
-            confirmations,
-            transaction_ids,
+            primary_result,
+            results: composer_results.results,
             group: composer_results.group,
         })
     }
@@ -702,20 +649,16 @@ impl TransactionSender {
         self.send_method_call_with_result(
             |composer| composer.add_app_create_method_call(params),
             |base_result| {
-                let app_id = base_result.confirmation.app_id.ok_or_else(|| {
-                    TransactionSenderError::ValidationError {
+                let app_id = base_result
+                    .primary_result
+                    .confirmation
+                    .app_id
+                    .ok_or_else(|| TransactionSenderError::ValidationError {
                         message: "App creation confirmation missing application-index".to_string(),
-                    }
-                })?;
+                    })?;
                 Ok(SendAppCreateMethodCallResult {
-                    transaction: base_result.transaction,
-                    confirmation: base_result.confirmation,
-                    transaction_id: base_result.transaction_id,
-                    abi_return: base_result.abi_return,
-                    transactions: base_result.transactions,
-                    confirmations: base_result.confirmations,
-                    transaction_ids: base_result.transaction_ids,
-                    abi_returns: base_result.abi_returns,
+                    primary_result: base_result.primary_result,
+                    results: base_result.results,
                     group: base_result.group,
                     app_id,
                     app_address: Address::from_app_id(&app_id),
