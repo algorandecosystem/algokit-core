@@ -330,7 +330,7 @@ impl TryFrom<Transaction> for algokit_transact::StateProofTransactionFields {
             });
         }
 
-        let data = tx.clone().state_proof.unwrap();
+        let data = tx.state_proof.clone().unwrap();
         let header: algokit_transact::TransactionHeader = tx.try_into()?;
 
         let state_proof = data.state_proof.map(TryInto::try_into).transpose()?;

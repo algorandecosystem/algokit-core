@@ -111,7 +111,7 @@ pub struct SigslotCommit {
 }
 
 /// A single array position revealed as part of a state proof. It reveals an element of the
-/// signature array and the corresponding element of the participants array.#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+/// signature array and the corresponding element of the participants array.
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct Reveal {
     #[serde(rename = "s")]

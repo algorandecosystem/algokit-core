@@ -45,16 +45,15 @@ fn sort_msgpack_value_internal(value: rmpv::Value, parent_field: Option<&str>) -
 }
 /// Sorts a map with string keys alphabetically.
 fn sort_map_with_string_keys(map: Vec<(rmpv::Value, rmpv::Value)>) -> rmpv::Value {
-    let mut sorted_map: BTreeMap<String, (rmpv::Value, Option<String>)> = BTreeMap::new();
+    let mut sorted_map: BTreeMap<String, rmpv::Value> = BTreeMap::new();
 
     // Convert and sort all key-value pairs
     for (k, v) in map {
         if let rmpv::Value::String(key) = k {
             let key_str = key.into_str().unwrap_or_default();
-            let field_name = key_str.clone();
             // Recursively sort the value, passing the field name as parent
-            let sorted_v = sort_msgpack_value_internal(v, Some(&field_name));
-            sorted_map.insert(key_str, (sorted_v, Some(field_name)));
+            let sorted_v = sort_msgpack_value_internal(v, Some(&key_str));
+            sorted_map.insert(key_str, sorted_v);
         }
     }
 
@@ -62,7 +61,7 @@ fn sort_map_with_string_keys(map: Vec<(rmpv::Value, rmpv::Value)>) -> rmpv::Valu
     rmpv::Value::Map(
         sorted_map
             .into_iter()
-            .map(|(k, (v, _))| (rmpv::Value::String(k.into()), v))
+            .map(|(k, v)| (rmpv::Value::String(k.into()), v))
             .collect(),
     )
 }

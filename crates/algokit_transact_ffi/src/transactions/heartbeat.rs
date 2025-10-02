@@ -74,7 +74,7 @@ impl TryFrom<Transaction> for algokit_transact::HeartbeatTransactionFields {
             });
         }
 
-        let data = tx.clone().heartbeat.unwrap();
+        let data = tx.heartbeat.clone().unwrap();
         let header: algokit_transact::TransactionHeader = tx.try_into()?;
 
         let sig = vec_to_array::<64>(&data.proof.sig, "heartbeat proof signature")?;

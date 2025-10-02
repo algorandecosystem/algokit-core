@@ -107,7 +107,7 @@ def test_decode_with_prefix(test_data):
     ids=txn_test_data.keys(),
 )
 def test_encode_with_auth_address(test_data):
-    """An auth address can be attached to a encoded transaction with a signature"""
+    """An auth address can be attached to an encoded transaction with a signature"""
     assert_encode_with_auth_address(test_data)
 
 
@@ -118,7 +118,7 @@ def test_encode_with_auth_address(test_data):
     ids=txn_test_data.keys(),
 )
 def test_encode_with_signature(test_data):
-    """A signature can be attached to a encoded transaction"""
+    """A signature can be attached to an encoded transaction"""
     assert_encode_with_signature(test_data)
 
 
