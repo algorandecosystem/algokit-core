@@ -67,6 +67,8 @@ impl ABIValue {
             let digits = u.to_u64_digits();
             if digits.len() == 1 {
                 Ok(digits[0])
+            } else if digits.is_empty() {
+                Ok(0)
             } else {
                 Err(UtilsError::UtilsError {
                     message: "ABI uint value is too large to fit in u64".to_string(),
