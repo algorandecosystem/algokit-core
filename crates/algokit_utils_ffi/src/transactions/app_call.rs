@@ -238,9 +238,10 @@ pub enum AppMethodCallArg {
     NonParticipationKeyRegistration(NonParticipationKeyRegistrationParams),
 }
 
-impl From<AppMethodCallArg> for algokit_utils::transactions::app_call::AppMethodCallArg {
-    fn from(value: AppMethodCallArg) -> Self {
-        match value {
+impl TryFrom<AppMethodCallArg> for algokit_utils::transactions::app_call::AppMethodCallArg {
+    type Error = UtilsError;
+    fn try_from(value: AppMethodCallArg) -> Result<Self, Self::Error> {
+        Ok(match value {
             AppMethodCallArg::ABIValue(abi_value) => {
                 algokit_utils::transactions::app_call::AppMethodCallArg::ABIValue(
                     abi_value.rust_value.clone(),
@@ -248,112 +249,115 @@ impl From<AppMethodCallArg> for algokit_utils::transactions::app_call::AppMethod
             }
             AppMethodCallArg::AppCreateCall(app_create_params) => {
                 algokit_utils::transactions::app_call::AppMethodCallArg::AppCreateCall(
-                    app_create_params.try_into().unwrap(),
+                    app_create_params.try_into()?,
+
                 )
             }
             AppMethodCallArg::AppUpdateCall(app_update_params) => {
                 algokit_utils::transactions::app_call::AppMethodCallArg::AppUpdateCall(
-                    app_update_params.try_into().unwrap(),
+                    app_update_params.try_into()?,
                 )
             }
             AppMethodCallArg::AppDeleteCall(app_delete_params) => {
                 algokit_utils::transactions::app_call::AppMethodCallArg::AppDeleteCall(
-                    app_delete_params.try_into().unwrap(),
+                    app_delete_params.try_into()?,
                 )
             }
             AppMethodCallArg::AppCallMethodCall(app_call_method_params) => {
                 algokit_utils::transactions::app_call::AppMethodCallArg::AppCallMethodCall(
-                    app_call_method_params.try_into().unwrap(),
+                    app_call_method_params.try_into()?,
                 )
             }
             AppMethodCallArg::AppCreateMethodCall(app_create_method_params) => {
                 algokit_utils::transactions::app_call::AppMethodCallArg::AppCreateMethodCall(
-                    app_create_method_params.try_into().unwrap(),
+                    app_create_method_params.try_into()?,
                 )
             }
             AppMethodCallArg::AppUpdateMethodCall(app_update_method_params) => {
                 algokit_utils::transactions::app_call::AppMethodCallArg::AppUpdateMethodCall(
-                    app_update_method_params.try_into().unwrap(),
+                    app_update_method_params.try_into()?,
                 )
             }
             AppMethodCallArg::AppDeleteMethodCall(app_delete_method_params) => {
                 algokit_utils::transactions::app_call::AppMethodCallArg::AppDeleteMethodCall(
-                    app_delete_method_params.try_into().unwrap(),
+                    app_delete_method_params.try_into()?,
                 )
             },
             AppMethodCallArg::Transaction(txn) => {
-                algokit_utils::transactions::app_call::AppMethodCallArg::Transaction(txn.try_into().unwrap())
+                algokit_utils::transactions::app_call::AppMethodCallArg::Transaction(txn.try_into().map_err(|e| UtilsError::UtilsError {
+                    message: format!("Invalid transaction: {}", e),
+                })?)
             },
             AppMethodCallArg::TransactionWithSigner(txn_with_signer) => {
                 algokit_utils::transactions::app_call::AppMethodCallArg::TransactionWithSigner(
-                    txn_with_signer.try_into().unwrap(),
+                    txn_with_signer.try_into()?,
                 )
             },
             AppMethodCallArg::Payment(payment_params) => {
                 algokit_utils::transactions::app_call::AppMethodCallArg::Payment(
-                    payment_params.try_into().unwrap(),
+                    payment_params.try_into()?,
                 )
             },
             AppMethodCallArg::AssetTransfer(asset_transfer_params) => {
                 algokit_utils::transactions::app_call::AppMethodCallArg::AssetTransfer(
-                    asset_transfer_params.try_into().unwrap(),
+                    asset_transfer_params.try_into()?,
                 )
             },
             AppMethodCallArg::AssetOptIn(asset_opt_in_params) => {
                 algokit_utils::transactions::app_call::AppMethodCallArg::AssetOptIn(
-                    asset_opt_in_params.try_into().unwrap(),
+                    asset_opt_in_params.try_into()?,
                 )
             },
             AppMethodCallArg::AssetOptOut(asset_opt_out_params) => {
                 algokit_utils::transactions::app_call::AppMethodCallArg::AssetOptOut(
-                    asset_opt_out_params.try_into().unwrap(),
+                    asset_opt_out_params.try_into()?,
                 )
             },
             AppMethodCallArg::AssetClawback(asset_clawback_params) => {
                 algokit_utils::transactions::app_call::AppMethodCallArg::AssetClawback(
-                    asset_clawback_params.try_into().unwrap(),
+                    asset_clawback_params.try_into()?,
                 )
             },
             AppMethodCallArg::AssetCreate(asset_create_params) => {
                 algokit_utils::transactions::app_call::AppMethodCallArg::AssetCreate(
-                    asset_create_params.try_into().unwrap(),
+                    asset_create_params.try_into()?,
                 )
             },
             AppMethodCallArg::AssetDestroy(asset_destroy_params) => {
                 algokit_utils::transactions::app_call::AppMethodCallArg::AssetDestroy(
-                    asset_destroy_params.try_into().unwrap(),
+                    asset_destroy_params.try_into()?,
                 )
             },
             AppMethodCallArg::AssetFreeze(asset_freeze_params) => {
                 algokit_utils::transactions::app_call::AppMethodCallArg::AssetFreeze(
-                    asset_freeze_params.try_into().unwrap(),
+                    asset_freeze_params.try_into()?,
                 )
             },
             AppMethodCallArg::AssetUnfreeze(asset_unfreeze_params) => {
                 algokit_utils::transactions::app_call::AppMethodCallArg::AssetUnfreeze(
-                    asset_unfreeze_params.try_into().unwrap(),
+                    asset_unfreeze_params.try_into()?,
                 )
             },
             AppMethodCallArg::AppCall(app_call_params) => {
                 algokit_utils::transactions::app_call::AppMethodCallArg::AppCall(
-                    app_call_params.try_into().unwrap(),
+                    app_call_params.try_into()?,
                 )
             },
             AppMethodCallArg::OnlineKeyRegistration(online_key_registration_params) => {
                 algokit_utils::transactions::app_call::AppMethodCallArg::OnlineKeyRegistration(
-                    online_key_registration_params.try_into().unwrap(),
+                    online_key_registration_params.try_into()?,
                 )
             },
             AppMethodCallArg::OfflineKeyRegistration(offline_key_registration_params) => {
                 algokit_utils::transactions::app_call::AppMethodCallArg::OfflineKeyRegistration(
-                    offline_key_registration_params.try_into().unwrap(),
+                    offline_key_registration_params.try_into()?,
                 )
             },
             AppMethodCallArg::NonParticipationKeyRegistration(
                 non_participation_key_registration_params,
             ) => {
                 algokit_utils::transactions::app_call::AppMethodCallArg::NonParticipationKeyRegistration(
-                    non_participation_key_registration_params.try_into().unwrap(),
+                    non_participation_key_registration_params.try_into()?,
                 )
             },
             AppMethodCallArg::DefaultValue => {
@@ -363,12 +367,17 @@ impl From<AppMethodCallArg> for algokit_utils::transactions::app_call::AppMethod
                 algokit_utils::transactions::app_call::AppMethodCallArg::TransactionPlaceholder
             },
 
-        }
+        })
     }
 }
 
-impl From<algokit_utils::transactions::app_call::AppMethodCallArg> for AppMethodCallArg {
-    fn from(value: algokit_utils::transactions::app_call::AppMethodCallArg) -> Self {
+impl TryFrom<algokit_utils::transactions::app_call::AppMethodCallArg> for AppMethodCallArg {
+    type Error = UtilsError;
+
+    fn try_from(
+        value: algokit_utils::transactions::app_call::AppMethodCallArg,
+    ) -> Result<Self, Self::Error> {
+        Ok(
         match value {
             algokit_utils::transactions::app_call::AppMethodCallArg::ABIValue(rust_value) => {
                 AppMethodCallArg::ABIValue(Arc::new(ABIValue { rust_value }))
@@ -384,22 +393,22 @@ impl From<algokit_utils::transactions::app_call::AppMethodCallArg> for AppMethod
             ) => AppMethodCallArg::AppDeleteCall(app_delete_params.into()),
             algokit_utils::transactions::app_call::AppMethodCallArg::AppCallMethodCall(
                 app_call_method_params,
-            ) => AppMethodCallArg::AppCallMethodCall(app_call_method_params.into()),
+            ) => AppMethodCallArg::AppCallMethodCall(app_call_method_params.try_into()?),
             algokit_utils::transactions::app_call::AppMethodCallArg::AppCreateMethodCall(
                 app_create_method_params,
-            ) => AppMethodCallArg::AppCreateMethodCall(app_create_method_params.into()),
+            ) => AppMethodCallArg::AppCreateMethodCall(app_create_method_params.try_into()?),
             algokit_utils::transactions::app_call::AppMethodCallArg::AppUpdateMethodCall(
                 app_update_method_params,
-            ) => AppMethodCallArg::AppUpdateMethodCall(app_update_method_params.into()),
+            ) => AppMethodCallArg::AppUpdateMethodCall(app_update_method_params.try_into()?),
             algokit_utils::transactions::app_call::AppMethodCallArg::AppDeleteMethodCall(
                 app_delete_method_params,
-            ) => AppMethodCallArg::AppDeleteMethodCall(app_delete_method_params.into()),
+            ) => AppMethodCallArg::AppDeleteMethodCall(app_delete_method_params.try_into()?),
             algokit_utils::transactions::app_call::AppMethodCallArg::Transaction(txn) => {
                 AppMethodCallArg::Transaction(txn.into())
             },
             algokit_utils::transactions::app_call::AppMethodCallArg::TransactionWithSigner(
                 txn_with_signer,
-            ) => AppMethodCallArg::TransactionWithSigner(txn_with_signer.try_into().unwrap()),
+            ) => AppMethodCallArg::TransactionWithSigner(txn_with_signer.try_into()?),
             algokit_utils::transactions::app_call::AppMethodCallArg::Payment(payment_params) => {
                 AppMethodCallArg::Payment(payment_params.into())
             },
@@ -454,7 +463,7 @@ impl From<algokit_utils::transactions::app_call::AppMethodCallArg> for AppMethod
             algokit_utils::transactions::app_call::AppMethodCallArg::AssetConfig(_) => {
                 todo!()
             },
-        }
+        })
     }
 }
 
@@ -524,7 +533,11 @@ impl TryFrom<AppCallMethodCallParams>
                 last_valid_round: value.last_valid_round,
                 app_id: value.app_id,
                 method: value.method.into(),
-                args: value.args.into_iter().map(|arg| arg.into()).collect(),
+                args: value
+                    .args
+                    .into_iter()
+                    .map(|arg| arg.try_into())
+                    .collect::<Result<_, _>>()?,
                 account_references: value
                     .account_references
                     .map(|accounts| {
@@ -550,11 +563,15 @@ impl TryFrom<AppCallMethodCallParams>
     }
 }
 
-impl From<algokit_utils::transactions::app_call::AppCallMethodCallParams>
+impl TryFrom<algokit_utils::transactions::app_call::AppCallMethodCallParams>
     for AppCallMethodCallParams
 {
-    fn from(value: algokit_utils::transactions::app_call::AppCallMethodCallParams) -> Self {
-        AppCallMethodCallParams {
+    type Error = UtilsError;
+
+    fn try_from(
+        value: algokit_utils::transactions::app_call::AppCallMethodCallParams,
+    ) -> Result<Self, Self::Error> {
+        Ok(AppCallMethodCallParams {
             sender: value.sender.to_string(),
             signer: value.signer.map(|s| {
                 Arc::new(FfiTransactionSignerFromRust { rust_signer: s })
@@ -571,7 +588,11 @@ impl From<algokit_utils::transactions::app_call::AppCallMethodCallParams>
             last_valid_round: value.last_valid_round,
             app_id: value.app_id,
             method: value.method.into(),
-            args: value.args.into_iter().map(|arg| arg.into()).collect(),
+            args: value
+                .args
+                .into_iter()
+                .map(|arg| arg.try_into())
+                .collect::<Result<_, _>>()?,
             account_references: value
                 .account_references
                 .map(|accounts| accounts.into_iter().map(|a| a.to_string()).collect()),
@@ -581,7 +602,7 @@ impl From<algokit_utils::transactions::app_call::AppCallMethodCallParams>
                 .box_references
                 .map(|boxes| boxes.into_iter().map(|b| b.into()).collect()),
             on_complete: value.on_complete.into(),
-        }
+        })
     }
 }
 
@@ -1200,7 +1221,12 @@ impl TryFrom<AppCreateMethodCallParams> for RustAppCreateMethodCallParams {
             local_state_schema: value.local_state_schema.map(|s| s.into()),
             extra_program_pages: value.extra_program_pages.map(|p| p as u32),
             method: value.method.into(),
-            args: value.args.into_iter().map(|arg| arg.into()).collect(),
+            args: value
+                .args
+                .into_iter()
+                .map(|arg| arg.try_into())
+                .collect::<Result<_, _>>()?,
+
             account_references: value
                 .account_references
                 .map(|accounts| {
@@ -1224,9 +1250,10 @@ impl TryFrom<AppCreateMethodCallParams> for RustAppCreateMethodCallParams {
     }
 }
 
-impl From<RustAppCreateMethodCallParams> for AppCreateMethodCallParams {
-    fn from(value: RustAppCreateMethodCallParams) -> Self {
-        AppCreateMethodCallParams {
+impl TryFrom<RustAppCreateMethodCallParams> for AppCreateMethodCallParams {
+    type Error = UtilsError;
+    fn try_from(value: RustAppCreateMethodCallParams) -> Result<Self, Self::Error> {
+        Ok(AppCreateMethodCallParams {
             sender: value.sender.to_string(),
             signer: value.signer.map(|s| {
                 Arc::new(FfiTransactionSignerFromRust { rust_signer: s })
@@ -1248,7 +1275,11 @@ impl From<RustAppCreateMethodCallParams> for AppCreateMethodCallParams {
             local_state_schema: value.local_state_schema.map(|s| s.into()),
             extra_program_pages: value.extra_program_pages.map(|p| p as u64),
             method: value.method.into(),
-            args: value.args.into_iter().map(|arg| arg.into()).collect(),
+            args: value
+                .args
+                .into_iter()
+                .map(|arg| arg.try_into())
+                .collect::<Result<_, _>>()?,
             account_references: value
                 .account_references
                 .map(|accounts| accounts.into_iter().map(|a| a.to_string()).collect()),
@@ -1257,7 +1288,7 @@ impl From<RustAppCreateMethodCallParams> for AppCreateMethodCallParams {
             box_references: value
                 .box_references
                 .map(|boxes| boxes.into_iter().map(|b| b.into()).collect()),
-        }
+        })
     }
 }
 
@@ -1333,7 +1364,11 @@ impl TryFrom<AppUpdateMethodCallParams> for RustAppUpdateMethodCallParams {
             approval_program: value.approval_program,
             clear_state_program: value.clear_state_program,
             method: value.method.into(),
-            args: value.args.into_iter().map(|arg| arg.into()).collect(),
+            args: value
+                .args
+                .into_iter()
+                .map(|arg| arg.try_into())
+                .collect::<Result<_, _>>()?,
             account_references: value
                 .account_references
                 .map(|accounts| {
@@ -1357,9 +1392,10 @@ impl TryFrom<AppUpdateMethodCallParams> for RustAppUpdateMethodCallParams {
     }
 }
 
-impl From<RustAppUpdateMethodCallParams> for AppUpdateMethodCallParams {
-    fn from(value: RustAppUpdateMethodCallParams) -> Self {
-        AppUpdateMethodCallParams {
+impl TryFrom<RustAppUpdateMethodCallParams> for AppUpdateMethodCallParams {
+    type Error = UtilsError;
+    fn try_from(value: RustAppUpdateMethodCallParams) -> Result<Self, Self::Error> {
+        Ok(AppUpdateMethodCallParams {
             sender: value.sender.to_string(),
             signer: value.signer.map(|s| {
                 Arc::new(FfiTransactionSignerFromRust { rust_signer: s })
@@ -1378,7 +1414,11 @@ impl From<RustAppUpdateMethodCallParams> for AppUpdateMethodCallParams {
             approval_program: value.approval_program,
             clear_state_program: value.clear_state_program,
             method: value.method.into(),
-            args: value.args.into_iter().map(|arg| arg.into()).collect(),
+            args: value
+                .args
+                .into_iter()
+                .map(|arg| arg.try_into())
+                .collect::<Result<_, _>>()?,
             account_references: value
                 .account_references
                 .map(|accounts| accounts.into_iter().map(|a| a.to_string()).collect()),
@@ -1387,7 +1427,7 @@ impl From<RustAppUpdateMethodCallParams> for AppUpdateMethodCallParams {
             box_references: value
                 .box_references
                 .map(|boxes| boxes.into_iter().map(|b| b.into()).collect()),
-        }
+        })
     }
 }
 
@@ -1452,7 +1492,11 @@ impl TryFrom<AppDeleteMethodCallParams> for RustAppDeleteMethodCallParams {
             last_valid_round: value.last_valid_round,
             app_id: value.app_id,
             method: value.method.into(),
-            args: value.args.into_iter().map(|arg| arg.into()).collect(),
+            args: value
+                .args
+                .into_iter()
+                .map(|arg| arg.try_into())
+                .collect::<Result<_, _>>()?,
             account_references: value
                 .account_references
                 .map(|accounts| {
@@ -1476,9 +1520,10 @@ impl TryFrom<AppDeleteMethodCallParams> for RustAppDeleteMethodCallParams {
     }
 }
 
-impl From<RustAppDeleteMethodCallParams> for AppDeleteMethodCallParams {
-    fn from(value: RustAppDeleteMethodCallParams) -> Self {
-        AppDeleteMethodCallParams {
+impl TryFrom<RustAppDeleteMethodCallParams> for AppDeleteMethodCallParams {
+    type Error = UtilsError;
+    fn try_from(value: RustAppDeleteMethodCallParams) -> Result<Self, Self::Error> {
+        Ok(AppDeleteMethodCallParams {
             sender: value.sender.to_string(),
             signer: value.signer.map(|s| {
                 Arc::new(FfiTransactionSignerFromRust { rust_signer: s })
@@ -1495,7 +1540,11 @@ impl From<RustAppDeleteMethodCallParams> for AppDeleteMethodCallParams {
             last_valid_round: value.last_valid_round,
             app_id: value.app_id,
             method: value.method.into(),
-            args: value.args.into_iter().map(|arg| arg.into()).collect(),
+            args: value
+                .args
+                .into_iter()
+                .map(|arg| arg.try_into())
+                .collect::<Result<_, _>>()?,
             account_references: value
                 .account_references
                 .map(|accounts| accounts.into_iter().map(|a| a.to_string()).collect()),
@@ -1504,6 +1553,6 @@ impl From<RustAppDeleteMethodCallParams> for AppDeleteMethodCallParams {
             box_references: value
                 .box_references
                 .map(|boxes| boxes.into_iter().map(|b| b.into()).collect()),
-        }
+        })
     }
 }
