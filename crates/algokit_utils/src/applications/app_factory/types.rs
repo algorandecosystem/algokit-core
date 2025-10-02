@@ -3,7 +3,7 @@ use crate::AppSourceMaps;
 use crate::applications::app_client::CompilationParams;
 use crate::clients::app_manager::CompiledPrograms;
 use crate::transactions::{
-    AppMethodCallArg, TransactionResult, TransactionComposerConfig, TransactionSigner,
+    AppMethodCallArg, TransactionComposerConfig, TransactionResult, TransactionSigner,
 };
 use algod_client::models::PendingTransactionResponse;
 use algokit_abi::Arc56Contract;

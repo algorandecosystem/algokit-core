@@ -389,15 +389,21 @@ impl AppFactory {
 
         // Extract and update source maps from the deploy result
         let (approval_source_map, clear_source_map) = match &deploy_result {
-            AppDeployResult::Create { compiled_programs, .. } => (
+            AppDeployResult::Create {
+                compiled_programs, ..
+            } => (
                 compiled_programs.approval.source_map.clone(),
                 compiled_programs.clear.source_map.clone(),
             ),
-            AppDeployResult::Update { compiled_programs, .. } => (
+            AppDeployResult::Update {
+                compiled_programs, ..
+            } => (
                 compiled_programs.approval.source_map.clone(),
                 compiled_programs.clear.source_map.clone(),
             ),
-            AppDeployResult::Replace { compiled_programs, .. } => (
+            AppDeployResult::Replace {
+                compiled_programs, ..
+            } => (
                 compiled_programs.approval.source_map.clone(),
                 compiled_programs.clear.source_map.clone(),
             ),

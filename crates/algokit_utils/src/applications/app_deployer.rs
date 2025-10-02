@@ -1017,7 +1017,7 @@ impl AppDeployer {
 
         Ok(AppDeployResult::Create {
             app: app_metadata,
-            create_result: create_result,
+            create_result,
             results: composer_result.results,
             group: composer_result.group,
             compiled_programs,
@@ -1132,7 +1132,7 @@ impl AppDeployer {
 
         Ok(AppDeployResult::Update {
             app: app_metadata,
-            update_result: update_result,
+            update_result,
             results: composer_result.results,
             group: composer_result.group,
             compiled_programs,
@@ -1359,8 +1359,8 @@ impl AppDeployer {
 
         Ok(AppDeployResult::Replace {
             app: app_metadata,
-            delete_result: delete_result,
-            create_result: create_result,
+            delete_result,
+            create_result,
             results: result.results,
             group: result.group,
             compiled_programs,
