@@ -1342,7 +1342,7 @@ async fn test_double_nested(#[future] algorand_fixture: AlgorandFixtureResult) -
     };
 
     composer.add_app_call_method_call(method_call_params)?;
-    let result: algokit_utils::SendTransactionComposerResult = composer.send(None).await?;
+    let result: algokit_utils::TransactionComposerSendResult = composer.send(None).await?;
 
     // result.results[0] is payment, result.results[1] is first method call
     let abi_return_0 = get_abi_return(&result.results[1].abi_return)?;

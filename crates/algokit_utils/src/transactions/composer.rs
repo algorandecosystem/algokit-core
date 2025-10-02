@@ -230,7 +230,7 @@ pub struct TransactionResult {
 }
 
 #[derive(Debug)]
-pub struct SendTransactionComposerResult {
+pub struct TransactionComposerSendResult {
     pub group: Option<Byte32>,
     pub results: Vec<TransactionResult>,
 }
@@ -2221,7 +2221,7 @@ impl Composer {
     pub async fn send(
         &mut self,
         params: Option<SendParams>,
-    ) -> Result<SendTransactionComposerResult, ComposerError> {
+    ) -> Result<TransactionComposerSendResult, ComposerError> {
         self.gather_signatures().await?;
 
         let signed_transactions = self
@@ -2341,7 +2341,7 @@ impl Composer {
             )
             .collect();
 
-        Ok(SendTransactionComposerResult { group, results })
+        Ok(TransactionComposerSendResult { group, results })
     }
 
     pub fn count(&self) -> usize {
