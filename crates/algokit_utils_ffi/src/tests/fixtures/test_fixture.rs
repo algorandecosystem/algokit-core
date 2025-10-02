@@ -96,15 +96,11 @@ impl TestFixture {
         };
 
         // Add payment to composer
-        composer.add_payment(
-            payment_params,
-            self.algod_client.clone(),
-            self.signer_getter.clone(),
-        ).await?;
+        composer.add_payment(payment_params).await?;
 
         // Build and send transaction
-        composer.build(self.algod_client.clone()).await?;
-        let tx_ids = composer.send(self.algod_client.clone()).await?;
+        composer.build().await?;
+        let tx_ids = composer.send().await?;
 
         // Return first transaction ID
         tx_ids.first().cloned().ok_or_else(|| UtilsError::UtilsError {
@@ -151,15 +147,11 @@ impl TestFixture {
         };
 
         // Add asset create to composer
-        composer.add_asset_create(
-            asset_params,
-            self.algod_client.clone(),
-            self.signer_getter.clone(),
-        ).await?;
+        composer.add_asset_create(asset_params).await?;
 
         // Build and send
-        composer.build(self.algod_client.clone()).await?;
-        let tx_ids = composer.send(self.algod_client.clone()).await?;
+        composer.build().await?;
+        let tx_ids = composer.send().await?;
 
         // Wait for confirmation to get asset ID
         let tx_id = tx_ids.first().ok_or_else(|| UtilsError::UtilsError {

@@ -144,13 +144,9 @@ async fn run_asset_freeze_and_unfreeze_test(
     };
 
     let opt_in_composer = fixture.composer_factory.create_composer();
-    opt_in_composer.add_asset_opt_in(
-        opt_in_params,
-        fixture.algod_client.clone(),
-        fixture.signer_getter.clone(),
-    ).await?;
-    opt_in_composer.build(fixture.algod_client.clone()).await?;
-    opt_in_composer.send(fixture.algod_client.clone()).await?;
+    opt_in_composer.add_asset_opt_in(opt_in_params).await?;
+    opt_in_composer.build().await?;
+    opt_in_composer.send().await?;
 
     // Step 3: Transfer assets to target (initial balance)
     let creator_signer = fixture.signer_getter.get_signer(creator.address.clone())?;
@@ -172,13 +168,9 @@ async fn run_asset_freeze_and_unfreeze_test(
     };
 
     let transfer_composer = fixture.composer_factory.create_composer();
-    transfer_composer.add_asset_transfer(
-        transfer_params,
-        fixture.algod_client.clone(),
-        fixture.signer_getter.clone(),
-    ).await?;
-    transfer_composer.build(fixture.algod_client.clone()).await?;
-    transfer_composer.send(fixture.algod_client.clone()).await?;
+    transfer_composer.add_asset_transfer(transfer_params).await?;
+    transfer_composer.build().await?;
+    transfer_composer.send().await?;
 
     // Step 4: Freeze manager freezes target account
     let freeze_signer = fixture.signer_getter.get_signer(freeze_manager.address.clone())?;
@@ -199,13 +191,9 @@ async fn run_asset_freeze_and_unfreeze_test(
     };
 
     let freeze_composer = fixture.composer_factory.create_composer();
-    freeze_composer.add_asset_freeze(
-        freeze_params,
-        fixture.algod_client.clone(),
-        fixture.signer_getter.clone(),
-    ).await?;
-    freeze_composer.build(fixture.algod_client.clone()).await?;
-    freeze_composer.send(fixture.algod_client.clone()).await?;
+    freeze_composer.add_asset_freeze(freeze_params).await?;
+    freeze_composer.build().await?;
+    freeze_composer.send().await?;
 
     // Step 5: Try to transfer from frozen account (should fail)
     let transfer_from_frozen_params = AssetTransferParams {
@@ -226,15 +214,11 @@ async fn run_asset_freeze_and_unfreeze_test(
     };
 
     let frozen_transfer_composer = fixture.composer_factory.create_composer();
-    frozen_transfer_composer.add_asset_transfer(
-        transfer_from_frozen_params,
-        fixture.algod_client.clone(),
-        fixture.signer_getter.clone(),
-    ).await?;
-    frozen_transfer_composer.build(fixture.algod_client.clone()).await?;
+    frozen_transfer_composer.add_asset_transfer(transfer_from_frozen_params).await?;
+    frozen_transfer_composer.build().await?;
 
     // This should fail because account is frozen
-    let transfer_result = frozen_transfer_composer.send(fixture.algod_client.clone()).await;
+    let transfer_result = frozen_transfer_composer.send().await;
 
     match transfer_result {
         Ok(_) => {
@@ -274,13 +258,9 @@ async fn run_asset_freeze_and_unfreeze_test(
     };
 
     let unfreeze_composer = fixture.composer_factory.create_composer();
-    unfreeze_composer.add_asset_unfreeze(
-        unfreeze_params,
-        fixture.algod_client.clone(),
-        fixture.signer_getter.clone(),
-    ).await?;
-    unfreeze_composer.build(fixture.algod_client.clone()).await?;
-    unfreeze_composer.send(fixture.algod_client.clone()).await?;
+    unfreeze_composer.add_asset_unfreeze(unfreeze_params).await?;
+    unfreeze_composer.build().await?;
+    unfreeze_composer.send().await?;
 
     // Step 7: Transfer from unfrozen account (should now succeed)
     let transfer_after_unfreeze_params = AssetTransferParams {
@@ -301,13 +281,9 @@ async fn run_asset_freeze_and_unfreeze_test(
     };
 
     let unfrozen_transfer_composer = fixture.composer_factory.create_composer();
-    unfrozen_transfer_composer.add_asset_transfer(
-        transfer_after_unfreeze_params,
-        fixture.algod_client.clone(),
-        fixture.signer_getter.clone(),
-    ).await?;
-    unfrozen_transfer_composer.build(fixture.algod_client.clone()).await?;
-    unfrozen_transfer_composer.send(fixture.algod_client.clone()).await?;
+    unfrozen_transfer_composer.add_asset_transfer(transfer_after_unfreeze_params).await?;
+    unfrozen_transfer_composer.build().await?;
+    unfrozen_transfer_composer.send().await?;
 
     Ok(()) // Test passed - freeze blocked transfer, unfreeze allowed transfer
 }
