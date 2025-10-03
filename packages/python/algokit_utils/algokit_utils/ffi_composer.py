@@ -124,6 +124,6 @@ class PythonComposerFactory:
         self.algod_client = algod_client
         self.signer_getter = signer_getter
 
-    def create_composer(self):
+    def create_composer(self) -> PythonComposer:
         """Create a fresh composer instance with stored dependencies"""
         return PythonComposer(self.algod_client, self.signer_getter)
