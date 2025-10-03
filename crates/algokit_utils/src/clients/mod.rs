@@ -7,7 +7,9 @@ pub mod kmd_account_manager;
 pub mod network_client;
 
 // Re-export commonly used client types
-pub use account_manager::{AccountManager, AccountManagerError, SigningAccount};
+pub use account_manager::{
+    AccountManager, AccountManagerError, EnsureFundedResult, SigningAccount,
+};
 pub use algorand_client::AlgorandClient;
 pub use app_manager::{AppManager, AppManagerError};
 pub use asset_manager::{
