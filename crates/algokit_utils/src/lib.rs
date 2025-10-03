@@ -1,5 +1,6 @@
 pub mod applications;
 pub mod clients;
+pub mod common;
 pub mod config;
 pub mod transactions;
 

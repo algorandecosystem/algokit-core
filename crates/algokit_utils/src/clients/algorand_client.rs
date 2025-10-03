@@ -33,7 +33,7 @@ impl AlgorandClient {
         let client_manager = ClientManager::new(&params.client_config).unwrap();
         let algod_client = client_manager.algod();
 
-        let account_manager = Arc::new(Mutex::new(AccountManager::new()));
+        let account_manager = Arc::new(Mutex::new(AccountManager::new(algod_client.clone())));
 
         let new_group = {
             let algod_client = algod_client.clone();
