@@ -1,12 +1,12 @@
 use crate::{
     clients::algod_client::AlgodClientTrait,
+    tests::fixtures::{TestAccount, TestFixture},
     transactions::{
-        composer::ComposerFactory,
-        common::{TransactionSignerGetter, UtilsError},
         asset_freeze::{AssetFreezeParams, AssetUnfreezeParams},
         asset_transfer::{AssetOptInParams, AssetTransferParams},
+        common::{TransactionSignerGetter, UtilsError},
+        composer::ComposerFactory,
     },
-    tests::fixtures::{TestFixture, TestAccount},
 };
 use std::sync::Arc;
 use std::time::Instant;
@@ -45,7 +45,8 @@ pub async fn run_asset_freeze_test_suite(
         algod_client.clone(),
         composer_factory.clone(),
         signer_getter,
-    ).await?;
+    )
+    .await?;
 
     // Test 1: Asset Creation and Setup
     let test_start = Instant::now();
@@ -78,7 +79,8 @@ pub async fn run_asset_freeze_test_suite(
 
     // Test 2: Asset Freeze and Unfreeze Test (combined)
     let test_start = Instant::now();
-    let test2_result = run_asset_freeze_and_unfreeze_test(&fixture, creator, freeze_manager, asset_id).await;
+    let test2_result =
+        run_asset_freeze_and_unfreeze_test(&fixture, creator, freeze_manager, asset_id).await;
     results.push(TestResult {
         name: "Asset Freeze and Unfreeze Test".to_string(),
         passed: test2_result.is_ok(),
@@ -107,10 +109,14 @@ async fn run_asset_creation_setup_test(
 
     // Fund both accounts
     fixture.fund_account(creator.clone(), 10_000_000).await?;
-    fixture.fund_account(freeze_manager.clone(), 10_000_000).await?;
+    fixture
+        .fund_account(freeze_manager.clone(), 10_000_000)
+        .await?;
 
     // Create asset with freeze manager
-    let asset_id = fixture.create_test_asset(creator.clone(), Some(freeze_manager.clone())).await?;
+    let asset_id = fixture
+        .create_test_asset(creator.clone(), Some(freeze_manager.clone()))
+        .await?;
 
     Ok((creator, freeze_manager, asset_id))
 }
@@ -168,12 +174,16 @@ async fn run_asset_freeze_and_unfreeze_test(
     };
 
     let transfer_composer = fixture.composer_factory.create_composer();
-    transfer_composer.add_asset_transfer(transfer_params).await?;
+    transfer_composer
+        .add_asset_transfer(transfer_params)
+        .await?;
     transfer_composer.build().await?;
     transfer_composer.send().await?;
 
     // Step 4: Freeze manager freezes target account
-    let freeze_signer = fixture.signer_getter.get_signer(freeze_manager.address.clone())?;
+    let freeze_signer = fixture
+        .signer_getter
+        .get_signer(freeze_manager.address.clone())?;
     let freeze_params = AssetFreezeParams {
         sender: freeze_manager.address.clone(),
         asset_id,
@@ -214,7 +224,9 @@ async fn run_asset_freeze_and_unfreeze_test(
     };
 
     let frozen_transfer_composer = fixture.composer_factory.create_composer();
-    frozen_transfer_composer.add_asset_transfer(transfer_from_frozen_params).await?;
+    frozen_transfer_composer
+        .add_asset_transfer(transfer_from_frozen_params)
+        .await?;
     frozen_transfer_composer.build().await?;
 
     // This should fail because account is frozen
@@ -223,7 +235,8 @@ async fn run_asset_freeze_and_unfreeze_test(
     match transfer_result {
         Ok(_) => {
             return Err(UtilsError::UtilsError {
-                message: "Transfer from frozen account should have failed but succeeded".to_string(),
+                message: "Transfer from frozen account should have failed but succeeded"
+                    .to_string(),
             });
         }
         Err(e) => {
@@ -258,7 +271,9 @@ async fn run_asset_freeze_and_unfreeze_test(
     };
 
     let unfreeze_composer = fixture.composer_factory.create_composer();
-    unfreeze_composer.add_asset_unfreeze(unfreeze_params).await?;
+    unfreeze_composer
+        .add_asset_unfreeze(unfreeze_params)
+        .await?;
     unfreeze_composer.build().await?;
     unfreeze_composer.send().await?;
 
@@ -281,7 +296,9 @@ async fn run_asset_freeze_and_unfreeze_test(
     };
 
     let unfrozen_transfer_composer = fixture.composer_factory.create_composer();
-    unfrozen_transfer_composer.add_asset_transfer(transfer_after_unfreeze_params).await?;
+    unfrozen_transfer_composer
+        .add_asset_transfer(transfer_after_unfreeze_params)
+        .await?;
     unfrozen_transfer_composer.build().await?;
     unfrozen_transfer_composer.send().await?;
 

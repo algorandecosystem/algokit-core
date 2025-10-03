@@ -1,6 +1,6 @@
-use std::process::Command;
-use regex::Regex;
 use crate::transactions::common::UtilsError;
+use regex::Regex;
+use std::process::Command;
 
 /// Fetch the dispenser mnemonic from LocalNet
 pub async fn get_dispenser_mnemonic() -> Result<String, UtilsError> {
@@ -21,7 +21,7 @@ async fn ensure_localnet_running() -> Result<(), UtilsError> {
         .args(["localnet", "status"])
         .output()
         .map_err(|e| UtilsError::UtilsError {
-            message: format!("Failed to check LocalNet status: {}", e)
+            message: format!("Failed to check LocalNet status: {}", e),
         })?;
 
     let status_str = String::from_utf8_lossy(&status_output.stdout);
@@ -32,13 +32,15 @@ async fn ensure_localnet_running() -> Result<(), UtilsError> {
             .args(["localnet", "start"])
             .output()
             .map_err(|e| UtilsError::UtilsError {
-                message: format!("Failed to start LocalNet: {}", e)
+                message: format!("Failed to start LocalNet: {}", e),
             })?;
 
         if !start_output.status.success() {
             return Err(UtilsError::UtilsError {
-                message: format!("Failed to start LocalNet: {}",
-                               String::from_utf8_lossy(&start_output.stderr))
+                message: format!(
+                    "Failed to start LocalNet: {}",
+                    String::from_utf8_lossy(&start_output.stderr)
+                ),
             });
         }
 
@@ -52,25 +54,33 @@ async fn ensure_localnet_running() -> Result<(), UtilsError> {
 /// Find the LocalNet account with the highest balance (dispenser)
 async fn find_dispenser_account() -> Result<String, UtilsError> {
     let accounts_output = Command::new("algokit")
-        .args(["goal", "account", "list", "-w", "unencrypted-default-wallet"])
+        .args([
+            "goal",
+            "account",
+            "list",
+            "-w",
+            "unencrypted-default-wallet",
+        ])
         .output()
         .map_err(|e| UtilsError::UtilsError {
-            message: format!("Failed to list accounts: {}", e)
+            message: format!("Failed to list accounts: {}", e),
         })?;
 
     if !accounts_output.status.success() {
         return Err(UtilsError::UtilsError {
-            message: format!("Failed to list accounts: {}",
-                           String::from_utf8_lossy(&accounts_output.stderr))
+            message: format!(
+                "Failed to list accounts: {}",
+                String::from_utf8_lossy(&accounts_output.stderr)
+            ),
         });
     }
 
     let output_str = String::from_utf8_lossy(&accounts_output.stdout);
 
     // Create regex pattern for parsing account lines
-    let re = Regex::new(r"([A-Z0-9]{58})\s+(\d+)\s+microAlgos")
-        .map_err(|e| UtilsError::UtilsError {
-            message: format!("Regex error: {}", e)
+    let re =
+        Regex::new(r"([A-Z0-9]{58})\s+(\d+)\s+microAlgos").map_err(|e| UtilsError::UtilsError {
+            message: format!("Regex error: {}", e),
         })?;
 
     let mut highest_balance = 0u64;
@@ -89,7 +99,7 @@ async fn find_dispenser_account() -> Result<String, UtilsError> {
 
     if dispenser_address.is_empty() {
         return Err(UtilsError::UtilsError {
-            message: "No funded accounts found in LocalNet".to_string()
+            message: "No funded accounts found in LocalNet".to_string(),
         });
     }
 
@@ -99,16 +109,27 @@ async fn find_dispenser_account() -> Result<String, UtilsError> {
 /// Export the mnemonic for a given account address
 async fn export_account_mnemonic(address: &str) -> Result<String, UtilsError> {
     let export_output = Command::new("algokit")
-        .args(["goal", "account", "export", "-a", address, "-w", "unencrypted-default-wallet"])
+        .args([
+            "goal",
+            "account",
+            "export",
+            "-a",
+            address,
+            "-w",
+            "unencrypted-default-wallet",
+        ])
         .output()
         .map_err(|e| UtilsError::UtilsError {
-            message: format!("Failed to export account {}: {}", address, e)
+            message: format!("Failed to export account {}: {}", address, e),
         })?;
 
     if !export_output.status.success() {
         return Err(UtilsError::UtilsError {
-            message: format!("Failed to export account {}: {}",
-                           address, String::from_utf8_lossy(&export_output.stderr))
+            message: format!(
+                "Failed to export account {}: {}",
+                address,
+                String::from_utf8_lossy(&export_output.stderr)
+            ),
         });
     }
 

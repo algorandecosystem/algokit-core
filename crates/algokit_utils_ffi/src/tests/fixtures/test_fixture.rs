@@ -1,13 +1,13 @@
+use super::{localnet, test_account::TestAccount};
 use crate::{
     clients::algod_client::AlgodClientTrait,
     transactions::{
-        composer::ComposerFactory,
-        common::{TransactionSignerGetter, UtilsError},
-        payment::PaymentParams,
         asset_config::AssetCreateParams,
+        common::{TransactionSignerGetter, UtilsError},
+        composer::ComposerFactory,
+        payment::PaymentParams,
     },
 };
-use super::{test_account::TestAccount, localnet};
 use std::sync::{Arc, Mutex};
 
 /// Test fixture that provides high-level test operations using foreign traits
@@ -55,10 +55,8 @@ impl TestFixture {
         let account = TestAccount::generate()?;
 
         // Register account with signer getter
-        self.signer_getter.register_account(
-            account.address.clone(),
-            account.mnemonic.clone(),
-        )?;
+        self.signer_getter
+            .register_account(account.address.clone(), account.mnemonic.clone())?;
 
         // Track generated accounts
         self.test_accounts.lock().unwrap().push(account.clone());
@@ -75,7 +73,8 @@ impl TestFixture {
         // Create a fresh composer for this operation (via factory)
         let composer = self.composer_factory.create_composer();
 
-        let dispenser_signer = self.signer_getter
+        let dispenser_signer = self
+            .signer_getter
             .get_signer(self.dispenser_account.address.clone())?;
 
         // Build payment parameters
@@ -103,9 +102,12 @@ impl TestFixture {
         let tx_ids = composer.send().await?;
 
         // Return first transaction ID
-        tx_ids.first().cloned().ok_or_else(|| UtilsError::UtilsError {
-            message: "No transaction ID returned".to_string(),
-        })
+        tx_ids
+            .first()
+            .cloned()
+            .ok_or_else(|| UtilsError::UtilsError {
+                message: "No transaction ID returned".to_string(),
+            })
     }
 
     /// Create a test asset with optional freeze manager
@@ -158,7 +160,10 @@ impl TestFixture {
             message: "No transaction ID returned".to_string(),
         })?;
 
-        let info = self.algod_client.wait_for_confirmation(tx_id.clone()).await?;
+        let info = self
+            .algod_client
+            .wait_for_confirmation(tx_id.clone())
+            .await?;
 
         info.asset_id.ok_or_else(|| UtilsError::UtilsError {
             message: "No asset ID in transaction result".to_string(),
