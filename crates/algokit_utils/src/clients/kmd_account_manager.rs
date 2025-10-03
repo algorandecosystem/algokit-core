@@ -1,5 +1,6 @@
 use crate::clients::{AccountManagerError, SigningAccount};
-use crate::{EmptySigner, TransactionSigner};
+use crate::transactions::ComposerParams;
+use crate::{Composer, EmptySigner, PaymentParams, TransactionSigner};
 use algod_client::{AlgodClient, models::Account};
 use algokit_transact::Address;
 use kmd_client::{
@@ -168,7 +169,6 @@ impl KmdAccountManager {
             .export_key(ExportKeyRequest {
                 address: Some(address.clone()),
                 wallet_handle_token: Some(wallet_handle.clone()),
-                wallet_password: None,
                 ..Default::default()
             })
             .await
@@ -237,8 +237,6 @@ impl KmdAccountManager {
                 .kmd
                 .create_wallet(CreateWalletRequest {
                     wallet_name: Some(wallet_name.to_string()),
-                    wallet_driver_name: Some("sqlite".to_string()),
-                    wallet_password: None,
                     ..Default::default()
                 })
                 .await
@@ -261,7 +259,6 @@ impl KmdAccountManager {
             .kmd
             .generate_key(GenerateKeyRequest {
                 wallet_handle_token: Some(wallet_handle.clone()),
-                display_mnemonic: Some(false),
                 ..Default::default()
             })
             .await
@@ -281,22 +278,17 @@ impl KmdAccountManager {
         let dispenser = self.get_localnet_dispenser_account().await?;
 
         // Create composer and send payment using the dispenser as the signer getter
-        let mut composer = crate::transactions::composer::Composer::new(
-            crate::transactions::composer::ComposerParams {
-                algod_client: self.algod.clone(),
-                signer_getter: Arc::new(EmptySigner {}),
-                composer_config: None,
-            },
-        );
-
-        // Use provided amount or default to 1000 ALGO = 1,000,000,000 microALGO
-        let amount_micro_algo = fund_with.unwrap_or(1_000_000_000);
+        let mut composer = Composer::new(ComposerParams {
+            algod_client: self.algod.clone(),
+            signer_getter: Arc::new(EmptySigner {}),
+            composer_config: None,
+        });
 
         composer
-            .add_payment(crate::transactions::payment::PaymentParams {
+            .add_payment(PaymentParams {
                 sender: dispenser.address.clone(),
                 receiver: account.address.clone(),
-                amount: amount_micro_algo,
+                amount: fund_with.unwrap_or(1_000_000_000), // provided amount or 1000 algos
                 signer: Some(dispenser.signer.clone()),
                 ..Default::default()
             })

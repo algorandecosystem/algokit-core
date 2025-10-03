@@ -33,7 +33,18 @@ impl AlgorandClient {
         let client_manager = ClientManager::new(&params.client_config).unwrap();
         let algod_client = client_manager.algod();
 
-        let account_manager = Arc::new(Mutex::new(AccountManager::new(algod_client.clone())));
+        // Create KmdAccountManager if KMD client is available
+        let kmd_manager = client_manager.kmd().ok().map(|kmd_client| {
+            Arc::new(crate::clients::KmdAccountManager::new(
+                kmd_client,
+                algod_client.clone(),
+            ))
+        });
+
+        let account_manager = Arc::new(Mutex::new(AccountManager::new(
+            algod_client.clone(),
+            kmd_manager,
+        )));
 
         let new_group = {
             let algod_client = algod_client.clone();

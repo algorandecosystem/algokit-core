@@ -1,4 +1,9 @@
-use crate::{TransactionSigner, common::mnemonic, transactions::common::TransactionSignerGetter};
+use crate::{
+    TransactionSigner,
+    clients::{KmdAccountManager, genesis_id_is_localnet},
+    common::mnemonic,
+    transactions::common::TransactionSignerGetter,
+};
 use algod_client::{AlgodClient, models::Account};
 use algokit_transact::{
     ALGORAND_SECRET_KEY_BYTE_LENGTH, ALGORAND_SIGNATURE_BYTE_LENGTH, Address, AlgorandMsgpack,
@@ -79,14 +84,19 @@ pub struct AccountManager {
     default_signer: Option<Arc<dyn TransactionSigner>>,
     accounts: HashMap<Address, Arc<dyn TransactionSigner>>,
     algod: Arc<AlgodClient>,
+    kmd_account_manager: Option<Arc<KmdAccountManager>>,
 }
 
 impl AccountManager {
-    pub fn new(algod: Arc<AlgodClient>) -> Self {
+    pub fn new(
+        algod: Arc<AlgodClient>,
+        kmd_account_manager: Option<Arc<KmdAccountManager>>,
+    ) -> Self {
         Self {
             default_signer: None,
             accounts: HashMap::new(),
             algod,
+            kmd_account_manager,
         }
     }
 
@@ -213,7 +223,7 @@ impl AccountManager {
     pub async fn from_environment(
         &mut self,
         name: &str,
-        _fund_with: Option<u64>,
+        fund_with: Option<u64>,
     ) -> Result<Address, AccountManagerError> {
         use std::env;
         use std::str::FromStr;
@@ -231,11 +241,30 @@ impl AccountManager {
             return self.from_mnemonic(&account_mnemonic, sender);
         }
 
-        // Check if we're on LocalNet
-        // Note: This requires access to ClientManager to check if we're on LocalNet
-        // and KMD functionality to create/get wallet accounts.
-        // For now, we'll return an error indicating the mnemonic is missing.
-        // TODO: Implement LocalNet KMD wallet creation when KMD integration is available
+        // Check if we're on LocalNet by checking genesis ID
+        let genesis =
+            self.algod
+                .get_genesis()
+                .await
+                .map_err(|e| AccountManagerError::AlgodError {
+                    message: format!("Failed to get genesis information: {}", e),
+                })?;
+
+        let is_localnet = genesis_id_is_localnet(&genesis.id);
+
+        // Use KMD to get or create wallet account if on LocalNet and KMD is available
+        if is_localnet {
+            if let Some(kmd_manager) = &self.kmd_account_manager {
+                let kmd_account = kmd_manager
+                    .get_or_create_wallet_account(name, fund_with)
+                    .await?;
+
+                // Register the signer
+                self.set_signer(kmd_account.address.clone(), kmd_account.signer);
+
+                return Ok(kmd_account.address);
+            }
+        }
 
         Err(AccountManagerError::EnvironmentError {
             message: format!(
