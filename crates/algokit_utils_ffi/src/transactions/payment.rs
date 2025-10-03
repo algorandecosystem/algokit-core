@@ -9,8 +9,6 @@ use algokit_utils::transactions::{
 
 use super::common::{FfiTransactionSignerFromRust, TransactionSigner};
 
-use super::common::{FfiTransactionSignerFromRust, TransactionSigner};
-
 create_transaction_params! {
     #[derive(uniffi::Record)]
     pub struct PaymentParams {

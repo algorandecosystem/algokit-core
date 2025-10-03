@@ -301,11 +301,8 @@ impl ComposerTrait for Composer {
         Composer::add_asset_create(self, params)
     }
 
-    async fn add_asset_reconfigure(
-        &self,
-        params: AssetReconfigureParams,
-    ) -> Result<(), UtilsError> {
-        Composer::add_asset_reconfigure(self, params)
+    async fn add_asset_reconfigure(&self, params: AssetConfigParams) -> Result<(), UtilsError> {
+        Composer::add_asset_config(self, params)
     }
 
     async fn add_asset_destroy(&self, params: AssetDestroyParams) -> Result<(), UtilsError> {
@@ -408,8 +405,7 @@ pub trait ComposerTrait: Send + Sync {
 
     async fn add_asset_create(&self, params: AssetCreateParams) -> Result<(), UtilsError>;
 
-    async fn add_asset_reconfigure(&self, params: AssetReconfigureParams)
-    -> Result<(), UtilsError>;
+    async fn add_asset_reconfigure(&self, params: AssetConfigParams) -> Result<(), UtilsError>;
 
     async fn add_asset_destroy(&self, params: AssetDestroyParams) -> Result<(), UtilsError>;
 
