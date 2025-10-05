@@ -12,6 +12,7 @@ use algokit_http_client::{HttpClient, HttpMethod};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::MetricsError as RustMetricsError;
 
 // Import all custom types used by this endpoint
 
@@ -23,4 +24,24 @@ pub enum MetricsError {
     Status404(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<MetricsError> for RustMetricsError {
+    fn from(e: MetricsError) -> Self {
+        match e {
+            MetricsError::Status404() => RustMetricsError::Status404(),
+            MetricsError::DefaultResponse() => RustMetricsError::DefaultResponse(),
+            MetricsError::UnknownValue(value) => RustMetricsError::UnknownValue(value.into()),
+        }
+    }
+}
+
+impl From<RustMetricsError> for MetricsError {
+    fn from(e: RustMetricsError) -> Self {
+        match e {
+            RustMetricsError::Status404() => MetricsError::Status404(),
+            RustMetricsError::DefaultResponse() => MetricsError::DefaultResponse(),
+            RustMetricsError::UnknownValue(value) => MetricsError::UnknownValue(value.to_string()),
+        }
+    }
 }

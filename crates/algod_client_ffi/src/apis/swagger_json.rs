@@ -12,6 +12,7 @@ use algokit_http_client::{HttpClient, HttpMethod};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::SwaggerJsonError as RustSwaggerJsonError;
 
 // Import all custom types used by this endpoint
 
@@ -23,4 +24,28 @@ pub enum SwaggerJsonError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<SwaggerJsonError> for RustSwaggerJsonError {
+    fn from(e: SwaggerJsonError) -> Self {
+        match e {
+            SwaggerJsonError::Statusdefault() => RustSwaggerJsonError::Statusdefault(),
+            SwaggerJsonError::DefaultResponse() => RustSwaggerJsonError::DefaultResponse(),
+            SwaggerJsonError::UnknownValue(value) => {
+                RustSwaggerJsonError::UnknownValue(value.into())
+            }
+        }
+    }
+}
+
+impl From<RustSwaggerJsonError> for SwaggerJsonError {
+    fn from(e: RustSwaggerJsonError) -> Self {
+        match e {
+            RustSwaggerJsonError::Statusdefault() => SwaggerJsonError::Statusdefault(),
+            RustSwaggerJsonError::DefaultResponse() => SwaggerJsonError::DefaultResponse(),
+            RustSwaggerJsonError::UnknownValue(value) => {
+                SwaggerJsonError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

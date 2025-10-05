@@ -12,6 +12,7 @@ use algokit_http_client::{HttpClient, HttpMethod};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::HealthCheckError as RustHealthCheckError;
 
 // Import all custom types used by this endpoint
 
@@ -23,4 +24,28 @@ pub enum HealthCheckError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<HealthCheckError> for RustHealthCheckError {
+    fn from(e: HealthCheckError) -> Self {
+        match e {
+            HealthCheckError::Statusdefault() => RustHealthCheckError::Statusdefault(),
+            HealthCheckError::DefaultResponse() => RustHealthCheckError::DefaultResponse(),
+            HealthCheckError::UnknownValue(value) => {
+                RustHealthCheckError::UnknownValue(value.into())
+            }
+        }
+    }
+}
+
+impl From<RustHealthCheckError> for HealthCheckError {
+    fn from(e: RustHealthCheckError) -> Self {
+        match e {
+            RustHealthCheckError::Statusdefault() => HealthCheckError::Statusdefault(),
+            RustHealthCheckError::DefaultResponse() => HealthCheckError::DefaultResponse(),
+            RustHealthCheckError::UnknownValue(value) => {
+                HealthCheckError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

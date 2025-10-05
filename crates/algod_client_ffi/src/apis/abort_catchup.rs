@@ -12,6 +12,7 @@ use algokit_http_client::{HttpClient, HttpMethod};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::AbortCatchupError as RustAbortCatchupError;
 
 // Import all custom types used by this endpoint
 use crate::models::{AbortCatchup, ErrorResponse};
@@ -27,4 +28,46 @@ pub enum AbortCatchupError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<AbortCatchupError> for RustAbortCatchupError {
+    fn from(e: AbortCatchupError) -> Self {
+        match e {
+            AbortCatchupError::Status400(ErrorResponse) => {
+                RustAbortCatchupError::Status400(ErrorResponse)
+            }
+            AbortCatchupError::Status401(ErrorResponse) => {
+                RustAbortCatchupError::Status401(ErrorResponse)
+            }
+            AbortCatchupError::Status500(ErrorResponse) => {
+                RustAbortCatchupError::Status500(ErrorResponse)
+            }
+            AbortCatchupError::Statusdefault() => RustAbortCatchupError::Statusdefault(),
+            AbortCatchupError::DefaultResponse() => RustAbortCatchupError::DefaultResponse(),
+            AbortCatchupError::UnknownValue(value) => {
+                RustAbortCatchupError::UnknownValue(value.into())
+            }
+        }
+    }
+}
+
+impl From<RustAbortCatchupError> for AbortCatchupError {
+    fn from(e: RustAbortCatchupError) -> Self {
+        match e {
+            RustAbortCatchupError::Status400(ErrorResponse) => {
+                AbortCatchupError::Status400(ErrorResponse)
+            }
+            RustAbortCatchupError::Status401(ErrorResponse) => {
+                AbortCatchupError::Status401(ErrorResponse)
+            }
+            RustAbortCatchupError::Status500(ErrorResponse) => {
+                AbortCatchupError::Status500(ErrorResponse)
+            }
+            RustAbortCatchupError::Statusdefault() => AbortCatchupError::Statusdefault(),
+            RustAbortCatchupError::DefaultResponse() => AbortCatchupError::DefaultResponse(),
+            RustAbortCatchupError::UnknownValue(value) => {
+                AbortCatchupError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

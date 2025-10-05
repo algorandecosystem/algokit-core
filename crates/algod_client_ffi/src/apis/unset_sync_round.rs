@@ -12,6 +12,7 @@ use algokit_http_client::{HttpClient, HttpMethod};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::UnsetSyncRoundError as RustUnsetSyncRoundError;
 
 // Import all custom types used by this endpoint
 use crate::models::ErrorResponse;
@@ -28,4 +29,52 @@ pub enum UnsetSyncRoundError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<UnsetSyncRoundError> for RustUnsetSyncRoundError {
+    fn from(e: UnsetSyncRoundError) -> Self {
+        match e {
+            UnsetSyncRoundError::Status400(ErrorResponse) => {
+                RustUnsetSyncRoundError::Status400(ErrorResponse)
+            }
+            UnsetSyncRoundError::Status401(ErrorResponse) => {
+                RustUnsetSyncRoundError::Status401(ErrorResponse)
+            }
+            UnsetSyncRoundError::Status500(ErrorResponse) => {
+                RustUnsetSyncRoundError::Status500(ErrorResponse)
+            }
+            UnsetSyncRoundError::Status503(ErrorResponse) => {
+                RustUnsetSyncRoundError::Status503(ErrorResponse)
+            }
+            UnsetSyncRoundError::Statusdefault() => RustUnsetSyncRoundError::Statusdefault(),
+            UnsetSyncRoundError::DefaultResponse() => RustUnsetSyncRoundError::DefaultResponse(),
+            UnsetSyncRoundError::UnknownValue(value) => {
+                RustUnsetSyncRoundError::UnknownValue(value.into())
+            }
+        }
+    }
+}
+
+impl From<RustUnsetSyncRoundError> for UnsetSyncRoundError {
+    fn from(e: RustUnsetSyncRoundError) -> Self {
+        match e {
+            RustUnsetSyncRoundError::Status400(ErrorResponse) => {
+                UnsetSyncRoundError::Status400(ErrorResponse)
+            }
+            RustUnsetSyncRoundError::Status401(ErrorResponse) => {
+                UnsetSyncRoundError::Status401(ErrorResponse)
+            }
+            RustUnsetSyncRoundError::Status500(ErrorResponse) => {
+                UnsetSyncRoundError::Status500(ErrorResponse)
+            }
+            RustUnsetSyncRoundError::Status503(ErrorResponse) => {
+                UnsetSyncRoundError::Status503(ErrorResponse)
+            }
+            RustUnsetSyncRoundError::Statusdefault() => UnsetSyncRoundError::Statusdefault(),
+            RustUnsetSyncRoundError::DefaultResponse() => UnsetSyncRoundError::DefaultResponse(),
+            RustUnsetSyncRoundError::UnknownValue(value) => {
+                UnsetSyncRoundError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

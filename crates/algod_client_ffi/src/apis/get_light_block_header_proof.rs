@@ -12,6 +12,7 @@ use algokit_http_client::{HttpClient, HttpMethod};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::GetLightBlockHeaderProofError as RustGetLightBlockHeaderProofError;
 
 // Import all custom types used by this endpoint
 use crate::models::{ErrorResponse, LightBlockHeaderProof};
@@ -29,4 +30,66 @@ pub enum GetLightBlockHeaderProofError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<GetLightBlockHeaderProofError> for RustGetLightBlockHeaderProofError {
+    fn from(e: GetLightBlockHeaderProofError) -> Self {
+        match e {
+            GetLightBlockHeaderProofError::Status401(ErrorResponse) => {
+                RustGetLightBlockHeaderProofError::Status401(ErrorResponse)
+            }
+            GetLightBlockHeaderProofError::Status404(ErrorResponse) => {
+                RustGetLightBlockHeaderProofError::Status404(ErrorResponse)
+            }
+            GetLightBlockHeaderProofError::Status408(ErrorResponse) => {
+                RustGetLightBlockHeaderProofError::Status408(ErrorResponse)
+            }
+            GetLightBlockHeaderProofError::Status500(ErrorResponse) => {
+                RustGetLightBlockHeaderProofError::Status500(ErrorResponse)
+            }
+            GetLightBlockHeaderProofError::Status503(ErrorResponse) => {
+                RustGetLightBlockHeaderProofError::Status503(ErrorResponse)
+            }
+            GetLightBlockHeaderProofError::Statusdefault() => {
+                RustGetLightBlockHeaderProofError::Statusdefault()
+            }
+            GetLightBlockHeaderProofError::DefaultResponse() => {
+                RustGetLightBlockHeaderProofError::DefaultResponse()
+            }
+            GetLightBlockHeaderProofError::UnknownValue(value) => {
+                RustGetLightBlockHeaderProofError::UnknownValue(value.into())
+            }
+        }
+    }
+}
+
+impl From<RustGetLightBlockHeaderProofError> for GetLightBlockHeaderProofError {
+    fn from(e: RustGetLightBlockHeaderProofError) -> Self {
+        match e {
+            RustGetLightBlockHeaderProofError::Status401(ErrorResponse) => {
+                GetLightBlockHeaderProofError::Status401(ErrorResponse)
+            }
+            RustGetLightBlockHeaderProofError::Status404(ErrorResponse) => {
+                GetLightBlockHeaderProofError::Status404(ErrorResponse)
+            }
+            RustGetLightBlockHeaderProofError::Status408(ErrorResponse) => {
+                GetLightBlockHeaderProofError::Status408(ErrorResponse)
+            }
+            RustGetLightBlockHeaderProofError::Status500(ErrorResponse) => {
+                GetLightBlockHeaderProofError::Status500(ErrorResponse)
+            }
+            RustGetLightBlockHeaderProofError::Status503(ErrorResponse) => {
+                GetLightBlockHeaderProofError::Status503(ErrorResponse)
+            }
+            RustGetLightBlockHeaderProofError::Statusdefault() => {
+                GetLightBlockHeaderProofError::Statusdefault()
+            }
+            RustGetLightBlockHeaderProofError::DefaultResponse() => {
+                GetLightBlockHeaderProofError::DefaultResponse()
+            }
+            RustGetLightBlockHeaderProofError::UnknownValue(value) => {
+                GetLightBlockHeaderProofError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

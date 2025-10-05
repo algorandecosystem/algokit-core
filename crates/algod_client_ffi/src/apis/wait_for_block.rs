@@ -12,6 +12,7 @@ use algokit_http_client::{HttpClient, HttpMethod};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::WaitForBlockError as RustWaitForBlockError;
 
 // Import all custom types used by this endpoint
 use crate::models::{ErrorResponse, WaitForBlock};
@@ -28,4 +29,52 @@ pub enum WaitForBlockError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<WaitForBlockError> for RustWaitForBlockError {
+    fn from(e: WaitForBlockError) -> Self {
+        match e {
+            WaitForBlockError::Status400(ErrorResponse) => {
+                RustWaitForBlockError::Status400(ErrorResponse)
+            }
+            WaitForBlockError::Status401(ErrorResponse) => {
+                RustWaitForBlockError::Status401(ErrorResponse)
+            }
+            WaitForBlockError::Status500(ErrorResponse) => {
+                RustWaitForBlockError::Status500(ErrorResponse)
+            }
+            WaitForBlockError::Status503(ErrorResponse) => {
+                RustWaitForBlockError::Status503(ErrorResponse)
+            }
+            WaitForBlockError::Statusdefault() => RustWaitForBlockError::Statusdefault(),
+            WaitForBlockError::DefaultResponse() => RustWaitForBlockError::DefaultResponse(),
+            WaitForBlockError::UnknownValue(value) => {
+                RustWaitForBlockError::UnknownValue(value.into())
+            }
+        }
+    }
+}
+
+impl From<RustWaitForBlockError> for WaitForBlockError {
+    fn from(e: RustWaitForBlockError) -> Self {
+        match e {
+            RustWaitForBlockError::Status400(ErrorResponse) => {
+                WaitForBlockError::Status400(ErrorResponse)
+            }
+            RustWaitForBlockError::Status401(ErrorResponse) => {
+                WaitForBlockError::Status401(ErrorResponse)
+            }
+            RustWaitForBlockError::Status500(ErrorResponse) => {
+                WaitForBlockError::Status500(ErrorResponse)
+            }
+            RustWaitForBlockError::Status503(ErrorResponse) => {
+                WaitForBlockError::Status503(ErrorResponse)
+            }
+            RustWaitForBlockError::Statusdefault() => WaitForBlockError::Statusdefault(),
+            RustWaitForBlockError::DefaultResponse() => WaitForBlockError::DefaultResponse(),
+            RustWaitForBlockError::UnknownValue(value) => {
+                WaitForBlockError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

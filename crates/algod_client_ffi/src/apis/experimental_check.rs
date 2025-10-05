@@ -12,6 +12,7 @@ use algokit_http_client::{HttpClient, HttpMethod};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::ExperimentalCheckError as RustExperimentalCheckError;
 
 // Import all custom types used by this endpoint
 
@@ -24,4 +25,34 @@ pub enum ExperimentalCheckError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<ExperimentalCheckError> for RustExperimentalCheckError {
+    fn from(e: ExperimentalCheckError) -> Self {
+        match e {
+            ExperimentalCheckError::Status404() => RustExperimentalCheckError::Status404(),
+            ExperimentalCheckError::Statusdefault() => RustExperimentalCheckError::Statusdefault(),
+            ExperimentalCheckError::DefaultResponse() => {
+                RustExperimentalCheckError::DefaultResponse()
+            }
+            ExperimentalCheckError::UnknownValue(value) => {
+                RustExperimentalCheckError::UnknownValue(value.into())
+            }
+        }
+    }
+}
+
+impl From<RustExperimentalCheckError> for ExperimentalCheckError {
+    fn from(e: RustExperimentalCheckError) -> Self {
+        match e {
+            RustExperimentalCheckError::Status404() => ExperimentalCheckError::Status404(),
+            RustExperimentalCheckError::Statusdefault() => ExperimentalCheckError::Statusdefault(),
+            RustExperimentalCheckError::DefaultResponse() => {
+                ExperimentalCheckError::DefaultResponse()
+            }
+            RustExperimentalCheckError::UnknownValue(value) => {
+                ExperimentalCheckError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

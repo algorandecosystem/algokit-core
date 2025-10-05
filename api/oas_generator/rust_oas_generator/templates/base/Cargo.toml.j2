@@ -13,6 +13,11 @@ default_client = ["algokit_http_client/default_client"]
 {% endif %}
 
 [dependencies]
+serde_json = "^1.0"
+
+# Error handling
+snafu = { workspace = true }
+
 {% if not "ffi" in package_name %}
 # Core serialization
 serde = { version = "^1.0", features = ["derive"] }
@@ -21,7 +26,6 @@ serde_with = { version = "^3.8", default-features = false, features = [
   "std",
   "macros",
 ] }
-serde_json = "^1.0"
 serde_repr = "^0.1"
 serde_bytes = "^0.11"
 
@@ -36,9 +40,6 @@ algokit_transact = { path = "../algokit_transact" }
 rmp-serde = "^1.1"
 {% endif %}
 
-# Error handling
-snafu = { workspace = true }
-
 # Utilities
 base64 = "^0.22"
 uuid = { version = "^1.0", features = ["v4"] }
@@ -46,7 +47,6 @@ uuid = { version = "^1.0", features = ["v4"] }
 {% if spec.has_msgpack_operations %}
 algokit_transact_ffi = { path = "../algokit_transact_ffi" }
 {% endif %}
-snafu = { workspace = true }
 uniffi = { workspace = true }
 algokit_http_client = { path = "../algokit_http_client", default-features = false, features = ["ffi_uniffi"] }
 {{ package_name | snake_case | replace("_ffi", "") }} = { path = "../{{ package_name | snake_case | replace("_ffi", "") }}" }

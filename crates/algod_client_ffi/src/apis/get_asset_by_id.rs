@@ -12,6 +12,7 @@ use algokit_http_client::{HttpClient, HttpMethod};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::GetAssetByIdError as RustGetAssetByIdError;
 
 // Import all custom types used by this endpoint
 use crate::models::{Asset, ErrorResponse};
@@ -28,4 +29,52 @@ pub enum GetAssetByIdError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<GetAssetByIdError> for RustGetAssetByIdError {
+    fn from(e: GetAssetByIdError) -> Self {
+        match e {
+            GetAssetByIdError::Status400(ErrorResponse) => {
+                RustGetAssetByIdError::Status400(ErrorResponse)
+            }
+            GetAssetByIdError::Status401(ErrorResponse) => {
+                RustGetAssetByIdError::Status401(ErrorResponse)
+            }
+            GetAssetByIdError::Status404(ErrorResponse) => {
+                RustGetAssetByIdError::Status404(ErrorResponse)
+            }
+            GetAssetByIdError::Status500(ErrorResponse) => {
+                RustGetAssetByIdError::Status500(ErrorResponse)
+            }
+            GetAssetByIdError::Statusdefault() => RustGetAssetByIdError::Statusdefault(),
+            GetAssetByIdError::DefaultResponse() => RustGetAssetByIdError::DefaultResponse(),
+            GetAssetByIdError::UnknownValue(value) => {
+                RustGetAssetByIdError::UnknownValue(value.into())
+            }
+        }
+    }
+}
+
+impl From<RustGetAssetByIdError> for GetAssetByIdError {
+    fn from(e: RustGetAssetByIdError) -> Self {
+        match e {
+            RustGetAssetByIdError::Status400(ErrorResponse) => {
+                GetAssetByIdError::Status400(ErrorResponse)
+            }
+            RustGetAssetByIdError::Status401(ErrorResponse) => {
+                GetAssetByIdError::Status401(ErrorResponse)
+            }
+            RustGetAssetByIdError::Status404(ErrorResponse) => {
+                GetAssetByIdError::Status404(ErrorResponse)
+            }
+            RustGetAssetByIdError::Status500(ErrorResponse) => {
+                GetAssetByIdError::Status500(ErrorResponse)
+            }
+            RustGetAssetByIdError::Statusdefault() => GetAssetByIdError::Statusdefault(),
+            RustGetAssetByIdError::DefaultResponse() => GetAssetByIdError::DefaultResponse(),
+            RustGetAssetByIdError::UnknownValue(value) => {
+                GetAssetByIdError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

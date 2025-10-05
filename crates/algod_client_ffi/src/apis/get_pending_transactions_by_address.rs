@@ -13,6 +13,7 @@ use std::collections::HashMap;
 
 use super::parameter_enums::*;
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::GetPendingTransactionsByAddressError as RustGetPendingTransactionsByAddressError;
 
 // Import all custom types used by this endpoint
 use crate::models::{ErrorResponse, GetPendingTransactionsByAddress};
@@ -29,4 +30,60 @@ pub enum GetPendingTransactionsByAddressError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<GetPendingTransactionsByAddressError> for RustGetPendingTransactionsByAddressError {
+    fn from(e: GetPendingTransactionsByAddressError) -> Self {
+        match e {
+            GetPendingTransactionsByAddressError::Status400(ErrorResponse) => {
+                RustGetPendingTransactionsByAddressError::Status400(ErrorResponse)
+            }
+            GetPendingTransactionsByAddressError::Status401(ErrorResponse) => {
+                RustGetPendingTransactionsByAddressError::Status401(ErrorResponse)
+            }
+            GetPendingTransactionsByAddressError::Status500(ErrorResponse) => {
+                RustGetPendingTransactionsByAddressError::Status500(ErrorResponse)
+            }
+            GetPendingTransactionsByAddressError::Status503(ErrorResponse) => {
+                RustGetPendingTransactionsByAddressError::Status503(ErrorResponse)
+            }
+            GetPendingTransactionsByAddressError::Statusdefault() => {
+                RustGetPendingTransactionsByAddressError::Statusdefault()
+            }
+            GetPendingTransactionsByAddressError::DefaultResponse() => {
+                RustGetPendingTransactionsByAddressError::DefaultResponse()
+            }
+            GetPendingTransactionsByAddressError::UnknownValue(value) => {
+                RustGetPendingTransactionsByAddressError::UnknownValue(value.into())
+            }
+        }
+    }
+}
+
+impl From<RustGetPendingTransactionsByAddressError> for GetPendingTransactionsByAddressError {
+    fn from(e: RustGetPendingTransactionsByAddressError) -> Self {
+        match e {
+            RustGetPendingTransactionsByAddressError::Status400(ErrorResponse) => {
+                GetPendingTransactionsByAddressError::Status400(ErrorResponse)
+            }
+            RustGetPendingTransactionsByAddressError::Status401(ErrorResponse) => {
+                GetPendingTransactionsByAddressError::Status401(ErrorResponse)
+            }
+            RustGetPendingTransactionsByAddressError::Status500(ErrorResponse) => {
+                GetPendingTransactionsByAddressError::Status500(ErrorResponse)
+            }
+            RustGetPendingTransactionsByAddressError::Status503(ErrorResponse) => {
+                GetPendingTransactionsByAddressError::Status503(ErrorResponse)
+            }
+            RustGetPendingTransactionsByAddressError::Statusdefault() => {
+                GetPendingTransactionsByAddressError::Statusdefault()
+            }
+            RustGetPendingTransactionsByAddressError::DefaultResponse() => {
+                GetPendingTransactionsByAddressError::DefaultResponse()
+            }
+            RustGetPendingTransactionsByAddressError::UnknownValue(value) => {
+                GetPendingTransactionsByAddressError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

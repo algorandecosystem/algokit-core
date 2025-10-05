@@ -12,6 +12,7 @@ use algokit_http_client::{HttpClient, HttpMethod};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::GetApplicationBoxByNameError as RustGetApplicationBoxByNameError;
 
 // Import all custom types used by this endpoint
 use crate::models::{Box, ErrorResponse};
@@ -28,4 +29,60 @@ pub enum GetApplicationBoxByNameError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<GetApplicationBoxByNameError> for RustGetApplicationBoxByNameError {
+    fn from(e: GetApplicationBoxByNameError) -> Self {
+        match e {
+            GetApplicationBoxByNameError::Status400(ErrorResponse) => {
+                RustGetApplicationBoxByNameError::Status400(ErrorResponse)
+            }
+            GetApplicationBoxByNameError::Status401(ErrorResponse) => {
+                RustGetApplicationBoxByNameError::Status401(ErrorResponse)
+            }
+            GetApplicationBoxByNameError::Status404(ErrorResponse) => {
+                RustGetApplicationBoxByNameError::Status404(ErrorResponse)
+            }
+            GetApplicationBoxByNameError::Status500(ErrorResponse) => {
+                RustGetApplicationBoxByNameError::Status500(ErrorResponse)
+            }
+            GetApplicationBoxByNameError::Statusdefault() => {
+                RustGetApplicationBoxByNameError::Statusdefault()
+            }
+            GetApplicationBoxByNameError::DefaultResponse() => {
+                RustGetApplicationBoxByNameError::DefaultResponse()
+            }
+            GetApplicationBoxByNameError::UnknownValue(value) => {
+                RustGetApplicationBoxByNameError::UnknownValue(value.into())
+            }
+        }
+    }
+}
+
+impl From<RustGetApplicationBoxByNameError> for GetApplicationBoxByNameError {
+    fn from(e: RustGetApplicationBoxByNameError) -> Self {
+        match e {
+            RustGetApplicationBoxByNameError::Status400(ErrorResponse) => {
+                GetApplicationBoxByNameError::Status400(ErrorResponse)
+            }
+            RustGetApplicationBoxByNameError::Status401(ErrorResponse) => {
+                GetApplicationBoxByNameError::Status401(ErrorResponse)
+            }
+            RustGetApplicationBoxByNameError::Status404(ErrorResponse) => {
+                GetApplicationBoxByNameError::Status404(ErrorResponse)
+            }
+            RustGetApplicationBoxByNameError::Status500(ErrorResponse) => {
+                GetApplicationBoxByNameError::Status500(ErrorResponse)
+            }
+            RustGetApplicationBoxByNameError::Statusdefault() => {
+                GetApplicationBoxByNameError::Statusdefault()
+            }
+            RustGetApplicationBoxByNameError::DefaultResponse() => {
+                GetApplicationBoxByNameError::DefaultResponse()
+            }
+            RustGetApplicationBoxByNameError::UnknownValue(value) => {
+                GetApplicationBoxByNameError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

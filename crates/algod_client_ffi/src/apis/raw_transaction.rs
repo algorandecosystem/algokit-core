@@ -12,6 +12,7 @@ use algokit_http_client::{HttpClient, HttpMethod};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::RawTransactionError as RustRawTransactionError;
 
 // Import all custom types used by this endpoint
 use crate::models::{ErrorResponse, RawTransaction};
@@ -28,4 +29,52 @@ pub enum RawTransactionError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<RawTransactionError> for RustRawTransactionError {
+    fn from(e: RawTransactionError) -> Self {
+        match e {
+            RawTransactionError::Status400(ErrorResponse) => {
+                RustRawTransactionError::Status400(ErrorResponse)
+            }
+            RawTransactionError::Status401(ErrorResponse) => {
+                RustRawTransactionError::Status401(ErrorResponse)
+            }
+            RawTransactionError::Status500(ErrorResponse) => {
+                RustRawTransactionError::Status500(ErrorResponse)
+            }
+            RawTransactionError::Status503(ErrorResponse) => {
+                RustRawTransactionError::Status503(ErrorResponse)
+            }
+            RawTransactionError::Statusdefault() => RustRawTransactionError::Statusdefault(),
+            RawTransactionError::DefaultResponse() => RustRawTransactionError::DefaultResponse(),
+            RawTransactionError::UnknownValue(value) => {
+                RustRawTransactionError::UnknownValue(value.into())
+            }
+        }
+    }
+}
+
+impl From<RustRawTransactionError> for RawTransactionError {
+    fn from(e: RustRawTransactionError) -> Self {
+        match e {
+            RustRawTransactionError::Status400(ErrorResponse) => {
+                RawTransactionError::Status400(ErrorResponse)
+            }
+            RustRawTransactionError::Status401(ErrorResponse) => {
+                RawTransactionError::Status401(ErrorResponse)
+            }
+            RustRawTransactionError::Status500(ErrorResponse) => {
+                RawTransactionError::Status500(ErrorResponse)
+            }
+            RustRawTransactionError::Status503(ErrorResponse) => {
+                RawTransactionError::Status503(ErrorResponse)
+            }
+            RustRawTransactionError::Statusdefault() => RawTransactionError::Statusdefault(),
+            RustRawTransactionError::DefaultResponse() => RawTransactionError::DefaultResponse(),
+            RustRawTransactionError::UnknownValue(value) => {
+                RawTransactionError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

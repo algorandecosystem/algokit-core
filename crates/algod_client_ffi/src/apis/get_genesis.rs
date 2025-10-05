@@ -12,6 +12,7 @@ use algokit_http_client::{HttpClient, HttpMethod};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::GetGenesisError as RustGetGenesisError;
 
 // Import all custom types used by this endpoint
 use crate::models::Genesis;
@@ -24,4 +25,26 @@ pub enum GetGenesisError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<GetGenesisError> for RustGetGenesisError {
+    fn from(e: GetGenesisError) -> Self {
+        match e {
+            GetGenesisError::Statusdefault() => RustGetGenesisError::Statusdefault(),
+            GetGenesisError::DefaultResponse() => RustGetGenesisError::DefaultResponse(),
+            GetGenesisError::UnknownValue(value) => RustGetGenesisError::UnknownValue(value.into()),
+        }
+    }
+}
+
+impl From<RustGetGenesisError> for GetGenesisError {
+    fn from(e: RustGetGenesisError) -> Self {
+        match e {
+            RustGetGenesisError::Statusdefault() => GetGenesisError::Statusdefault(),
+            RustGetGenesisError::DefaultResponse() => GetGenesisError::DefaultResponse(),
+            RustGetGenesisError::UnknownValue(value) => {
+                GetGenesisError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

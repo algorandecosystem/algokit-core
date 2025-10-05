@@ -13,6 +13,7 @@ use std::collections::HashMap;
 
 use super::parameter_enums::*;
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::GetBlockError as RustGetBlockError;
 
 // Import all custom types used by this endpoint
 use crate::models::{ErrorResponse, GetBlock};
@@ -29,4 +30,34 @@ pub enum GetBlockError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<GetBlockError> for RustGetBlockError {
+    fn from(e: GetBlockError) -> Self {
+        match e {
+            GetBlockError::Status400(ErrorResponse) => RustGetBlockError::Status400(ErrorResponse),
+            GetBlockError::Status401(ErrorResponse) => RustGetBlockError::Status401(ErrorResponse),
+            GetBlockError::Status404(ErrorResponse) => RustGetBlockError::Status404(ErrorResponse),
+            GetBlockError::Status500(ErrorResponse) => RustGetBlockError::Status500(ErrorResponse),
+            GetBlockError::Statusdefault() => RustGetBlockError::Statusdefault(),
+            GetBlockError::DefaultResponse() => RustGetBlockError::DefaultResponse(),
+            GetBlockError::UnknownValue(value) => RustGetBlockError::UnknownValue(value.into()),
+        }
+    }
+}
+
+impl From<RustGetBlockError> for GetBlockError {
+    fn from(e: RustGetBlockError) -> Self {
+        match e {
+            RustGetBlockError::Status400(ErrorResponse) => GetBlockError::Status400(ErrorResponse),
+            RustGetBlockError::Status401(ErrorResponse) => GetBlockError::Status401(ErrorResponse),
+            RustGetBlockError::Status404(ErrorResponse) => GetBlockError::Status404(ErrorResponse),
+            RustGetBlockError::Status500(ErrorResponse) => GetBlockError::Status500(ErrorResponse),
+            RustGetBlockError::Statusdefault() => GetBlockError::Statusdefault(),
+            RustGetBlockError::DefaultResponse() => GetBlockError::DefaultResponse(),
+            RustGetBlockError::UnknownValue(value) => {
+                GetBlockError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

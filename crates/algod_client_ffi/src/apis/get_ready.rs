@@ -12,6 +12,7 @@ use algokit_http_client::{HttpClient, HttpMethod};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::GetReadyError as RustGetReadyError;
 
 // Import all custom types used by this endpoint
 
@@ -25,4 +26,30 @@ pub enum GetReadyError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<GetReadyError> for RustGetReadyError {
+    fn from(e: GetReadyError) -> Self {
+        match e {
+            GetReadyError::Status500() => RustGetReadyError::Status500(),
+            GetReadyError::Status503() => RustGetReadyError::Status503(),
+            GetReadyError::Statusdefault() => RustGetReadyError::Statusdefault(),
+            GetReadyError::DefaultResponse() => RustGetReadyError::DefaultResponse(),
+            GetReadyError::UnknownValue(value) => RustGetReadyError::UnknownValue(value.into()),
+        }
+    }
+}
+
+impl From<RustGetReadyError> for GetReadyError {
+    fn from(e: RustGetReadyError) -> Self {
+        match e {
+            RustGetReadyError::Status500() => GetReadyError::Status500(),
+            RustGetReadyError::Status503() => GetReadyError::Status503(),
+            RustGetReadyError::Statusdefault() => GetReadyError::Statusdefault(),
+            RustGetReadyError::DefaultResponse() => GetReadyError::DefaultResponse(),
+            RustGetReadyError::UnknownValue(value) => {
+                GetReadyError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

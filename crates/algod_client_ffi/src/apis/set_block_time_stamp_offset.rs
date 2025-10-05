@@ -12,6 +12,7 @@ use algokit_http_client::{HttpClient, HttpMethod};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::SetBlockTimeStampOffsetError as RustSetBlockTimeStampOffsetError;
 
 // Import all custom types used by this endpoint
 use crate::models::ErrorResponse;
@@ -27,4 +28,54 @@ pub enum SetBlockTimeStampOffsetError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<SetBlockTimeStampOffsetError> for RustSetBlockTimeStampOffsetError {
+    fn from(e: SetBlockTimeStampOffsetError) -> Self {
+        match e {
+            SetBlockTimeStampOffsetError::Status400(ErrorResponse) => {
+                RustSetBlockTimeStampOffsetError::Status400(ErrorResponse)
+            }
+            SetBlockTimeStampOffsetError::Status401(ErrorResponse) => {
+                RustSetBlockTimeStampOffsetError::Status401(ErrorResponse)
+            }
+            SetBlockTimeStampOffsetError::Status500(ErrorResponse) => {
+                RustSetBlockTimeStampOffsetError::Status500(ErrorResponse)
+            }
+            SetBlockTimeStampOffsetError::Statusdefault() => {
+                RustSetBlockTimeStampOffsetError::Statusdefault()
+            }
+            SetBlockTimeStampOffsetError::DefaultResponse() => {
+                RustSetBlockTimeStampOffsetError::DefaultResponse()
+            }
+            SetBlockTimeStampOffsetError::UnknownValue(value) => {
+                RustSetBlockTimeStampOffsetError::UnknownValue(value.into())
+            }
+        }
+    }
+}
+
+impl From<RustSetBlockTimeStampOffsetError> for SetBlockTimeStampOffsetError {
+    fn from(e: RustSetBlockTimeStampOffsetError) -> Self {
+        match e {
+            RustSetBlockTimeStampOffsetError::Status400(ErrorResponse) => {
+                SetBlockTimeStampOffsetError::Status400(ErrorResponse)
+            }
+            RustSetBlockTimeStampOffsetError::Status401(ErrorResponse) => {
+                SetBlockTimeStampOffsetError::Status401(ErrorResponse)
+            }
+            RustSetBlockTimeStampOffsetError::Status500(ErrorResponse) => {
+                SetBlockTimeStampOffsetError::Status500(ErrorResponse)
+            }
+            RustSetBlockTimeStampOffsetError::Statusdefault() => {
+                SetBlockTimeStampOffsetError::Statusdefault()
+            }
+            RustSetBlockTimeStampOffsetError::DefaultResponse() => {
+                SetBlockTimeStampOffsetError::DefaultResponse()
+            }
+            RustSetBlockTimeStampOffsetError::UnknownValue(value) => {
+                SetBlockTimeStampOffsetError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

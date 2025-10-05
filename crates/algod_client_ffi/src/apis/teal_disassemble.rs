@@ -12,6 +12,7 @@ use algokit_http_client::{HttpClient, HttpMethod};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::TealDisassembleError as RustTealDisassembleError;
 
 // Import all custom types used by this endpoint
 use crate::models::{ErrorResponse, TealDisassemble};
@@ -28,4 +29,48 @@ pub enum TealDisassembleError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<TealDisassembleError> for RustTealDisassembleError {
+    fn from(e: TealDisassembleError) -> Self {
+        match e {
+            TealDisassembleError::Status400(ErrorResponse) => {
+                RustTealDisassembleError::Status400(ErrorResponse)
+            }
+            TealDisassembleError::Status401(ErrorResponse) => {
+                RustTealDisassembleError::Status401(ErrorResponse)
+            }
+            TealDisassembleError::Status404() => RustTealDisassembleError::Status404(),
+            TealDisassembleError::Status500(ErrorResponse) => {
+                RustTealDisassembleError::Status500(ErrorResponse)
+            }
+            TealDisassembleError::Statusdefault() => RustTealDisassembleError::Statusdefault(),
+            TealDisassembleError::DefaultResponse() => RustTealDisassembleError::DefaultResponse(),
+            TealDisassembleError::UnknownValue(value) => {
+                RustTealDisassembleError::UnknownValue(value.into())
+            }
+        }
+    }
+}
+
+impl From<RustTealDisassembleError> for TealDisassembleError {
+    fn from(e: RustTealDisassembleError) -> Self {
+        match e {
+            RustTealDisassembleError::Status400(ErrorResponse) => {
+                TealDisassembleError::Status400(ErrorResponse)
+            }
+            RustTealDisassembleError::Status401(ErrorResponse) => {
+                TealDisassembleError::Status401(ErrorResponse)
+            }
+            RustTealDisassembleError::Status404() => TealDisassembleError::Status404(),
+            RustTealDisassembleError::Status500(ErrorResponse) => {
+                TealDisassembleError::Status500(ErrorResponse)
+            }
+            RustTealDisassembleError::Statusdefault() => TealDisassembleError::Statusdefault(),
+            RustTealDisassembleError::DefaultResponse() => TealDisassembleError::DefaultResponse(),
+            RustTealDisassembleError::UnknownValue(value) => {
+                TealDisassembleError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

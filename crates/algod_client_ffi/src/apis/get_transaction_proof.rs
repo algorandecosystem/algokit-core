@@ -13,6 +13,7 @@ use std::collections::HashMap;
 
 use super::parameter_enums::*;
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::GetTransactionProofError as RustGetTransactionProofError;
 
 // Import all custom types used by this endpoint
 use crate::models::{ErrorResponse, TransactionProof};
@@ -29,4 +30,60 @@ pub enum GetTransactionProofError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<GetTransactionProofError> for RustGetTransactionProofError {
+    fn from(e: GetTransactionProofError) -> Self {
+        match e {
+            GetTransactionProofError::Status400(ErrorResponse) => {
+                RustGetTransactionProofError::Status400(ErrorResponse)
+            }
+            GetTransactionProofError::Status401(ErrorResponse) => {
+                RustGetTransactionProofError::Status401(ErrorResponse)
+            }
+            GetTransactionProofError::Status404(ErrorResponse) => {
+                RustGetTransactionProofError::Status404(ErrorResponse)
+            }
+            GetTransactionProofError::Status500(ErrorResponse) => {
+                RustGetTransactionProofError::Status500(ErrorResponse)
+            }
+            GetTransactionProofError::Statusdefault() => {
+                RustGetTransactionProofError::Statusdefault()
+            }
+            GetTransactionProofError::DefaultResponse() => {
+                RustGetTransactionProofError::DefaultResponse()
+            }
+            GetTransactionProofError::UnknownValue(value) => {
+                RustGetTransactionProofError::UnknownValue(value.into())
+            }
+        }
+    }
+}
+
+impl From<RustGetTransactionProofError> for GetTransactionProofError {
+    fn from(e: RustGetTransactionProofError) -> Self {
+        match e {
+            RustGetTransactionProofError::Status400(ErrorResponse) => {
+                GetTransactionProofError::Status400(ErrorResponse)
+            }
+            RustGetTransactionProofError::Status401(ErrorResponse) => {
+                GetTransactionProofError::Status401(ErrorResponse)
+            }
+            RustGetTransactionProofError::Status404(ErrorResponse) => {
+                GetTransactionProofError::Status404(ErrorResponse)
+            }
+            RustGetTransactionProofError::Status500(ErrorResponse) => {
+                GetTransactionProofError::Status500(ErrorResponse)
+            }
+            RustGetTransactionProofError::Statusdefault() => {
+                GetTransactionProofError::Statusdefault()
+            }
+            RustGetTransactionProofError::DefaultResponse() => {
+                GetTransactionProofError::DefaultResponse()
+            }
+            RustGetTransactionProofError::UnknownValue(value) => {
+                GetTransactionProofError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

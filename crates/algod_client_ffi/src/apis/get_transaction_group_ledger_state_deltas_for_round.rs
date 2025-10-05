@@ -13,6 +13,7 @@ use std::collections::HashMap;
 
 use super::parameter_enums::*;
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::GetTransactionGroupLedgerStateDeltasForRoundError as RustGetTransactionGroupLedgerStateDeltasForRoundError;
 
 // Import all custom types used by this endpoint
 use crate::models::{ErrorResponse, GetTransactionGroupLedgerStateDeltasForRound};
@@ -30,4 +31,70 @@ pub enum GetTransactionGroupLedgerStateDeltasForRoundError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<GetTransactionGroupLedgerStateDeltasForRoundError>
+    for RustGetTransactionGroupLedgerStateDeltasForRoundError
+{
+    fn from(e: GetTransactionGroupLedgerStateDeltasForRoundError) -> Self {
+        match e {
+            GetTransactionGroupLedgerStateDeltasForRoundError::Status401(ErrorResponse) => {
+                RustGetTransactionGroupLedgerStateDeltasForRoundError::Status401(ErrorResponse)
+            }
+            GetTransactionGroupLedgerStateDeltasForRoundError::Status404(ErrorResponse) => {
+                RustGetTransactionGroupLedgerStateDeltasForRoundError::Status404(ErrorResponse)
+            }
+            GetTransactionGroupLedgerStateDeltasForRoundError::Status408(ErrorResponse) => {
+                RustGetTransactionGroupLedgerStateDeltasForRoundError::Status408(ErrorResponse)
+            }
+            GetTransactionGroupLedgerStateDeltasForRoundError::Status500(ErrorResponse) => {
+                RustGetTransactionGroupLedgerStateDeltasForRoundError::Status500(ErrorResponse)
+            }
+            GetTransactionGroupLedgerStateDeltasForRoundError::Status501(ErrorResponse) => {
+                RustGetTransactionGroupLedgerStateDeltasForRoundError::Status501(ErrorResponse)
+            }
+            GetTransactionGroupLedgerStateDeltasForRoundError::Statusdefault() => {
+                RustGetTransactionGroupLedgerStateDeltasForRoundError::Statusdefault()
+            }
+            GetTransactionGroupLedgerStateDeltasForRoundError::DefaultResponse() => {
+                RustGetTransactionGroupLedgerStateDeltasForRoundError::DefaultResponse()
+            }
+            GetTransactionGroupLedgerStateDeltasForRoundError::UnknownValue(value) => {
+                RustGetTransactionGroupLedgerStateDeltasForRoundError::UnknownValue(value.into())
+            }
+        }
+    }
+}
+
+impl From<RustGetTransactionGroupLedgerStateDeltasForRoundError>
+    for GetTransactionGroupLedgerStateDeltasForRoundError
+{
+    fn from(e: RustGetTransactionGroupLedgerStateDeltasForRoundError) -> Self {
+        match e {
+            RustGetTransactionGroupLedgerStateDeltasForRoundError::Status401(ErrorResponse) => {
+                GetTransactionGroupLedgerStateDeltasForRoundError::Status401(ErrorResponse)
+            }
+            RustGetTransactionGroupLedgerStateDeltasForRoundError::Status404(ErrorResponse) => {
+                GetTransactionGroupLedgerStateDeltasForRoundError::Status404(ErrorResponse)
+            }
+            RustGetTransactionGroupLedgerStateDeltasForRoundError::Status408(ErrorResponse) => {
+                GetTransactionGroupLedgerStateDeltasForRoundError::Status408(ErrorResponse)
+            }
+            RustGetTransactionGroupLedgerStateDeltasForRoundError::Status500(ErrorResponse) => {
+                GetTransactionGroupLedgerStateDeltasForRoundError::Status500(ErrorResponse)
+            }
+            RustGetTransactionGroupLedgerStateDeltasForRoundError::Status501(ErrorResponse) => {
+                GetTransactionGroupLedgerStateDeltasForRoundError::Status501(ErrorResponse)
+            }
+            RustGetTransactionGroupLedgerStateDeltasForRoundError::Statusdefault() => {
+                GetTransactionGroupLedgerStateDeltasForRoundError::Statusdefault()
+            }
+            RustGetTransactionGroupLedgerStateDeltasForRoundError::DefaultResponse() => {
+                GetTransactionGroupLedgerStateDeltasForRoundError::DefaultResponse()
+            }
+            RustGetTransactionGroupLedgerStateDeltasForRoundError::UnknownValue(value) => {
+                GetTransactionGroupLedgerStateDeltasForRoundError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

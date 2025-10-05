@@ -12,6 +12,7 @@ use algokit_http_client::{HttpClient, HttpMethod};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::TealDryrunError as RustTealDryrunError;
 
 // Import all custom types used by this endpoint
 use crate::models::{ErrorResponse, TealDryrun};
@@ -29,4 +30,46 @@ pub enum TealDryrunError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<TealDryrunError> for RustTealDryrunError {
+    fn from(e: TealDryrunError) -> Self {
+        match e {
+            TealDryrunError::Status400(ErrorResponse) => {
+                RustTealDryrunError::Status400(ErrorResponse)
+            }
+            TealDryrunError::Status401(ErrorResponse) => {
+                RustTealDryrunError::Status401(ErrorResponse)
+            }
+            TealDryrunError::Status404() => RustTealDryrunError::Status404(),
+            TealDryrunError::Status500(ErrorResponse) => {
+                RustTealDryrunError::Status500(ErrorResponse)
+            }
+            TealDryrunError::Statusdefault() => RustTealDryrunError::Statusdefault(),
+            TealDryrunError::DefaultResponse() => RustTealDryrunError::DefaultResponse(),
+            TealDryrunError::UnknownValue(value) => RustTealDryrunError::UnknownValue(value.into()),
+        }
+    }
+}
+
+impl From<RustTealDryrunError> for TealDryrunError {
+    fn from(e: RustTealDryrunError) -> Self {
+        match e {
+            RustTealDryrunError::Status400(ErrorResponse) => {
+                TealDryrunError::Status400(ErrorResponse)
+            }
+            RustTealDryrunError::Status401(ErrorResponse) => {
+                TealDryrunError::Status401(ErrorResponse)
+            }
+            RustTealDryrunError::Status404() => TealDryrunError::Status404(),
+            RustTealDryrunError::Status500(ErrorResponse) => {
+                TealDryrunError::Status500(ErrorResponse)
+            }
+            RustTealDryrunError::Statusdefault() => TealDryrunError::Statusdefault(),
+            RustTealDryrunError::DefaultResponse() => TealDryrunError::DefaultResponse(),
+            RustTealDryrunError::UnknownValue(value) => {
+                TealDryrunError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

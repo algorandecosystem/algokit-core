@@ -12,6 +12,7 @@ use algokit_http_client::{HttpClient, HttpMethod};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::GetApplicationBoxesError as RustGetApplicationBoxesError;
 
 // Import all custom types used by this endpoint
 use crate::models::{ErrorResponse, GetApplicationBoxes};
@@ -27,4 +28,54 @@ pub enum GetApplicationBoxesError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<GetApplicationBoxesError> for RustGetApplicationBoxesError {
+    fn from(e: GetApplicationBoxesError) -> Self {
+        match e {
+            GetApplicationBoxesError::Status400(ErrorResponse) => {
+                RustGetApplicationBoxesError::Status400(ErrorResponse)
+            }
+            GetApplicationBoxesError::Status401(ErrorResponse) => {
+                RustGetApplicationBoxesError::Status401(ErrorResponse)
+            }
+            GetApplicationBoxesError::Status500(ErrorResponse) => {
+                RustGetApplicationBoxesError::Status500(ErrorResponse)
+            }
+            GetApplicationBoxesError::Statusdefault() => {
+                RustGetApplicationBoxesError::Statusdefault()
+            }
+            GetApplicationBoxesError::DefaultResponse() => {
+                RustGetApplicationBoxesError::DefaultResponse()
+            }
+            GetApplicationBoxesError::UnknownValue(value) => {
+                RustGetApplicationBoxesError::UnknownValue(value.into())
+            }
+        }
+    }
+}
+
+impl From<RustGetApplicationBoxesError> for GetApplicationBoxesError {
+    fn from(e: RustGetApplicationBoxesError) -> Self {
+        match e {
+            RustGetApplicationBoxesError::Status400(ErrorResponse) => {
+                GetApplicationBoxesError::Status400(ErrorResponse)
+            }
+            RustGetApplicationBoxesError::Status401(ErrorResponse) => {
+                GetApplicationBoxesError::Status401(ErrorResponse)
+            }
+            RustGetApplicationBoxesError::Status500(ErrorResponse) => {
+                GetApplicationBoxesError::Status500(ErrorResponse)
+            }
+            RustGetApplicationBoxesError::Statusdefault() => {
+                GetApplicationBoxesError::Statusdefault()
+            }
+            RustGetApplicationBoxesError::DefaultResponse() => {
+                GetApplicationBoxesError::DefaultResponse()
+            }
+            RustGetApplicationBoxesError::UnknownValue(value) => {
+                GetApplicationBoxesError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

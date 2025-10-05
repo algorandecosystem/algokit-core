@@ -12,6 +12,7 @@ use algokit_http_client::{HttpClient, HttpMethod};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::GetBlockHashError as RustGetBlockHashError;
 
 // Import all custom types used by this endpoint
 use crate::models::{ErrorResponse, GetBlockHash};
@@ -28,4 +29,52 @@ pub enum GetBlockHashError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<GetBlockHashError> for RustGetBlockHashError {
+    fn from(e: GetBlockHashError) -> Self {
+        match e {
+            GetBlockHashError::Status400(ErrorResponse) => {
+                RustGetBlockHashError::Status400(ErrorResponse)
+            }
+            GetBlockHashError::Status401(ErrorResponse) => {
+                RustGetBlockHashError::Status401(ErrorResponse)
+            }
+            GetBlockHashError::Status404(ErrorResponse) => {
+                RustGetBlockHashError::Status404(ErrorResponse)
+            }
+            GetBlockHashError::Status500(ErrorResponse) => {
+                RustGetBlockHashError::Status500(ErrorResponse)
+            }
+            GetBlockHashError::Statusdefault() => RustGetBlockHashError::Statusdefault(),
+            GetBlockHashError::DefaultResponse() => RustGetBlockHashError::DefaultResponse(),
+            GetBlockHashError::UnknownValue(value) => {
+                RustGetBlockHashError::UnknownValue(value.into())
+            }
+        }
+    }
+}
+
+impl From<RustGetBlockHashError> for GetBlockHashError {
+    fn from(e: RustGetBlockHashError) -> Self {
+        match e {
+            RustGetBlockHashError::Status400(ErrorResponse) => {
+                GetBlockHashError::Status400(ErrorResponse)
+            }
+            RustGetBlockHashError::Status401(ErrorResponse) => {
+                GetBlockHashError::Status401(ErrorResponse)
+            }
+            RustGetBlockHashError::Status404(ErrorResponse) => {
+                GetBlockHashError::Status404(ErrorResponse)
+            }
+            RustGetBlockHashError::Status500(ErrorResponse) => {
+                GetBlockHashError::Status500(ErrorResponse)
+            }
+            RustGetBlockHashError::Statusdefault() => GetBlockHashError::Statusdefault(),
+            RustGetBlockHashError::DefaultResponse() => GetBlockHashError::DefaultResponse(),
+            RustGetBlockHashError::UnknownValue(value) => {
+                GetBlockHashError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

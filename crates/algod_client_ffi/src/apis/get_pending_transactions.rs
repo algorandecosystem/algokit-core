@@ -13,6 +13,7 @@ use std::collections::HashMap;
 
 use super::parameter_enums::*;
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::GetPendingTransactionsError as RustGetPendingTransactionsError;
 
 // Import all custom types used by this endpoint
 use crate::models::{ErrorResponse, GetPendingTransactions};
@@ -28,4 +29,54 @@ pub enum GetPendingTransactionsError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<GetPendingTransactionsError> for RustGetPendingTransactionsError {
+    fn from(e: GetPendingTransactionsError) -> Self {
+        match e {
+            GetPendingTransactionsError::Status401(ErrorResponse) => {
+                RustGetPendingTransactionsError::Status401(ErrorResponse)
+            }
+            GetPendingTransactionsError::Status500(ErrorResponse) => {
+                RustGetPendingTransactionsError::Status500(ErrorResponse)
+            }
+            GetPendingTransactionsError::Status503(ErrorResponse) => {
+                RustGetPendingTransactionsError::Status503(ErrorResponse)
+            }
+            GetPendingTransactionsError::Statusdefault() => {
+                RustGetPendingTransactionsError::Statusdefault()
+            }
+            GetPendingTransactionsError::DefaultResponse() => {
+                RustGetPendingTransactionsError::DefaultResponse()
+            }
+            GetPendingTransactionsError::UnknownValue(value) => {
+                RustGetPendingTransactionsError::UnknownValue(value.into())
+            }
+        }
+    }
+}
+
+impl From<RustGetPendingTransactionsError> for GetPendingTransactionsError {
+    fn from(e: RustGetPendingTransactionsError) -> Self {
+        match e {
+            RustGetPendingTransactionsError::Status401(ErrorResponse) => {
+                GetPendingTransactionsError::Status401(ErrorResponse)
+            }
+            RustGetPendingTransactionsError::Status500(ErrorResponse) => {
+                GetPendingTransactionsError::Status500(ErrorResponse)
+            }
+            RustGetPendingTransactionsError::Status503(ErrorResponse) => {
+                GetPendingTransactionsError::Status503(ErrorResponse)
+            }
+            RustGetPendingTransactionsError::Statusdefault() => {
+                GetPendingTransactionsError::Statusdefault()
+            }
+            RustGetPendingTransactionsError::DefaultResponse() => {
+                GetPendingTransactionsError::DefaultResponse()
+            }
+            RustGetPendingTransactionsError::UnknownValue(value) => {
+                GetPendingTransactionsError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

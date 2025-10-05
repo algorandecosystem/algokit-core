@@ -12,6 +12,7 @@ use algokit_http_client::{HttpClient, HttpMethod};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::GetParticipationKeyByIdError as RustGetParticipationKeyByIdError;
 
 // Import all custom types used by this endpoint
 use crate::models::{ErrorResponse, ParticipationKey};
@@ -28,4 +29,60 @@ pub enum GetParticipationKeyByIdError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<GetParticipationKeyByIdError> for RustGetParticipationKeyByIdError {
+    fn from(e: GetParticipationKeyByIdError) -> Self {
+        match e {
+            GetParticipationKeyByIdError::Status400(ErrorResponse) => {
+                RustGetParticipationKeyByIdError::Status400(ErrorResponse)
+            }
+            GetParticipationKeyByIdError::Status401(ErrorResponse) => {
+                RustGetParticipationKeyByIdError::Status401(ErrorResponse)
+            }
+            GetParticipationKeyByIdError::Status404(ErrorResponse) => {
+                RustGetParticipationKeyByIdError::Status404(ErrorResponse)
+            }
+            GetParticipationKeyByIdError::Status500(ErrorResponse) => {
+                RustGetParticipationKeyByIdError::Status500(ErrorResponse)
+            }
+            GetParticipationKeyByIdError::Statusdefault() => {
+                RustGetParticipationKeyByIdError::Statusdefault()
+            }
+            GetParticipationKeyByIdError::DefaultResponse() => {
+                RustGetParticipationKeyByIdError::DefaultResponse()
+            }
+            GetParticipationKeyByIdError::UnknownValue(value) => {
+                RustGetParticipationKeyByIdError::UnknownValue(value.into())
+            }
+        }
+    }
+}
+
+impl From<RustGetParticipationKeyByIdError> for GetParticipationKeyByIdError {
+    fn from(e: RustGetParticipationKeyByIdError) -> Self {
+        match e {
+            RustGetParticipationKeyByIdError::Status400(ErrorResponse) => {
+                GetParticipationKeyByIdError::Status400(ErrorResponse)
+            }
+            RustGetParticipationKeyByIdError::Status401(ErrorResponse) => {
+                GetParticipationKeyByIdError::Status401(ErrorResponse)
+            }
+            RustGetParticipationKeyByIdError::Status404(ErrorResponse) => {
+                GetParticipationKeyByIdError::Status404(ErrorResponse)
+            }
+            RustGetParticipationKeyByIdError::Status500(ErrorResponse) => {
+                GetParticipationKeyByIdError::Status500(ErrorResponse)
+            }
+            RustGetParticipationKeyByIdError::Statusdefault() => {
+                GetParticipationKeyByIdError::Statusdefault()
+            }
+            RustGetParticipationKeyByIdError::DefaultResponse() => {
+                GetParticipationKeyByIdError::DefaultResponse()
+            }
+            RustGetParticipationKeyByIdError::UnknownValue(value) => {
+                GetParticipationKeyByIdError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

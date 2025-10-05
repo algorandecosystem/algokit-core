@@ -12,6 +12,7 @@ use algokit_http_client::{HttpClient, HttpMethod};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::TransactionParamsError as RustTransactionParamsError;
 
 // Import all custom types used by this endpoint
 use crate::models::{ErrorResponse, TransactionParams};
@@ -27,4 +28,50 @@ pub enum TransactionParamsError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<TransactionParamsError> for RustTransactionParamsError {
+    fn from(e: TransactionParamsError) -> Self {
+        match e {
+            TransactionParamsError::Status401(ErrorResponse) => {
+                RustTransactionParamsError::Status401(ErrorResponse)
+            }
+            TransactionParamsError::Status500(ErrorResponse) => {
+                RustTransactionParamsError::Status500(ErrorResponse)
+            }
+            TransactionParamsError::Status503(ErrorResponse) => {
+                RustTransactionParamsError::Status503(ErrorResponse)
+            }
+            TransactionParamsError::Statusdefault() => RustTransactionParamsError::Statusdefault(),
+            TransactionParamsError::DefaultResponse() => {
+                RustTransactionParamsError::DefaultResponse()
+            }
+            TransactionParamsError::UnknownValue(value) => {
+                RustTransactionParamsError::UnknownValue(value.into())
+            }
+        }
+    }
+}
+
+impl From<RustTransactionParamsError> for TransactionParamsError {
+    fn from(e: RustTransactionParamsError) -> Self {
+        match e {
+            RustTransactionParamsError::Status401(ErrorResponse) => {
+                TransactionParamsError::Status401(ErrorResponse)
+            }
+            RustTransactionParamsError::Status500(ErrorResponse) => {
+                TransactionParamsError::Status500(ErrorResponse)
+            }
+            RustTransactionParamsError::Status503(ErrorResponse) => {
+                TransactionParamsError::Status503(ErrorResponse)
+            }
+            RustTransactionParamsError::Statusdefault() => TransactionParamsError::Statusdefault(),
+            RustTransactionParamsError::DefaultResponse() => {
+                TransactionParamsError::DefaultResponse()
+            }
+            RustTransactionParamsError::UnknownValue(value) => {
+                TransactionParamsError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

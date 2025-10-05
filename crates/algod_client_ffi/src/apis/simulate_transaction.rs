@@ -13,6 +13,7 @@ use std::collections::HashMap;
 
 use super::parameter_enums::*;
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::SimulateTransactionError as RustSimulateTransactionError;
 
 // Import all custom types used by this endpoint
 use crate::models::{ErrorResponse, SimulateTransaction};
@@ -30,4 +31,60 @@ pub enum SimulateTransactionError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<SimulateTransactionError> for RustSimulateTransactionError {
+    fn from(e: SimulateTransactionError) -> Self {
+        match e {
+            SimulateTransactionError::Status400(ErrorResponse) => {
+                RustSimulateTransactionError::Status400(ErrorResponse)
+            }
+            SimulateTransactionError::Status401(ErrorResponse) => {
+                RustSimulateTransactionError::Status401(ErrorResponse)
+            }
+            SimulateTransactionError::Status500(ErrorResponse) => {
+                RustSimulateTransactionError::Status500(ErrorResponse)
+            }
+            SimulateTransactionError::Status503(ErrorResponse) => {
+                RustSimulateTransactionError::Status503(ErrorResponse)
+            }
+            SimulateTransactionError::Statusdefault() => {
+                RustSimulateTransactionError::Statusdefault()
+            }
+            SimulateTransactionError::DefaultResponse() => {
+                RustSimulateTransactionError::DefaultResponse()
+            }
+            SimulateTransactionError::UnknownValue(value) => {
+                RustSimulateTransactionError::UnknownValue(value.into())
+            }
+        }
+    }
+}
+
+impl From<RustSimulateTransactionError> for SimulateTransactionError {
+    fn from(e: RustSimulateTransactionError) -> Self {
+        match e {
+            RustSimulateTransactionError::Status400(ErrorResponse) => {
+                SimulateTransactionError::Status400(ErrorResponse)
+            }
+            RustSimulateTransactionError::Status401(ErrorResponse) => {
+                SimulateTransactionError::Status401(ErrorResponse)
+            }
+            RustSimulateTransactionError::Status500(ErrorResponse) => {
+                SimulateTransactionError::Status500(ErrorResponse)
+            }
+            RustSimulateTransactionError::Status503(ErrorResponse) => {
+                SimulateTransactionError::Status503(ErrorResponse)
+            }
+            RustSimulateTransactionError::Statusdefault() => {
+                SimulateTransactionError::Statusdefault()
+            }
+            RustSimulateTransactionError::DefaultResponse() => {
+                SimulateTransactionError::DefaultResponse()
+            }
+            RustSimulateTransactionError::UnknownValue(value) => {
+                SimulateTransactionError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

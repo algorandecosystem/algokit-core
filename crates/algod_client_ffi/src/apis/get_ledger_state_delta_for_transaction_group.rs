@@ -13,6 +13,7 @@ use std::collections::HashMap;
 
 use super::parameter_enums::*;
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::GetLedgerStateDeltaForTransactionGroupError as RustGetLedgerStateDeltaForTransactionGroupError;
 
 // Import all custom types used by this endpoint
 use crate::models::{ErrorResponse, LedgerStateDelta};
@@ -30,4 +31,70 @@ pub enum GetLedgerStateDeltaForTransactionGroupError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<GetLedgerStateDeltaForTransactionGroupError>
+    for RustGetLedgerStateDeltaForTransactionGroupError
+{
+    fn from(e: GetLedgerStateDeltaForTransactionGroupError) -> Self {
+        match e {
+            GetLedgerStateDeltaForTransactionGroupError::Status401(ErrorResponse) => {
+                RustGetLedgerStateDeltaForTransactionGroupError::Status401(ErrorResponse)
+            }
+            GetLedgerStateDeltaForTransactionGroupError::Status404(ErrorResponse) => {
+                RustGetLedgerStateDeltaForTransactionGroupError::Status404(ErrorResponse)
+            }
+            GetLedgerStateDeltaForTransactionGroupError::Status408(ErrorResponse) => {
+                RustGetLedgerStateDeltaForTransactionGroupError::Status408(ErrorResponse)
+            }
+            GetLedgerStateDeltaForTransactionGroupError::Status500(ErrorResponse) => {
+                RustGetLedgerStateDeltaForTransactionGroupError::Status500(ErrorResponse)
+            }
+            GetLedgerStateDeltaForTransactionGroupError::Status501(ErrorResponse) => {
+                RustGetLedgerStateDeltaForTransactionGroupError::Status501(ErrorResponse)
+            }
+            GetLedgerStateDeltaForTransactionGroupError::Statusdefault() => {
+                RustGetLedgerStateDeltaForTransactionGroupError::Statusdefault()
+            }
+            GetLedgerStateDeltaForTransactionGroupError::DefaultResponse() => {
+                RustGetLedgerStateDeltaForTransactionGroupError::DefaultResponse()
+            }
+            GetLedgerStateDeltaForTransactionGroupError::UnknownValue(value) => {
+                RustGetLedgerStateDeltaForTransactionGroupError::UnknownValue(value.into())
+            }
+        }
+    }
+}
+
+impl From<RustGetLedgerStateDeltaForTransactionGroupError>
+    for GetLedgerStateDeltaForTransactionGroupError
+{
+    fn from(e: RustGetLedgerStateDeltaForTransactionGroupError) -> Self {
+        match e {
+            RustGetLedgerStateDeltaForTransactionGroupError::Status401(ErrorResponse) => {
+                GetLedgerStateDeltaForTransactionGroupError::Status401(ErrorResponse)
+            }
+            RustGetLedgerStateDeltaForTransactionGroupError::Status404(ErrorResponse) => {
+                GetLedgerStateDeltaForTransactionGroupError::Status404(ErrorResponse)
+            }
+            RustGetLedgerStateDeltaForTransactionGroupError::Status408(ErrorResponse) => {
+                GetLedgerStateDeltaForTransactionGroupError::Status408(ErrorResponse)
+            }
+            RustGetLedgerStateDeltaForTransactionGroupError::Status500(ErrorResponse) => {
+                GetLedgerStateDeltaForTransactionGroupError::Status500(ErrorResponse)
+            }
+            RustGetLedgerStateDeltaForTransactionGroupError::Status501(ErrorResponse) => {
+                GetLedgerStateDeltaForTransactionGroupError::Status501(ErrorResponse)
+            }
+            RustGetLedgerStateDeltaForTransactionGroupError::Statusdefault() => {
+                GetLedgerStateDeltaForTransactionGroupError::Statusdefault()
+            }
+            RustGetLedgerStateDeltaForTransactionGroupError::DefaultResponse() => {
+                GetLedgerStateDeltaForTransactionGroupError::DefaultResponse()
+            }
+            RustGetLedgerStateDeltaForTransactionGroupError::UnknownValue(value) => {
+                GetLedgerStateDeltaForTransactionGroupError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

@@ -12,6 +12,7 @@ use algokit_http_client::{HttpClient, HttpMethod};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::GetStateProofError as RustGetStateProofError;
 
 // Import all custom types used by this endpoint
 use crate::models::{ErrorResponse, StateProof};
@@ -29,4 +30,58 @@ pub enum GetStateProofError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<GetStateProofError> for RustGetStateProofError {
+    fn from(e: GetStateProofError) -> Self {
+        match e {
+            GetStateProofError::Status401(ErrorResponse) => {
+                RustGetStateProofError::Status401(ErrorResponse)
+            }
+            GetStateProofError::Status404(ErrorResponse) => {
+                RustGetStateProofError::Status404(ErrorResponse)
+            }
+            GetStateProofError::Status408(ErrorResponse) => {
+                RustGetStateProofError::Status408(ErrorResponse)
+            }
+            GetStateProofError::Status500(ErrorResponse) => {
+                RustGetStateProofError::Status500(ErrorResponse)
+            }
+            GetStateProofError::Status503(ErrorResponse) => {
+                RustGetStateProofError::Status503(ErrorResponse)
+            }
+            GetStateProofError::Statusdefault() => RustGetStateProofError::Statusdefault(),
+            GetStateProofError::DefaultResponse() => RustGetStateProofError::DefaultResponse(),
+            GetStateProofError::UnknownValue(value) => {
+                RustGetStateProofError::UnknownValue(value.into())
+            }
+        }
+    }
+}
+
+impl From<RustGetStateProofError> for GetStateProofError {
+    fn from(e: RustGetStateProofError) -> Self {
+        match e {
+            RustGetStateProofError::Status401(ErrorResponse) => {
+                GetStateProofError::Status401(ErrorResponse)
+            }
+            RustGetStateProofError::Status404(ErrorResponse) => {
+                GetStateProofError::Status404(ErrorResponse)
+            }
+            RustGetStateProofError::Status408(ErrorResponse) => {
+                GetStateProofError::Status408(ErrorResponse)
+            }
+            RustGetStateProofError::Status500(ErrorResponse) => {
+                GetStateProofError::Status500(ErrorResponse)
+            }
+            RustGetStateProofError::Status503(ErrorResponse) => {
+                GetStateProofError::Status503(ErrorResponse)
+            }
+            RustGetStateProofError::Statusdefault() => GetStateProofError::Statusdefault(),
+            RustGetStateProofError::DefaultResponse() => GetStateProofError::DefaultResponse(),
+            RustGetStateProofError::UnknownValue(value) => {
+                GetStateProofError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

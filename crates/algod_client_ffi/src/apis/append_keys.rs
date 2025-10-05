@@ -12,6 +12,7 @@ use algokit_http_client::{HttpClient, HttpMethod};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::AppendKeysError as RustAppendKeysError;
 
 // Import all custom types used by this endpoint
 use crate::models::{ErrorResponse, ParticipationKey};
@@ -28,4 +29,50 @@ pub enum AppendKeysError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<AppendKeysError> for RustAppendKeysError {
+    fn from(e: AppendKeysError) -> Self {
+        match e {
+            AppendKeysError::Status400(ErrorResponse) => {
+                RustAppendKeysError::Status400(ErrorResponse)
+            }
+            AppendKeysError::Status401(ErrorResponse) => {
+                RustAppendKeysError::Status401(ErrorResponse)
+            }
+            AppendKeysError::Status404(ErrorResponse) => {
+                RustAppendKeysError::Status404(ErrorResponse)
+            }
+            AppendKeysError::Status500(ErrorResponse) => {
+                RustAppendKeysError::Status500(ErrorResponse)
+            }
+            AppendKeysError::Statusdefault() => RustAppendKeysError::Statusdefault(),
+            AppendKeysError::DefaultResponse() => RustAppendKeysError::DefaultResponse(),
+            AppendKeysError::UnknownValue(value) => RustAppendKeysError::UnknownValue(value.into()),
+        }
+    }
+}
+
+impl From<RustAppendKeysError> for AppendKeysError {
+    fn from(e: RustAppendKeysError) -> Self {
+        match e {
+            RustAppendKeysError::Status400(ErrorResponse) => {
+                AppendKeysError::Status400(ErrorResponse)
+            }
+            RustAppendKeysError::Status401(ErrorResponse) => {
+                AppendKeysError::Status401(ErrorResponse)
+            }
+            RustAppendKeysError::Status404(ErrorResponse) => {
+                AppendKeysError::Status404(ErrorResponse)
+            }
+            RustAppendKeysError::Status500(ErrorResponse) => {
+                AppendKeysError::Status500(ErrorResponse)
+            }
+            RustAppendKeysError::Statusdefault() => AppendKeysError::Statusdefault(),
+            RustAppendKeysError::DefaultResponse() => AppendKeysError::DefaultResponse(),
+            RustAppendKeysError::UnknownValue(value) => {
+                AppendKeysError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

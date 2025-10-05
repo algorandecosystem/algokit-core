@@ -12,6 +12,7 @@ use algokit_http_client::{HttpClient, HttpMethod};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::DeleteParticipationKeyByIdError as RustDeleteParticipationKeyByIdError;
 
 // Import all custom types used by this endpoint
 use crate::models::ErrorResponse;
@@ -28,4 +29,60 @@ pub enum DeleteParticipationKeyByIdError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<DeleteParticipationKeyByIdError> for RustDeleteParticipationKeyByIdError {
+    fn from(e: DeleteParticipationKeyByIdError) -> Self {
+        match e {
+            DeleteParticipationKeyByIdError::Status400(ErrorResponse) => {
+                RustDeleteParticipationKeyByIdError::Status400(ErrorResponse)
+            }
+            DeleteParticipationKeyByIdError::Status401(ErrorResponse) => {
+                RustDeleteParticipationKeyByIdError::Status401(ErrorResponse)
+            }
+            DeleteParticipationKeyByIdError::Status404(ErrorResponse) => {
+                RustDeleteParticipationKeyByIdError::Status404(ErrorResponse)
+            }
+            DeleteParticipationKeyByIdError::Status500(ErrorResponse) => {
+                RustDeleteParticipationKeyByIdError::Status500(ErrorResponse)
+            }
+            DeleteParticipationKeyByIdError::Statusdefault() => {
+                RustDeleteParticipationKeyByIdError::Statusdefault()
+            }
+            DeleteParticipationKeyByIdError::DefaultResponse() => {
+                RustDeleteParticipationKeyByIdError::DefaultResponse()
+            }
+            DeleteParticipationKeyByIdError::UnknownValue(value) => {
+                RustDeleteParticipationKeyByIdError::UnknownValue(value.into())
+            }
+        }
+    }
+}
+
+impl From<RustDeleteParticipationKeyByIdError> for DeleteParticipationKeyByIdError {
+    fn from(e: RustDeleteParticipationKeyByIdError) -> Self {
+        match e {
+            RustDeleteParticipationKeyByIdError::Status400(ErrorResponse) => {
+                DeleteParticipationKeyByIdError::Status400(ErrorResponse)
+            }
+            RustDeleteParticipationKeyByIdError::Status401(ErrorResponse) => {
+                DeleteParticipationKeyByIdError::Status401(ErrorResponse)
+            }
+            RustDeleteParticipationKeyByIdError::Status404(ErrorResponse) => {
+                DeleteParticipationKeyByIdError::Status404(ErrorResponse)
+            }
+            RustDeleteParticipationKeyByIdError::Status500(ErrorResponse) => {
+                DeleteParticipationKeyByIdError::Status500(ErrorResponse)
+            }
+            RustDeleteParticipationKeyByIdError::Statusdefault() => {
+                DeleteParticipationKeyByIdError::Statusdefault()
+            }
+            RustDeleteParticipationKeyByIdError::DefaultResponse() => {
+                DeleteParticipationKeyByIdError::DefaultResponse()
+            }
+            RustDeleteParticipationKeyByIdError::UnknownValue(value) => {
+                DeleteParticipationKeyByIdError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

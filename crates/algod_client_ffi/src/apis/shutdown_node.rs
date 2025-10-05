@@ -12,6 +12,7 @@ use algokit_http_client::{HttpClient, HttpMethod};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::ShutdownNodeError as RustShutdownNodeError;
 
 // Import all custom types used by this endpoint
 use crate::models::UnknownJsonValue;
@@ -23,4 +24,26 @@ use crate::models::UnknownJsonValue;
 pub enum ShutdownNodeError {
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<ShutdownNodeError> for RustShutdownNodeError {
+    fn from(e: ShutdownNodeError) -> Self {
+        match e {
+            ShutdownNodeError::DefaultResponse() => RustShutdownNodeError::DefaultResponse(),
+            ShutdownNodeError::UnknownValue(value) => {
+                RustShutdownNodeError::UnknownValue(value.into())
+            }
+        }
+    }
+}
+
+impl From<RustShutdownNodeError> for ShutdownNodeError {
+    fn from(e: RustShutdownNodeError) -> Self {
+        match e {
+            RustShutdownNodeError::DefaultResponse() => ShutdownNodeError::DefaultResponse(),
+            RustShutdownNodeError::UnknownValue(value) => {
+                ShutdownNodeError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

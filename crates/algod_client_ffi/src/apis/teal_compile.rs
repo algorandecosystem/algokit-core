@@ -12,6 +12,7 @@ use algokit_http_client::{HttpClient, HttpMethod};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::TealCompileError as RustTealCompileError;
 
 // Import all custom types used by this endpoint
 use crate::models::{ErrorResponse, TealCompile};
@@ -28,4 +29,48 @@ pub enum TealCompileError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<TealCompileError> for RustTealCompileError {
+    fn from(e: TealCompileError) -> Self {
+        match e {
+            TealCompileError::Status400(ErrorResponse) => {
+                RustTealCompileError::Status400(ErrorResponse)
+            }
+            TealCompileError::Status401(ErrorResponse) => {
+                RustTealCompileError::Status401(ErrorResponse)
+            }
+            TealCompileError::Status404() => RustTealCompileError::Status404(),
+            TealCompileError::Status500(ErrorResponse) => {
+                RustTealCompileError::Status500(ErrorResponse)
+            }
+            TealCompileError::Statusdefault() => RustTealCompileError::Statusdefault(),
+            TealCompileError::DefaultResponse() => RustTealCompileError::DefaultResponse(),
+            TealCompileError::UnknownValue(value) => {
+                RustTealCompileError::UnknownValue(value.into())
+            }
+        }
+    }
+}
+
+impl From<RustTealCompileError> for TealCompileError {
+    fn from(e: RustTealCompileError) -> Self {
+        match e {
+            RustTealCompileError::Status400(ErrorResponse) => {
+                TealCompileError::Status400(ErrorResponse)
+            }
+            RustTealCompileError::Status401(ErrorResponse) => {
+                TealCompileError::Status401(ErrorResponse)
+            }
+            RustTealCompileError::Status404() => TealCompileError::Status404(),
+            RustTealCompileError::Status500(ErrorResponse) => {
+                TealCompileError::Status500(ErrorResponse)
+            }
+            RustTealCompileError::Statusdefault() => TealCompileError::Statusdefault(),
+            RustTealCompileError::DefaultResponse() => TealCompileError::DefaultResponse(),
+            RustTealCompileError::UnknownValue(value) => {
+                TealCompileError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

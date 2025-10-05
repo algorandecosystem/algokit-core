@@ -12,6 +12,7 @@ use algokit_http_client::{HttpClient, HttpMethod};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::GetBlockTimeStampOffsetError as RustGetBlockTimeStampOffsetError;
 
 // Import all custom types used by this endpoint
 use crate::models::{ErrorResponse, GetBlockTimeStampOffset};
@@ -25,4 +26,42 @@ pub enum GetBlockTimeStampOffsetError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<GetBlockTimeStampOffsetError> for RustGetBlockTimeStampOffsetError {
+    fn from(e: GetBlockTimeStampOffsetError) -> Self {
+        match e {
+            GetBlockTimeStampOffsetError::Status400(ErrorResponse) => {
+                RustGetBlockTimeStampOffsetError::Status400(ErrorResponse)
+            }
+            GetBlockTimeStampOffsetError::Statusdefault() => {
+                RustGetBlockTimeStampOffsetError::Statusdefault()
+            }
+            GetBlockTimeStampOffsetError::DefaultResponse() => {
+                RustGetBlockTimeStampOffsetError::DefaultResponse()
+            }
+            GetBlockTimeStampOffsetError::UnknownValue(value) => {
+                RustGetBlockTimeStampOffsetError::UnknownValue(value.into())
+            }
+        }
+    }
+}
+
+impl From<RustGetBlockTimeStampOffsetError> for GetBlockTimeStampOffsetError {
+    fn from(e: RustGetBlockTimeStampOffsetError) -> Self {
+        match e {
+            RustGetBlockTimeStampOffsetError::Status400(ErrorResponse) => {
+                GetBlockTimeStampOffsetError::Status400(ErrorResponse)
+            }
+            RustGetBlockTimeStampOffsetError::Statusdefault() => {
+                GetBlockTimeStampOffsetError::Statusdefault()
+            }
+            RustGetBlockTimeStampOffsetError::DefaultResponse() => {
+                GetBlockTimeStampOffsetError::DefaultResponse()
+            }
+            RustGetBlockTimeStampOffsetError::UnknownValue(value) => {
+                GetBlockTimeStampOffsetError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

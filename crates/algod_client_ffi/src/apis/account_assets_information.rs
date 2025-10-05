@@ -12,6 +12,7 @@ use algokit_http_client::{HttpClient, HttpMethod};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::AccountAssetsInformationError as RustAccountAssetsInformationError;
 
 // Import all custom types used by this endpoint
 use crate::models::{AccountAssetsInformation, ErrorResponse};
@@ -27,4 +28,54 @@ pub enum AccountAssetsInformationError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<AccountAssetsInformationError> for RustAccountAssetsInformationError {
+    fn from(e: AccountAssetsInformationError) -> Self {
+        match e {
+            AccountAssetsInformationError::Status400(ErrorResponse) => {
+                RustAccountAssetsInformationError::Status400(ErrorResponse)
+            }
+            AccountAssetsInformationError::Status401(ErrorResponse) => {
+                RustAccountAssetsInformationError::Status401(ErrorResponse)
+            }
+            AccountAssetsInformationError::Status500(ErrorResponse) => {
+                RustAccountAssetsInformationError::Status500(ErrorResponse)
+            }
+            AccountAssetsInformationError::Statusdefault() => {
+                RustAccountAssetsInformationError::Statusdefault()
+            }
+            AccountAssetsInformationError::DefaultResponse() => {
+                RustAccountAssetsInformationError::DefaultResponse()
+            }
+            AccountAssetsInformationError::UnknownValue(value) => {
+                RustAccountAssetsInformationError::UnknownValue(value.into())
+            }
+        }
+    }
+}
+
+impl From<RustAccountAssetsInformationError> for AccountAssetsInformationError {
+    fn from(e: RustAccountAssetsInformationError) -> Self {
+        match e {
+            RustAccountAssetsInformationError::Status400(ErrorResponse) => {
+                AccountAssetsInformationError::Status400(ErrorResponse)
+            }
+            RustAccountAssetsInformationError::Status401(ErrorResponse) => {
+                AccountAssetsInformationError::Status401(ErrorResponse)
+            }
+            RustAccountAssetsInformationError::Status500(ErrorResponse) => {
+                AccountAssetsInformationError::Status500(ErrorResponse)
+            }
+            RustAccountAssetsInformationError::Statusdefault() => {
+                AccountAssetsInformationError::Statusdefault()
+            }
+            RustAccountAssetsInformationError::DefaultResponse() => {
+                AccountAssetsInformationError::DefaultResponse()
+            }
+            RustAccountAssetsInformationError::UnknownValue(value) => {
+                AccountAssetsInformationError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

@@ -12,6 +12,7 @@ use algokit_http_client::{HttpClient, HttpMethod};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::AddParticipationKeyError as RustAddParticipationKeyError;
 
 // Import all custom types used by this endpoint
 use crate::models::{AddParticipationKey, ErrorResponse};
@@ -29,4 +30,66 @@ pub enum AddParticipationKeyError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<AddParticipationKeyError> for RustAddParticipationKeyError {
+    fn from(e: AddParticipationKeyError) -> Self {
+        match e {
+            AddParticipationKeyError::Status400(ErrorResponse) => {
+                RustAddParticipationKeyError::Status400(ErrorResponse)
+            }
+            AddParticipationKeyError::Status401(ErrorResponse) => {
+                RustAddParticipationKeyError::Status401(ErrorResponse)
+            }
+            AddParticipationKeyError::Status404(ErrorResponse) => {
+                RustAddParticipationKeyError::Status404(ErrorResponse)
+            }
+            AddParticipationKeyError::Status500(ErrorResponse) => {
+                RustAddParticipationKeyError::Status500(ErrorResponse)
+            }
+            AddParticipationKeyError::Status503(ErrorResponse) => {
+                RustAddParticipationKeyError::Status503(ErrorResponse)
+            }
+            AddParticipationKeyError::Statusdefault() => {
+                RustAddParticipationKeyError::Statusdefault()
+            }
+            AddParticipationKeyError::DefaultResponse() => {
+                RustAddParticipationKeyError::DefaultResponse()
+            }
+            AddParticipationKeyError::UnknownValue(value) => {
+                RustAddParticipationKeyError::UnknownValue(value.into())
+            }
+        }
+    }
+}
+
+impl From<RustAddParticipationKeyError> for AddParticipationKeyError {
+    fn from(e: RustAddParticipationKeyError) -> Self {
+        match e {
+            RustAddParticipationKeyError::Status400(ErrorResponse) => {
+                AddParticipationKeyError::Status400(ErrorResponse)
+            }
+            RustAddParticipationKeyError::Status401(ErrorResponse) => {
+                AddParticipationKeyError::Status401(ErrorResponse)
+            }
+            RustAddParticipationKeyError::Status404(ErrorResponse) => {
+                AddParticipationKeyError::Status404(ErrorResponse)
+            }
+            RustAddParticipationKeyError::Status500(ErrorResponse) => {
+                AddParticipationKeyError::Status500(ErrorResponse)
+            }
+            RustAddParticipationKeyError::Status503(ErrorResponse) => {
+                AddParticipationKeyError::Status503(ErrorResponse)
+            }
+            RustAddParticipationKeyError::Statusdefault() => {
+                AddParticipationKeyError::Statusdefault()
+            }
+            RustAddParticipationKeyError::DefaultResponse() => {
+                AddParticipationKeyError::DefaultResponse()
+            }
+            RustAddParticipationKeyError::UnknownValue(value) => {
+                AddParticipationKeyError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

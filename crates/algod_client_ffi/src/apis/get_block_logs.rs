@@ -12,6 +12,7 @@ use algokit_http_client::{HttpClient, HttpMethod};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::GetBlockLogsError as RustGetBlockLogsError;
 
 // Import all custom types used by this endpoint
 use crate::models::{ErrorResponse, GetBlockLogs};
@@ -27,4 +28,50 @@ pub enum GetBlockLogsError {
     Status500(ErrorResponse),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<GetBlockLogsError> for RustGetBlockLogsError {
+    fn from(e: GetBlockLogsError) -> Self {
+        match e {
+            GetBlockLogsError::Status400(ErrorResponse) => {
+                RustGetBlockLogsError::Status400(ErrorResponse)
+            }
+            GetBlockLogsError::Status401(ErrorResponse) => {
+                RustGetBlockLogsError::Status401(ErrorResponse)
+            }
+            GetBlockLogsError::Status404(ErrorResponse) => {
+                RustGetBlockLogsError::Status404(ErrorResponse)
+            }
+            GetBlockLogsError::Status500(ErrorResponse) => {
+                RustGetBlockLogsError::Status500(ErrorResponse)
+            }
+            GetBlockLogsError::DefaultResponse() => RustGetBlockLogsError::DefaultResponse(),
+            GetBlockLogsError::UnknownValue(value) => {
+                RustGetBlockLogsError::UnknownValue(value.into())
+            }
+        }
+    }
+}
+
+impl From<RustGetBlockLogsError> for GetBlockLogsError {
+    fn from(e: RustGetBlockLogsError) -> Self {
+        match e {
+            RustGetBlockLogsError::Status400(ErrorResponse) => {
+                GetBlockLogsError::Status400(ErrorResponse)
+            }
+            RustGetBlockLogsError::Status401(ErrorResponse) => {
+                GetBlockLogsError::Status401(ErrorResponse)
+            }
+            RustGetBlockLogsError::Status404(ErrorResponse) => {
+                GetBlockLogsError::Status404(ErrorResponse)
+            }
+            RustGetBlockLogsError::Status500(ErrorResponse) => {
+                GetBlockLogsError::Status500(ErrorResponse)
+            }
+            RustGetBlockLogsError::DefaultResponse() => GetBlockLogsError::DefaultResponse(),
+            RustGetBlockLogsError::UnknownValue(value) => {
+                GetBlockLogsError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

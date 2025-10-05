@@ -12,6 +12,7 @@ use algokit_http_client::{HttpClient, HttpMethod};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::GetVersionError as RustGetVersionError;
 
 // Import all custom types used by this endpoint
 use crate::models::Version;
@@ -23,4 +24,24 @@ use crate::models::Version;
 pub enum GetVersionError {
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<GetVersionError> for RustGetVersionError {
+    fn from(e: GetVersionError) -> Self {
+        match e {
+            GetVersionError::DefaultResponse() => RustGetVersionError::DefaultResponse(),
+            GetVersionError::UnknownValue(value) => RustGetVersionError::UnknownValue(value.into()),
+        }
+    }
+}
+
+impl From<RustGetVersionError> for GetVersionError {
+    fn from(e: RustGetVersionError) -> Self {
+        match e {
+            RustGetVersionError::DefaultResponse() => GetVersionError::DefaultResponse(),
+            RustGetVersionError::UnknownValue(value) => {
+                GetVersionError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

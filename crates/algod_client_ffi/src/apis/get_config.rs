@@ -12,6 +12,7 @@ use algokit_http_client::{HttpClient, HttpMethod};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::GetConfigError as RustGetConfigError;
 
 // Import all custom types used by this endpoint
 
@@ -23,4 +24,26 @@ pub enum GetConfigError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<GetConfigError> for RustGetConfigError {
+    fn from(e: GetConfigError) -> Self {
+        match e {
+            GetConfigError::Statusdefault() => RustGetConfigError::Statusdefault(),
+            GetConfigError::DefaultResponse() => RustGetConfigError::DefaultResponse(),
+            GetConfigError::UnknownValue(value) => RustGetConfigError::UnknownValue(value.into()),
+        }
+    }
+}
+
+impl From<RustGetConfigError> for GetConfigError {
+    fn from(e: RustGetConfigError) -> Self {
+        match e {
+            RustGetConfigError::Statusdefault() => GetConfigError::Statusdefault(),
+            RustGetConfigError::DefaultResponse() => GetConfigError::DefaultResponse(),
+            RustGetConfigError::UnknownValue(value) => {
+                GetConfigError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

@@ -12,6 +12,7 @@ use algokit_http_client::{HttpClient, HttpMethod};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::GetStatusError as RustGetStatusError;
 
 // Import all custom types used by this endpoint
 use crate::models::{ErrorResponse, GetStatus};
@@ -26,4 +27,34 @@ pub enum GetStatusError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<GetStatusError> for RustGetStatusError {
+    fn from(e: GetStatusError) -> Self {
+        match e {
+            GetStatusError::Status401(ErrorResponse) => {
+                RustGetStatusError::Status401(ErrorResponse)
+            }
+            GetStatusError::Status500(String) => RustGetStatusError::Status500(String),
+            GetStatusError::Statusdefault() => RustGetStatusError::Statusdefault(),
+            GetStatusError::DefaultResponse() => RustGetStatusError::DefaultResponse(),
+            GetStatusError::UnknownValue(value) => RustGetStatusError::UnknownValue(value.into()),
+        }
+    }
+}
+
+impl From<RustGetStatusError> for GetStatusError {
+    fn from(e: RustGetStatusError) -> Self {
+        match e {
+            RustGetStatusError::Status401(ErrorResponse) => {
+                GetStatusError::Status401(ErrorResponse)
+            }
+            RustGetStatusError::Status500(String) => GetStatusError::Status500(String),
+            RustGetStatusError::Statusdefault() => GetStatusError::Statusdefault(),
+            RustGetStatusError::DefaultResponse() => GetStatusError::DefaultResponse(),
+            RustGetStatusError::UnknownValue(value) => {
+                GetStatusError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

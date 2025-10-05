@@ -12,6 +12,7 @@ use algokit_http_client::{HttpClient, HttpMethod};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::RawTransactionAsyncError as RustRawTransactionAsyncError;
 
 // Import all custom types used by this endpoint
 use crate::models::ErrorResponse;
@@ -29,4 +30,62 @@ pub enum RawTransactionAsyncError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<RawTransactionAsyncError> for RustRawTransactionAsyncError {
+    fn from(e: RawTransactionAsyncError) -> Self {
+        match e {
+            RawTransactionAsyncError::Status400(ErrorResponse) => {
+                RustRawTransactionAsyncError::Status400(ErrorResponse)
+            }
+            RawTransactionAsyncError::Status401(ErrorResponse) => {
+                RustRawTransactionAsyncError::Status401(ErrorResponse)
+            }
+            RawTransactionAsyncError::Status404() => RustRawTransactionAsyncError::Status404(),
+            RawTransactionAsyncError::Status500(ErrorResponse) => {
+                RustRawTransactionAsyncError::Status500(ErrorResponse)
+            }
+            RawTransactionAsyncError::Status503(ErrorResponse) => {
+                RustRawTransactionAsyncError::Status503(ErrorResponse)
+            }
+            RawTransactionAsyncError::Statusdefault() => {
+                RustRawTransactionAsyncError::Statusdefault()
+            }
+            RawTransactionAsyncError::DefaultResponse() => {
+                RustRawTransactionAsyncError::DefaultResponse()
+            }
+            RawTransactionAsyncError::UnknownValue(value) => {
+                RustRawTransactionAsyncError::UnknownValue(value.into())
+            }
+        }
+    }
+}
+
+impl From<RustRawTransactionAsyncError> for RawTransactionAsyncError {
+    fn from(e: RustRawTransactionAsyncError) -> Self {
+        match e {
+            RustRawTransactionAsyncError::Status400(ErrorResponse) => {
+                RawTransactionAsyncError::Status400(ErrorResponse)
+            }
+            RustRawTransactionAsyncError::Status401(ErrorResponse) => {
+                RawTransactionAsyncError::Status401(ErrorResponse)
+            }
+            RustRawTransactionAsyncError::Status404() => RawTransactionAsyncError::Status404(),
+            RustRawTransactionAsyncError::Status500(ErrorResponse) => {
+                RawTransactionAsyncError::Status500(ErrorResponse)
+            }
+            RustRawTransactionAsyncError::Status503(ErrorResponse) => {
+                RawTransactionAsyncError::Status503(ErrorResponse)
+            }
+            RustRawTransactionAsyncError::Statusdefault() => {
+                RawTransactionAsyncError::Statusdefault()
+            }
+            RustRawTransactionAsyncError::DefaultResponse() => {
+                RawTransactionAsyncError::DefaultResponse()
+            }
+            RustRawTransactionAsyncError::UnknownValue(value) => {
+                RawTransactionAsyncError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

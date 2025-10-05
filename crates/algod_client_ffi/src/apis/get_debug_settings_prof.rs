@@ -12,6 +12,7 @@ use algokit_http_client::{HttpClient, HttpMethod};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::GetDebugSettingsProfError as RustGetDebugSettingsProfError;
 
 // Import all custom types used by this endpoint
 use crate::models::DebugSettingsProf;
@@ -23,4 +24,30 @@ use crate::models::DebugSettingsProf;
 pub enum GetDebugSettingsProfError {
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<GetDebugSettingsProfError> for RustGetDebugSettingsProfError {
+    fn from(e: GetDebugSettingsProfError) -> Self {
+        match e {
+            GetDebugSettingsProfError::DefaultResponse() => {
+                RustGetDebugSettingsProfError::DefaultResponse()
+            }
+            GetDebugSettingsProfError::UnknownValue(value) => {
+                RustGetDebugSettingsProfError::UnknownValue(value.into())
+            }
+        }
+    }
+}
+
+impl From<RustGetDebugSettingsProfError> for GetDebugSettingsProfError {
+    fn from(e: RustGetDebugSettingsProfError) -> Self {
+        match e {
+            RustGetDebugSettingsProfError::DefaultResponse() => {
+                GetDebugSettingsProfError::DefaultResponse()
+            }
+            RustGetDebugSettingsProfError::UnknownValue(value) => {
+                GetDebugSettingsProfError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

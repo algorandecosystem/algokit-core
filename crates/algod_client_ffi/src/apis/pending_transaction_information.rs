@@ -13,6 +13,7 @@ use std::collections::HashMap;
 
 use super::parameter_enums::*;
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::PendingTransactionInformationError as RustPendingTransactionInformationError;
 
 // Import all custom types used by this endpoint
 use crate::models::{ErrorResponse, PendingTransactionResponse};
@@ -28,4 +29,54 @@ pub enum PendingTransactionInformationError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<PendingTransactionInformationError> for RustPendingTransactionInformationError {
+    fn from(e: PendingTransactionInformationError) -> Self {
+        match e {
+            PendingTransactionInformationError::Status400(ErrorResponse) => {
+                RustPendingTransactionInformationError::Status400(ErrorResponse)
+            }
+            PendingTransactionInformationError::Status401(ErrorResponse) => {
+                RustPendingTransactionInformationError::Status401(ErrorResponse)
+            }
+            PendingTransactionInformationError::Status404(ErrorResponse) => {
+                RustPendingTransactionInformationError::Status404(ErrorResponse)
+            }
+            PendingTransactionInformationError::Statusdefault() => {
+                RustPendingTransactionInformationError::Statusdefault()
+            }
+            PendingTransactionInformationError::DefaultResponse() => {
+                RustPendingTransactionInformationError::DefaultResponse()
+            }
+            PendingTransactionInformationError::UnknownValue(value) => {
+                RustPendingTransactionInformationError::UnknownValue(value.into())
+            }
+        }
+    }
+}
+
+impl From<RustPendingTransactionInformationError> for PendingTransactionInformationError {
+    fn from(e: RustPendingTransactionInformationError) -> Self {
+        match e {
+            RustPendingTransactionInformationError::Status400(ErrorResponse) => {
+                PendingTransactionInformationError::Status400(ErrorResponse)
+            }
+            RustPendingTransactionInformationError::Status401(ErrorResponse) => {
+                PendingTransactionInformationError::Status401(ErrorResponse)
+            }
+            RustPendingTransactionInformationError::Status404(ErrorResponse) => {
+                PendingTransactionInformationError::Status404(ErrorResponse)
+            }
+            RustPendingTransactionInformationError::Statusdefault() => {
+                PendingTransactionInformationError::Statusdefault()
+            }
+            RustPendingTransactionInformationError::DefaultResponse() => {
+                PendingTransactionInformationError::DefaultResponse()
+            }
+            RustPendingTransactionInformationError::UnknownValue(value) => {
+                PendingTransactionInformationError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

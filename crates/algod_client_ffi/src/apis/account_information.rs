@@ -13,6 +13,7 @@ use std::collections::HashMap;
 
 use super::parameter_enums::*;
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::AccountInformationError as RustAccountInformationError;
 
 // Import all custom types used by this endpoint
 use crate::models::{Account, ErrorResponse};
@@ -28,4 +29,54 @@ pub enum AccountInformationError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<AccountInformationError> for RustAccountInformationError {
+    fn from(e: AccountInformationError) -> Self {
+        match e {
+            AccountInformationError::Status400(ErrorResponse) => {
+                RustAccountInformationError::Status400(ErrorResponse)
+            }
+            AccountInformationError::Status401(ErrorResponse) => {
+                RustAccountInformationError::Status401(ErrorResponse)
+            }
+            AccountInformationError::Status500(ErrorResponse) => {
+                RustAccountInformationError::Status500(ErrorResponse)
+            }
+            AccountInformationError::Statusdefault() => {
+                RustAccountInformationError::Statusdefault()
+            }
+            AccountInformationError::DefaultResponse() => {
+                RustAccountInformationError::DefaultResponse()
+            }
+            AccountInformationError::UnknownValue(value) => {
+                RustAccountInformationError::UnknownValue(value.into())
+            }
+        }
+    }
+}
+
+impl From<RustAccountInformationError> for AccountInformationError {
+    fn from(e: RustAccountInformationError) -> Self {
+        match e {
+            RustAccountInformationError::Status400(ErrorResponse) => {
+                AccountInformationError::Status400(ErrorResponse)
+            }
+            RustAccountInformationError::Status401(ErrorResponse) => {
+                AccountInformationError::Status401(ErrorResponse)
+            }
+            RustAccountInformationError::Status500(ErrorResponse) => {
+                AccountInformationError::Status500(ErrorResponse)
+            }
+            RustAccountInformationError::Statusdefault() => {
+                AccountInformationError::Statusdefault()
+            }
+            RustAccountInformationError::DefaultResponse() => {
+                AccountInformationError::DefaultResponse()
+            }
+            RustAccountInformationError::UnknownValue(value) => {
+                AccountInformationError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

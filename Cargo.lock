@@ -53,6 +53,7 @@ dependencies = [
  "algod_client",
  "algokit_http_client",
  "algokit_transact_ffi",
+ "serde_json",
  "snafu",
  "tokio",
  "tokio-test",

@@ -12,6 +12,7 @@ use algokit_http_client::{HttpClient, HttpMethod};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::GetApplicationByIdError as RustGetApplicationByIdError;
 
 // Import all custom types used by this endpoint
 use crate::models::{Application, ErrorResponse};
@@ -28,4 +29,60 @@ pub enum GetApplicationByIdError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<GetApplicationByIdError> for RustGetApplicationByIdError {
+    fn from(e: GetApplicationByIdError) -> Self {
+        match e {
+            GetApplicationByIdError::Status400(ErrorResponse) => {
+                RustGetApplicationByIdError::Status400(ErrorResponse)
+            }
+            GetApplicationByIdError::Status401(ErrorResponse) => {
+                RustGetApplicationByIdError::Status401(ErrorResponse)
+            }
+            GetApplicationByIdError::Status404(ErrorResponse) => {
+                RustGetApplicationByIdError::Status404(ErrorResponse)
+            }
+            GetApplicationByIdError::Status500(ErrorResponse) => {
+                RustGetApplicationByIdError::Status500(ErrorResponse)
+            }
+            GetApplicationByIdError::Statusdefault() => {
+                RustGetApplicationByIdError::Statusdefault()
+            }
+            GetApplicationByIdError::DefaultResponse() => {
+                RustGetApplicationByIdError::DefaultResponse()
+            }
+            GetApplicationByIdError::UnknownValue(value) => {
+                RustGetApplicationByIdError::UnknownValue(value.into())
+            }
+        }
+    }
+}
+
+impl From<RustGetApplicationByIdError> for GetApplicationByIdError {
+    fn from(e: RustGetApplicationByIdError) -> Self {
+        match e {
+            RustGetApplicationByIdError::Status400(ErrorResponse) => {
+                GetApplicationByIdError::Status400(ErrorResponse)
+            }
+            RustGetApplicationByIdError::Status401(ErrorResponse) => {
+                GetApplicationByIdError::Status401(ErrorResponse)
+            }
+            RustGetApplicationByIdError::Status404(ErrorResponse) => {
+                GetApplicationByIdError::Status404(ErrorResponse)
+            }
+            RustGetApplicationByIdError::Status500(ErrorResponse) => {
+                GetApplicationByIdError::Status500(ErrorResponse)
+            }
+            RustGetApplicationByIdError::Statusdefault() => {
+                GetApplicationByIdError::Statusdefault()
+            }
+            RustGetApplicationByIdError::DefaultResponse() => {
+                GetApplicationByIdError::DefaultResponse()
+            }
+            RustGetApplicationByIdError::UnknownValue(value) => {
+                GetApplicationByIdError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }

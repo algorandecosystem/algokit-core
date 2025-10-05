@@ -12,6 +12,7 @@ use algokit_http_client::{HttpClient, HttpMethod};
 use std::collections::HashMap;
 
 use super::{AlgodApiError, ContentType, Error};
+use algod_client::apis::GetSupplyError as RustGetSupplyError;
 
 // Import all custom types used by this endpoint
 use crate::models::{ErrorResponse, GetSupply};
@@ -25,4 +26,32 @@ pub enum GetSupplyError {
     Statusdefault(),
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),
+}
+
+impl From<GetSupplyError> for RustGetSupplyError {
+    fn from(e: GetSupplyError) -> Self {
+        match e {
+            GetSupplyError::Status401(ErrorResponse) => {
+                RustGetSupplyError::Status401(ErrorResponse)
+            }
+            GetSupplyError::Statusdefault() => RustGetSupplyError::Statusdefault(),
+            GetSupplyError::DefaultResponse() => RustGetSupplyError::DefaultResponse(),
+            GetSupplyError::UnknownValue(value) => RustGetSupplyError::UnknownValue(value.into()),
+        }
+    }
+}
+
+impl From<RustGetSupplyError> for GetSupplyError {
+    fn from(e: RustGetSupplyError) -> Self {
+        match e {
+            RustGetSupplyError::Status401(ErrorResponse) => {
+                GetSupplyError::Status401(ErrorResponse)
+            }
+            RustGetSupplyError::Statusdefault() => GetSupplyError::Statusdefault(),
+            RustGetSupplyError::DefaultResponse() => GetSupplyError::DefaultResponse(),
+            RustGetSupplyError::UnknownValue(value) => {
+                GetSupplyError::UnknownValue(value.to_string())
+            }
+        }
+    }
 }
