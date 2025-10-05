@@ -23,8 +23,8 @@ pub struct DebugSettingsProf {
 impl From<RustDebugSettingsProf> for DebugSettingsProf {
     fn from(rust_struct: RustDebugSettingsProf) -> Self {
         Self {
-            block_rate: rust_struct.block_rate.into(),
-            mutex_rate: rust_struct.mutex_rate.into(),
+            block_rate: rust_struct.block_rate.map(|v| v.into()),
+            mutex_rate: rust_struct.mutex_rate.map(|v| v.into()),
         }
     }
 }
@@ -32,8 +32,8 @@ impl From<RustDebugSettingsProf> for DebugSettingsProf {
 impl From<DebugSettingsProf> for RustDebugSettingsProf {
     fn from(ffi_struct: DebugSettingsProf) -> Self {
         Self {
-            block_rate: ffi_struct.block_rate.into(),
-            mutex_rate: ffi_struct.mutex_rate.into(),
+            block_rate: ffi_struct.block_rate.map(|v| v.into()),
+            mutex_rate: ffi_struct.mutex_rate.map(|v| v.into()),
         }
     }
 }

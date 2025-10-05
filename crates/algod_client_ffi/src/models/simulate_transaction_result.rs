@@ -34,11 +34,11 @@ impl From<RustSimulateTransactionResult> for SimulateTransactionResult {
     fn from(rust_struct: RustSimulateTransactionResult) -> Self {
         Self {
             txn_result: rust_struct.txn_result.into(),
-            app_budget_consumed: rust_struct.app_budget_consumed.into(),
-            logic_sig_budget_consumed: rust_struct.logic_sig_budget_consumed.into(),
-            exec_trace: rust_struct.exec_trace.into(),
-            unnamed_resources_accessed: rust_struct.unnamed_resources_accessed.into(),
-            fixed_signer: rust_struct.fixed_signer.into(),
+            app_budget_consumed: rust_struct.app_budget_consumed.map(|v| v.into()),
+            logic_sig_budget_consumed: rust_struct.logic_sig_budget_consumed.map(|v| v.into()),
+            exec_trace: rust_struct.exec_trace.map(|v| v.into()),
+            unnamed_resources_accessed: rust_struct.unnamed_resources_accessed.map(|v| v.into()),
+            fixed_signer: rust_struct.fixed_signer.map(|v| v.into()),
         }
     }
 }
@@ -47,11 +47,11 @@ impl From<SimulateTransactionResult> for RustSimulateTransactionResult {
     fn from(ffi_struct: SimulateTransactionResult) -> Self {
         Self {
             txn_result: ffi_struct.txn_result.into(),
-            app_budget_consumed: ffi_struct.app_budget_consumed.into(),
-            logic_sig_budget_consumed: ffi_struct.logic_sig_budget_consumed.into(),
-            exec_trace: ffi_struct.exec_trace.into(),
-            unnamed_resources_accessed: ffi_struct.unnamed_resources_accessed.into(),
-            fixed_signer: ffi_struct.fixed_signer.into(),
+            app_budget_consumed: ffi_struct.app_budget_consumed.map(|v| v.into()),
+            logic_sig_budget_consumed: ffi_struct.logic_sig_budget_consumed.map(|v| v.into()),
+            exec_trace: ffi_struct.exec_trace.map(|v| v.into()),
+            unnamed_resources_accessed: ffi_struct.unnamed_resources_accessed.map(|v| v.into()),
+            fixed_signer: ffi_struct.fixed_signer.map(|v| v.into()),
         }
     }
 }

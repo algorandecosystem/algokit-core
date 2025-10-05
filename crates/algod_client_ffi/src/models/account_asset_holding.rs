@@ -25,7 +25,7 @@ impl From<RustAccountAssetHolding> for AccountAssetHolding {
     fn from(rust_struct: RustAccountAssetHolding) -> Self {
         Self {
             asset_holding: rust_struct.asset_holding.into(),
-            asset_params: rust_struct.asset_params.into(),
+            asset_params: rust_struct.asset_params.map(|v| v.into()),
         }
     }
 }
@@ -34,7 +34,7 @@ impl From<AccountAssetHolding> for RustAccountAssetHolding {
     fn from(ffi_struct: AccountAssetHolding) -> Self {
         Self {
             asset_holding: ffi_struct.asset_holding.into(),
-            asset_params: ffi_struct.asset_params.into(),
+            asset_params: ffi_struct.asset_params.map(|v| v.into()),
         }
     }
 }

@@ -39,11 +39,11 @@ impl From<RustApplicationParams> for ApplicationParams {
             creator: rust_struct.creator.into(),
             approval_program: rust_struct.approval_program.into(),
             clear_state_program: rust_struct.clear_state_program.into(),
-            extra_program_pages: rust_struct.extra_program_pages.into(),
-            local_state_schema: rust_struct.local_state_schema.into(),
-            global_state_schema: rust_struct.global_state_schema.into(),
-            global_state: rust_struct.global_state.into(),
-            version: rust_struct.version.into(),
+            extra_program_pages: rust_struct.extra_program_pages.map(|v| v.into()),
+            local_state_schema: rust_struct.local_state_schema.map(|v| v.into()),
+            global_state_schema: rust_struct.global_state_schema.map(|v| v.into()),
+            global_state: rust_struct.global_state.map(|v| v.into()),
+            version: rust_struct.version.map(|v| v.into()),
         }
     }
 }
@@ -54,11 +54,11 @@ impl From<ApplicationParams> for RustApplicationParams {
             creator: ffi_struct.creator.into(),
             approval_program: ffi_struct.approval_program.into(),
             clear_state_program: ffi_struct.clear_state_program.into(),
-            extra_program_pages: ffi_struct.extra_program_pages.into(),
-            local_state_schema: ffi_struct.local_state_schema.into(),
-            global_state_schema: ffi_struct.global_state_schema.into(),
-            global_state: ffi_struct.global_state.into(),
-            version: ffi_struct.version.into(),
+            extra_program_pages: ffi_struct.extra_program_pages.map(|v| v.into()),
+            local_state_schema: ffi_struct.local_state_schema.map(|v| v.into()),
+            global_state_schema: ffi_struct.global_state_schema.map(|v| v.into()),
+            global_state: ffi_struct.global_state.map(|v| v.into()),
+            version: ffi_struct.version.map(|v| v.into()),
         }
     }
 }

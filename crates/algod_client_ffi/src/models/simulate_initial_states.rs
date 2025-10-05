@@ -24,7 +24,7 @@ pub struct SimulateInitialStates {
 impl From<RustSimulateInitialStates> for SimulateInitialStates {
     fn from(rust_struct: RustSimulateInitialStates) -> Self {
         Self {
-            app_initial_states: rust_struct.app_initial_states.into(),
+            app_initial_states: rust_struct.app_initial_states.map(|v| v.into()),
         }
     }
 }
@@ -32,7 +32,7 @@ impl From<RustSimulateInitialStates> for SimulateInitialStates {
 impl From<SimulateInitialStates> for RustSimulateInitialStates {
     fn from(ffi_struct: SimulateInitialStates) -> Self {
         Self {
-            app_initial_states: ffi_struct.app_initial_states.into(),
+            app_initial_states: ffi_struct.app_initial_states.map(|v| v.into()),
         }
     }
 }

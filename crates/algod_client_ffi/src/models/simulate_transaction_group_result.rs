@@ -35,11 +35,11 @@ impl From<RustSimulateTransactionGroupResult> for SimulateTransactionGroupResult
     fn from(rust_struct: RustSimulateTransactionGroupResult) -> Self {
         Self {
             txn_results: rust_struct.txn_results.into(),
-            failure_message: rust_struct.failure_message.into(),
-            failed_at: rust_struct.failed_at.into(),
-            app_budget_added: rust_struct.app_budget_added.into(),
-            app_budget_consumed: rust_struct.app_budget_consumed.into(),
-            unnamed_resources_accessed: rust_struct.unnamed_resources_accessed.into(),
+            failure_message: rust_struct.failure_message.map(|v| v.into()),
+            failed_at: rust_struct.failed_at.map(|v| v.into()),
+            app_budget_added: rust_struct.app_budget_added.map(|v| v.into()),
+            app_budget_consumed: rust_struct.app_budget_consumed.map(|v| v.into()),
+            unnamed_resources_accessed: rust_struct.unnamed_resources_accessed.map(|v| v.into()),
         }
     }
 }
@@ -48,11 +48,11 @@ impl From<SimulateTransactionGroupResult> for RustSimulateTransactionGroupResult
     fn from(ffi_struct: SimulateTransactionGroupResult) -> Self {
         Self {
             txn_results: ffi_struct.txn_results.into(),
-            failure_message: ffi_struct.failure_message.into(),
-            failed_at: ffi_struct.failed_at.into(),
-            app_budget_added: ffi_struct.app_budget_added.into(),
-            app_budget_consumed: ffi_struct.app_budget_consumed.into(),
-            unnamed_resources_accessed: ffi_struct.unnamed_resources_accessed.into(),
+            failure_message: ffi_struct.failure_message.map(|v| v.into()),
+            failed_at: ffi_struct.failed_at.map(|v| v.into()),
+            app_budget_added: ffi_struct.app_budget_added.map(|v| v.into()),
+            app_budget_consumed: ffi_struct.app_budget_consumed.map(|v| v.into()),
+            unnamed_resources_accessed: ffi_struct.unnamed_resources_accessed.map(|v| v.into()),
         }
     }
 }

@@ -34,8 +34,8 @@ impl From<RustApplicationStateOperation> for ApplicationStateOperation {
             operation: rust_struct.operation.into(),
             app_state_type: rust_struct.app_state_type.into(),
             key: rust_struct.key.into(),
-            new_value: rust_struct.new_value.into(),
-            account: rust_struct.account.into(),
+            new_value: rust_struct.new_value.map(|v| v.into()),
+            account: rust_struct.account.map(|v| v.into()),
         }
     }
 }
@@ -46,8 +46,8 @@ impl From<ApplicationStateOperation> for RustApplicationStateOperation {
             operation: ffi_struct.operation.into(),
             app_state_type: ffi_struct.app_state_type.into(),
             key: ffi_struct.key.into(),
-            new_value: ffi_struct.new_value.into(),
-            account: ffi_struct.account.into(),
+            new_value: ffi_struct.new_value.map(|v| v.into()),
+            account: ffi_struct.account.map(|v| v.into()),
         }
     }
 }

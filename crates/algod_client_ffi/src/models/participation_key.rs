@@ -38,11 +38,11 @@ impl From<RustParticipationKey> for ParticipationKey {
         Self {
             id: rust_struct.id.into(),
             address: rust_struct.address.into(),
-            effective_first_valid: rust_struct.effective_first_valid.into(),
-            effective_last_valid: rust_struct.effective_last_valid.into(),
-            last_vote: rust_struct.last_vote.into(),
-            last_block_proposal: rust_struct.last_block_proposal.into(),
-            last_state_proof: rust_struct.last_state_proof.into(),
+            effective_first_valid: rust_struct.effective_first_valid.map(|v| v.into()),
+            effective_last_valid: rust_struct.effective_last_valid.map(|v| v.into()),
+            last_vote: rust_struct.last_vote.map(|v| v.into()),
+            last_block_proposal: rust_struct.last_block_proposal.map(|v| v.into()),
+            last_state_proof: rust_struct.last_state_proof.map(|v| v.into()),
             key: rust_struct.key.into(),
         }
     }
@@ -53,11 +53,11 @@ impl From<ParticipationKey> for RustParticipationKey {
         Self {
             id: ffi_struct.id.into(),
             address: ffi_struct.address.into(),
-            effective_first_valid: ffi_struct.effective_first_valid.into(),
-            effective_last_valid: ffi_struct.effective_last_valid.into(),
-            last_vote: ffi_struct.last_vote.into(),
-            last_block_proposal: ffi_struct.last_block_proposal.into(),
-            last_state_proof: ffi_struct.last_state_proof.into(),
+            effective_first_valid: ffi_struct.effective_first_valid.map(|v| v.into()),
+            effective_last_valid: ffi_struct.effective_last_valid.map(|v| v.into()),
+            last_vote: ffi_struct.last_vote.map(|v| v.into()),
+            last_block_proposal: ffi_struct.last_block_proposal.map(|v| v.into()),
+            last_state_proof: ffi_struct.last_state_proof.map(|v| v.into()),
             key: ffi_struct.key.into(),
         }
     }

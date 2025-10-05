@@ -55,21 +55,21 @@ pub struct AssetParams {
 impl From<RustAssetParams> for AssetParams {
     fn from(rust_struct: RustAssetParams) -> Self {
         Self {
-            clawback: rust_struct.clawback.into(),
+            clawback: rust_struct.clawback.map(|v| v.into()),
             creator: rust_struct.creator.into(),
             decimals: rust_struct.decimals.into(),
-            default_frozen: rust_struct.default_frozen.into(),
-            freeze: rust_struct.freeze.into(),
-            manager: rust_struct.manager.into(),
-            metadata_hash: rust_struct.metadata_hash.into(),
-            name: rust_struct.name.into(),
-            name_b64: rust_struct.name_b64.into(),
-            reserve: rust_struct.reserve.into(),
+            default_frozen: rust_struct.default_frozen.map(|v| v.into()),
+            freeze: rust_struct.freeze.map(|v| v.into()),
+            manager: rust_struct.manager.map(|v| v.into()),
+            metadata_hash: rust_struct.metadata_hash.map(|v| v.into()),
+            name: rust_struct.name.map(|v| v.into()),
+            name_b64: rust_struct.name_b64.map(|v| v.into()),
+            reserve: rust_struct.reserve.map(|v| v.into()),
             total: rust_struct.total.into(),
-            unit_name: rust_struct.unit_name.into(),
-            unit_name_b64: rust_struct.unit_name_b64.into(),
-            url: rust_struct.url.into(),
-            url_b64: rust_struct.url_b64.into(),
+            unit_name: rust_struct.unit_name.map(|v| v.into()),
+            unit_name_b64: rust_struct.unit_name_b64.map(|v| v.into()),
+            url: rust_struct.url.map(|v| v.into()),
+            url_b64: rust_struct.url_b64.map(|v| v.into()),
         }
     }
 }
@@ -77,21 +77,21 @@ impl From<RustAssetParams> for AssetParams {
 impl From<AssetParams> for RustAssetParams {
     fn from(ffi_struct: AssetParams) -> Self {
         Self {
-            clawback: ffi_struct.clawback.into(),
+            clawback: ffi_struct.clawback.map(|v| v.into()),
             creator: ffi_struct.creator.into(),
             decimals: ffi_struct.decimals.into(),
-            default_frozen: ffi_struct.default_frozen.into(),
-            freeze: ffi_struct.freeze.into(),
-            manager: ffi_struct.manager.into(),
-            metadata_hash: ffi_struct.metadata_hash.into(),
-            name: ffi_struct.name.into(),
-            name_b64: ffi_struct.name_b64.into(),
-            reserve: ffi_struct.reserve.into(),
+            default_frozen: ffi_struct.default_frozen.map(|v| v.into()),
+            freeze: ffi_struct.freeze.map(|v| v.into()),
+            manager: ffi_struct.manager.map(|v| v.into()),
+            metadata_hash: ffi_struct.metadata_hash.map(|v| v.into()),
+            name: ffi_struct.name.map(|v| v.into()),
+            name_b64: ffi_struct.name_b64.map(|v| v.into()),
+            reserve: ffi_struct.reserve.map(|v| v.into()),
             total: ffi_struct.total.into(),
-            unit_name: ffi_struct.unit_name.into(),
-            unit_name_b64: ffi_struct.unit_name_b64.into(),
-            url: ffi_struct.url.into(),
-            url_b64: ffi_struct.url_b64.into(),
+            unit_name: ffi_struct.unit_name.map(|v| v.into()),
+            unit_name_b64: ffi_struct.unit_name_b64.map(|v| v.into()),
+            url: ffi_struct.url.map(|v| v.into()),
+            url_b64: ffi_struct.url_b64.map(|v| v.into()),
         }
     }
 }

@@ -29,9 +29,9 @@ impl From<RustApplicationInitialStates> for ApplicationInitialStates {
     fn from(rust_struct: RustApplicationInitialStates) -> Self {
         Self {
             id: rust_struct.id.into(),
-            app_locals: rust_struct.app_locals.into(),
-            app_globals: rust_struct.app_globals.into(),
-            app_boxes: rust_struct.app_boxes.into(),
+            app_locals: rust_struct.app_locals.map(|v| v.into()),
+            app_globals: rust_struct.app_globals.map(|v| v.into()),
+            app_boxes: rust_struct.app_boxes.map(|v| v.into()),
         }
     }
 }
@@ -40,9 +40,9 @@ impl From<ApplicationInitialStates> for RustApplicationInitialStates {
     fn from(ffi_struct: ApplicationInitialStates) -> Self {
         Self {
             id: ffi_struct.id.into(),
-            app_locals: ffi_struct.app_locals.into(),
-            app_globals: ffi_struct.app_globals.into(),
-            app_boxes: ffi_struct.app_boxes.into(),
+            app_locals: ffi_struct.app_locals.map(|v| v.into()),
+            app_globals: ffi_struct.app_globals.map(|v| v.into()),
+            app_boxes: ffi_struct.app_boxes.map(|v| v.into()),
         }
     }
 }

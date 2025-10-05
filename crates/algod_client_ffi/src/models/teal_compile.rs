@@ -29,7 +29,7 @@ impl From<RustTealCompile> for TealCompile {
         Self {
             hash: rust_struct.hash.into(),
             result: rust_struct.result.into(),
-            sourcemap: rust_struct.sourcemap.into(),
+            sourcemap: rust_struct.sourcemap.map(|v| v.into()),
         }
     }
 }
@@ -39,7 +39,7 @@ impl From<TealCompile> for RustTealCompile {
         Self {
             hash: ffi_struct.hash.into(),
             result: ffi_struct.result.into(),
-            sourcemap: ffi_struct.sourcemap.into(),
+            sourcemap: ffi_struct.sourcemap.map(|v| v.into()),
         }
     }
 }

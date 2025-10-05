@@ -263,7 +263,11 @@ impl From<Rust{{ schema.rust_struct_name }}> for {{ schema.rust_struct_name }} {
     fn from(rust_struct: Rust{{ schema.rust_struct_name }}) -> Self {
         Self {
 {% for property in schema.properties %}
+            {% if property.required %}
             {{ property.rust_field_name }}: rust_struct.{{ property.rust_field_name }}.into(),
+            {% else %}
+            {{ property.rust_field_name }}: rust_struct.{{ property.rust_field_name }}.map(|v| v.into()),
+            {% endif %}
 {% endfor %}
         }
     }
@@ -273,7 +277,11 @@ impl From<{{ schema.rust_struct_name }}> for Rust{{ schema.rust_struct_name }} {
     fn from(ffi_struct: {{ schema.rust_struct_name }}) -> Self {
         Self {
 {% for property in schema.properties %}
+            {% if property.required %}
             {{ property.rust_field_name }}: ffi_struct.{{ property.rust_field_name }}.into(),
+            {% else %}
+            {{ property.rust_field_name }}: ffi_struct.{{ property.rust_field_name }}.map(|v| v.into()),
+            {% endif %}
 {% endfor %}
         }
     }

@@ -9,7 +9,26 @@
  */
 
 {% if ffi %}
-pub type UnknownJsonValue = String;
+#[derive(Clone, Default, Debug, PartialEq)]
+pub struct UnknownJsonValue(serde_json::Value);
+
+uniffi::custom_type!(UnknownJsonValue, String, {
+    lower: |s| s.0.to_string(),
+    try_lift: |s| serde_json::from_str(&s).map_err(|e| uniffi::deps::anyhow::Error::msg(e.to_string())).map(UnknownJsonValue),
+});
+
+impl From<UnknownJsonValue> for serde_json::Value {
+    fn from(ffi_struct: UnknownJsonValue) -> Self {
+        ffi_struct.0
+    }
+}
+
+impl From<serde_json::Value> for UnknownJsonValue {
+    fn from(rust_struct: serde_json::Value) -> Self {
+        UnknownJsonValue(rust_struct)
+    }
+}
+
 {% else %}
 pub type UnknownJsonValue = serde_json::Value;
 {% endif %}

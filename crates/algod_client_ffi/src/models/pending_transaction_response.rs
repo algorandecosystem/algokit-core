@@ -51,19 +51,19 @@ pub struct PendingTransactionResponse {
 impl From<RustPendingTransactionResponse> for PendingTransactionResponse {
     fn from(rust_struct: RustPendingTransactionResponse) -> Self {
         Self {
-            asset_id: rust_struct.asset_id.into(),
-            app_id: rust_struct.app_id.into(),
-            close_rewards: rust_struct.close_rewards.into(),
-            closing_amount: rust_struct.closing_amount.into(),
-            asset_closing_amount: rust_struct.asset_closing_amount.into(),
-            confirmed_round: rust_struct.confirmed_round.into(),
+            asset_id: rust_struct.asset_id.map(|v| v.into()),
+            app_id: rust_struct.app_id.map(|v| v.into()),
+            close_rewards: rust_struct.close_rewards.map(|v| v.into()),
+            closing_amount: rust_struct.closing_amount.map(|v| v.into()),
+            asset_closing_amount: rust_struct.asset_closing_amount.map(|v| v.into()),
+            confirmed_round: rust_struct.confirmed_round.map(|v| v.into()),
             pool_error: rust_struct.pool_error.into(),
-            receiver_rewards: rust_struct.receiver_rewards.into(),
-            sender_rewards: rust_struct.sender_rewards.into(),
-            local_state_delta: rust_struct.local_state_delta.into(),
-            global_state_delta: rust_struct.global_state_delta.into(),
-            logs: rust_struct.logs.into(),
-            inner_txns: rust_struct.inner_txns.into(),
+            receiver_rewards: rust_struct.receiver_rewards.map(|v| v.into()),
+            sender_rewards: rust_struct.sender_rewards.map(|v| v.into()),
+            local_state_delta: rust_struct.local_state_delta.map(|v| v.into()),
+            global_state_delta: rust_struct.global_state_delta.map(|v| v.into()),
+            logs: rust_struct.logs.map(|v| v.into()),
+            inner_txns: rust_struct.inner_txns.map(|v| v.into()),
             txn: rust_struct.txn.into(),
         }
     }
@@ -72,19 +72,19 @@ impl From<RustPendingTransactionResponse> for PendingTransactionResponse {
 impl From<PendingTransactionResponse> for RustPendingTransactionResponse {
     fn from(ffi_struct: PendingTransactionResponse) -> Self {
         Self {
-            asset_id: ffi_struct.asset_id.into(),
-            app_id: ffi_struct.app_id.into(),
-            close_rewards: ffi_struct.close_rewards.into(),
-            closing_amount: ffi_struct.closing_amount.into(),
-            asset_closing_amount: ffi_struct.asset_closing_amount.into(),
-            confirmed_round: ffi_struct.confirmed_round.into(),
+            asset_id: ffi_struct.asset_id.map(|v| v.into()),
+            app_id: ffi_struct.app_id.map(|v| v.into()),
+            close_rewards: ffi_struct.close_rewards.map(|v| v.into()),
+            closing_amount: ffi_struct.closing_amount.map(|v| v.into()),
+            asset_closing_amount: ffi_struct.asset_closing_amount.map(|v| v.into()),
+            confirmed_round: ffi_struct.confirmed_round.map(|v| v.into()),
             pool_error: ffi_struct.pool_error.into(),
-            receiver_rewards: ffi_struct.receiver_rewards.into(),
-            sender_rewards: ffi_struct.sender_rewards.into(),
-            local_state_delta: ffi_struct.local_state_delta.into(),
-            global_state_delta: ffi_struct.global_state_delta.into(),
-            logs: ffi_struct.logs.into(),
-            inner_txns: ffi_struct.inner_txns.into(),
+            receiver_rewards: ffi_struct.receiver_rewards.map(|v| v.into()),
+            sender_rewards: ffi_struct.sender_rewards.map(|v| v.into()),
+            local_state_delta: ffi_struct.local_state_delta.map(|v| v.into()),
+            global_state_delta: ffi_struct.global_state_delta.map(|v| v.into()),
+            logs: ffi_struct.logs.map(|v| v.into()),
+            inner_txns: ffi_struct.inner_txns.map(|v| v.into()),
             txn: ffi_struct.txn.into(),
         }
     }

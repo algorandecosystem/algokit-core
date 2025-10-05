@@ -28,10 +28,10 @@ pub struct SimulateTraceConfig {
 impl From<RustSimulateTraceConfig> for SimulateTraceConfig {
     fn from(rust_struct: RustSimulateTraceConfig) -> Self {
         Self {
-            enable: rust_struct.enable.into(),
-            stack_change: rust_struct.stack_change.into(),
-            scratch_change: rust_struct.scratch_change.into(),
-            state_change: rust_struct.state_change.into(),
+            enable: rust_struct.enable.map(|v| v.into()),
+            stack_change: rust_struct.stack_change.map(|v| v.into()),
+            scratch_change: rust_struct.scratch_change.map(|v| v.into()),
+            state_change: rust_struct.state_change.map(|v| v.into()),
         }
     }
 }
@@ -39,10 +39,10 @@ impl From<RustSimulateTraceConfig> for SimulateTraceConfig {
 impl From<SimulateTraceConfig> for RustSimulateTraceConfig {
     fn from(ffi_struct: SimulateTraceConfig) -> Self {
         Self {
-            enable: ffi_struct.enable.into(),
-            stack_change: ffi_struct.stack_change.into(),
-            scratch_change: ffi_struct.scratch_change.into(),
-            state_change: ffi_struct.state_change.into(),
+            enable: ffi_struct.enable.map(|v| v.into()),
+            stack_change: ffi_struct.stack_change.map(|v| v.into()),
+            scratch_change: ffi_struct.scratch_change.map(|v| v.into()),
+            state_change: ffi_struct.state_change.map(|v| v.into()),
         }
     }
 }

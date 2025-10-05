@@ -27,8 +27,8 @@ impl From<RustEvalDelta> for EvalDelta {
     fn from(rust_struct: RustEvalDelta) -> Self {
         Self {
             action: rust_struct.action.into(),
-            bytes: rust_struct.bytes.into(),
-            uint: rust_struct.uint.into(),
+            bytes: rust_struct.bytes.map(|v| v.into()),
+            uint: rust_struct.uint.map(|v| v.into()),
         }
     }
 }
@@ -37,8 +37,8 @@ impl From<EvalDelta> for RustEvalDelta {
     fn from(ffi_struct: EvalDelta) -> Self {
         Self {
             action: ffi_struct.action.into(),
-            bytes: ffi_struct.bytes.into(),
-            uint: ffi_struct.uint.into(),
+            bytes: ffi_struct.bytes.map(|v| v.into()),
+            uint: ffi_struct.uint.map(|v| v.into()),
         }
     }
 }

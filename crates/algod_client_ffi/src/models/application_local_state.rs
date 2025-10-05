@@ -29,7 +29,7 @@ impl From<RustApplicationLocalState> for ApplicationLocalState {
         Self {
             id: rust_struct.id.into(),
             schema: rust_struct.schema.into(),
-            key_value: rust_struct.key_value.into(),
+            key_value: rust_struct.key_value.map(|v| v.into()),
         }
     }
 }
@@ -39,7 +39,7 @@ impl From<ApplicationLocalState> for RustApplicationLocalState {
         Self {
             id: ffi_struct.id.into(),
             schema: ffi_struct.schema.into(),
-            key_value: ffi_struct.key_value.into(),
+            key_value: ffi_struct.key_value.map(|v| v.into()),
         }
     }
 }

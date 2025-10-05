@@ -40,15 +40,15 @@ pub struct SimulationTransactionExecTrace {
 impl From<RustSimulationTransactionExecTrace> for SimulationTransactionExecTrace {
     fn from(rust_struct: RustSimulationTransactionExecTrace) -> Self {
         Self {
-            approval_program_trace: rust_struct.approval_program_trace.into(),
-            approval_program_hash: rust_struct.approval_program_hash.into(),
-            clear_state_program_trace: rust_struct.clear_state_program_trace.into(),
-            clear_state_program_hash: rust_struct.clear_state_program_hash.into(),
-            clear_state_rollback: rust_struct.clear_state_rollback.into(),
-            clear_state_rollback_error: rust_struct.clear_state_rollback_error.into(),
-            logic_sig_trace: rust_struct.logic_sig_trace.into(),
-            logic_sig_hash: rust_struct.logic_sig_hash.into(),
-            inner_trace: rust_struct.inner_trace.into(),
+            approval_program_trace: rust_struct.approval_program_trace.map(|v| v.into()),
+            approval_program_hash: rust_struct.approval_program_hash.map(|v| v.into()),
+            clear_state_program_trace: rust_struct.clear_state_program_trace.map(|v| v.into()),
+            clear_state_program_hash: rust_struct.clear_state_program_hash.map(|v| v.into()),
+            clear_state_rollback: rust_struct.clear_state_rollback.map(|v| v.into()),
+            clear_state_rollback_error: rust_struct.clear_state_rollback_error.map(|v| v.into()),
+            logic_sig_trace: rust_struct.logic_sig_trace.map(|v| v.into()),
+            logic_sig_hash: rust_struct.logic_sig_hash.map(|v| v.into()),
+            inner_trace: rust_struct.inner_trace.map(|v| v.into()),
         }
     }
 }
@@ -56,15 +56,15 @@ impl From<RustSimulationTransactionExecTrace> for SimulationTransactionExecTrace
 impl From<SimulationTransactionExecTrace> for RustSimulationTransactionExecTrace {
     fn from(ffi_struct: SimulationTransactionExecTrace) -> Self {
         Self {
-            approval_program_trace: ffi_struct.approval_program_trace.into(),
-            approval_program_hash: ffi_struct.approval_program_hash.into(),
-            clear_state_program_trace: ffi_struct.clear_state_program_trace.into(),
-            clear_state_program_hash: ffi_struct.clear_state_program_hash.into(),
-            clear_state_rollback: ffi_struct.clear_state_rollback.into(),
-            clear_state_rollback_error: ffi_struct.clear_state_rollback_error.into(),
-            logic_sig_trace: ffi_struct.logic_sig_trace.into(),
-            logic_sig_hash: ffi_struct.logic_sig_hash.into(),
-            inner_trace: ffi_struct.inner_trace.into(),
+            approval_program_trace: ffi_struct.approval_program_trace.map(|v| v.into()),
+            approval_program_hash: ffi_struct.approval_program_hash.map(|v| v.into()),
+            clear_state_program_trace: ffi_struct.clear_state_program_trace.map(|v| v.into()),
+            clear_state_program_hash: ffi_struct.clear_state_program_hash.map(|v| v.into()),
+            clear_state_rollback: ffi_struct.clear_state_rollback.map(|v| v.into()),
+            clear_state_rollback_error: ffi_struct.clear_state_rollback_error.map(|v| v.into()),
+            logic_sig_trace: ffi_struct.logic_sig_trace.map(|v| v.into()),
+            logic_sig_hash: ffi_struct.logic_sig_hash.map(|v| v.into()),
+            inner_trace: ffi_struct.inner_trace.map(|v| v.into()),
         }
     }
 }

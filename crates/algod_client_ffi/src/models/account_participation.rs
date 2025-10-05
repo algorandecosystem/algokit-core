@@ -37,7 +37,7 @@ impl From<RustAccountParticipation> for AccountParticipation {
             vote_key_dilution: rust_struct.vote_key_dilution.into(),
             vote_last_valid: rust_struct.vote_last_valid.into(),
             vote_participation_key: rust_struct.vote_participation_key.into(),
-            state_proof_key: rust_struct.state_proof_key.into(),
+            state_proof_key: rust_struct.state_proof_key.map(|v| v.into()),
         }
     }
 }
@@ -50,7 +50,7 @@ impl From<AccountParticipation> for RustAccountParticipation {
             vote_key_dilution: ffi_struct.vote_key_dilution.into(),
             vote_last_valid: ffi_struct.vote_last_valid.into(),
             vote_participation_key: ffi_struct.vote_participation_key.into(),
-            state_proof_key: ffi_struct.state_proof_key.into(),
+            state_proof_key: ffi_struct.state_proof_key.map(|v| v.into()),
         }
     }
 }

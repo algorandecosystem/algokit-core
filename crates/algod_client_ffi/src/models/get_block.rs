@@ -27,7 +27,7 @@ impl From<RustGetBlock> for GetBlock {
     fn from(rust_struct: RustGetBlock) -> Self {
         Self {
             block: rust_struct.block.into(),
-            cert: rust_struct.cert.into(),
+            cert: rust_struct.cert.map(|v| v.into()),
         }
     }
 }
@@ -36,7 +36,7 @@ impl From<GetBlock> for RustGetBlock {
     fn from(ffi_struct: GetBlock) -> Self {
         Self {
             block: ffi_struct.block.into(),
-            cert: ffi_struct.cert.into(),
+            cert: ffi_struct.cert.map(|v| v.into()),
         }
     }
 }

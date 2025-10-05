@@ -39,13 +39,13 @@ impl From<RustSimulateRequest> for SimulateRequest {
     fn from(rust_struct: RustSimulateRequest) -> Self {
         Self {
             txn_groups: rust_struct.txn_groups.into(),
-            round: rust_struct.round.into(),
-            allow_empty_signatures: rust_struct.allow_empty_signatures.into(),
-            allow_more_logging: rust_struct.allow_more_logging.into(),
-            allow_unnamed_resources: rust_struct.allow_unnamed_resources.into(),
-            extra_opcode_budget: rust_struct.extra_opcode_budget.into(),
-            exec_trace_config: rust_struct.exec_trace_config.into(),
-            fix_signers: rust_struct.fix_signers.into(),
+            round: rust_struct.round.map(|v| v.into()),
+            allow_empty_signatures: rust_struct.allow_empty_signatures.map(|v| v.into()),
+            allow_more_logging: rust_struct.allow_more_logging.map(|v| v.into()),
+            allow_unnamed_resources: rust_struct.allow_unnamed_resources.map(|v| v.into()),
+            extra_opcode_budget: rust_struct.extra_opcode_budget.map(|v| v.into()),
+            exec_trace_config: rust_struct.exec_trace_config.map(|v| v.into()),
+            fix_signers: rust_struct.fix_signers.map(|v| v.into()),
         }
     }
 }
@@ -54,13 +54,13 @@ impl From<SimulateRequest> for RustSimulateRequest {
     fn from(ffi_struct: SimulateRequest) -> Self {
         Self {
             txn_groups: ffi_struct.txn_groups.into(),
-            round: ffi_struct.round.into(),
-            allow_empty_signatures: ffi_struct.allow_empty_signatures.into(),
-            allow_more_logging: ffi_struct.allow_more_logging.into(),
-            allow_unnamed_resources: ffi_struct.allow_unnamed_resources.into(),
-            extra_opcode_budget: ffi_struct.extra_opcode_budget.into(),
-            exec_trace_config: ffi_struct.exec_trace_config.into(),
-            fix_signers: ffi_struct.fix_signers.into(),
+            round: ffi_struct.round.map(|v| v.into()),
+            allow_empty_signatures: ffi_struct.allow_empty_signatures.map(|v| v.into()),
+            allow_more_logging: ffi_struct.allow_more_logging.map(|v| v.into()),
+            allow_unnamed_resources: ffi_struct.allow_unnamed_resources.map(|v| v.into()),
+            extra_opcode_budget: ffi_struct.extra_opcode_budget.map(|v| v.into()),
+            exec_trace_config: ffi_struct.exec_trace_config.map(|v| v.into()),
+            fix_signers: ffi_struct.fix_signers.map(|v| v.into()),
         }
     }
 }

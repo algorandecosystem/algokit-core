@@ -30,8 +30,8 @@ impl From<RustGenesis> for Genesis {
     fn from(rust_struct: RustGenesis) -> Self {
         Self {
             alloc: rust_struct.alloc.into(),
-            comment: rust_struct.comment.into(),
-            devmode: rust_struct.devmode.into(),
+            comment: rust_struct.comment.map(|v| v.into()),
+            devmode: rust_struct.devmode.map(|v| v.into()),
             fees: rust_struct.fees.into(),
             id: rust_struct.id.into(),
             network: rust_struct.network.into(),
@@ -46,8 +46,8 @@ impl From<Genesis> for RustGenesis {
     fn from(ffi_struct: Genesis) -> Self {
         Self {
             alloc: ffi_struct.alloc.into(),
-            comment: ffi_struct.comment.into(),
-            devmode: ffi_struct.devmode.into(),
+            comment: ffi_struct.comment.map(|v| v.into()),
+            devmode: ffi_struct.devmode.map(|v| v.into()),
             fees: ffi_struct.fees.into(),
             id: ffi_struct.id.into(),
             network: ffi_struct.network.into(),
