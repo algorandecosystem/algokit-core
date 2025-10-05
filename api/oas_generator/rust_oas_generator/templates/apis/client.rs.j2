@@ -153,10 +153,18 @@ impl {{ client_type }}Client {
         {% else %}
         self.inner_algod_client.{{ operation.rust_function_name }}(
         {% if has_request_body(operation) %}
-            {{ get_request_body_name(operation) }},
+            {% if is_request_body_required(operation) %}
+            {{ get_request_body_name(operation) }}.into(),
+            {% else %}
+            {{ get_request_body_name(operation) }}.map(|v| v.into()),
+            {% endif %}
         {% endif %}
         {% for param in operation.parameters %}
-            {{ param.rust_name }},
+            {% if param.required %}
+            {{ param.rust_name }}.into(),
+            {% else %}
+            {{ param.rust_name }}.map(|v| v.into()),
+            {% endif %}
         {% endfor %}
         ).await.map(|v| v.into()).map_err(|e| e.into())
         {% endif %}

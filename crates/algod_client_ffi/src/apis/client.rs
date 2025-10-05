@@ -135,7 +135,11 @@ impl AlgodClient {
         format: Option<Format>,
     ) -> Result<Account, Error> {
         self.inner_algod_client
-            .account_information(address, exclude, format)
+            .account_information(
+                address.into(),
+                exclude.map(|v| v.into()),
+                format.map(|v| v.into()),
+            )
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -149,7 +153,7 @@ impl AlgodClient {
         format: Option<Format>,
     ) -> Result<AccountAssetInformation, Error> {
         self.inner_algod_client
-            .account_asset_information(address, asset_id, format)
+            .account_asset_information(address.into(), asset_id.into(), format.map(|v| v.into()))
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -163,7 +167,11 @@ impl AlgodClient {
         next: Option<String>,
     ) -> Result<AccountAssetsInformation, Error> {
         self.inner_algod_client
-            .account_assets_information(address, limit, next)
+            .account_assets_information(
+                address.into(),
+                limit.map(|v| v.into()),
+                next.map(|v| v.into()),
+            )
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -177,7 +185,11 @@ impl AlgodClient {
         format: Option<Format>,
     ) -> Result<AccountApplicationInformation, Error> {
         self.inner_algod_client
-            .account_application_information(address, application_id, format)
+            .account_application_information(
+                address.into(),
+                application_id.into(),
+                format.map(|v| v.into()),
+            )
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -191,7 +203,11 @@ impl AlgodClient {
         format: Option<Format>,
     ) -> Result<GetPendingTransactionsByAddress, Error> {
         self.inner_algod_client
-            .get_pending_transactions_by_address(address, max, format)
+            .get_pending_transactions_by_address(
+                address.into(),
+                max.map(|v| v.into()),
+                format.map(|v| v.into()),
+            )
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -205,7 +221,11 @@ impl AlgodClient {
         format: Option<Format>,
     ) -> Result<GetBlock, Error> {
         self.inner_algod_client
-            .get_block(round, header_only, format)
+            .get_block(
+                round.into(),
+                header_only.map(|v| v.into()),
+                format.map(|v| v.into()),
+            )
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -214,7 +234,7 @@ impl AlgodClient {
     /// Get the top level transaction IDs for the block on the given round.
     pub async fn get_block_txids(&self, round: u64) -> Result<GetBlockTxids, Error> {
         self.inner_algod_client
-            .get_block_txids(round)
+            .get_block_txids(round.into())
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -223,7 +243,7 @@ impl AlgodClient {
     /// Get the block hash for the block on the given round.
     pub async fn get_block_hash(&self, round: u64) -> Result<GetBlockHash, Error> {
         self.inner_algod_client
-            .get_block_hash(round)
+            .get_block_hash(round.into())
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -238,7 +258,12 @@ impl AlgodClient {
         format: Option<Format>,
     ) -> Result<TransactionProof, Error> {
         self.inner_algod_client
-            .get_transaction_proof(round, txid, hashtype, format)
+            .get_transaction_proof(
+                round.into(),
+                txid.into(),
+                hashtype.map(|v| v.into()),
+                format.map(|v| v.into()),
+            )
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -247,7 +272,7 @@ impl AlgodClient {
     /// Get all of the logs from outer and inner app calls in the given round
     pub async fn get_block_logs(&self, round: u64) -> Result<GetBlockLogs, Error> {
         self.inner_algod_client
-            .get_block_logs(round)
+            .get_block_logs(round.into())
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -277,7 +302,7 @@ impl AlgodClient {
         request: Vec<u8>,
     ) -> Result<AddParticipationKey, Error> {
         self.inner_algod_client
-            .add_participation_key(request)
+            .add_participation_key(request.into())
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -292,7 +317,12 @@ impl AlgodClient {
         last: u64,
     ) -> Result<String, Error> {
         self.inner_algod_client
-            .generate_participation_keys(address, dilution, first, last)
+            .generate_participation_keys(
+                address.into(),
+                dilution.map(|v| v.into()),
+                first.into(),
+                last.into(),
+            )
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -304,7 +334,7 @@ impl AlgodClient {
         participation_id: &str,
     ) -> Result<ParticipationKey, Error> {
         self.inner_algod_client
-            .get_participation_key_by_id(participation_id)
+            .get_participation_key_by_id(participation_id.into())
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -317,7 +347,7 @@ impl AlgodClient {
         participation_id: &str,
     ) -> Result<ParticipationKey, Error> {
         self.inner_algod_client
-            .append_keys(request, participation_id)
+            .append_keys(request.into(), participation_id.into())
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -329,7 +359,7 @@ impl AlgodClient {
         participation_id: &str,
     ) -> Result<(), Error> {
         self.inner_algod_client
-            .delete_participation_key_by_id(participation_id)
+            .delete_participation_key_by_id(participation_id.into())
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -338,7 +368,7 @@ impl AlgodClient {
     /// Special management endpoint to shutdown the node. Optionally provide a timeout parameter to indicate that the node should begin shutting down after a number of seconds.
     pub async fn shutdown_node(&self, timeout: Option<u64>) -> Result<UnknownJsonValue, Error> {
         self.inner_algod_client
-            .shutdown_node(timeout)
+            .shutdown_node(timeout.map(|v| v.into()))
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -356,7 +386,7 @@ impl AlgodClient {
     /// Gets the node status after waiting for a round after the given round.
     pub async fn wait_for_block(&self, round: u64) -> Result<WaitForBlock, Error> {
         self.inner_algod_client
-            .wait_for_block(round)
+            .wait_for_block(round.into())
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -365,7 +395,7 @@ impl AlgodClient {
     /// Broadcasts a raw transaction or transaction group to the network.
     pub async fn raw_transaction(&self, request: Vec<u8>) -> Result<RawTransaction, Error> {
         self.inner_algod_client
-            .raw_transaction(request)
+            .raw_transaction(request.into())
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -374,7 +404,7 @@ impl AlgodClient {
     /// Fast track for broadcasting a raw transaction or transaction group to the network through the tx handler without performing most of the checks and reporting detailed errors. Should be only used for development and performance testing.
     pub async fn raw_transaction_async(&self, request: Vec<u8>) -> Result<(), Error> {
         self.inner_algod_client
-            .raw_transaction_async(request)
+            .raw_transaction_async(request.into())
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -387,7 +417,7 @@ impl AlgodClient {
         format: Option<Format>,
     ) -> Result<SimulateTransaction, Error> {
         self.inner_algod_client
-            .simulate_transaction(request, format)
+            .simulate_transaction(request.into(), format.map(|v| v.into()))
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -409,7 +439,7 @@ impl AlgodClient {
         format: Option<Format>,
     ) -> Result<GetPendingTransactions, Error> {
         self.inner_algod_client
-            .get_pending_transactions(max, format)
+            .get_pending_transactions(max.map(|v| v.into()), format.map(|v| v.into()))
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -422,7 +452,7 @@ impl AlgodClient {
         format: Option<Format>,
     ) -> Result<PendingTransactionResponse, Error> {
         self.inner_algod_client
-            .pending_transaction_information(txid, format)
+            .pending_transaction_information(txid.into(), format.map(|v| v.into()))
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -435,7 +465,7 @@ impl AlgodClient {
         format: Option<Format>,
     ) -> Result<LedgerStateDelta, Error> {
         self.inner_algod_client
-            .get_ledger_state_delta(round, format)
+            .get_ledger_state_delta(round.into(), format.map(|v| v.into()))
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -448,7 +478,10 @@ impl AlgodClient {
         format: Option<Format>,
     ) -> Result<GetTransactionGroupLedgerStateDeltasForRound, Error> {
         self.inner_algod_client
-            .get_transaction_group_ledger_state_deltas_for_round(round, format)
+            .get_transaction_group_ledger_state_deltas_for_round(
+                round.into(),
+                format.map(|v| v.into()),
+            )
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -461,7 +494,7 @@ impl AlgodClient {
         format: Option<Format>,
     ) -> Result<LedgerStateDelta, Error> {
         self.inner_algod_client
-            .get_ledger_state_delta_for_transaction_group(id, format)
+            .get_ledger_state_delta_for_transaction_group(id.into(), format.map(|v| v.into()))
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -470,7 +503,7 @@ impl AlgodClient {
     /// Get a state proof that covers a given round
     pub async fn get_state_proof(&self, round: u64) -> Result<StateProof, Error> {
         self.inner_algod_client
-            .get_state_proof(round)
+            .get_state_proof(round.into())
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -482,7 +515,7 @@ impl AlgodClient {
         round: u64,
     ) -> Result<LightBlockHeaderProof, Error> {
         self.inner_algod_client
-            .get_light_block_header_proof(round)
+            .get_light_block_header_proof(round.into())
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -491,7 +524,7 @@ impl AlgodClient {
     /// Get application information.
     pub async fn get_application_by_id(&self, application_id: u64) -> Result<Application, Error> {
         self.inner_algod_client
-            .get_application_by_id(application_id)
+            .get_application_by_id(application_id.into())
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -504,7 +537,7 @@ impl AlgodClient {
         max: Option<u64>,
     ) -> Result<GetApplicationBoxes, Error> {
         self.inner_algod_client
-            .get_application_boxes(application_id, max)
+            .get_application_boxes(application_id.into(), max.map(|v| v.into()))
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -517,7 +550,7 @@ impl AlgodClient {
         name: &str,
     ) -> Result<crate::models::Box, Error> {
         self.inner_algod_client
-            .get_application_box_by_name(application_id, name)
+            .get_application_box_by_name(application_id.into(), name.into())
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -526,7 +559,7 @@ impl AlgodClient {
     /// Get asset information.
     pub async fn get_asset_by_id(&self, asset_id: u64) -> Result<Asset, Error> {
         self.inner_algod_client
-            .get_asset_by_id(asset_id)
+            .get_asset_by_id(asset_id.into())
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -553,7 +586,7 @@ impl AlgodClient {
     /// Given a round, tells the ledger to keep that round in its cache.
     pub async fn set_sync_round(&self, round: u64) -> Result<(), Error> {
         self.inner_algod_client
-            .set_sync_round(round)
+            .set_sync_round(round.into())
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -566,7 +599,7 @@ impl AlgodClient {
         sourcemap: Option<bool>,
     ) -> Result<TealCompile, Error> {
         self.inner_algod_client
-            .teal_compile(request, sourcemap)
+            .teal_compile(request.into(), sourcemap.map(|v| v.into()))
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -575,7 +608,7 @@ impl AlgodClient {
     /// Disassemble program bytes into the TEAL source code.
     pub async fn teal_disassemble(&self, request: String) -> Result<TealDisassemble, Error> {
         self.inner_algod_client
-            .teal_disassemble(request)
+            .teal_disassemble(request.into())
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -588,7 +621,7 @@ impl AlgodClient {
         min: Option<u64>,
     ) -> Result<StartCatchup, Error> {
         self.inner_algod_client
-            .start_catchup(catchpoint, min)
+            .start_catchup(catchpoint.into(), min.map(|v| v.into()))
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -597,7 +630,7 @@ impl AlgodClient {
     /// Aborts a catchpoint catchup.
     pub async fn abort_catchup(&self, catchpoint: &str) -> Result<AbortCatchup, Error> {
         self.inner_algod_client
-            .abort_catchup(catchpoint)
+            .abort_catchup(catchpoint.into())
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -606,7 +639,7 @@ impl AlgodClient {
     /// Provide debugging information for a transaction (or group).
     pub async fn teal_dryrun(&self, request: Option<DryrunRequest>) -> Result<TealDryrun, Error> {
         self.inner_algod_client
-            .teal_dryrun(request)
+            .teal_dryrun(request.map(|v| v.into()))
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -633,7 +666,7 @@ impl AlgodClient {
     /// Given a timestamp offset in seconds, adds the offset to every subsequent block header's timestamp.
     pub async fn set_block_time_stamp_offset(&self, offset: u64) -> Result<(), Error> {
         self.inner_algod_client
-            .set_block_time_stamp_offset(offset)
+            .set_block_time_stamp_offset(offset.into())
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
