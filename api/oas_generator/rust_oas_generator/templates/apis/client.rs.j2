@@ -162,6 +162,8 @@ impl {{ client_type }}Client {
         {% for param in operation.parameters %}
             {% if param.required %}
             {{ param.rust_name }}.into(),
+            {% elif param.rust_type == "String" and not param.is_enum_parameter %}
+            {{ param.rust_name }}.as_deref().map(|v| v.into()),
             {% else %}
             {{ param.rust_name }}.map(|v| v.into()),
             {% endif %}

@@ -170,7 +170,7 @@ impl AlgodClient {
             .account_assets_information(
                 address.into(),
                 limit.map(|v| v.into()),
-                next.map(|v| v.into()),
+                next.as_deref().map(|v| v.into()),
             )
             .await
             .map(|v| v.into())
