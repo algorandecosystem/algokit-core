@@ -28,6 +28,6 @@ impl From<RustTealKeyValueStore> for TealKeyValueStore {
 
 impl From<TealKeyValueStore> for RustTealKeyValueStore {
     fn from(ffi_struct: TealKeyValueStore) -> Self {
-        rust_struct.0.into_iter().map(|v| v.into()).collect()
+        ffi_struct.0.into_iter().map(|v| v.into()).collect()
     }
 }

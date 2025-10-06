@@ -28,6 +28,6 @@ impl From<RustStateDelta> for StateDelta {
 
 impl From<StateDelta> for RustStateDelta {
     fn from(ffi_struct: StateDelta) -> Self {
-        rust_struct.0.into_iter().map(|v| v.into()).collect()
+        ffi_struct.0.into_iter().map(|v| v.into()).collect()
     }
 }

@@ -299,7 +299,7 @@ impl From<Rust{{ schema.rust_struct_name }}> for {{ schema.rust_struct_name }} {
 impl From<{{ schema.rust_struct_name }}> for Rust{{ schema.rust_struct_name }} {
     fn from(ffi_struct: {{ schema.rust_struct_name }}) -> Self {
         {% if schema.schema_type == 'array' and schema.underlying_rust_type %}
-        rust_struct.0.into_iter().map(|v| v.into()).collect()
+        ffi_struct.0.into_iter().map(|v| v.into()).collect()
         {% else %}
         Self {
 {% for property in schema.properties %}
