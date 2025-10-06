@@ -12,7 +12,7 @@ use crate::models;
 use algod_client::models::StateProofMessage as RustStateProofMessage;
 
 /// Represents the message that the state proofs are attesting to.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct StateProofMessage {
     /// The vector commitment root on all light block headers within a state proof interval.
     pub block_headers_commitment: Vec<u8>,

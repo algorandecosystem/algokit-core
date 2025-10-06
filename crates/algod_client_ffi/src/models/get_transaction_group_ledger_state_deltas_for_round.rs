@@ -15,7 +15,7 @@ use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
 use crate::models::LedgerStateDeltaForTransactionGroup;
 
 /// Response containing all ledger state deltas for transaction groups, with their associated Ids, in a single round.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct GetTransactionGroupLedgerStateDeltasForRound {
     pub deltas: Vec<LedgerStateDeltaForTransactionGroup>,
 }

@@ -11,7 +11,7 @@
 use crate::models;
 use algod_client::models::BuildVersion as RustBuildVersion;
 
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct BuildVersion {
     pub branch: String,
     pub build_number: u64,

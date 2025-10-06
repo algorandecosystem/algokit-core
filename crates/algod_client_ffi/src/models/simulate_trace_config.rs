@@ -13,7 +13,7 @@ use algod_client::models::SimulateTraceConfig as RustSimulateTraceConfig;
 use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
 
 /// An object that configures simulation execution trace.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct SimulateTraceConfig {
     /// A boolean option for opting in execution trace features simulation endpoint.
     pub enable: Option<bool>,

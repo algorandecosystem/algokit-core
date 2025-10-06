@@ -15,7 +15,7 @@ use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
 use crate::models::AvmValue;
 
 /// A write operation into a scratch slot.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct ScratchChange {
     /// The scratch slot written.
     pub slot: u64,

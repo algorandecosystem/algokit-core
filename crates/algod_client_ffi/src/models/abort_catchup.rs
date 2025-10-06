@@ -12,7 +12,7 @@ use crate::models;
 use algod_client::models::AbortCatchup as RustAbortCatchup;
 
 /// An catchpoint abort response.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct AbortCatchup {
     /// Catchup abort response string
     pub catchup_message: String,

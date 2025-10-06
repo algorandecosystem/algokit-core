@@ -12,7 +12,7 @@ use crate::models;
 use algod_client::models::GetBlockHash as RustGetBlockHash;
 
 /// Hash of a block header.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct GetBlockHash {
     /// Block header hash.
     pub block_hash: String,

@@ -13,7 +13,7 @@ use algod_client::models::TealValue as RustTealValue;
 use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
 
 /// Represents a TEAL value.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct TealValue {
     /// \[tt\] value type. Value `1` refers to **bytes**, value `2` refers to **uint**
     pub r#type: u64,

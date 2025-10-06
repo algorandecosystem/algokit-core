@@ -15,7 +15,7 @@ use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
 use crate::models::AvmKeyValue;
 
 /// An application's global/local/box state.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct ApplicationKvStorage {
     /// Key-Value pairs representing application states.
     pub kvs: Vec<AvmKeyValue>,

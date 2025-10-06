@@ -13,7 +13,7 @@ use algod_client::models::SimulationEvalOverrides as RustSimulationEvalOverrides
 use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
 
 /// The set of parameters and limits override during simulation. If this set of parameters is present, then evaluation parameters may differ from standard evaluation in certain ways.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct SimulationEvalOverrides {
     /// If true, transactions without signatures are allowed and simulated as if they were properly signed.
     pub allow_empty_signatures: Option<bool>,

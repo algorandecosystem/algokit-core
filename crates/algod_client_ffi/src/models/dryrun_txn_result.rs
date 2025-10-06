@@ -16,7 +16,7 @@ use crate::models::DryrunState;
 use crate::models::StateDelta;
 
 /// DryrunTxnResult contains any LogicSig or ApplicationCall program debug information and state updates from a dryrun.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct DryrunTxnResult {
     /// Disassembled program line by line.
     pub disassembly: Vec<String>,

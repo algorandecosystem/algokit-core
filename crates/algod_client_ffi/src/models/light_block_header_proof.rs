@@ -12,7 +12,7 @@ use crate::models;
 use algod_client::models::LightBlockHeaderProof as RustLightBlockHeaderProof;
 
 /// Proof of membership and position of a light block header.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct LightBlockHeaderProof {
     /// The index of the light block header in the vector commitment tree
     pub index: u64,

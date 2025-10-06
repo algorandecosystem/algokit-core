@@ -15,7 +15,7 @@ use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
 use crate::models::SimulationOpcodeTraceUnit;
 
 /// The execution trace of calling an app or a logic sig, containing the inner app call trace in a recursive way.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct SimulationTransactionExecTrace {
     /// Program trace that contains a trace of opcode effects in an approval program.
     pub approval_program_trace: Option<Vec<SimulationOpcodeTraceUnit>>,

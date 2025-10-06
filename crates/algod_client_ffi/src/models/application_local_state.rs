@@ -16,7 +16,7 @@ use crate::models::ApplicationStateSchema;
 use crate::models::TealKeyValueStore;
 
 /// Stores local state associated with an application.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct ApplicationLocalState {
     /// The application which this local state is for.
     pub id: u64,

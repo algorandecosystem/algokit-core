@@ -12,7 +12,7 @@ use crate::models;
 use algod_client::models::RawTransaction as RustRawTransaction;
 
 /// Transaction ID of the submission.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct RawTransaction {
     /// encoding of the transaction hash.
     pub tx_id: String,

@@ -14,7 +14,7 @@ use algod_client::models::StateProof as RustStateProof;
 use crate::models::StateProofMessage;
 
 /// Represents a state proof and its corresponding message
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct StateProof {
     pub message: StateProofMessage,
     /// The encoded StateProof for the message.

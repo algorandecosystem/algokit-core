@@ -15,7 +15,7 @@ use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
 use crate::models::EvalDelta;
 
 /// Key-value pairs for StateDelta.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct EvalDeltaKeyValue {
     pub key: String,
     pub value: EvalDelta,

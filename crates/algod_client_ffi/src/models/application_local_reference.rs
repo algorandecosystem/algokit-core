@@ -13,7 +13,7 @@ use algod_client::models::ApplicationLocalReference as RustApplicationLocalRefer
 use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
 
 /// References an account's local state for an application.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct ApplicationLocalReference {
     /// Address of the account with the local state.
     pub account: String,

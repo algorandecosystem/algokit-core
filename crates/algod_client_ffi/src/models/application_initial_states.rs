@@ -15,7 +15,7 @@ use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
 use crate::models::ApplicationKvStorage;
 
 /// An application's initial global/local/box states that were accessed during simulation.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct ApplicationInitialStates {
     /// Application index.
     pub id: u64,

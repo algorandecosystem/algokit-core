@@ -17,7 +17,7 @@ use crate::models::Application;
 use crate::models::DryrunSource;
 
 /// Request data type for dryrun endpoint. Given the Transactions and simulated ledger state upload, run TEAL scripts and return debugging information.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct DryrunRequest {
     pub txns: Vec<AlgokitSignedTransaction>,
     pub accounts: Vec<Account>,

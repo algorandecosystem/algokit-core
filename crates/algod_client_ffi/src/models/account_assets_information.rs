@@ -14,7 +14,7 @@ use algod_client::models::AccountAssetsInformation as RustAccountAssetsInformati
 use crate::models::AccountAssetHolding;
 
 /// AccountAssetsInformationResponse contains a list of assets held by an account.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct AccountAssetsInformation {
     /// The round for which this information is relevant.
     pub round: u64,

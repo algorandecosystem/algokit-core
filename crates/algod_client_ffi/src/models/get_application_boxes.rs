@@ -14,7 +14,7 @@ use algod_client::models::GetApplicationBoxes as RustGetApplicationBoxes;
 use crate::models::BoxDescriptor;
 
 /// Box names of an application
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct GetApplicationBoxes {
     pub boxes: Vec<BoxDescriptor>,
 }

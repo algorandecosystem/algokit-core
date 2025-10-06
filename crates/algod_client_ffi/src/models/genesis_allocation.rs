@@ -13,7 +13,7 @@ use algod_client::models::GenesisAllocation as RustGenesisAllocation;
 
 use crate::models::UnknownJsonValue;
 
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct GenesisAllocation {
     pub addr: String,
     pub comment: String,

@@ -12,7 +12,7 @@ use crate::models;
 use algod_client::models::GetSyncRound as RustGetSyncRound;
 
 /// Response containing the ledger's minimum sync round
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct GetSyncRound {
     /// The minimum sync round for the ledger.
     pub round: u64,

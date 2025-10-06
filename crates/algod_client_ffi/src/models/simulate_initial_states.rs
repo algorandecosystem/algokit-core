@@ -15,7 +15,7 @@ use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
 use crate::models::ApplicationInitialStates;
 
 /// Initial states of resources that were accessed during simulation.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct SimulateInitialStates {
     /// The initial states of accessed application before simulation. The order of this array is arbitrary.
     pub app_initial_states: Option<Vec<ApplicationInitialStates>>,

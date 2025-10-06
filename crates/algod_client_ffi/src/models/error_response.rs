@@ -15,7 +15,7 @@ use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
 use crate::models::UnknownJsonValue;
 
 /// An error response with optional data field.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct ErrorResponse {
     pub data: Option<UnknownJsonValue>,
     pub message: String,

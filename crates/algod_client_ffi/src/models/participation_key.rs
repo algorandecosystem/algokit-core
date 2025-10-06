@@ -14,7 +14,7 @@ use algod_client::models::ParticipationKey as RustParticipationKey;
 use crate::models::AccountParticipation;
 
 /// Represents a participation key used by the node.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct ParticipationKey {
     /// The key's ParticipationID.
     pub id: String,

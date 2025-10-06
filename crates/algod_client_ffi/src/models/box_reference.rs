@@ -13,7 +13,7 @@ use algod_client::models::BoxReference as RustBoxReference;
 use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
 
 /// References a box of an application.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct BoxReference {
     /// Application ID which this box belongs to
     pub app: u64,

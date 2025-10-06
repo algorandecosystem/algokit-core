@@ -14,7 +14,7 @@ use algod_client::models::TealDryrun as RustTealDryrun;
 use crate::models::DryrunTxnResult;
 
 /// DryrunResponse contains per-txn debug information from a dryrun.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct TealDryrun {
     pub txns: Vec<DryrunTxnResult>,
     pub error: String,

@@ -12,7 +12,7 @@ use crate::models;
 use algod_client::models::Box as RustBox;
 
 /// Box name and its content.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct Box {
     /// The round for which this information is relevant
     pub round: u64,

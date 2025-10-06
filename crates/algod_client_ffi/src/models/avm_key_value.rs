@@ -15,7 +15,7 @@ use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
 use crate::models::AvmValue;
 
 /// Represents an AVM key-value pair in an application store.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct AvmKeyValue {
     pub key: Vec<u8>,
     pub value: AvmValue,

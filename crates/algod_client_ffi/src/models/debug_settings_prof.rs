@@ -12,7 +12,7 @@ use crate::models;
 use algod_client::models::DebugSettingsProf as RustDebugSettingsProf;
 
 /// algod mutex and blocking profiling state.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct DebugSettingsProf {
     /// The rate of blocking events. The profiler aims to sample an average of one blocking event per rate nanoseconds spent blocked. To turn off profiling entirely, pass rate 0.
     pub block_rate: Option<u64>,

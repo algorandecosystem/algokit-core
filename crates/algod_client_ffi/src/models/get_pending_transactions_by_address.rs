@@ -15,7 +15,7 @@ use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
 use crate::models::UnknownJsonValue;
 
 /// PendingTransactions is an array of signed transactions exactly as they were submitted.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct GetPendingTransactionsByAddress {
     /// An array of signed transaction objects.
     pub top_transactions: Vec<AlgokitSignedTransaction>,

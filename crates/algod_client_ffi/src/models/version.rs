@@ -14,7 +14,7 @@ use algod_client::models::Version as RustVersion;
 use crate::models::BuildVersion;
 
 /// algod version information.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct Version {
     pub build: BuildVersion,
     pub genesis_hash_b64: Vec<u8>,

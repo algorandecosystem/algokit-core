@@ -18,7 +18,7 @@ use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
 ///
 /// Definition:
 /// data/transactions/asset.go : AssetParams
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct AssetParams {
     /// \[c\] Address of account used to clawback holdings of this asset.  If empty, clawback is not permitted.
     pub clawback: Option<String>,

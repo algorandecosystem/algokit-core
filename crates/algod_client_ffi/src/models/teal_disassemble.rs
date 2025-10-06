@@ -12,7 +12,7 @@ use crate::models;
 use algod_client::models::TealDisassemble as RustTealDisassemble;
 
 /// Teal disassembly Result
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct TealDisassemble {
     /// disassembled Teal code
     pub result: String,

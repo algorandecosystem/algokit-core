@@ -15,7 +15,7 @@ use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
 use crate::models::AssetParams;
 
 /// Specifies both the unique identifier and the parameters for an asset
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct Asset {
     /// unique asset identifier
     pub index: u64,

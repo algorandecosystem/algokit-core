@@ -12,7 +12,7 @@ use crate::models;
 use algod_client::models::BoxDescriptor as RustBoxDescriptor;
 
 /// Box descriptor describes a Box.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct BoxDescriptor {
     /// Base64 encoded box name
     pub name: Vec<u8>,

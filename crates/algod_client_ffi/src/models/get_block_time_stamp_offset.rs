@@ -12,7 +12,7 @@ use crate::models;
 use algod_client::models::GetBlockTimeStampOffset as RustGetBlockTimeStampOffset;
 
 /// Response containing the timestamp offset in seconds
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct GetBlockTimeStampOffset {
     /// Timestamp offset in seconds.
     pub offset: u64,

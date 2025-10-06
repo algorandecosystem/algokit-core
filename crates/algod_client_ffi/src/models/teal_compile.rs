@@ -14,7 +14,7 @@ use algod_client::models::TealCompile as RustTealCompile;
 use crate::models::UnknownJsonValue;
 
 /// Teal compile Result
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct TealCompile {
     /// base32 SHA512_256 of program bytes (Address style)
     pub hash: String,

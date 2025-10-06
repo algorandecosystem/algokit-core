@@ -12,7 +12,7 @@ use crate::models;
 use algod_client::models::WaitForBlock as RustWaitForBlock;
 
 /// NodeStatus contains the information about a node status
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct WaitForBlock {
     /// CatchupTime in nanoseconds
     pub catchup_time: u64,

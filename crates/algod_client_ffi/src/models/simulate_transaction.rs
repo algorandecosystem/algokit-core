@@ -18,7 +18,7 @@ use crate::models::SimulateTransactionGroupResult;
 use crate::models::SimulationEvalOverrides;
 
 /// Result of a transaction group simulation.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct SimulateTransaction {
     /// The version of this response object.
     pub version: u64,
@@ -44,23 +44,6 @@ impl From<RustSimulateTransaction> for SimulateTransaction {
             eval_overrides: rust_struct.eval_overrides.map(|v| v.into()),
             exec_trace_config: rust_struct.exec_trace_config.map(|v| v.into()),
             initial_states: rust_struct.initial_states.map(|v| v.into()),
-        }
-    }
-}
-
-impl From<SimulateTransaction> for RustSimulateTransaction {
-    fn from(ffi_struct: SimulateTransaction) -> Self {
-        Self {
-            version: ffi_struct.version.into(),
-            last_round: ffi_struct.last_round.into(),
-            txn_groups: ffi_struct
-                .txn_groups
-                .into_iter()
-                .map(|v| v.into())
-                .collect(),
-            eval_overrides: ffi_struct.eval_overrides.map(|v| v.into()),
-            exec_trace_config: ffi_struct.exec_trace_config.map(|v| v.into()),
-            initial_states: ffi_struct.initial_states.map(|v| v.into()),
         }
     }
 }

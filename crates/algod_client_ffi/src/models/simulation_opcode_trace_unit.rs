@@ -17,7 +17,7 @@ use crate::models::AvmValue;
 use crate::models::ScratchChange;
 
 /// The set of trace information and effect from evaluating a single opcode.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct SimulationOpcodeTraceUnit {
     /// The program counter of the current opcode being evaluated.
     pub pc: u64,

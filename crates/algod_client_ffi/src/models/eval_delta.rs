@@ -13,7 +13,7 @@ use algod_client::models::EvalDelta as RustEvalDelta;
 use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
 
 /// Represents a TEAL value delta.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct EvalDelta {
     /// \[at\] delta action.
     pub action: u32,

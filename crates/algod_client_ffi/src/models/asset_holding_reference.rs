@@ -13,7 +13,7 @@ use algod_client::models::AssetHoldingReference as RustAssetHoldingReference;
 use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
 
 /// References an asset held by an account.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct AssetHoldingReference {
     /// Address of the account holding the asset.
     pub account: String,

@@ -23,7 +23,7 @@ use crate::models::AssetHolding;
 ///
 /// Definition:
 /// data/basics/userBalance.go : AccountData
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct Account {
     /// the account public key
     pub address: String,

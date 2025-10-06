@@ -16,7 +16,7 @@ use crate::models::SimulateRequestTransactionGroup;
 use crate::models::SimulateTraceConfig;
 
 /// Request type for simulation endpoint.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct SimulateRequest {
     /// The transaction groups to simulate.
     pub txn_groups: Vec<SimulateRequestTransactionGroup>,
@@ -54,14 +54,23 @@ impl From<RustSimulateRequest> for SimulateRequest {
     }
 }
 
-impl From<SimulateRequest> for RustSimulateRequest {
-    fn from(ffi_struct: SimulateRequest) -> Self {
-        Self {
+impl TryFrom<SimulateRequest> for RustSimulateRequest {
+    type Error = crate::apis::Error;
+
+    fn try_from(ffi_struct: SimulateRequest) -> Result<Self, Self::Error> {
+        Ok(Self {
             txn_groups: ffi_struct
                 .txn_groups
                 .into_iter()
-                .map(|v| v.into())
-                .collect(),
+                .map(|v| {
+                    v.try_into()
+                        .map_err(|e: algokit_transact_ffi::AlgoKitTransactError| {
+                            crate::apis::Error::Serde {
+                                message: e.to_string(),
+                            }
+                        })
+                })
+                .collect::<Result<_, _>>()?,
             round: ffi_struct.round.map(|v| v.into()),
             allow_empty_signatures: ffi_struct.allow_empty_signatures.map(|v| v.into()),
             allow_more_logging: ffi_struct.allow_more_logging.map(|v| v.into()),
@@ -69,6 +78,6 @@ impl From<SimulateRequest> for RustSimulateRequest {
             extra_opcode_budget: ffi_struct.extra_opcode_budget.map(|v| v.into()),
             exec_trace_config: ffi_struct.exec_trace_config.map(|v| v.into()),
             fix_signers: ffi_struct.fix_signers.map(|v| v.into()),
-        }
+        })
     }
 }

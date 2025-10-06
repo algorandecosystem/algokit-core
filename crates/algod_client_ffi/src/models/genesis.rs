@@ -13,7 +13,7 @@ use algod_client::models::Genesis as RustGenesis;
 
 use crate::models::GenesisAllocation;
 
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct Genesis {
     pub alloc: Vec<GenesisAllocation>,
     pub comment: Option<String>,

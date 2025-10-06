@@ -13,7 +13,7 @@ use algod_client::models::ApplicationStateSchema as RustApplicationStateSchema;
 use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
 
 /// Specifies maximums on the number of each type that may be stored.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct ApplicationStateSchema {
     /// \[nui\] num of uints.
     pub num_uint: u32,

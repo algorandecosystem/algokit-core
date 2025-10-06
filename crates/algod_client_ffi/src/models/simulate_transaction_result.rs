@@ -17,7 +17,7 @@ use crate::models::SimulateUnnamedResourcesAccessed;
 use crate::models::SimulationTransactionExecTrace;
 
 /// Simulation result for an individual transaction
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct SimulateTransactionResult {
     pub txn_result: PendingTransactionResponse,
     /// Budget used during execution of an app call transaction. This value includes budged used by inner app calls spawned by this transaction.
@@ -39,19 +39,6 @@ impl From<RustSimulateTransactionResult> for SimulateTransactionResult {
             exec_trace: rust_struct.exec_trace.map(|v| v.into()),
             unnamed_resources_accessed: rust_struct.unnamed_resources_accessed.map(|v| v.into()),
             fixed_signer: rust_struct.fixed_signer.map(|v| v.into()),
-        }
-    }
-}
-
-impl From<SimulateTransactionResult> for RustSimulateTransactionResult {
-    fn from(ffi_struct: SimulateTransactionResult) -> Self {
-        Self {
-            txn_result: ffi_struct.txn_result.into(),
-            app_budget_consumed: ffi_struct.app_budget_consumed.map(|v| v.into()),
-            logic_sig_budget_consumed: ffi_struct.logic_sig_budget_consumed.map(|v| v.into()),
-            exec_trace: ffi_struct.exec_trace.map(|v| v.into()),
-            unnamed_resources_accessed: ffi_struct.unnamed_resources_accessed.map(|v| v.into()),
-            fixed_signer: ffi_struct.fixed_signer.map(|v| v.into()),
         }
     }
 }

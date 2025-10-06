@@ -12,7 +12,7 @@ use crate::models;
 use algod_client::models::GetBlockTxids as RustGetBlockTxids;
 
 /// Top level transaction IDs in a block.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct GetBlockTxids {
     /// Block transaction IDs.
     pub block_txids: Vec<String>,

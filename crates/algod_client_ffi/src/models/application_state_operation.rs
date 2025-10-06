@@ -15,7 +15,7 @@ use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
 use crate::models::AvmValue;
 
 /// An operation against an application's global/local/box state.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct ApplicationStateOperation {
     /// Operation type. Value `w` is **write**, `d` is **delete**.
     pub operation: String,

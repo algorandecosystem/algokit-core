@@ -16,7 +16,7 @@ use crate::models::SimulateTransactionResult;
 use crate::models::SimulateUnnamedResourcesAccessed;
 
 /// Simulation result for an atomic transaction group
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct SimulateTransactionGroupResult {
     /// Simulation result for individual transactions
     pub txn_results: Vec<SimulateTransactionResult>,
@@ -46,25 +46,6 @@ impl From<RustSimulateTransactionGroupResult> for SimulateTransactionGroupResult
             app_budget_added: rust_struct.app_budget_added.map(|v| v.into()),
             app_budget_consumed: rust_struct.app_budget_consumed.map(|v| v.into()),
             unnamed_resources_accessed: rust_struct.unnamed_resources_accessed.map(|v| v.into()),
-        }
-    }
-}
-
-impl From<SimulateTransactionGroupResult> for RustSimulateTransactionGroupResult {
-    fn from(ffi_struct: SimulateTransactionGroupResult) -> Self {
-        Self {
-            txn_results: ffi_struct
-                .txn_results
-                .into_iter()
-                .map(|v| v.into())
-                .collect(),
-            failure_message: ffi_struct.failure_message.map(|v| v.into()),
-            failed_at: ffi_struct
-                .failed_at
-                .map(|v| v.into_iter().map(|v| v.into()).collect()),
-            app_budget_added: ffi_struct.app_budget_added.map(|v| v.into()),
-            app_budget_consumed: ffi_struct.app_budget_consumed.map(|v| v.into()),
-            unnamed_resources_accessed: ffi_struct.unnamed_resources_accessed.map(|v| v.into()),
         }
     }
 }

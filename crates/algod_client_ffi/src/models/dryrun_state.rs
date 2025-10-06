@@ -14,7 +14,7 @@ use algod_client::models::DryrunState as RustDryrunState;
 use crate::models::TealValue;
 
 /// Stores the TEAL eval step data
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct DryrunState {
     /// Line number
     pub line: u64,

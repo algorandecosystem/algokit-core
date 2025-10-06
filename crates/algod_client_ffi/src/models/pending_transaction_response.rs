@@ -74,30 +74,3 @@ impl From<RustPendingTransactionResponse> for PendingTransactionResponse {
         }
     }
 }
-
-impl From<PendingTransactionResponse> for RustPendingTransactionResponse {
-    fn from(ffi_struct: PendingTransactionResponse) -> Self {
-        Self {
-            asset_id: ffi_struct.asset_id.map(|v| v.into()),
-            app_id: ffi_struct.app_id.map(|v| v.into()),
-            close_rewards: ffi_struct.close_rewards.map(|v| v.into()),
-            closing_amount: ffi_struct.closing_amount.map(|v| v.into()),
-            asset_closing_amount: ffi_struct.asset_closing_amount.map(|v| v.into()),
-            confirmed_round: ffi_struct.confirmed_round.map(|v| v.into()),
-            pool_error: ffi_struct.pool_error.into(),
-            receiver_rewards: ffi_struct.receiver_rewards.map(|v| v.into()),
-            sender_rewards: ffi_struct.sender_rewards.map(|v| v.into()),
-            local_state_delta: ffi_struct
-                .local_state_delta
-                .map(|v| v.into_iter().map(|v| v.into()).collect()),
-            global_state_delta: ffi_struct.global_state_delta.map(|v| v.into()),
-            logs: ffi_struct
-                .logs
-                .map(|v| v.into_iter().map(|v| v.into()).collect()),
-            inner_txns: ffi_struct
-                .inner_txns
-                .map(|v| v.into_iter().map(|v| v.into()).collect()),
-            txn: ffi_struct.txn.into(),
-        }
-    }
-}

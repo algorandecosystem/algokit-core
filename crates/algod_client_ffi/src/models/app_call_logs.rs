@@ -12,7 +12,7 @@ use crate::models;
 use algod_client::models::AppCallLogs as RustAppCallLogs;
 
 /// The logged messages from an app call along with the app ID and outer transaction ID. Logs appear in the same order that they were emitted.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct AppCallLogs {
     /// An array of logs
     pub logs: Vec<Vec<u8>>,

@@ -13,7 +13,7 @@ use algod_client::models::TransactionParams as RustTransactionParams;
 
 /// TransactionParams contains the parameters that help a client construct
 /// a new transaction.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct TransactionParams {
     /// ConsensusVersion indicates the consensus protocol version
     /// as of LastRound.

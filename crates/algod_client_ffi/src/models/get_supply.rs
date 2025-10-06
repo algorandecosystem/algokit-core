@@ -12,7 +12,7 @@ use crate::models;
 use algod_client::models::GetSupply as RustGetSupply;
 
 /// Supply represents the current supply of MicroAlgos in the system
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct GetSupply {
     /// Round
     pub current_round: u64,

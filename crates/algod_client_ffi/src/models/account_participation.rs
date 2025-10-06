@@ -13,7 +13,7 @@ use algod_client::models::AccountParticipation as RustAccountParticipation;
 use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
 
 /// AccountParticipation describes the parameters used by this account in consensus protocol.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct AccountParticipation {
     /// \[sel\] Selection public key (if any) currently registered for this round.
     pub selection_participation_key: Vec<u8>,

@@ -13,7 +13,7 @@ use algod_client::models::LedgerStateDelta as RustLedgerStateDelta;
 use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
 
 /// Ledger StateDelta object
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct LedgerStateDelta {}
 
 impl From<RustLedgerStateDelta> for LedgerStateDelta {

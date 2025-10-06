@@ -12,7 +12,7 @@ use crate::models;
 use algod_client::models::TransactionProof as RustTransactionProof;
 
 /// Proof of transaction in a block.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct TransactionProof {
     /// Proof of transaction membership.
     pub proof: Vec<u8>,

@@ -12,7 +12,7 @@ use crate::models;
 use algod_client::models::AddParticipationKey as RustAddParticipationKey;
 
 /// Participation ID of the submission
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct AddParticipationKey {
     /// encoding of the participation ID.
     pub part_id: String,

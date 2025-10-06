@@ -12,7 +12,7 @@ use crate::models;
 use algod_client::models::StartCatchup as RustStartCatchup;
 
 /// An catchpoint start response.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct StartCatchup {
     /// Catchup start response string
     pub catchup_message: String,

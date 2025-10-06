@@ -13,7 +13,7 @@ use algod_client::models::SimulateRequestTransactionGroup as RustSimulateRequest
 use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
 
 /// A transaction group to simulate.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct SimulateRequestTransactionGroup {
     /// An atomic transaction group.
     pub txns: Vec<AlgokitSignedTransaction>,
@@ -28,21 +28,14 @@ impl From<RustSimulateRequestTransactionGroup> for SimulateRequestTransactionGro
 }
 
 impl TryFrom<SimulateRequestTransactionGroup> for RustSimulateRequestTransactionGroup {
-    type Error = crate::apis::Error;
+    type Error = algokit_transact_ffi::AlgoKitTransactError;
 
     fn try_from(ffi_struct: SimulateRequestTransactionGroup) -> Result<Self, Self::Error> {
         Ok(Self {
             txns: ffi_struct
                 .txns
                 .into_iter()
-                .map(|v| {
-                    v.try_into()
-                        .map_err(|e: algokit_transact_ffi::AlgoKitTransactError| {
-                            crate::apis::Error::Serde {
-                                message: e.to_string(),
-                            }
-                        })
-                })
+                .map(|v| v.try_into())
                 .collect::<Result<_, _>>()?,
         })
     }

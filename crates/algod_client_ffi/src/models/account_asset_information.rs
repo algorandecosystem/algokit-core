@@ -16,7 +16,7 @@ use crate::models::AssetHolding;
 use crate::models::AssetParams;
 
 /// AccountAssetResponse describes the account's asset holding and asset parameters (if either exist) for a specific asset ID. Asset parameters will only be returned if the provided address is the asset's creator.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct AccountAssetInformation {
     /// The round for which this information is relevant.
     pub round: u64,

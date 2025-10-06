@@ -92,7 +92,7 @@ pub type {{ schema.rust_struct_name }} = {{ schema.underlying_rust_type }};
     {% endif %}
 {% endfor %}
 {% set needs_manual_default = complex_signed_tx_fields|length > 0 %}
-#[derive(Clone, {% if not needs_manual_default %}Default, {% endif %}Debug, PartialEq)]
+#[derive(Clone, {% if not needs_manual_default and not ffi %}Default, {% endif %}Debug, PartialEq)]
 {% if ffi %}
 #[derive(uniffi::Record)]
 {% else %}
@@ -281,7 +281,8 @@ impl From<Rust{{ schema.rust_struct_name }}> for {{ schema.rust_struct_name }} {
     }
 }
 
-{% set skip_from_types = ["GetPendingTransactions", "GetPendingTransactionsByAddress", "SimulateRequestTransactionGroup"] %}
+{# These types would require a TyFrom impl, most are return values only so there is no need to go from Ffi to Rust #}
+{% set skip_from_types = ["GetPendingTransactions", "GetPendingTransactionsByAddress", "SimulateRequestTransactionGroup", "PendingTransactionResponse", "SimulateTransactionResult", "SimulateTransactionGroupResult", "SimulateTransaction", "SimulateRequest"] %}
 {% if schema.rust_struct_name not in skip_from_types %}
 
 impl From<{{ schema.rust_struct_name }}> for Rust{{ schema.rust_struct_name }} {
@@ -307,7 +308,7 @@ impl From<{{ schema.rust_struct_name }}> for Rust{{ schema.rust_struct_name }} {
 }
 {% elif schema.rust_struct_name == "SimulateRequestTransactionGroup"%}
 impl TryFrom<SimulateRequestTransactionGroup> for RustSimulateRequestTransactionGroup {
-    type Error = crate::apis::Error;
+    type Error = algokit_transact_ffi::AlgoKitTransactError;
 
     fn try_from(ffi_struct: SimulateRequestTransactionGroup) -> Result<Self, Self::Error> {
         Ok(Self {
@@ -316,13 +317,36 @@ impl TryFrom<SimulateRequestTransactionGroup> for RustSimulateRequestTransaction
                 .into_iter()
                 .map(|v| {
                     v.try_into()
-                        .map_err(|e: algokit_transact_ffi::AlgoKitTransactError| {
-                            crate::apis::Error::Serde {
-                                message: e.to_string(),
-                            }
-                        })
                 })
                 .collect::<Result<_, _>>()?,
+        })
+    }
+}
+{% elif schema.rust_struct_name == "SimulateRequest"%}
+impl TryFrom<SimulateRequest> for RustSimulateRequest {
+    type Error = crate::apis::Error;
+
+    fn try_from(ffi_struct: SimulateRequest) -> Result<Self, Self::Error> {
+        Ok(Self {
+            txn_groups: ffi_struct
+                .txn_groups
+                .into_iter()
+                .map(|v| {
+                v.try_into()
+                    .map_err(|e: algokit_transact_ffi::AlgoKitTransactError| {
+                        crate::apis::Error::Serde {
+                            message: e.to_string(),
+                        }
+                    })
+                })
+                .collect::<Result<_, _>>()?,
+            round: ffi_struct.round.map(|v| v.into()),
+            allow_empty_signatures: ffi_struct.allow_empty_signatures.map(|v| v.into()),
+            allow_more_logging: ffi_struct.allow_more_logging.map(|v| v.into()),
+            allow_unnamed_resources: ffi_struct.allow_unnamed_resources.map(|v| v.into()),
+            extra_opcode_budget: ffi_struct.extra_opcode_budget.map(|v| v.into()),
+            exec_trace_config: ffi_struct.exec_trace_config.map(|v| v.into()),
+            fix_signers: ffi_struct.fix_signers.map(|v| v.into()),
         })
     }
 }

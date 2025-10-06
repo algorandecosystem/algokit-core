@@ -13,7 +13,7 @@ use algod_client::models::AvmValue as RustAvmValue;
 use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
 
 /// Represents an AVM value.
-#[derive(Clone, Default, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct AvmValue {
     /// value type. Value `1` refers to **bytes**, value `2` refers to **uint64**
     pub r#type: u64,
