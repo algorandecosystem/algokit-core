@@ -48,8 +48,8 @@ jobs:
       - name: Build all crates
         run: cargo build --workspace
 
-      - name: Run all Rust tests with verbose output
-        run: cargo test --workspace --verbose -- --nocapture
+      - name: Run Rust tests with cargo-nextest
+        run: cargo nextest run --workspace --all-targets --failure-output=immediate --status-level=all
 
   # A setup job to define the matricies that will be used across all of the jobs in this workflow
   setup:
