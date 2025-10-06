@@ -18,11 +18,11 @@ use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
 /// data/basics/userBalance.go : AssetHolding
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct AssetHolding {
-    /// \[a\] number of units held.
+    /// [a] number of units held.
     pub amount: u64,
     /// Asset ID of the holding.
     pub asset_id: u64,
-    /// \[f\] whether or not the holding is frozen.
+    /// [f] whether or not the holding is frozen.
     pub is_frozen: bool,
 }
 

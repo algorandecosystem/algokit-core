@@ -15,17 +15,17 @@ use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
 /// AccountParticipation describes the parameters used by this account in consensus protocol.
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct AccountParticipation {
-    /// \[sel\] Selection public key (if any) currently registered for this round.
+    /// [sel] Selection public key (if any) currently registered for this round.
     pub selection_participation_key: Vec<u8>,
-    /// \[voteFst\] First round for which this participation is valid.
+    /// [voteFst] First round for which this participation is valid.
     pub vote_first_valid: u64,
-    /// \[voteKD\] Number of subkeys in each batch of participation keys.
+    /// [voteKD] Number of subkeys in each batch of participation keys.
     pub vote_key_dilution: u64,
-    /// \[voteLst\] Last round for which this participation is valid.
+    /// [voteLst] Last round for which this participation is valid.
     pub vote_last_valid: u64,
-    /// \[vote\] root participation public key (if any) currently registered for this round.
+    /// [vote] root participation public key (if any) currently registered for this round.
     pub vote_participation_key: Vec<u8>,
-    /// \[stprf\] Root of the state proof key (if any)
+    /// [stprf] Root of the state proof key (if any)
     pub state_proof_key: Option<Vec<u8>>,
 }
 

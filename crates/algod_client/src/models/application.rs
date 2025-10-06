@@ -18,7 +18,7 @@ use crate::models::ApplicationParams;
 /// Application index and its parameters
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Application {
-    /// \[appidx\] application index.
+    /// [appidx] application index.
     #[serde(rename = "id")]
     pub id: u64,
     #[serde(rename = "params")]

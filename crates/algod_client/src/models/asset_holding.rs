@@ -19,13 +19,13 @@ use serde::{Deserialize, Serialize};
 /// data/basics/userBalance.go : AssetHolding
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct AssetHolding {
-    /// \[a\] number of units held.
+    /// [a] number of units held.
     #[serde(rename = "amount")]
     pub amount: u64,
     /// Asset ID of the holding.
     #[serde(rename = "asset-id")]
     pub asset_id: u64,
-    /// \[f\] whether or not the holding is frozen.
+    /// [f] whether or not the holding is frozen.
     #[serde(rename = "is-frozen")]
     pub is_frozen: bool,
 }

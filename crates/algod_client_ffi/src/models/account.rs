@@ -27,7 +27,7 @@ use crate::models::AssetHolding;
 pub struct Account {
     /// the account public key
     pub address: String,
-    /// \[algo\] total number of MicroAlgos in the account
+    /// [algo] total number of MicroAlgos in the account
     pub amount: u64,
     /// MicroAlgo balance required by the account.
     ///
@@ -35,49 +35,49 @@ pub struct Account {
     pub min_balance: u64,
     /// specifies the amount of MicroAlgos in the account, without the pending rewards.
     pub amount_without_pending_rewards: u64,
-    /// \[appl\] applications local data stored in this account.
+    /// [appl] applications local data stored in this account.
     ///
     /// Note the raw object uses `map[int] -> AppLocalState` for this type.
     pub apps_local_state: Option<Vec<ApplicationLocalState>>,
     /// The count of all applications that have been opted in, equivalent to the count of application local data (AppLocalState objects) stored in this account.
     pub total_apps_opted_in: u64,
     pub apps_total_schema: Option<ApplicationStateSchema>,
-    /// \[teap\] the sum of all extra application program pages for this account.
+    /// [teap] the sum of all extra application program pages for this account.
     pub apps_total_extra_pages: Option<u64>,
-    /// \[asset\] assets held by this account.
+    /// [asset] assets held by this account.
     ///
     /// Note the raw object uses `map[int] -> AssetHolding` for this type.
     pub assets: Option<Vec<AssetHolding>>,
     /// The count of all assets that have been opted in, equivalent to the count of AssetHolding objects held by this account.
     pub total_assets_opted_in: u64,
-    /// \[appp\] parameters of applications created by this account including app global data.
+    /// [appp] parameters of applications created by this account including app global data.
     ///
     /// Note: the raw account uses `map[int] -> AppParams` for this type.
     pub created_apps: Option<Vec<Application>>,
     /// The count of all apps (AppParams objects) created by this account.
     pub total_created_apps: u64,
-    /// \[apar\] parameters of assets created by this account.
+    /// [apar] parameters of assets created by this account.
     ///
     /// Note: the raw account uses `map[int] -> Asset` for this type.
     pub created_assets: Option<Vec<Asset>>,
     /// The count of all assets (AssetParams objects) created by this account.
     pub total_created_assets: u64,
-    /// \[tbx\] The number of existing boxes created by this account's app.
+    /// [tbx] The number of existing boxes created by this account's app.
     pub total_boxes: Option<u64>,
-    /// \[tbxb\] The total number of bytes used by this account's app's box keys and values.
+    /// [tbxb] The total number of bytes used by this account's app's box keys and values.
     pub total_box_bytes: Option<u64>,
     pub participation: Option<AccountParticipation>,
     /// Whether or not the account can receive block incentives if its balance is in range at proposal time.
     pub incentive_eligible: Option<bool>,
     /// amount of MicroAlgos of pending rewards in this account.
     pub pending_rewards: u64,
-    /// \[ebase\] used as part of the rewards computation. Only applicable to accounts which are participating.
+    /// [ebase] used as part of the rewards computation. Only applicable to accounts which are participating.
     pub reward_base: Option<u64>,
-    /// \[ern\] total rewards of MicroAlgos the account has received, including pending rewards.
+    /// [ern] total rewards of MicroAlgos the account has received, including pending rewards.
     pub rewards: u64,
     /// The round for which this information is relevant.
     pub round: u64,
-    /// \[onl\] delegation status of the account's MicroAlgos
+    /// [onl] delegation status of the account's MicroAlgos
     ///   * Offline - indicates that the associated account is delegated.
     ///   *  Online  - indicates that the associated account used as part of the delegation pool.
     ///   *   NotParticipating - indicates that the associated account is neither a delegator nor a delegate.
@@ -87,7 +87,7 @@ pub struct Account {
     ///   * msig
     ///   * lsig
     pub sig_type: Option<String>,
-    /// \[spend\] the address against which signing should be checked. If empty, the address of the current account is used. This field can be updated in any transaction by setting the RekeyTo field.
+    /// [spend] the address against which signing should be checked. If empty, the address of the current account is used. This field can be updated in any transaction by setting the RekeyTo field.
     pub auth_addr: Option<String>,
     /// The round in which this account last proposed the block.
     pub last_proposed: Option<u64>,

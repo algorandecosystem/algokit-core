@@ -15,11 +15,11 @@ use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
 /// Represents a TEAL value.
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct TealValue {
-    /// \[tt\] value type. Value `1` refers to **bytes**, value `2` refers to **uint**
+    /// [tt] value type. Value `1` refers to **bytes**, value `2` refers to **uint**
     pub r#type: u64,
-    /// \[tb\] bytes value.
+    /// [tb] bytes value.
     pub bytes: Vec<u8>,
-    /// \[ui\] uint value.
+    /// [ui] uint value.
     pub uint: u64,
 }
 

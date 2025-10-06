@@ -16,13 +16,13 @@ use serde::{Deserialize, Serialize};
 /// Represents a TEAL value delta.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct EvalDelta {
-    /// \[at\] delta action.
+    /// [at] delta action.
     #[serde(rename = "action")]
     pub action: u32,
-    /// \[bs\] bytes value.
+    /// [bs] bytes value.
     #[serde(rename = "bytes", skip_serializing_if = "Option::is_none")]
     pub bytes: Option<String>,
-    /// \[ui\] uint value.
+    /// [ui] uint value.
     #[serde(rename = "uint", skip_serializing_if = "Option::is_none")]
     pub uint: Option<u64>,
 }

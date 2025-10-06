@@ -20,16 +20,16 @@ use crate::models::TealKeyValueStore;
 pub struct ApplicationParams {
     /// The address that created this application. This is the address where the parameters and global state for this application can be found.
     pub creator: String,
-    /// \[approv\] approval program.
+    /// [approv] approval program.
     pub approval_program: Vec<u8>,
-    /// \[clearp\] approval program.
+    /// [clearp] approval program.
     pub clear_state_program: Vec<u8>,
-    /// \[epp\] the amount of extra program pages available to this app.
+    /// [epp] the amount of extra program pages available to this app.
     pub extra_program_pages: Option<u32>,
     pub local_state_schema: Option<ApplicationStateSchema>,
     pub global_state_schema: Option<ApplicationStateSchema>,
     pub global_state: Option<TealKeyValueStore>,
-    /// \[v\] the number of updates to the application programs
+    /// [v] the number of updates to the application programs
     pub version: Option<u64>,
 }
 

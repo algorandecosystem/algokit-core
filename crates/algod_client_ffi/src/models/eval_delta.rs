@@ -15,11 +15,11 @@ use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
 /// Represents a TEAL value delta.
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct EvalDelta {
-    /// \[at\] delta action.
+    /// [at] delta action.
     pub action: u32,
-    /// \[bs\] bytes value.
+    /// [bs] bytes value.
     pub bytes: Option<String>,
-    /// \[ui\] uint value.
+    /// [ui] uint value.
     pub uint: Option<u64>,
 }
 

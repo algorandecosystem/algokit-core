@@ -44,7 +44,7 @@ def rust_doc_comment(text: str, indent: int = 0) -> str:
     if not text:
         return ""
 
-    lines = text.strip().split("\n")
+    lines = text.strip().replace("\\[", "[").replace("\\]", "]").split("\n")
     indent_str = " " * indent
 
     if len(lines) == 1:

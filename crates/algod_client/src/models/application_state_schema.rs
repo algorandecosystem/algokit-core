@@ -16,10 +16,10 @@ use serde::{Deserialize, Serialize};
 /// Specifies maximums on the number of each type that may be stored.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ApplicationStateSchema {
-    /// \[nui\] num of uints.
+    /// [nui] num of uints.
     #[serde(rename = "num-uint")]
     pub num_uint: u32,
-    /// \[nbs\] num of byte slices.
+    /// [nbs] num of byte slices.
     #[serde(rename = "num-byte-slice")]
     pub num_byte_slice: u32,
 }
