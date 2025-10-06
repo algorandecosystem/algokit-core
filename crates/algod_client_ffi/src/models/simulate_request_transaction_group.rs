@@ -27,10 +27,23 @@ impl From<RustSimulateRequestTransactionGroup> for SimulateRequestTransactionGro
     }
 }
 
-impl From<SimulateRequestTransactionGroup> for RustSimulateRequestTransactionGroup {
-    fn from(ffi_struct: SimulateRequestTransactionGroup) -> Self {
-        Self {
-            txns: ffi_struct.txns.into_iter().map(|v| v.into()).collect(),
-        }
+impl TryFrom<SimulateRequestTransactionGroup> for RustSimulateRequestTransactionGroup {
+    type Error = crate::apis::Error;
+
+    fn try_from(ffi_struct: SimulateRequestTransactionGroup) -> Result<Self, Self::Error> {
+        Ok(Self {
+            txns: ffi_struct
+                .txns
+                .into_iter()
+                .map(|v| {
+                    v.try_into()
+                        .map_err(|e: algokit_transact_ffi::AlgoKitTransactError| {
+                            crate::apis::Error::Serde {
+                                message: e.to_string(),
+                            }
+                        })
+                })
+                .collect::<Result<_, _>>()?,
+        })
     }
 }

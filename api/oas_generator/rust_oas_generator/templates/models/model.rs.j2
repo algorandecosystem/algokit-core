@@ -281,7 +281,7 @@ impl From<Rust{{ schema.rust_struct_name }}> for {{ schema.rust_struct_name }} {
     }
 }
 
-{% set skip_from_types = ["GetPendingTransactions", "GetPendingTransactionsByAddress"] %}
+{% set skip_from_types = ["GetPendingTransactions", "GetPendingTransactionsByAddress", "SimulateRequestTransactionGroup"] %}
 {% if schema.rust_struct_name not in skip_from_types %}
 
 impl From<{{ schema.rust_struct_name }}> for Rust{{ schema.rust_struct_name }} {
@@ -303,6 +303,27 @@ impl From<{{ schema.rust_struct_name }}> for Rust{{ schema.rust_struct_name }} {
             {% endif %}
 {% endfor %}
         }
+    }
+}
+{% elif schema.rust_struct_name == "SimulateRequestTransactionGroup"%}
+impl TryFrom<SimulateRequestTransactionGroup> for RustSimulateRequestTransactionGroup {
+    type Error = crate::apis::Error;
+
+    fn try_from(ffi_struct: SimulateRequestTransactionGroup) -> Result<Self, Self::Error> {
+        Ok(Self {
+            txns: ffi_struct
+                .txns
+                .into_iter()
+                .map(|v| {
+                    v.try_into()
+                        .map_err(|e: algokit_transact_ffi::AlgoKitTransactError| {
+                            crate::apis::Error::Serde {
+                                message: e.to_string(),
+                            }
+                        })
+                })
+                .collect::<Result<_, _>>()?,
+        })
     }
 }
 {% endif %}
