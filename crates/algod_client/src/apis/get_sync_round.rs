@@ -20,9 +20,8 @@ use crate::models::{ErrorResponse, GetSyncRound};
 // Import request body type if needed
 
 /// struct for typed errors of method [`get_sync_round`]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[derive(Serialize, Deserialize)]
 pub enum GetSyncRoundError {
     Status400(ErrorResponse),
     Status401(ErrorResponse),

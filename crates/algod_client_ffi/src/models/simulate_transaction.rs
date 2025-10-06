@@ -36,7 +36,11 @@ impl From<RustSimulateTransaction> for SimulateTransaction {
         Self {
             version: rust_struct.version.into(),
             last_round: rust_struct.last_round.into(),
-            txn_groups: rust_struct.txn_groups.into(),
+            txn_groups: rust_struct
+                .txn_groups
+                .into_iter()
+                .map(|v| v.into())
+                .collect(),
             eval_overrides: rust_struct.eval_overrides.map(|v| v.into()),
             exec_trace_config: rust_struct.exec_trace_config.map(|v| v.into()),
             initial_states: rust_struct.initial_states.map(|v| v.into()),
@@ -49,7 +53,11 @@ impl From<SimulateTransaction> for RustSimulateTransaction {
         Self {
             version: ffi_struct.version.into(),
             last_round: ffi_struct.last_round.into(),
-            txn_groups: ffi_struct.txn_groups.into(),
+            txn_groups: ffi_struct
+                .txn_groups
+                .into_iter()
+                .map(|v| v.into())
+                .collect(),
             eval_overrides: ffi_struct.eval_overrides.map(|v| v.into()),
             exec_trace_config: ffi_struct.exec_trace_config.map(|v| v.into()),
             initial_states: ffi_struct.initial_states.map(|v| v.into()),

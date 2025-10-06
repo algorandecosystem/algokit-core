@@ -22,7 +22,7 @@ pub struct GetBlockLogs {
 impl From<RustGetBlockLogs> for GetBlockLogs {
     fn from(rust_struct: RustGetBlockLogs) -> Self {
         Self {
-            logs: rust_struct.logs.into(),
+            logs: rust_struct.logs.into_iter().map(|v| v.into()).collect(),
         }
     }
 }
@@ -30,7 +30,7 @@ impl From<RustGetBlockLogs> for GetBlockLogs {
 impl From<GetBlockLogs> for RustGetBlockLogs {
     fn from(ffi_struct: GetBlockLogs) -> Self {
         Self {
-            logs: ffi_struct.logs.into(),
+            logs: ffi_struct.logs.into_iter().map(|v| v.into()).collect(),
         }
     }
 }

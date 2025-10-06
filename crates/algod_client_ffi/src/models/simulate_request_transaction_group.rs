@@ -22,7 +22,7 @@ pub struct SimulateRequestTransactionGroup {
 impl From<RustSimulateRequestTransactionGroup> for SimulateRequestTransactionGroup {
     fn from(rust_struct: RustSimulateRequestTransactionGroup) -> Self {
         Self {
-            txns: rust_struct.txns.into(),
+            txns: rust_struct.txns.into_iter().map(|v| v.into()).collect(),
         }
     }
 }
@@ -30,7 +30,7 @@ impl From<RustSimulateRequestTransactionGroup> for SimulateRequestTransactionGro
 impl From<SimulateRequestTransactionGroup> for RustSimulateRequestTransactionGroup {
     fn from(ffi_struct: SimulateRequestTransactionGroup) -> Self {
         Self {
-            txns: ffi_struct.txns.into(),
+            txns: ffi_struct.txns.into_iter().map(|v| v.into()).collect(),
         }
     }
 }

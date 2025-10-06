@@ -20,9 +20,8 @@ use crate::models::DebugSettingsProf;
 // Import request body type if needed
 
 /// struct for typed errors of method [`get_debug_settings_prof`]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[derive(Serialize, Deserialize)]
 pub enum GetDebugSettingsProfError {
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),

@@ -34,7 +34,11 @@ pub struct SimulateTransactionGroupResult {
 impl From<RustSimulateTransactionGroupResult> for SimulateTransactionGroupResult {
     fn from(rust_struct: RustSimulateTransactionGroupResult) -> Self {
         Self {
-            txn_results: rust_struct.txn_results.into(),
+            txn_results: rust_struct
+                .txn_results
+                .into_iter()
+                .map(|v| v.into())
+                .collect(),
             failure_message: rust_struct.failure_message.map(|v| v.into()),
             failed_at: rust_struct.failed_at.map(|v| v.into()),
             app_budget_added: rust_struct.app_budget_added.map(|v| v.into()),
@@ -47,7 +51,11 @@ impl From<RustSimulateTransactionGroupResult> for SimulateTransactionGroupResult
 impl From<SimulateTransactionGroupResult> for RustSimulateTransactionGroupResult {
     fn from(ffi_struct: SimulateTransactionGroupResult) -> Self {
         Self {
-            txn_results: ffi_struct.txn_results.into(),
+            txn_results: ffi_struct
+                .txn_results
+                .into_iter()
+                .map(|v| v.into())
+                .collect(),
             failure_message: ffi_struct.failure_message.map(|v| v.into()),
             failed_at: ffi_struct.failed_at.map(|v| v.into()),
             app_budget_added: ffi_struct.app_budget_added.map(|v| v.into()),

@@ -20,9 +20,8 @@ use crate::models::{ErrorResponse, StartCatchup};
 // Import request body type if needed
 
 /// struct for typed errors of method [`start_catchup`]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[derive(Serialize, Deserialize)]
 pub enum StartCatchupError {
     Status400(ErrorResponse),
     Status401(ErrorResponse),

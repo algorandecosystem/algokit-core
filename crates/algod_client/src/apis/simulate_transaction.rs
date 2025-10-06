@@ -23,9 +23,8 @@ use crate::models::{ErrorResponse, SimulateTransaction};
 use crate::models::SimulateRequest;
 
 /// struct for typed errors of method [`simulate_transaction`]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[derive(Serialize, Deserialize)]
 pub enum SimulateTransactionError {
     Status400(ErrorResponse),
     Status401(ErrorResponse),

@@ -26,7 +26,7 @@ pub struct ApplicationKvStorage {
 impl From<RustApplicationKvStorage> for ApplicationKvStorage {
     fn from(rust_struct: RustApplicationKvStorage) -> Self {
         Self {
-            kvs: rust_struct.kvs.into(),
+            kvs: rust_struct.kvs.into_iter().map(|v| v.into()).collect(),
             account: rust_struct.account.map(|v| v.into()),
         }
     }
@@ -35,7 +35,7 @@ impl From<RustApplicationKvStorage> for ApplicationKvStorage {
 impl From<ApplicationKvStorage> for RustApplicationKvStorage {
     fn from(ffi_struct: ApplicationKvStorage) -> Self {
         Self {
-            kvs: ffi_struct.kvs.into(),
+            kvs: ffi_struct.kvs.into_iter().map(|v| v.into()).collect(),
             account: ffi_struct.account.map(|v| v.into()),
         }
     }

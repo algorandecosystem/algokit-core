@@ -20,9 +20,8 @@ use crate::models::{ErrorResponse, LightBlockHeaderProof};
 // Import request body type if needed
 
 /// struct for typed errors of method [`get_light_block_header_proof`]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[derive(Serialize, Deserialize)]
 pub enum GetLightBlockHeaderProofError {
     Status401(ErrorResponse),
     Status404(ErrorResponse),

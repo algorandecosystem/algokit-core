@@ -20,9 +20,8 @@ use crate::models::{ErrorResponse, ParticipationKey};
 // Import request body type if needed
 
 /// struct for typed errors of method [`get_participation_keys`]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[derive(Serialize, Deserialize)]
 pub enum GetParticipationKeysError {
     Status400(ErrorResponse),
     Status401(ErrorResponse),

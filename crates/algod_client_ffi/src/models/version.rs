@@ -28,7 +28,7 @@ impl From<RustVersion> for Version {
             build: rust_struct.build.into(),
             genesis_hash_b64: rust_struct.genesis_hash_b64.into(),
             genesis_id: rust_struct.genesis_id.into(),
-            versions: rust_struct.versions.into(),
+            versions: rust_struct.versions.into_iter().map(|v| v.into()).collect(),
         }
     }
 }
@@ -39,7 +39,7 @@ impl From<Version> for RustVersion {
             build: ffi_struct.build.into(),
             genesis_hash_b64: ffi_struct.genesis_hash_b64.into(),
             genesis_id: ffi_struct.genesis_id.into(),
-            versions: ffi_struct.versions.into(),
+            versions: ffi_struct.versions.into_iter().map(|v| v.into()).collect(),
         }
     }
 }

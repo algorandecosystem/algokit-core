@@ -791,3 +791,6 @@ impl From<&str> for ContentType {
         }
     }
 }
+
+// Re-export the consolidated client
+pub use client::AlgodClient;

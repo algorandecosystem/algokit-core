@@ -22,9 +22,8 @@ use crate::models::{ErrorResponse, GetPendingTransactions};
 // Import request body type if needed
 
 /// struct for typed errors of method [`get_pending_transactions`]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[derive(Serialize, Deserialize)]
 pub enum GetPendingTransactionsError {
     Status401(ErrorResponse),
     Status500(ErrorResponse),

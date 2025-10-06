@@ -563,12 +563,12 @@ impl From<&str> for ContentType {
     }
 }
 
+// Re-export the consolidated client
+pub use client::AlgodClient;
+
 pub fn urlencode<T: AsRef<str>>(s: T) -> String {
     ::url::form_urlencoded::byte_serialize(s.as_ref().as_bytes()).collect()
 }
-
-// Re-export the consolidated client
-pub use client::AlgodClient;
 
 // Re-export parameter enums
 pub use parameter_enums::*;

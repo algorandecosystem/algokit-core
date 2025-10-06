@@ -22,9 +22,8 @@ use crate::models::{AccountApplicationInformation, ErrorResponse};
 // Import request body type if needed
 
 /// struct for typed errors of method [`account_application_information`]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[derive(Serialize, Deserialize)]
 pub enum AccountApplicationInformationError {
     Status400(ErrorResponse),
     Status401(ErrorResponse),

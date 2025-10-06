@@ -22,9 +22,8 @@ use crate::models::{ErrorResponse, LedgerStateDelta};
 // Import request body type if needed
 
 /// struct for typed errors of method [`get_ledger_state_delta_for_transaction_group`]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[derive(Serialize, Deserialize)]
 pub enum GetLedgerStateDeltaForTransactionGroupError {
     Status401(ErrorResponse),
     Status404(ErrorResponse),

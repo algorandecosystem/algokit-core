@@ -25,7 +25,7 @@ pub struct AppCallLogs {
 impl From<RustAppCallLogs> for AppCallLogs {
     fn from(rust_struct: RustAppCallLogs) -> Self {
         Self {
-            logs: rust_struct.logs.into(),
+            logs: rust_struct.logs.into_iter().map(|v| v.into()).collect(),
             app_id: rust_struct.app_id.into(),
             tx_id: rust_struct.tx_id.into(),
         }
@@ -35,7 +35,7 @@ impl From<RustAppCallLogs> for AppCallLogs {
 impl From<AppCallLogs> for RustAppCallLogs {
     fn from(ffi_struct: AppCallLogs) -> Self {
         Self {
-            logs: ffi_struct.logs.into(),
+            logs: ffi_struct.logs.into_iter().map(|v| v.into()).collect(),
             app_id: ffi_struct.app_id.into(),
             tx_id: ffi_struct.tx_id.into(),
         }

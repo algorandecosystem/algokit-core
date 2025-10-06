@@ -26,7 +26,11 @@ pub struct GetPendingTransactions {
 impl From<RustGetPendingTransactions> for GetPendingTransactions {
     fn from(rust_struct: RustGetPendingTransactions) -> Self {
         Self {
-            top_transactions: rust_struct.top_transactions.into(),
+            top_transactions: rust_struct
+                .top_transactions
+                .into_iter()
+                .map(|v| v.into())
+                .collect(),
             total_transactions: rust_struct.total_transactions.into(),
         }
     }
@@ -35,7 +39,11 @@ impl From<RustGetPendingTransactions> for GetPendingTransactions {
 impl From<GetPendingTransactions> for RustGetPendingTransactions {
     fn from(ffi_struct: GetPendingTransactions) -> Self {
         Self {
-            top_transactions: ffi_struct.top_transactions.into(),
+            top_transactions: ffi_struct
+                .top_transactions
+                .into_iter()
+                .map(|v| v.into())
+                .collect(),
             total_transactions: ffi_struct.total_transactions.into(),
         }
     }

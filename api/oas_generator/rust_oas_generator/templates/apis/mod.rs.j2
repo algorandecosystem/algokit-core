@@ -121,13 +121,13 @@ impl From<&str> for ContentType {
     }
 }
 
+// Re-export the consolidated client
+pub use client::{{ client_type }}Client;
+
 {% if not ffi %}
 pub fn urlencode<T: AsRef<str>>(s: T) -> String {
     ::url::form_urlencoded::byte_serialize(s.as_ref().as_bytes()).collect()
 }
-
-// Re-export the consolidated client
-pub use client::{{ client_type }}Client;
 
 {% if param_enums %}
 // Re-export parameter enums

@@ -22,7 +22,7 @@ pub struct GetApplicationBoxes {
 impl From<RustGetApplicationBoxes> for GetApplicationBoxes {
     fn from(rust_struct: RustGetApplicationBoxes) -> Self {
         Self {
-            boxes: rust_struct.boxes.into(),
+            boxes: rust_struct.boxes.into_iter().map(|v| v.into()).collect(),
         }
     }
 }
@@ -30,7 +30,7 @@ impl From<RustGetApplicationBoxes> for GetApplicationBoxes {
 impl From<GetApplicationBoxes> for RustGetApplicationBoxes {
     fn from(ffi_struct: GetApplicationBoxes) -> Self {
         Self {
-            boxes: ffi_struct.boxes.into(),
+            boxes: ffi_struct.boxes.into_iter().map(|v| v.into()).collect(),
         }
     }
 }

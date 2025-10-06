@@ -34,13 +34,13 @@ pub struct DryrunRequest {
 impl From<RustDryrunRequest> for DryrunRequest {
     fn from(rust_struct: RustDryrunRequest) -> Self {
         Self {
-            txns: rust_struct.txns.into(),
-            accounts: rust_struct.accounts.into(),
-            apps: rust_struct.apps.into(),
+            txns: rust_struct.txns.into_iter().map(|v| v.into()).collect(),
+            accounts: rust_struct.accounts.into_iter().map(|v| v.into()).collect(),
+            apps: rust_struct.apps.into_iter().map(|v| v.into()).collect(),
             protocol_version: rust_struct.protocol_version.into(),
             round: rust_struct.round.into(),
             latest_timestamp: rust_struct.latest_timestamp.into(),
-            sources: rust_struct.sources.into(),
+            sources: rust_struct.sources.into_iter().map(|v| v.into()).collect(),
         }
     }
 }
@@ -48,13 +48,13 @@ impl From<RustDryrunRequest> for DryrunRequest {
 impl From<DryrunRequest> for RustDryrunRequest {
     fn from(ffi_struct: DryrunRequest) -> Self {
         Self {
-            txns: ffi_struct.txns.into(),
-            accounts: ffi_struct.accounts.into(),
-            apps: ffi_struct.apps.into(),
+            txns: ffi_struct.txns.into_iter().map(|v| v.into()).collect(),
+            accounts: ffi_struct.accounts.into_iter().map(|v| v.into()).collect(),
+            apps: ffi_struct.apps.into_iter().map(|v| v.into()).collect(),
             protocol_version: ffi_struct.protocol_version.into(),
             round: ffi_struct.round.into(),
             latest_timestamp: ffi_struct.latest_timestamp.into(),
-            sources: ffi_struct.sources.into(),
+            sources: ffi_struct.sources.into_iter().map(|v| v.into()).collect(),
         }
     }
 }

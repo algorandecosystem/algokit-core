@@ -38,7 +38,11 @@ pub struct SimulateRequest {
 impl From<RustSimulateRequest> for SimulateRequest {
     fn from(rust_struct: RustSimulateRequest) -> Self {
         Self {
-            txn_groups: rust_struct.txn_groups.into(),
+            txn_groups: rust_struct
+                .txn_groups
+                .into_iter()
+                .map(|v| v.into())
+                .collect(),
             round: rust_struct.round.map(|v| v.into()),
             allow_empty_signatures: rust_struct.allow_empty_signatures.map(|v| v.into()),
             allow_more_logging: rust_struct.allow_more_logging.map(|v| v.into()),
@@ -53,7 +57,11 @@ impl From<RustSimulateRequest> for SimulateRequest {
 impl From<SimulateRequest> for RustSimulateRequest {
     fn from(ffi_struct: SimulateRequest) -> Self {
         Self {
-            txn_groups: ffi_struct.txn_groups.into(),
+            txn_groups: ffi_struct
+                .txn_groups
+                .into_iter()
+                .map(|v| v.into())
+                .collect(),
             round: ffi_struct.round.map(|v| v.into()),
             allow_empty_signatures: ffi_struct.allow_empty_signatures.map(|v| v.into()),
             allow_more_logging: ffi_struct.allow_more_logging.map(|v| v.into()),

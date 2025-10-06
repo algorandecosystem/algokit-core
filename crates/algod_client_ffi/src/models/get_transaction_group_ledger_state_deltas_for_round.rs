@@ -25,7 +25,7 @@ impl From<RustGetTransactionGroupLedgerStateDeltasForRound>
 {
     fn from(rust_struct: RustGetTransactionGroupLedgerStateDeltasForRound) -> Self {
         Self {
-            deltas: rust_struct.deltas.into(),
+            deltas: rust_struct.deltas.into_iter().map(|v| v.into()).collect(),
         }
     }
 }
@@ -35,7 +35,7 @@ impl From<GetTransactionGroupLedgerStateDeltasForRound>
 {
     fn from(ffi_struct: GetTransactionGroupLedgerStateDeltasForRound) -> Self {
         Self {
-            deltas: ffi_struct.deltas.into(),
+            deltas: ffi_struct.deltas.into_iter().map(|v| v.into()).collect(),
         }
     }
 }

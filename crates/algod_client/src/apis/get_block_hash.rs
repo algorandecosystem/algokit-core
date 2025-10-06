@@ -20,9 +20,8 @@ use crate::models::{ErrorResponse, GetBlockHash};
 // Import request body type if needed
 
 /// struct for typed errors of method [`get_block_hash`]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[derive(Serialize, Deserialize)]
 pub enum GetBlockHashError {
     Status400(ErrorResponse),
     Status401(ErrorResponse),

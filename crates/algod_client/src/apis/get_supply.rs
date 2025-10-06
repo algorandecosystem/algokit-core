@@ -20,9 +20,8 @@ use crate::models::{ErrorResponse, GetSupply};
 // Import request body type if needed
 
 /// struct for typed errors of method [`get_supply`]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[derive(Serialize, Deserialize)]
 pub enum GetSupplyError {
     Status401(ErrorResponse),
     Statusdefault(),

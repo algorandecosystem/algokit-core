@@ -38,7 +38,11 @@ pub struct DryrunTxnResult {
 impl From<RustDryrunTxnResult> for DryrunTxnResult {
     fn from(rust_struct: RustDryrunTxnResult) -> Self {
         Self {
-            disassembly: rust_struct.disassembly.into(),
+            disassembly: rust_struct
+                .disassembly
+                .into_iter()
+                .map(|v| v.into())
+                .collect(),
             logic_sig_disassembly: rust_struct.logic_sig_disassembly.map(|v| v.into()),
             logic_sig_trace: rust_struct.logic_sig_trace.map(|v| v.into()),
             logic_sig_messages: rust_struct.logic_sig_messages.map(|v| v.into()),
@@ -56,7 +60,11 @@ impl From<RustDryrunTxnResult> for DryrunTxnResult {
 impl From<DryrunTxnResult> for RustDryrunTxnResult {
     fn from(ffi_struct: DryrunTxnResult) -> Self {
         Self {
-            disassembly: ffi_struct.disassembly.into(),
+            disassembly: ffi_struct
+                .disassembly
+                .into_iter()
+                .map(|v| v.into())
+                .collect(),
             logic_sig_disassembly: ffi_struct.logic_sig_disassembly.map(|v| v.into()),
             logic_sig_trace: ffi_struct.logic_sig_trace.map(|v| v.into()),
             logic_sig_messages: ffi_struct.logic_sig_messages.map(|v| v.into()),

@@ -19,9 +19,8 @@ use super::{AlgodApiError, ContentType, Error};
 // Import request body type if needed
 
 /// struct for typed errors of method [`get_config`]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[derive(Serialize, Deserialize)]
 pub enum GetConfigError {
     Statusdefault(),
     DefaultResponse(),

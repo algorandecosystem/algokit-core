@@ -21,7 +21,11 @@ pub struct GetBlockTxids {
 impl From<RustGetBlockTxids> for GetBlockTxids {
     fn from(rust_struct: RustGetBlockTxids) -> Self {
         Self {
-            block_txids: rust_struct.block_txids.into(),
+            block_txids: rust_struct
+                .block_txids
+                .into_iter()
+                .map(|v| v.into())
+                .collect(),
         }
     }
 }
@@ -29,7 +33,11 @@ impl From<RustGetBlockTxids> for GetBlockTxids {
 impl From<GetBlockTxids> for RustGetBlockTxids {
     fn from(ffi_struct: GetBlockTxids) -> Self {
         Self {
-            block_txids: ffi_struct.block_txids.into(),
+            block_txids: ffi_struct
+                .block_txids
+                .into_iter()
+                .map(|v| v.into())
+                .collect(),
         }
     }
 }

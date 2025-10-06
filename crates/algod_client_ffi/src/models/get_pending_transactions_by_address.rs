@@ -26,7 +26,11 @@ pub struct GetPendingTransactionsByAddress {
 impl From<RustGetPendingTransactionsByAddress> for GetPendingTransactionsByAddress {
     fn from(rust_struct: RustGetPendingTransactionsByAddress) -> Self {
         Self {
-            top_transactions: rust_struct.top_transactions.into(),
+            top_transactions: rust_struct
+                .top_transactions
+                .into_iter()
+                .map(|v| v.into())
+                .collect(),
             total_transactions: rust_struct.total_transactions.into(),
         }
     }
@@ -35,7 +39,11 @@ impl From<RustGetPendingTransactionsByAddress> for GetPendingTransactionsByAddre
 impl From<GetPendingTransactionsByAddress> for RustGetPendingTransactionsByAddress {
     fn from(ffi_struct: GetPendingTransactionsByAddress) -> Self {
         Self {
-            top_transactions: ffi_struct.top_transactions.into(),
+            top_transactions: ffi_struct
+                .top_transactions
+                .into_iter()
+                .map(|v| v.into())
+                .collect(),
             total_transactions: ffi_struct.total_transactions.into(),
         }
     }

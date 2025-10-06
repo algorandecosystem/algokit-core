@@ -20,9 +20,8 @@ use crate::models::{ErrorResponse, TealCompile};
 // Import request body type if needed
 
 /// struct for typed errors of method [`teal_compile`]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[derive(Serialize, Deserialize)]
 pub enum TealCompileError {
     Status400(ErrorResponse),
     Status401(ErrorResponse),

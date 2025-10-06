@@ -20,9 +20,8 @@ use crate::models::{ErrorResponse, TransactionParams};
 // Import request body type if needed
 
 /// struct for typed errors of method [`transaction_params`]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[derive(Serialize, Deserialize)]
 pub enum TransactionParamsError {
     Status401(ErrorResponse),
     Status500(ErrorResponse),
