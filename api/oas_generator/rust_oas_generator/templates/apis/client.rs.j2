@@ -154,7 +154,11 @@ impl {{ client_type }}Client {
         self.inner_algod_client.{{ operation.rust_function_name }}(
         {% if has_request_body(operation) %}
             {% if is_request_body_required(operation) %}
+            {% if operation.rust_function_name == "simulate_transaction" %}
+            {{ get_request_body_name(operation) }}.try_into()?,
+            {%else%}
             {{ get_request_body_name(operation) }}.into(),
+            {% endif %}
             {% else %}
             {{ get_request_body_name(operation) }}.map(|v| v.into()),
             {% endif %}

@@ -417,7 +417,7 @@ impl AlgodClient {
         format: Option<Format>,
     ) -> Result<SimulateTransaction, Error> {
         self.inner_algod_client
-            .simulate_transaction(request.into(), format.map(|v| v.into()))
+            .simulate_transaction(request.try_into()?, format.map(|v| v.into()))
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
