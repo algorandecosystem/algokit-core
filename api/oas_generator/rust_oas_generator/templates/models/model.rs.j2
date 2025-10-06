@@ -73,7 +73,14 @@ use crate::models::{{ alias_inner }};
 {% if schema.description %}
 {{ schema.description | rust_doc_comment }}
 {% endif %}
+{% if ffi %}
+#[derive(Clone, Debug, PartialEq)]
+pub struct {{ schema.rust_struct_name }}({{ schema.underlying_rust_type }});
+
+uniffi::custom_newtype!({{ schema.rust_struct_name }}, {{ schema.underlying_rust_type }});
+{% else %}
 pub type {{ schema.rust_struct_name }} = {{ schema.underlying_rust_type }};
+{% endif %}
 {# Handle string enum schemas as Rust enums #}
 {% elif schema.is_string_enum %}
 {{ generate_string_enum(schema.rust_struct_name, schema.enum_values, schema.description) }}
@@ -258,9 +265,12 @@ impl {{ schema.rust_struct_name }} {
 }
 {% endif %}
 
-{% if ffi and schema.schema_type != "array" %}
+{% if ffi %}
 impl From<Rust{{ schema.rust_struct_name }}> for {{ schema.rust_struct_name }} {
     fn from(rust_struct: Rust{{ schema.rust_struct_name }}) -> Self {
+        {% if schema.schema_type == 'array' and schema.underlying_rust_type %}
+        Self(rust_struct.into_iter().map(|v| v.into()).collect())
+        {% else %}
         Self {
 {% for property in schema.properties %}
             {% if property.required %}
@@ -270,7 +280,7 @@ impl From<Rust{{ schema.rust_struct_name }}> for {{ schema.rust_struct_name }} {
             {{ property.rust_field_name }}: rust_struct.{{ property.rust_field_name }}.into(),
             {% endif %}
             {% else %}
-            {% if "Vec<" in property.rust_type or property.rust_type in ["StateDelta", "EvalDeltaKeyValue", "TealKeyValue"] %}
+            {% if "Vec<" in property.rust_type  %}
             {{ property.rust_field_name }}: rust_struct.{{ property.rust_field_name }}.map(|v| v.into_iter().map(|v| v.into()).collect()),
             {% else %}
             {{ property.rust_field_name }}: rust_struct.{{ property.rust_field_name }}.map(|v| v.into()),
@@ -278,15 +288,19 @@ impl From<Rust{{ schema.rust_struct_name }}> for {{ schema.rust_struct_name }} {
             {% endif %}
 {% endfor %}
         }
+{%endif%}
     }
 }
 
 {# These types would require a TyFrom impl, most are return values only so there is no need to go from Ffi to Rust #}
-{% set skip_from_types = ["GetPendingTransactions", "GetPendingTransactionsByAddress", "SimulateRequestTransactionGroup", "PendingTransactionResponse", "SimulateTransactionResult", "SimulateTransactionGroupResult", "SimulateTransaction", "SimulateRequest", "DryrunRequest", "DryrunTxnResult", "ApplicationParams", "TealDryrun", "ApplicationParams"] %}
+{% set skip_from_types = ["GetPendingTransactions", "GetPendingTransactionsByAddress", "SimulateRequestTransactionGroup", "PendingTransactionResponse", "SimulateTransactionResult", "SimulateTransactionGroupResult", "SimulateTransaction", "SimulateRequest", "DryrunRequest", "DryrunTxnResult", "ApplicationParams", "TealDryrun", "ApplicationParams", "AccountApplicationInformation"] %}
 {% if schema.rust_struct_name not in skip_from_types %}
 
 impl From<{{ schema.rust_struct_name }}> for Rust{{ schema.rust_struct_name }} {
     fn from(ffi_struct: {{ schema.rust_struct_name }}) -> Self {
+        {% if schema.schema_type == 'array' and schema.underlying_rust_type %}
+        rust_struct.0.into_iter().map(|v| v.into()).collect()
+        {% else %}
         Self {
 {% for property in schema.properties %}
             {% if property.required %}
@@ -304,6 +318,7 @@ impl From<{{ schema.rust_struct_name }}> for Rust{{ schema.rust_struct_name }} {
             {% endif %}
 {% endfor %}
         }
+    {% endif %}
     }
 }
 {% elif schema.rust_struct_name == "SimulateRequestTransactionGroup"%}

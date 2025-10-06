@@ -33,13 +33,3 @@ impl From<RustAccountApplicationInformation> for AccountApplicationInformation {
         }
     }
 }
-
-impl From<AccountApplicationInformation> for RustAccountApplicationInformation {
-    fn from(ffi_struct: AccountApplicationInformation) -> Self {
-        Self {
-            round: ffi_struct.round.into(),
-            app_local_state: ffi_struct.app_local_state.map(|v| v.into()),
-            created_app: ffi_struct.created_app.map(|v| v.into()),
-        }
-    }
-}

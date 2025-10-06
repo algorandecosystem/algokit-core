@@ -15,4 +15,19 @@ use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
 use crate::models::TealKeyValue;
 
 /// Represents a key-value store for use in an application.
-pub type TealKeyValueStore = Vec<TealKeyValue>;
+#[derive(Clone, Debug, PartialEq)]
+pub struct TealKeyValueStore(Vec<TealKeyValue>);
+
+uniffi::custom_newtype!(TealKeyValueStore, Vec<TealKeyValue>);
+
+impl From<RustTealKeyValueStore> for TealKeyValueStore {
+    fn from(rust_struct: RustTealKeyValueStore) -> Self {
+        Self(rust_struct.into_iter().map(|v| v.into()).collect())
+    }
+}
+
+impl From<TealKeyValueStore> for RustTealKeyValueStore {
+    fn from(ffi_struct: TealKeyValueStore) -> Self {
+        rust_struct.0.into_iter().map(|v| v.into()).collect()
+    }
+}

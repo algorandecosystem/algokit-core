@@ -63,9 +63,7 @@ impl From<RustPendingTransactionResponse> for PendingTransactionResponse {
             local_state_delta: rust_struct
                 .local_state_delta
                 .map(|v| v.into_iter().map(|v| v.into()).collect()),
-            global_state_delta: rust_struct
-                .global_state_delta
-                .map(|v| v.into_iter().map(|v| v.into()).collect()),
+            global_state_delta: rust_struct.global_state_delta.map(|v| v.into()),
             logs: rust_struct
                 .logs
                 .map(|v| v.into_iter().map(|v| v.into()).collect()),

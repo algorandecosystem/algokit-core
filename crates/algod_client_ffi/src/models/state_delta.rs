@@ -15,4 +15,19 @@ use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
 use crate::models::EvalDeltaKeyValue;
 
 /// Application state delta.
-pub type StateDelta = Vec<EvalDeltaKeyValue>;
+#[derive(Clone, Debug, PartialEq)]
+pub struct StateDelta(Vec<EvalDeltaKeyValue>);
+
+uniffi::custom_newtype!(StateDelta, Vec<EvalDeltaKeyValue>);
+
+impl From<RustStateDelta> for StateDelta {
+    fn from(rust_struct: RustStateDelta) -> Self {
+        Self(rust_struct.into_iter().map(|v| v.into()).collect())
+    }
+}
+
+impl From<StateDelta> for RustStateDelta {
+    fn from(ffi_struct: StateDelta) -> Self {
+        rust_struct.0.into_iter().map(|v| v.into()).collect()
+    }
+}

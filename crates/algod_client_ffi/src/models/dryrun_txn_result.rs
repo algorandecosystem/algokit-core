@@ -58,9 +58,7 @@ impl From<RustDryrunTxnResult> for DryrunTxnResult {
             app_call_messages: rust_struct
                 .app_call_messages
                 .map(|v| v.into_iter().map(|v| v.into()).collect()),
-            global_delta: rust_struct
-                .global_delta
-                .map(|v| v.into_iter().map(|v| v.into()).collect()),
+            global_delta: rust_struct.global_delta.map(|v| v.into()),
             local_deltas: rust_struct
                 .local_deltas
                 .map(|v| v.into_iter().map(|v| v.into()).collect()),
