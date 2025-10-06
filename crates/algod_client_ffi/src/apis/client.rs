@@ -639,7 +639,7 @@ impl AlgodClient {
     /// Provide debugging information for a transaction (or group).
     pub async fn teal_dryrun(&self, request: Option<DryrunRequest>) -> Result<TealDryrun, Error> {
         self.inner_algod_client
-            .teal_dryrun(request.map(|v| v.into()))
+            .teal_dryrun(request.map(|v| v.try_into()).transpose()?)
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())

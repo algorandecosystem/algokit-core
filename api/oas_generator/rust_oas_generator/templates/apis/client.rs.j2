@@ -160,7 +160,11 @@ impl {{ client_type }}Client {
             {{ get_request_body_name(operation) }}.into(),
             {% endif %}
             {% else %}
+            {% if operation.rust_function_name == "teal_dryrun" %}
+            {{ get_request_body_name(operation) }}.map(|v| v.try_into()).transpose()?,
+            {%else%}
             {{ get_request_body_name(operation) }}.map(|v| v.into()),
+            {% endif %}
             {% endif %}
         {% endif %}
         {% for param in operation.parameters %}
