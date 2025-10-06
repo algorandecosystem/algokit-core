@@ -277,6 +277,9 @@ impl From<Rust{{ schema.rust_struct_name }}> for {{ schema.rust_struct_name }} {
     }
 }
 
+{% set skip_from_types = ["GetPendingTransactions", "GetPendingTransactionsByAddress"] %}
+{% if schema.rust_struct_name not in skip_from_types %}
+
 impl From<{{ schema.rust_struct_name }}> for Rust{{ schema.rust_struct_name }} {
     fn from(ffi_struct: {{ schema.rust_struct_name }}) -> Self {
         Self {
@@ -294,5 +297,5 @@ impl From<{{ schema.rust_struct_name }}> for Rust{{ schema.rust_struct_name }} {
         }
     }
 }
-
+{% endif %}
 {% endif %}
