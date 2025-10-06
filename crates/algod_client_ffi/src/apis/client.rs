@@ -292,7 +292,7 @@ impl AlgodClient {
         self.inner_algod_client
             .get_participation_keys()
             .await
-            .map(|v| v.into())
+            .map(|v| v.into_iter().map(|item| item.into()).collect())
             .map_err(|e| e.into())
     }
 
