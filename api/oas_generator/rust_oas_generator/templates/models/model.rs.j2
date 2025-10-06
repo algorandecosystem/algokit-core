@@ -270,7 +270,11 @@ impl From<Rust{{ schema.rust_struct_name }}> for {{ schema.rust_struct_name }} {
             {{ property.rust_field_name }}: rust_struct.{{ property.rust_field_name }}.into(),
             {% endif %}
             {% else %}
+            {% if "Vec<" in property.rust_type %}
+            {{ property.rust_field_name }}: rust_struct.{{ property.rust_field_name }}.map(|v| v.into_iter().map(|v| v.into()).collect()),
+            {% else %}
             {{ property.rust_field_name }}: rust_struct.{{ property.rust_field_name }}.map(|v| v.into()),
+            {% endif %}
             {% endif %}
 {% endfor %}
         }
@@ -291,7 +295,11 @@ impl From<{{ schema.rust_struct_name }}> for Rust{{ schema.rust_struct_name }} {
             {{ property.rust_field_name }}: ffi_struct.{{ property.rust_field_name }}.into(),
             {% endif %}
             {% else %}
+            {% if "Vec<" in property.rust_type %}
+            {{ property.rust_field_name }}: ffi_struct.{{ property.rust_field_name }}.map(|v| v.into_iter().map(|v| v.into()).collect()),
+            {% else %}
             {{ property.rust_field_name }}: ffi_struct.{{ property.rust_field_name }}.map(|v| v.into()),
+            {% endif %}
             {% endif %}
 {% endfor %}
         }

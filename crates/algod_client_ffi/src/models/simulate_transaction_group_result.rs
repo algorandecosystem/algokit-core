@@ -40,7 +40,9 @@ impl From<RustSimulateTransactionGroupResult> for SimulateTransactionGroupResult
                 .map(|v| v.into())
                 .collect(),
             failure_message: rust_struct.failure_message.map(|v| v.into()),
-            failed_at: rust_struct.failed_at.map(|v| v.into()),
+            failed_at: rust_struct
+                .failed_at
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
             app_budget_added: rust_struct.app_budget_added.map(|v| v.into()),
             app_budget_consumed: rust_struct.app_budget_consumed.map(|v| v.into()),
             unnamed_resources_accessed: rust_struct.unnamed_resources_accessed.map(|v| v.into()),
@@ -57,7 +59,9 @@ impl From<SimulateTransactionGroupResult> for RustSimulateTransactionGroupResult
                 .map(|v| v.into())
                 .collect(),
             failure_message: ffi_struct.failure_message.map(|v| v.into()),
-            failed_at: ffi_struct.failed_at.map(|v| v.into()),
+            failed_at: ffi_struct
+                .failed_at
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
             app_budget_added: ffi_struct.app_budget_added.map(|v| v.into()),
             app_budget_consumed: ffi_struct.app_budget_consumed.map(|v| v.into()),
             unnamed_resources_accessed: ffi_struct.unnamed_resources_accessed.map(|v| v.into()),

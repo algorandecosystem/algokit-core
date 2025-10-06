@@ -38,13 +38,25 @@ pub struct SimulateUnnamedResourcesAccessed {
 impl From<RustSimulateUnnamedResourcesAccessed> for SimulateUnnamedResourcesAccessed {
     fn from(rust_struct: RustSimulateUnnamedResourcesAccessed) -> Self {
         Self {
-            accounts: rust_struct.accounts.map(|v| v.into()),
-            assets: rust_struct.assets.map(|v| v.into()),
-            apps: rust_struct.apps.map(|v| v.into()),
-            boxes: rust_struct.boxes.map(|v| v.into()),
+            accounts: rust_struct
+                .accounts
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
+            assets: rust_struct
+                .assets
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
+            apps: rust_struct
+                .apps
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
+            boxes: rust_struct
+                .boxes
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
             extra_box_refs: rust_struct.extra_box_refs.map(|v| v.into()),
-            asset_holdings: rust_struct.asset_holdings.map(|v| v.into()),
-            app_locals: rust_struct.app_locals.map(|v| v.into()),
+            asset_holdings: rust_struct
+                .asset_holdings
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
+            app_locals: rust_struct
+                .app_locals
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
         }
     }
 }
@@ -52,13 +64,25 @@ impl From<RustSimulateUnnamedResourcesAccessed> for SimulateUnnamedResourcesAcce
 impl From<SimulateUnnamedResourcesAccessed> for RustSimulateUnnamedResourcesAccessed {
     fn from(ffi_struct: SimulateUnnamedResourcesAccessed) -> Self {
         Self {
-            accounts: ffi_struct.accounts.map(|v| v.into()),
-            assets: ffi_struct.assets.map(|v| v.into()),
-            apps: ffi_struct.apps.map(|v| v.into()),
-            boxes: ffi_struct.boxes.map(|v| v.into()),
+            accounts: ffi_struct
+                .accounts
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
+            assets: ffi_struct
+                .assets
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
+            apps: ffi_struct
+                .apps
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
+            boxes: ffi_struct
+                .boxes
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
             extra_box_refs: ffi_struct.extra_box_refs.map(|v| v.into()),
-            asset_holdings: ffi_struct.asset_holdings.map(|v| v.into()),
-            app_locals: ffi_struct.app_locals.map(|v| v.into()),
+            asset_holdings: ffi_struct
+                .asset_holdings
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
+            app_locals: ffi_struct
+                .app_locals
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
         }
     }
 }

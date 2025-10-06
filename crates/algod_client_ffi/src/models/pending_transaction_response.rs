@@ -60,10 +60,16 @@ impl From<RustPendingTransactionResponse> for PendingTransactionResponse {
             pool_error: rust_struct.pool_error.into(),
             receiver_rewards: rust_struct.receiver_rewards.map(|v| v.into()),
             sender_rewards: rust_struct.sender_rewards.map(|v| v.into()),
-            local_state_delta: rust_struct.local_state_delta.map(|v| v.into()),
+            local_state_delta: rust_struct
+                .local_state_delta
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
             global_state_delta: rust_struct.global_state_delta.map(|v| v.into()),
-            logs: rust_struct.logs.map(|v| v.into()),
-            inner_txns: rust_struct.inner_txns.map(|v| v.into()),
+            logs: rust_struct
+                .logs
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
+            inner_txns: rust_struct
+                .inner_txns
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
             txn: rust_struct.txn.into(),
         }
     }
@@ -81,10 +87,16 @@ impl From<PendingTransactionResponse> for RustPendingTransactionResponse {
             pool_error: ffi_struct.pool_error.into(),
             receiver_rewards: ffi_struct.receiver_rewards.map(|v| v.into()),
             sender_rewards: ffi_struct.sender_rewards.map(|v| v.into()),
-            local_state_delta: ffi_struct.local_state_delta.map(|v| v.into()),
+            local_state_delta: ffi_struct
+                .local_state_delta
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
             global_state_delta: ffi_struct.global_state_delta.map(|v| v.into()),
-            logs: ffi_struct.logs.map(|v| v.into()),
-            inner_txns: ffi_struct.inner_txns.map(|v| v.into()),
+            logs: ffi_struct
+                .logs
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
+            inner_txns: ffi_struct
+                .inner_txns
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
             txn: ffi_struct.txn.into(),
         }
     }

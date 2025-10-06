@@ -102,15 +102,23 @@ impl From<RustAccount> for Account {
             amount: rust_struct.amount.into(),
             min_balance: rust_struct.min_balance.into(),
             amount_without_pending_rewards: rust_struct.amount_without_pending_rewards.into(),
-            apps_local_state: rust_struct.apps_local_state.map(|v| v.into()),
+            apps_local_state: rust_struct
+                .apps_local_state
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
             total_apps_opted_in: rust_struct.total_apps_opted_in.into(),
             apps_total_schema: rust_struct.apps_total_schema.map(|v| v.into()),
             apps_total_extra_pages: rust_struct.apps_total_extra_pages.map(|v| v.into()),
-            assets: rust_struct.assets.map(|v| v.into()),
+            assets: rust_struct
+                .assets
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
             total_assets_opted_in: rust_struct.total_assets_opted_in.into(),
-            created_apps: rust_struct.created_apps.map(|v| v.into()),
+            created_apps: rust_struct
+                .created_apps
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
             total_created_apps: rust_struct.total_created_apps.into(),
-            created_assets: rust_struct.created_assets.map(|v| v.into()),
+            created_assets: rust_struct
+                .created_assets
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
             total_created_assets: rust_struct.total_created_assets.into(),
             total_boxes: rust_struct.total_boxes.map(|v| v.into()),
             total_box_bytes: rust_struct.total_box_bytes.map(|v| v.into()),
@@ -136,15 +144,23 @@ impl From<Account> for RustAccount {
             amount: ffi_struct.amount.into(),
             min_balance: ffi_struct.min_balance.into(),
             amount_without_pending_rewards: ffi_struct.amount_without_pending_rewards.into(),
-            apps_local_state: ffi_struct.apps_local_state.map(|v| v.into()),
+            apps_local_state: ffi_struct
+                .apps_local_state
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
             total_apps_opted_in: ffi_struct.total_apps_opted_in.into(),
             apps_total_schema: ffi_struct.apps_total_schema.map(|v| v.into()),
             apps_total_extra_pages: ffi_struct.apps_total_extra_pages.map(|v| v.into()),
-            assets: ffi_struct.assets.map(|v| v.into()),
+            assets: ffi_struct
+                .assets
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
             total_assets_opted_in: ffi_struct.total_assets_opted_in.into(),
-            created_apps: ffi_struct.created_apps.map(|v| v.into()),
+            created_apps: ffi_struct
+                .created_apps
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
             total_created_apps: ffi_struct.total_created_apps.into(),
-            created_assets: ffi_struct.created_assets.map(|v| v.into()),
+            created_assets: ffi_struct
+                .created_assets
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
             total_created_assets: ffi_struct.total_created_assets.into(),
             total_boxes: ffi_struct.total_boxes.map(|v| v.into()),
             total_box_bytes: ffi_struct.total_box_bytes.map(|v| v.into()),

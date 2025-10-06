@@ -28,7 +28,9 @@ impl From<RustAccountAssetsInformation> for AccountAssetsInformation {
         Self {
             round: rust_struct.round.into(),
             next_token: rust_struct.next_token.map(|v| v.into()),
-            asset_holdings: rust_struct.asset_holdings.map(|v| v.into()),
+            asset_holdings: rust_struct
+                .asset_holdings
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
         }
     }
 }
@@ -38,7 +40,9 @@ impl From<AccountAssetsInformation> for RustAccountAssetsInformation {
         Self {
             round: ffi_struct.round.into(),
             next_token: ffi_struct.next_token.map(|v| v.into()),
-            asset_holdings: ffi_struct.asset_holdings.map(|v| v.into()),
+            asset_holdings: ffi_struct
+                .asset_holdings
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
         }
     }
 }

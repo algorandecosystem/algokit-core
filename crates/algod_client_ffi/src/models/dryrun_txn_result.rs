@@ -43,14 +43,28 @@ impl From<RustDryrunTxnResult> for DryrunTxnResult {
                 .into_iter()
                 .map(|v| v.into())
                 .collect(),
-            logic_sig_disassembly: rust_struct.logic_sig_disassembly.map(|v| v.into()),
-            logic_sig_trace: rust_struct.logic_sig_trace.map(|v| v.into()),
-            logic_sig_messages: rust_struct.logic_sig_messages.map(|v| v.into()),
-            app_call_trace: rust_struct.app_call_trace.map(|v| v.into()),
-            app_call_messages: rust_struct.app_call_messages.map(|v| v.into()),
+            logic_sig_disassembly: rust_struct
+                .logic_sig_disassembly
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
+            logic_sig_trace: rust_struct
+                .logic_sig_trace
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
+            logic_sig_messages: rust_struct
+                .logic_sig_messages
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
+            app_call_trace: rust_struct
+                .app_call_trace
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
+            app_call_messages: rust_struct
+                .app_call_messages
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
             global_delta: rust_struct.global_delta.map(|v| v.into()),
-            local_deltas: rust_struct.local_deltas.map(|v| v.into()),
-            logs: rust_struct.logs.map(|v| v.into()),
+            local_deltas: rust_struct
+                .local_deltas
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
+            logs: rust_struct
+                .logs
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
             budget_added: rust_struct.budget_added.map(|v| v.into()),
             budget_consumed: rust_struct.budget_consumed.map(|v| v.into()),
         }
@@ -65,14 +79,28 @@ impl From<DryrunTxnResult> for RustDryrunTxnResult {
                 .into_iter()
                 .map(|v| v.into())
                 .collect(),
-            logic_sig_disassembly: ffi_struct.logic_sig_disassembly.map(|v| v.into()),
-            logic_sig_trace: ffi_struct.logic_sig_trace.map(|v| v.into()),
-            logic_sig_messages: ffi_struct.logic_sig_messages.map(|v| v.into()),
-            app_call_trace: ffi_struct.app_call_trace.map(|v| v.into()),
-            app_call_messages: ffi_struct.app_call_messages.map(|v| v.into()),
+            logic_sig_disassembly: ffi_struct
+                .logic_sig_disassembly
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
+            logic_sig_trace: ffi_struct
+                .logic_sig_trace
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
+            logic_sig_messages: ffi_struct
+                .logic_sig_messages
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
+            app_call_trace: ffi_struct
+                .app_call_trace
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
+            app_call_messages: ffi_struct
+                .app_call_messages
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
             global_delta: ffi_struct.global_delta.map(|v| v.into()),
-            local_deltas: ffi_struct.local_deltas.map(|v| v.into()),
-            logs: ffi_struct.logs.map(|v| v.into()),
+            local_deltas: ffi_struct
+                .local_deltas
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
+            logs: ffi_struct
+                .logs
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
             budget_added: ffi_struct.budget_added.map(|v| v.into()),
             budget_consumed: ffi_struct.budget_consumed.map(|v| v.into()),
         }

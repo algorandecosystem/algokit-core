@@ -32,7 +32,9 @@ impl From<RustDryrunState> for DryrunState {
             line: rust_struct.line.into(),
             pc: rust_struct.pc.into(),
             stack: rust_struct.stack.into_iter().map(|v| v.into()).collect(),
-            scratch: rust_struct.scratch.map(|v| v.into()),
+            scratch: rust_struct
+                .scratch
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
             error: rust_struct.error.map(|v| v.into()),
         }
     }
@@ -44,7 +46,9 @@ impl From<DryrunState> for RustDryrunState {
             line: ffi_struct.line.into(),
             pc: ffi_struct.pc.into(),
             stack: ffi_struct.stack.into_iter().map(|v| v.into()).collect(),
-            scratch: ffi_struct.scratch.map(|v| v.into()),
+            scratch: ffi_struct
+                .scratch
+                .map(|v| v.into_iter().map(|v| v.into()).collect()),
             error: ffi_struct.error.map(|v| v.into()),
         }
     }
