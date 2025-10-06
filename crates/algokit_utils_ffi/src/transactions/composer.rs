@@ -22,29 +22,10 @@ use crate::transactions::{
 
 // External crate imports
 // algod_client
-use algod_client::AlgodClient as RustAlgodClient;
-
-// algokit_http_client
-use algokit_http_client::HttpClient;
+use algod_client_ffi::AlgodClient;
 
 // algokit_utils
 use algokit_utils::transactions::{ComposerParams, composer::Composer as RustComposer};
-
-#[derive(uniffi::Object)]
-pub struct AlgodClient {
-    inner_algod_client: Mutex<RustAlgodClient>,
-}
-
-#[uniffi::export]
-impl AlgodClient {
-    #[uniffi::constructor]
-    pub fn new(http_client: Arc<dyn HttpClient>) -> Self {
-        let algod_client = RustAlgodClient::new(http_client);
-        AlgodClient {
-            inner_algod_client: Mutex::new(algod_client),
-        }
-    }
-}
 
 // NOTE: This struct is a temporary placeholder until we have a proper algod_api_ffi crate with the fully typed response
 #[derive(uniffi::Record)]
@@ -70,9 +51,8 @@ impl Composer {
         };
 
         let rust_composer = {
-            let rust_algod_client = algod_client.inner_algod_client.blocking_lock();
             RustComposer::new(ComposerParams {
-                algod_client: Arc::new(rust_algod_client.clone()),
+                algod_client: algod_client.inner_algod_client.clone(),
                 signer_getter: Arc::new(rust_signer_getter),
                 composer_config: None,
             })
