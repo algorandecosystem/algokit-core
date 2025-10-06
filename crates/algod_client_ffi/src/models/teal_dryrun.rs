@@ -31,13 +31,3 @@ impl From<RustTealDryrun> for TealDryrun {
         }
     }
 }
-
-impl From<TealDryrun> for RustTealDryrun {
-    fn from(ffi_struct: TealDryrun) -> Self {
-        Self {
-            txns: ffi_struct.txns.into_iter().map(|v| v.into()).collect(),
-            error: ffi_struct.error.into(),
-            protocol_version: ffi_struct.protocol_version.into(),
-        }
-    }
-}

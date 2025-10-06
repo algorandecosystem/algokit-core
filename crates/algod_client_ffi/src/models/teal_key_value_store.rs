@@ -16,15 +16,3 @@ use crate::models::TealKeyValue;
 
 /// Represents a key-value store for use in an application.
 pub type TealKeyValueStore = Vec<TealKeyValue>;
-
-impl From<RustTealKeyValueStore> for TealKeyValueStore {
-    fn from(rust_struct: RustTealKeyValueStore) -> Self {
-        Self {}
-    }
-}
-
-impl From<TealKeyValueStore> for RustTealKeyValueStore {
-    fn from(ffi_struct: TealKeyValueStore) -> Self {
-        Self {}
-    }
-}

@@ -45,16 +45,29 @@ impl From<RustDryrunRequest> for DryrunRequest {
     }
 }
 
-impl From<DryrunRequest> for RustDryrunRequest {
-    fn from(ffi_struct: DryrunRequest) -> Self {
-        Self {
-            txns: ffi_struct.txns.into_iter().map(|v| v.into()).collect(),
+impl TryFrom<DryrunRequest> for RustDryrunRequest {
+    type Error = crate::apis::Error;
+
+    fn try_from(ffi_struct: DryrunRequest) -> Result<Self, Self::Error> {
+        Ok(Self {
+            txns: ffi_struct
+                .txns
+                .into_iter()
+                .map(|v| {
+                    v.try_into()
+                        .map_err(|e: algokit_transact_ffi::AlgoKitTransactError| {
+                            crate::apis::Error::Serde {
+                                message: e.to_string(),
+                            }
+                        })
+                })
+                .collect::<Result<_, _>>()?,
             accounts: ffi_struct.accounts.into_iter().map(|v| v.into()).collect(),
             apps: ffi_struct.apps.into_iter().map(|v| v.into()).collect(),
             protocol_version: ffi_struct.protocol_version.into(),
             round: ffi_struct.round.into(),
             latest_timestamp: ffi_struct.latest_timestamp.into(),
             sources: ffi_struct.sources.into_iter().map(|v| v.into()).collect(),
-        }
+        })
     }
 }

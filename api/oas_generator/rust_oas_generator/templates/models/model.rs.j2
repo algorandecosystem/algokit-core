@@ -258,7 +258,7 @@ impl {{ schema.rust_struct_name }} {
 }
 {% endif %}
 
-{% if ffi %}
+{% if ffi and schema.schema_type != "array" %}
 impl From<Rust{{ schema.rust_struct_name }}> for {{ schema.rust_struct_name }} {
     fn from(rust_struct: Rust{{ schema.rust_struct_name }}) -> Self {
         Self {
@@ -270,7 +270,7 @@ impl From<Rust{{ schema.rust_struct_name }}> for {{ schema.rust_struct_name }} {
             {{ property.rust_field_name }}: rust_struct.{{ property.rust_field_name }}.into(),
             {% endif %}
             {% else %}
-            {% if "Vec<" in property.rust_type %}
+            {% if "Vec<" in property.rust_type or property.rust_type in ["StateDelta", "EvalDeltaKeyValue", "TealKeyValue"] %}
             {{ property.rust_field_name }}: rust_struct.{{ property.rust_field_name }}.map(|v| v.into_iter().map(|v| v.into()).collect()),
             {% else %}
             {{ property.rust_field_name }}: rust_struct.{{ property.rust_field_name }}.map(|v| v.into()),
@@ -282,7 +282,7 @@ impl From<Rust{{ schema.rust_struct_name }}> for {{ schema.rust_struct_name }} {
 }
 
 {# These types would require a TyFrom impl, most are return values only so there is no need to go from Ffi to Rust #}
-{% set skip_from_types = ["GetPendingTransactions", "GetPendingTransactionsByAddress", "SimulateRequestTransactionGroup", "PendingTransactionResponse", "SimulateTransactionResult", "SimulateTransactionGroupResult", "SimulateTransaction", "SimulateRequest"] %}
+{% set skip_from_types = ["GetPendingTransactions", "GetPendingTransactionsByAddress", "SimulateRequestTransactionGroup", "PendingTransactionResponse", "SimulateTransactionResult", "SimulateTransactionGroupResult", "SimulateTransaction", "SimulateRequest", "DryrunRequest", "DryrunTxnResult", "ApplicationParams", "TealDryrun", "ApplicationParams"] %}
 {% if schema.rust_struct_name not in skip_from_types %}
 
 impl From<{{ schema.rust_struct_name }}> for Rust{{ schema.rust_struct_name }} {
@@ -347,6 +347,33 @@ impl TryFrom<SimulateRequest> for RustSimulateRequest {
             extra_opcode_budget: ffi_struct.extra_opcode_budget.map(|v| v.into()),
             exec_trace_config: ffi_struct.exec_trace_config.map(|v| v.into()),
             fix_signers: ffi_struct.fix_signers.map(|v| v.into()),
+        })
+    }
+}
+{% elif schema.rust_struct_name == "DryrunRequest" %}
+impl TryFrom<DryrunRequest> for RustDryrunRequest {
+    type Error = crate::apis::Error;
+
+    fn try_from(ffi_struct: DryrunRequest) -> Result<Self, Self::Error> {
+        Ok(Self {
+            txns: ffi_struct
+                .txns
+                .into_iter()
+                .map(|v| {
+                    v.try_into()
+                        .map_err(|e: algokit_transact_ffi::AlgoKitTransactError| {
+                            crate::apis::Error::Serde {
+                                message: e.to_string(),
+                            }
+                        })
+                })
+                .collect::<Result<_, _>>()?,
+            accounts: ffi_struct.accounts.into_iter().map(|v| v.into()).collect(),
+            apps: ffi_struct.apps.into_iter().map(|v| v.into()).collect(),
+            protocol_version: ffi_struct.protocol_version.into(),
+            round: ffi_struct.round.into(),
+            latest_timestamp: ffi_struct.latest_timestamp.into(),
+            sources: ffi_struct.sources.into_iter().map(|v| v.into()).collect(),
         })
     }
 }

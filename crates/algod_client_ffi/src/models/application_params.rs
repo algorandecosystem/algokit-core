@@ -47,18 +47,3 @@ impl From<RustApplicationParams> for ApplicationParams {
         }
     }
 }
-
-impl From<ApplicationParams> for RustApplicationParams {
-    fn from(ffi_struct: ApplicationParams) -> Self {
-        Self {
-            creator: ffi_struct.creator.into(),
-            approval_program: ffi_struct.approval_program.into(),
-            clear_state_program: ffi_struct.clear_state_program.into(),
-            extra_program_pages: ffi_struct.extra_program_pages.map(|v| v.into()),
-            local_state_schema: ffi_struct.local_state_schema.map(|v| v.into()),
-            global_state_schema: ffi_struct.global_state_schema.map(|v| v.into()),
-            global_state: ffi_struct.global_state.map(|v| v.into()),
-            version: ffi_struct.version.map(|v| v.into()),
-        }
-    }
-}

@@ -16,15 +16,3 @@ use crate::models::EvalDeltaKeyValue;
 
 /// Application state delta.
 pub type StateDelta = Vec<EvalDeltaKeyValue>;
-
-impl From<RustStateDelta> for StateDelta {
-    fn from(rust_struct: RustStateDelta) -> Self {
-        Self {}
-    }
-}
-
-impl From<StateDelta> for RustStateDelta {
-    fn from(ffi_struct: StateDelta) -> Self {
-        Self {}
-    }
-}
