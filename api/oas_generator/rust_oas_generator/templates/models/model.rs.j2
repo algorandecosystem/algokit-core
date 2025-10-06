@@ -293,7 +293,7 @@ impl From<Rust{{ schema.rust_struct_name }}> for {{ schema.rust_struct_name }} {
 }
 
 {# These types would require a TyFrom impl, most are return values only so there is no need to go from Ffi to Rust #}
-{% set skip_from_types = ["GetPendingTransactions", "GetPendingTransactionsByAddress", "SimulateRequestTransactionGroup", "PendingTransactionResponse", "SimulateTransactionResult", "SimulateTransactionGroupResult", "SimulateTransaction", "SimulateRequest", "DryrunRequest", "DryrunTxnResult", "ApplicationParams", "TealDryrun", "ApplicationParams", "AccountApplicationInformation"] %}
+{% set skip_from_types = ["GetPendingTransactions", "GetPendingTransactionsByAddress", "SimulateRequestTransactionGroup", "PendingTransactionResponse", "SimulateTransactionResult", "SimulateTransactionGroupResult", "SimulateTransaction", "SimulateRequest", "DryrunRequest", "DryrunTxnResult", "TealDryrun", "AccountApplicationInformation"] %}
 {% if schema.rust_struct_name not in skip_from_types %}
 
 impl From<{{ schema.rust_struct_name }}> for Rust{{ schema.rust_struct_name }} {
