@@ -34,7 +34,7 @@ use std::sync::Arc;
 /// All methods return a unified `Error` type that can represent any endpoint error.
 #[derive(Clone, uniffi::Object)]
 pub struct AlgodClient {
-    inner_algod_client: Arc<RustAlgodClient>,
+    pub inner_algod_client: Arc<RustAlgodClient>,
 }
 
 #[uniffi::export]

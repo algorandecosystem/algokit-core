@@ -57,7 +57,7 @@ use algod_client::AlgodClient as RustAlgodClient;
 {% endif %}
 pub struct {{ client_type }}Client {
     {% if ffi %}
-    inner_algod_client: Arc<RustAlgodClient>,
+    pub inner_algod_client: Arc<RustAlgodClient>,
     {% else %}
     http_client: Arc<dyn HttpClient>,
     {% endif %}

@@ -11,7 +11,7 @@ import pytest
 from algokit_utils.ffi_algod_client import PythonAlgodClient
 from algokit_utils.ffi_composer import PythonComposerFactory
 from tests.test_utils import HttpClientImpl, MultiAccountSignerGetter
-from algokit_utils.algokit_utils_ffi import AlgodClient
+from algokit_utils.algod_client_ffi import AlgodClient
 
 
 @pytest.mark.asyncio
