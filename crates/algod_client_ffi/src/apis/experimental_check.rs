@@ -35,8 +35,8 @@ impl From<RustExperimentalCheckError> for ExperimentalCheckError {
             RustExperimentalCheckError::DefaultResponse() => {
                 ExperimentalCheckError::DefaultResponse()
             }
-            RustExperimentalCheckError::UnknownValue(value) => {
-                ExperimentalCheckError::UnknownValue(value.to_string())
+            RustExperimentalCheckError::UnknownValue(v) => {
+                ExperimentalCheckError::UnknownValue(v.into())
             }
         }
     }

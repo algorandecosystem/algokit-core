@@ -34,17 +34,17 @@ pub enum GetParticipationKeyByIdError {
 impl From<RustGetParticipationKeyByIdError> for GetParticipationKeyByIdError {
     fn from(e: RustGetParticipationKeyByIdError) -> Self {
         match e {
-            RustGetParticipationKeyByIdError::Status400(ErrorResponse) => {
-                GetParticipationKeyByIdError::Status400(ErrorResponse)
+            RustGetParticipationKeyByIdError::Status400(v) => {
+                GetParticipationKeyByIdError::Status400(v.into())
             }
-            RustGetParticipationKeyByIdError::Status401(ErrorResponse) => {
-                GetParticipationKeyByIdError::Status401(ErrorResponse)
+            RustGetParticipationKeyByIdError::Status401(v) => {
+                GetParticipationKeyByIdError::Status401(v.into())
             }
-            RustGetParticipationKeyByIdError::Status404(ErrorResponse) => {
-                GetParticipationKeyByIdError::Status404(ErrorResponse)
+            RustGetParticipationKeyByIdError::Status404(v) => {
+                GetParticipationKeyByIdError::Status404(v.into())
             }
-            RustGetParticipationKeyByIdError::Status500(ErrorResponse) => {
-                GetParticipationKeyByIdError::Status500(ErrorResponse)
+            RustGetParticipationKeyByIdError::Status500(v) => {
+                GetParticipationKeyByIdError::Status500(v.into())
             }
             RustGetParticipationKeyByIdError::Statusdefault() => {
                 GetParticipationKeyByIdError::Statusdefault()
@@ -52,8 +52,8 @@ impl From<RustGetParticipationKeyByIdError> for GetParticipationKeyByIdError {
             RustGetParticipationKeyByIdError::DefaultResponse() => {
                 GetParticipationKeyByIdError::DefaultResponse()
             }
-            RustGetParticipationKeyByIdError::UnknownValue(value) => {
-                GetParticipationKeyByIdError::UnknownValue(value.to_string())
+            RustGetParticipationKeyByIdError::UnknownValue(v) => {
+                GetParticipationKeyByIdError::UnknownValue(v.into())
             }
         }
     }

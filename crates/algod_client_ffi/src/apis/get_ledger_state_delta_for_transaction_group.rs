@@ -38,20 +38,20 @@ impl From<RustGetLedgerStateDeltaForTransactionGroupError>
 {
     fn from(e: RustGetLedgerStateDeltaForTransactionGroupError) -> Self {
         match e {
-            RustGetLedgerStateDeltaForTransactionGroupError::Status401(ErrorResponse) => {
-                GetLedgerStateDeltaForTransactionGroupError::Status401(ErrorResponse)
+            RustGetLedgerStateDeltaForTransactionGroupError::Status401(v) => {
+                GetLedgerStateDeltaForTransactionGroupError::Status401(v.into())
             }
-            RustGetLedgerStateDeltaForTransactionGroupError::Status404(ErrorResponse) => {
-                GetLedgerStateDeltaForTransactionGroupError::Status404(ErrorResponse)
+            RustGetLedgerStateDeltaForTransactionGroupError::Status404(v) => {
+                GetLedgerStateDeltaForTransactionGroupError::Status404(v.into())
             }
-            RustGetLedgerStateDeltaForTransactionGroupError::Status408(ErrorResponse) => {
-                GetLedgerStateDeltaForTransactionGroupError::Status408(ErrorResponse)
+            RustGetLedgerStateDeltaForTransactionGroupError::Status408(v) => {
+                GetLedgerStateDeltaForTransactionGroupError::Status408(v.into())
             }
-            RustGetLedgerStateDeltaForTransactionGroupError::Status500(ErrorResponse) => {
-                GetLedgerStateDeltaForTransactionGroupError::Status500(ErrorResponse)
+            RustGetLedgerStateDeltaForTransactionGroupError::Status500(v) => {
+                GetLedgerStateDeltaForTransactionGroupError::Status500(v.into())
             }
-            RustGetLedgerStateDeltaForTransactionGroupError::Status501(ErrorResponse) => {
-                GetLedgerStateDeltaForTransactionGroupError::Status501(ErrorResponse)
+            RustGetLedgerStateDeltaForTransactionGroupError::Status501(v) => {
+                GetLedgerStateDeltaForTransactionGroupError::Status501(v.into())
             }
             RustGetLedgerStateDeltaForTransactionGroupError::Statusdefault() => {
                 GetLedgerStateDeltaForTransactionGroupError::Statusdefault()
@@ -59,8 +59,8 @@ impl From<RustGetLedgerStateDeltaForTransactionGroupError>
             RustGetLedgerStateDeltaForTransactionGroupError::DefaultResponse() => {
                 GetLedgerStateDeltaForTransactionGroupError::DefaultResponse()
             }
-            RustGetLedgerStateDeltaForTransactionGroupError::UnknownValue(value) => {
-                GetLedgerStateDeltaForTransactionGroupError::UnknownValue(value.to_string())
+            RustGetLedgerStateDeltaForTransactionGroupError::UnknownValue(v) => {
+                GetLedgerStateDeltaForTransactionGroupError::UnknownValue(v.into())
             }
         }
     }

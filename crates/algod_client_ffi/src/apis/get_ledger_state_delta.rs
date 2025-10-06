@@ -36,20 +36,20 @@ pub enum GetLedgerStateDeltaError {
 impl From<RustGetLedgerStateDeltaError> for GetLedgerStateDeltaError {
     fn from(e: RustGetLedgerStateDeltaError) -> Self {
         match e {
-            RustGetLedgerStateDeltaError::Status401(ErrorResponse) => {
-                GetLedgerStateDeltaError::Status401(ErrorResponse)
+            RustGetLedgerStateDeltaError::Status401(v) => {
+                GetLedgerStateDeltaError::Status401(v.into())
             }
-            RustGetLedgerStateDeltaError::Status404(ErrorResponse) => {
-                GetLedgerStateDeltaError::Status404(ErrorResponse)
+            RustGetLedgerStateDeltaError::Status404(v) => {
+                GetLedgerStateDeltaError::Status404(v.into())
             }
-            RustGetLedgerStateDeltaError::Status408(ErrorResponse) => {
-                GetLedgerStateDeltaError::Status408(ErrorResponse)
+            RustGetLedgerStateDeltaError::Status408(v) => {
+                GetLedgerStateDeltaError::Status408(v.into())
             }
-            RustGetLedgerStateDeltaError::Status500(ErrorResponse) => {
-                GetLedgerStateDeltaError::Status500(ErrorResponse)
+            RustGetLedgerStateDeltaError::Status500(v) => {
+                GetLedgerStateDeltaError::Status500(v.into())
             }
-            RustGetLedgerStateDeltaError::Status503(ErrorResponse) => {
-                GetLedgerStateDeltaError::Status503(ErrorResponse)
+            RustGetLedgerStateDeltaError::Status503(v) => {
+                GetLedgerStateDeltaError::Status503(v.into())
             }
             RustGetLedgerStateDeltaError::Statusdefault() => {
                 GetLedgerStateDeltaError::Statusdefault()
@@ -57,8 +57,8 @@ impl From<RustGetLedgerStateDeltaError> for GetLedgerStateDeltaError {
             RustGetLedgerStateDeltaError::DefaultResponse() => {
                 GetLedgerStateDeltaError::DefaultResponse()
             }
-            RustGetLedgerStateDeltaError::UnknownValue(value) => {
-                GetLedgerStateDeltaError::UnknownValue(value.to_string())
+            RustGetLedgerStateDeltaError::UnknownValue(v) => {
+                GetLedgerStateDeltaError::UnknownValue(v.into())
             }
         }
     }

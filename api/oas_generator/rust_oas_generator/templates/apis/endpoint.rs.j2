@@ -62,7 +62,8 @@ impl From<Rust{{ operation.rust_error_enum }}> for {{ operation.rust_error_enum 
     fn from(e: Rust{{ operation.rust_error_enum }}) -> Self {
         match e {
         {% for error_type in error_types %}
-            Rust{{ operation.rust_error_enum }}::{{ error_type | replace("crate::models::UnknownJsonValue", "value") }} => {{ operation.rust_error_enum }}::{{ error_type | replace("crate::models::UnknownJsonValue", "value.to_string()") }},
+        {% set error = parse_error_type(error_type) %}
+            Rust{{ operation.rust_error_enum }}::{{ error.variant }}({% if error.inner_type %}v{% endif %}) => {{ operation.rust_error_enum }}::{{ error.variant }}({% if error.inner_type %}v.into(){% endif %}),
         {% endfor %}
         }
     }

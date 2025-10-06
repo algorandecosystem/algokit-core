@@ -31,9 +31,7 @@ impl From<RustHealthCheckError> for HealthCheckError {
         match e {
             RustHealthCheckError::Statusdefault() => HealthCheckError::Statusdefault(),
             RustHealthCheckError::DefaultResponse() => HealthCheckError::DefaultResponse(),
-            RustHealthCheckError::UnknownValue(value) => {
-                HealthCheckError::UnknownValue(value.to_string())
-            }
+            RustHealthCheckError::UnknownValue(v) => HealthCheckError::UnknownValue(v.into()),
         }
     }
 }

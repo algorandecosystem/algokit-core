@@ -31,8 +31,8 @@ pub enum GetBlockTimeStampOffsetError {
 impl From<RustGetBlockTimeStampOffsetError> for GetBlockTimeStampOffsetError {
     fn from(e: RustGetBlockTimeStampOffsetError) -> Self {
         match e {
-            RustGetBlockTimeStampOffsetError::Status400(ErrorResponse) => {
-                GetBlockTimeStampOffsetError::Status400(ErrorResponse)
+            RustGetBlockTimeStampOffsetError::Status400(v) => {
+                GetBlockTimeStampOffsetError::Status400(v.into())
             }
             RustGetBlockTimeStampOffsetError::Statusdefault() => {
                 GetBlockTimeStampOffsetError::Statusdefault()
@@ -40,8 +40,8 @@ impl From<RustGetBlockTimeStampOffsetError> for GetBlockTimeStampOffsetError {
             RustGetBlockTimeStampOffsetError::DefaultResponse() => {
                 GetBlockTimeStampOffsetError::DefaultResponse()
             }
-            RustGetBlockTimeStampOffsetError::UnknownValue(value) => {
-                GetBlockTimeStampOffsetError::UnknownValue(value.to_string())
+            RustGetBlockTimeStampOffsetError::UnknownValue(v) => {
+                GetBlockTimeStampOffsetError::UnknownValue(v.into())
             }
         }
     }

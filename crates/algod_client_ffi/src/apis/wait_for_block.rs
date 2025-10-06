@@ -34,23 +34,13 @@ pub enum WaitForBlockError {
 impl From<RustWaitForBlockError> for WaitForBlockError {
     fn from(e: RustWaitForBlockError) -> Self {
         match e {
-            RustWaitForBlockError::Status400(ErrorResponse) => {
-                WaitForBlockError::Status400(ErrorResponse)
-            }
-            RustWaitForBlockError::Status401(ErrorResponse) => {
-                WaitForBlockError::Status401(ErrorResponse)
-            }
-            RustWaitForBlockError::Status500(ErrorResponse) => {
-                WaitForBlockError::Status500(ErrorResponse)
-            }
-            RustWaitForBlockError::Status503(ErrorResponse) => {
-                WaitForBlockError::Status503(ErrorResponse)
-            }
+            RustWaitForBlockError::Status400(v) => WaitForBlockError::Status400(v.into()),
+            RustWaitForBlockError::Status401(v) => WaitForBlockError::Status401(v.into()),
+            RustWaitForBlockError::Status500(v) => WaitForBlockError::Status500(v.into()),
+            RustWaitForBlockError::Status503(v) => WaitForBlockError::Status503(v.into()),
             RustWaitForBlockError::Statusdefault() => WaitForBlockError::Statusdefault(),
             RustWaitForBlockError::DefaultResponse() => WaitForBlockError::DefaultResponse(),
-            RustWaitForBlockError::UnknownValue(value) => {
-                WaitForBlockError::UnknownValue(value.to_string())
-            }
+            RustWaitForBlockError::UnknownValue(v) => WaitForBlockError::UnknownValue(v.into()),
         }
     }
 }

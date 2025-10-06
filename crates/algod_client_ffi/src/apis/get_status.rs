@@ -32,15 +32,11 @@ pub enum GetStatusError {
 impl From<RustGetStatusError> for GetStatusError {
     fn from(e: RustGetStatusError) -> Self {
         match e {
-            RustGetStatusError::Status401(ErrorResponse) => {
-                GetStatusError::Status401(ErrorResponse)
-            }
-            RustGetStatusError::Status500(String) => GetStatusError::Status500(String),
+            RustGetStatusError::Status401(v) => GetStatusError::Status401(v.into()),
+            RustGetStatusError::Status500(v) => GetStatusError::Status500(v.into()),
             RustGetStatusError::Statusdefault() => GetStatusError::Statusdefault(),
             RustGetStatusError::DefaultResponse() => GetStatusError::DefaultResponse(),
-            RustGetStatusError::UnknownValue(value) => {
-                GetStatusError::UnknownValue(value.to_string())
-            }
+            RustGetStatusError::UnknownValue(v) => GetStatusError::UnknownValue(v.into()),
         }
     }
 }

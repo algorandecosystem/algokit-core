@@ -32,8 +32,8 @@ impl From<RustGetDebugSettingsProfError> for GetDebugSettingsProfError {
             RustGetDebugSettingsProfError::DefaultResponse() => {
                 GetDebugSettingsProfError::DefaultResponse()
             }
-            RustGetDebugSettingsProfError::UnknownValue(value) => {
-                GetDebugSettingsProfError::UnknownValue(value.to_string())
+            RustGetDebugSettingsProfError::UnknownValue(v) => {
+                GetDebugSettingsProfError::UnknownValue(v.into())
             }
         }
     }

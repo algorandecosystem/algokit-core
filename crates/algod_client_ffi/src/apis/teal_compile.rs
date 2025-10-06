@@ -34,21 +34,13 @@ pub enum TealCompileError {
 impl From<RustTealCompileError> for TealCompileError {
     fn from(e: RustTealCompileError) -> Self {
         match e {
-            RustTealCompileError::Status400(ErrorResponse) => {
-                TealCompileError::Status400(ErrorResponse)
-            }
-            RustTealCompileError::Status401(ErrorResponse) => {
-                TealCompileError::Status401(ErrorResponse)
-            }
+            RustTealCompileError::Status400(v) => TealCompileError::Status400(v.into()),
+            RustTealCompileError::Status401(v) => TealCompileError::Status401(v.into()),
             RustTealCompileError::Status404() => TealCompileError::Status404(),
-            RustTealCompileError::Status500(ErrorResponse) => {
-                TealCompileError::Status500(ErrorResponse)
-            }
+            RustTealCompileError::Status500(v) => TealCompileError::Status500(v.into()),
             RustTealCompileError::Statusdefault() => TealCompileError::Statusdefault(),
             RustTealCompileError::DefaultResponse() => TealCompileError::DefaultResponse(),
-            RustTealCompileError::UnknownValue(value) => {
-                TealCompileError::UnknownValue(value.to_string())
-            }
+            RustTealCompileError::UnknownValue(v) => TealCompileError::UnknownValue(v.into()),
         }
     }
 }

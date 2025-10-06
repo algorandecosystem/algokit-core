@@ -34,17 +34,17 @@ pub enum GenerateParticipationKeysError {
 impl From<RustGenerateParticipationKeysError> for GenerateParticipationKeysError {
     fn from(e: RustGenerateParticipationKeysError) -> Self {
         match e {
-            RustGenerateParticipationKeysError::Status400(ErrorResponse) => {
-                GenerateParticipationKeysError::Status400(ErrorResponse)
+            RustGenerateParticipationKeysError::Status400(v) => {
+                GenerateParticipationKeysError::Status400(v.into())
             }
-            RustGenerateParticipationKeysError::Status401(ErrorResponse) => {
-                GenerateParticipationKeysError::Status401(ErrorResponse)
+            RustGenerateParticipationKeysError::Status401(v) => {
+                GenerateParticipationKeysError::Status401(v.into())
             }
-            RustGenerateParticipationKeysError::Status500(ErrorResponse) => {
-                GenerateParticipationKeysError::Status500(ErrorResponse)
+            RustGenerateParticipationKeysError::Status500(v) => {
+                GenerateParticipationKeysError::Status500(v.into())
             }
-            RustGenerateParticipationKeysError::Status503(ErrorResponse) => {
-                GenerateParticipationKeysError::Status503(ErrorResponse)
+            RustGenerateParticipationKeysError::Status503(v) => {
+                GenerateParticipationKeysError::Status503(v.into())
             }
             RustGenerateParticipationKeysError::Statusdefault() => {
                 GenerateParticipationKeysError::Statusdefault()
@@ -52,8 +52,8 @@ impl From<RustGenerateParticipationKeysError> for GenerateParticipationKeysError
             RustGenerateParticipationKeysError::DefaultResponse() => {
                 GenerateParticipationKeysError::DefaultResponse()
             }
-            RustGenerateParticipationKeysError::UnknownValue(value) => {
-                GenerateParticipationKeysError::UnknownValue(value.to_string())
+            RustGenerateParticipationKeysError::UnknownValue(v) => {
+                GenerateParticipationKeysError::UnknownValue(v.into())
             }
         }
     }

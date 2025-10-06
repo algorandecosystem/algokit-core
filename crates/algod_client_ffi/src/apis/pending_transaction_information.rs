@@ -34,14 +34,14 @@ pub enum PendingTransactionInformationError {
 impl From<RustPendingTransactionInformationError> for PendingTransactionInformationError {
     fn from(e: RustPendingTransactionInformationError) -> Self {
         match e {
-            RustPendingTransactionInformationError::Status400(ErrorResponse) => {
-                PendingTransactionInformationError::Status400(ErrorResponse)
+            RustPendingTransactionInformationError::Status400(v) => {
+                PendingTransactionInformationError::Status400(v.into())
             }
-            RustPendingTransactionInformationError::Status401(ErrorResponse) => {
-                PendingTransactionInformationError::Status401(ErrorResponse)
+            RustPendingTransactionInformationError::Status401(v) => {
+                PendingTransactionInformationError::Status401(v.into())
             }
-            RustPendingTransactionInformationError::Status404(ErrorResponse) => {
-                PendingTransactionInformationError::Status404(ErrorResponse)
+            RustPendingTransactionInformationError::Status404(v) => {
+                PendingTransactionInformationError::Status404(v.into())
             }
             RustPendingTransactionInformationError::Statusdefault() => {
                 PendingTransactionInformationError::Statusdefault()
@@ -49,8 +49,8 @@ impl From<RustPendingTransactionInformationError> for PendingTransactionInformat
             RustPendingTransactionInformationError::DefaultResponse() => {
                 PendingTransactionInformationError::DefaultResponse()
             }
-            RustPendingTransactionInformationError::UnknownValue(value) => {
-                PendingTransactionInformationError::UnknownValue(value.to_string())
+            RustPendingTransactionInformationError::UnknownValue(v) => {
+                PendingTransactionInformationError::UnknownValue(v.into())
             }
         }
     }

@@ -35,17 +35,17 @@ pub enum GetTransactionProofError {
 impl From<RustGetTransactionProofError> for GetTransactionProofError {
     fn from(e: RustGetTransactionProofError) -> Self {
         match e {
-            RustGetTransactionProofError::Status400(ErrorResponse) => {
-                GetTransactionProofError::Status400(ErrorResponse)
+            RustGetTransactionProofError::Status400(v) => {
+                GetTransactionProofError::Status400(v.into())
             }
-            RustGetTransactionProofError::Status401(ErrorResponse) => {
-                GetTransactionProofError::Status401(ErrorResponse)
+            RustGetTransactionProofError::Status401(v) => {
+                GetTransactionProofError::Status401(v.into())
             }
-            RustGetTransactionProofError::Status404(ErrorResponse) => {
-                GetTransactionProofError::Status404(ErrorResponse)
+            RustGetTransactionProofError::Status404(v) => {
+                GetTransactionProofError::Status404(v.into())
             }
-            RustGetTransactionProofError::Status500(ErrorResponse) => {
-                GetTransactionProofError::Status500(ErrorResponse)
+            RustGetTransactionProofError::Status500(v) => {
+                GetTransactionProofError::Status500(v.into())
             }
             RustGetTransactionProofError::Statusdefault() => {
                 GetTransactionProofError::Statusdefault()
@@ -53,8 +53,8 @@ impl From<RustGetTransactionProofError> for GetTransactionProofError {
             RustGetTransactionProofError::DefaultResponse() => {
                 GetTransactionProofError::DefaultResponse()
             }
-            RustGetTransactionProofError::UnknownValue(value) => {
-                GetTransactionProofError::UnknownValue(value.to_string())
+            RustGetTransactionProofError::UnknownValue(v) => {
+                GetTransactionProofError::UnknownValue(v.into())
             }
         }
     }

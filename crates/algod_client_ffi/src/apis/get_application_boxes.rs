@@ -33,14 +33,14 @@ pub enum GetApplicationBoxesError {
 impl From<RustGetApplicationBoxesError> for GetApplicationBoxesError {
     fn from(e: RustGetApplicationBoxesError) -> Self {
         match e {
-            RustGetApplicationBoxesError::Status400(ErrorResponse) => {
-                GetApplicationBoxesError::Status400(ErrorResponse)
+            RustGetApplicationBoxesError::Status400(v) => {
+                GetApplicationBoxesError::Status400(v.into())
             }
-            RustGetApplicationBoxesError::Status401(ErrorResponse) => {
-                GetApplicationBoxesError::Status401(ErrorResponse)
+            RustGetApplicationBoxesError::Status401(v) => {
+                GetApplicationBoxesError::Status401(v.into())
             }
-            RustGetApplicationBoxesError::Status500(ErrorResponse) => {
-                GetApplicationBoxesError::Status500(ErrorResponse)
+            RustGetApplicationBoxesError::Status500(v) => {
+                GetApplicationBoxesError::Status500(v.into())
             }
             RustGetApplicationBoxesError::Statusdefault() => {
                 GetApplicationBoxesError::Statusdefault()
@@ -48,8 +48,8 @@ impl From<RustGetApplicationBoxesError> for GetApplicationBoxesError {
             RustGetApplicationBoxesError::DefaultResponse() => {
                 GetApplicationBoxesError::DefaultResponse()
             }
-            RustGetApplicationBoxesError::UnknownValue(value) => {
-                GetApplicationBoxesError::UnknownValue(value.to_string())
+            RustGetApplicationBoxesError::UnknownValue(v) => {
+                GetApplicationBoxesError::UnknownValue(v.into())
             }
         }
     }

@@ -34,14 +34,14 @@ pub enum AccountAssetInformationError {
 impl From<RustAccountAssetInformationError> for AccountAssetInformationError {
     fn from(e: RustAccountAssetInformationError) -> Self {
         match e {
-            RustAccountAssetInformationError::Status400(ErrorResponse) => {
-                AccountAssetInformationError::Status400(ErrorResponse)
+            RustAccountAssetInformationError::Status400(v) => {
+                AccountAssetInformationError::Status400(v.into())
             }
-            RustAccountAssetInformationError::Status401(ErrorResponse) => {
-                AccountAssetInformationError::Status401(ErrorResponse)
+            RustAccountAssetInformationError::Status401(v) => {
+                AccountAssetInformationError::Status401(v.into())
             }
-            RustAccountAssetInformationError::Status500(ErrorResponse) => {
-                AccountAssetInformationError::Status500(ErrorResponse)
+            RustAccountAssetInformationError::Status500(v) => {
+                AccountAssetInformationError::Status500(v.into())
             }
             RustAccountAssetInformationError::Statusdefault() => {
                 AccountAssetInformationError::Statusdefault()
@@ -49,8 +49,8 @@ impl From<RustAccountAssetInformationError> for AccountAssetInformationError {
             RustAccountAssetInformationError::DefaultResponse() => {
                 AccountAssetInformationError::DefaultResponse()
             }
-            RustAccountAssetInformationError::UnknownValue(value) => {
-                AccountAssetInformationError::UnknownValue(value.to_string())
+            RustAccountAssetInformationError::UnknownValue(v) => {
+                AccountAssetInformationError::UnknownValue(v.into())
             }
         }
     }

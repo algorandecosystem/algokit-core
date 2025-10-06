@@ -34,23 +34,13 @@ pub enum GetSyncRoundError {
 impl From<RustGetSyncRoundError> for GetSyncRoundError {
     fn from(e: RustGetSyncRoundError) -> Self {
         match e {
-            RustGetSyncRoundError::Status400(ErrorResponse) => {
-                GetSyncRoundError::Status400(ErrorResponse)
-            }
-            RustGetSyncRoundError::Status401(ErrorResponse) => {
-                GetSyncRoundError::Status401(ErrorResponse)
-            }
-            RustGetSyncRoundError::Status500(ErrorResponse) => {
-                GetSyncRoundError::Status500(ErrorResponse)
-            }
-            RustGetSyncRoundError::Status503(ErrorResponse) => {
-                GetSyncRoundError::Status503(ErrorResponse)
-            }
+            RustGetSyncRoundError::Status400(v) => GetSyncRoundError::Status400(v.into()),
+            RustGetSyncRoundError::Status401(v) => GetSyncRoundError::Status401(v.into()),
+            RustGetSyncRoundError::Status500(v) => GetSyncRoundError::Status500(v.into()),
+            RustGetSyncRoundError::Status503(v) => GetSyncRoundError::Status503(v.into()),
             RustGetSyncRoundError::Statusdefault() => GetSyncRoundError::Statusdefault(),
             RustGetSyncRoundError::DefaultResponse() => GetSyncRoundError::DefaultResponse(),
-            RustGetSyncRoundError::UnknownValue(value) => {
-                GetSyncRoundError::UnknownValue(value.to_string())
-            }
+            RustGetSyncRoundError::UnknownValue(v) => GetSyncRoundError::UnknownValue(v.into()),
         }
     }
 }

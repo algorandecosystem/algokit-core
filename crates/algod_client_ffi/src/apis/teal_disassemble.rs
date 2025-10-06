@@ -34,20 +34,14 @@ pub enum TealDisassembleError {
 impl From<RustTealDisassembleError> for TealDisassembleError {
     fn from(e: RustTealDisassembleError) -> Self {
         match e {
-            RustTealDisassembleError::Status400(ErrorResponse) => {
-                TealDisassembleError::Status400(ErrorResponse)
-            }
-            RustTealDisassembleError::Status401(ErrorResponse) => {
-                TealDisassembleError::Status401(ErrorResponse)
-            }
+            RustTealDisassembleError::Status400(v) => TealDisassembleError::Status400(v.into()),
+            RustTealDisassembleError::Status401(v) => TealDisassembleError::Status401(v.into()),
             RustTealDisassembleError::Status404() => TealDisassembleError::Status404(),
-            RustTealDisassembleError::Status500(ErrorResponse) => {
-                TealDisassembleError::Status500(ErrorResponse)
-            }
+            RustTealDisassembleError::Status500(v) => TealDisassembleError::Status500(v.into()),
             RustTealDisassembleError::Statusdefault() => TealDisassembleError::Statusdefault(),
             RustTealDisassembleError::DefaultResponse() => TealDisassembleError::DefaultResponse(),
-            RustTealDisassembleError::UnknownValue(value) => {
-                TealDisassembleError::UnknownValue(value.to_string())
+            RustTealDisassembleError::UnknownValue(v) => {
+                TealDisassembleError::UnknownValue(v.into())
             }
         }
     }

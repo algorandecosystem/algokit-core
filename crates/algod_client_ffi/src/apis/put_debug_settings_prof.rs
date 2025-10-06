@@ -32,8 +32,8 @@ impl From<RustPutDebugSettingsProfError> for PutDebugSettingsProfError {
             RustPutDebugSettingsProfError::DefaultResponse() => {
                 PutDebugSettingsProfError::DefaultResponse()
             }
-            RustPutDebugSettingsProfError::UnknownValue(value) => {
-                PutDebugSettingsProfError::UnknownValue(value.to_string())
+            RustPutDebugSettingsProfError::UnknownValue(v) => {
+                PutDebugSettingsProfError::UnknownValue(v.into())
             }
         }
     }

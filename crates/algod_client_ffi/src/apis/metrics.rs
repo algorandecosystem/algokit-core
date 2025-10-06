@@ -31,7 +31,7 @@ impl From<RustMetricsError> for MetricsError {
         match e {
             RustMetricsError::Status404() => MetricsError::Status404(),
             RustMetricsError::DefaultResponse() => MetricsError::DefaultResponse(),
-            RustMetricsError::UnknownValue(value) => MetricsError::UnknownValue(value.to_string()),
+            RustMetricsError::UnknownValue(v) => MetricsError::UnknownValue(v.into()),
         }
     }
 }

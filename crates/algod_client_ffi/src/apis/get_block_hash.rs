@@ -34,23 +34,13 @@ pub enum GetBlockHashError {
 impl From<RustGetBlockHashError> for GetBlockHashError {
     fn from(e: RustGetBlockHashError) -> Self {
         match e {
-            RustGetBlockHashError::Status400(ErrorResponse) => {
-                GetBlockHashError::Status400(ErrorResponse)
-            }
-            RustGetBlockHashError::Status401(ErrorResponse) => {
-                GetBlockHashError::Status401(ErrorResponse)
-            }
-            RustGetBlockHashError::Status404(ErrorResponse) => {
-                GetBlockHashError::Status404(ErrorResponse)
-            }
-            RustGetBlockHashError::Status500(ErrorResponse) => {
-                GetBlockHashError::Status500(ErrorResponse)
-            }
+            RustGetBlockHashError::Status400(v) => GetBlockHashError::Status400(v.into()),
+            RustGetBlockHashError::Status401(v) => GetBlockHashError::Status401(v.into()),
+            RustGetBlockHashError::Status404(v) => GetBlockHashError::Status404(v.into()),
+            RustGetBlockHashError::Status500(v) => GetBlockHashError::Status500(v.into()),
             RustGetBlockHashError::Statusdefault() => GetBlockHashError::Statusdefault(),
             RustGetBlockHashError::DefaultResponse() => GetBlockHashError::DefaultResponse(),
-            RustGetBlockHashError::UnknownValue(value) => {
-                GetBlockHashError::UnknownValue(value.to_string())
-            }
+            RustGetBlockHashError::UnknownValue(v) => GetBlockHashError::UnknownValue(v.into()),
         }
     }
 }

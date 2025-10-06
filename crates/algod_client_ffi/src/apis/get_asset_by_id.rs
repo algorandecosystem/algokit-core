@@ -34,23 +34,13 @@ pub enum GetAssetByIdError {
 impl From<RustGetAssetByIdError> for GetAssetByIdError {
     fn from(e: RustGetAssetByIdError) -> Self {
         match e {
-            RustGetAssetByIdError::Status400(ErrorResponse) => {
-                GetAssetByIdError::Status400(ErrorResponse)
-            }
-            RustGetAssetByIdError::Status401(ErrorResponse) => {
-                GetAssetByIdError::Status401(ErrorResponse)
-            }
-            RustGetAssetByIdError::Status404(ErrorResponse) => {
-                GetAssetByIdError::Status404(ErrorResponse)
-            }
-            RustGetAssetByIdError::Status500(ErrorResponse) => {
-                GetAssetByIdError::Status500(ErrorResponse)
-            }
+            RustGetAssetByIdError::Status400(v) => GetAssetByIdError::Status400(v.into()),
+            RustGetAssetByIdError::Status401(v) => GetAssetByIdError::Status401(v.into()),
+            RustGetAssetByIdError::Status404(v) => GetAssetByIdError::Status404(v.into()),
+            RustGetAssetByIdError::Status500(v) => GetAssetByIdError::Status500(v.into()),
             RustGetAssetByIdError::Statusdefault() => GetAssetByIdError::Statusdefault(),
             RustGetAssetByIdError::DefaultResponse() => GetAssetByIdError::DefaultResponse(),
-            RustGetAssetByIdError::UnknownValue(value) => {
-                GetAssetByIdError::UnknownValue(value.to_string())
-            }
+            RustGetAssetByIdError::UnknownValue(v) => GetAssetByIdError::UnknownValue(v.into()),
         }
     }
 }

@@ -34,23 +34,13 @@ pub enum RawTransactionError {
 impl From<RustRawTransactionError> for RawTransactionError {
     fn from(e: RustRawTransactionError) -> Self {
         match e {
-            RustRawTransactionError::Status400(ErrorResponse) => {
-                RawTransactionError::Status400(ErrorResponse)
-            }
-            RustRawTransactionError::Status401(ErrorResponse) => {
-                RawTransactionError::Status401(ErrorResponse)
-            }
-            RustRawTransactionError::Status500(ErrorResponse) => {
-                RawTransactionError::Status500(ErrorResponse)
-            }
-            RustRawTransactionError::Status503(ErrorResponse) => {
-                RawTransactionError::Status503(ErrorResponse)
-            }
+            RustRawTransactionError::Status400(v) => RawTransactionError::Status400(v.into()),
+            RustRawTransactionError::Status401(v) => RawTransactionError::Status401(v.into()),
+            RustRawTransactionError::Status500(v) => RawTransactionError::Status500(v.into()),
+            RustRawTransactionError::Status503(v) => RawTransactionError::Status503(v.into()),
             RustRawTransactionError::Statusdefault() => RawTransactionError::Statusdefault(),
             RustRawTransactionError::DefaultResponse() => RawTransactionError::DefaultResponse(),
-            RustRawTransactionError::UnknownValue(value) => {
-                RawTransactionError::UnknownValue(value.to_string())
-            }
+            RustRawTransactionError::UnknownValue(v) => RawTransactionError::UnknownValue(v.into()),
         }
     }
 }

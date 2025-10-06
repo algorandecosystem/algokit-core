@@ -35,17 +35,17 @@ pub enum GetPendingTransactionsByAddressError {
 impl From<RustGetPendingTransactionsByAddressError> for GetPendingTransactionsByAddressError {
     fn from(e: RustGetPendingTransactionsByAddressError) -> Self {
         match e {
-            RustGetPendingTransactionsByAddressError::Status400(ErrorResponse) => {
-                GetPendingTransactionsByAddressError::Status400(ErrorResponse)
+            RustGetPendingTransactionsByAddressError::Status400(v) => {
+                GetPendingTransactionsByAddressError::Status400(v.into())
             }
-            RustGetPendingTransactionsByAddressError::Status401(ErrorResponse) => {
-                GetPendingTransactionsByAddressError::Status401(ErrorResponse)
+            RustGetPendingTransactionsByAddressError::Status401(v) => {
+                GetPendingTransactionsByAddressError::Status401(v.into())
             }
-            RustGetPendingTransactionsByAddressError::Status500(ErrorResponse) => {
-                GetPendingTransactionsByAddressError::Status500(ErrorResponse)
+            RustGetPendingTransactionsByAddressError::Status500(v) => {
+                GetPendingTransactionsByAddressError::Status500(v.into())
             }
-            RustGetPendingTransactionsByAddressError::Status503(ErrorResponse) => {
-                GetPendingTransactionsByAddressError::Status503(ErrorResponse)
+            RustGetPendingTransactionsByAddressError::Status503(v) => {
+                GetPendingTransactionsByAddressError::Status503(v.into())
             }
             RustGetPendingTransactionsByAddressError::Statusdefault() => {
                 GetPendingTransactionsByAddressError::Statusdefault()
@@ -53,8 +53,8 @@ impl From<RustGetPendingTransactionsByAddressError> for GetPendingTransactionsBy
             RustGetPendingTransactionsByAddressError::DefaultResponse() => {
                 GetPendingTransactionsByAddressError::DefaultResponse()
             }
-            RustGetPendingTransactionsByAddressError::UnknownValue(value) => {
-                GetPendingTransactionsByAddressError::UnknownValue(value.to_string())
+            RustGetPendingTransactionsByAddressError::UnknownValue(v) => {
+                GetPendingTransactionsByAddressError::UnknownValue(v.into())
             }
         }
     }

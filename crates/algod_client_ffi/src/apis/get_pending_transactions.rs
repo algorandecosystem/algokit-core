@@ -34,14 +34,14 @@ pub enum GetPendingTransactionsError {
 impl From<RustGetPendingTransactionsError> for GetPendingTransactionsError {
     fn from(e: RustGetPendingTransactionsError) -> Self {
         match e {
-            RustGetPendingTransactionsError::Status401(ErrorResponse) => {
-                GetPendingTransactionsError::Status401(ErrorResponse)
+            RustGetPendingTransactionsError::Status401(v) => {
+                GetPendingTransactionsError::Status401(v.into())
             }
-            RustGetPendingTransactionsError::Status500(ErrorResponse) => {
-                GetPendingTransactionsError::Status500(ErrorResponse)
+            RustGetPendingTransactionsError::Status500(v) => {
+                GetPendingTransactionsError::Status500(v.into())
             }
-            RustGetPendingTransactionsError::Status503(ErrorResponse) => {
-                GetPendingTransactionsError::Status503(ErrorResponse)
+            RustGetPendingTransactionsError::Status503(v) => {
+                GetPendingTransactionsError::Status503(v.into())
             }
             RustGetPendingTransactionsError::Statusdefault() => {
                 GetPendingTransactionsError::Statusdefault()
@@ -49,8 +49,8 @@ impl From<RustGetPendingTransactionsError> for GetPendingTransactionsError {
             RustGetPendingTransactionsError::DefaultResponse() => {
                 GetPendingTransactionsError::DefaultResponse()
             }
-            RustGetPendingTransactionsError::UnknownValue(value) => {
-                GetPendingTransactionsError::UnknownValue(value.to_string())
+            RustGetPendingTransactionsError::UnknownValue(v) => {
+                GetPendingTransactionsError::UnknownValue(v.into())
             }
         }
     }

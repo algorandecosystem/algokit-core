@@ -33,20 +33,12 @@ pub enum AbortCatchupError {
 impl From<RustAbortCatchupError> for AbortCatchupError {
     fn from(e: RustAbortCatchupError) -> Self {
         match e {
-            RustAbortCatchupError::Status400(ErrorResponse) => {
-                AbortCatchupError::Status400(ErrorResponse)
-            }
-            RustAbortCatchupError::Status401(ErrorResponse) => {
-                AbortCatchupError::Status401(ErrorResponse)
-            }
-            RustAbortCatchupError::Status500(ErrorResponse) => {
-                AbortCatchupError::Status500(ErrorResponse)
-            }
+            RustAbortCatchupError::Status400(v) => AbortCatchupError::Status400(v.into()),
+            RustAbortCatchupError::Status401(v) => AbortCatchupError::Status401(v.into()),
+            RustAbortCatchupError::Status500(v) => AbortCatchupError::Status500(v.into()),
             RustAbortCatchupError::Statusdefault() => AbortCatchupError::Statusdefault(),
             RustAbortCatchupError::DefaultResponse() => AbortCatchupError::DefaultResponse(),
-            RustAbortCatchupError::UnknownValue(value) => {
-                AbortCatchupError::UnknownValue(value.to_string())
-            }
+            RustAbortCatchupError::UnknownValue(v) => AbortCatchupError::UnknownValue(v.into()),
         }
     }
 }

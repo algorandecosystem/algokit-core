@@ -34,17 +34,17 @@ pub enum GetApplicationBoxByNameError {
 impl From<RustGetApplicationBoxByNameError> for GetApplicationBoxByNameError {
     fn from(e: RustGetApplicationBoxByNameError) -> Self {
         match e {
-            RustGetApplicationBoxByNameError::Status400(ErrorResponse) => {
-                GetApplicationBoxByNameError::Status400(ErrorResponse)
+            RustGetApplicationBoxByNameError::Status400(v) => {
+                GetApplicationBoxByNameError::Status400(v.into())
             }
-            RustGetApplicationBoxByNameError::Status401(ErrorResponse) => {
-                GetApplicationBoxByNameError::Status401(ErrorResponse)
+            RustGetApplicationBoxByNameError::Status401(v) => {
+                GetApplicationBoxByNameError::Status401(v.into())
             }
-            RustGetApplicationBoxByNameError::Status404(ErrorResponse) => {
-                GetApplicationBoxByNameError::Status404(ErrorResponse)
+            RustGetApplicationBoxByNameError::Status404(v) => {
+                GetApplicationBoxByNameError::Status404(v.into())
             }
-            RustGetApplicationBoxByNameError::Status500(ErrorResponse) => {
-                GetApplicationBoxByNameError::Status500(ErrorResponse)
+            RustGetApplicationBoxByNameError::Status500(v) => {
+                GetApplicationBoxByNameError::Status500(v.into())
             }
             RustGetApplicationBoxByNameError::Statusdefault() => {
                 GetApplicationBoxByNameError::Statusdefault()
@@ -52,8 +52,8 @@ impl From<RustGetApplicationBoxByNameError> for GetApplicationBoxByNameError {
             RustGetApplicationBoxByNameError::DefaultResponse() => {
                 GetApplicationBoxByNameError::DefaultResponse()
             }
-            RustGetApplicationBoxByNameError::UnknownValue(value) => {
-                GetApplicationBoxByNameError::UnknownValue(value.to_string())
+            RustGetApplicationBoxByNameError::UnknownValue(v) => {
+                GetApplicationBoxByNameError::UnknownValue(v.into())
             }
         }
     }

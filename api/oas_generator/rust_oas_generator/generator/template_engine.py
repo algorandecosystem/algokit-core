@@ -207,6 +207,13 @@ class ResponseAnalyzer:
         return error_types
 
     @staticmethod
+    def parse_error_type(error_type: str) -> dict[str, str | None]:
+        variant = error_type.split("(")[0]
+        inner_type = error_type.split("(")[1].rstrip(")") if "(" in error_type else None
+
+        return {"variant": variant, "inner_type": inner_type}
+
+    @staticmethod
     def get_response_types_by_filter(
         operations: list[Operation],
         filter_func: Callable[[str, Response], bool],
@@ -341,6 +348,7 @@ class RustTemplateEngine:
             "group_operations_by_tag": op_analyzer.group_operations_by_tag,
             # Response analysis
             "get_error_types": resp_analyzer.get_error_types,
+            "parse_error_type": resp_analyzer.parse_error_type,
             "get_success_response_type": resp_analyzer.get_success_response_type,
             "get_all_response_types": resp_analyzer.get_all_response_types,
             "get_endpoint_response_types": lambda op: resp_analyzer.get_all_response_types([op]),

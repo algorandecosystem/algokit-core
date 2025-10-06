@@ -33,14 +33,14 @@ pub enum SetBlockTimeStampOffsetError {
 impl From<RustSetBlockTimeStampOffsetError> for SetBlockTimeStampOffsetError {
     fn from(e: RustSetBlockTimeStampOffsetError) -> Self {
         match e {
-            RustSetBlockTimeStampOffsetError::Status400(ErrorResponse) => {
-                SetBlockTimeStampOffsetError::Status400(ErrorResponse)
+            RustSetBlockTimeStampOffsetError::Status400(v) => {
+                SetBlockTimeStampOffsetError::Status400(v.into())
             }
-            RustSetBlockTimeStampOffsetError::Status401(ErrorResponse) => {
-                SetBlockTimeStampOffsetError::Status401(ErrorResponse)
+            RustSetBlockTimeStampOffsetError::Status401(v) => {
+                SetBlockTimeStampOffsetError::Status401(v.into())
             }
-            RustSetBlockTimeStampOffsetError::Status500(ErrorResponse) => {
-                SetBlockTimeStampOffsetError::Status500(ErrorResponse)
+            RustSetBlockTimeStampOffsetError::Status500(v) => {
+                SetBlockTimeStampOffsetError::Status500(v.into())
             }
             RustSetBlockTimeStampOffsetError::Statusdefault() => {
                 SetBlockTimeStampOffsetError::Statusdefault()
@@ -48,8 +48,8 @@ impl From<RustSetBlockTimeStampOffsetError> for SetBlockTimeStampOffsetError {
             RustSetBlockTimeStampOffsetError::DefaultResponse() => {
                 SetBlockTimeStampOffsetError::DefaultResponse()
             }
-            RustSetBlockTimeStampOffsetError::UnknownValue(value) => {
-                SetBlockTimeStampOffsetError::UnknownValue(value.to_string())
+            RustSetBlockTimeStampOffsetError::UnknownValue(v) => {
+                SetBlockTimeStampOffsetError::UnknownValue(v.into())
             }
         }
     }

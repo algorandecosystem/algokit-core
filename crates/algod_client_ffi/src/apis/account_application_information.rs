@@ -34,14 +34,14 @@ pub enum AccountApplicationInformationError {
 impl From<RustAccountApplicationInformationError> for AccountApplicationInformationError {
     fn from(e: RustAccountApplicationInformationError) -> Self {
         match e {
-            RustAccountApplicationInformationError::Status400(ErrorResponse) => {
-                AccountApplicationInformationError::Status400(ErrorResponse)
+            RustAccountApplicationInformationError::Status400(v) => {
+                AccountApplicationInformationError::Status400(v.into())
             }
-            RustAccountApplicationInformationError::Status401(ErrorResponse) => {
-                AccountApplicationInformationError::Status401(ErrorResponse)
+            RustAccountApplicationInformationError::Status401(v) => {
+                AccountApplicationInformationError::Status401(v.into())
             }
-            RustAccountApplicationInformationError::Status500(ErrorResponse) => {
-                AccountApplicationInformationError::Status500(ErrorResponse)
+            RustAccountApplicationInformationError::Status500(v) => {
+                AccountApplicationInformationError::Status500(v.into())
             }
             RustAccountApplicationInformationError::Statusdefault() => {
                 AccountApplicationInformationError::Statusdefault()
@@ -49,8 +49,8 @@ impl From<RustAccountApplicationInformationError> for AccountApplicationInformat
             RustAccountApplicationInformationError::DefaultResponse() => {
                 AccountApplicationInformationError::DefaultResponse()
             }
-            RustAccountApplicationInformationError::UnknownValue(value) => {
-                AccountApplicationInformationError::UnknownValue(value.to_string())
+            RustAccountApplicationInformationError::UnknownValue(v) => {
+                AccountApplicationInformationError::UnknownValue(v.into())
             }
         }
     }

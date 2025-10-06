@@ -34,23 +34,13 @@ pub enum StartCatchupError {
 impl From<RustStartCatchupError> for StartCatchupError {
     fn from(e: RustStartCatchupError) -> Self {
         match e {
-            RustStartCatchupError::Status400(ErrorResponse) => {
-                StartCatchupError::Status400(ErrorResponse)
-            }
-            RustStartCatchupError::Status401(ErrorResponse) => {
-                StartCatchupError::Status401(ErrorResponse)
-            }
-            RustStartCatchupError::Status408(ErrorResponse) => {
-                StartCatchupError::Status408(ErrorResponse)
-            }
-            RustStartCatchupError::Status500(ErrorResponse) => {
-                StartCatchupError::Status500(ErrorResponse)
-            }
+            RustStartCatchupError::Status400(v) => StartCatchupError::Status400(v.into()),
+            RustStartCatchupError::Status401(v) => StartCatchupError::Status401(v.into()),
+            RustStartCatchupError::Status408(v) => StartCatchupError::Status408(v.into()),
+            RustStartCatchupError::Status500(v) => StartCatchupError::Status500(v.into()),
             RustStartCatchupError::Statusdefault() => StartCatchupError::Statusdefault(),
             RustStartCatchupError::DefaultResponse() => StartCatchupError::DefaultResponse(),
-            RustStartCatchupError::UnknownValue(value) => {
-                StartCatchupError::UnknownValue(value.to_string())
-            }
+            RustStartCatchupError::UnknownValue(v) => StartCatchupError::UnknownValue(v.into()),
         }
     }
 }

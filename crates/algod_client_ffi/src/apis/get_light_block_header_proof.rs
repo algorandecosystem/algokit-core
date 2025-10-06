@@ -35,20 +35,20 @@ pub enum GetLightBlockHeaderProofError {
 impl From<RustGetLightBlockHeaderProofError> for GetLightBlockHeaderProofError {
     fn from(e: RustGetLightBlockHeaderProofError) -> Self {
         match e {
-            RustGetLightBlockHeaderProofError::Status401(ErrorResponse) => {
-                GetLightBlockHeaderProofError::Status401(ErrorResponse)
+            RustGetLightBlockHeaderProofError::Status401(v) => {
+                GetLightBlockHeaderProofError::Status401(v.into())
             }
-            RustGetLightBlockHeaderProofError::Status404(ErrorResponse) => {
-                GetLightBlockHeaderProofError::Status404(ErrorResponse)
+            RustGetLightBlockHeaderProofError::Status404(v) => {
+                GetLightBlockHeaderProofError::Status404(v.into())
             }
-            RustGetLightBlockHeaderProofError::Status408(ErrorResponse) => {
-                GetLightBlockHeaderProofError::Status408(ErrorResponse)
+            RustGetLightBlockHeaderProofError::Status408(v) => {
+                GetLightBlockHeaderProofError::Status408(v.into())
             }
-            RustGetLightBlockHeaderProofError::Status500(ErrorResponse) => {
-                GetLightBlockHeaderProofError::Status500(ErrorResponse)
+            RustGetLightBlockHeaderProofError::Status500(v) => {
+                GetLightBlockHeaderProofError::Status500(v.into())
             }
-            RustGetLightBlockHeaderProofError::Status503(ErrorResponse) => {
-                GetLightBlockHeaderProofError::Status503(ErrorResponse)
+            RustGetLightBlockHeaderProofError::Status503(v) => {
+                GetLightBlockHeaderProofError::Status503(v.into())
             }
             RustGetLightBlockHeaderProofError::Statusdefault() => {
                 GetLightBlockHeaderProofError::Statusdefault()
@@ -56,8 +56,8 @@ impl From<RustGetLightBlockHeaderProofError> for GetLightBlockHeaderProofError {
             RustGetLightBlockHeaderProofError::DefaultResponse() => {
                 GetLightBlockHeaderProofError::DefaultResponse()
             }
-            RustGetLightBlockHeaderProofError::UnknownValue(value) => {
-                GetLightBlockHeaderProofError::UnknownValue(value.to_string())
+            RustGetLightBlockHeaderProofError::UnknownValue(v) => {
+                GetLightBlockHeaderProofError::UnknownValue(v.into())
             }
         }
     }

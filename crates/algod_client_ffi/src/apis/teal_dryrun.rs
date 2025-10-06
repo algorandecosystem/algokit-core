@@ -35,21 +35,13 @@ pub enum TealDryrunError {
 impl From<RustTealDryrunError> for TealDryrunError {
     fn from(e: RustTealDryrunError) -> Self {
         match e {
-            RustTealDryrunError::Status400(ErrorResponse) => {
-                TealDryrunError::Status400(ErrorResponse)
-            }
-            RustTealDryrunError::Status401(ErrorResponse) => {
-                TealDryrunError::Status401(ErrorResponse)
-            }
+            RustTealDryrunError::Status400(v) => TealDryrunError::Status400(v.into()),
+            RustTealDryrunError::Status401(v) => TealDryrunError::Status401(v.into()),
             RustTealDryrunError::Status404() => TealDryrunError::Status404(),
-            RustTealDryrunError::Status500(ErrorResponse) => {
-                TealDryrunError::Status500(ErrorResponse)
-            }
+            RustTealDryrunError::Status500(v) => TealDryrunError::Status500(v.into()),
             RustTealDryrunError::Statusdefault() => TealDryrunError::Statusdefault(),
             RustTealDryrunError::DefaultResponse() => TealDryrunError::DefaultResponse(),
-            RustTealDryrunError::UnknownValue(value) => {
-                TealDryrunError::UnknownValue(value.to_string())
-            }
+            RustTealDryrunError::UnknownValue(v) => TealDryrunError::UnknownValue(v.into()),
         }
     }
 }

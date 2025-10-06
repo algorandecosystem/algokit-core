@@ -32,9 +32,7 @@ impl From<RustGetGenesisError> for GetGenesisError {
         match e {
             RustGetGenesisError::Statusdefault() => GetGenesisError::Statusdefault(),
             RustGetGenesisError::DefaultResponse() => GetGenesisError::DefaultResponse(),
-            RustGetGenesisError::UnknownValue(value) => {
-                GetGenesisError::UnknownValue(value.to_string())
-            }
+            RustGetGenesisError::UnknownValue(v) => GetGenesisError::UnknownValue(v.into()),
         }
     }
 }

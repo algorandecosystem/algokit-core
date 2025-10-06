@@ -34,17 +34,17 @@ pub enum DeleteParticipationKeyByIdError {
 impl From<RustDeleteParticipationKeyByIdError> for DeleteParticipationKeyByIdError {
     fn from(e: RustDeleteParticipationKeyByIdError) -> Self {
         match e {
-            RustDeleteParticipationKeyByIdError::Status400(ErrorResponse) => {
-                DeleteParticipationKeyByIdError::Status400(ErrorResponse)
+            RustDeleteParticipationKeyByIdError::Status400(v) => {
+                DeleteParticipationKeyByIdError::Status400(v.into())
             }
-            RustDeleteParticipationKeyByIdError::Status401(ErrorResponse) => {
-                DeleteParticipationKeyByIdError::Status401(ErrorResponse)
+            RustDeleteParticipationKeyByIdError::Status401(v) => {
+                DeleteParticipationKeyByIdError::Status401(v.into())
             }
-            RustDeleteParticipationKeyByIdError::Status404(ErrorResponse) => {
-                DeleteParticipationKeyByIdError::Status404(ErrorResponse)
+            RustDeleteParticipationKeyByIdError::Status404(v) => {
+                DeleteParticipationKeyByIdError::Status404(v.into())
             }
-            RustDeleteParticipationKeyByIdError::Status500(ErrorResponse) => {
-                DeleteParticipationKeyByIdError::Status500(ErrorResponse)
+            RustDeleteParticipationKeyByIdError::Status500(v) => {
+                DeleteParticipationKeyByIdError::Status500(v.into())
             }
             RustDeleteParticipationKeyByIdError::Statusdefault() => {
                 DeleteParticipationKeyByIdError::Statusdefault()
@@ -52,8 +52,8 @@ impl From<RustDeleteParticipationKeyByIdError> for DeleteParticipationKeyByIdErr
             RustDeleteParticipationKeyByIdError::DefaultResponse() => {
                 DeleteParticipationKeyByIdError::DefaultResponse()
             }
-            RustDeleteParticipationKeyByIdError::UnknownValue(value) => {
-                DeleteParticipationKeyByIdError::UnknownValue(value.to_string())
+            RustDeleteParticipationKeyByIdError::UnknownValue(v) => {
+                DeleteParticipationKeyByIdError::UnknownValue(v.into())
             }
         }
     }

@@ -36,17 +36,17 @@ pub enum SimulateTransactionError {
 impl From<RustSimulateTransactionError> for SimulateTransactionError {
     fn from(e: RustSimulateTransactionError) -> Self {
         match e {
-            RustSimulateTransactionError::Status400(ErrorResponse) => {
-                SimulateTransactionError::Status400(ErrorResponse)
+            RustSimulateTransactionError::Status400(v) => {
+                SimulateTransactionError::Status400(v.into())
             }
-            RustSimulateTransactionError::Status401(ErrorResponse) => {
-                SimulateTransactionError::Status401(ErrorResponse)
+            RustSimulateTransactionError::Status401(v) => {
+                SimulateTransactionError::Status401(v.into())
             }
-            RustSimulateTransactionError::Status500(ErrorResponse) => {
-                SimulateTransactionError::Status500(ErrorResponse)
+            RustSimulateTransactionError::Status500(v) => {
+                SimulateTransactionError::Status500(v.into())
             }
-            RustSimulateTransactionError::Status503(ErrorResponse) => {
-                SimulateTransactionError::Status503(ErrorResponse)
+            RustSimulateTransactionError::Status503(v) => {
+                SimulateTransactionError::Status503(v.into())
             }
             RustSimulateTransactionError::Statusdefault() => {
                 SimulateTransactionError::Statusdefault()
@@ -54,8 +54,8 @@ impl From<RustSimulateTransactionError> for SimulateTransactionError {
             RustSimulateTransactionError::DefaultResponse() => {
                 SimulateTransactionError::DefaultResponse()
             }
-            RustSimulateTransactionError::UnknownValue(value) => {
-                SimulateTransactionError::UnknownValue(value.to_string())
+            RustSimulateTransactionError::UnknownValue(v) => {
+                SimulateTransactionError::UnknownValue(v.into())
             }
         }
     }

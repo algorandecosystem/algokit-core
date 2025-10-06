@@ -33,21 +33,15 @@ pub enum TransactionParamsError {
 impl From<RustTransactionParamsError> for TransactionParamsError {
     fn from(e: RustTransactionParamsError) -> Self {
         match e {
-            RustTransactionParamsError::Status401(ErrorResponse) => {
-                TransactionParamsError::Status401(ErrorResponse)
-            }
-            RustTransactionParamsError::Status500(ErrorResponse) => {
-                TransactionParamsError::Status500(ErrorResponse)
-            }
-            RustTransactionParamsError::Status503(ErrorResponse) => {
-                TransactionParamsError::Status503(ErrorResponse)
-            }
+            RustTransactionParamsError::Status401(v) => TransactionParamsError::Status401(v.into()),
+            RustTransactionParamsError::Status500(v) => TransactionParamsError::Status500(v.into()),
+            RustTransactionParamsError::Status503(v) => TransactionParamsError::Status503(v.into()),
             RustTransactionParamsError::Statusdefault() => TransactionParamsError::Statusdefault(),
             RustTransactionParamsError::DefaultResponse() => {
                 TransactionParamsError::DefaultResponse()
             }
-            RustTransactionParamsError::UnknownValue(value) => {
-                TransactionParamsError::UnknownValue(value.to_string())
+            RustTransactionParamsError::UnknownValue(v) => {
+                TransactionParamsError::UnknownValue(v.into())
             }
         }
     }

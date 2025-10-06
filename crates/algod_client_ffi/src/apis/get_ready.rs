@@ -35,9 +35,7 @@ impl From<RustGetReadyError> for GetReadyError {
             RustGetReadyError::Status503() => GetReadyError::Status503(),
             RustGetReadyError::Statusdefault() => GetReadyError::Statusdefault(),
             RustGetReadyError::DefaultResponse() => GetReadyError::DefaultResponse(),
-            RustGetReadyError::UnknownValue(value) => {
-                GetReadyError::UnknownValue(value.to_string())
-            }
+            RustGetReadyError::UnknownValue(v) => GetReadyError::UnknownValue(v.into()),
         }
     }
 }

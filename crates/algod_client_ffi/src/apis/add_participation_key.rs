@@ -35,20 +35,20 @@ pub enum AddParticipationKeyError {
 impl From<RustAddParticipationKeyError> for AddParticipationKeyError {
     fn from(e: RustAddParticipationKeyError) -> Self {
         match e {
-            RustAddParticipationKeyError::Status400(ErrorResponse) => {
-                AddParticipationKeyError::Status400(ErrorResponse)
+            RustAddParticipationKeyError::Status400(v) => {
+                AddParticipationKeyError::Status400(v.into())
             }
-            RustAddParticipationKeyError::Status401(ErrorResponse) => {
-                AddParticipationKeyError::Status401(ErrorResponse)
+            RustAddParticipationKeyError::Status401(v) => {
+                AddParticipationKeyError::Status401(v.into())
             }
-            RustAddParticipationKeyError::Status404(ErrorResponse) => {
-                AddParticipationKeyError::Status404(ErrorResponse)
+            RustAddParticipationKeyError::Status404(v) => {
+                AddParticipationKeyError::Status404(v.into())
             }
-            RustAddParticipationKeyError::Status500(ErrorResponse) => {
-                AddParticipationKeyError::Status500(ErrorResponse)
+            RustAddParticipationKeyError::Status500(v) => {
+                AddParticipationKeyError::Status500(v.into())
             }
-            RustAddParticipationKeyError::Status503(ErrorResponse) => {
-                AddParticipationKeyError::Status503(ErrorResponse)
+            RustAddParticipationKeyError::Status503(v) => {
+                AddParticipationKeyError::Status503(v.into())
             }
             RustAddParticipationKeyError::Statusdefault() => {
                 AddParticipationKeyError::Statusdefault()
@@ -56,8 +56,8 @@ impl From<RustAddParticipationKeyError> for AddParticipationKeyError {
             RustAddParticipationKeyError::DefaultResponse() => {
                 AddParticipationKeyError::DefaultResponse()
             }
-            RustAddParticipationKeyError::UnknownValue(value) => {
-                AddParticipationKeyError::UnknownValue(value.to_string())
+            RustAddParticipationKeyError::UnknownValue(v) => {
+                AddParticipationKeyError::UnknownValue(v.into())
             }
         }
     }

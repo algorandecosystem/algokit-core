@@ -30,9 +30,7 @@ impl From<RustShutdownNodeError> for ShutdownNodeError {
     fn from(e: RustShutdownNodeError) -> Self {
         match e {
             RustShutdownNodeError::DefaultResponse() => ShutdownNodeError::DefaultResponse(),
-            RustShutdownNodeError::UnknownValue(value) => {
-                ShutdownNodeError::UnknownValue(value.to_string())
-            }
+            RustShutdownNodeError::UnknownValue(v) => ShutdownNodeError::UnknownValue(v.into()),
         }
     }
 }

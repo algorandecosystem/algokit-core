@@ -34,17 +34,17 @@ pub enum GetApplicationByIdError {
 impl From<RustGetApplicationByIdError> for GetApplicationByIdError {
     fn from(e: RustGetApplicationByIdError) -> Self {
         match e {
-            RustGetApplicationByIdError::Status400(ErrorResponse) => {
-                GetApplicationByIdError::Status400(ErrorResponse)
+            RustGetApplicationByIdError::Status400(v) => {
+                GetApplicationByIdError::Status400(v.into())
             }
-            RustGetApplicationByIdError::Status401(ErrorResponse) => {
-                GetApplicationByIdError::Status401(ErrorResponse)
+            RustGetApplicationByIdError::Status401(v) => {
+                GetApplicationByIdError::Status401(v.into())
             }
-            RustGetApplicationByIdError::Status404(ErrorResponse) => {
-                GetApplicationByIdError::Status404(ErrorResponse)
+            RustGetApplicationByIdError::Status404(v) => {
+                GetApplicationByIdError::Status404(v.into())
             }
-            RustGetApplicationByIdError::Status500(ErrorResponse) => {
-                GetApplicationByIdError::Status500(ErrorResponse)
+            RustGetApplicationByIdError::Status500(v) => {
+                GetApplicationByIdError::Status500(v.into())
             }
             RustGetApplicationByIdError::Statusdefault() => {
                 GetApplicationByIdError::Statusdefault()
@@ -52,8 +52,8 @@ impl From<RustGetApplicationByIdError> for GetApplicationByIdError {
             RustGetApplicationByIdError::DefaultResponse() => {
                 GetApplicationByIdError::DefaultResponse()
             }
-            RustGetApplicationByIdError::UnknownValue(value) => {
-                GetApplicationByIdError::UnknownValue(value.to_string())
+            RustGetApplicationByIdError::UnknownValue(v) => {
+                GetApplicationByIdError::UnknownValue(v.into())
             }
         }
     }

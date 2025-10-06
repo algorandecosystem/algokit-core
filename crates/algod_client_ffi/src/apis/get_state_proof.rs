@@ -35,26 +35,14 @@ pub enum GetStateProofError {
 impl From<RustGetStateProofError> for GetStateProofError {
     fn from(e: RustGetStateProofError) -> Self {
         match e {
-            RustGetStateProofError::Status401(ErrorResponse) => {
-                GetStateProofError::Status401(ErrorResponse)
-            }
-            RustGetStateProofError::Status404(ErrorResponse) => {
-                GetStateProofError::Status404(ErrorResponse)
-            }
-            RustGetStateProofError::Status408(ErrorResponse) => {
-                GetStateProofError::Status408(ErrorResponse)
-            }
-            RustGetStateProofError::Status500(ErrorResponse) => {
-                GetStateProofError::Status500(ErrorResponse)
-            }
-            RustGetStateProofError::Status503(ErrorResponse) => {
-                GetStateProofError::Status503(ErrorResponse)
-            }
+            RustGetStateProofError::Status401(v) => GetStateProofError::Status401(v.into()),
+            RustGetStateProofError::Status404(v) => GetStateProofError::Status404(v.into()),
+            RustGetStateProofError::Status408(v) => GetStateProofError::Status408(v.into()),
+            RustGetStateProofError::Status500(v) => GetStateProofError::Status500(v.into()),
+            RustGetStateProofError::Status503(v) => GetStateProofError::Status503(v.into()),
             RustGetStateProofError::Statusdefault() => GetStateProofError::Statusdefault(),
             RustGetStateProofError::DefaultResponse() => GetStateProofError::DefaultResponse(),
-            RustGetStateProofError::UnknownValue(value) => {
-                GetStateProofError::UnknownValue(value.to_string())
-            }
+            RustGetStateProofError::UnknownValue(v) => GetStateProofError::UnknownValue(v.into()),
         }
     }
 }

@@ -33,22 +33,12 @@ pub enum GetBlockLogsError {
 impl From<RustGetBlockLogsError> for GetBlockLogsError {
     fn from(e: RustGetBlockLogsError) -> Self {
         match e {
-            RustGetBlockLogsError::Status400(ErrorResponse) => {
-                GetBlockLogsError::Status400(ErrorResponse)
-            }
-            RustGetBlockLogsError::Status401(ErrorResponse) => {
-                GetBlockLogsError::Status401(ErrorResponse)
-            }
-            RustGetBlockLogsError::Status404(ErrorResponse) => {
-                GetBlockLogsError::Status404(ErrorResponse)
-            }
-            RustGetBlockLogsError::Status500(ErrorResponse) => {
-                GetBlockLogsError::Status500(ErrorResponse)
-            }
+            RustGetBlockLogsError::Status400(v) => GetBlockLogsError::Status400(v.into()),
+            RustGetBlockLogsError::Status401(v) => GetBlockLogsError::Status401(v.into()),
+            RustGetBlockLogsError::Status404(v) => GetBlockLogsError::Status404(v.into()),
+            RustGetBlockLogsError::Status500(v) => GetBlockLogsError::Status500(v.into()),
             RustGetBlockLogsError::DefaultResponse() => GetBlockLogsError::DefaultResponse(),
-            RustGetBlockLogsError::UnknownValue(value) => {
-                GetBlockLogsError::UnknownValue(value.to_string())
-            }
+            RustGetBlockLogsError::UnknownValue(v) => GetBlockLogsError::UnknownValue(v.into()),
         }
     }
 }

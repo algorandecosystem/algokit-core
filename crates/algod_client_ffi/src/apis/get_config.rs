@@ -31,9 +31,7 @@ impl From<RustGetConfigError> for GetConfigError {
         match e {
             RustGetConfigError::Statusdefault() => GetConfigError::Statusdefault(),
             RustGetConfigError::DefaultResponse() => GetConfigError::DefaultResponse(),
-            RustGetConfigError::UnknownValue(value) => {
-                GetConfigError::UnknownValue(value.to_string())
-            }
+            RustGetConfigError::UnknownValue(v) => GetConfigError::UnknownValue(v.into()),
         }
     }
 }

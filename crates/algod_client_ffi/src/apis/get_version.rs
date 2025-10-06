@@ -30,9 +30,7 @@ impl From<RustGetVersionError> for GetVersionError {
     fn from(e: RustGetVersionError) -> Self {
         match e {
             RustGetVersionError::DefaultResponse() => GetVersionError::DefaultResponse(),
-            RustGetVersionError::UnknownValue(value) => {
-                GetVersionError::UnknownValue(value.to_string())
-            }
+            RustGetVersionError::UnknownValue(v) => GetVersionError::UnknownValue(v.into()),
         }
     }
 }

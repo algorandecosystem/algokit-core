@@ -31,9 +31,7 @@ impl From<RustSwaggerJsonError> for SwaggerJsonError {
         match e {
             RustSwaggerJsonError::Statusdefault() => SwaggerJsonError::Statusdefault(),
             RustSwaggerJsonError::DefaultResponse() => SwaggerJsonError::DefaultResponse(),
-            RustSwaggerJsonError::UnknownValue(value) => {
-                SwaggerJsonError::UnknownValue(value.to_string())
-            }
+            RustSwaggerJsonError::UnknownValue(v) => SwaggerJsonError::UnknownValue(v.into()),
         }
     }
 }

@@ -34,23 +34,13 @@ pub enum AppendKeysError {
 impl From<RustAppendKeysError> for AppendKeysError {
     fn from(e: RustAppendKeysError) -> Self {
         match e {
-            RustAppendKeysError::Status400(ErrorResponse) => {
-                AppendKeysError::Status400(ErrorResponse)
-            }
-            RustAppendKeysError::Status401(ErrorResponse) => {
-                AppendKeysError::Status401(ErrorResponse)
-            }
-            RustAppendKeysError::Status404(ErrorResponse) => {
-                AppendKeysError::Status404(ErrorResponse)
-            }
-            RustAppendKeysError::Status500(ErrorResponse) => {
-                AppendKeysError::Status500(ErrorResponse)
-            }
+            RustAppendKeysError::Status400(v) => AppendKeysError::Status400(v.into()),
+            RustAppendKeysError::Status401(v) => AppendKeysError::Status401(v.into()),
+            RustAppendKeysError::Status404(v) => AppendKeysError::Status404(v.into()),
+            RustAppendKeysError::Status500(v) => AppendKeysError::Status500(v.into()),
             RustAppendKeysError::Statusdefault() => AppendKeysError::Statusdefault(),
             RustAppendKeysError::DefaultResponse() => AppendKeysError::DefaultResponse(),
-            RustAppendKeysError::UnknownValue(value) => {
-                AppendKeysError::UnknownValue(value.to_string())
-            }
+            RustAppendKeysError::UnknownValue(v) => AppendKeysError::UnknownValue(v.into()),
         }
     }
 }

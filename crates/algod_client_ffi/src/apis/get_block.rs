@@ -35,15 +35,13 @@ pub enum GetBlockError {
 impl From<RustGetBlockError> for GetBlockError {
     fn from(e: RustGetBlockError) -> Self {
         match e {
-            RustGetBlockError::Status400(ErrorResponse) => GetBlockError::Status400(ErrorResponse),
-            RustGetBlockError::Status401(ErrorResponse) => GetBlockError::Status401(ErrorResponse),
-            RustGetBlockError::Status404(ErrorResponse) => GetBlockError::Status404(ErrorResponse),
-            RustGetBlockError::Status500(ErrorResponse) => GetBlockError::Status500(ErrorResponse),
+            RustGetBlockError::Status400(v) => GetBlockError::Status400(v.into()),
+            RustGetBlockError::Status401(v) => GetBlockError::Status401(v.into()),
+            RustGetBlockError::Status404(v) => GetBlockError::Status404(v.into()),
+            RustGetBlockError::Status500(v) => GetBlockError::Status500(v.into()),
             RustGetBlockError::Statusdefault() => GetBlockError::Statusdefault(),
             RustGetBlockError::DefaultResponse() => GetBlockError::DefaultResponse(),
-            RustGetBlockError::UnknownValue(value) => {
-                GetBlockError::UnknownValue(value.to_string())
-            }
+            RustGetBlockError::UnknownValue(v) => GetBlockError::UnknownValue(v.into()),
         }
     }
 }

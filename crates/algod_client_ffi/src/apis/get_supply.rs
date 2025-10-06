@@ -31,14 +31,10 @@ pub enum GetSupplyError {
 impl From<RustGetSupplyError> for GetSupplyError {
     fn from(e: RustGetSupplyError) -> Self {
         match e {
-            RustGetSupplyError::Status401(ErrorResponse) => {
-                GetSupplyError::Status401(ErrorResponse)
-            }
+            RustGetSupplyError::Status401(v) => GetSupplyError::Status401(v.into()),
             RustGetSupplyError::Statusdefault() => GetSupplyError::Statusdefault(),
             RustGetSupplyError::DefaultResponse() => GetSupplyError::DefaultResponse(),
-            RustGetSupplyError::UnknownValue(value) => {
-                GetSupplyError::UnknownValue(value.to_string())
-            }
+            RustGetSupplyError::UnknownValue(v) => GetSupplyError::UnknownValue(v.into()),
         }
     }
 }

@@ -34,23 +34,13 @@ pub enum GetBlockTxidsError {
 impl From<RustGetBlockTxidsError> for GetBlockTxidsError {
     fn from(e: RustGetBlockTxidsError) -> Self {
         match e {
-            RustGetBlockTxidsError::Status400(ErrorResponse) => {
-                GetBlockTxidsError::Status400(ErrorResponse)
-            }
-            RustGetBlockTxidsError::Status401(ErrorResponse) => {
-                GetBlockTxidsError::Status401(ErrorResponse)
-            }
-            RustGetBlockTxidsError::Status404(ErrorResponse) => {
-                GetBlockTxidsError::Status404(ErrorResponse)
-            }
-            RustGetBlockTxidsError::Status500(ErrorResponse) => {
-                GetBlockTxidsError::Status500(ErrorResponse)
-            }
+            RustGetBlockTxidsError::Status400(v) => GetBlockTxidsError::Status400(v.into()),
+            RustGetBlockTxidsError::Status401(v) => GetBlockTxidsError::Status401(v.into()),
+            RustGetBlockTxidsError::Status404(v) => GetBlockTxidsError::Status404(v.into()),
+            RustGetBlockTxidsError::Status500(v) => GetBlockTxidsError::Status500(v.into()),
             RustGetBlockTxidsError::Statusdefault() => GetBlockTxidsError::Statusdefault(),
             RustGetBlockTxidsError::DefaultResponse() => GetBlockTxidsError::DefaultResponse(),
-            RustGetBlockTxidsError::UnknownValue(value) => {
-                GetBlockTxidsError::UnknownValue(value.to_string())
-            }
+            RustGetBlockTxidsError::UnknownValue(v) => GetBlockTxidsError::UnknownValue(v.into()),
         }
     }
 }

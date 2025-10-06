@@ -35,18 +35,18 @@ pub enum RawTransactionAsyncError {
 impl From<RustRawTransactionAsyncError> for RawTransactionAsyncError {
     fn from(e: RustRawTransactionAsyncError) -> Self {
         match e {
-            RustRawTransactionAsyncError::Status400(ErrorResponse) => {
-                RawTransactionAsyncError::Status400(ErrorResponse)
+            RustRawTransactionAsyncError::Status400(v) => {
+                RawTransactionAsyncError::Status400(v.into())
             }
-            RustRawTransactionAsyncError::Status401(ErrorResponse) => {
-                RawTransactionAsyncError::Status401(ErrorResponse)
+            RustRawTransactionAsyncError::Status401(v) => {
+                RawTransactionAsyncError::Status401(v.into())
             }
             RustRawTransactionAsyncError::Status404() => RawTransactionAsyncError::Status404(),
-            RustRawTransactionAsyncError::Status500(ErrorResponse) => {
-                RawTransactionAsyncError::Status500(ErrorResponse)
+            RustRawTransactionAsyncError::Status500(v) => {
+                RawTransactionAsyncError::Status500(v.into())
             }
-            RustRawTransactionAsyncError::Status503(ErrorResponse) => {
-                RawTransactionAsyncError::Status503(ErrorResponse)
+            RustRawTransactionAsyncError::Status503(v) => {
+                RawTransactionAsyncError::Status503(v.into())
             }
             RustRawTransactionAsyncError::Statusdefault() => {
                 RawTransactionAsyncError::Statusdefault()
@@ -54,8 +54,8 @@ impl From<RustRawTransactionAsyncError> for RawTransactionAsyncError {
             RustRawTransactionAsyncError::DefaultResponse() => {
                 RawTransactionAsyncError::DefaultResponse()
             }
-            RustRawTransactionAsyncError::UnknownValue(value) => {
-                RawTransactionAsyncError::UnknownValue(value.to_string())
+            RustRawTransactionAsyncError::UnknownValue(v) => {
+                RawTransactionAsyncError::UnknownValue(v.into())
             }
         }
     }

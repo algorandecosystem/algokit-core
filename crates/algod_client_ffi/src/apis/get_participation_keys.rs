@@ -34,17 +34,17 @@ pub enum GetParticipationKeysError {
 impl From<RustGetParticipationKeysError> for GetParticipationKeysError {
     fn from(e: RustGetParticipationKeysError) -> Self {
         match e {
-            RustGetParticipationKeysError::Status400(ErrorResponse) => {
-                GetParticipationKeysError::Status400(ErrorResponse)
+            RustGetParticipationKeysError::Status400(v) => {
+                GetParticipationKeysError::Status400(v.into())
             }
-            RustGetParticipationKeysError::Status401(ErrorResponse) => {
-                GetParticipationKeysError::Status401(ErrorResponse)
+            RustGetParticipationKeysError::Status401(v) => {
+                GetParticipationKeysError::Status401(v.into())
             }
-            RustGetParticipationKeysError::Status404(ErrorResponse) => {
-                GetParticipationKeysError::Status404(ErrorResponse)
+            RustGetParticipationKeysError::Status404(v) => {
+                GetParticipationKeysError::Status404(v.into())
             }
-            RustGetParticipationKeysError::Status500(ErrorResponse) => {
-                GetParticipationKeysError::Status500(ErrorResponse)
+            RustGetParticipationKeysError::Status500(v) => {
+                GetParticipationKeysError::Status500(v.into())
             }
             RustGetParticipationKeysError::Statusdefault() => {
                 GetParticipationKeysError::Statusdefault()
@@ -52,8 +52,8 @@ impl From<RustGetParticipationKeysError> for GetParticipationKeysError {
             RustGetParticipationKeysError::DefaultResponse() => {
                 GetParticipationKeysError::DefaultResponse()
             }
-            RustGetParticipationKeysError::UnknownValue(value) => {
-                GetParticipationKeysError::UnknownValue(value.to_string())
+            RustGetParticipationKeysError::UnknownValue(v) => {
+                GetParticipationKeysError::UnknownValue(v.into())
             }
         }
     }
