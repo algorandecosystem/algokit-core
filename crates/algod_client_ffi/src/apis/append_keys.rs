@@ -31,28 +31,6 @@ pub enum AppendKeysError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<AppendKeysError> for RustAppendKeysError {
-    fn from(e: AppendKeysError) -> Self {
-        match e {
-            AppendKeysError::Status400(ErrorResponse) => {
-                RustAppendKeysError::Status400(ErrorResponse)
-            }
-            AppendKeysError::Status401(ErrorResponse) => {
-                RustAppendKeysError::Status401(ErrorResponse)
-            }
-            AppendKeysError::Status404(ErrorResponse) => {
-                RustAppendKeysError::Status404(ErrorResponse)
-            }
-            AppendKeysError::Status500(ErrorResponse) => {
-                RustAppendKeysError::Status500(ErrorResponse)
-            }
-            AppendKeysError::Statusdefault() => RustAppendKeysError::Statusdefault(),
-            AppendKeysError::DefaultResponse() => RustAppendKeysError::DefaultResponse(),
-            AppendKeysError::UnknownValue(value) => RustAppendKeysError::UnknownValue(value.into()),
-        }
-    }
-}
-
 impl From<RustAppendKeysError> for AppendKeysError {
     fn from(e: RustAppendKeysError) -> Self {
         match e {

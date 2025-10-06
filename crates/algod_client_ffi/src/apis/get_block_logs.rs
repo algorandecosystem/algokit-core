@@ -30,29 +30,6 @@ pub enum GetBlockLogsError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<GetBlockLogsError> for RustGetBlockLogsError {
-    fn from(e: GetBlockLogsError) -> Self {
-        match e {
-            GetBlockLogsError::Status400(ErrorResponse) => {
-                RustGetBlockLogsError::Status400(ErrorResponse)
-            }
-            GetBlockLogsError::Status401(ErrorResponse) => {
-                RustGetBlockLogsError::Status401(ErrorResponse)
-            }
-            GetBlockLogsError::Status404(ErrorResponse) => {
-                RustGetBlockLogsError::Status404(ErrorResponse)
-            }
-            GetBlockLogsError::Status500(ErrorResponse) => {
-                RustGetBlockLogsError::Status500(ErrorResponse)
-            }
-            GetBlockLogsError::DefaultResponse() => RustGetBlockLogsError::DefaultResponse(),
-            GetBlockLogsError::UnknownValue(value) => {
-                RustGetBlockLogsError::UnknownValue(value.into())
-            }
-        }
-    }
-}
-
 impl From<RustGetBlockLogsError> for GetBlockLogsError {
     fn from(e: RustGetBlockLogsError) -> Self {
         match e {

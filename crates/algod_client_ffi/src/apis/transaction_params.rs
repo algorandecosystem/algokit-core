@@ -30,29 +30,6 @@ pub enum TransactionParamsError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<TransactionParamsError> for RustTransactionParamsError {
-    fn from(e: TransactionParamsError) -> Self {
-        match e {
-            TransactionParamsError::Status401(ErrorResponse) => {
-                RustTransactionParamsError::Status401(ErrorResponse)
-            }
-            TransactionParamsError::Status500(ErrorResponse) => {
-                RustTransactionParamsError::Status500(ErrorResponse)
-            }
-            TransactionParamsError::Status503(ErrorResponse) => {
-                RustTransactionParamsError::Status503(ErrorResponse)
-            }
-            TransactionParamsError::Statusdefault() => RustTransactionParamsError::Statusdefault(),
-            TransactionParamsError::DefaultResponse() => {
-                RustTransactionParamsError::DefaultResponse()
-            }
-            TransactionParamsError::UnknownValue(value) => {
-                RustTransactionParamsError::UnknownValue(value.into())
-            }
-        }
-    }
-}
-
 impl From<RustTransactionParamsError> for TransactionParamsError {
     fn from(e: RustTransactionParamsError) -> Self {
         match e {

@@ -32,34 +32,6 @@ pub enum GetPendingTransactionsByAddressError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<GetPendingTransactionsByAddressError> for RustGetPendingTransactionsByAddressError {
-    fn from(e: GetPendingTransactionsByAddressError) -> Self {
-        match e {
-            GetPendingTransactionsByAddressError::Status400(ErrorResponse) => {
-                RustGetPendingTransactionsByAddressError::Status400(ErrorResponse)
-            }
-            GetPendingTransactionsByAddressError::Status401(ErrorResponse) => {
-                RustGetPendingTransactionsByAddressError::Status401(ErrorResponse)
-            }
-            GetPendingTransactionsByAddressError::Status500(ErrorResponse) => {
-                RustGetPendingTransactionsByAddressError::Status500(ErrorResponse)
-            }
-            GetPendingTransactionsByAddressError::Status503(ErrorResponse) => {
-                RustGetPendingTransactionsByAddressError::Status503(ErrorResponse)
-            }
-            GetPendingTransactionsByAddressError::Statusdefault() => {
-                RustGetPendingTransactionsByAddressError::Statusdefault()
-            }
-            GetPendingTransactionsByAddressError::DefaultResponse() => {
-                RustGetPendingTransactionsByAddressError::DefaultResponse()
-            }
-            GetPendingTransactionsByAddressError::UnknownValue(value) => {
-                RustGetPendingTransactionsByAddressError::UnknownValue(value.into())
-            }
-        }
-    }
-}
-
 impl From<RustGetPendingTransactionsByAddressError> for GetPendingTransactionsByAddressError {
     fn from(e: RustGetPendingTransactionsByAddressError) -> Self {
         match e {

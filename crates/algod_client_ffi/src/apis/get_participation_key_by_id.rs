@@ -31,34 +31,6 @@ pub enum GetParticipationKeyByIdError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<GetParticipationKeyByIdError> for RustGetParticipationKeyByIdError {
-    fn from(e: GetParticipationKeyByIdError) -> Self {
-        match e {
-            GetParticipationKeyByIdError::Status400(ErrorResponse) => {
-                RustGetParticipationKeyByIdError::Status400(ErrorResponse)
-            }
-            GetParticipationKeyByIdError::Status401(ErrorResponse) => {
-                RustGetParticipationKeyByIdError::Status401(ErrorResponse)
-            }
-            GetParticipationKeyByIdError::Status404(ErrorResponse) => {
-                RustGetParticipationKeyByIdError::Status404(ErrorResponse)
-            }
-            GetParticipationKeyByIdError::Status500(ErrorResponse) => {
-                RustGetParticipationKeyByIdError::Status500(ErrorResponse)
-            }
-            GetParticipationKeyByIdError::Statusdefault() => {
-                RustGetParticipationKeyByIdError::Statusdefault()
-            }
-            GetParticipationKeyByIdError::DefaultResponse() => {
-                RustGetParticipationKeyByIdError::DefaultResponse()
-            }
-            GetParticipationKeyByIdError::UnknownValue(value) => {
-                RustGetParticipationKeyByIdError::UnknownValue(value.into())
-            }
-        }
-    }
-}
-
 impl From<RustGetParticipationKeyByIdError> for GetParticipationKeyByIdError {
     fn from(e: RustGetParticipationKeyByIdError) -> Self {
         match e {

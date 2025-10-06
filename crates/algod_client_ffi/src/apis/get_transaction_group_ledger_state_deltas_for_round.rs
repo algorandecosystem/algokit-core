@@ -33,39 +33,6 @@ pub enum GetTransactionGroupLedgerStateDeltasForRoundError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<GetTransactionGroupLedgerStateDeltasForRoundError>
-    for RustGetTransactionGroupLedgerStateDeltasForRoundError
-{
-    fn from(e: GetTransactionGroupLedgerStateDeltasForRoundError) -> Self {
-        match e {
-            GetTransactionGroupLedgerStateDeltasForRoundError::Status401(ErrorResponse) => {
-                RustGetTransactionGroupLedgerStateDeltasForRoundError::Status401(ErrorResponse)
-            }
-            GetTransactionGroupLedgerStateDeltasForRoundError::Status404(ErrorResponse) => {
-                RustGetTransactionGroupLedgerStateDeltasForRoundError::Status404(ErrorResponse)
-            }
-            GetTransactionGroupLedgerStateDeltasForRoundError::Status408(ErrorResponse) => {
-                RustGetTransactionGroupLedgerStateDeltasForRoundError::Status408(ErrorResponse)
-            }
-            GetTransactionGroupLedgerStateDeltasForRoundError::Status500(ErrorResponse) => {
-                RustGetTransactionGroupLedgerStateDeltasForRoundError::Status500(ErrorResponse)
-            }
-            GetTransactionGroupLedgerStateDeltasForRoundError::Status501(ErrorResponse) => {
-                RustGetTransactionGroupLedgerStateDeltasForRoundError::Status501(ErrorResponse)
-            }
-            GetTransactionGroupLedgerStateDeltasForRoundError::Statusdefault() => {
-                RustGetTransactionGroupLedgerStateDeltasForRoundError::Statusdefault()
-            }
-            GetTransactionGroupLedgerStateDeltasForRoundError::DefaultResponse() => {
-                RustGetTransactionGroupLedgerStateDeltasForRoundError::DefaultResponse()
-            }
-            GetTransactionGroupLedgerStateDeltasForRoundError::UnknownValue(value) => {
-                RustGetTransactionGroupLedgerStateDeltasForRoundError::UnknownValue(value.into())
-            }
-        }
-    }
-}
-
 impl From<RustGetTransactionGroupLedgerStateDeltasForRoundError>
     for GetTransactionGroupLedgerStateDeltasForRoundError
 {

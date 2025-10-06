@@ -29,20 +29,6 @@ pub enum GetStatusError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<GetStatusError> for RustGetStatusError {
-    fn from(e: GetStatusError) -> Self {
-        match e {
-            GetStatusError::Status401(ErrorResponse) => {
-                RustGetStatusError::Status401(ErrorResponse)
-            }
-            GetStatusError::Status500(String) => RustGetStatusError::Status500(String),
-            GetStatusError::Statusdefault() => RustGetStatusError::Statusdefault(),
-            GetStatusError::DefaultResponse() => RustGetStatusError::DefaultResponse(),
-            GetStatusError::UnknownValue(value) => RustGetStatusError::UnknownValue(value.into()),
-        }
-    }
-}
-
 impl From<RustGetStatusError> for GetStatusError {
     fn from(e: RustGetStatusError) -> Self {
         match e {

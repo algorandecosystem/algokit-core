@@ -31,31 +31,6 @@ pub enum GetPendingTransactionsError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<GetPendingTransactionsError> for RustGetPendingTransactionsError {
-    fn from(e: GetPendingTransactionsError) -> Self {
-        match e {
-            GetPendingTransactionsError::Status401(ErrorResponse) => {
-                RustGetPendingTransactionsError::Status401(ErrorResponse)
-            }
-            GetPendingTransactionsError::Status500(ErrorResponse) => {
-                RustGetPendingTransactionsError::Status500(ErrorResponse)
-            }
-            GetPendingTransactionsError::Status503(ErrorResponse) => {
-                RustGetPendingTransactionsError::Status503(ErrorResponse)
-            }
-            GetPendingTransactionsError::Statusdefault() => {
-                RustGetPendingTransactionsError::Statusdefault()
-            }
-            GetPendingTransactionsError::DefaultResponse() => {
-                RustGetPendingTransactionsError::DefaultResponse()
-            }
-            GetPendingTransactionsError::UnknownValue(value) => {
-                RustGetPendingTransactionsError::UnknownValue(value.into())
-            }
-        }
-    }
-}
-
 impl From<RustGetPendingTransactionsError> for GetPendingTransactionsError {
     fn from(e: RustGetPendingTransactionsError) -> Self {
         match e {

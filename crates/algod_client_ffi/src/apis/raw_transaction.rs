@@ -31,30 +31,6 @@ pub enum RawTransactionError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<RawTransactionError> for RustRawTransactionError {
-    fn from(e: RawTransactionError) -> Self {
-        match e {
-            RawTransactionError::Status400(ErrorResponse) => {
-                RustRawTransactionError::Status400(ErrorResponse)
-            }
-            RawTransactionError::Status401(ErrorResponse) => {
-                RustRawTransactionError::Status401(ErrorResponse)
-            }
-            RawTransactionError::Status500(ErrorResponse) => {
-                RustRawTransactionError::Status500(ErrorResponse)
-            }
-            RawTransactionError::Status503(ErrorResponse) => {
-                RustRawTransactionError::Status503(ErrorResponse)
-            }
-            RawTransactionError::Statusdefault() => RustRawTransactionError::Statusdefault(),
-            RawTransactionError::DefaultResponse() => RustRawTransactionError::DefaultResponse(),
-            RawTransactionError::UnknownValue(value) => {
-                RustRawTransactionError::UnknownValue(value.into())
-            }
-        }
-    }
-}
-
 impl From<RustRawTransactionError> for RawTransactionError {
     fn from(e: RustRawTransactionError) -> Self {
         match e {

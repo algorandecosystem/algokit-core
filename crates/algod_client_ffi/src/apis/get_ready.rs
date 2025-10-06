@@ -28,18 +28,6 @@ pub enum GetReadyError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<GetReadyError> for RustGetReadyError {
-    fn from(e: GetReadyError) -> Self {
-        match e {
-            GetReadyError::Status500() => RustGetReadyError::Status500(),
-            GetReadyError::Status503() => RustGetReadyError::Status503(),
-            GetReadyError::Statusdefault() => RustGetReadyError::Statusdefault(),
-            GetReadyError::DefaultResponse() => RustGetReadyError::DefaultResponse(),
-            GetReadyError::UnknownValue(value) => RustGetReadyError::UnknownValue(value.into()),
-        }
-    }
-}
-
 impl From<RustGetReadyError> for GetReadyError {
     fn from(e: RustGetReadyError) -> Self {
         match e {

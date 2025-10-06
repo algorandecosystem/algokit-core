@@ -26,19 +26,6 @@ pub enum GetDebugSettingsProfError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<GetDebugSettingsProfError> for RustGetDebugSettingsProfError {
-    fn from(e: GetDebugSettingsProfError) -> Self {
-        match e {
-            GetDebugSettingsProfError::DefaultResponse() => {
-                RustGetDebugSettingsProfError::DefaultResponse()
-            }
-            GetDebugSettingsProfError::UnknownValue(value) => {
-                RustGetDebugSettingsProfError::UnknownValue(value.into())
-            }
-        }
-    }
-}
-
 impl From<RustGetDebugSettingsProfError> for GetDebugSettingsProfError {
     fn from(e: RustGetDebugSettingsProfError) -> Self {
         match e {

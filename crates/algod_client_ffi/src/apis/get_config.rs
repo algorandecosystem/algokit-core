@@ -26,16 +26,6 @@ pub enum GetConfigError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<GetConfigError> for RustGetConfigError {
-    fn from(e: GetConfigError) -> Self {
-        match e {
-            GetConfigError::Statusdefault() => RustGetConfigError::Statusdefault(),
-            GetConfigError::DefaultResponse() => RustGetConfigError::DefaultResponse(),
-            GetConfigError::UnknownValue(value) => RustGetConfigError::UnknownValue(value.into()),
-        }
-    }
-}
-
 impl From<RustGetConfigError> for GetConfigError {
     fn from(e: RustGetConfigError) -> Self {
         match e {

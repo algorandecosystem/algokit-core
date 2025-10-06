@@ -30,31 +30,6 @@ pub enum AccountAssetsInformationError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<AccountAssetsInformationError> for RustAccountAssetsInformationError {
-    fn from(e: AccountAssetsInformationError) -> Self {
-        match e {
-            AccountAssetsInformationError::Status400(ErrorResponse) => {
-                RustAccountAssetsInformationError::Status400(ErrorResponse)
-            }
-            AccountAssetsInformationError::Status401(ErrorResponse) => {
-                RustAccountAssetsInformationError::Status401(ErrorResponse)
-            }
-            AccountAssetsInformationError::Status500(ErrorResponse) => {
-                RustAccountAssetsInformationError::Status500(ErrorResponse)
-            }
-            AccountAssetsInformationError::Statusdefault() => {
-                RustAccountAssetsInformationError::Statusdefault()
-            }
-            AccountAssetsInformationError::DefaultResponse() => {
-                RustAccountAssetsInformationError::DefaultResponse()
-            }
-            AccountAssetsInformationError::UnknownValue(value) => {
-                RustAccountAssetsInformationError::UnknownValue(value.into())
-            }
-        }
-    }
-}
-
 impl From<RustAccountAssetsInformationError> for AccountAssetsInformationError {
     fn from(e: RustAccountAssetsInformationError) -> Self {
         match e {

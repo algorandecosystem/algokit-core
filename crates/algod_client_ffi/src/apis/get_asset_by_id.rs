@@ -31,30 +31,6 @@ pub enum GetAssetByIdError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<GetAssetByIdError> for RustGetAssetByIdError {
-    fn from(e: GetAssetByIdError) -> Self {
-        match e {
-            GetAssetByIdError::Status400(ErrorResponse) => {
-                RustGetAssetByIdError::Status400(ErrorResponse)
-            }
-            GetAssetByIdError::Status401(ErrorResponse) => {
-                RustGetAssetByIdError::Status401(ErrorResponse)
-            }
-            GetAssetByIdError::Status404(ErrorResponse) => {
-                RustGetAssetByIdError::Status404(ErrorResponse)
-            }
-            GetAssetByIdError::Status500(ErrorResponse) => {
-                RustGetAssetByIdError::Status500(ErrorResponse)
-            }
-            GetAssetByIdError::Statusdefault() => RustGetAssetByIdError::Statusdefault(),
-            GetAssetByIdError::DefaultResponse() => RustGetAssetByIdError::DefaultResponse(),
-            GetAssetByIdError::UnknownValue(value) => {
-                RustGetAssetByIdError::UnknownValue(value.into())
-            }
-        }
-    }
-}
-
 impl From<RustGetAssetByIdError> for GetAssetByIdError {
     fn from(e: RustGetAssetByIdError) -> Self {
         match e {

@@ -31,28 +31,6 @@ pub enum TealCompileError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<TealCompileError> for RustTealCompileError {
-    fn from(e: TealCompileError) -> Self {
-        match e {
-            TealCompileError::Status400(ErrorResponse) => {
-                RustTealCompileError::Status400(ErrorResponse)
-            }
-            TealCompileError::Status401(ErrorResponse) => {
-                RustTealCompileError::Status401(ErrorResponse)
-            }
-            TealCompileError::Status404() => RustTealCompileError::Status404(),
-            TealCompileError::Status500(ErrorResponse) => {
-                RustTealCompileError::Status500(ErrorResponse)
-            }
-            TealCompileError::Statusdefault() => RustTealCompileError::Statusdefault(),
-            TealCompileError::DefaultResponse() => RustTealCompileError::DefaultResponse(),
-            TealCompileError::UnknownValue(value) => {
-                RustTealCompileError::UnknownValue(value.into())
-            }
-        }
-    }
-}
-
 impl From<RustTealCompileError> for TealCompileError {
     fn from(e: RustTealCompileError) -> Self {
         match e {

@@ -32,34 +32,6 @@ pub enum GetTransactionProofError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<GetTransactionProofError> for RustGetTransactionProofError {
-    fn from(e: GetTransactionProofError) -> Self {
-        match e {
-            GetTransactionProofError::Status400(ErrorResponse) => {
-                RustGetTransactionProofError::Status400(ErrorResponse)
-            }
-            GetTransactionProofError::Status401(ErrorResponse) => {
-                RustGetTransactionProofError::Status401(ErrorResponse)
-            }
-            GetTransactionProofError::Status404(ErrorResponse) => {
-                RustGetTransactionProofError::Status404(ErrorResponse)
-            }
-            GetTransactionProofError::Status500(ErrorResponse) => {
-                RustGetTransactionProofError::Status500(ErrorResponse)
-            }
-            GetTransactionProofError::Statusdefault() => {
-                RustGetTransactionProofError::Statusdefault()
-            }
-            GetTransactionProofError::DefaultResponse() => {
-                RustGetTransactionProofError::DefaultResponse()
-            }
-            GetTransactionProofError::UnknownValue(value) => {
-                RustGetTransactionProofError::UnknownValue(value.into())
-            }
-        }
-    }
-}
-
 impl From<RustGetTransactionProofError> for GetTransactionProofError {
     fn from(e: RustGetTransactionProofError) -> Self {
         match e {

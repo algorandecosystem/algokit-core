@@ -26,17 +26,6 @@ pub enum ShutdownNodeError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<ShutdownNodeError> for RustShutdownNodeError {
-    fn from(e: ShutdownNodeError) -> Self {
-        match e {
-            ShutdownNodeError::DefaultResponse() => RustShutdownNodeError::DefaultResponse(),
-            ShutdownNodeError::UnknownValue(value) => {
-                RustShutdownNodeError::UnknownValue(value.into())
-            }
-        }
-    }
-}
-
 impl From<RustShutdownNodeError> for ShutdownNodeError {
     fn from(e: RustShutdownNodeError) -> Self {
         match e {

@@ -33,34 +33,6 @@ pub enum SimulateTransactionError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<SimulateTransactionError> for RustSimulateTransactionError {
-    fn from(e: SimulateTransactionError) -> Self {
-        match e {
-            SimulateTransactionError::Status400(ErrorResponse) => {
-                RustSimulateTransactionError::Status400(ErrorResponse)
-            }
-            SimulateTransactionError::Status401(ErrorResponse) => {
-                RustSimulateTransactionError::Status401(ErrorResponse)
-            }
-            SimulateTransactionError::Status500(ErrorResponse) => {
-                RustSimulateTransactionError::Status500(ErrorResponse)
-            }
-            SimulateTransactionError::Status503(ErrorResponse) => {
-                RustSimulateTransactionError::Status503(ErrorResponse)
-            }
-            SimulateTransactionError::Statusdefault() => {
-                RustSimulateTransactionError::Statusdefault()
-            }
-            SimulateTransactionError::DefaultResponse() => {
-                RustSimulateTransactionError::DefaultResponse()
-            }
-            SimulateTransactionError::UnknownValue(value) => {
-                RustSimulateTransactionError::UnknownValue(value.into())
-            }
-        }
-    }
-}
-
 impl From<RustSimulateTransactionError> for SimulateTransactionError {
     fn from(e: RustSimulateTransactionError) -> Self {
         match e {

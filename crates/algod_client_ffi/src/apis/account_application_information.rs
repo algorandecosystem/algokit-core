@@ -31,31 +31,6 @@ pub enum AccountApplicationInformationError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<AccountApplicationInformationError> for RustAccountApplicationInformationError {
-    fn from(e: AccountApplicationInformationError) -> Self {
-        match e {
-            AccountApplicationInformationError::Status400(ErrorResponse) => {
-                RustAccountApplicationInformationError::Status400(ErrorResponse)
-            }
-            AccountApplicationInformationError::Status401(ErrorResponse) => {
-                RustAccountApplicationInformationError::Status401(ErrorResponse)
-            }
-            AccountApplicationInformationError::Status500(ErrorResponse) => {
-                RustAccountApplicationInformationError::Status500(ErrorResponse)
-            }
-            AccountApplicationInformationError::Statusdefault() => {
-                RustAccountApplicationInformationError::Statusdefault()
-            }
-            AccountApplicationInformationError::DefaultResponse() => {
-                RustAccountApplicationInformationError::DefaultResponse()
-            }
-            AccountApplicationInformationError::UnknownValue(value) => {
-                RustAccountApplicationInformationError::UnknownValue(value.into())
-            }
-        }
-    }
-}
-
 impl From<RustAccountApplicationInformationError> for AccountApplicationInformationError {
     fn from(e: RustAccountApplicationInformationError) -> Self {
         match e {

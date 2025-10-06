@@ -28,19 +28,6 @@ pub enum GetSupplyError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<GetSupplyError> for RustGetSupplyError {
-    fn from(e: GetSupplyError) -> Self {
-        match e {
-            GetSupplyError::Status401(ErrorResponse) => {
-                RustGetSupplyError::Status401(ErrorResponse)
-            }
-            GetSupplyError::Statusdefault() => RustGetSupplyError::Statusdefault(),
-            GetSupplyError::DefaultResponse() => RustGetSupplyError::DefaultResponse(),
-            GetSupplyError::UnknownValue(value) => RustGetSupplyError::UnknownValue(value.into()),
-        }
-    }
-}
-
 impl From<RustGetSupplyError> for GetSupplyError {
     fn from(e: RustGetSupplyError) -> Self {
         match e {

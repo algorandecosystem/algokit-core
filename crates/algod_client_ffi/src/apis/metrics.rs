@@ -26,16 +26,6 @@ pub enum MetricsError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<MetricsError> for RustMetricsError {
-    fn from(e: MetricsError) -> Self {
-        match e {
-            MetricsError::Status404() => RustMetricsError::Status404(),
-            MetricsError::DefaultResponse() => RustMetricsError::DefaultResponse(),
-            MetricsError::UnknownValue(value) => RustMetricsError::UnknownValue(value.into()),
-        }
-    }
-}
-
 impl From<RustMetricsError> for MetricsError {
     fn from(e: RustMetricsError) -> Self {
         match e {

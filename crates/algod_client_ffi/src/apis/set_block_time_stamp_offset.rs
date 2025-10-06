@@ -30,31 +30,6 @@ pub enum SetBlockTimeStampOffsetError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<SetBlockTimeStampOffsetError> for RustSetBlockTimeStampOffsetError {
-    fn from(e: SetBlockTimeStampOffsetError) -> Self {
-        match e {
-            SetBlockTimeStampOffsetError::Status400(ErrorResponse) => {
-                RustSetBlockTimeStampOffsetError::Status400(ErrorResponse)
-            }
-            SetBlockTimeStampOffsetError::Status401(ErrorResponse) => {
-                RustSetBlockTimeStampOffsetError::Status401(ErrorResponse)
-            }
-            SetBlockTimeStampOffsetError::Status500(ErrorResponse) => {
-                RustSetBlockTimeStampOffsetError::Status500(ErrorResponse)
-            }
-            SetBlockTimeStampOffsetError::Statusdefault() => {
-                RustSetBlockTimeStampOffsetError::Statusdefault()
-            }
-            SetBlockTimeStampOffsetError::DefaultResponse() => {
-                RustSetBlockTimeStampOffsetError::DefaultResponse()
-            }
-            SetBlockTimeStampOffsetError::UnknownValue(value) => {
-                RustSetBlockTimeStampOffsetError::UnknownValue(value.into())
-            }
-        }
-    }
-}
-
 impl From<RustSetBlockTimeStampOffsetError> for SetBlockTimeStampOffsetError {
     fn from(e: RustSetBlockTimeStampOffsetError) -> Self {
         match e {

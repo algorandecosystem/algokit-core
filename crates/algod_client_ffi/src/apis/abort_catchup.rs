@@ -30,27 +30,6 @@ pub enum AbortCatchupError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<AbortCatchupError> for RustAbortCatchupError {
-    fn from(e: AbortCatchupError) -> Self {
-        match e {
-            AbortCatchupError::Status400(ErrorResponse) => {
-                RustAbortCatchupError::Status400(ErrorResponse)
-            }
-            AbortCatchupError::Status401(ErrorResponse) => {
-                RustAbortCatchupError::Status401(ErrorResponse)
-            }
-            AbortCatchupError::Status500(ErrorResponse) => {
-                RustAbortCatchupError::Status500(ErrorResponse)
-            }
-            AbortCatchupError::Statusdefault() => RustAbortCatchupError::Statusdefault(),
-            AbortCatchupError::DefaultResponse() => RustAbortCatchupError::DefaultResponse(),
-            AbortCatchupError::UnknownValue(value) => {
-                RustAbortCatchupError::UnknownValue(value.into())
-            }
-        }
-    }
-}
-
 impl From<RustAbortCatchupError> for AbortCatchupError {
     fn from(e: RustAbortCatchupError) -> Self {
         match e {

@@ -32,37 +32,6 @@ pub enum GetLightBlockHeaderProofError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<GetLightBlockHeaderProofError> for RustGetLightBlockHeaderProofError {
-    fn from(e: GetLightBlockHeaderProofError) -> Self {
-        match e {
-            GetLightBlockHeaderProofError::Status401(ErrorResponse) => {
-                RustGetLightBlockHeaderProofError::Status401(ErrorResponse)
-            }
-            GetLightBlockHeaderProofError::Status404(ErrorResponse) => {
-                RustGetLightBlockHeaderProofError::Status404(ErrorResponse)
-            }
-            GetLightBlockHeaderProofError::Status408(ErrorResponse) => {
-                RustGetLightBlockHeaderProofError::Status408(ErrorResponse)
-            }
-            GetLightBlockHeaderProofError::Status500(ErrorResponse) => {
-                RustGetLightBlockHeaderProofError::Status500(ErrorResponse)
-            }
-            GetLightBlockHeaderProofError::Status503(ErrorResponse) => {
-                RustGetLightBlockHeaderProofError::Status503(ErrorResponse)
-            }
-            GetLightBlockHeaderProofError::Statusdefault() => {
-                RustGetLightBlockHeaderProofError::Statusdefault()
-            }
-            GetLightBlockHeaderProofError::DefaultResponse() => {
-                RustGetLightBlockHeaderProofError::DefaultResponse()
-            }
-            GetLightBlockHeaderProofError::UnknownValue(value) => {
-                RustGetLightBlockHeaderProofError::UnknownValue(value.into())
-            }
-        }
-    }
-}
-
 impl From<RustGetLightBlockHeaderProofError> for GetLightBlockHeaderProofError {
     fn from(e: RustGetLightBlockHeaderProofError) -> Self {
         match e {

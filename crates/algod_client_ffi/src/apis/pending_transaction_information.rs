@@ -31,31 +31,6 @@ pub enum PendingTransactionInformationError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<PendingTransactionInformationError> for RustPendingTransactionInformationError {
-    fn from(e: PendingTransactionInformationError) -> Self {
-        match e {
-            PendingTransactionInformationError::Status400(ErrorResponse) => {
-                RustPendingTransactionInformationError::Status400(ErrorResponse)
-            }
-            PendingTransactionInformationError::Status401(ErrorResponse) => {
-                RustPendingTransactionInformationError::Status401(ErrorResponse)
-            }
-            PendingTransactionInformationError::Status404(ErrorResponse) => {
-                RustPendingTransactionInformationError::Status404(ErrorResponse)
-            }
-            PendingTransactionInformationError::Statusdefault() => {
-                RustPendingTransactionInformationError::Statusdefault()
-            }
-            PendingTransactionInformationError::DefaultResponse() => {
-                RustPendingTransactionInformationError::DefaultResponse()
-            }
-            PendingTransactionInformationError::UnknownValue(value) => {
-                RustPendingTransactionInformationError::UnknownValue(value.into())
-            }
-        }
-    }
-}
-
 impl From<RustPendingTransactionInformationError> for PendingTransactionInformationError {
     fn from(e: RustPendingTransactionInformationError) -> Self {
         match e {

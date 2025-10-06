@@ -31,34 +31,6 @@ pub enum GetParticipationKeysError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<GetParticipationKeysError> for RustGetParticipationKeysError {
-    fn from(e: GetParticipationKeysError) -> Self {
-        match e {
-            GetParticipationKeysError::Status400(ErrorResponse) => {
-                RustGetParticipationKeysError::Status400(ErrorResponse)
-            }
-            GetParticipationKeysError::Status401(ErrorResponse) => {
-                RustGetParticipationKeysError::Status401(ErrorResponse)
-            }
-            GetParticipationKeysError::Status404(ErrorResponse) => {
-                RustGetParticipationKeysError::Status404(ErrorResponse)
-            }
-            GetParticipationKeysError::Status500(ErrorResponse) => {
-                RustGetParticipationKeysError::Status500(ErrorResponse)
-            }
-            GetParticipationKeysError::Statusdefault() => {
-                RustGetParticipationKeysError::Statusdefault()
-            }
-            GetParticipationKeysError::DefaultResponse() => {
-                RustGetParticipationKeysError::DefaultResponse()
-            }
-            GetParticipationKeysError::UnknownValue(value) => {
-                RustGetParticipationKeysError::UnknownValue(value.into())
-            }
-        }
-    }
-}
-
 impl From<RustGetParticipationKeysError> for GetParticipationKeysError {
     fn from(e: RustGetParticipationKeysError) -> Self {
         match e {

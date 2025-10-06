@@ -31,30 +31,6 @@ pub enum GetBlockTxidsError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<GetBlockTxidsError> for RustGetBlockTxidsError {
-    fn from(e: GetBlockTxidsError) -> Self {
-        match e {
-            GetBlockTxidsError::Status400(ErrorResponse) => {
-                RustGetBlockTxidsError::Status400(ErrorResponse)
-            }
-            GetBlockTxidsError::Status401(ErrorResponse) => {
-                RustGetBlockTxidsError::Status401(ErrorResponse)
-            }
-            GetBlockTxidsError::Status404(ErrorResponse) => {
-                RustGetBlockTxidsError::Status404(ErrorResponse)
-            }
-            GetBlockTxidsError::Status500(ErrorResponse) => {
-                RustGetBlockTxidsError::Status500(ErrorResponse)
-            }
-            GetBlockTxidsError::Statusdefault() => RustGetBlockTxidsError::Statusdefault(),
-            GetBlockTxidsError::DefaultResponse() => RustGetBlockTxidsError::DefaultResponse(),
-            GetBlockTxidsError::UnknownValue(value) => {
-                RustGetBlockTxidsError::UnknownValue(value.into())
-            }
-        }
-    }
-}
-
 impl From<RustGetBlockTxidsError> for GetBlockTxidsError {
     fn from(e: RustGetBlockTxidsError) -> Self {
         match e {

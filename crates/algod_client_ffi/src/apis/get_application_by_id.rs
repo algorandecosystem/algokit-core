@@ -31,34 +31,6 @@ pub enum GetApplicationByIdError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<GetApplicationByIdError> for RustGetApplicationByIdError {
-    fn from(e: GetApplicationByIdError) -> Self {
-        match e {
-            GetApplicationByIdError::Status400(ErrorResponse) => {
-                RustGetApplicationByIdError::Status400(ErrorResponse)
-            }
-            GetApplicationByIdError::Status401(ErrorResponse) => {
-                RustGetApplicationByIdError::Status401(ErrorResponse)
-            }
-            GetApplicationByIdError::Status404(ErrorResponse) => {
-                RustGetApplicationByIdError::Status404(ErrorResponse)
-            }
-            GetApplicationByIdError::Status500(ErrorResponse) => {
-                RustGetApplicationByIdError::Status500(ErrorResponse)
-            }
-            GetApplicationByIdError::Statusdefault() => {
-                RustGetApplicationByIdError::Statusdefault()
-            }
-            GetApplicationByIdError::DefaultResponse() => {
-                RustGetApplicationByIdError::DefaultResponse()
-            }
-            GetApplicationByIdError::UnknownValue(value) => {
-                RustGetApplicationByIdError::UnknownValue(value.into())
-            }
-        }
-    }
-}
-
 impl From<RustGetApplicationByIdError> for GetApplicationByIdError {
     fn from(e: RustGetApplicationByIdError) -> Self {
         match e {

@@ -26,15 +26,6 @@ pub enum GetVersionError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<GetVersionError> for RustGetVersionError {
-    fn from(e: GetVersionError) -> Self {
-        match e {
-            GetVersionError::DefaultResponse() => RustGetVersionError::DefaultResponse(),
-            GetVersionError::UnknownValue(value) => RustGetVersionError::UnknownValue(value.into()),
-        }
-    }
-}
-
 impl From<RustGetVersionError> for GetVersionError {
     fn from(e: RustGetVersionError) -> Self {
         match e {

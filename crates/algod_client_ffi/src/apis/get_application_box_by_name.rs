@@ -31,34 +31,6 @@ pub enum GetApplicationBoxByNameError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<GetApplicationBoxByNameError> for RustGetApplicationBoxByNameError {
-    fn from(e: GetApplicationBoxByNameError) -> Self {
-        match e {
-            GetApplicationBoxByNameError::Status400(ErrorResponse) => {
-                RustGetApplicationBoxByNameError::Status400(ErrorResponse)
-            }
-            GetApplicationBoxByNameError::Status401(ErrorResponse) => {
-                RustGetApplicationBoxByNameError::Status401(ErrorResponse)
-            }
-            GetApplicationBoxByNameError::Status404(ErrorResponse) => {
-                RustGetApplicationBoxByNameError::Status404(ErrorResponse)
-            }
-            GetApplicationBoxByNameError::Status500(ErrorResponse) => {
-                RustGetApplicationBoxByNameError::Status500(ErrorResponse)
-            }
-            GetApplicationBoxByNameError::Statusdefault() => {
-                RustGetApplicationBoxByNameError::Statusdefault()
-            }
-            GetApplicationBoxByNameError::DefaultResponse() => {
-                RustGetApplicationBoxByNameError::DefaultResponse()
-            }
-            GetApplicationBoxByNameError::UnknownValue(value) => {
-                RustGetApplicationBoxByNameError::UnknownValue(value.into())
-            }
-        }
-    }
-}
-
 impl From<RustGetApplicationBoxByNameError> for GetApplicationBoxByNameError {
     fn from(e: RustGetApplicationBoxByNameError) -> Self {
         match e {

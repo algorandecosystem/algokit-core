@@ -33,37 +33,6 @@ pub enum GetLedgerStateDeltaError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<GetLedgerStateDeltaError> for RustGetLedgerStateDeltaError {
-    fn from(e: GetLedgerStateDeltaError) -> Self {
-        match e {
-            GetLedgerStateDeltaError::Status401(ErrorResponse) => {
-                RustGetLedgerStateDeltaError::Status401(ErrorResponse)
-            }
-            GetLedgerStateDeltaError::Status404(ErrorResponse) => {
-                RustGetLedgerStateDeltaError::Status404(ErrorResponse)
-            }
-            GetLedgerStateDeltaError::Status408(ErrorResponse) => {
-                RustGetLedgerStateDeltaError::Status408(ErrorResponse)
-            }
-            GetLedgerStateDeltaError::Status500(ErrorResponse) => {
-                RustGetLedgerStateDeltaError::Status500(ErrorResponse)
-            }
-            GetLedgerStateDeltaError::Status503(ErrorResponse) => {
-                RustGetLedgerStateDeltaError::Status503(ErrorResponse)
-            }
-            GetLedgerStateDeltaError::Statusdefault() => {
-                RustGetLedgerStateDeltaError::Statusdefault()
-            }
-            GetLedgerStateDeltaError::DefaultResponse() => {
-                RustGetLedgerStateDeltaError::DefaultResponse()
-            }
-            GetLedgerStateDeltaError::UnknownValue(value) => {
-                RustGetLedgerStateDeltaError::UnknownValue(value.into())
-            }
-        }
-    }
-}
-
 impl From<RustGetLedgerStateDeltaError> for GetLedgerStateDeltaError {
     fn from(e: RustGetLedgerStateDeltaError) -> Self {
         match e {

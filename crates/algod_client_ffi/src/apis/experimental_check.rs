@@ -27,21 +27,6 @@ pub enum ExperimentalCheckError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<ExperimentalCheckError> for RustExperimentalCheckError {
-    fn from(e: ExperimentalCheckError) -> Self {
-        match e {
-            ExperimentalCheckError::Status404() => RustExperimentalCheckError::Status404(),
-            ExperimentalCheckError::Statusdefault() => RustExperimentalCheckError::Statusdefault(),
-            ExperimentalCheckError::DefaultResponse() => {
-                RustExperimentalCheckError::DefaultResponse()
-            }
-            ExperimentalCheckError::UnknownValue(value) => {
-                RustExperimentalCheckError::UnknownValue(value.into())
-            }
-        }
-    }
-}
-
 impl From<RustExperimentalCheckError> for ExperimentalCheckError {
     fn from(e: RustExperimentalCheckError) -> Self {
         match e {

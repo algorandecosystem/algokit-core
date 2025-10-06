@@ -31,30 +31,6 @@ pub enum UnsetSyncRoundError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<UnsetSyncRoundError> for RustUnsetSyncRoundError {
-    fn from(e: UnsetSyncRoundError) -> Self {
-        match e {
-            UnsetSyncRoundError::Status400(ErrorResponse) => {
-                RustUnsetSyncRoundError::Status400(ErrorResponse)
-            }
-            UnsetSyncRoundError::Status401(ErrorResponse) => {
-                RustUnsetSyncRoundError::Status401(ErrorResponse)
-            }
-            UnsetSyncRoundError::Status500(ErrorResponse) => {
-                RustUnsetSyncRoundError::Status500(ErrorResponse)
-            }
-            UnsetSyncRoundError::Status503(ErrorResponse) => {
-                RustUnsetSyncRoundError::Status503(ErrorResponse)
-            }
-            UnsetSyncRoundError::Statusdefault() => RustUnsetSyncRoundError::Statusdefault(),
-            UnsetSyncRoundError::DefaultResponse() => RustUnsetSyncRoundError::DefaultResponse(),
-            UnsetSyncRoundError::UnknownValue(value) => {
-                RustUnsetSyncRoundError::UnknownValue(value.into())
-            }
-        }
-    }
-}
-
 impl From<RustUnsetSyncRoundError> for UnsetSyncRoundError {
     fn from(e: RustUnsetSyncRoundError) -> Self {
         match e {

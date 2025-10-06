@@ -31,34 +31,6 @@ pub enum GenerateParticipationKeysError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<GenerateParticipationKeysError> for RustGenerateParticipationKeysError {
-    fn from(e: GenerateParticipationKeysError) -> Self {
-        match e {
-            GenerateParticipationKeysError::Status400(ErrorResponse) => {
-                RustGenerateParticipationKeysError::Status400(ErrorResponse)
-            }
-            GenerateParticipationKeysError::Status401(ErrorResponse) => {
-                RustGenerateParticipationKeysError::Status401(ErrorResponse)
-            }
-            GenerateParticipationKeysError::Status500(ErrorResponse) => {
-                RustGenerateParticipationKeysError::Status500(ErrorResponse)
-            }
-            GenerateParticipationKeysError::Status503(ErrorResponse) => {
-                RustGenerateParticipationKeysError::Status503(ErrorResponse)
-            }
-            GenerateParticipationKeysError::Statusdefault() => {
-                RustGenerateParticipationKeysError::Statusdefault()
-            }
-            GenerateParticipationKeysError::DefaultResponse() => {
-                RustGenerateParticipationKeysError::DefaultResponse()
-            }
-            GenerateParticipationKeysError::UnknownValue(value) => {
-                RustGenerateParticipationKeysError::UnknownValue(value.into())
-            }
-        }
-    }
-}
-
 impl From<RustGenerateParticipationKeysError> for GenerateParticipationKeysError {
     fn from(e: RustGenerateParticipationKeysError) -> Self {
         match e {

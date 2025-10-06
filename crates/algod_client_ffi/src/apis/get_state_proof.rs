@@ -32,33 +32,6 @@ pub enum GetStateProofError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<GetStateProofError> for RustGetStateProofError {
-    fn from(e: GetStateProofError) -> Self {
-        match e {
-            GetStateProofError::Status401(ErrorResponse) => {
-                RustGetStateProofError::Status401(ErrorResponse)
-            }
-            GetStateProofError::Status404(ErrorResponse) => {
-                RustGetStateProofError::Status404(ErrorResponse)
-            }
-            GetStateProofError::Status408(ErrorResponse) => {
-                RustGetStateProofError::Status408(ErrorResponse)
-            }
-            GetStateProofError::Status500(ErrorResponse) => {
-                RustGetStateProofError::Status500(ErrorResponse)
-            }
-            GetStateProofError::Status503(ErrorResponse) => {
-                RustGetStateProofError::Status503(ErrorResponse)
-            }
-            GetStateProofError::Statusdefault() => RustGetStateProofError::Statusdefault(),
-            GetStateProofError::DefaultResponse() => RustGetStateProofError::DefaultResponse(),
-            GetStateProofError::UnknownValue(value) => {
-                RustGetStateProofError::UnknownValue(value.into())
-            }
-        }
-    }
-}
-
 impl From<RustGetStateProofError> for GetStateProofError {
     fn from(e: RustGetStateProofError) -> Self {
         match e {

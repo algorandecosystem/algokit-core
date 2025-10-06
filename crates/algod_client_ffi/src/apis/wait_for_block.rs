@@ -31,30 +31,6 @@ pub enum WaitForBlockError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<WaitForBlockError> for RustWaitForBlockError {
-    fn from(e: WaitForBlockError) -> Self {
-        match e {
-            WaitForBlockError::Status400(ErrorResponse) => {
-                RustWaitForBlockError::Status400(ErrorResponse)
-            }
-            WaitForBlockError::Status401(ErrorResponse) => {
-                RustWaitForBlockError::Status401(ErrorResponse)
-            }
-            WaitForBlockError::Status500(ErrorResponse) => {
-                RustWaitForBlockError::Status500(ErrorResponse)
-            }
-            WaitForBlockError::Status503(ErrorResponse) => {
-                RustWaitForBlockError::Status503(ErrorResponse)
-            }
-            WaitForBlockError::Statusdefault() => RustWaitForBlockError::Statusdefault(),
-            WaitForBlockError::DefaultResponse() => RustWaitForBlockError::DefaultResponse(),
-            WaitForBlockError::UnknownValue(value) => {
-                RustWaitForBlockError::UnknownValue(value.into())
-            }
-        }
-    }
-}
-
 impl From<RustWaitForBlockError> for WaitForBlockError {
     fn from(e: RustWaitForBlockError) -> Self {
         match e {

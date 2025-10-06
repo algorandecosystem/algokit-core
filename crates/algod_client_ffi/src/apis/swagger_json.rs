@@ -26,18 +26,6 @@ pub enum SwaggerJsonError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<SwaggerJsonError> for RustSwaggerJsonError {
-    fn from(e: SwaggerJsonError) -> Self {
-        match e {
-            SwaggerJsonError::Statusdefault() => RustSwaggerJsonError::Statusdefault(),
-            SwaggerJsonError::DefaultResponse() => RustSwaggerJsonError::DefaultResponse(),
-            SwaggerJsonError::UnknownValue(value) => {
-                RustSwaggerJsonError::UnknownValue(value.into())
-            }
-        }
-    }
-}
-
 impl From<RustSwaggerJsonError> for SwaggerJsonError {
     fn from(e: RustSwaggerJsonError) -> Self {
         match e {

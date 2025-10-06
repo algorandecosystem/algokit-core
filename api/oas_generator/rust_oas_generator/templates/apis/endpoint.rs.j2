@@ -58,16 +58,6 @@ pub enum {{ operation.rust_error_enum }} {
 }
 
 {% if ffi %}
-impl From<{{ operation.rust_error_enum }}> for Rust{{ operation.rust_error_enum }} {
-    fn from(e: {{ operation.rust_error_enum }}) -> Self {
-        match e {
-        {% for error_type in error_types %}
-            {{ operation.rust_error_enum }}::{{ error_type | replace("crate::models::UnknownJsonValue", "value") }} => Rust{{ operation.rust_error_enum }}::{{ error_type | replace("crate::models::UnknownJsonValue", "value.into()") }},
-        {% endfor %}
-        }
-    }
-}
-
 impl From<Rust{{ operation.rust_error_enum }}> for {{ operation.rust_error_enum }} {
     fn from(e: Rust{{ operation.rust_error_enum }}) -> Self {
         match e {

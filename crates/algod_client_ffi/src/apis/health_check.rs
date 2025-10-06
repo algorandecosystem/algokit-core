@@ -26,18 +26,6 @@ pub enum HealthCheckError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<HealthCheckError> for RustHealthCheckError {
-    fn from(e: HealthCheckError) -> Self {
-        match e {
-            HealthCheckError::Statusdefault() => RustHealthCheckError::Statusdefault(),
-            HealthCheckError::DefaultResponse() => RustHealthCheckError::DefaultResponse(),
-            HealthCheckError::UnknownValue(value) => {
-                RustHealthCheckError::UnknownValue(value.into())
-            }
-        }
-    }
-}
-
 impl From<RustHealthCheckError> for HealthCheckError {
     fn from(e: RustHealthCheckError) -> Self {
         match e {

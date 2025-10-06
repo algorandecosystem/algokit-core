@@ -31,30 +31,6 @@ pub enum StartCatchupError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<StartCatchupError> for RustStartCatchupError {
-    fn from(e: StartCatchupError) -> Self {
-        match e {
-            StartCatchupError::Status400(ErrorResponse) => {
-                RustStartCatchupError::Status400(ErrorResponse)
-            }
-            StartCatchupError::Status401(ErrorResponse) => {
-                RustStartCatchupError::Status401(ErrorResponse)
-            }
-            StartCatchupError::Status408(ErrorResponse) => {
-                RustStartCatchupError::Status408(ErrorResponse)
-            }
-            StartCatchupError::Status500(ErrorResponse) => {
-                RustStartCatchupError::Status500(ErrorResponse)
-            }
-            StartCatchupError::Statusdefault() => RustStartCatchupError::Statusdefault(),
-            StartCatchupError::DefaultResponse() => RustStartCatchupError::DefaultResponse(),
-            StartCatchupError::UnknownValue(value) => {
-                RustStartCatchupError::UnknownValue(value.into())
-            }
-        }
-    }
-}
-
 impl From<RustStartCatchupError> for StartCatchupError {
     fn from(e: RustStartCatchupError) -> Self {
         match e {

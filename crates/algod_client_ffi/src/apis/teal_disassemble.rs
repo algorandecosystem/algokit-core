@@ -31,28 +31,6 @@ pub enum TealDisassembleError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<TealDisassembleError> for RustTealDisassembleError {
-    fn from(e: TealDisassembleError) -> Self {
-        match e {
-            TealDisassembleError::Status400(ErrorResponse) => {
-                RustTealDisassembleError::Status400(ErrorResponse)
-            }
-            TealDisassembleError::Status401(ErrorResponse) => {
-                RustTealDisassembleError::Status401(ErrorResponse)
-            }
-            TealDisassembleError::Status404() => RustTealDisassembleError::Status404(),
-            TealDisassembleError::Status500(ErrorResponse) => {
-                RustTealDisassembleError::Status500(ErrorResponse)
-            }
-            TealDisassembleError::Statusdefault() => RustTealDisassembleError::Statusdefault(),
-            TealDisassembleError::DefaultResponse() => RustTealDisassembleError::DefaultResponse(),
-            TealDisassembleError::UnknownValue(value) => {
-                RustTealDisassembleError::UnknownValue(value.into())
-            }
-        }
-    }
-}
-
 impl From<RustTealDisassembleError> for TealDisassembleError {
     fn from(e: RustTealDisassembleError) -> Self {
         match e {

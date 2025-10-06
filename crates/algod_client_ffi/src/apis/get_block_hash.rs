@@ -31,30 +31,6 @@ pub enum GetBlockHashError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<GetBlockHashError> for RustGetBlockHashError {
-    fn from(e: GetBlockHashError) -> Self {
-        match e {
-            GetBlockHashError::Status400(ErrorResponse) => {
-                RustGetBlockHashError::Status400(ErrorResponse)
-            }
-            GetBlockHashError::Status401(ErrorResponse) => {
-                RustGetBlockHashError::Status401(ErrorResponse)
-            }
-            GetBlockHashError::Status404(ErrorResponse) => {
-                RustGetBlockHashError::Status404(ErrorResponse)
-            }
-            GetBlockHashError::Status500(ErrorResponse) => {
-                RustGetBlockHashError::Status500(ErrorResponse)
-            }
-            GetBlockHashError::Statusdefault() => RustGetBlockHashError::Statusdefault(),
-            GetBlockHashError::DefaultResponse() => RustGetBlockHashError::DefaultResponse(),
-            GetBlockHashError::UnknownValue(value) => {
-                RustGetBlockHashError::UnknownValue(value.into())
-            }
-        }
-    }
-}
-
 impl From<RustGetBlockHashError> for GetBlockHashError {
     fn from(e: RustGetBlockHashError) -> Self {
         match e {

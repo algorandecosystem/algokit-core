@@ -32,26 +32,6 @@ pub enum TealDryrunError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<TealDryrunError> for RustTealDryrunError {
-    fn from(e: TealDryrunError) -> Self {
-        match e {
-            TealDryrunError::Status400(ErrorResponse) => {
-                RustTealDryrunError::Status400(ErrorResponse)
-            }
-            TealDryrunError::Status401(ErrorResponse) => {
-                RustTealDryrunError::Status401(ErrorResponse)
-            }
-            TealDryrunError::Status404() => RustTealDryrunError::Status404(),
-            TealDryrunError::Status500(ErrorResponse) => {
-                RustTealDryrunError::Status500(ErrorResponse)
-            }
-            TealDryrunError::Statusdefault() => RustTealDryrunError::Statusdefault(),
-            TealDryrunError::DefaultResponse() => RustTealDryrunError::DefaultResponse(),
-            TealDryrunError::UnknownValue(value) => RustTealDryrunError::UnknownValue(value.into()),
-        }
-    }
-}
-
 impl From<RustTealDryrunError> for TealDryrunError {
     fn from(e: RustTealDryrunError) -> Self {
         match e {

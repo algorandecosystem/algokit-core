@@ -27,16 +27,6 @@ pub enum GetGenesisError {
     UnknownValue(crate::models::UnknownJsonValue),
 }
 
-impl From<GetGenesisError> for RustGetGenesisError {
-    fn from(e: GetGenesisError) -> Self {
-        match e {
-            GetGenesisError::Statusdefault() => RustGetGenesisError::Statusdefault(),
-            GetGenesisError::DefaultResponse() => RustGetGenesisError::DefaultResponse(),
-            GetGenesisError::UnknownValue(value) => RustGetGenesisError::UnknownValue(value.into()),
-        }
-    }
-}
-
 impl From<RustGetGenesisError> for GetGenesisError {
     fn from(e: RustGetGenesisError) -> Self {
         match e {
