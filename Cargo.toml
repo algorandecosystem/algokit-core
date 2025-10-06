@@ -29,4 +29,4 @@ rstest = { version = "0.25.0" }
 [workspace.metadata.bin]
 polytest = { version = "0.3.0", locked = true }
 cargo-insta = { version = "1.43.1", locked = true }
-cargo-nextest = { version = "0.9.105", locked = true }
+cargo-nextest = { version = "0.9.100", locked = true }

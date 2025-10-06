@@ -28,10 +28,6 @@ jobs:
           toolchain: 1.85.0
           components: clippy, rustfmt
 
-      - uses: taiki-e/install-action@v2
-        with:
-          tool: nextest@0.9.105
-
       - name: Install uv
         uses: astral-sh/setup-uv@v5
 
@@ -40,11 +36,10 @@ jobs:
 
       - name: Check formatting
         run: cargo fmt --check
+
       - name: Clippy
         # Run clippy and treat warnings as errors
         run: cargo clippy -- -D warnings
-      - name: Check
-        run: cargo check
 
       - name: Start localnet
         run: algokit localnet start
