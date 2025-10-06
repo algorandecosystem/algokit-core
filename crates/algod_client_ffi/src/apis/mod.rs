@@ -758,18 +758,6 @@ impl From<RustError> for Error {
     }
 }
 
-impl From<Error> for RustError {
-    fn from(err: Error) -> Self {
-        match err {
-            Error::Http { source } => RustError::Http { source },
-            Error::Serde { message } => RustError::Serde { message },
-            Error::Api { source } => RustError::Api {
-                source: source.into(),
-            },
-        }
-    }
-}
-
 #[derive(Debug, PartialEq, Eq)]
 pub enum ContentType {
     Json,
