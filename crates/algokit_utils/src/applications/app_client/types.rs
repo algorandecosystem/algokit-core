@@ -159,9 +159,9 @@ pub struct CompilationParams {
 #[derive(Clone, Debug)]
 pub struct AppClientUpdateMethodCallResult {
     /// The result of the primary (last) transaction
-    pub primary_result: TransactionResult,
+    pub result: TransactionResult,
     /// All transaction results
-    pub results: Vec<TransactionResult>,
+    pub group_results: Vec<TransactionResult>,
     /// The group ID (optional)
     pub group: Option<Byte32>,
     /// The compiled programs (approval and clear state)

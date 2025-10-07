@@ -32,9 +32,9 @@ pub struct AppFactoryCreateResult {
 #[derive(Clone, Debug)]
 pub struct AppFactoryCreateMethodCallResult {
     /// The result of the primary (last) transaction
-    pub primary_result: TransactionResult,
+    pub result: TransactionResult,
     /// All transaction results
-    pub results: Vec<TransactionResult>,
+    pub group_results: Vec<TransactionResult>,
     /// The group ID for the transaction group (if any)
     pub group: Option<Byte32>,
     /// The ID of the created app

@@ -107,9 +107,9 @@ pub struct SendAppCreateResult {
 #[derive(Debug, Clone)]
 pub struct SendAppMethodCallResult {
     /// The result of the primary (last) transaction
-    pub primary_result: TransactionResult,
+    pub result: TransactionResult,
     /// All transaction results from the composer
-    pub results: Vec<TransactionResult>,
+    pub group_results: Vec<TransactionResult>,
     /// The group ID (optional)
     pub group: Option<Byte32>,
 }
@@ -118,9 +118,9 @@ pub struct SendAppMethodCallResult {
 #[derive(Debug, Clone)]
 pub struct SendAppCreateMethodCallResult {
     /// The result of the primary (last) transaction
-    pub primary_result: TransactionResult,
+    pub result: TransactionResult,
     /// All transaction results from the composer
-    pub results: Vec<TransactionResult>,
+    pub group_results: Vec<TransactionResult>,
     /// The group ID (optional)
     pub group: Option<Byte32>,
     /// The ID of the created app
@@ -221,7 +221,7 @@ impl TransactionSender {
         add_transaction(&mut composer)?;
         let composer_results = composer.send(send_params).await?;
 
-        let primary_result = composer_results
+        let result = composer_results
             .results
             .last()
             .ok_or(TransactionSenderError::ValidationError {
@@ -230,8 +230,8 @@ impl TransactionSender {
             .clone();
 
         Ok(SendAppMethodCallResult {
-            primary_result,
-            results: composer_results.results,
+            result,
+            group_results: composer_results.results,
             group: composer_results.group,
         })
     }
@@ -649,16 +649,14 @@ impl TransactionSender {
         self.send_method_call_with_result(
             |composer| composer.add_app_create_method_call(params),
             |base_result| {
-                let app_id = base_result
-                    .primary_result
-                    .confirmation
-                    .app_id
-                    .ok_or_else(|| TransactionSenderError::ValidationError {
+                let app_id = base_result.result.confirmation.app_id.ok_or_else(|| {
+                    TransactionSenderError::ValidationError {
                         message: "App creation confirmation missing application-index".to_string(),
-                    })?;
+                    }
+                })?;
                 Ok(SendAppCreateMethodCallResult {
-                    primary_result: base_result.primary_result,
-                    results: base_result.results,
+                    result: base_result.result,
+                    group_results: base_result.group_results,
                     group: base_result.group,
                     app_id,
                     app_address: Address::from_app_id(&app_id),

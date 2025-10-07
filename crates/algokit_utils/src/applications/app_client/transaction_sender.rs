@@ -88,8 +88,8 @@ impl<'app_client> TransactionSender<'app_client> {
                 .clone();
 
             Ok(SendAppMethodCallResult {
-                primary_result: last_result,
-                results: simulate_results.results,
+                result: last_result,
+                group_results: simulate_results.results,
                 group: simulate_results.group,
             })
         } else {
@@ -172,8 +172,8 @@ impl<'app_client> TransactionSender<'app_client> {
             .map_err(|e| self.client.transform_transaction_error(e, false))?;
 
         Ok(AppClientUpdateMethodCallResult {
-            primary_result: result.primary_result,
-            results: result.results,
+            result: result.result,
+            group_results: result.group_results,
             group: result.group,
             compiled_programs,
         })

@@ -258,11 +258,7 @@ async fn abi_based_create_returns_value(
         )
         .await?;
 
-    match call_return
-        .primary_result
-        .abi_return
-        .and_then(|r| r.return_value)
-    {
+    match call_return.result.abi_return.and_then(|r| r.return_value) {
         Some(ABIValue::String(s)) => assert_eq!(s, "string_io"),
         other => return Err(format!("expected string return, got {other:?}").into()),
     }
@@ -309,7 +305,7 @@ async fn create_then_call_via_app_client(
         .await?;
 
     let abi_ret = send_res
-        .primary_result
+        .result
         .abi_return
         .clone()
         .expect("abi return expected");
@@ -475,7 +471,7 @@ async fn delete_app_with_abi_direct(
         .await?;
 
     let abi_ret = delete_res
-        .primary_result
+        .result
         .abi_return
         .clone()
         .expect("abi return expected");
@@ -534,7 +530,7 @@ async fn update_app_with_abi_direct(
         .await?;
 
     let abi_ret = update_res
-        .primary_result
+        .result
         .abi_return
         .clone()
         .expect("abi return expected");

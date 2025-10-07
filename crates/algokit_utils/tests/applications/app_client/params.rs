@@ -206,9 +206,9 @@ async fn params_construct_txn_with_abi_tx_arg_and_return(
         )
         .await?;
 
-    assert_eq!(result.results.len(), 2);
+    assert_eq!(result.group_results.len(), 2);
     let abi_ret = result
-        .primary_result
+        .result
         .abi_return
         .as_ref()
         .expect("abi return expected");

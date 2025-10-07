@@ -89,8 +89,8 @@ impl<'app_factory> TransactionSender<'app_factory> {
         let app_address = Address::from_app_id(&app_id);
 
         let factory_result = AppFactoryCreateMethodCallResult {
-            primary_result: result.primary_result,
-            results: result.results,
+            result: result.result,
+            group_results: result.group_results,
             group: result.group,
             app_id,
             app_address,

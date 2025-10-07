@@ -36,7 +36,7 @@ async fn test_create_then_call_app(
         .await?;
 
     let abi_return = result
-        .primary_result
+        .result
         .abi_return
         .expect("Expected ABI return");
     match abi_return.return_value {
@@ -90,10 +90,10 @@ async fn test_construct_transaction_with_abi_encoding_including_transaction(
         )
         .await?;
 
-    assert_eq!(result.results.len(), 2);
+    assert_eq!(result.group_results.len(), 2);
 
     let abi_return = result
-        .primary_result
+        .result
         .abi_return
         .as_ref()
         .expect("Expected ABI return");
@@ -378,7 +378,7 @@ async fn test_sign_nested_transactions_in_group_with_different_signers(
 
     assert_eq!(
         result
-            .primary_result
+            .result
             .abi_return
             .as_ref()
             .unwrap()
@@ -416,7 +416,7 @@ async fn bare_call_with_box_reference_builds_and_sends(
         )
         .await?;
 
-    match &result.primary_result.transaction {
+    match &result.result.transaction {
         algokit_transact::Transaction::AppCall(fields) => {
             assert_eq!(fields.app_id, f.app_id);
             assert_eq!(
