@@ -35,10 +35,7 @@ async fn test_create_then_call_app(
         )
         .await?;
 
-    let abi_return = result
-        .result
-        .abi_return
-        .expect("Expected ABI return");
+    let abi_return = result.result.abi_return.expect("Expected ABI return");
     match abi_return.return_value {
         Some(ABIValue::String(s)) => assert_eq!(s, "Hello, test"),
         _ => return Err("Expected string ABI return".into()),
@@ -377,12 +374,7 @@ async fn test_sign_nested_transactions_in_group_with_different_signers(
         .await?;
 
     assert_eq!(
-        result
-            .result
-            .abi_return
-            .as_ref()
-            .unwrap()
-            .return_value,
+        result.result.abi_return.as_ref().unwrap().return_value,
         Some(ABIValue::Uint(BigUint::from(client.app_id())))
     );
 
