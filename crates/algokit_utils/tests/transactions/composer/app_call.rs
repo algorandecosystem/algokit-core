@@ -278,7 +278,7 @@ async fn test_hello_world_app_method_call(
     composer.add_app_call_method_call(method_call_params)?;
 
     let result = composer.send(None).await?;
-    let abi_return = get_abi_return(&result.results[0].abi_return)?;
+    let abi_return = ensure_abi_return(&result.results[0].abi_return)?;
 
     match &abi_return.return_value {
         Some(ABIValue::String(value)) => {
@@ -321,7 +321,7 @@ async fn test_add_app_call_method_call(
 
     let result = composer.send(None).await?;
 
-    let abi_return = get_abi_return(&result.results[0].abi_return)?;
+    let abi_return = ensure_abi_return(&result.results[0].abi_return)?;
 
     match &abi_return.return_value {
         Some(ABIValue::Uint(value)) => {
@@ -369,7 +369,7 @@ async fn test_echo_byte_app_call_method_call(
 
     let result = composer.send(None).await?;
 
-    let abi_return = get_abi_return(&result.results[0].abi_return)?;
+    let abi_return = ensure_abi_return(&result.results[0].abi_return)?;
 
     match &abi_return.return_value {
         Some(ABIValue::Array(value)) => {
@@ -417,7 +417,7 @@ async fn test_echo_static_array_app_call_method_call(
 
     let result = composer.send(None).await?;
 
-    let abi_return = get_abi_return(&result.results[0].abi_return)?;
+    let abi_return = ensure_abi_return(&result.results[0].abi_return)?;
 
     match &abi_return.return_value {
         Some(ABIValue::Array(value)) => {
@@ -464,7 +464,7 @@ async fn test_echo_dynamic_array_app_call_method_call(
 
     let result = composer.send(None).await?;
 
-    let abi_return = get_abi_return(&result.results[0].abi_return)?;
+    let abi_return = ensure_abi_return(&result.results[0].abi_return)?;
 
     match &abi_return.return_value {
         Some(ABIValue::Array(value)) => {
@@ -527,7 +527,7 @@ async fn test_nest_array_and_tuple_app_call_method_call(
 
     let result = composer.send(None).await?;
 
-    let abi_return = get_abi_return(&result.results[0].abi_return)?;
+    let abi_return = ensure_abi_return(&result.results[0].abi_return)?;
 
     match &abi_return.return_value {
         Some(ABIValue::Array(returned_tuple)) => {
@@ -605,7 +605,7 @@ async fn test_get_pay_txn_amount_app_call_method_call(
     let result = composer.send(None).await?;
 
     // Transaction 0 is payment, Transaction 1 is the method call
-    let abi_return = get_abi_return(&result.results[1].abi_return)?;
+    let abi_return = ensure_abi_return(&result.results[1].abi_return)?;
 
     match &abi_return.return_value {
         Some(ABIValue::Uint(returned_amount)) => {
@@ -664,7 +664,7 @@ async fn test_get_pay_txn_amount_app_call_method_call_using_a_different_signer(
     let result = composer.send(None).await?;
 
     // Transaction 0 is payment, Transaction 1 is the method call
-    let abi_return = get_abi_return(&result.results[1].abi_return)?;
+    let abi_return = ensure_abi_return(&result.results[1].abi_return)?;
 
     match &abi_return.return_value {
         Some(ABIValue::Uint(returned_amount)) => {
@@ -730,7 +730,7 @@ async fn test_get_returned_value_of_app_call_txn_app_call_method_call(
     let result = composer.send(None).await?;
 
     // Transaction order: [payment, first_method_call, second_method_call]
-    let abi_return = get_abi_return(&result.results[2].abi_return)?;
+    let abi_return = ensure_abi_return(&result.results[2].abi_return)?;
 
     match &abi_return.return_value {
         Some(ABIValue::Uint(returned_amount)) => {
@@ -804,7 +804,7 @@ async fn test_get_returned_value_of_nested_app_call_method_calls(
     let result = composer.send(None).await?;
 
     // Transaction order: [payment1, payment2, inner_app_call, outer_app_call]
-    let abi_return = get_abi_return(&result.results[3].abi_return)?;
+    let abi_return = ensure_abi_return(&result.results[3].abi_return)?;
 
     let expected_result = BigUint::from(15_000u64);
     match &abi_return.return_value {
@@ -1082,7 +1082,7 @@ async fn test_more_than_15_args_with_ref_types_app_call_method_call(
     let result = composer.send(None).await?;
 
     // Transaction 0 is the payment from args, Transaction 1 is the method call
-    let abi_return = get_abi_return(&result.results[1].abi_return)?;
+    let abi_return = ensure_abi_return(&result.results[1].abi_return)?;
 
     match &abi_return.return_value {
         Some(ABIValue::Array(returned_tuple)) => {
@@ -1194,7 +1194,7 @@ async fn test_more_than_15_args_app_call_method_call(
 
     let result = composer.send(None).await?;
 
-    let abi_return = get_abi_return(&result.results[0].abi_return)?;
+    let abi_return = ensure_abi_return(&result.results[0].abi_return)?;
 
     match &abi_return.return_value {
         Some(ABIValue::Array(returned_array)) => {
@@ -1280,7 +1280,7 @@ fn get_abi_method(
         .map_err(|e| format!("Failed to convert ARC56 method to ABI method: {}", e))?)
 }
 
-fn get_abi_return(
+fn ensure_abi_return(
     abi_return: &Option<ABIReturn>,
 ) -> Result<&ABIReturn, Box<dyn std::error::Error + Send + Sync>> {
     let abi_return = abi_return.as_ref().ok_or("No ABI return value")?;
@@ -1345,7 +1345,7 @@ async fn test_double_nested(#[future] algorand_fixture: AlgorandFixtureResult) -
     let result: algokit_utils::TransactionComposerSendResult = composer.send(None).await?;
 
     // result.results[0] is payment, result.results[1] is first method call
-    let abi_return_0 = get_abi_return(&result.results[1].abi_return)?;
+    let abi_return_0 = ensure_abi_return(&result.results[1].abi_return)?;
     if let Some(ABIValue::Address(value)) = &abi_return_0.return_value {
         assert_eq!(
             *value,
@@ -1357,7 +1357,7 @@ async fn test_double_nested(#[future] algorand_fixture: AlgorandFixtureResult) -
     }
 
     // result.results[2] is payment, result.results[3] is second method call
-    let abi_return_1 = get_abi_return(&result.results[3].abi_return)?;
+    let abi_return_1 = ensure_abi_return(&result.results[3].abi_return)?;
     if let Some(ABIValue::Address(value)) = &abi_return_1.return_value {
         assert_eq!(
             *value,
@@ -1369,7 +1369,7 @@ async fn test_double_nested(#[future] algorand_fixture: AlgorandFixtureResult) -
     }
 
     // result.results[4] is the outer method call
-    let abi_return_2 = get_abi_return(&result.results[4].abi_return)?;
+    let abi_return_2 = ensure_abi_return(&result.results[4].abi_return)?;
     if let Some(ABIValue::Uint(value)) = &abi_return_2.return_value {
         assert_eq!(
             *value,

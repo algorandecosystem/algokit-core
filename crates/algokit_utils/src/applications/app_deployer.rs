@@ -255,7 +255,7 @@ pub enum AppDeployResult {
         /// The result of create transaction
         create_result: TransactionResult,
         /// All transaction results
-        results: Vec<TransactionResult>,
+        group_results: Vec<TransactionResult>,
         /// The group ID for the transaction group (if any)
         group: Option<Byte32>,
         /// The compiled approval and clear programs
@@ -267,7 +267,7 @@ pub enum AppDeployResult {
         /// The result of the update transaction
         update_result: TransactionResult,
         /// All transaction results
-        results: Vec<TransactionResult>,
+        group_results: Vec<TransactionResult>,
         /// The group ID for the transaction group (if any)
         group: Option<Byte32>,
         /// The compiled approval and clear programs
@@ -281,7 +281,7 @@ pub enum AppDeployResult {
         /// The result of the create transaction
         create_result: TransactionResult,
         /// All transaction results
-        results: Vec<TransactionResult>,
+        group_results: Vec<TransactionResult>,
         /// The group ID for the transaction group (if any)
         group: Option<Byte32>,
         /// The compiled approval and clear programs
@@ -1018,7 +1018,7 @@ impl AppDeployer {
         Ok(AppDeployResult::Create {
             app: app_metadata,
             create_result,
-            results: composer_result.results,
+            group_results: composer_result.results,
             group: composer_result.group,
             compiled_programs,
         })
@@ -1133,7 +1133,7 @@ impl AppDeployer {
         Ok(AppDeployResult::Update {
             app: app_metadata,
             update_result,
-            results: composer_result.results,
+            group_results: composer_result.results,
             group: composer_result.group,
             compiled_programs,
         })
@@ -1361,7 +1361,7 @@ impl AppDeployer {
             app: app_metadata,
             delete_result,
             create_result,
-            results: result.results,
+            group_results: result.results,
             group: result.group,
             compiled_programs,
         })
