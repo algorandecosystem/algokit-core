@@ -1,13 +1,11 @@
 use super::{localnet, test_account::TestAccount};
-use crate::{
-    clients::algod_client::AlgodClientTrait,
-    transactions::{
-        asset_config::AssetCreateParams,
-        common::{TransactionSignerGetter, UtilsError},
-        composer::ComposerFactory,
-        payment::PaymentParams,
-    },
+use crate::transactions::{
+    asset_config::AssetCreateParams,
+    common::{TransactionSignerGetter, UtilsError},
+    composer::ComposerFactory,
+    payment::PaymentParams,
 };
+use algod_client_ffi::apis::client::AlgodClientTrait;
 use std::sync::{Arc, Mutex};
 
 /// Test fixture that provides high-level test operations using foreign traits
@@ -95,11 +93,25 @@ impl TestFixture {
         };
 
         // Add payment to composer
-        composer.add_payment(payment_params).await?;
+        eprintln!(
+            "DEBUGPRINT[120]: test_fixture.rs:96 (before composer.add_payment(payment_params).awa…)"
+        );
+        composer.add_payment(payment_params)?;
+        eprintln!(
+            "DEBUGPRINT[121]: test_fixture.rs:97 (after composer.add_payment(payment_params).awa…)"
+        );
 
         // Build and send transaction
+        eprintln!("DEBUGPRINT[122]: test_fixture.rs:101 (before composer.build().await?;)");
         composer.build().await?;
+        eprintln!("DEBUGPRINT[123]: test_fixture.rs:102 (after composer.build().await?;)");
+        eprintln!(
+            "DEBUGPRINT[124]: test_fixture.rs:104 (before let tx_ids = composer.send().await?;)"
+        );
         let tx_ids = composer.send().await?;
+        eprintln!(
+            "DEBUGPRINT[125]: test_fixture.rs:105 (after let tx_ids = composer.send().await?;)"
+        );
 
         // Return first transaction ID
         tx_ids
@@ -149,7 +161,7 @@ impl TestFixture {
         };
 
         // Add asset create to composer
-        composer.add_asset_create(asset_params).await?;
+        composer.add_asset_create(asset_params)?;
 
         // Build and send
         composer.build().await?;
@@ -160,10 +172,7 @@ impl TestFixture {
             message: "No transaction ID returned".to_string(),
         })?;
 
-        let info = self
-            .algod_client
-            .wait_for_confirmation(tx_id.clone())
-            .await?;
+        let info = composer.wait_for_confirmation(tx_id.clone(), 3).await?;
 
         info.asset_id.ok_or_else(|| UtilsError::UtilsError {
             message: "No asset ID in transaction result".to_string(),

@@ -19,6 +19,14 @@ pub enum UtilsError {
     UtilsError { message: String },
 }
 
+impl From<uniffi::UnexpectedUniFFICallbackError> for UtilsError {
+    fn from(e: uniffi::UnexpectedUniFFICallbackError) -> Self {
+        UtilsError::UtilsError {
+            message: format!("Unexpected UniFFI callback error: {}", e),
+        }
+    }
+}
+
 #[uniffi::export(with_foreign)]
 #[async_trait]
 pub trait TransactionSigner: Send + Sync {

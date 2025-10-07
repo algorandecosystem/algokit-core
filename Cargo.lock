@@ -522,7 +522,7 @@ dependencies = [
  "clap",
  "rustversion",
  "serde",
- "toml",
+ "toml 0.5.11",
  "toml_edit 0.19.15",
  "version_check",
  "which",
@@ -2135,7 +2135,7 @@ dependencies = [
  "shlex",
  "tempfile",
  "tokio",
- "toml",
+ "toml 0.5.11",
  "topological-sort",
  "walkdir",
  "warp",
@@ -3096,6 +3096,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_spanned"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "40734c41988f7306bb04f0ecf60ec0f3f1caa34290e4e8ea471dcd3346483b83"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "serde_urlencoded"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3664,10 +3673,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "toml"
+version = "0.9.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "75129e1dc5000bfbaa9fee9d1b21f974f9fbad9daec557a521ee6e080825f6e8"
+dependencies = [
+ "indexmap 2.7.0",
+ "serde",
+ "serde_spanned",
+ "toml_datetime 0.7.0",
+ "toml_parser",
+ "toml_writer",
+ "winnow 0.7.12",
+]
+
+[[package]]
 name = "toml_datetime"
 version = "0.6.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "22cddaf88f4fbc13c51aebbf5f8eceb5c7c5a9da2ac40a13519eb5b0a0e8f11c"
+
+[[package]]
+name = "toml_datetime"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bade1c3e902f58d73d3f294cd7f20391c1cb2fbcb643b73566bc773971df91e3"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "toml_edit"
@@ -3676,7 +3709,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1b5bb770da30e5cbfde35a2d7b9b8a2c4b8ef89548a7a6aeab5c9a576e3e7421"
 dependencies = [
  "indexmap 2.7.0",
- "toml_datetime",
+ "toml_datetime 0.6.11",
  "winnow 0.5.40",
 ]
 
@@ -3687,9 +3720,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "41fe8c660ae4257887cf66394862d21dbca4a6ddd26f04a3560410406a2f819a"
 dependencies = [
  "indexmap 2.7.0",
- "toml_datetime",
+ "toml_datetime 0.6.11",
  "winnow 0.7.12",
 ]
+
+[[package]]
+name = "toml_parser"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b551886f449aa90d4fe2bdaa9f4a2577ad2dde302c61ecf262d80b116db95c10"
+dependencies = [
+ "winnow 0.7.12",
+]
+
+[[package]]
+name = "toml_writer"
+version = "1.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d163a63c116ce562a22cda521fcc4d79152e7aba014456fb5eb442f6d6a10109"
 
 [[package]]
 name = "topological-sort"
@@ -3848,8 +3896,7 @@ checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 [[package]]
 name = "uniffi"
 version = "0.29.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c6d968cb62160c11f2573e6be724ef8b1b18a277aededd17033f8a912d73e2b4"
+source = "git+https://github.com/mozilla/uniffi-rs?branch=main#dd2200e6f332cbc7e25f4fcc767b443aae89f3e8"
 dependencies = [
  "anyhow",
  "camino",
@@ -3871,8 +3918,7 @@ dependencies = [
 [[package]]
 name = "uniffi_bindgen"
 version = "0.29.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f6b39ef1acbe1467d5d210f274fae344cb6f8766339330cb4c9688752899bf6b"
+source = "git+https://github.com/mozilla/uniffi-rs?branch=main#dd2200e6f332cbc7e25f4fcc767b443aae89f3e8"
 dependencies = [
  "anyhow",
  "askama",
@@ -3887,7 +3933,7 @@ dependencies = [
  "serde",
  "tempfile",
  "textwrap",
- "toml",
+ "toml 0.9.5",
  "uniffi_internal_macros",
  "uniffi_meta",
  "uniffi_pipeline",
@@ -3898,8 +3944,7 @@ dependencies = [
 [[package]]
 name = "uniffi_core"
 version = "0.29.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c2d990b553d6b9a7ee9c3ae71134674739913d52350b56152b0e613595bb5a6f"
+source = "git+https://github.com/mozilla/uniffi-rs?branch=main#dd2200e6f332cbc7e25f4fcc767b443aae89f3e8"
 dependencies = [
  "anyhow",
  "bytes",
@@ -3910,8 +3955,7 @@ dependencies = [
 [[package]]
 name = "uniffi_internal_macros"
 version = "0.29.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "04f4f224becf14885c10e6e400b95cc4d1985738140cb194ccc2044563f8a56b"
+source = "git+https://github.com/mozilla/uniffi-rs?branch=main#dd2200e6f332cbc7e25f4fcc767b443aae89f3e8"
 dependencies = [
  "anyhow",
  "indexmap 2.7.0",
@@ -3923,8 +3967,7 @@ dependencies = [
 [[package]]
 name = "uniffi_macros"
 version = "0.29.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b481d385af334871d70904e6a5f129be7cd38c18fcf8dd8fd1f646b426a56d58"
+source = "git+https://github.com/mozilla/uniffi-rs?branch=main#dd2200e6f332cbc7e25f4fcc767b443aae89f3e8"
 dependencies = [
  "camino",
  "fs-err",
@@ -3933,15 +3976,14 @@ dependencies = [
  "quote",
  "serde",
  "syn",
- "toml",
+ "toml 0.9.5",
  "uniffi_meta",
 ]
 
 [[package]]
 name = "uniffi_meta"
 version = "0.29.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "10f817868a3b171bb7bf259e882138d104deafde65684689b4694c846d322491"
+source = "git+https://github.com/mozilla/uniffi-rs?branch=main#dd2200e6f332cbc7e25f4fcc767b443aae89f3e8"
 dependencies = [
  "anyhow",
  "siphasher 0.3.11",
@@ -3952,8 +3994,7 @@ dependencies = [
 [[package]]
 name = "uniffi_pipeline"
 version = "0.29.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4b147e133ad7824e32426b90bc41fda584363563f2ba747f590eca1fd6fd14e6"
+source = "git+https://github.com/mozilla/uniffi-rs?branch=main#dd2200e6f332cbc7e25f4fcc767b443aae89f3e8"
 dependencies = [
  "anyhow",
  "heck",
@@ -3965,8 +4006,7 @@ dependencies = [
 [[package]]
 name = "uniffi_testing"
 version = "0.29.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7a5e9befada8a7069066191beb8865cdb8287f66e9041fb0bbffc8dfc5bea6b7"
+source = "git+https://github.com/mozilla/uniffi-rs?branch=main#dd2200e6f332cbc7e25f4fcc767b443aae89f3e8"
 dependencies = [
  "anyhow",
  "camino",
@@ -3978,8 +4018,7 @@ dependencies = [
 [[package]]
 name = "uniffi_udl"
 version = "0.29.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "caed654fb73da5abbc7a7e9c741532284532ba4762d6fe5071372df22a41730a"
+source = "git+https://github.com/mozilla/uniffi-rs?branch=main#dd2200e6f332cbc7e25f4fcc767b443aae89f3e8"
 dependencies = [
  "anyhow",
  "textwrap",
@@ -4204,8 +4243,7 @@ dependencies = [
 [[package]]
 name = "weedle2"
 version = "5.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "998d2c24ec099a87daf9467808859f9d82b61f1d9c9701251aea037f514eae0e"
+source = "git+https://github.com/mozilla/uniffi-rs?branch=main#dd2200e6f332cbc7e25f4fcc767b443aae89f3e8"
 dependencies = [
  "nom",
 ]

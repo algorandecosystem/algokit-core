@@ -22,7 +22,7 @@ use crate::transactions::{
 
 // External crate imports
 // algod_client
-use algod_client_ffi::AlgodClient;
+use algod_client_ffi::{AlgodClient, models::PendingTransactionResponse};
 
 // algokit_utils
 use algokit_utils::transactions::{ComposerParams, composer::Composer as RustComposer};
@@ -273,93 +273,99 @@ impl ComposerTrait for Composer {
         Ok(response.transaction_ids)
     }
 
-    async fn add_payment(&self, params: super::payment::PaymentParams) -> Result<(), UtilsError> {
+    async fn wait_for_confirmation(
+        &self,
+        tx_id: String,
+        max_rounds_to_wait: u32,
+    ) -> Result<PendingTransactionResponse, UtilsError> {
+        let composer = self.inner_composer.lock().await;
+        composer
+            .wait_for_confirmation(&tx_id, max_rounds_to_wait)
+            .await
+            .map_err(|e| UtilsError::UtilsError {
+                message: e.to_string(),
+            })
+            .map(|r| r.into())
+    }
+
+    fn add_payment(&self, params: super::payment::PaymentParams) -> Result<(), UtilsError> {
         Composer::add_payment(self, params)
     }
 
-    async fn add_asset_create(&self, params: AssetCreateParams) -> Result<(), UtilsError> {
+    fn add_asset_create(&self, params: AssetCreateParams) -> Result<(), UtilsError> {
         Composer::add_asset_create(self, params)
     }
 
-    async fn add_asset_reconfigure(&self, params: AssetConfigParams) -> Result<(), UtilsError> {
+    fn add_asset_reconfigure(&self, params: AssetConfigParams) -> Result<(), UtilsError> {
         Composer::add_asset_config(self, params)
     }
 
-    async fn add_asset_destroy(&self, params: AssetDestroyParams) -> Result<(), UtilsError> {
+    fn add_asset_destroy(&self, params: AssetDestroyParams) -> Result<(), UtilsError> {
         Composer::add_asset_destroy(self, params)
     }
 
-    async fn add_asset_freeze(&self, params: AssetFreezeParams) -> Result<(), UtilsError> {
+    fn add_asset_freeze(&self, params: AssetFreezeParams) -> Result<(), UtilsError> {
         Composer::add_asset_freeze(self, params)
     }
 
-    async fn add_asset_unfreeze(&self, params: AssetUnfreezeParams) -> Result<(), UtilsError> {
+    fn add_asset_unfreeze(&self, params: AssetUnfreezeParams) -> Result<(), UtilsError> {
         Composer::add_asset_unfreeze(self, params)
     }
 
-    async fn add_asset_transfer(&self, params: AssetTransferParams) -> Result<(), UtilsError> {
+    fn add_asset_transfer(&self, params: AssetTransferParams) -> Result<(), UtilsError> {
         Composer::add_asset_transfer(self, params)
     }
 
-    async fn add_asset_opt_in(&self, params: AssetOptInParams) -> Result<(), UtilsError> {
+    fn add_asset_opt_in(&self, params: AssetOptInParams) -> Result<(), UtilsError> {
         Composer::add_asset_opt_in(self, params)
     }
 
-    async fn add_asset_opt_out(&self, params: AssetOptOutParams) -> Result<(), UtilsError> {
+    fn add_asset_opt_out(&self, params: AssetOptOutParams) -> Result<(), UtilsError> {
         Composer::add_asset_opt_out(self, params)
     }
 
-    async fn add_asset_clawback(&self, params: AssetClawbackParams) -> Result<(), UtilsError> {
+    fn add_asset_clawback(&self, params: AssetClawbackParams) -> Result<(), UtilsError> {
         Composer::add_asset_clawback(self, params)
     }
 
-    async fn add_app_create(
-        &self,
-        params: super::app_call::AppCreateParams,
-    ) -> Result<(), UtilsError> {
+    fn add_app_create(&self, params: super::app_call::AppCreateParams) -> Result<(), UtilsError> {
         Composer::add_app_create(self, params)
     }
 
-    async fn add_app_call(&self, params: super::app_call::AppCallParams) -> Result<(), UtilsError> {
+    fn add_app_call(&self, params: super::app_call::AppCallParams) -> Result<(), UtilsError> {
         Composer::add_app_call(self, params)
     }
 
-    async fn add_app_update(
-        &self,
-        params: super::app_call::AppUpdateParams,
-    ) -> Result<(), UtilsError> {
+    fn add_app_update(&self, params: super::app_call::AppUpdateParams) -> Result<(), UtilsError> {
         Composer::add_app_update(self, params)
     }
 
-    async fn add_app_delete(
-        &self,
-        params: super::app_call::AppDeleteParams,
-    ) -> Result<(), UtilsError> {
+    fn add_app_delete(&self, params: super::app_call::AppDeleteParams) -> Result<(), UtilsError> {
         Composer::add_app_delete(self, params)
     }
 
-    async fn add_app_call_method_call(
+    fn add_app_call_method_call(
         &self,
         params: super::app_call::AppCallMethodCallParams,
     ) -> Result<(), UtilsError> {
         Composer::add_app_call_method_call(self, params)
     }
 
-    async fn add_app_create_method_call(
+    fn add_app_create_method_call(
         &self,
         params: super::app_call::AppCreateMethodCallParams,
     ) -> Result<(), UtilsError> {
         Composer::add_app_create_method_call(self, params)
     }
 
-    async fn add_app_update_method_call(
+    fn add_app_update_method_call(
         &self,
         params: super::app_call::AppUpdateMethodCallParams,
     ) -> Result<(), UtilsError> {
         Composer::add_app_update_method_call(self, params)
     }
 
-    async fn add_app_delete_method_call(
+    fn add_app_delete_method_call(
         &self,
         params: super::app_call::AppDeleteMethodCallParams,
     ) -> Result<(), UtilsError> {
@@ -380,60 +386,56 @@ impl ComposerTrait for Composer {
 pub trait ComposerTrait: Send + Sync {
     async fn build(&self) -> Result<(), UtilsError>;
     async fn send(&self) -> Result<Vec<String>, UtilsError>;
-
-    async fn add_payment(&self, params: super::payment::PaymentParams) -> Result<(), UtilsError>;
-
-    async fn add_asset_create(&self, params: AssetCreateParams) -> Result<(), UtilsError>;
-
-    async fn add_asset_reconfigure(&self, params: AssetConfigParams) -> Result<(), UtilsError>;
-
-    async fn add_asset_destroy(&self, params: AssetDestroyParams) -> Result<(), UtilsError>;
-
-    async fn add_asset_freeze(&self, params: AssetFreezeParams) -> Result<(), UtilsError>;
-
-    async fn add_asset_unfreeze(&self, params: AssetUnfreezeParams) -> Result<(), UtilsError>;
-
-    async fn add_asset_transfer(&self, params: AssetTransferParams) -> Result<(), UtilsError>;
-
-    async fn add_asset_opt_in(&self, params: AssetOptInParams) -> Result<(), UtilsError>;
-
-    async fn add_asset_opt_out(&self, params: AssetOptOutParams) -> Result<(), UtilsError>;
-
-    async fn add_asset_clawback(&self, params: AssetClawbackParams) -> Result<(), UtilsError>;
-
-    async fn add_app_create(
+    async fn wait_for_confirmation(
         &self,
-        params: super::app_call::AppCreateParams,
-    ) -> Result<(), UtilsError>;
+        tx_id: String,
+        max_rounds_to_wait: u32,
+    ) -> Result<PendingTransactionResponse, UtilsError>;
 
-    async fn add_app_call(&self, params: super::app_call::AppCallParams) -> Result<(), UtilsError>;
+    fn add_payment(&self, params: super::payment::PaymentParams) -> Result<(), UtilsError>;
 
-    async fn add_app_update(
-        &self,
-        params: super::app_call::AppUpdateParams,
-    ) -> Result<(), UtilsError>;
+    fn add_asset_create(&self, params: AssetCreateParams) -> Result<(), UtilsError>;
 
-    async fn add_app_delete(
-        &self,
-        params: super::app_call::AppDeleteParams,
-    ) -> Result<(), UtilsError>;
+    fn add_asset_reconfigure(&self, params: AssetConfigParams) -> Result<(), UtilsError>;
 
-    async fn add_app_call_method_call(
+    fn add_asset_destroy(&self, params: AssetDestroyParams) -> Result<(), UtilsError>;
+
+    fn add_asset_freeze(&self, params: AssetFreezeParams) -> Result<(), UtilsError>;
+
+    fn add_asset_unfreeze(&self, params: AssetUnfreezeParams) -> Result<(), UtilsError>;
+
+    fn add_asset_transfer(&self, params: AssetTransferParams) -> Result<(), UtilsError>;
+
+    fn add_asset_opt_in(&self, params: AssetOptInParams) -> Result<(), UtilsError>;
+
+    fn add_asset_opt_out(&self, params: AssetOptOutParams) -> Result<(), UtilsError>;
+
+    fn add_asset_clawback(&self, params: AssetClawbackParams) -> Result<(), UtilsError>;
+
+    fn add_app_create(&self, params: super::app_call::AppCreateParams) -> Result<(), UtilsError>;
+
+    fn add_app_call(&self, params: super::app_call::AppCallParams) -> Result<(), UtilsError>;
+
+    fn add_app_update(&self, params: super::app_call::AppUpdateParams) -> Result<(), UtilsError>;
+
+    fn add_app_delete(&self, params: super::app_call::AppDeleteParams) -> Result<(), UtilsError>;
+
+    fn add_app_call_method_call(
         &self,
         params: super::app_call::AppCallMethodCallParams,
     ) -> Result<(), UtilsError>;
 
-    async fn add_app_create_method_call(
+    fn add_app_create_method_call(
         &self,
         params: super::app_call::AppCreateMethodCallParams,
     ) -> Result<(), UtilsError>;
 
-    async fn add_app_update_method_call(
+    fn add_app_update_method_call(
         &self,
         params: super::app_call::AppUpdateMethodCallParams,
     ) -> Result<(), UtilsError>;
 
-    async fn add_app_delete_method_call(
+    fn add_app_delete_method_call(
         &self,
         params: super::app_call::AppDeleteMethodCallParams,
     ) -> Result<(), UtilsError>;

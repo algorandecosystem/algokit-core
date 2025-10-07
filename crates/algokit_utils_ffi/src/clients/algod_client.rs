@@ -25,13 +25,3 @@ pub struct SuggestedParams {
     pub genesis_hash: Vec<u8>,
     pub genesis_id: String,
 }
-
-#[uniffi::export(with_foreign)]
-#[async_trait]
-pub trait AlgodClientTrait: Send + Sync {
-    async fn send_transaction(&self, txn: Vec<u8>) -> Result<String, UtilsError>;
-    async fn get_account_info(&self, address: String) -> Result<AccountInfo, UtilsError>;
-    async fn get_transaction_info(&self, tx_id: String) -> Result<TransactionInfo, UtilsError>;
-    async fn wait_for_confirmation(&self, tx_id: String) -> Result<TransactionInfo, UtilsError>;
-    async fn get_suggested_params(&self) -> Result<SuggestedParams, UtilsError>;
-}

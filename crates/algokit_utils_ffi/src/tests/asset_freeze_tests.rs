@@ -1,5 +1,4 @@
 use crate::{
-    clients::algod_client::AlgodClientTrait,
     tests::fixtures::{TestAccount, TestFixture},
     transactions::{
         asset_freeze::{AssetFreezeParams, AssetUnfreezeParams},
@@ -8,6 +7,7 @@ use crate::{
         composer::ComposerFactory,
     },
 };
+use algod_client_ffi::apis::client::AlgodClientTrait;
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -37,6 +37,9 @@ pub async fn run_asset_freeze_test_suite(
     composer_factory: Arc<dyn ComposerFactory>,
     signer_getter: Arc<dyn TransactionSignerGetter>,
 ) -> Result<TestSuiteResult, UtilsError> {
+    eprintln!(
+        "DEBUGPRINT[111]: asset_freeze_tests.rs:40 (before let suite_start = Instant::now();)"
+    );
     let suite_start = Instant::now();
     let mut results = Vec::new();
 
@@ -108,7 +111,13 @@ async fn run_asset_creation_setup_test(
     let freeze_manager = fixture.generate_account()?;
 
     // Fund both accounts
+    eprintln!(
+        "DEBUGPRINT[118]: asset_freeze_tests.rs:130 (before fixture.fund_account(creator.clone(), 10…)"
+    );
     fixture.fund_account(creator.clone(), 10_000_000).await?;
+    eprintln!(
+        "DEBUGPRINT[119]: asset_freeze_tests.rs:131 (after fixture.fund_account(creator.clone(), 10…)"
+    );
     fixture
         .fund_account(freeze_manager.clone(), 10_000_000)
         .await?;
@@ -150,7 +159,7 @@ async fn run_asset_freeze_and_unfreeze_test(
     };
 
     let opt_in_composer = fixture.composer_factory.create_composer();
-    opt_in_composer.add_asset_opt_in(opt_in_params).await?;
+    opt_in_composer.add_asset_opt_in(opt_in_params)?;
     opt_in_composer.build().await?;
     opt_in_composer.send().await?;
 
@@ -174,9 +183,7 @@ async fn run_asset_freeze_and_unfreeze_test(
     };
 
     let transfer_composer = fixture.composer_factory.create_composer();
-    transfer_composer
-        .add_asset_transfer(transfer_params)
-        .await?;
+    transfer_composer.add_asset_transfer(transfer_params)?;
     transfer_composer.build().await?;
     transfer_composer.send().await?;
 
@@ -201,7 +208,7 @@ async fn run_asset_freeze_and_unfreeze_test(
     };
 
     let freeze_composer = fixture.composer_factory.create_composer();
-    freeze_composer.add_asset_freeze(freeze_params).await?;
+    freeze_composer.add_asset_freeze(freeze_params)?;
     freeze_composer.build().await?;
     freeze_composer.send().await?;
 
@@ -224,9 +231,7 @@ async fn run_asset_freeze_and_unfreeze_test(
     };
 
     let frozen_transfer_composer = fixture.composer_factory.create_composer();
-    frozen_transfer_composer
-        .add_asset_transfer(transfer_from_frozen_params)
-        .await?;
+    frozen_transfer_composer.add_asset_transfer(transfer_from_frozen_params)?;
     frozen_transfer_composer.build().await?;
 
     // This should fail because account is frozen
@@ -271,9 +276,7 @@ async fn run_asset_freeze_and_unfreeze_test(
     };
 
     let unfreeze_composer = fixture.composer_factory.create_composer();
-    unfreeze_composer
-        .add_asset_unfreeze(unfreeze_params)
-        .await?;
+    unfreeze_composer.add_asset_unfreeze(unfreeze_params)?;
     unfreeze_composer.build().await?;
     unfreeze_composer.send().await?;
 
@@ -296,9 +299,7 @@ async fn run_asset_freeze_and_unfreeze_test(
     };
 
     let unfrozen_transfer_composer = fixture.composer_factory.create_composer();
-    unfrozen_transfer_composer
-        .add_asset_transfer(transfer_after_unfreeze_params)
-        .await?;
+    unfrozen_transfer_composer.add_asset_transfer(transfer_after_unfreeze_params)?;
     unfrozen_transfer_composer.build().await?;
     unfrozen_transfer_composer.send().await?;
 

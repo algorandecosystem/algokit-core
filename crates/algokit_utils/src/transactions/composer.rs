@@ -2146,7 +2146,7 @@ impl Composer {
         Ok(self.signed_group.as_ref().unwrap())
     }
 
-    async fn wait_for_confirmation(
+    pub async fn wait_for_confirmation(
         &self,
         tx_id: &str,
         max_rounds_to_wait: u32,

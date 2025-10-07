@@ -8,7 +8,7 @@ This test demonstrates the foreign trait testing pattern where:
 """
 
 import pytest
-from algokit_utils.ffi_algod_client import PythonAlgodClient
+from algokit_utils.algod_client_ffi import AlgodClient
 from algokit_utils.ffi_composer import PythonComposerFactory
 from tests.test_utils import HttpClientImpl, MultiAccountSignerGetter
 from algokit_utils.algod_client_ffi import AlgodClient
@@ -20,14 +20,13 @@ async def test_asset_freeze_comprehensive():
 
     # Create Python implementations of async traits using existing HttpClient
     http_client = HttpClientImpl()
-    algod_client = PythonAlgodClient(http_client)
+    algod_client = AlgodClient(http_client)
 
     # Create the concrete FFI components
-    ffi_algod = AlgodClient(http_client)
     ffi_signer_getter = MultiAccountSignerGetter()
 
     # Create composer factory
-    composer_factory = PythonComposerFactory(ffi_algod, ffi_signer_getter)
+    composer_factory = PythonComposerFactory(algod_client, ffi_signer_getter)
 
     # Run the async Rust test suite - dispenser mnemonic is now fetched internally
     try:
@@ -36,10 +35,14 @@ async def test_asset_freeze_comprehensive():
         # Run the async Rust test suite
         # Rust will fetch dispenser mnemonic from localnet internally
         result = await run_asset_freeze_test_suite(
-            algod_client,          # PythonAlgodClient (foreign trait impl)
+            algod_client,          # Concrete AlgodClient which implements the foreign trait
             composer_factory,      # PythonComposerFactory (foreign trait impl)
             ffi_signer_getter      # MultiAccountSignerGetter (foreign trait impl)
         )
+
+        for res in result.results:
+            if not res.passed:
+                raise RuntimeError(f"Test '{res.name}' failed with error: {res.error}")
 
         # Assert all tests passed
         assert result.all_passed, f"Test suite failed: {result.name}"
