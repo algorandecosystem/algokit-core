@@ -580,6 +580,116 @@ def _uniffi_check_api_checksums(lib):
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algod_client_ffi_checksum_method_algodclient_wait_for_block() != 9675:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_health_check() != 31004:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_ready() != 32153:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_metrics() != 54504:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_genesis() != 53872:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_swagger_json() != 33786:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_version() != 48136:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_debug_settings_prof() != 8719:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_put_debug_settings_prof() != 11478:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_config() != 36751:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_account_information() != 36494:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_account_asset_information() != 35829:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_account_assets_information() != 7523:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_account_application_information() != 32643:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_pending_transactions_by_address() != 56228:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_block() != 28675:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_block_txids() != 18606:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_block_hash() != 42932:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_transaction_proof() != 55680:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_block_logs() != 64461:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_supply() != 56575:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_participation_keys() != 33821:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_add_participation_key() != 1010:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_generate_participation_keys() != 11293:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_participation_key_by_id() != 57044:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_append_keys() != 22678:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_delete_participation_key_by_id() != 739:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_shutdown_node() != 65060:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_status() != 12650:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_wait_for_block() != 9950:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_raw_transaction() != 11416:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_raw_transaction_async() != 58915:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_simulate_transaction() != 34397:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_transaction_params() != 5378:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_pending_transactions() != 11707:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_pending_transaction_information() != 57930:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_ledger_state_delta() != 54683:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_transaction_group_ledger_state_deltas_for_round() != 15191:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_ledger_state_delta_for_transaction_group() != 1328:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_state_proof() != 11069:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_light_block_header_proof() != 50214:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_application_by_id() != 30187:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_application_boxes() != 45910:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_application_box_by_name() != 152:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_asset_by_id() != 54171:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_sync_round() != 7287:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_unset_sync_round() != 39382:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_set_sync_round() != 19078:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_teal_compile() != 12414:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_teal_disassemble() != 44847:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_start_catchup() != 48197:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_abort_catchup() != 1545:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_teal_dryrun() != 23321:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_experimental_check() != 65217:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_block_time_stamp_offset() != 46373:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_set_block_time_stamp_offset() != 3361:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algod_client_ffi_checksum_constructor_algodclient_new() != 43657:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
 
@@ -688,6 +798,175 @@ class _UniffiForeignFutureStructVoid(ctypes.Structure):
     ]
 _UNIFFI_FOREIGN_FUTURE_COMPLETE_VOID = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiForeignFutureStructVoid,
 )
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD0 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UNIFFI_FOREIGN_FUTURE_COMPLETE_VOID,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD1 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UNIFFI_FOREIGN_FUTURE_COMPLETE_VOID,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD2 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UNIFFI_FOREIGN_FUTURE_COMPLETE_VOID,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD3 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD4 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD5 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD6 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD7 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD8 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD9 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,_UniffiRustBuffer,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD10 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,ctypes.c_uint64,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD11 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,_UniffiRustBuffer,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD12 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,ctypes.c_uint64,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD13 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,_UniffiRustBuffer,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD14 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,ctypes.c_uint64,_UniffiRustBuffer,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD15 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,ctypes.c_uint64,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD16 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,ctypes.c_uint64,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD17 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,ctypes.c_uint64,_UniffiRustBuffer,_UniffiRustBuffer,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD18 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,ctypes.c_uint64,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD19 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD20 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD21 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD22 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,_UniffiRustBuffer,ctypes.c_uint64,ctypes.c_uint64,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD23 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD24 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD25 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETE_VOID,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD26 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD27 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD28 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,ctypes.c_uint64,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD29 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD30 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETE_VOID,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD31 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD32 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD33 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD34 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD35 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,ctypes.c_uint64,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD36 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,ctypes.c_uint64,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD37 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD38 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,ctypes.c_uint64,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD39 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,ctypes.c_uint64,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD40 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,ctypes.c_uint64,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD41 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,ctypes.c_uint64,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD42 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,ctypes.c_uint64,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD43 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,ctypes.c_uint64,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD44 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD45 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UNIFFI_FOREIGN_FUTURE_COMPLETE_VOID,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD46 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,ctypes.c_uint64,_UNIFFI_FOREIGN_FUTURE_COMPLETE_VOID,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD47 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD48 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD49 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD50 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD51 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD52 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UNIFFI_FOREIGN_FUTURE_COMPLETE_VOID,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD53 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UNIFFI_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD54 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,ctypes.c_uint64,_UNIFFI_FOREIGN_FUTURE_COMPLETE_VOID,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFuture),
+)
+class _UniffiVTableCallbackInterfaceAlgodClientTrait(ctypes.Structure):
+    _fields_ = [
+        ("health_check", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD0),
+        ("get_ready", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD1),
+        ("metrics", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD2),
+        ("get_genesis", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD3),
+        ("swagger_json", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD4),
+        ("get_version", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD5),
+        ("get_debug_settings_prof", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD6),
+        ("put_debug_settings_prof", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD7),
+        ("get_config", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD8),
+        ("account_information", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD9),
+        ("account_asset_information", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD10),
+        ("account_assets_information", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD11),
+        ("account_application_information", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD12),
+        ("get_pending_transactions_by_address", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD13),
+        ("get_block", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD14),
+        ("get_block_txids", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD15),
+        ("get_block_hash", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD16),
+        ("get_transaction_proof", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD17),
+        ("get_block_logs", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD18),
+        ("get_supply", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD19),
+        ("get_participation_keys", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD20),
+        ("add_participation_key", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD21),
+        ("generate_participation_keys", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD22),
+        ("get_participation_key_by_id", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD23),
+        ("append_keys", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD24),
+        ("delete_participation_key_by_id", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD25),
+        ("shutdown_node", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD26),
+        ("get_status", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD27),
+        ("wait_for_block", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD28),
+        ("raw_transaction", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD29),
+        ("raw_transaction_async", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD30),
+        ("simulate_transaction", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD31),
+        ("transaction_params", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD32),
+        ("get_pending_transactions", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD33),
+        ("pending_transaction_information", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD34),
+        ("get_ledger_state_delta", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD35),
+        ("get_transaction_group_ledger_state_deltas_for_round", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD36),
+        ("get_ledger_state_delta_for_transaction_group", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD37),
+        ("get_state_proof", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD38),
+        ("get_light_block_header_proof", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD39),
+        ("get_application_by_id", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD40),
+        ("get_application_boxes", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD41),
+        ("get_application_box_by_name", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD42),
+        ("get_asset_by_id", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD43),
+        ("get_sync_round", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD44),
+        ("unset_sync_round", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD45),
+        ("set_sync_round", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD46),
+        ("teal_compile", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD47),
+        ("teal_disassemble", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD48),
+        ("start_catchup", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD49),
+        ("abort_catchup", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD50),
+        ("teal_dryrun", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD51),
+        ("experimental_check", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD52),
+        ("get_block_time_stamp_offset", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD53),
+        ("set_block_time_stamp_offset", _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD54),
+        ("uniffi_free", _UNIFFI_CALLBACK_INTERFACE_FREE),
+    ]
 _UniffiLib.uniffi_algod_client_ffi_fn_clone_algodclient.argtypes = (
     ctypes.c_void_p,
     ctypes.POINTER(_UniffiRustCallStatus),
@@ -990,6 +1269,307 @@ _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclient_wait_for_block.argtypes
     ctypes.c_uint64,
 )
 _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclient_wait_for_block.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_clone_algodclienttrait.argtypes = (
+    ctypes.c_void_p,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_clone_algodclienttrait.restype = ctypes.c_void_p
+_UniffiLib.uniffi_algod_client_ffi_fn_free_algodclienttrait.argtypes = (
+    ctypes.c_void_p,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_free_algodclienttrait.restype = None
+_UniffiLib.uniffi_algod_client_ffi_fn_init_callback_vtable_algodclienttrait.argtypes = (
+    ctypes.POINTER(_UniffiVTableCallbackInterfaceAlgodClientTrait),
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_init_callback_vtable_algodclienttrait.restype = None
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_health_check.argtypes = (
+    ctypes.c_void_p,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_health_check.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_ready.argtypes = (
+    ctypes.c_void_p,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_ready.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_metrics.argtypes = (
+    ctypes.c_void_p,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_metrics.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_genesis.argtypes = (
+    ctypes.c_void_p,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_genesis.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_swagger_json.argtypes = (
+    ctypes.c_void_p,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_swagger_json.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_version.argtypes = (
+    ctypes.c_void_p,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_version.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_debug_settings_prof.argtypes = (
+    ctypes.c_void_p,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_debug_settings_prof.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_put_debug_settings_prof.argtypes = (
+    ctypes.c_void_p,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_put_debug_settings_prof.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_config.argtypes = (
+    ctypes.c_void_p,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_config.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_account_information.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_account_information.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_account_asset_information.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    ctypes.c_uint64,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_account_asset_information.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_account_assets_information.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_account_assets_information.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_account_application_information.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    ctypes.c_uint64,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_account_application_information.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_pending_transactions_by_address.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_pending_transactions_by_address.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_block.argtypes = (
+    ctypes.c_void_p,
+    ctypes.c_uint64,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_block.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_block_txids.argtypes = (
+    ctypes.c_void_p,
+    ctypes.c_uint64,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_block_txids.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_block_hash.argtypes = (
+    ctypes.c_void_p,
+    ctypes.c_uint64,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_block_hash.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_transaction_proof.argtypes = (
+    ctypes.c_void_p,
+    ctypes.c_uint64,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_transaction_proof.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_block_logs.argtypes = (
+    ctypes.c_void_p,
+    ctypes.c_uint64,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_block_logs.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_supply.argtypes = (
+    ctypes.c_void_p,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_supply.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_participation_keys.argtypes = (
+    ctypes.c_void_p,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_participation_keys.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_add_participation_key.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_add_participation_key.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_generate_participation_keys.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+    ctypes.c_uint64,
+    ctypes.c_uint64,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_generate_participation_keys.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_participation_key_by_id.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_participation_key_by_id.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_append_keys.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_append_keys.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_delete_participation_key_by_id.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_delete_participation_key_by_id.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_shutdown_node.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_shutdown_node.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_status.argtypes = (
+    ctypes.c_void_p,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_status.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_wait_for_block.argtypes = (
+    ctypes.c_void_p,
+    ctypes.c_uint64,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_wait_for_block.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_raw_transaction.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_raw_transaction.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_raw_transaction_async.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_raw_transaction_async.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_simulate_transaction.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_simulate_transaction.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_transaction_params.argtypes = (
+    ctypes.c_void_p,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_transaction_params.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_pending_transactions.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_pending_transactions.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_pending_transaction_information.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_pending_transaction_information.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_ledger_state_delta.argtypes = (
+    ctypes.c_void_p,
+    ctypes.c_uint64,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_ledger_state_delta.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_transaction_group_ledger_state_deltas_for_round.argtypes = (
+    ctypes.c_void_p,
+    ctypes.c_uint64,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_transaction_group_ledger_state_deltas_for_round.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_ledger_state_delta_for_transaction_group.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_ledger_state_delta_for_transaction_group.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_state_proof.argtypes = (
+    ctypes.c_void_p,
+    ctypes.c_uint64,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_state_proof.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_light_block_header_proof.argtypes = (
+    ctypes.c_void_p,
+    ctypes.c_uint64,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_light_block_header_proof.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_application_by_id.argtypes = (
+    ctypes.c_void_p,
+    ctypes.c_uint64,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_application_by_id.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_application_boxes.argtypes = (
+    ctypes.c_void_p,
+    ctypes.c_uint64,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_application_boxes.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_application_box_by_name.argtypes = (
+    ctypes.c_void_p,
+    ctypes.c_uint64,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_application_box_by_name.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_asset_by_id.argtypes = (
+    ctypes.c_void_p,
+    ctypes.c_uint64,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_asset_by_id.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_sync_round.argtypes = (
+    ctypes.c_void_p,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_sync_round.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_unset_sync_round.argtypes = (
+    ctypes.c_void_p,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_unset_sync_round.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_set_sync_round.argtypes = (
+    ctypes.c_void_p,
+    ctypes.c_uint64,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_set_sync_round.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_teal_compile.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_teal_compile.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_teal_disassemble.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_teal_disassemble.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_start_catchup.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_start_catchup.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_abort_catchup.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_abort_catchup.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_teal_dryrun.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_teal_dryrun.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_experimental_check.argtypes = (
+    ctypes.c_void_p,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_experimental_check.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_block_time_stamp_offset.argtypes = (
+    ctypes.c_void_p,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_block_time_stamp_offset.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_set_block_time_stamp_offset.argtypes = (
+    ctypes.c_void_p,
+    ctypes.c_uint64,
+)
+_UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_set_block_time_stamp_offset.restype = ctypes.c_uint64
 _UniffiLib.ffi_algod_client_ffi_rustbuffer_alloc.argtypes = (
     ctypes.c_uint64,
     ctypes.POINTER(_UniffiRustCallStatus),
@@ -1423,6 +2003,171 @@ _UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclient_unset_sync_round.
 _UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclient_wait_for_block.argtypes = (
 )
 _UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclient_wait_for_block.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_health_check.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_health_check.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_ready.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_ready.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_metrics.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_metrics.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_genesis.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_genesis.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_swagger_json.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_swagger_json.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_version.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_version.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_debug_settings_prof.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_debug_settings_prof.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_put_debug_settings_prof.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_put_debug_settings_prof.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_config.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_config.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_account_information.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_account_information.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_account_asset_information.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_account_asset_information.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_account_assets_information.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_account_assets_information.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_account_application_information.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_account_application_information.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_pending_transactions_by_address.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_pending_transactions_by_address.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_block.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_block.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_block_txids.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_block_txids.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_block_hash.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_block_hash.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_transaction_proof.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_transaction_proof.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_block_logs.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_block_logs.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_supply.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_supply.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_participation_keys.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_participation_keys.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_add_participation_key.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_add_participation_key.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_generate_participation_keys.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_generate_participation_keys.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_participation_key_by_id.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_participation_key_by_id.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_append_keys.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_append_keys.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_delete_participation_key_by_id.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_delete_participation_key_by_id.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_shutdown_node.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_shutdown_node.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_status.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_status.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_wait_for_block.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_wait_for_block.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_raw_transaction.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_raw_transaction.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_raw_transaction_async.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_raw_transaction_async.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_simulate_transaction.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_simulate_transaction.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_transaction_params.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_transaction_params.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_pending_transactions.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_pending_transactions.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_pending_transaction_information.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_pending_transaction_information.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_ledger_state_delta.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_ledger_state_delta.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_transaction_group_ledger_state_deltas_for_round.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_transaction_group_ledger_state_deltas_for_round.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_ledger_state_delta_for_transaction_group.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_ledger_state_delta_for_transaction_group.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_state_proof.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_state_proof.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_light_block_header_proof.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_light_block_header_proof.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_application_by_id.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_application_by_id.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_application_boxes.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_application_boxes.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_application_box_by_name.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_application_box_by_name.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_asset_by_id.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_asset_by_id.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_sync_round.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_sync_round.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_unset_sync_round.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_unset_sync_round.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_set_sync_round.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_set_sync_round.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_teal_compile.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_teal_compile.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_teal_disassemble.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_teal_disassemble.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_start_catchup.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_start_catchup.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_abort_catchup.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_abort_catchup.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_teal_dryrun.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_teal_dryrun.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_experimental_check.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_experimental_check.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_block_time_stamp_offset.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_block_time_stamp_offset.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_set_block_time_stamp_offset.argtypes = (
+)
+_UniffiLib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_set_block_time_stamp_offset.restype = ctypes.c_uint16
 _UniffiLib.uniffi_algod_client_ffi_checksum_constructor_algodclient_new.argtypes = (
 )
 _UniffiLib.uniffi_algod_client_ffi_checksum_constructor_algodclient_new.restype = ctypes.c_uint16
@@ -1434,7 +2179,38 @@ _uniffi_check_contract_api_version(_UniffiLib)
 # _uniffi_check_api_checksums(_UniffiLib)
 
 # Public interface members begin here.
+# Magic number for the Rust proxy to call using the same mechanism as every other method,
+# to free the callback once it's dropped by Rust.
+_UNIFFI_IDX_CALLBACK_FREE = 0
+# Return codes for callback calls
+_UNIFFI_CALLBACK_SUCCESS = 0
+_UNIFFI_CALLBACK_ERROR = 1
+_UNIFFI_CALLBACK_UNEXPECTED_ERROR = 2
 
+class _UniffiCallbackInterfaceFfiConverter:
+    _handle_map = _UniffiHandleMap()
+
+    @classmethod
+    def lift(cls, handle):
+        return cls._handle_map.get(handle)
+
+    @classmethod
+    def read(cls, buf):
+        handle = buf.read_u64()
+        cls.lift(handle)
+
+    @classmethod
+    def check_lower(cls, cb):
+        pass
+
+    @classmethod
+    def lower(cls, cb):
+        handle = cls._handle_map.insert(cb)
+        return handle
+
+    @classmethod
+    def write(cls, cb, buf):
+        buf.write_u64(cls.lower(cb))
 
 class _UniffiConverterUInt32(_UniffiConverterPrimitiveInt):
     CLASS_NAME = "u32"
@@ -1534,6 +2310,8 @@ class _UniffiConverterBytes(_UniffiConverterRustBuffer):
     def write(value, buf):
         buf.write_i32(len(value))
         buf.write(value)
+
+
 
 
 
@@ -19973,6 +20751,4090 @@ class _UniffiConverterTypeUnknownJsonValue:
         return _UniffiConverterString.lower(value)
 
 # objects.
+class AlgodClientTraitProtocol(typing.Protocol):
+    def health_check(self, ):
+        """
+        Returns OK if healthy.
+        """
+
+        raise NotImplementedError
+    def get_ready(self, ):
+        """
+        Returns OK if healthy and fully caught up.
+        """
+
+        raise NotImplementedError
+    def metrics(self, ):
+        """
+        Return metrics about algod functioning.
+        """
+
+        raise NotImplementedError
+    def get_genesis(self, ):
+        """
+        Gets the genesis information.
+        """
+
+        raise NotImplementedError
+    def swagger_json(self, ):
+        """
+        Gets the current swagger spec.
+        """
+
+        raise NotImplementedError
+    def get_version(self, ):
+        """
+        Retrieves the supported API versions, binary build versions, and genesis information.
+        """
+
+        raise NotImplementedError
+    def get_debug_settings_prof(self, ):
+        """
+        Retrieves the current settings for blocking and mutex profiles
+        """
+
+        raise NotImplementedError
+    def put_debug_settings_prof(self, ):
+        """
+        Enables blocking and mutex profiles, and returns the old settings
+        """
+
+        raise NotImplementedError
+    def get_config(self, ):
+        """
+        Gets the merged config file.
+        """
+
+        raise NotImplementedError
+    def account_information(self, address: "str",exclude: "typing.Optional[Exclude]",format: "typing.Optional[Format]"):
+        """
+        Get account information.
+        """
+
+        raise NotImplementedError
+    def account_asset_information(self, address: "str",asset_id: "int",format: "typing.Optional[Format]"):
+        """
+        Get account information about a given asset.
+        """
+
+        raise NotImplementedError
+    def account_assets_information(self, address: "str",limit: "typing.Optional[int]",next: "typing.Optional[str]"):
+        """
+        Get a list of assets held by an account, inclusive of asset params.
+        """
+
+        raise NotImplementedError
+    def account_application_information(self, address: "str",application_id: "int",format: "typing.Optional[Format]"):
+        """
+        Get account information about a given app.
+        """
+
+        raise NotImplementedError
+    def get_pending_transactions_by_address(self, address: "str",max: "typing.Optional[int]",format: "typing.Optional[Format]"):
+        """
+        Get a list of unconfirmed transactions currently in the transaction pool by address.
+        """
+
+        raise NotImplementedError
+    def get_block(self, round: "int",header_only: "typing.Optional[bool]",format: "typing.Optional[Format]"):
+        """
+        Get the block for the given round.
+        """
+
+        raise NotImplementedError
+    def get_block_txids(self, round: "int"):
+        """
+        Get the top level transaction IDs for the block on the given round.
+        """
+
+        raise NotImplementedError
+    def get_block_hash(self, round: "int"):
+        """
+        Get the block hash for the block on the given round.
+        """
+
+        raise NotImplementedError
+    def get_transaction_proof(self, round: "int",txid: "str",hashtype: "typing.Optional[Hashtype]",format: "typing.Optional[Format]"):
+        """
+        Get a proof for a transaction in a block.
+        """
+
+        raise NotImplementedError
+    def get_block_logs(self, round: "int"):
+        """
+        Get all of the logs from outer and inner app calls in the given round
+        """
+
+        raise NotImplementedError
+    def get_supply(self, ):
+        """
+        Get the current supply reported by the ledger.
+        """
+
+        raise NotImplementedError
+    def get_participation_keys(self, ):
+        """
+        Return a list of participation keys
+        """
+
+        raise NotImplementedError
+    def add_participation_key(self, request: "bytes"):
+        """
+        Add a participation key to the node
+        """
+
+        raise NotImplementedError
+    def generate_participation_keys(self, address: "str",dilution: "typing.Optional[int]",first: "int",last: "int"):
+        """
+        Generate and install participation keys to the node.
+        """
+
+        raise NotImplementedError
+    def get_participation_key_by_id(self, participation_id: "str"):
+        """
+        Get participation key info given a participation ID
+        """
+
+        raise NotImplementedError
+    def append_keys(self, request: "bytes",participation_id: "str"):
+        """
+        Append state proof keys to a participation key
+        """
+
+        raise NotImplementedError
+    def delete_participation_key_by_id(self, participation_id: "str"):
+        """
+        Delete a given participation key by ID
+        """
+
+        raise NotImplementedError
+    def shutdown_node(self, timeout: "typing.Optional[int]"):
+        """
+        Special management endpoint to shutdown the node. Optionally provide a timeout parameter to indicate that the node should begin shutting down after a number of seconds.
+        """
+
+        raise NotImplementedError
+    def get_status(self, ):
+        """
+        Gets the current node status.
+        """
+
+        raise NotImplementedError
+    def wait_for_block(self, round: "int"):
+        """
+        Gets the node status after waiting for a round after the given round.
+        """
+
+        raise NotImplementedError
+    def raw_transaction(self, request: "bytes"):
+        """
+        Broadcasts a raw transaction or transaction group to the network.
+        """
+
+        raise NotImplementedError
+    def raw_transaction_async(self, request: "bytes"):
+        """
+        Fast track for broadcasting a raw transaction or transaction group to the network through the tx handler without performing most of the checks and reporting detailed errors. Should be only used for development and performance testing.
+        """
+
+        raise NotImplementedError
+    def simulate_transaction(self, request: "SimulateRequest",format: "typing.Optional[Format]"):
+        """
+        Simulates a raw transaction or transaction group as it would be evaluated on the network. The simulation will use blockchain state from the latest committed round.
+        """
+
+        raise NotImplementedError
+    def transaction_params(self, ):
+        """
+        Get parameters for constructing a new transaction
+        """
+
+        raise NotImplementedError
+    def get_pending_transactions(self, max: "typing.Optional[int]",format: "typing.Optional[Format]"):
+        """
+        Get a list of unconfirmed transactions currently in the transaction pool.
+        """
+
+        raise NotImplementedError
+    def pending_transaction_information(self, txid: "str",format: "typing.Optional[Format]"):
+        """
+        Get a specific pending transaction.
+        """
+
+        raise NotImplementedError
+    def get_ledger_state_delta(self, round: "int",format: "typing.Optional[Format]"):
+        """
+        Get a LedgerStateDelta object for a given round
+        """
+
+        raise NotImplementedError
+    def get_transaction_group_ledger_state_deltas_for_round(self, round: "int",format: "typing.Optional[Format]"):
+        """
+        Get LedgerStateDelta objects for all transaction groups in a given round
+        """
+
+        raise NotImplementedError
+    def get_ledger_state_delta_for_transaction_group(self, id: "str",format: "typing.Optional[Format]"):
+        """
+        Get a LedgerStateDelta object for a given transaction group
+        """
+
+        raise NotImplementedError
+    def get_state_proof(self, round: "int"):
+        """
+        Get a state proof that covers a given round
+        """
+
+        raise NotImplementedError
+    def get_light_block_header_proof(self, round: "int"):
+        """
+        Gets a proof for a given light block header inside a state proof commitment
+        """
+
+        raise NotImplementedError
+    def get_application_by_id(self, application_id: "int"):
+        """
+        Get application information.
+        """
+
+        raise NotImplementedError
+    def get_application_boxes(self, application_id: "int",max: "typing.Optional[int]"):
+        """
+        Get all box names for a given application.
+        """
+
+        raise NotImplementedError
+    def get_application_box_by_name(self, application_id: "int",name: "str"):
+        """
+        Get box information for a given application.
+        """
+
+        raise NotImplementedError
+    def get_asset_by_id(self, asset_id: "int"):
+        """
+        Get asset information.
+        """
+
+        raise NotImplementedError
+    def get_sync_round(self, ):
+        """
+        Returns the minimum sync round the ledger is keeping in cache.
+        """
+
+        raise NotImplementedError
+    def unset_sync_round(self, ):
+        """
+        Removes minimum sync round restriction from the ledger.
+        """
+
+        raise NotImplementedError
+    def set_sync_round(self, round: "int"):
+        """
+        Given a round, tells the ledger to keep that round in its cache.
+        """
+
+        raise NotImplementedError
+    def teal_compile(self, request: "bytes",sourcemap: "typing.Optional[bool]"):
+        """
+        Compile TEAL source code to binary, produce its hash
+        """
+
+        raise NotImplementedError
+    def teal_disassemble(self, request: "str"):
+        """
+        Disassemble program bytes into the TEAL source code.
+        """
+
+        raise NotImplementedError
+    def start_catchup(self, catchpoint: "str",min: "typing.Optional[int]"):
+        """
+        Starts a catchpoint catchup.
+        """
+
+        raise NotImplementedError
+    def abort_catchup(self, catchpoint: "str"):
+        """
+        Aborts a catchpoint catchup.
+        """
+
+        raise NotImplementedError
+    def teal_dryrun(self, request: "typing.Optional[DryrunRequest]"):
+        """
+        Provide debugging information for a transaction (or group).
+        """
+
+        raise NotImplementedError
+    def experimental_check(self, ):
+        """
+        Returns OK if experimental API is enabled.
+        """
+
+        raise NotImplementedError
+    def get_block_time_stamp_offset(self, ):
+        """
+        Returns the timestamp offset. Timestamp offsets can only be set in dev mode.
+        """
+
+        raise NotImplementedError
+    def set_block_time_stamp_offset(self, offset: "int"):
+        """
+        Given a timestamp offset in seconds, adds the offset to every subsequent block header's timestamp.
+        """
+
+        raise NotImplementedError
+# AlgodClientTrait is a foreign trait so treated like a callback interface, where the
+# primary use-case is the trait being implemented locally.
+# It is a base-class local implementations might subclass.
+
+
+class AlgodClientTrait():
+    def health_check(self, ):
+        """
+        Returns OK if healthy.
+        """
+
+        raise NotImplementedError
+    def get_ready(self, ):
+        """
+        Returns OK if healthy and fully caught up.
+        """
+
+        raise NotImplementedError
+    def metrics(self, ):
+        """
+        Return metrics about algod functioning.
+        """
+
+        raise NotImplementedError
+    def get_genesis(self, ):
+        """
+        Gets the genesis information.
+        """
+
+        raise NotImplementedError
+    def swagger_json(self, ):
+        """
+        Gets the current swagger spec.
+        """
+
+        raise NotImplementedError
+    def get_version(self, ):
+        """
+        Retrieves the supported API versions, binary build versions, and genesis information.
+        """
+
+        raise NotImplementedError
+    def get_debug_settings_prof(self, ):
+        """
+        Retrieves the current settings for blocking and mutex profiles
+        """
+
+        raise NotImplementedError
+    def put_debug_settings_prof(self, ):
+        """
+        Enables blocking and mutex profiles, and returns the old settings
+        """
+
+        raise NotImplementedError
+    def get_config(self, ):
+        """
+        Gets the merged config file.
+        """
+
+        raise NotImplementedError
+    def account_information(self, address: "str",exclude: "typing.Optional[Exclude]",format: "typing.Optional[Format]"):
+        """
+        Get account information.
+        """
+
+        raise NotImplementedError
+    def account_asset_information(self, address: "str",asset_id: "int",format: "typing.Optional[Format]"):
+        """
+        Get account information about a given asset.
+        """
+
+        raise NotImplementedError
+    def account_assets_information(self, address: "str",limit: "typing.Optional[int]",next: "typing.Optional[str]"):
+        """
+        Get a list of assets held by an account, inclusive of asset params.
+        """
+
+        raise NotImplementedError
+    def account_application_information(self, address: "str",application_id: "int",format: "typing.Optional[Format]"):
+        """
+        Get account information about a given app.
+        """
+
+        raise NotImplementedError
+    def get_pending_transactions_by_address(self, address: "str",max: "typing.Optional[int]",format: "typing.Optional[Format]"):
+        """
+        Get a list of unconfirmed transactions currently in the transaction pool by address.
+        """
+
+        raise NotImplementedError
+    def get_block(self, round: "int",header_only: "typing.Optional[bool]",format: "typing.Optional[Format]"):
+        """
+        Get the block for the given round.
+        """
+
+        raise NotImplementedError
+    def get_block_txids(self, round: "int"):
+        """
+        Get the top level transaction IDs for the block on the given round.
+        """
+
+        raise NotImplementedError
+    def get_block_hash(self, round: "int"):
+        """
+        Get the block hash for the block on the given round.
+        """
+
+        raise NotImplementedError
+    def get_transaction_proof(self, round: "int",txid: "str",hashtype: "typing.Optional[Hashtype]",format: "typing.Optional[Format]"):
+        """
+        Get a proof for a transaction in a block.
+        """
+
+        raise NotImplementedError
+    def get_block_logs(self, round: "int"):
+        """
+        Get all of the logs from outer and inner app calls in the given round
+        """
+
+        raise NotImplementedError
+    def get_supply(self, ):
+        """
+        Get the current supply reported by the ledger.
+        """
+
+        raise NotImplementedError
+    def get_participation_keys(self, ):
+        """
+        Return a list of participation keys
+        """
+
+        raise NotImplementedError
+    def add_participation_key(self, request: "bytes"):
+        """
+        Add a participation key to the node
+        """
+
+        raise NotImplementedError
+    def generate_participation_keys(self, address: "str",dilution: "typing.Optional[int]",first: "int",last: "int"):
+        """
+        Generate and install participation keys to the node.
+        """
+
+        raise NotImplementedError
+    def get_participation_key_by_id(self, participation_id: "str"):
+        """
+        Get participation key info given a participation ID
+        """
+
+        raise NotImplementedError
+    def append_keys(self, request: "bytes",participation_id: "str"):
+        """
+        Append state proof keys to a participation key
+        """
+
+        raise NotImplementedError
+    def delete_participation_key_by_id(self, participation_id: "str"):
+        """
+        Delete a given participation key by ID
+        """
+
+        raise NotImplementedError
+    def shutdown_node(self, timeout: "typing.Optional[int]"):
+        """
+        Special management endpoint to shutdown the node. Optionally provide a timeout parameter to indicate that the node should begin shutting down after a number of seconds.
+        """
+
+        raise NotImplementedError
+    def get_status(self, ):
+        """
+        Gets the current node status.
+        """
+
+        raise NotImplementedError
+    def wait_for_block(self, round: "int"):
+        """
+        Gets the node status after waiting for a round after the given round.
+        """
+
+        raise NotImplementedError
+    def raw_transaction(self, request: "bytes"):
+        """
+        Broadcasts a raw transaction or transaction group to the network.
+        """
+
+        raise NotImplementedError
+    def raw_transaction_async(self, request: "bytes"):
+        """
+        Fast track for broadcasting a raw transaction or transaction group to the network through the tx handler without performing most of the checks and reporting detailed errors. Should be only used for development and performance testing.
+        """
+
+        raise NotImplementedError
+    def simulate_transaction(self, request: "SimulateRequest",format: "typing.Optional[Format]"):
+        """
+        Simulates a raw transaction or transaction group as it would be evaluated on the network. The simulation will use blockchain state from the latest committed round.
+        """
+
+        raise NotImplementedError
+    def transaction_params(self, ):
+        """
+        Get parameters for constructing a new transaction
+        """
+
+        raise NotImplementedError
+    def get_pending_transactions(self, max: "typing.Optional[int]",format: "typing.Optional[Format]"):
+        """
+        Get a list of unconfirmed transactions currently in the transaction pool.
+        """
+
+        raise NotImplementedError
+    def pending_transaction_information(self, txid: "str",format: "typing.Optional[Format]"):
+        """
+        Get a specific pending transaction.
+        """
+
+        raise NotImplementedError
+    def get_ledger_state_delta(self, round: "int",format: "typing.Optional[Format]"):
+        """
+        Get a LedgerStateDelta object for a given round
+        """
+
+        raise NotImplementedError
+    def get_transaction_group_ledger_state_deltas_for_round(self, round: "int",format: "typing.Optional[Format]"):
+        """
+        Get LedgerStateDelta objects for all transaction groups in a given round
+        """
+
+        raise NotImplementedError
+    def get_ledger_state_delta_for_transaction_group(self, id: "str",format: "typing.Optional[Format]"):
+        """
+        Get a LedgerStateDelta object for a given transaction group
+        """
+
+        raise NotImplementedError
+    def get_state_proof(self, round: "int"):
+        """
+        Get a state proof that covers a given round
+        """
+
+        raise NotImplementedError
+    def get_light_block_header_proof(self, round: "int"):
+        """
+        Gets a proof for a given light block header inside a state proof commitment
+        """
+
+        raise NotImplementedError
+    def get_application_by_id(self, application_id: "int"):
+        """
+        Get application information.
+        """
+
+        raise NotImplementedError
+    def get_application_boxes(self, application_id: "int",max: "typing.Optional[int]"):
+        """
+        Get all box names for a given application.
+        """
+
+        raise NotImplementedError
+    def get_application_box_by_name(self, application_id: "int",name: "str"):
+        """
+        Get box information for a given application.
+        """
+
+        raise NotImplementedError
+    def get_asset_by_id(self, asset_id: "int"):
+        """
+        Get asset information.
+        """
+
+        raise NotImplementedError
+    def get_sync_round(self, ):
+        """
+        Returns the minimum sync round the ledger is keeping in cache.
+        """
+
+        raise NotImplementedError
+    def unset_sync_round(self, ):
+        """
+        Removes minimum sync round restriction from the ledger.
+        """
+
+        raise NotImplementedError
+    def set_sync_round(self, round: "int"):
+        """
+        Given a round, tells the ledger to keep that round in its cache.
+        """
+
+        raise NotImplementedError
+    def teal_compile(self, request: "bytes",sourcemap: "typing.Optional[bool]"):
+        """
+        Compile TEAL source code to binary, produce its hash
+        """
+
+        raise NotImplementedError
+    def teal_disassemble(self, request: "str"):
+        """
+        Disassemble program bytes into the TEAL source code.
+        """
+
+        raise NotImplementedError
+    def start_catchup(self, catchpoint: "str",min: "typing.Optional[int]"):
+        """
+        Starts a catchpoint catchup.
+        """
+
+        raise NotImplementedError
+    def abort_catchup(self, catchpoint: "str"):
+        """
+        Aborts a catchpoint catchup.
+        """
+
+        raise NotImplementedError
+    def teal_dryrun(self, request: "typing.Optional[DryrunRequest]"):
+        """
+        Provide debugging information for a transaction (or group).
+        """
+
+        raise NotImplementedError
+    def experimental_check(self, ):
+        """
+        Returns OK if experimental API is enabled.
+        """
+
+        raise NotImplementedError
+    def get_block_time_stamp_offset(self, ):
+        """
+        Returns the timestamp offset. Timestamp offsets can only be set in dev mode.
+        """
+
+        raise NotImplementedError
+    def set_block_time_stamp_offset(self, offset: "int"):
+        """
+        Given a timestamp offset in seconds, adds the offset to every subsequent block header's timestamp.
+        """
+
+        raise NotImplementedError
+# `AlgodClientTraitImpl` is the implementation for a Rust implemented version.
+class AlgodClientTraitImpl():
+    _pointer: ctypes.c_void_p
+    
+    def __init__(self, *args, **kwargs):
+        raise ValueError("This class has no default constructor")
+
+    def __del__(self):
+        # In case of partial initialization of instances.
+        pointer = getattr(self, "_pointer", None)
+        if pointer is not None:
+            _uniffi_rust_call(_UniffiLib.uniffi_algod_client_ffi_fn_free_algodclienttrait, pointer)
+
+    def _uniffi_clone_pointer(self):
+        return _uniffi_rust_call(_UniffiLib.uniffi_algod_client_ffi_fn_clone_algodclienttrait, self._pointer)
+
+    # Used by alternative constructors or any methods which return this type.
+    @classmethod
+    def _make_instance_(cls, pointer):
+        # Lightly yucky way to bypass the usual __init__ logic
+        # and just create a new instance with the required pointer.
+        inst = cls.__new__(cls)
+        inst._pointer = pointer
+        return inst
+
+    async def health_check(self, ) -> None:
+
+        """
+        Returns OK if healthy.
+        """
+
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_health_check(
+                self._uniffi_clone_pointer(), 
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_void,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_void,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_void,
+            # lift function
+            lambda val: None,
+            
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def get_ready(self, ) -> None:
+
+        """
+        Returns OK if healthy and fully caught up.
+        """
+
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_ready(
+                self._uniffi_clone_pointer(), 
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_void,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_void,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_void,
+            # lift function
+            lambda val: None,
+            
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def metrics(self, ) -> None:
+
+        """
+        Return metrics about algod functioning.
+        """
+
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_metrics(
+                self._uniffi_clone_pointer(), 
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_void,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_void,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_void,
+            # lift function
+            lambda val: None,
+            
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def get_genesis(self, ) -> "Genesis":
+        """
+        Gets the genesis information.
+        """
+
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_genesis(
+                self._uniffi_clone_pointer(), 
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeGenesis.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def swagger_json(self, ) -> "str":
+        """
+        Gets the current swagger spec.
+        """
+
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_swagger_json(
+                self._uniffi_clone_pointer(), 
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterString.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def get_version(self, ) -> "Version":
+        """
+        Retrieves the supported API versions, binary build versions, and genesis information.
+        """
+
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_version(
+                self._uniffi_clone_pointer(), 
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeVersion.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def get_debug_settings_prof(self, ) -> "DebugSettingsProf":
+        """
+        Retrieves the current settings for blocking and mutex profiles
+        """
+
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_debug_settings_prof(
+                self._uniffi_clone_pointer(), 
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeDebugSettingsProf.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def put_debug_settings_prof(self, ) -> "DebugSettingsProf":
+        """
+        Enables blocking and mutex profiles, and returns the old settings
+        """
+
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_put_debug_settings_prof(
+                self._uniffi_clone_pointer(), 
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeDebugSettingsProf.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def get_config(self, ) -> "str":
+        """
+        Gets the merged config file.
+        """
+
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_config(
+                self._uniffi_clone_pointer(), 
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterString.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def account_information(self, address: "str",exclude: "typing.Optional[Exclude]",format: "typing.Optional[Format]") -> "Account":
+        """
+        Get account information.
+        """
+
+        _UniffiConverterString.check_lower(address)
+        
+        _UniffiConverterOptionalTypeExclude.check_lower(exclude)
+        
+        _UniffiConverterOptionalTypeFormat.check_lower(format)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_account_information(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterString.lower(address),
+        _UniffiConverterOptionalTypeExclude.lower(exclude),
+        _UniffiConverterOptionalTypeFormat.lower(format)
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeAccount.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def account_asset_information(self, address: "str",asset_id: "int",format: "typing.Optional[Format]") -> "AccountAssetInformation":
+        """
+        Get account information about a given asset.
+        """
+
+        _UniffiConverterString.check_lower(address)
+        
+        _UniffiConverterUInt64.check_lower(asset_id)
+        
+        _UniffiConverterOptionalTypeFormat.check_lower(format)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_account_asset_information(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterString.lower(address),
+        _UniffiConverterUInt64.lower(asset_id),
+        _UniffiConverterOptionalTypeFormat.lower(format)
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeAccountAssetInformation.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def account_assets_information(self, address: "str",limit: "typing.Optional[int]",next: "typing.Optional[str]") -> "AccountAssetsInformation":
+        """
+        Get a list of assets held by an account, inclusive of asset params.
+        """
+
+        _UniffiConverterString.check_lower(address)
+        
+        _UniffiConverterOptionalUInt64.check_lower(limit)
+        
+        _UniffiConverterOptionalString.check_lower(next)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_account_assets_information(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterString.lower(address),
+        _UniffiConverterOptionalUInt64.lower(limit),
+        _UniffiConverterOptionalString.lower(next)
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeAccountAssetsInformation.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def account_application_information(self, address: "str",application_id: "int",format: "typing.Optional[Format]") -> "AccountApplicationInformation":
+        """
+        Get account information about a given app.
+        """
+
+        _UniffiConverterString.check_lower(address)
+        
+        _UniffiConverterUInt64.check_lower(application_id)
+        
+        _UniffiConverterOptionalTypeFormat.check_lower(format)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_account_application_information(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterString.lower(address),
+        _UniffiConverterUInt64.lower(application_id),
+        _UniffiConverterOptionalTypeFormat.lower(format)
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeAccountApplicationInformation.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def get_pending_transactions_by_address(self, address: "str",max: "typing.Optional[int]",format: "typing.Optional[Format]") -> "GetPendingTransactionsByAddress":
+        """
+        Get a list of unconfirmed transactions currently in the transaction pool by address.
+        """
+
+        _UniffiConverterString.check_lower(address)
+        
+        _UniffiConverterOptionalUInt64.check_lower(max)
+        
+        _UniffiConverterOptionalTypeFormat.check_lower(format)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_pending_transactions_by_address(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterString.lower(address),
+        _UniffiConverterOptionalUInt64.lower(max),
+        _UniffiConverterOptionalTypeFormat.lower(format)
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeGetPendingTransactionsByAddress.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def get_block(self, round: "int",header_only: "typing.Optional[bool]",format: "typing.Optional[Format]") -> "GetBlock":
+        """
+        Get the block for the given round.
+        """
+
+        _UniffiConverterUInt64.check_lower(round)
+        
+        _UniffiConverterOptionalBool.check_lower(header_only)
+        
+        _UniffiConverterOptionalTypeFormat.check_lower(format)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_block(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterUInt64.lower(round),
+        _UniffiConverterOptionalBool.lower(header_only),
+        _UniffiConverterOptionalTypeFormat.lower(format)
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeGetBlock.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def get_block_txids(self, round: "int") -> "GetBlockTxids":
+        """
+        Get the top level transaction IDs for the block on the given round.
+        """
+
+        _UniffiConverterUInt64.check_lower(round)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_block_txids(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterUInt64.lower(round)
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeGetBlockTxids.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def get_block_hash(self, round: "int") -> "GetBlockHash":
+        """
+        Get the block hash for the block on the given round.
+        """
+
+        _UniffiConverterUInt64.check_lower(round)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_block_hash(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterUInt64.lower(round)
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeGetBlockHash.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def get_transaction_proof(self, round: "int",txid: "str",hashtype: "typing.Optional[Hashtype]",format: "typing.Optional[Format]") -> "TransactionProof":
+        """
+        Get a proof for a transaction in a block.
+        """
+
+        _UniffiConverterUInt64.check_lower(round)
+        
+        _UniffiConverterString.check_lower(txid)
+        
+        _UniffiConverterOptionalTypeHashtype.check_lower(hashtype)
+        
+        _UniffiConverterOptionalTypeFormat.check_lower(format)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_transaction_proof(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterUInt64.lower(round),
+        _UniffiConverterString.lower(txid),
+        _UniffiConverterOptionalTypeHashtype.lower(hashtype),
+        _UniffiConverterOptionalTypeFormat.lower(format)
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeTransactionProof.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def get_block_logs(self, round: "int") -> "GetBlockLogs":
+        """
+        Get all of the logs from outer and inner app calls in the given round
+        """
+
+        _UniffiConverterUInt64.check_lower(round)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_block_logs(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterUInt64.lower(round)
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeGetBlockLogs.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def get_supply(self, ) -> "GetSupply":
+        """
+        Get the current supply reported by the ledger.
+        """
+
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_supply(
+                self._uniffi_clone_pointer(), 
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeGetSupply.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def get_participation_keys(self, ) -> "typing.List[ParticipationKey]":
+        """
+        Return a list of participation keys
+        """
+
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_participation_keys(
+                self._uniffi_clone_pointer(), 
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterSequenceTypeParticipationKey.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def add_participation_key(self, request: "bytes") -> "AddParticipationKey":
+        """
+        Add a participation key to the node
+        """
+
+        _UniffiConverterBytes.check_lower(request)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_add_participation_key(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterBytes.lower(request)
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeAddParticipationKey.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def generate_participation_keys(self, address: "str",dilution: "typing.Optional[int]",first: "int",last: "int") -> "str":
+        """
+        Generate and install participation keys to the node.
+        """
+
+        _UniffiConverterString.check_lower(address)
+        
+        _UniffiConverterOptionalUInt64.check_lower(dilution)
+        
+        _UniffiConverterUInt64.check_lower(first)
+        
+        _UniffiConverterUInt64.check_lower(last)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_generate_participation_keys(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterString.lower(address),
+        _UniffiConverterOptionalUInt64.lower(dilution),
+        _UniffiConverterUInt64.lower(first),
+        _UniffiConverterUInt64.lower(last)
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterString.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def get_participation_key_by_id(self, participation_id: "str") -> "ParticipationKey":
+        """
+        Get participation key info given a participation ID
+        """
+
+        _UniffiConverterString.check_lower(participation_id)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_participation_key_by_id(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterString.lower(participation_id)
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeParticipationKey.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def append_keys(self, request: "bytes",participation_id: "str") -> "ParticipationKey":
+        """
+        Append state proof keys to a participation key
+        """
+
+        _UniffiConverterBytes.check_lower(request)
+        
+        _UniffiConverterString.check_lower(participation_id)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_append_keys(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterBytes.lower(request),
+        _UniffiConverterString.lower(participation_id)
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeParticipationKey.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def delete_participation_key_by_id(self, participation_id: "str") -> None:
+
+        """
+        Delete a given participation key by ID
+        """
+
+        _UniffiConverterString.check_lower(participation_id)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_delete_participation_key_by_id(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterString.lower(participation_id)
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_void,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_void,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_void,
+            # lift function
+            lambda val: None,
+            
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def shutdown_node(self, timeout: "typing.Optional[int]") -> "UnknownJsonValue":
+        """
+        Special management endpoint to shutdown the node. Optionally provide a timeout parameter to indicate that the node should begin shutting down after a number of seconds.
+        """
+
+        _UniffiConverterOptionalUInt64.check_lower(timeout)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_shutdown_node(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterOptionalUInt64.lower(timeout)
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeUnknownJsonValue.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def get_status(self, ) -> "GetStatus":
+        """
+        Gets the current node status.
+        """
+
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_status(
+                self._uniffi_clone_pointer(), 
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeGetStatus.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def wait_for_block(self, round: "int") -> "WaitForBlock":
+        """
+        Gets the node status after waiting for a round after the given round.
+        """
+
+        _UniffiConverterUInt64.check_lower(round)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_wait_for_block(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterUInt64.lower(round)
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeWaitForBlock.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def raw_transaction(self, request: "bytes") -> "RawTransaction":
+        """
+        Broadcasts a raw transaction or transaction group to the network.
+        """
+
+        _UniffiConverterBytes.check_lower(request)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_raw_transaction(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterBytes.lower(request)
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeRawTransaction.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def raw_transaction_async(self, request: "bytes") -> None:
+
+        """
+        Fast track for broadcasting a raw transaction or transaction group to the network through the tx handler without performing most of the checks and reporting detailed errors. Should be only used for development and performance testing.
+        """
+
+        _UniffiConverterBytes.check_lower(request)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_raw_transaction_async(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterBytes.lower(request)
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_void,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_void,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_void,
+            # lift function
+            lambda val: None,
+            
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def simulate_transaction(self, request: "SimulateRequest",format: "typing.Optional[Format]") -> "SimulateTransaction":
+        """
+        Simulates a raw transaction or transaction group as it would be evaluated on the network. The simulation will use blockchain state from the latest committed round.
+        """
+
+        _UniffiConverterTypeSimulateRequest.check_lower(request)
+        
+        _UniffiConverterOptionalTypeFormat.check_lower(format)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_simulate_transaction(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterTypeSimulateRequest.lower(request),
+        _UniffiConverterOptionalTypeFormat.lower(format)
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeSimulateTransaction.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def transaction_params(self, ) -> "TransactionParams":
+        """
+        Get parameters for constructing a new transaction
+        """
+
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_transaction_params(
+                self._uniffi_clone_pointer(), 
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeTransactionParams.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def get_pending_transactions(self, max: "typing.Optional[int]",format: "typing.Optional[Format]") -> "GetPendingTransactions":
+        """
+        Get a list of unconfirmed transactions currently in the transaction pool.
+        """
+
+        _UniffiConverterOptionalUInt64.check_lower(max)
+        
+        _UniffiConverterOptionalTypeFormat.check_lower(format)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_pending_transactions(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterOptionalUInt64.lower(max),
+        _UniffiConverterOptionalTypeFormat.lower(format)
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeGetPendingTransactions.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def pending_transaction_information(self, txid: "str",format: "typing.Optional[Format]") -> "PendingTransactionResponse":
+        """
+        Get a specific pending transaction.
+        """
+
+        _UniffiConverterString.check_lower(txid)
+        
+        _UniffiConverterOptionalTypeFormat.check_lower(format)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_pending_transaction_information(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterString.lower(txid),
+        _UniffiConverterOptionalTypeFormat.lower(format)
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypePendingTransactionResponse.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def get_ledger_state_delta(self, round: "int",format: "typing.Optional[Format]") -> "LedgerStateDelta":
+        """
+        Get a LedgerStateDelta object for a given round
+        """
+
+        _UniffiConverterUInt64.check_lower(round)
+        
+        _UniffiConverterOptionalTypeFormat.check_lower(format)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_ledger_state_delta(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterUInt64.lower(round),
+        _UniffiConverterOptionalTypeFormat.lower(format)
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeLedgerStateDelta.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def get_transaction_group_ledger_state_deltas_for_round(self, round: "int",format: "typing.Optional[Format]") -> "GetTransactionGroupLedgerStateDeltasForRound":
+        """
+        Get LedgerStateDelta objects for all transaction groups in a given round
+        """
+
+        _UniffiConverterUInt64.check_lower(round)
+        
+        _UniffiConverterOptionalTypeFormat.check_lower(format)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_transaction_group_ledger_state_deltas_for_round(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterUInt64.lower(round),
+        _UniffiConverterOptionalTypeFormat.lower(format)
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeGetTransactionGroupLedgerStateDeltasForRound.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def get_ledger_state_delta_for_transaction_group(self, id: "str",format: "typing.Optional[Format]") -> "LedgerStateDelta":
+        """
+        Get a LedgerStateDelta object for a given transaction group
+        """
+
+        _UniffiConverterString.check_lower(id)
+        
+        _UniffiConverterOptionalTypeFormat.check_lower(format)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_ledger_state_delta_for_transaction_group(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterString.lower(id),
+        _UniffiConverterOptionalTypeFormat.lower(format)
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeLedgerStateDelta.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def get_state_proof(self, round: "int") -> "StateProof":
+        """
+        Get a state proof that covers a given round
+        """
+
+        _UniffiConverterUInt64.check_lower(round)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_state_proof(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterUInt64.lower(round)
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeStateProof.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def get_light_block_header_proof(self, round: "int") -> "LightBlockHeaderProof":
+        """
+        Gets a proof for a given light block header inside a state proof commitment
+        """
+
+        _UniffiConverterUInt64.check_lower(round)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_light_block_header_proof(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterUInt64.lower(round)
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeLightBlockHeaderProof.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def get_application_by_id(self, application_id: "int") -> "Application":
+        """
+        Get application information.
+        """
+
+        _UniffiConverterUInt64.check_lower(application_id)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_application_by_id(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterUInt64.lower(application_id)
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeApplication.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def get_application_boxes(self, application_id: "int",max: "typing.Optional[int]") -> "GetApplicationBoxes":
+        """
+        Get all box names for a given application.
+        """
+
+        _UniffiConverterUInt64.check_lower(application_id)
+        
+        _UniffiConverterOptionalUInt64.check_lower(max)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_application_boxes(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterUInt64.lower(application_id),
+        _UniffiConverterOptionalUInt64.lower(max)
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeGetApplicationBoxes.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def get_application_box_by_name(self, application_id: "int",name: "str") -> "Box":
+        """
+        Get box information for a given application.
+        """
+
+        _UniffiConverterUInt64.check_lower(application_id)
+        
+        _UniffiConverterString.check_lower(name)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_application_box_by_name(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterUInt64.lower(application_id),
+        _UniffiConverterString.lower(name)
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeBox.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def get_asset_by_id(self, asset_id: "int") -> "Asset":
+        """
+        Get asset information.
+        """
+
+        _UniffiConverterUInt64.check_lower(asset_id)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_asset_by_id(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterUInt64.lower(asset_id)
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeAsset.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def get_sync_round(self, ) -> "GetSyncRound":
+        """
+        Returns the minimum sync round the ledger is keeping in cache.
+        """
+
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_sync_round(
+                self._uniffi_clone_pointer(), 
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeGetSyncRound.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def unset_sync_round(self, ) -> None:
+
+        """
+        Removes minimum sync round restriction from the ledger.
+        """
+
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_unset_sync_round(
+                self._uniffi_clone_pointer(), 
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_void,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_void,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_void,
+            # lift function
+            lambda val: None,
+            
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def set_sync_round(self, round: "int") -> None:
+
+        """
+        Given a round, tells the ledger to keep that round in its cache.
+        """
+
+        _UniffiConverterUInt64.check_lower(round)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_set_sync_round(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterUInt64.lower(round)
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_void,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_void,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_void,
+            # lift function
+            lambda val: None,
+            
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def teal_compile(self, request: "bytes",sourcemap: "typing.Optional[bool]") -> "TealCompile":
+        """
+        Compile TEAL source code to binary, produce its hash
+        """
+
+        _UniffiConverterBytes.check_lower(request)
+        
+        _UniffiConverterOptionalBool.check_lower(sourcemap)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_teal_compile(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterBytes.lower(request),
+        _UniffiConverterOptionalBool.lower(sourcemap)
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeTealCompile.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def teal_disassemble(self, request: "str") -> "TealDisassemble":
+        """
+        Disassemble program bytes into the TEAL source code.
+        """
+
+        _UniffiConverterString.check_lower(request)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_teal_disassemble(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterString.lower(request)
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeTealDisassemble.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def start_catchup(self, catchpoint: "str",min: "typing.Optional[int]") -> "StartCatchup":
+        """
+        Starts a catchpoint catchup.
+        """
+
+        _UniffiConverterString.check_lower(catchpoint)
+        
+        _UniffiConverterOptionalUInt64.check_lower(min)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_start_catchup(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterString.lower(catchpoint),
+        _UniffiConverterOptionalUInt64.lower(min)
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeStartCatchup.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def abort_catchup(self, catchpoint: "str") -> "AbortCatchup":
+        """
+        Aborts a catchpoint catchup.
+        """
+
+        _UniffiConverterString.check_lower(catchpoint)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_abort_catchup(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterString.lower(catchpoint)
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeAbortCatchup.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def teal_dryrun(self, request: "typing.Optional[DryrunRequest]") -> "TealDryrun":
+        """
+        Provide debugging information for a transaction (or group).
+        """
+
+        _UniffiConverterOptionalTypeDryrunRequest.check_lower(request)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_teal_dryrun(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterOptionalTypeDryrunRequest.lower(request)
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeTealDryrun.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def experimental_check(self, ) -> None:
+
+        """
+        Returns OK if experimental API is enabled.
+        """
+
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_experimental_check(
+                self._uniffi_clone_pointer(), 
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_void,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_void,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_void,
+            # lift function
+            lambda val: None,
+            
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def get_block_time_stamp_offset(self, ) -> "GetBlockTimeStampOffset":
+        """
+        Returns the timestamp offset. Timestamp offsets can only be set in dev mode.
+        """
+
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_block_time_stamp_offset(
+                self._uniffi_clone_pointer(), 
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_rust_buffer,
+            # lift function
+            _UniffiConverterTypeGetBlockTimeStampOffset.lift,
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+    async def set_block_time_stamp_offset(self, offset: "int") -> None:
+
+        """
+        Given a timestamp offset in seconds, adds the offset to every subsequent block header's timestamp.
+        """
+
+        _UniffiConverterUInt64.check_lower(offset)
+        
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_set_block_time_stamp_offset(
+                self._uniffi_clone_pointer(), 
+        _UniffiConverterUInt64.lower(offset)
+            ),
+            _UniffiLib.ffi_algod_client_ffi_rust_future_poll_void,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_complete_void,
+            _UniffiLib.ffi_algod_client_ffi_rust_future_free_void,
+            # lift function
+            lambda val: None,
+            
+            
+    # Error FFI converter
+_UniffiConverterTypeError,
+
+        )
+
+
+
+
+# Put all the bits inside a class to keep the top-level namespace clean
+class _UniffiTraitImplAlgodClientTrait:
+    # For each method, generate a callback function to pass to Rust
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD0
+    def health_check(
+            uniffi_handle,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = ()
+            method = uniffi_obj.health_check
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructVoid(
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructVoid(
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD1
+    def get_ready(
+            uniffi_handle,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = ()
+            method = uniffi_obj.get_ready
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructVoid(
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructVoid(
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD2
+    def metrics(
+            uniffi_handle,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = ()
+            method = uniffi_obj.metrics
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructVoid(
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructVoid(
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD3
+    def get_genesis(
+            uniffi_handle,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = ()
+            method = uniffi_obj.get_genesis
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeGenesis.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD4
+    def swagger_json(
+            uniffi_handle,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = ()
+            method = uniffi_obj.swagger_json
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterString.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD5
+    def get_version(
+            uniffi_handle,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = ()
+            method = uniffi_obj.get_version
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeVersion.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD6
+    def get_debug_settings_prof(
+            uniffi_handle,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = ()
+            method = uniffi_obj.get_debug_settings_prof
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeDebugSettingsProf.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD7
+    def put_debug_settings_prof(
+            uniffi_handle,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = ()
+            method = uniffi_obj.put_debug_settings_prof
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeDebugSettingsProf.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD8
+    def get_config(
+            uniffi_handle,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = ()
+            method = uniffi_obj.get_config
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterString.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD9
+    def account_information(
+            uniffi_handle,
+            address,
+            exclude,
+            format,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterString.lift(address), _UniffiConverterOptionalTypeExclude.lift(exclude), _UniffiConverterOptionalTypeFormat.lift(format), )
+            method = uniffi_obj.account_information
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeAccount.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD10
+    def account_asset_information(
+            uniffi_handle,
+            address,
+            asset_id,
+            format,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterString.lift(address), _UniffiConverterUInt64.lift(asset_id), _UniffiConverterOptionalTypeFormat.lift(format), )
+            method = uniffi_obj.account_asset_information
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeAccountAssetInformation.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD11
+    def account_assets_information(
+            uniffi_handle,
+            address,
+            limit,
+            next,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterString.lift(address), _UniffiConverterOptionalUInt64.lift(limit), _UniffiConverterOptionalString.lift(next), )
+            method = uniffi_obj.account_assets_information
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeAccountAssetsInformation.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD12
+    def account_application_information(
+            uniffi_handle,
+            address,
+            application_id,
+            format,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterString.lift(address), _UniffiConverterUInt64.lift(application_id), _UniffiConverterOptionalTypeFormat.lift(format), )
+            method = uniffi_obj.account_application_information
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeAccountApplicationInformation.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD13
+    def get_pending_transactions_by_address(
+            uniffi_handle,
+            address,
+            max,
+            format,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterString.lift(address), _UniffiConverterOptionalUInt64.lift(max), _UniffiConverterOptionalTypeFormat.lift(format), )
+            method = uniffi_obj.get_pending_transactions_by_address
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeGetPendingTransactionsByAddress.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD14
+    def get_block(
+            uniffi_handle,
+            round,
+            header_only,
+            format,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterUInt64.lift(round), _UniffiConverterOptionalBool.lift(header_only), _UniffiConverterOptionalTypeFormat.lift(format), )
+            method = uniffi_obj.get_block
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeGetBlock.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD15
+    def get_block_txids(
+            uniffi_handle,
+            round,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterUInt64.lift(round), )
+            method = uniffi_obj.get_block_txids
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeGetBlockTxids.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD16
+    def get_block_hash(
+            uniffi_handle,
+            round,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterUInt64.lift(round), )
+            method = uniffi_obj.get_block_hash
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeGetBlockHash.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD17
+    def get_transaction_proof(
+            uniffi_handle,
+            round,
+            txid,
+            hashtype,
+            format,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterUInt64.lift(round), _UniffiConverterString.lift(txid), _UniffiConverterOptionalTypeHashtype.lift(hashtype), _UniffiConverterOptionalTypeFormat.lift(format), )
+            method = uniffi_obj.get_transaction_proof
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeTransactionProof.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD18
+    def get_block_logs(
+            uniffi_handle,
+            round,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterUInt64.lift(round), )
+            method = uniffi_obj.get_block_logs
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeGetBlockLogs.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD19
+    def get_supply(
+            uniffi_handle,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = ()
+            method = uniffi_obj.get_supply
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeGetSupply.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD20
+    def get_participation_keys(
+            uniffi_handle,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = ()
+            method = uniffi_obj.get_participation_keys
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterSequenceTypeParticipationKey.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD21
+    def add_participation_key(
+            uniffi_handle,
+            request,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterBytes.lift(request), )
+            method = uniffi_obj.add_participation_key
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeAddParticipationKey.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD22
+    def generate_participation_keys(
+            uniffi_handle,
+            address,
+            dilution,
+            first,
+            last,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterString.lift(address), _UniffiConverterOptionalUInt64.lift(dilution), _UniffiConverterUInt64.lift(first), _UniffiConverterUInt64.lift(last), )
+            method = uniffi_obj.generate_participation_keys
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterString.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD23
+    def get_participation_key_by_id(
+            uniffi_handle,
+            participation_id,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterString.lift(participation_id), )
+            method = uniffi_obj.get_participation_key_by_id
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeParticipationKey.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD24
+    def append_keys(
+            uniffi_handle,
+            request,
+            participation_id,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterBytes.lift(request), _UniffiConverterString.lift(participation_id), )
+            method = uniffi_obj.append_keys
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeParticipationKey.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD25
+    def delete_participation_key_by_id(
+            uniffi_handle,
+            participation_id,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterString.lift(participation_id), )
+            method = uniffi_obj.delete_participation_key_by_id
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructVoid(
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructVoid(
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD26
+    def shutdown_node(
+            uniffi_handle,
+            timeout,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterOptionalUInt64.lift(timeout), )
+            method = uniffi_obj.shutdown_node
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeUnknownJsonValue.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD27
+    def get_status(
+            uniffi_handle,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = ()
+            method = uniffi_obj.get_status
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeGetStatus.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD28
+    def wait_for_block(
+            uniffi_handle,
+            round,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterUInt64.lift(round), )
+            method = uniffi_obj.wait_for_block
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeWaitForBlock.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD29
+    def raw_transaction(
+            uniffi_handle,
+            request,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterBytes.lift(request), )
+            method = uniffi_obj.raw_transaction
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeRawTransaction.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD30
+    def raw_transaction_async(
+            uniffi_handle,
+            request,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterBytes.lift(request), )
+            method = uniffi_obj.raw_transaction_async
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructVoid(
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructVoid(
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD31
+    def simulate_transaction(
+            uniffi_handle,
+            request,
+            format,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterTypeSimulateRequest.lift(request), _UniffiConverterOptionalTypeFormat.lift(format), )
+            method = uniffi_obj.simulate_transaction
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeSimulateTransaction.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD32
+    def transaction_params(
+            uniffi_handle,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = ()
+            method = uniffi_obj.transaction_params
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeTransactionParams.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD33
+    def get_pending_transactions(
+            uniffi_handle,
+            max,
+            format,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterOptionalUInt64.lift(max), _UniffiConverterOptionalTypeFormat.lift(format), )
+            method = uniffi_obj.get_pending_transactions
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeGetPendingTransactions.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD34
+    def pending_transaction_information(
+            uniffi_handle,
+            txid,
+            format,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterString.lift(txid), _UniffiConverterOptionalTypeFormat.lift(format), )
+            method = uniffi_obj.pending_transaction_information
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypePendingTransactionResponse.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD35
+    def get_ledger_state_delta(
+            uniffi_handle,
+            round,
+            format,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterUInt64.lift(round), _UniffiConverterOptionalTypeFormat.lift(format), )
+            method = uniffi_obj.get_ledger_state_delta
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeLedgerStateDelta.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD36
+    def get_transaction_group_ledger_state_deltas_for_round(
+            uniffi_handle,
+            round,
+            format,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterUInt64.lift(round), _UniffiConverterOptionalTypeFormat.lift(format), )
+            method = uniffi_obj.get_transaction_group_ledger_state_deltas_for_round
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeGetTransactionGroupLedgerStateDeltasForRound.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD37
+    def get_ledger_state_delta_for_transaction_group(
+            uniffi_handle,
+            id,
+            format,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterString.lift(id), _UniffiConverterOptionalTypeFormat.lift(format), )
+            method = uniffi_obj.get_ledger_state_delta_for_transaction_group
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeLedgerStateDelta.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD38
+    def get_state_proof(
+            uniffi_handle,
+            round,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterUInt64.lift(round), )
+            method = uniffi_obj.get_state_proof
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeStateProof.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD39
+    def get_light_block_header_proof(
+            uniffi_handle,
+            round,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterUInt64.lift(round), )
+            method = uniffi_obj.get_light_block_header_proof
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeLightBlockHeaderProof.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD40
+    def get_application_by_id(
+            uniffi_handle,
+            application_id,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterUInt64.lift(application_id), )
+            method = uniffi_obj.get_application_by_id
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeApplication.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD41
+    def get_application_boxes(
+            uniffi_handle,
+            application_id,
+            max,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterUInt64.lift(application_id), _UniffiConverterOptionalUInt64.lift(max), )
+            method = uniffi_obj.get_application_boxes
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeGetApplicationBoxes.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD42
+    def get_application_box_by_name(
+            uniffi_handle,
+            application_id,
+            name,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterUInt64.lift(application_id), _UniffiConverterString.lift(name), )
+            method = uniffi_obj.get_application_box_by_name
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeBox.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD43
+    def get_asset_by_id(
+            uniffi_handle,
+            asset_id,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterUInt64.lift(asset_id), )
+            method = uniffi_obj.get_asset_by_id
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeAsset.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD44
+    def get_sync_round(
+            uniffi_handle,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = ()
+            method = uniffi_obj.get_sync_round
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeGetSyncRound.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD45
+    def unset_sync_round(
+            uniffi_handle,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = ()
+            method = uniffi_obj.unset_sync_round
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructVoid(
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructVoid(
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD46
+    def set_sync_round(
+            uniffi_handle,
+            round,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterUInt64.lift(round), )
+            method = uniffi_obj.set_sync_round
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructVoid(
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructVoid(
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD47
+    def teal_compile(
+            uniffi_handle,
+            request,
+            sourcemap,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterBytes.lift(request), _UniffiConverterOptionalBool.lift(sourcemap), )
+            method = uniffi_obj.teal_compile
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeTealCompile.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD48
+    def teal_disassemble(
+            uniffi_handle,
+            request,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterString.lift(request), )
+            method = uniffi_obj.teal_disassemble
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeTealDisassemble.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD49
+    def start_catchup(
+            uniffi_handle,
+            catchpoint,
+            min,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterString.lift(catchpoint), _UniffiConverterOptionalUInt64.lift(min), )
+            method = uniffi_obj.start_catchup
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeStartCatchup.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD50
+    def abort_catchup(
+            uniffi_handle,
+            catchpoint,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterString.lift(catchpoint), )
+            method = uniffi_obj.abort_catchup
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeAbortCatchup.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD51
+    def teal_dryrun(
+            uniffi_handle,
+            request,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterOptionalTypeDryrunRequest.lift(request), )
+            method = uniffi_obj.teal_dryrun
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeTealDryrun.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD52
+    def experimental_check(
+            uniffi_handle,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = ()
+            method = uniffi_obj.experimental_check
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructVoid(
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructVoid(
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD53
+    def get_block_time_stamp_offset(
+            uniffi_handle,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = ()
+            method = uniffi_obj.get_block_time_stamp_offset
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiConverterTypeGetBlockTimeStampOffset.lower(return_value),
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructRustBuffer(
+                    _UniffiRustBuffer.default(),
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_TRAIT_METHOD54
+    def set_block_time_stamp_offset(
+            uniffi_handle,
+            offset,
+            uniffi_future_callback,
+            uniffi_callback_data,
+            uniffi_out_return,
+        ):
+        uniffi_obj = _UniffiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
+        def make_call():
+            args = (_UniffiConverterUInt64.lift(offset), )
+            method = uniffi_obj.set_block_time_stamp_offset
+            return method(*args)
+
+        
+        def handle_success(return_value):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructVoid(
+                    _UniffiRustCallStatus.default()
+                )
+            )
+
+        def handle_error(status_code, rust_buffer):
+            uniffi_future_callback(
+                uniffi_callback_data,
+                _UniffiForeignFutureStructVoid(
+                    _UniffiRustCallStatus(status_code, rust_buffer),
+                )
+            )
+        uniffi_out_return[0] = _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, Error, _UniffiConverterTypeError.lower)
+
+    @_UNIFFI_CALLBACK_INTERFACE_FREE
+    def _uniffi_free(uniffi_handle):
+        _UniffiConverterTypeAlgodClientTrait._handle_map.remove(uniffi_handle)
+
+    # Generate the FFI VTable.  This has a field for each callback interface method.
+    _uniffi_vtable = _UniffiVTableCallbackInterfaceAlgodClientTrait(
+        health_check,
+        get_ready,
+        metrics,
+        get_genesis,
+        swagger_json,
+        get_version,
+        get_debug_settings_prof,
+        put_debug_settings_prof,
+        get_config,
+        account_information,
+        account_asset_information,
+        account_assets_information,
+        account_application_information,
+        get_pending_transactions_by_address,
+        get_block,
+        get_block_txids,
+        get_block_hash,
+        get_transaction_proof,
+        get_block_logs,
+        get_supply,
+        get_participation_keys,
+        add_participation_key,
+        generate_participation_keys,
+        get_participation_key_by_id,
+        append_keys,
+        delete_participation_key_by_id,
+        shutdown_node,
+        get_status,
+        wait_for_block,
+        raw_transaction,
+        raw_transaction_async,
+        simulate_transaction,
+        transaction_params,
+        get_pending_transactions,
+        pending_transaction_information,
+        get_ledger_state_delta,
+        get_transaction_group_ledger_state_deltas_for_round,
+        get_ledger_state_delta_for_transaction_group,
+        get_state_proof,
+        get_light_block_header_proof,
+        get_application_by_id,
+        get_application_boxes,
+        get_application_box_by_name,
+        get_asset_by_id,
+        get_sync_round,
+        unset_sync_round,
+        set_sync_round,
+        teal_compile,
+        teal_disassemble,
+        start_catchup,
+        abort_catchup,
+        teal_dryrun,
+        experimental_check,
+        get_block_time_stamp_offset,
+        set_block_time_stamp_offset,
+        _uniffi_free
+    )
+    # Send Rust a pointer to the VTable.  Note: this means we need to keep the struct alive forever,
+    # or else bad things will happen when Rust tries to access it.
+    _UniffiLib.uniffi_algod_client_ffi_fn_init_callback_vtable_algodclienttrait(ctypes.byref(_uniffi_vtable))
+
+
+
+class _UniffiConverterTypeAlgodClientTrait:
+    _handle_map = _UniffiHandleMap()
+
+    @staticmethod
+    def lift(value: int):
+        return AlgodClientTraitImpl._make_instance_(value)
+
+    @staticmethod
+    def check_lower(value: AlgodClientTrait):
+        pass
+
+    @staticmethod
+    def lower(value: AlgodClientTraitProtocol):
+        return _UniffiConverterTypeAlgodClientTrait._handle_map.insert(value)
+
+    @classmethod
+    def read(cls, buf: _UniffiRustBuffer):
+        ptr = buf.read_u64()
+        if ptr == 0:
+            raise InternalError("Raw pointer value was null")
+        return cls.lift(ptr)
+
+    @classmethod
+    def write(cls, value: AlgodClientTraitProtocol, buf: _UniffiRustBuffer):
+        buf.write_u64(cls.lower(value))
 class AlgodClientProtocol(typing.Protocol):
     """
     The main Algod API client.
@@ -20313,7 +25175,7 @@ class AlgodClientProtocol(typing.Protocol):
 
         raise NotImplementedError
 # AlgodClient is a Rust-only trait - it's a wrapper around a Rust implementation.
-class AlgodClient():
+class AlgodClient(AlgodClientTrait,):
     """
     The main Algod API client.
 
@@ -21882,6 +26744,54 @@ async def _uniffi_rust_call_async(rust_future, ffi_poll, ffi_complete, ffi_free,
         )
     finally:
         ffi_free(rust_future)
+def _uniffi_trait_interface_call_async(make_call, handle_success, handle_error):
+    async def make_call_and_call_callback():
+        try:
+            handle_success(await make_call())
+        except Exception as e:
+            print("UniFFI: Unhandled exception in trait interface call", file=sys.stderr)
+            traceback.print_exc(file=sys.stderr)
+            handle_error(
+                _UniffiRustCallStatus.CALL_UNEXPECTED_ERROR,
+                _UniffiConverterString.lower(repr(e)),
+            )
+    eventloop = _uniffi_get_event_loop()
+    task = asyncio.run_coroutine_threadsafe(make_call_and_call_callback(), eventloop)
+    handle = _UNIFFI_FOREIGN_FUTURE_HANDLE_MAP.insert((eventloop, task))
+    return _UniffiForeignFuture(handle, _uniffi_foreign_future_free)
+
+def _uniffi_trait_interface_call_async_with_error(make_call, handle_success, handle_error, error_type, lower_error):
+    async def make_call_and_call_callback():
+        try:
+            try:
+                handle_success(await make_call())
+            except error_type as e:
+                handle_error(
+                    _UniffiRustCallStatus.CALL_ERROR,
+                    lower_error(e),
+                )
+        except Exception as e:
+            print("UniFFI: Unhandled exception in trait interface call", file=sys.stderr)
+            traceback.print_exc(file=sys.stderr)
+            handle_error(
+                _UniffiRustCallStatus.CALL_UNEXPECTED_ERROR,
+                _UniffiConverterString.lower(repr(e)),
+            )
+    eventloop = _uniffi_get_event_loop()
+    task = asyncio.run_coroutine_threadsafe(make_call_and_call_callback(), eventloop)
+    handle = _UNIFFI_FOREIGN_FUTURE_HANDLE_MAP.insert((eventloop, task))
+    return _UniffiForeignFuture(handle, _uniffi_foreign_future_free)
+
+_UNIFFI_FOREIGN_FUTURE_HANDLE_MAP = _UniffiHandleMap()
+
+@_UNIFFI_FOREIGN_FUTURE_FREE
+def _uniffi_foreign_future_free(handle):
+    (eventloop, task) = _UNIFFI_FOREIGN_FUTURE_HANDLE_MAP.remove(handle)
+    eventloop.call_soon(_uniffi_foreign_future_do_free, task)
+
+def _uniffi_foreign_future_do_free(task):
+    if not task.done():
+        task.cancel()
 
 __all__ = [
     "InternalError",
@@ -22026,5 +26936,6 @@ __all__ = [
     "Version",
     "WaitForBlock",
     "AlgodClient",
+    "AlgodClientTrait",
 ]
 

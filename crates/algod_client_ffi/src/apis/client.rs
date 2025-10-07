@@ -14,7 +14,7 @@ use super::Error;
 use super::parameter_enums::*;
 use crate::models::{
     AbortCatchup, Account, AccountApplicationInformation, AccountAssetInformation,
-    AccountAssetsInformation, AddParticipationKey, Application, Asset, Box, DebugSettingsProf,
+    AccountAssetsInformation, AddParticipationKey, Application, Asset, DebugSettingsProf,
     DryrunRequest, ErrorResponse, Genesis, GetApplicationBoxes, GetBlock, GetBlockHash,
     GetBlockLogs, GetBlockTimeStampOffset, GetBlockTxids, GetPendingTransactions,
     GetPendingTransactionsByAddress, GetStatus, GetSupply, GetSyncRound,
@@ -45,9 +45,12 @@ impl AlgodClient {
         let inner_algod_client = Arc::new(RustAlgodClient::new(http_client.clone()));
         Self { inner_algod_client }
     }
-
+}
+#[uniffi::export]
+#[async_trait::async_trait]
+impl AlgodClientTrait for AlgodClient {
     /// Returns OK if healthy.
-    pub async fn health_check(&self) -> Result<(), Error> {
+    async fn health_check(&self) -> Result<(), Error> {
         self.inner_algod_client
             .health_check()
             .await
@@ -56,7 +59,7 @@ impl AlgodClient {
     }
 
     /// Returns OK if healthy and fully caught up.
-    pub async fn get_ready(&self) -> Result<(), Error> {
+    async fn get_ready(&self) -> Result<(), Error> {
         self.inner_algod_client
             .get_ready()
             .await
@@ -65,7 +68,7 @@ impl AlgodClient {
     }
 
     /// Return metrics about algod functioning.
-    pub async fn metrics(&self) -> Result<(), Error> {
+    async fn metrics(&self) -> Result<(), Error> {
         self.inner_algod_client
             .metrics()
             .await
@@ -74,7 +77,7 @@ impl AlgodClient {
     }
 
     /// Gets the genesis information.
-    pub async fn get_genesis(&self) -> Result<Genesis, Error> {
+    async fn get_genesis(&self) -> Result<Genesis, Error> {
         self.inner_algod_client
             .get_genesis()
             .await
@@ -83,7 +86,7 @@ impl AlgodClient {
     }
 
     /// Gets the current swagger spec.
-    pub async fn swagger_json(&self) -> Result<String, Error> {
+    async fn swagger_json(&self) -> Result<String, Error> {
         self.inner_algod_client
             .swagger_json()
             .await
@@ -92,7 +95,7 @@ impl AlgodClient {
     }
 
     /// Retrieves the supported API versions, binary build versions, and genesis information.
-    pub async fn get_version(&self) -> Result<Version, Error> {
+    async fn get_version(&self) -> Result<Version, Error> {
         self.inner_algod_client
             .get_version()
             .await
@@ -101,7 +104,7 @@ impl AlgodClient {
     }
 
     /// Retrieves the current settings for blocking and mutex profiles
-    pub async fn get_debug_settings_prof(&self) -> Result<DebugSettingsProf, Error> {
+    async fn get_debug_settings_prof(&self) -> Result<DebugSettingsProf, Error> {
         self.inner_algod_client
             .get_debug_settings_prof()
             .await
@@ -110,7 +113,7 @@ impl AlgodClient {
     }
 
     /// Enables blocking and mutex profiles, and returns the old settings
-    pub async fn put_debug_settings_prof(&self) -> Result<DebugSettingsProf, Error> {
+    async fn put_debug_settings_prof(&self) -> Result<DebugSettingsProf, Error> {
         self.inner_algod_client
             .put_debug_settings_prof()
             .await
@@ -119,7 +122,7 @@ impl AlgodClient {
     }
 
     /// Gets the merged config file.
-    pub async fn get_config(&self) -> Result<String, Error> {
+    async fn get_config(&self) -> Result<String, Error> {
         self.inner_algod_client
             .get_config()
             .await
@@ -128,15 +131,15 @@ impl AlgodClient {
     }
 
     /// Get account information.
-    pub async fn account_information(
+    async fn account_information(
         &self,
-        address: &str,
+        address: String,
         exclude: Option<Exclude>,
         format: Option<Format>,
     ) -> Result<Account, Error> {
         self.inner_algod_client
             .account_information(
-                address.into(),
+                &address,
                 exclude.map(|v| v.into()),
                 format.map(|v| v.into()),
             )
@@ -146,29 +149,29 @@ impl AlgodClient {
     }
 
     /// Get account information about a given asset.
-    pub async fn account_asset_information(
+    async fn account_asset_information(
         &self,
-        address: &str,
+        address: String,
         asset_id: u64,
         format: Option<Format>,
     ) -> Result<AccountAssetInformation, Error> {
         self.inner_algod_client
-            .account_asset_information(address.into(), asset_id.into(), format.map(|v| v.into()))
+            .account_asset_information(&address, asset_id.into(), format.map(|v| v.into()))
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
     }
 
     /// Get a list of assets held by an account, inclusive of asset params.
-    pub async fn account_assets_information(
+    async fn account_assets_information(
         &self,
-        address: &str,
+        address: String,
         limit: Option<u64>,
         next: Option<String>,
     ) -> Result<AccountAssetsInformation, Error> {
         self.inner_algod_client
             .account_assets_information(
-                address.into(),
+                &address,
                 limit.map(|v| v.into()),
                 next.as_deref().map(|v| v.into()),
             )
@@ -178,15 +181,15 @@ impl AlgodClient {
     }
 
     /// Get account information about a given app.
-    pub async fn account_application_information(
+    async fn account_application_information(
         &self,
-        address: &str,
+        address: String,
         application_id: u64,
         format: Option<Format>,
     ) -> Result<AccountApplicationInformation, Error> {
         self.inner_algod_client
             .account_application_information(
-                address.into(),
+                &address,
                 application_id.into(),
                 format.map(|v| v.into()),
             )
@@ -196,15 +199,15 @@ impl AlgodClient {
     }
 
     /// Get a list of unconfirmed transactions currently in the transaction pool by address.
-    pub async fn get_pending_transactions_by_address(
+    async fn get_pending_transactions_by_address(
         &self,
-        address: &str,
+        address: String,
         max: Option<u64>,
         format: Option<Format>,
     ) -> Result<GetPendingTransactionsByAddress, Error> {
         self.inner_algod_client
             .get_pending_transactions_by_address(
-                address.into(),
+                &address,
                 max.map(|v| v.into()),
                 format.map(|v| v.into()),
             )
@@ -214,7 +217,7 @@ impl AlgodClient {
     }
 
     /// Get the block for the given round.
-    pub async fn get_block(
+    async fn get_block(
         &self,
         round: u64,
         header_only: Option<bool>,
@@ -232,7 +235,7 @@ impl AlgodClient {
     }
 
     /// Get the top level transaction IDs for the block on the given round.
-    pub async fn get_block_txids(&self, round: u64) -> Result<GetBlockTxids, Error> {
+    async fn get_block_txids(&self, round: u64) -> Result<GetBlockTxids, Error> {
         self.inner_algod_client
             .get_block_txids(round.into())
             .await
@@ -241,7 +244,7 @@ impl AlgodClient {
     }
 
     /// Get the block hash for the block on the given round.
-    pub async fn get_block_hash(&self, round: u64) -> Result<GetBlockHash, Error> {
+    async fn get_block_hash(&self, round: u64) -> Result<GetBlockHash, Error> {
         self.inner_algod_client
             .get_block_hash(round.into())
             .await
@@ -250,17 +253,17 @@ impl AlgodClient {
     }
 
     /// Get a proof for a transaction in a block.
-    pub async fn get_transaction_proof(
+    async fn get_transaction_proof(
         &self,
         round: u64,
-        txid: &str,
+        txid: String,
         hashtype: Option<Hashtype>,
         format: Option<Format>,
     ) -> Result<TransactionProof, Error> {
         self.inner_algod_client
             .get_transaction_proof(
                 round.into(),
-                txid.into(),
+                &txid,
                 hashtype.map(|v| v.into()),
                 format.map(|v| v.into()),
             )
@@ -270,7 +273,7 @@ impl AlgodClient {
     }
 
     /// Get all of the logs from outer and inner app calls in the given round
-    pub async fn get_block_logs(&self, round: u64) -> Result<GetBlockLogs, Error> {
+    async fn get_block_logs(&self, round: u64) -> Result<GetBlockLogs, Error> {
         self.inner_algod_client
             .get_block_logs(round.into())
             .await
@@ -279,7 +282,7 @@ impl AlgodClient {
     }
 
     /// Get the current supply reported by the ledger.
-    pub async fn get_supply(&self) -> Result<GetSupply, Error> {
+    async fn get_supply(&self) -> Result<GetSupply, Error> {
         self.inner_algod_client
             .get_supply()
             .await
@@ -288,7 +291,7 @@ impl AlgodClient {
     }
 
     /// Return a list of participation keys
-    pub async fn get_participation_keys(&self) -> Result<Vec<ParticipationKey>, Error> {
+    async fn get_participation_keys(&self) -> Result<Vec<ParticipationKey>, Error> {
         self.inner_algod_client
             .get_participation_keys()
             .await
@@ -297,10 +300,7 @@ impl AlgodClient {
     }
 
     /// Add a participation key to the node
-    pub async fn add_participation_key(
-        &self,
-        request: Vec<u8>,
-    ) -> Result<AddParticipationKey, Error> {
+    async fn add_participation_key(&self, request: Vec<u8>) -> Result<AddParticipationKey, Error> {
         self.inner_algod_client
             .add_participation_key(request.into())
             .await
@@ -309,16 +309,16 @@ impl AlgodClient {
     }
 
     /// Generate and install participation keys to the node.
-    pub async fn generate_participation_keys(
+    async fn generate_participation_keys(
         &self,
-        address: &str,
+        address: String,
         dilution: Option<u64>,
         first: u64,
         last: u64,
     ) -> Result<String, Error> {
         self.inner_algod_client
             .generate_participation_keys(
-                address.into(),
+                &address,
                 dilution.map(|v| v.into()),
                 first.into(),
                 last.into(),
@@ -329,44 +329,41 @@ impl AlgodClient {
     }
 
     /// Get participation key info given a participation ID
-    pub async fn get_participation_key_by_id(
+    async fn get_participation_key_by_id(
         &self,
-        participation_id: &str,
+        participation_id: String,
     ) -> Result<ParticipationKey, Error> {
         self.inner_algod_client
-            .get_participation_key_by_id(participation_id.into())
+            .get_participation_key_by_id(&participation_id)
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
     }
 
     /// Append state proof keys to a participation key
-    pub async fn append_keys(
+    async fn append_keys(
         &self,
         request: Vec<u8>,
-        participation_id: &str,
+        participation_id: String,
     ) -> Result<ParticipationKey, Error> {
         self.inner_algod_client
-            .append_keys(request.into(), participation_id.into())
+            .append_keys(request.into(), &participation_id)
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
     }
 
     /// Delete a given participation key by ID
-    pub async fn delete_participation_key_by_id(
-        &self,
-        participation_id: &str,
-    ) -> Result<(), Error> {
+    async fn delete_participation_key_by_id(&self, participation_id: String) -> Result<(), Error> {
         self.inner_algod_client
-            .delete_participation_key_by_id(participation_id.into())
+            .delete_participation_key_by_id(&participation_id)
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
     }
 
     /// Special management endpoint to shutdown the node. Optionally provide a timeout parameter to indicate that the node should begin shutting down after a number of seconds.
-    pub async fn shutdown_node(&self, timeout: Option<u64>) -> Result<UnknownJsonValue, Error> {
+    async fn shutdown_node(&self, timeout: Option<u64>) -> Result<UnknownJsonValue, Error> {
         self.inner_algod_client
             .shutdown_node(timeout.map(|v| v.into()))
             .await
@@ -375,7 +372,7 @@ impl AlgodClient {
     }
 
     /// Gets the current node status.
-    pub async fn get_status(&self) -> Result<GetStatus, Error> {
+    async fn get_status(&self) -> Result<GetStatus, Error> {
         self.inner_algod_client
             .get_status()
             .await
@@ -384,7 +381,7 @@ impl AlgodClient {
     }
 
     /// Gets the node status after waiting for a round after the given round.
-    pub async fn wait_for_block(&self, round: u64) -> Result<WaitForBlock, Error> {
+    async fn wait_for_block(&self, round: u64) -> Result<WaitForBlock, Error> {
         self.inner_algod_client
             .wait_for_block(round.into())
             .await
@@ -393,7 +390,7 @@ impl AlgodClient {
     }
 
     /// Broadcasts a raw transaction or transaction group to the network.
-    pub async fn raw_transaction(&self, request: Vec<u8>) -> Result<RawTransaction, Error> {
+    async fn raw_transaction(&self, request: Vec<u8>) -> Result<RawTransaction, Error> {
         self.inner_algod_client
             .raw_transaction(request.into())
             .await
@@ -402,7 +399,7 @@ impl AlgodClient {
     }
 
     /// Fast track for broadcasting a raw transaction or transaction group to the network through the tx handler without performing most of the checks and reporting detailed errors. Should be only used for development and performance testing.
-    pub async fn raw_transaction_async(&self, request: Vec<u8>) -> Result<(), Error> {
+    async fn raw_transaction_async(&self, request: Vec<u8>) -> Result<(), Error> {
         self.inner_algod_client
             .raw_transaction_async(request.into())
             .await
@@ -411,7 +408,7 @@ impl AlgodClient {
     }
 
     /// Simulates a raw transaction or transaction group as it would be evaluated on the network. The simulation will use blockchain state from the latest committed round.
-    pub async fn simulate_transaction(
+    async fn simulate_transaction(
         &self,
         request: SimulateRequest,
         format: Option<Format>,
@@ -424,7 +421,7 @@ impl AlgodClient {
     }
 
     /// Get parameters for constructing a new transaction
-    pub async fn transaction_params(&self) -> Result<TransactionParams, Error> {
+    async fn transaction_params(&self) -> Result<TransactionParams, Error> {
         self.inner_algod_client
             .transaction_params()
             .await
@@ -433,7 +430,7 @@ impl AlgodClient {
     }
 
     /// Get a list of unconfirmed transactions currently in the transaction pool.
-    pub async fn get_pending_transactions(
+    async fn get_pending_transactions(
         &self,
         max: Option<u64>,
         format: Option<Format>,
@@ -446,20 +443,20 @@ impl AlgodClient {
     }
 
     /// Get a specific pending transaction.
-    pub async fn pending_transaction_information(
+    async fn pending_transaction_information(
         &self,
-        txid: &str,
+        txid: String,
         format: Option<Format>,
     ) -> Result<PendingTransactionResponse, Error> {
         self.inner_algod_client
-            .pending_transaction_information(txid.into(), format.map(|v| v.into()))
+            .pending_transaction_information(&txid, format.map(|v| v.into()))
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
     }
 
     /// Get a LedgerStateDelta object for a given round
-    pub async fn get_ledger_state_delta(
+    async fn get_ledger_state_delta(
         &self,
         round: u64,
         format: Option<Format>,
@@ -472,7 +469,7 @@ impl AlgodClient {
     }
 
     /// Get LedgerStateDelta objects for all transaction groups in a given round
-    pub async fn get_transaction_group_ledger_state_deltas_for_round(
+    async fn get_transaction_group_ledger_state_deltas_for_round(
         &self,
         round: u64,
         format: Option<Format>,
@@ -488,20 +485,20 @@ impl AlgodClient {
     }
 
     /// Get a LedgerStateDelta object for a given transaction group
-    pub async fn get_ledger_state_delta_for_transaction_group(
+    async fn get_ledger_state_delta_for_transaction_group(
         &self,
-        id: &str,
+        id: String,
         format: Option<Format>,
     ) -> Result<LedgerStateDelta, Error> {
         self.inner_algod_client
-            .get_ledger_state_delta_for_transaction_group(id.into(), format.map(|v| v.into()))
+            .get_ledger_state_delta_for_transaction_group(&id, format.map(|v| v.into()))
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
     }
 
     /// Get a state proof that covers a given round
-    pub async fn get_state_proof(&self, round: u64) -> Result<StateProof, Error> {
+    async fn get_state_proof(&self, round: u64) -> Result<StateProof, Error> {
         self.inner_algod_client
             .get_state_proof(round.into())
             .await
@@ -510,7 +507,7 @@ impl AlgodClient {
     }
 
     /// Gets a proof for a given light block header inside a state proof commitment
-    pub async fn get_light_block_header_proof(
+    async fn get_light_block_header_proof(
         &self,
         round: u64,
     ) -> Result<LightBlockHeaderProof, Error> {
@@ -522,7 +519,7 @@ impl AlgodClient {
     }
 
     /// Get application information.
-    pub async fn get_application_by_id(&self, application_id: u64) -> Result<Application, Error> {
+    async fn get_application_by_id(&self, application_id: u64) -> Result<Application, Error> {
         self.inner_algod_client
             .get_application_by_id(application_id.into())
             .await
@@ -531,7 +528,7 @@ impl AlgodClient {
     }
 
     /// Get all box names for a given application.
-    pub async fn get_application_boxes(
+    async fn get_application_boxes(
         &self,
         application_id: u64,
         max: Option<u64>,
@@ -544,20 +541,20 @@ impl AlgodClient {
     }
 
     /// Get box information for a given application.
-    pub async fn get_application_box_by_name(
+    async fn get_application_box_by_name(
         &self,
         application_id: u64,
-        name: &str,
+        name: String,
     ) -> Result<crate::models::Box, Error> {
         self.inner_algod_client
-            .get_application_box_by_name(application_id.into(), name.into())
+            .get_application_box_by_name(application_id.into(), &name)
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
     }
 
     /// Get asset information.
-    pub async fn get_asset_by_id(&self, asset_id: u64) -> Result<Asset, Error> {
+    async fn get_asset_by_id(&self, asset_id: u64) -> Result<Asset, Error> {
         self.inner_algod_client
             .get_asset_by_id(asset_id.into())
             .await
@@ -566,7 +563,7 @@ impl AlgodClient {
     }
 
     /// Returns the minimum sync round the ledger is keeping in cache.
-    pub async fn get_sync_round(&self) -> Result<GetSyncRound, Error> {
+    async fn get_sync_round(&self) -> Result<GetSyncRound, Error> {
         self.inner_algod_client
             .get_sync_round()
             .await
@@ -575,7 +572,7 @@ impl AlgodClient {
     }
 
     /// Removes minimum sync round restriction from the ledger.
-    pub async fn unset_sync_round(&self) -> Result<(), Error> {
+    async fn unset_sync_round(&self) -> Result<(), Error> {
         self.inner_algod_client
             .unset_sync_round()
             .await
@@ -584,7 +581,7 @@ impl AlgodClient {
     }
 
     /// Given a round, tells the ledger to keep that round in its cache.
-    pub async fn set_sync_round(&self, round: u64) -> Result<(), Error> {
+    async fn set_sync_round(&self, round: u64) -> Result<(), Error> {
         self.inner_algod_client
             .set_sync_round(round.into())
             .await
@@ -593,7 +590,7 @@ impl AlgodClient {
     }
 
     /// Compile TEAL source code to binary, produce its hash
-    pub async fn teal_compile(
+    async fn teal_compile(
         &self,
         request: Vec<u8>,
         sourcemap: Option<bool>,
@@ -606,7 +603,7 @@ impl AlgodClient {
     }
 
     /// Disassemble program bytes into the TEAL source code.
-    pub async fn teal_disassemble(&self, request: String) -> Result<TealDisassemble, Error> {
+    async fn teal_disassemble(&self, request: String) -> Result<TealDisassemble, Error> {
         self.inner_algod_client
             .teal_disassemble(request.into())
             .await
@@ -615,29 +612,29 @@ impl AlgodClient {
     }
 
     /// Starts a catchpoint catchup.
-    pub async fn start_catchup(
+    async fn start_catchup(
         &self,
-        catchpoint: &str,
+        catchpoint: String,
         min: Option<u64>,
     ) -> Result<StartCatchup, Error> {
         self.inner_algod_client
-            .start_catchup(catchpoint.into(), min.map(|v| v.into()))
+            .start_catchup(&catchpoint, min.map(|v| v.into()))
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
     }
 
     /// Aborts a catchpoint catchup.
-    pub async fn abort_catchup(&self, catchpoint: &str) -> Result<AbortCatchup, Error> {
+    async fn abort_catchup(&self, catchpoint: String) -> Result<AbortCatchup, Error> {
         self.inner_algod_client
-            .abort_catchup(catchpoint.into())
+            .abort_catchup(&catchpoint)
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
     }
 
     /// Provide debugging information for a transaction (or group).
-    pub async fn teal_dryrun(&self, request: Option<DryrunRequest>) -> Result<TealDryrun, Error> {
+    async fn teal_dryrun(&self, request: Option<DryrunRequest>) -> Result<TealDryrun, Error> {
         self.inner_algod_client
             .teal_dryrun(request.map(|v| v.try_into()).transpose()?)
             .await
@@ -646,7 +643,7 @@ impl AlgodClient {
     }
 
     /// Returns OK if experimental API is enabled.
-    pub async fn experimental_check(&self) -> Result<(), Error> {
+    async fn experimental_check(&self) -> Result<(), Error> {
         self.inner_algod_client
             .experimental_check()
             .await
@@ -655,7 +652,7 @@ impl AlgodClient {
     }
 
     /// Returns the timestamp offset. Timestamp offsets can only be set in dev mode.
-    pub async fn get_block_time_stamp_offset(&self) -> Result<GetBlockTimeStampOffset, Error> {
+    async fn get_block_time_stamp_offset(&self) -> Result<GetBlockTimeStampOffset, Error> {
         self.inner_algod_client
             .get_block_time_stamp_offset()
             .await
@@ -664,11 +661,217 @@ impl AlgodClient {
     }
 
     /// Given a timestamp offset in seconds, adds the offset to every subsequent block header's timestamp.
-    pub async fn set_block_time_stamp_offset(&self, offset: u64) -> Result<(), Error> {
+    async fn set_block_time_stamp_offset(&self, offset: u64) -> Result<(), Error> {
         self.inner_algod_client
             .set_block_time_stamp_offset(offset.into())
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
     }
+}
+#[uniffi::export(with_foreign)]
+#[async_trait::async_trait]
+pub trait AlgodClientTrait: Send + Sync {
+    /// Returns OK if healthy.
+    async fn health_check(&self) -> Result<(), Error>;
+    /// Returns OK if healthy and fully caught up.
+    async fn get_ready(&self) -> Result<(), Error>;
+    /// Return metrics about algod functioning.
+    async fn metrics(&self) -> Result<(), Error>;
+    /// Gets the genesis information.
+    async fn get_genesis(&self) -> Result<Genesis, Error>;
+    /// Gets the current swagger spec.
+    async fn swagger_json(&self) -> Result<String, Error>;
+    /// Retrieves the supported API versions, binary build versions, and genesis information.
+    async fn get_version(&self) -> Result<Version, Error>;
+    /// Retrieves the current settings for blocking and mutex profiles
+    async fn get_debug_settings_prof(&self) -> Result<DebugSettingsProf, Error>;
+    /// Enables blocking and mutex profiles, and returns the old settings
+    async fn put_debug_settings_prof(&self) -> Result<DebugSettingsProf, Error>;
+    /// Gets the merged config file.
+    async fn get_config(&self) -> Result<String, Error>;
+    /// Get account information.
+    async fn account_information(
+        &self,
+        address: String,
+        exclude: Option<Exclude>,
+        format: Option<Format>,
+    ) -> Result<Account, Error>;
+    /// Get account information about a given asset.
+    async fn account_asset_information(
+        &self,
+        address: String,
+        asset_id: u64,
+        format: Option<Format>,
+    ) -> Result<AccountAssetInformation, Error>;
+    /// Get a list of assets held by an account, inclusive of asset params.
+    async fn account_assets_information(
+        &self,
+        address: String,
+        limit: Option<u64>,
+        next: Option<String>,
+    ) -> Result<AccountAssetsInformation, Error>;
+    /// Get account information about a given app.
+    async fn account_application_information(
+        &self,
+        address: String,
+        application_id: u64,
+        format: Option<Format>,
+    ) -> Result<AccountApplicationInformation, Error>;
+    /// Get a list of unconfirmed transactions currently in the transaction pool by address.
+    async fn get_pending_transactions_by_address(
+        &self,
+        address: String,
+        max: Option<u64>,
+        format: Option<Format>,
+    ) -> Result<GetPendingTransactionsByAddress, Error>;
+    /// Get the block for the given round.
+    async fn get_block(
+        &self,
+        round: u64,
+        header_only: Option<bool>,
+        format: Option<Format>,
+    ) -> Result<GetBlock, Error>;
+    /// Get the top level transaction IDs for the block on the given round.
+    async fn get_block_txids(&self, round: u64) -> Result<GetBlockTxids, Error>;
+    /// Get the block hash for the block on the given round.
+    async fn get_block_hash(&self, round: u64) -> Result<GetBlockHash, Error>;
+    /// Get a proof for a transaction in a block.
+    async fn get_transaction_proof(
+        &self,
+        round: u64,
+        txid: String,
+        hashtype: Option<Hashtype>,
+        format: Option<Format>,
+    ) -> Result<TransactionProof, Error>;
+    /// Get all of the logs from outer and inner app calls in the given round
+    async fn get_block_logs(&self, round: u64) -> Result<GetBlockLogs, Error>;
+    /// Get the current supply reported by the ledger.
+    async fn get_supply(&self) -> Result<GetSupply, Error>;
+    /// Return a list of participation keys
+    async fn get_participation_keys(&self) -> Result<Vec<ParticipationKey>, Error>;
+    /// Add a participation key to the node
+    async fn add_participation_key(&self, request: Vec<u8>) -> Result<AddParticipationKey, Error>;
+    /// Generate and install participation keys to the node.
+    async fn generate_participation_keys(
+        &self,
+        address: String,
+        dilution: Option<u64>,
+        first: u64,
+        last: u64,
+    ) -> Result<String, Error>;
+    /// Get participation key info given a participation ID
+    async fn get_participation_key_by_id(
+        &self,
+        participation_id: String,
+    ) -> Result<ParticipationKey, Error>;
+    /// Append state proof keys to a participation key
+    async fn append_keys(
+        &self,
+        request: Vec<u8>,
+        participation_id: String,
+    ) -> Result<ParticipationKey, Error>;
+    /// Delete a given participation key by ID
+    async fn delete_participation_key_by_id(&self, participation_id: String) -> Result<(), Error>;
+    /// Special management endpoint to shutdown the node. Optionally provide a timeout parameter to indicate that the node should begin shutting down after a number of seconds.
+    async fn shutdown_node(&self, timeout: Option<u64>) -> Result<UnknownJsonValue, Error>;
+    /// Gets the current node status.
+    async fn get_status(&self) -> Result<GetStatus, Error>;
+    /// Gets the node status after waiting for a round after the given round.
+    async fn wait_for_block(&self, round: u64) -> Result<WaitForBlock, Error>;
+    /// Broadcasts a raw transaction or transaction group to the network.
+    async fn raw_transaction(&self, request: Vec<u8>) -> Result<RawTransaction, Error>;
+    /// Fast track for broadcasting a raw transaction or transaction group to the network through the tx handler without performing most of the checks and reporting detailed errors. Should be only used for development and performance testing.
+    async fn raw_transaction_async(&self, request: Vec<u8>) -> Result<(), Error>;
+    /// Simulates a raw transaction or transaction group as it would be evaluated on the network. The simulation will use blockchain state from the latest committed round.
+    async fn simulate_transaction(
+        &self,
+        request: SimulateRequest,
+        format: Option<Format>,
+    ) -> Result<SimulateTransaction, Error>;
+    /// Get parameters for constructing a new transaction
+    async fn transaction_params(&self) -> Result<TransactionParams, Error>;
+    /// Get a list of unconfirmed transactions currently in the transaction pool.
+    async fn get_pending_transactions(
+        &self,
+        max: Option<u64>,
+        format: Option<Format>,
+    ) -> Result<GetPendingTransactions, Error>;
+    /// Get a specific pending transaction.
+    async fn pending_transaction_information(
+        &self,
+        txid: String,
+        format: Option<Format>,
+    ) -> Result<PendingTransactionResponse, Error>;
+    /// Get a LedgerStateDelta object for a given round
+    async fn get_ledger_state_delta(
+        &self,
+        round: u64,
+        format: Option<Format>,
+    ) -> Result<LedgerStateDelta, Error>;
+    /// Get LedgerStateDelta objects for all transaction groups in a given round
+    async fn get_transaction_group_ledger_state_deltas_for_round(
+        &self,
+        round: u64,
+        format: Option<Format>,
+    ) -> Result<GetTransactionGroupLedgerStateDeltasForRound, Error>;
+    /// Get a LedgerStateDelta object for a given transaction group
+    async fn get_ledger_state_delta_for_transaction_group(
+        &self,
+        id: String,
+        format: Option<Format>,
+    ) -> Result<LedgerStateDelta, Error>;
+    /// Get a state proof that covers a given round
+    async fn get_state_proof(&self, round: u64) -> Result<StateProof, Error>;
+    /// Gets a proof for a given light block header inside a state proof commitment
+    async fn get_light_block_header_proof(
+        &self,
+        round: u64,
+    ) -> Result<LightBlockHeaderProof, Error>;
+    /// Get application information.
+    async fn get_application_by_id(&self, application_id: u64) -> Result<Application, Error>;
+    /// Get all box names for a given application.
+    async fn get_application_boxes(
+        &self,
+        application_id: u64,
+        max: Option<u64>,
+    ) -> Result<GetApplicationBoxes, Error>;
+    /// Get box information for a given application.
+    async fn get_application_box_by_name(
+        &self,
+        application_id: u64,
+        name: String,
+    ) -> Result<crate::models::Box, Error>;
+    /// Get asset information.
+    async fn get_asset_by_id(&self, asset_id: u64) -> Result<Asset, Error>;
+    /// Returns the minimum sync round the ledger is keeping in cache.
+    async fn get_sync_round(&self) -> Result<GetSyncRound, Error>;
+    /// Removes minimum sync round restriction from the ledger.
+    async fn unset_sync_round(&self) -> Result<(), Error>;
+    /// Given a round, tells the ledger to keep that round in its cache.
+    async fn set_sync_round(&self, round: u64) -> Result<(), Error>;
+    /// Compile TEAL source code to binary, produce its hash
+    async fn teal_compile(
+        &self,
+        request: Vec<u8>,
+        sourcemap: Option<bool>,
+    ) -> Result<TealCompile, Error>;
+    /// Disassemble program bytes into the TEAL source code.
+    async fn teal_disassemble(&self, request: String) -> Result<TealDisassemble, Error>;
+    /// Starts a catchpoint catchup.
+    async fn start_catchup(
+        &self,
+        catchpoint: String,
+        min: Option<u64>,
+    ) -> Result<StartCatchup, Error>;
+    /// Aborts a catchpoint catchup.
+    async fn abort_catchup(&self, catchpoint: String) -> Result<AbortCatchup, Error>;
+    /// Provide debugging information for a transaction (or group).
+    async fn teal_dryrun(&self, request: Option<DryrunRequest>) -> Result<TealDryrun, Error>;
+    /// Returns OK if experimental API is enabled.
+    async fn experimental_check(&self) -> Result<(), Error>;
+    /// Returns the timestamp offset. Timestamp offsets can only be set in dev mode.
+    async fn get_block_time_stamp_offset(&self) -> Result<GetBlockTimeStampOffset, Error>;
+    /// Given a timestamp offset in seconds, adds the offset to every subsequent block header's timestamp.
+    async fn set_block_time_stamp_offset(&self, offset: u64) -> Result<(), Error>;
 }

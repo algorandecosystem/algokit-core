@@ -14,7 +14,7 @@ use super::Error;
 use super::parameter_enums::*;
 use crate::models::{
     AbortCatchup, Account, AccountApplicationInformation, AccountAssetInformation,
-    AccountAssetsInformation, AddParticipationKey, Application, Asset, Box, DebugSettingsProf,
+    AccountAssetsInformation, AddParticipationKey, Application, Asset, DebugSettingsProf,
     DryrunRequest, ErrorResponse, Genesis, GetApplicationBoxes, GetBlock, GetBlockHash,
     GetBlockLogs, GetBlockTimeStampOffset, GetBlockTxids, GetPendingTransactions,
     GetPendingTransactionsByAddress, GetStatus, GetSupply, GetSyncRound,
@@ -73,6 +73,8 @@ impl AlgodClient {
         );
         Self::new(http_client)
     }
+}
+impl AlgodClient {
     /// Returns OK if healthy.
     pub async fn health_check(&self) -> Result<(), Error> {
         super::health_check::health_check(self.http_client.as_ref()).await

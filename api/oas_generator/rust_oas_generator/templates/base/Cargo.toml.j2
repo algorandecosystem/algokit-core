@@ -44,6 +44,7 @@ rmp-serde = "^1.1"
 base64 = "^0.22"
 uuid = { version = "^1.0", features = ["v4"] }
 {% else %}
+async-trait = "0.1.89"
 {% if spec.has_msgpack_operations %}
 algokit_transact_ffi = { path = "../algokit_transact_ffi" }
 {% endif %}
