@@ -85,6 +85,7 @@ version = "0.1.0"
 name = "algokit_transact"
 version = "0.1.0"
 dependencies = [
+ "algokit_test_artifacts",
  "algokit_transact",
  "base32",
  "base64 0.22.1",
@@ -167,8 +168,15 @@ dependencies = [
  "algokit_transact_ffi",
  "algokit_utils",
  "async-trait",
+ "base32",
+ "base64 0.22.1",
  "derive_more",
+ "ed25519-dalek",
+ "lazy_static",
  "num-bigint",
+ "rand",
+ "regex",
+ "sha2",
  "snafu",
  "tokio",
  "uniffi",

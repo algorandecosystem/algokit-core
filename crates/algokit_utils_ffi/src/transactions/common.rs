@@ -108,6 +108,10 @@ impl TransactionSigner for FfiTransactionSignerFromRust {
 #[uniffi::export(with_foreign)]
 pub trait TransactionSignerGetter: Send + Sync {
     fn get_signer(&self, address: String) -> Result<Arc<dyn TransactionSigner>, UtilsError>;
+
+    /// Register an account with the signer getter
+    /// This allows test fixtures to register accounts so they can be retrieved later via get_signer
+    fn register_account(&self, address: String, mnemonic: String) -> Result<(), UtilsError>;
 }
 
 pub struct RustTransactionSignerGetterFromFfi {
@@ -143,8 +147,15 @@ impl TransactionSignerGetter for FfiTransactionSignerGetterFromRust {
                 message: e.to_string(),
             })
     }
+
+    fn register_account(&self, _address: String, _mnemonic: String) -> Result<(), UtilsError> {
+        // No-op: This adapter wraps a Rust signer getter which doesn't need registration
+        // This method is here for backwards compatibility with the FFI trait
+        Ok(())
+    }
 }
 
+#[derive(uniffi::Record)]
 pub struct TransactionWithSigner {
     pub transaction: Transaction,
     pub signer: Arc<dyn TransactionSigner>,
