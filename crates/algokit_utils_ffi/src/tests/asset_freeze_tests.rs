@@ -37,9 +37,6 @@ pub async fn run_asset_freeze_test_suite(
     composer_factory: Arc<dyn ComposerFactory>,
     signer_getter: Arc<dyn TransactionSignerGetter>,
 ) -> Result<TestSuiteResult, UtilsError> {
-    eprintln!(
-        "DEBUGPRINT[111]: asset_freeze_tests.rs:40 (before let suite_start = Instant::now();)"
-    );
     let suite_start = Instant::now();
     let mut results = Vec::new();
 
@@ -111,13 +108,7 @@ async fn run_asset_creation_setup_test(
     let freeze_manager = fixture.generate_account()?;
 
     // Fund both accounts
-    eprintln!(
-        "DEBUGPRINT[118]: asset_freeze_tests.rs:130 (before fixture.fund_account(creator.clone(), 10…)"
-    );
     fixture.fund_account(creator.clone(), 10_000_000).await?;
-    eprintln!(
-        "DEBUGPRINT[119]: asset_freeze_tests.rs:131 (after fixture.fund_account(creator.clone(), 10…)"
-    );
     fixture
         .fund_account(freeze_manager.clone(), 10_000_000)
         .await?;

@@ -93,28 +93,15 @@ impl TestFixture {
         };
 
         // Add payment to composer
-        eprintln!(
-            "DEBUGPRINT[120]: test_fixture.rs:96 (before composer.add_payment(payment_params).awa…)"
-        );
         composer.add_payment(payment_params)?;
-        eprintln!(
-            "DEBUGPRINT[121]: test_fixture.rs:97 (after composer.add_payment(payment_params).awa…)"
-        );
 
         // Build and send transaction
-        eprintln!("DEBUGPRINT[122]: test_fixture.rs:101 (before composer.build().await?;)");
         composer.build().await?;
-        eprintln!("DEBUGPRINT[123]: test_fixture.rs:102 (after composer.build().await?;)");
-        eprintln!(
-            "DEBUGPRINT[124]: test_fixture.rs:104 (before let tx_ids = composer.send().await?;)"
-        );
         let tx_ids = composer.send().await?;
-        eprintln!(
-            "DEBUGPRINT[125]: test_fixture.rs:105 (after let tx_ids = composer.send().await?;)"
-        );
 
         // Return first transaction ID
         tx_ids
+            .transaction_ids
             .first()
             .cloned()
             .ok_or_else(|| UtilsError::UtilsError {
@@ -165,7 +152,7 @@ impl TestFixture {
 
         // Build and send
         composer.build().await?;
-        let tx_ids = composer.send().await?;
+        let tx_ids = composer.send().await?.transaction_ids;
 
         // Wait for confirmation to get asset ID
         let tx_id = tx_ids.first().ok_or_else(|| UtilsError::UtilsError {

@@ -595,11 +595,13 @@ def _uniffi_check_api_checksums(lib):
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algokit_utils_ffi_checksum_method_composer_send() != 25144:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_algokit_utils_ffi_checksum_method_composer_wait_for_confirmation() != 62038:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algokit_utils_ffi_checksum_method_composerfactory_create_composer() != 54297:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algokit_utils_ffi_checksum_method_composertrait_build() != 44731:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_algokit_utils_ffi_checksum_method_composertrait_send() != 55817:
+    if lib.uniffi_algokit_utils_ffi_checksum_method_composertrait_send() != 4472:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algokit_utils_ffi_checksum_method_composertrait_wait_for_confirmation() != 13649:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
@@ -607,7 +609,7 @@ def _uniffi_check_api_checksums(lib):
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algokit_utils_ffi_checksum_method_composertrait_add_asset_create() != 34726:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_algokit_utils_ffi_checksum_method_composertrait_add_asset_reconfigure() != 12483:
+    if lib.uniffi_algokit_utils_ffi_checksum_method_composertrait_add_asset_config() != 56942:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algokit_utils_ffi_checksum_method_composertrait_add_asset_destroy() != 20885:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
@@ -1144,7 +1146,7 @@ class _UniffiVTableCallbackInterfaceAlgokitUtilsFfiComposerTrait(ctypes.Structur
         ("wait_for_confirmation", _UNIFFI_CALLBACK_INTERFACE_ALGOKIT_UTILS_FFI_COMPOSER_TRAIT_METHOD2),
         ("add_payment", _UNIFFI_CALLBACK_INTERFACE_ALGOKIT_UTILS_FFI_COMPOSER_TRAIT_METHOD3),
         ("add_asset_create", _UNIFFI_CALLBACK_INTERFACE_ALGOKIT_UTILS_FFI_COMPOSER_TRAIT_METHOD4),
-        ("add_asset_reconfigure", _UNIFFI_CALLBACK_INTERFACE_ALGOKIT_UTILS_FFI_COMPOSER_TRAIT_METHOD5),
+        ("add_asset_config", _UNIFFI_CALLBACK_INTERFACE_ALGOKIT_UTILS_FFI_COMPOSER_TRAIT_METHOD5),
         ("add_asset_destroy", _UNIFFI_CALLBACK_INTERFACE_ALGOKIT_UTILS_FFI_COMPOSER_TRAIT_METHOD6),
         ("add_asset_freeze", _UNIFFI_CALLBACK_INTERFACE_ALGOKIT_UTILS_FFI_COMPOSER_TRAIT_METHOD7),
         ("add_asset_unfreeze", _UNIFFI_CALLBACK_INTERFACE_ALGOKIT_UTILS_FFI_COMPOSER_TRAIT_METHOD8),
@@ -1525,6 +1527,12 @@ _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_send.argtypes = (
     ctypes.c_uint64,
 )
 _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_send.restype = ctypes.c_uint64
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_wait_for_confirmation.argtypes = (
+    ctypes.c_uint64,
+    _UniffiRustBuffer,
+    ctypes.c_uint32,
+)
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_wait_for_confirmation.restype = ctypes.c_uint64
 _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composerfactory_create_composer.argtypes = (
     ctypes.c_uint64,
     ctypes.POINTER(_UniffiRustCallStatus),
@@ -1556,12 +1564,12 @@ _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composertrait_add_asset_create.arg
     ctypes.POINTER(_UniffiRustCallStatus),
 )
 _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composertrait_add_asset_create.restype = None
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composertrait_add_asset_reconfigure.argtypes = (
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composertrait_add_asset_config.argtypes = (
     ctypes.c_uint64,
     _UniffiRustBuffer,
     ctypes.POINTER(_UniffiRustCallStatus),
 )
-_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composertrait_add_asset_reconfigure.restype = None
+_UniffiLib.uniffi_algokit_utils_ffi_fn_method_composertrait_add_asset_config.restype = None
 _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composertrait_add_asset_destroy.argtypes = (
     ctypes.c_uint64,
     _UniffiRustBuffer,
@@ -1890,6 +1898,9 @@ _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_build.restype = cty
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_send.argtypes = (
 )
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_send.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_wait_for_confirmation.argtypes = (
+)
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composer_wait_for_confirmation.restype = ctypes.c_uint16
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composerfactory_create_composer.argtypes = (
 )
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composerfactory_create_composer.restype = ctypes.c_uint16
@@ -1908,9 +1919,9 @@ _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composertrait_add_payment.re
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composertrait_add_asset_create.argtypes = (
 )
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composertrait_add_asset_create.restype = ctypes.c_uint16
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composertrait_add_asset_reconfigure.argtypes = (
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composertrait_add_asset_config.argtypes = (
 )
-_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composertrait_add_asset_reconfigure.restype = ctypes.c_uint16
+_UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composertrait_add_asset_config.restype = ctypes.c_uint16
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composertrait_add_asset_destroy.argtypes = (
 )
 _UniffiLib.uniffi_algokit_utils_ffi_checksum_method_composertrait_add_asset_destroy.restype = ctypes.c_uint16
@@ -9642,423 +9653,13 @@ class _UniffiFfiConverterTypeABIStruct:
         buf.write_u64(cls.lower(value))
 
 
-class ComposerProtocol(typing.Protocol):
-    
-    def add_app_call(self, params: AppCallParams) -> None:
-        raise NotImplementedError
-    def add_app_call_method_call(self, params: AppCallMethodCallParams) -> None:
-        raise NotImplementedError
-    def add_app_create(self, params: AppCreateParams) -> None:
-        raise NotImplementedError
-    def add_app_create_method_call(self, params: AppCreateMethodCallParams) -> None:
-        raise NotImplementedError
-    def add_app_delete(self, params: AppDeleteParams) -> None:
-        raise NotImplementedError
-    def add_app_delete_method_call(self, params: AppDeleteMethodCallParams) -> None:
-        raise NotImplementedError
-    def add_app_update(self, params: AppUpdateParams) -> None:
-        raise NotImplementedError
-    def add_app_update_method_call(self, params: AppUpdateMethodCallParams) -> None:
-        raise NotImplementedError
-    def add_asset_clawback(self, params: AssetClawbackParams) -> None:
-        raise NotImplementedError
-    def add_asset_config(self, params: AssetConfigParams) -> None:
-        raise NotImplementedError
-    def add_asset_create(self, params: AssetCreateParams) -> None:
-        raise NotImplementedError
-    def add_asset_destroy(self, params: AssetDestroyParams) -> None:
-        raise NotImplementedError
-    def add_asset_freeze(self, params: AssetFreezeParams) -> None:
-        raise NotImplementedError
-    def add_asset_opt_in(self, params: AssetOptInParams) -> None:
-        raise NotImplementedError
-    def add_asset_opt_out(self, params: AssetOptOutParams) -> None:
-        raise NotImplementedError
-    def add_asset_transfer(self, params: AssetTransferParams) -> None:
-        raise NotImplementedError
-    def add_asset_unfreeze(self, params: AssetUnfreezeParams) -> None:
-        raise NotImplementedError
-    def add_payment(self, params: PaymentParams) -> None:
-        raise NotImplementedError
-    async def build(self, ) -> None:
-        raise NotImplementedError
-    async def send(self, ) -> TempSendResponse:
-        raise NotImplementedError
-
-class Composer(ComposerProtocol):
-    
-    _handle: ctypes.c_uint64
-    def __init__(self, algod_client: algod_client_ffi.AlgodClient,signer_getter: TransactionSignerGetter):
-        
-        algod_client_ffi._UniffiFfiConverterTypeAlgodClient.check_lower(algod_client)
-        
-        _UniffiFfiConverterTypeTransactionSignerGetter.check_lower(signer_getter)
-        _uniffi_lowered_args = (
-            algod_client_ffi._UniffiFfiConverterTypeAlgodClient.lower(algod_client),
-            _UniffiFfiConverterTypeTransactionSignerGetter.lower(signer_getter),
-        )
-        _uniffi_lift_return = _UniffiFfiConverterTypeComposer.lift
-        _uniffi_error_converter = None
-        _uniffi_ffi_result = _uniffi_rust_call_with_error(
-            _uniffi_error_converter,
-            _UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_composer_new,
-            *_uniffi_lowered_args,
-        )
-        self._handle = _uniffi_ffi_result
-
-    def __del__(self):
-        # In case of partial initialization of instances.
-        handle = getattr(self, "_handle", None)
-        if handle is not None:
-            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_free_composer, handle)
-
-    def _uniffi_clone_handle(self):
-        return _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_composer, self._handle)
-
-    # Used by alternative constructors or any methods which return this type.
-    @classmethod
-    def _uniffi_make_instance(cls, handle):
-        # Lightly yucky way to bypass the usual __init__ logic
-        # and just create a new instance with the required handle.
-        inst = cls.__new__(cls)
-        inst._handle = handle
-        return inst
-    def add_app_call(self, params: AppCallParams) -> None:
-        
-        _UniffiFfiConverterTypeAppCallParams.check_lower(params)
-        _uniffi_lowered_args = (
-            self._uniffi_clone_handle(),
-            _UniffiFfiConverterTypeAppCallParams.lower(params),
-        )
-        _uniffi_lift_return = lambda val: None
-        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
-        _uniffi_ffi_result = _uniffi_rust_call_with_error(
-            _uniffi_error_converter,
-            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_app_call,
-            *_uniffi_lowered_args,
-        )
-        return _uniffi_lift_return(_uniffi_ffi_result)
-    def add_app_call_method_call(self, params: AppCallMethodCallParams) -> None:
-        
-        _UniffiFfiConverterTypeAppCallMethodCallParams.check_lower(params)
-        _uniffi_lowered_args = (
-            self._uniffi_clone_handle(),
-            _UniffiFfiConverterTypeAppCallMethodCallParams.lower(params),
-        )
-        _uniffi_lift_return = lambda val: None
-        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
-        _uniffi_ffi_result = _uniffi_rust_call_with_error(
-            _uniffi_error_converter,
-            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_app_call_method_call,
-            *_uniffi_lowered_args,
-        )
-        return _uniffi_lift_return(_uniffi_ffi_result)
-    def add_app_create(self, params: AppCreateParams) -> None:
-        
-        _UniffiFfiConverterTypeAppCreateParams.check_lower(params)
-        _uniffi_lowered_args = (
-            self._uniffi_clone_handle(),
-            _UniffiFfiConverterTypeAppCreateParams.lower(params),
-        )
-        _uniffi_lift_return = lambda val: None
-        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
-        _uniffi_ffi_result = _uniffi_rust_call_with_error(
-            _uniffi_error_converter,
-            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_app_create,
-            *_uniffi_lowered_args,
-        )
-        return _uniffi_lift_return(_uniffi_ffi_result)
-    def add_app_create_method_call(self, params: AppCreateMethodCallParams) -> None:
-        
-        _UniffiFfiConverterTypeAppCreateMethodCallParams.check_lower(params)
-        _uniffi_lowered_args = (
-            self._uniffi_clone_handle(),
-            _UniffiFfiConverterTypeAppCreateMethodCallParams.lower(params),
-        )
-        _uniffi_lift_return = lambda val: None
-        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
-        _uniffi_ffi_result = _uniffi_rust_call_with_error(
-            _uniffi_error_converter,
-            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_app_create_method_call,
-            *_uniffi_lowered_args,
-        )
-        return _uniffi_lift_return(_uniffi_ffi_result)
-    def add_app_delete(self, params: AppDeleteParams) -> None:
-        
-        _UniffiFfiConverterTypeAppDeleteParams.check_lower(params)
-        _uniffi_lowered_args = (
-            self._uniffi_clone_handle(),
-            _UniffiFfiConverterTypeAppDeleteParams.lower(params),
-        )
-        _uniffi_lift_return = lambda val: None
-        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
-        _uniffi_ffi_result = _uniffi_rust_call_with_error(
-            _uniffi_error_converter,
-            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_app_delete,
-            *_uniffi_lowered_args,
-        )
-        return _uniffi_lift_return(_uniffi_ffi_result)
-    def add_app_delete_method_call(self, params: AppDeleteMethodCallParams) -> None:
-        
-        _UniffiFfiConverterTypeAppDeleteMethodCallParams.check_lower(params)
-        _uniffi_lowered_args = (
-            self._uniffi_clone_handle(),
-            _UniffiFfiConverterTypeAppDeleteMethodCallParams.lower(params),
-        )
-        _uniffi_lift_return = lambda val: None
-        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
-        _uniffi_ffi_result = _uniffi_rust_call_with_error(
-            _uniffi_error_converter,
-            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_app_delete_method_call,
-            *_uniffi_lowered_args,
-        )
-        return _uniffi_lift_return(_uniffi_ffi_result)
-    def add_app_update(self, params: AppUpdateParams) -> None:
-        
-        _UniffiFfiConverterTypeAppUpdateParams.check_lower(params)
-        _uniffi_lowered_args = (
-            self._uniffi_clone_handle(),
-            _UniffiFfiConverterTypeAppUpdateParams.lower(params),
-        )
-        _uniffi_lift_return = lambda val: None
-        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
-        _uniffi_ffi_result = _uniffi_rust_call_with_error(
-            _uniffi_error_converter,
-            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_app_update,
-            *_uniffi_lowered_args,
-        )
-        return _uniffi_lift_return(_uniffi_ffi_result)
-    def add_app_update_method_call(self, params: AppUpdateMethodCallParams) -> None:
-        
-        _UniffiFfiConverterTypeAppUpdateMethodCallParams.check_lower(params)
-        _uniffi_lowered_args = (
-            self._uniffi_clone_handle(),
-            _UniffiFfiConverterTypeAppUpdateMethodCallParams.lower(params),
-        )
-        _uniffi_lift_return = lambda val: None
-        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
-        _uniffi_ffi_result = _uniffi_rust_call_with_error(
-            _uniffi_error_converter,
-            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_app_update_method_call,
-            *_uniffi_lowered_args,
-        )
-        return _uniffi_lift_return(_uniffi_ffi_result)
-    def add_asset_clawback(self, params: AssetClawbackParams) -> None:
-        
-        _UniffiFfiConverterTypeAssetClawbackParams.check_lower(params)
-        _uniffi_lowered_args = (
-            self._uniffi_clone_handle(),
-            _UniffiFfiConverterTypeAssetClawbackParams.lower(params),
-        )
-        _uniffi_lift_return = lambda val: None
-        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
-        _uniffi_ffi_result = _uniffi_rust_call_with_error(
-            _uniffi_error_converter,
-            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_clawback,
-            *_uniffi_lowered_args,
-        )
-        return _uniffi_lift_return(_uniffi_ffi_result)
-    def add_asset_config(self, params: AssetConfigParams) -> None:
-        
-        _UniffiFfiConverterTypeAssetConfigParams.check_lower(params)
-        _uniffi_lowered_args = (
-            self._uniffi_clone_handle(),
-            _UniffiFfiConverterTypeAssetConfigParams.lower(params),
-        )
-        _uniffi_lift_return = lambda val: None
-        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
-        _uniffi_ffi_result = _uniffi_rust_call_with_error(
-            _uniffi_error_converter,
-            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_config,
-            *_uniffi_lowered_args,
-        )
-        return _uniffi_lift_return(_uniffi_ffi_result)
-    def add_asset_create(self, params: AssetCreateParams) -> None:
-        
-        _UniffiFfiConverterTypeAssetCreateParams.check_lower(params)
-        _uniffi_lowered_args = (
-            self._uniffi_clone_handle(),
-            _UniffiFfiConverterTypeAssetCreateParams.lower(params),
-        )
-        _uniffi_lift_return = lambda val: None
-        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
-        _uniffi_ffi_result = _uniffi_rust_call_with_error(
-            _uniffi_error_converter,
-            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_create,
-            *_uniffi_lowered_args,
-        )
-        return _uniffi_lift_return(_uniffi_ffi_result)
-    def add_asset_destroy(self, params: AssetDestroyParams) -> None:
-        
-        _UniffiFfiConverterTypeAssetDestroyParams.check_lower(params)
-        _uniffi_lowered_args = (
-            self._uniffi_clone_handle(),
-            _UniffiFfiConverterTypeAssetDestroyParams.lower(params),
-        )
-        _uniffi_lift_return = lambda val: None
-        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
-        _uniffi_ffi_result = _uniffi_rust_call_with_error(
-            _uniffi_error_converter,
-            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_destroy,
-            *_uniffi_lowered_args,
-        )
-        return _uniffi_lift_return(_uniffi_ffi_result)
-    def add_asset_freeze(self, params: AssetFreezeParams) -> None:
-        
-        _UniffiFfiConverterTypeAssetFreezeParams.check_lower(params)
-        _uniffi_lowered_args = (
-            self._uniffi_clone_handle(),
-            _UniffiFfiConverterTypeAssetFreezeParams.lower(params),
-        )
-        _uniffi_lift_return = lambda val: None
-        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
-        _uniffi_ffi_result = _uniffi_rust_call_with_error(
-            _uniffi_error_converter,
-            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_freeze,
-            *_uniffi_lowered_args,
-        )
-        return _uniffi_lift_return(_uniffi_ffi_result)
-    def add_asset_opt_in(self, params: AssetOptInParams) -> None:
-        
-        _UniffiFfiConverterTypeAssetOptInParams.check_lower(params)
-        _uniffi_lowered_args = (
-            self._uniffi_clone_handle(),
-            _UniffiFfiConverterTypeAssetOptInParams.lower(params),
-        )
-        _uniffi_lift_return = lambda val: None
-        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
-        _uniffi_ffi_result = _uniffi_rust_call_with_error(
-            _uniffi_error_converter,
-            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_opt_in,
-            *_uniffi_lowered_args,
-        )
-        return _uniffi_lift_return(_uniffi_ffi_result)
-    def add_asset_opt_out(self, params: AssetOptOutParams) -> None:
-        
-        _UniffiFfiConverterTypeAssetOptOutParams.check_lower(params)
-        _uniffi_lowered_args = (
-            self._uniffi_clone_handle(),
-            _UniffiFfiConverterTypeAssetOptOutParams.lower(params),
-        )
-        _uniffi_lift_return = lambda val: None
-        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
-        _uniffi_ffi_result = _uniffi_rust_call_with_error(
-            _uniffi_error_converter,
-            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_opt_out,
-            *_uniffi_lowered_args,
-        )
-        return _uniffi_lift_return(_uniffi_ffi_result)
-    def add_asset_transfer(self, params: AssetTransferParams) -> None:
-        
-        _UniffiFfiConverterTypeAssetTransferParams.check_lower(params)
-        _uniffi_lowered_args = (
-            self._uniffi_clone_handle(),
-            _UniffiFfiConverterTypeAssetTransferParams.lower(params),
-        )
-        _uniffi_lift_return = lambda val: None
-        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
-        _uniffi_ffi_result = _uniffi_rust_call_with_error(
-            _uniffi_error_converter,
-            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_transfer,
-            *_uniffi_lowered_args,
-        )
-        return _uniffi_lift_return(_uniffi_ffi_result)
-    def add_asset_unfreeze(self, params: AssetUnfreezeParams) -> None:
-        
-        _UniffiFfiConverterTypeAssetUnfreezeParams.check_lower(params)
-        _uniffi_lowered_args = (
-            self._uniffi_clone_handle(),
-            _UniffiFfiConverterTypeAssetUnfreezeParams.lower(params),
-        )
-        _uniffi_lift_return = lambda val: None
-        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
-        _uniffi_ffi_result = _uniffi_rust_call_with_error(
-            _uniffi_error_converter,
-            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_unfreeze,
-            *_uniffi_lowered_args,
-        )
-        return _uniffi_lift_return(_uniffi_ffi_result)
-    def add_payment(self, params: PaymentParams) -> None:
-        
-        _UniffiFfiConverterTypePaymentParams.check_lower(params)
-        _uniffi_lowered_args = (
-            self._uniffi_clone_handle(),
-            _UniffiFfiConverterTypePaymentParams.lower(params),
-        )
-        _uniffi_lift_return = lambda val: None
-        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
-        _uniffi_ffi_result = _uniffi_rust_call_with_error(
-            _uniffi_error_converter,
-            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_payment,
-            *_uniffi_lowered_args,
-        )
-        return _uniffi_lift_return(_uniffi_ffi_result)
-    async def build(self, ) -> None:
-        _uniffi_lowered_args = (
-            self._uniffi_clone_handle(),
-        )
-        _uniffi_lift_return = lambda val: None
-        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
-        return await _uniffi_rust_call_async(
-            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_build(*_uniffi_lowered_args),
-            _UniffiLib.ffi_algokit_utils_ffi_rust_future_poll_void,
-            _UniffiLib.ffi_algokit_utils_ffi_rust_future_complete_void,
-            _UniffiLib.ffi_algokit_utils_ffi_rust_future_free_void,
-            _uniffi_lift_return,
-            _uniffi_error_converter,
-        )
-    async def send(self, ) -> TempSendResponse:
-        _uniffi_lowered_args = (
-            self._uniffi_clone_handle(),
-        )
-        _uniffi_lift_return = _UniffiFfiConverterTypeTempSendResponse.lift
-        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
-        return await _uniffi_rust_call_async(
-            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_send(*_uniffi_lowered_args),
-            _UniffiLib.ffi_algokit_utils_ffi_rust_future_poll_rust_buffer,
-            _UniffiLib.ffi_algokit_utils_ffi_rust_future_complete_rust_buffer,
-            _UniffiLib.ffi_algokit_utils_ffi_rust_future_free_rust_buffer,
-            _uniffi_lift_return,
-            _uniffi_error_converter,
-        )
-
-
-
-
-
-class _UniffiFfiConverterTypeComposer:
-    @staticmethod
-    def lift(value: int) -> Composer:
-        return Composer._uniffi_make_instance(value)
-
-    @staticmethod
-    def check_lower(value: Composer):
-        if not isinstance(value, Composer):
-            raise TypeError("Expected Composer instance, {} found".format(type(value).__name__))
-
-    @staticmethod
-    def lower(value: Composer) -> ctypes.c_uint64:
-        return value._uniffi_clone_handle()
-
-    @classmethod
-    def read(cls, buf: _UniffiRustBuffer) -> Composer:
-        ptr = buf.read_u64()
-        if ptr == 0:
-            raise InternalError("Raw handle value was null")
-        return cls.lift(ptr)
-
-    @classmethod
-    def write(cls, value: Composer, buf: _UniffiRustBuffer):
-        buf.write_u64(cls.lower(value))
-
-
 
 
 class ComposerTrait():
     
     async def build(self, ) -> None:
         raise NotImplementedError
-    async def send(self, ) -> typing.List[str]:
+    async def send(self, ) -> TempSendResponse:
         raise NotImplementedError
     async def wait_for_confirmation(self, tx_id: str,max_rounds_to_wait: int) -> algod_client_ffi.PendingTransactionResponse:
         raise NotImplementedError
@@ -10066,7 +9667,7 @@ class ComposerTrait():
         raise NotImplementedError
     def add_asset_create(self, params: AssetCreateParams) -> None:
         raise NotImplementedError
-    def add_asset_reconfigure(self, params: AssetConfigParams) -> None:
+    def add_asset_config(self, params: AssetConfigParams) -> None:
         raise NotImplementedError
     def add_asset_destroy(self, params: AssetDestroyParams) -> None:
         raise NotImplementedError
@@ -10137,11 +9738,11 @@ class ComposerTraitImpl(ComposerTrait):
             _uniffi_lift_return,
             _uniffi_error_converter,
         )
-    async def send(self, ) -> typing.List[str]:
+    async def send(self, ) -> TempSendResponse:
         _uniffi_lowered_args = (
             self._uniffi_clone_handle(),
         )
-        _uniffi_lift_return = _UniffiFfiConverterSequenceString.lift
+        _uniffi_lift_return = _UniffiFfiConverterTypeTempSendResponse.lift
         _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
         return await _uniffi_rust_call_async(
             _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composertrait_send(*_uniffi_lowered_args),
@@ -10201,7 +9802,7 @@ class ComposerTraitImpl(ComposerTrait):
             *_uniffi_lowered_args,
         )
         return _uniffi_lift_return(_uniffi_ffi_result)
-    def add_asset_reconfigure(self, params: AssetConfigParams) -> None:
+    def add_asset_config(self, params: AssetConfigParams) -> None:
         
         _UniffiFfiConverterTypeAssetConfigParams.check_lower(params)
         _uniffi_lowered_args = (
@@ -10212,7 +9813,7 @@ class ComposerTraitImpl(ComposerTrait):
         _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
         _uniffi_ffi_result = _uniffi_rust_call_with_error(
             _uniffi_error_converter,
-            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composertrait_add_asset_reconfigure,
+            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composertrait_add_asset_config,
             *_uniffi_lowered_args,
         )
         return _uniffi_lift_return(_uniffi_ffi_result)
@@ -10501,7 +10102,7 @@ class _UniffiTraitImplComposerTraitImpl:
             uniffi_future_callback(
                 uniffi_callback_data,
                 _UniffiForeignFutureResultRustBuffer(
-                    _UniffiFfiConverterSequenceString.lower(return_value),
+                    _UniffiFfiConverterTypeTempSendResponse.lower(return_value),
                     _UniffiRustCallStatus.default()
                 )
             )
@@ -10606,7 +10207,7 @@ class _UniffiTraitImplComposerTraitImpl:
         )
 
     @_UNIFFI_CALLBACK_INTERFACE_ALGOKIT_UTILS_FFI_COMPOSER_TRAIT_METHOD5
-    def add_asset_reconfigure(
+    def add_asset_config(
             uniffi_handle,
             params,
             uniffi_out_return,
@@ -10615,7 +10216,7 @@ class _UniffiTraitImplComposerTraitImpl:
         uniffi_obj = _UniffiFfiConverterTypeComposerTrait._handle_map.get(uniffi_handle)
         def make_call():
             uniffi_args = (_UniffiFfiConverterTypeAssetConfigParams.lift(params), )
-            uniffi_method = uniffi_obj.add_asset_reconfigure
+            uniffi_method = uniffi_obj.add_asset_config
             return uniffi_method(*uniffi_args)
         write_return_value = lambda v: None
         _uniffi_trait_interface_call_with_error(
@@ -10958,7 +10559,7 @@ class _UniffiTraitImplComposerTraitImpl:
         wait_for_confirmation,
         add_payment,
         add_asset_create,
-        add_asset_reconfigure,
+        add_asset_config,
         add_asset_destroy,
         add_asset_freeze,
         add_asset_unfreeze,
@@ -11015,6 +10616,438 @@ class _UniffiFfiConverterTypeComposerTrait:
 
     @classmethod
     def write(cls, value: ComposerTrait, buf: _UniffiRustBuffer):
+        buf.write_u64(cls.lower(value))
+
+
+class ComposerProtocol(typing.Protocol):
+    
+    def add_app_call(self, params: AppCallParams) -> None:
+        raise NotImplementedError
+    def add_app_call_method_call(self, params: AppCallMethodCallParams) -> None:
+        raise NotImplementedError
+    def add_app_create(self, params: AppCreateParams) -> None:
+        raise NotImplementedError
+    def add_app_create_method_call(self, params: AppCreateMethodCallParams) -> None:
+        raise NotImplementedError
+    def add_app_delete(self, params: AppDeleteParams) -> None:
+        raise NotImplementedError
+    def add_app_delete_method_call(self, params: AppDeleteMethodCallParams) -> None:
+        raise NotImplementedError
+    def add_app_update(self, params: AppUpdateParams) -> None:
+        raise NotImplementedError
+    def add_app_update_method_call(self, params: AppUpdateMethodCallParams) -> None:
+        raise NotImplementedError
+    def add_asset_clawback(self, params: AssetClawbackParams) -> None:
+        raise NotImplementedError
+    def add_asset_config(self, params: AssetConfigParams) -> None:
+        raise NotImplementedError
+    def add_asset_create(self, params: AssetCreateParams) -> None:
+        raise NotImplementedError
+    def add_asset_destroy(self, params: AssetDestroyParams) -> None:
+        raise NotImplementedError
+    def add_asset_freeze(self, params: AssetFreezeParams) -> None:
+        raise NotImplementedError
+    def add_asset_opt_in(self, params: AssetOptInParams) -> None:
+        raise NotImplementedError
+    def add_asset_opt_out(self, params: AssetOptOutParams) -> None:
+        raise NotImplementedError
+    def add_asset_transfer(self, params: AssetTransferParams) -> None:
+        raise NotImplementedError
+    def add_asset_unfreeze(self, params: AssetUnfreezeParams) -> None:
+        raise NotImplementedError
+    def add_payment(self, params: PaymentParams) -> None:
+        raise NotImplementedError
+    async def build(self, ) -> None:
+        raise NotImplementedError
+    async def send(self, ) -> TempSendResponse:
+        raise NotImplementedError
+    async def wait_for_confirmation(self, tx_id: str,max_rounds_to_wait: int) -> algod_client_ffi.PendingTransactionResponse:
+        raise NotImplementedError
+
+class Composer(ComposerProtocol, ComposerTrait):
+    
+    _handle: ctypes.c_uint64
+    def __init__(self, algod_client: algod_client_ffi.AlgodClient,signer_getter: TransactionSignerGetter):
+        
+        algod_client_ffi._UniffiFfiConverterTypeAlgodClient.check_lower(algod_client)
+        
+        _UniffiFfiConverterTypeTransactionSignerGetter.check_lower(signer_getter)
+        _uniffi_lowered_args = (
+            algod_client_ffi._UniffiFfiConverterTypeAlgodClient.lower(algod_client),
+            _UniffiFfiConverterTypeTransactionSignerGetter.lower(signer_getter),
+        )
+        _uniffi_lift_return = _UniffiFfiConverterTypeComposer.lift
+        _uniffi_error_converter = None
+        _uniffi_ffi_result = _uniffi_rust_call_with_error(
+            _uniffi_error_converter,
+            _UniffiLib.uniffi_algokit_utils_ffi_fn_constructor_composer_new,
+            *_uniffi_lowered_args,
+        )
+        self._handle = _uniffi_ffi_result
+
+    def __del__(self):
+        # In case of partial initialization of instances.
+        handle = getattr(self, "_handle", None)
+        if handle is not None:
+            _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_free_composer, handle)
+
+    def _uniffi_clone_handle(self):
+        return _uniffi_rust_call(_UniffiLib.uniffi_algokit_utils_ffi_fn_clone_composer, self._handle)
+
+    # Used by alternative constructors or any methods which return this type.
+    @classmethod
+    def _uniffi_make_instance(cls, handle):
+        # Lightly yucky way to bypass the usual __init__ logic
+        # and just create a new instance with the required handle.
+        inst = cls.__new__(cls)
+        inst._handle = handle
+        return inst
+    def add_app_call(self, params: AppCallParams) -> None:
+        
+        _UniffiFfiConverterTypeAppCallParams.check_lower(params)
+        _uniffi_lowered_args = (
+            self._uniffi_clone_handle(),
+            _UniffiFfiConverterTypeAppCallParams.lower(params),
+        )
+        _uniffi_lift_return = lambda val: None
+        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
+        _uniffi_ffi_result = _uniffi_rust_call_with_error(
+            _uniffi_error_converter,
+            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_app_call,
+            *_uniffi_lowered_args,
+        )
+        return _uniffi_lift_return(_uniffi_ffi_result)
+    def add_app_call_method_call(self, params: AppCallMethodCallParams) -> None:
+        
+        _UniffiFfiConverterTypeAppCallMethodCallParams.check_lower(params)
+        _uniffi_lowered_args = (
+            self._uniffi_clone_handle(),
+            _UniffiFfiConverterTypeAppCallMethodCallParams.lower(params),
+        )
+        _uniffi_lift_return = lambda val: None
+        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
+        _uniffi_ffi_result = _uniffi_rust_call_with_error(
+            _uniffi_error_converter,
+            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_app_call_method_call,
+            *_uniffi_lowered_args,
+        )
+        return _uniffi_lift_return(_uniffi_ffi_result)
+    def add_app_create(self, params: AppCreateParams) -> None:
+        
+        _UniffiFfiConverterTypeAppCreateParams.check_lower(params)
+        _uniffi_lowered_args = (
+            self._uniffi_clone_handle(),
+            _UniffiFfiConverterTypeAppCreateParams.lower(params),
+        )
+        _uniffi_lift_return = lambda val: None
+        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
+        _uniffi_ffi_result = _uniffi_rust_call_with_error(
+            _uniffi_error_converter,
+            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_app_create,
+            *_uniffi_lowered_args,
+        )
+        return _uniffi_lift_return(_uniffi_ffi_result)
+    def add_app_create_method_call(self, params: AppCreateMethodCallParams) -> None:
+        
+        _UniffiFfiConverterTypeAppCreateMethodCallParams.check_lower(params)
+        _uniffi_lowered_args = (
+            self._uniffi_clone_handle(),
+            _UniffiFfiConverterTypeAppCreateMethodCallParams.lower(params),
+        )
+        _uniffi_lift_return = lambda val: None
+        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
+        _uniffi_ffi_result = _uniffi_rust_call_with_error(
+            _uniffi_error_converter,
+            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_app_create_method_call,
+            *_uniffi_lowered_args,
+        )
+        return _uniffi_lift_return(_uniffi_ffi_result)
+    def add_app_delete(self, params: AppDeleteParams) -> None:
+        
+        _UniffiFfiConverterTypeAppDeleteParams.check_lower(params)
+        _uniffi_lowered_args = (
+            self._uniffi_clone_handle(),
+            _UniffiFfiConverterTypeAppDeleteParams.lower(params),
+        )
+        _uniffi_lift_return = lambda val: None
+        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
+        _uniffi_ffi_result = _uniffi_rust_call_with_error(
+            _uniffi_error_converter,
+            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_app_delete,
+            *_uniffi_lowered_args,
+        )
+        return _uniffi_lift_return(_uniffi_ffi_result)
+    def add_app_delete_method_call(self, params: AppDeleteMethodCallParams) -> None:
+        
+        _UniffiFfiConverterTypeAppDeleteMethodCallParams.check_lower(params)
+        _uniffi_lowered_args = (
+            self._uniffi_clone_handle(),
+            _UniffiFfiConverterTypeAppDeleteMethodCallParams.lower(params),
+        )
+        _uniffi_lift_return = lambda val: None
+        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
+        _uniffi_ffi_result = _uniffi_rust_call_with_error(
+            _uniffi_error_converter,
+            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_app_delete_method_call,
+            *_uniffi_lowered_args,
+        )
+        return _uniffi_lift_return(_uniffi_ffi_result)
+    def add_app_update(self, params: AppUpdateParams) -> None:
+        
+        _UniffiFfiConverterTypeAppUpdateParams.check_lower(params)
+        _uniffi_lowered_args = (
+            self._uniffi_clone_handle(),
+            _UniffiFfiConverterTypeAppUpdateParams.lower(params),
+        )
+        _uniffi_lift_return = lambda val: None
+        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
+        _uniffi_ffi_result = _uniffi_rust_call_with_error(
+            _uniffi_error_converter,
+            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_app_update,
+            *_uniffi_lowered_args,
+        )
+        return _uniffi_lift_return(_uniffi_ffi_result)
+    def add_app_update_method_call(self, params: AppUpdateMethodCallParams) -> None:
+        
+        _UniffiFfiConverterTypeAppUpdateMethodCallParams.check_lower(params)
+        _uniffi_lowered_args = (
+            self._uniffi_clone_handle(),
+            _UniffiFfiConverterTypeAppUpdateMethodCallParams.lower(params),
+        )
+        _uniffi_lift_return = lambda val: None
+        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
+        _uniffi_ffi_result = _uniffi_rust_call_with_error(
+            _uniffi_error_converter,
+            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_app_update_method_call,
+            *_uniffi_lowered_args,
+        )
+        return _uniffi_lift_return(_uniffi_ffi_result)
+    def add_asset_clawback(self, params: AssetClawbackParams) -> None:
+        
+        _UniffiFfiConverterTypeAssetClawbackParams.check_lower(params)
+        _uniffi_lowered_args = (
+            self._uniffi_clone_handle(),
+            _UniffiFfiConverterTypeAssetClawbackParams.lower(params),
+        )
+        _uniffi_lift_return = lambda val: None
+        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
+        _uniffi_ffi_result = _uniffi_rust_call_with_error(
+            _uniffi_error_converter,
+            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_clawback,
+            *_uniffi_lowered_args,
+        )
+        return _uniffi_lift_return(_uniffi_ffi_result)
+    def add_asset_config(self, params: AssetConfigParams) -> None:
+        
+        _UniffiFfiConverterTypeAssetConfigParams.check_lower(params)
+        _uniffi_lowered_args = (
+            self._uniffi_clone_handle(),
+            _UniffiFfiConverterTypeAssetConfigParams.lower(params),
+        )
+        _uniffi_lift_return = lambda val: None
+        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
+        _uniffi_ffi_result = _uniffi_rust_call_with_error(
+            _uniffi_error_converter,
+            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_config,
+            *_uniffi_lowered_args,
+        )
+        return _uniffi_lift_return(_uniffi_ffi_result)
+    def add_asset_create(self, params: AssetCreateParams) -> None:
+        
+        _UniffiFfiConverterTypeAssetCreateParams.check_lower(params)
+        _uniffi_lowered_args = (
+            self._uniffi_clone_handle(),
+            _UniffiFfiConverterTypeAssetCreateParams.lower(params),
+        )
+        _uniffi_lift_return = lambda val: None
+        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
+        _uniffi_ffi_result = _uniffi_rust_call_with_error(
+            _uniffi_error_converter,
+            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_create,
+            *_uniffi_lowered_args,
+        )
+        return _uniffi_lift_return(_uniffi_ffi_result)
+    def add_asset_destroy(self, params: AssetDestroyParams) -> None:
+        
+        _UniffiFfiConverterTypeAssetDestroyParams.check_lower(params)
+        _uniffi_lowered_args = (
+            self._uniffi_clone_handle(),
+            _UniffiFfiConverterTypeAssetDestroyParams.lower(params),
+        )
+        _uniffi_lift_return = lambda val: None
+        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
+        _uniffi_ffi_result = _uniffi_rust_call_with_error(
+            _uniffi_error_converter,
+            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_destroy,
+            *_uniffi_lowered_args,
+        )
+        return _uniffi_lift_return(_uniffi_ffi_result)
+    def add_asset_freeze(self, params: AssetFreezeParams) -> None:
+        
+        _UniffiFfiConverterTypeAssetFreezeParams.check_lower(params)
+        _uniffi_lowered_args = (
+            self._uniffi_clone_handle(),
+            _UniffiFfiConverterTypeAssetFreezeParams.lower(params),
+        )
+        _uniffi_lift_return = lambda val: None
+        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
+        _uniffi_ffi_result = _uniffi_rust_call_with_error(
+            _uniffi_error_converter,
+            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_freeze,
+            *_uniffi_lowered_args,
+        )
+        return _uniffi_lift_return(_uniffi_ffi_result)
+    def add_asset_opt_in(self, params: AssetOptInParams) -> None:
+        
+        _UniffiFfiConverterTypeAssetOptInParams.check_lower(params)
+        _uniffi_lowered_args = (
+            self._uniffi_clone_handle(),
+            _UniffiFfiConverterTypeAssetOptInParams.lower(params),
+        )
+        _uniffi_lift_return = lambda val: None
+        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
+        _uniffi_ffi_result = _uniffi_rust_call_with_error(
+            _uniffi_error_converter,
+            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_opt_in,
+            *_uniffi_lowered_args,
+        )
+        return _uniffi_lift_return(_uniffi_ffi_result)
+    def add_asset_opt_out(self, params: AssetOptOutParams) -> None:
+        
+        _UniffiFfiConverterTypeAssetOptOutParams.check_lower(params)
+        _uniffi_lowered_args = (
+            self._uniffi_clone_handle(),
+            _UniffiFfiConverterTypeAssetOptOutParams.lower(params),
+        )
+        _uniffi_lift_return = lambda val: None
+        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
+        _uniffi_ffi_result = _uniffi_rust_call_with_error(
+            _uniffi_error_converter,
+            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_opt_out,
+            *_uniffi_lowered_args,
+        )
+        return _uniffi_lift_return(_uniffi_ffi_result)
+    def add_asset_transfer(self, params: AssetTransferParams) -> None:
+        
+        _UniffiFfiConverterTypeAssetTransferParams.check_lower(params)
+        _uniffi_lowered_args = (
+            self._uniffi_clone_handle(),
+            _UniffiFfiConverterTypeAssetTransferParams.lower(params),
+        )
+        _uniffi_lift_return = lambda val: None
+        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
+        _uniffi_ffi_result = _uniffi_rust_call_with_error(
+            _uniffi_error_converter,
+            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_transfer,
+            *_uniffi_lowered_args,
+        )
+        return _uniffi_lift_return(_uniffi_ffi_result)
+    def add_asset_unfreeze(self, params: AssetUnfreezeParams) -> None:
+        
+        _UniffiFfiConverterTypeAssetUnfreezeParams.check_lower(params)
+        _uniffi_lowered_args = (
+            self._uniffi_clone_handle(),
+            _UniffiFfiConverterTypeAssetUnfreezeParams.lower(params),
+        )
+        _uniffi_lift_return = lambda val: None
+        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
+        _uniffi_ffi_result = _uniffi_rust_call_with_error(
+            _uniffi_error_converter,
+            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_asset_unfreeze,
+            *_uniffi_lowered_args,
+        )
+        return _uniffi_lift_return(_uniffi_ffi_result)
+    def add_payment(self, params: PaymentParams) -> None:
+        
+        _UniffiFfiConverterTypePaymentParams.check_lower(params)
+        _uniffi_lowered_args = (
+            self._uniffi_clone_handle(),
+            _UniffiFfiConverterTypePaymentParams.lower(params),
+        )
+        _uniffi_lift_return = lambda val: None
+        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
+        _uniffi_ffi_result = _uniffi_rust_call_with_error(
+            _uniffi_error_converter,
+            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_add_payment,
+            *_uniffi_lowered_args,
+        )
+        return _uniffi_lift_return(_uniffi_ffi_result)
+    async def build(self, ) -> None:
+        _uniffi_lowered_args = (
+            self._uniffi_clone_handle(),
+        )
+        _uniffi_lift_return = lambda val: None
+        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_build(*_uniffi_lowered_args),
+            _UniffiLib.ffi_algokit_utils_ffi_rust_future_poll_void,
+            _UniffiLib.ffi_algokit_utils_ffi_rust_future_complete_void,
+            _UniffiLib.ffi_algokit_utils_ffi_rust_future_free_void,
+            _uniffi_lift_return,
+            _uniffi_error_converter,
+        )
+    async def send(self, ) -> TempSendResponse:
+        _uniffi_lowered_args = (
+            self._uniffi_clone_handle(),
+        )
+        _uniffi_lift_return = _UniffiFfiConverterTypeTempSendResponse.lift
+        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_send(*_uniffi_lowered_args),
+            _UniffiLib.ffi_algokit_utils_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algokit_utils_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algokit_utils_ffi_rust_future_free_rust_buffer,
+            _uniffi_lift_return,
+            _uniffi_error_converter,
+        )
+    async def wait_for_confirmation(self, tx_id: str,max_rounds_to_wait: int) -> algod_client_ffi.PendingTransactionResponse:
+        
+        _UniffiFfiConverterString.check_lower(tx_id)
+        
+        _UniffiFfiConverterUInt32.check_lower(max_rounds_to_wait)
+        _uniffi_lowered_args = (
+            self._uniffi_clone_handle(),
+            _UniffiFfiConverterString.lower(tx_id),
+            _UniffiFfiConverterUInt32.lower(max_rounds_to_wait),
+        )
+        _uniffi_lift_return = algod_client_ffi._UniffiFfiConverterTypePendingTransactionResponse.lift
+        _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
+        return await _uniffi_rust_call_async(
+            _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_wait_for_confirmation(*_uniffi_lowered_args),
+            _UniffiLib.ffi_algokit_utils_ffi_rust_future_poll_rust_buffer,
+            _UniffiLib.ffi_algokit_utils_ffi_rust_future_complete_rust_buffer,
+            _UniffiLib.ffi_algokit_utils_ffi_rust_future_free_rust_buffer,
+            _uniffi_lift_return,
+            _uniffi_error_converter,
+        )
+
+
+
+
+
+class _UniffiFfiConverterTypeComposer:
+    @staticmethod
+    def lift(value: int) -> Composer:
+        return Composer._uniffi_make_instance(value)
+
+    @staticmethod
+    def check_lower(value: Composer):
+        if not isinstance(value, Composer):
+            raise TypeError("Expected Composer instance, {} found".format(type(value).__name__))
+
+    @staticmethod
+    def lower(value: Composer) -> ctypes.c_uint64:
+        return value._uniffi_clone_handle()
+
+    @classmethod
+    def read(cls, buf: _UniffiRustBuffer) -> Composer:
+        ptr = buf.read_u64()
+        if ptr == 0:
+            raise InternalError("Raw handle value was null")
+        return cls.lift(ptr)
+
+    @classmethod
+    def write(cls, value: Composer, buf: _UniffiRustBuffer):
         buf.write_u64(cls.lower(value))
 
 
@@ -11706,10 +11739,10 @@ __all__ = [
     "StructFieldProtocol",
     "AbiStruct",
     "AbiStructProtocol",
-    "Composer",
-    "ComposerProtocol",
     "ComposerTraitImpl",
     "ComposerTrait",
+    "Composer",
+    "ComposerProtocol",
     "ComposerFactoryImpl",
     "ComposerFactory",
     "DefaultComposerFactory",
