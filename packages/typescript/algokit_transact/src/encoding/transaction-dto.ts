@@ -137,6 +137,50 @@ export type TransactionDto = {
 
   /** Non-participation flag */
   nonpart?: boolean
+
+  // Heartbeat transaction fields (type: 'hb')
+  /** Heartbeat parameters */
+  hb?: HeartbeatParamsDto
+}
+
+/**
+ * Encodeable heartbeat parameters structure
+ */
+export type HeartbeatParamsDto = {
+  /** Heartbeat address */
+  a?: Uint8Array
+
+  /** Heartbeat proof */
+  prf?: HeartbeatProofDto
+
+  /** Heartbeat seed */
+  sd?: Uint8Array
+
+  /** Heartbeat vote ID */
+  vid?: Uint8Array
+
+  /** Heartbeat key dilution */
+  kd?: bigint | number
+}
+
+/**
+ * Encodeable heartbeat proof structure
+ */
+export type HeartbeatProofDto = {
+  /** Signature (64 bytes) */
+  s?: Uint8Array
+
+  /** Public key (32 bytes) */
+  p?: Uint8Array
+
+  /** Public key 2 (32 bytes) */
+  p2?: Uint8Array
+
+  /** Public key 1 signature (64 bytes) */
+  p1s?: Uint8Array
+
+  /** Public key 2 signature (64 bytes) */
+  p2s?: Uint8Array
 }
 
 /**

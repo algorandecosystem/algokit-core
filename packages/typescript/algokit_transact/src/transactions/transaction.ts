@@ -10,7 +10,7 @@ import {
 } from '@algorandfoundation/algokit-common'
 import { addressCodec, bigIntCodec, booleanCodec, bytesCodec, numberCodec, OmitEmptyObjectCodec, stringCodec } from '../encoding/codecs'
 import { decodeMsgpack, encodeMsgpack } from '../encoding/msgpack'
-import { AssetParamsDto, StateSchemaDto, TransactionDto } from '../encoding/transaction-dto'
+import { AssetParamsDto, HeartbeatParamsDto, HeartbeatProofDto, StateSchemaDto, TransactionDto } from '../encoding/transaction-dto'
 import { AppCallTransactionFields, OnApplicationComplete, StateSchema, validateAppCallTransaction } from './app-call'
 import { AssetConfigTransactionFields, validateAssetConfigTransaction } from './asset-config'
 import { AssetFreezeTransactionFields, validateAssetFreezeTransaction } from './asset-freeze'
@@ -18,6 +18,7 @@ import { AssetTransferTransactionFields, validateAssetTransferTransaction } from
 import { getValidationErrorMessage, TransactionValidationError } from './common'
 import { KeyRegistrationTransactionFields, validateKeyRegistrationTransaction } from './key-registration'
 import { PaymentTransactionFields } from './payment'
+import { HeartbeatTransactionFields } from './heartbeat'
 
 /**
  * Represents a complete Algorand transaction.
@@ -133,6 +134,11 @@ export type Transaction = {
    * Asset freeze specific fields
    */
   assetFreeze?: AssetFreezeTransactionFields
+
+  /**
+   * Heartbeat specific fields
+   */
+  heartbeat?: HeartbeatTransactionFields
 }
 
 /**
@@ -229,6 +235,7 @@ export function validateTransaction(transaction: Transaction): void {
     transaction.appCall,
     transaction.keyRegistration,
     transaction.assetFreeze,
+    transaction.heartbeat,
   ]
 
   const setFieldsCount = typeFields.filter((field) => field !== undefined).length
@@ -513,6 +520,8 @@ function fromOnApplicationCompleteDto(onComplete: TransactionDto['apan']): OnApp
 const stateSchemaCodec = new OmitEmptyObjectCodec<StateSchema>()
 const stateSchemaDtoCodec = new OmitEmptyObjectCodec<StateSchemaDto>()
 const assetParamsDtoCodec = new OmitEmptyObjectCodec<AssetParamsDto>()
+const heartbeatParamsDtoCodec = new OmitEmptyObjectCodec<HeartbeatParamsDto>()
+const heartbeatProofDtoCodec = new OmitEmptyObjectCodec<HeartbeatProofDto>()
 
 export function toTransactionDto(transaction: Transaction): TransactionDto {
   const txDto: TransactionDto = {
@@ -600,6 +609,22 @@ export function toTransactionDto(transaction: Transaction): TransactionDto {
     txDto.votekd = bigIntCodec.encode(transaction.keyRegistration.voteKeyDilution)
     txDto.sprfkey = bytesCodec.encode(transaction.keyRegistration.stateProofKey)
     txDto.nonpart = booleanCodec.encode(transaction.keyRegistration.nonParticipation)
+  }
+
+  if (transaction.heartbeat) {
+    txDto.hb = heartbeatParamsDtoCodec.encode({
+      a: addressCodec.encode(transaction.heartbeat.address),
+      prf: heartbeatProofDtoCodec.encode({
+        s: bytesCodec.encode(transaction.heartbeat.proof.sig),
+        p: bytesCodec.encode(transaction.heartbeat.proof.pk),
+        p2: bytesCodec.encode(transaction.heartbeat.proof.pk2),
+        p1s: bytesCodec.encode(transaction.heartbeat.proof.pk1Sig),
+        p2s: bytesCodec.encode(transaction.heartbeat.proof.pk2Sig),
+      }),
+      sd: bytesCodec.encode(transaction.heartbeat.seed),
+      vid: bytesCodec.encode(transaction.heartbeat.voteId),
+      kd: bigIntCodec.encode(transaction.heartbeat.keyDilution),
+    })
   }
 
   return txDto
@@ -705,6 +730,23 @@ export function fromTransactionDto(transactionDto: TransactionDto): Transaction 
         voteKeyDilution: bigIntCodec.decodeOptional(transactionDto.votekd),
         stateProofKey: bytesCodec.decodeOptional(transactionDto.sprfkey),
         nonParticipation: booleanCodec.decodeOptional(transactionDto.nonpart),
+      }
+      break
+    case TransactionType.Heartbeat:
+      if (transactionDto.hb) {
+        tx.heartbeat = {
+          address: addressCodec.decode(transactionDto.hb.a),
+          proof: {
+            sig: bytesCodec.decode(transactionDto.hb.prf?.s),
+            pk: bytesCodec.decode(transactionDto.hb.prf?.p),
+            pk2: bytesCodec.decode(transactionDto.hb.prf?.p2),
+            pk1Sig: bytesCodec.decode(transactionDto.hb.prf?.p1s),
+            pk2Sig: bytesCodec.decode(transactionDto.hb.prf?.p2s),
+          },
+          seed: bytesCodec.decode(transactionDto.hb.sd),
+          voteId: bytesCodec.decode(transactionDto.hb.vid),
+          keyDilution: bigIntCodec.decode(transactionDto.hb.kd),
+        }
       }
       break
   }
