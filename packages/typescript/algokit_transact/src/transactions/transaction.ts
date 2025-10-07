@@ -19,6 +19,7 @@ import { getValidationErrorMessage, TransactionValidationError } from './common'
 import { KeyRegistrationTransactionFields, validateKeyRegistrationTransaction } from './key-registration'
 import { PaymentTransactionFields } from './payment'
 import { HeartbeatTransactionFields } from './heartbeat'
+import { StateProofTransactionFields } from './state-proof'
 
 /**
  * Represents a complete Algorand transaction.
@@ -139,6 +140,11 @@ export type Transaction = {
    * Heartbeat specific fields
    */
   heartbeat?: HeartbeatTransactionFields
+
+  /**
+   * State proof specific fields
+   */
+  stateProof?: StateProofTransactionFields
 }
 
 /**
@@ -236,6 +242,7 @@ export function validateTransaction(transaction: Transaction): void {
     transaction.keyRegistration,
     transaction.assetFreeze,
     transaction.heartbeat,
+    transaction.stateProof,
   ]
 
   const setFieldsCount = typeFields.filter((field) => field !== undefined).length
@@ -627,6 +634,76 @@ export function toTransactionDto(transaction: Transaction): TransactionDto {
     })
   }
 
+  if (transaction.stateProof) {
+    txDto.sptype = bigIntCodec.encode(transaction.stateProof.stateProofType)
+
+    if (transaction.stateProof.stateProof) {
+      const sp = transaction.stateProof.stateProof
+
+      txDto.sp = {
+        c: bytesCodec.encode(sp.sigCommit),
+        w: bigIntCodec.encode(sp.signedWeight),
+        S: {
+          pth: sp.sigProofs.path.map((p) => bytesCodec.encode(p) ?? bytesCodec.defaultValue()),
+          hsh: {
+            t: bigIntCodec.encode(sp.sigProofs.hashFactory.hashType),
+          },
+          td: bigIntCodec.encode(sp.sigProofs.treeDepth),
+        },
+        P: {
+          pth: sp.partProofs.path.map((p) => bytesCodec.encode(p) ?? bytesCodec.defaultValue()),
+          hsh: {
+            t: bigIntCodec.encode(sp.partProofs.hashFactory.hashType),
+          },
+          td: bigIntCodec.encode(sp.partProofs.treeDepth),
+        },
+        v: bigIntCodec.encode(sp.merkleSignatureSaltVersion),
+        r: new Map(
+          Array.from(sp.reveals.entries()).map(([key, reveal]) => [
+            key,
+            {
+              s: {
+                s: {
+                  sig: bytesCodec.encode(reveal.sigslot.sig.signature),
+                  idx: bigIntCodec.encode(reveal.sigslot.sig.vectorCommitmentIndex),
+                  prf: {
+                    pth: reveal.sigslot.sig.proof.path.map((p) => bytesCodec.encode(p) ?? bytesCodec.defaultValue()),
+                    hsh: {
+                      t: bigIntCodec.encode(reveal.sigslot.sig.proof.hashFactory.hashType),
+                    },
+                    td: bigIntCodec.encode(reveal.sigslot.sig.proof.treeDepth),
+                  },
+                  vkey: {
+                    k: bytesCodec.encode(reveal.sigslot.sig.verifyingKey.publicKey),
+                  },
+                },
+                l: bigIntCodec.encode(reveal.sigslot.lowerSigWeight),
+              },
+              p: {
+                p: {
+                  cmt: bytesCodec.encode(reveal.participant.verifier.commitment),
+                  lf: bigIntCodec.encode(reveal.participant.verifier.keyLifetime),
+                },
+                w: bigIntCodec.encode(reveal.participant.weight),
+              },
+            },
+          ]),
+        ),
+        pr: sp.positionsToReveal.map((p) => bigIntCodec.encode(p) ?? bigIntCodec.defaultValue()),
+      }
+    }
+
+    if (transaction.stateProof.message) {
+      txDto.spmsg = {
+        b: bytesCodec.encode(transaction.stateProof.message.blockHeadersCommitment),
+        v: bytesCodec.encode(transaction.stateProof.message.votersCommitment),
+        P: bigIntCodec.encode(transaction.stateProof.message.lnProvenWeight),
+        f: bigIntCodec.encode(transaction.stateProof.message.firstAttestedRound),
+        l: bigIntCodec.encode(transaction.stateProof.message.lastAttestedRound),
+      }
+    }
+  }
+
   return txDto
 }
 
@@ -747,6 +824,73 @@ export function fromTransactionDto(transactionDto: TransactionDto): Transaction 
           voteId: bytesCodec.decode(transactionDto.hb.vid),
           keyDilution: bigIntCodec.decode(transactionDto.hb.kd),
         }
+      }
+      break
+    case TransactionType.StateProof:
+      tx.stateProof = {
+        stateProofType: bigIntCodec.decodeOptional(transactionDto.sptype),
+        stateProof: transactionDto.sp
+          ? {
+              sigCommit: bytesCodec.decode(transactionDto.sp.c),
+              signedWeight: bigIntCodec.decode(transactionDto.sp.w),
+              sigProofs: {
+                path: transactionDto.sp.S?.pth?.map((p) => bytesCodec.decode(p)) ?? [],
+                hashFactory: {
+                  hashType: bigIntCodec.decode(transactionDto.sp.S?.hsh?.t),
+                },
+                treeDepth: bigIntCodec.decode(transactionDto.sp.S?.td),
+              },
+              partProofs: {
+                path: transactionDto.sp.P?.pth?.map((p) => bytesCodec.decode(p)) ?? [],
+                hashFactory: {
+                  hashType: bigIntCodec.decode(transactionDto.sp.P?.hsh?.t),
+                },
+                treeDepth: bigIntCodec.decode(transactionDto.sp.P?.td),
+              },
+              merkleSignatureSaltVersion: bigIntCodec.decode(transactionDto.sp.v),
+              reveals: new Map(
+                Array.from(transactionDto.sp.r?.entries() ?? []).map(([key, reveal]) => [
+                  key,
+                  {
+                    sigslot: {
+                      sig: {
+                        signature: bytesCodec.decode(reveal.s?.s?.sig),
+                        vectorCommitmentIndex: bigIntCodec.decode(reveal.s?.s?.idx),
+                        proof: {
+                          path: reveal.s?.s?.prf?.pth?.map((p) => bytesCodec.decode(p)) ?? [],
+                          hashFactory: {
+                            hashType: bigIntCodec.decode(reveal.s?.s?.prf?.hsh?.t),
+                          },
+                          treeDepth: bigIntCodec.decode(reveal.s?.s?.prf?.td),
+                        },
+                        verifyingKey: {
+                          publicKey: bytesCodec.decode(reveal.s?.s?.vkey?.k),
+                        },
+                      },
+                      lowerSigWeight: bigIntCodec.decode(reveal.s?.l),
+                    },
+                    participant: {
+                      verifier: {
+                        commitment: bytesCodec.decode(reveal.p?.p?.cmt),
+                        keyLifetime: bigIntCodec.decode(reveal.p?.p?.lf),
+                      },
+                      weight: bigIntCodec.decode(reveal.p?.w),
+                    },
+                  },
+                ]),
+              ),
+              positionsToReveal: transactionDto.sp.pr?.map((p) => bigIntCodec.decode(p)) ?? [],
+            }
+          : undefined,
+        message: transactionDto.spmsg
+          ? {
+              blockHeadersCommitment: bytesCodec.decode(transactionDto.spmsg.b),
+              votersCommitment: bytesCodec.decode(transactionDto.spmsg.v),
+              lnProvenWeight: bigIntCodec.decode(transactionDto.spmsg.P),
+              firstAttestedRound: bigIntCodec.decode(transactionDto.spmsg.f),
+              lastAttestedRound: bigIntCodec.decode(transactionDto.spmsg.l),
+            }
+          : undefined,
       }
       break
   }

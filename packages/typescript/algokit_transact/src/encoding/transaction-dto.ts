@@ -141,6 +141,16 @@ export type TransactionDto = {
   // Heartbeat transaction fields (type: 'hb')
   /** Heartbeat parameters */
   hb?: HeartbeatParamsDto
+
+  // State proof transaction fields (type: 'stpf')
+  /** State proof type */
+  sptype?: bigint | number
+
+  /** State proof */
+  sp?: StateProofDto
+
+  /** State proof message */
+  spmsg?: StateProofMessageDto
 }
 
 /**
@@ -181,6 +191,143 @@ export type HeartbeatProofDto = {
 
   /** Public key 2 signature (64 bytes) */
   p2s?: Uint8Array
+}
+
+/**
+ * Encodeable hash factory structure
+ */
+export type HashFactoryDto = {
+  /** Hash type */
+  t?: bigint | number
+}
+
+/**
+ * Encodeable merkle array proof structure
+ */
+export type MerkleArrayProofDto = {
+  /** Merkle path */
+  pth?: Uint8Array[]
+
+  /** Hash factory */
+  hsh?: HashFactoryDto
+
+  /** Tree depth */
+  td?: bigint | number
+}
+
+/**
+ * Encodeable merkle signature verifier structure
+ */
+export type MerkleSignatureVerifierDto = {
+  /** Commitment (64 bytes) */
+  cmt?: Uint8Array
+
+  /** Key lifetime */
+  lf?: bigint | number
+}
+
+/**
+ * Encodeable participant structure
+ */
+export type ParticipantDto = {
+  /** Verifier */
+  p?: MerkleSignatureVerifierDto
+
+  /** Weight */
+  w?: bigint | number
+}
+
+/**
+ * Encodeable falcon verifier structure
+ */
+export type FalconVerifierDto = {
+  /** Public key */
+  k?: Uint8Array
+}
+
+/**
+ * Encodeable falcon signature structure
+ */
+export type FalconSignatureStructDto = {
+  /** Signature */
+  sig?: Uint8Array
+
+  /** Vector commitment index */
+  idx?: bigint | number
+
+  /** Proof */
+  prf?: MerkleArrayProofDto
+
+  /** Verifying key */
+  vkey?: FalconVerifierDto
+}
+
+/**
+ * Encodeable sigslot commit structure
+ */
+export type SigslotCommitDto = {
+  /** Signature */
+  s?: FalconSignatureStructDto
+
+  /** Lower signature weight */
+  l?: bigint | number
+}
+
+/**
+ * Encodeable reveal structure
+ */
+export type RevealDto = {
+  /** Sigslot */
+  s?: SigslotCommitDto
+
+  /** Participant */
+  p?: ParticipantDto
+}
+
+/**
+ * Encodeable state proof structure
+ */
+export type StateProofDto = {
+  /** Signature commitment */
+  c?: Uint8Array
+
+  /** Signed weight */
+  w?: bigint | number
+
+  /** Signature proofs */
+  S?: MerkleArrayProofDto
+
+  /** Participant proofs */
+  P?: MerkleArrayProofDto
+
+  /** Merkle signature salt version */
+  v?: bigint | number
+
+  /** Reveals - sparse map from position to reveal elements */
+  r?: Map<bigint, RevealDto>
+
+  /** Positions to reveal */
+  pr?: (bigint | number)[]
+}
+
+/**
+ * Encodeable state proof message structure
+ */
+export type StateProofMessageDto = {
+  /** Block headers commitment */
+  b?: Uint8Array
+
+  /** Voters commitment */
+  v?: Uint8Array
+
+  /** Natural log of proven weight */
+  P?: bigint | number
+
+  /** First attested round */
+  f?: bigint | number
+
+  /** Last attested round */
+  l?: bigint | number
 }
 
 /**
