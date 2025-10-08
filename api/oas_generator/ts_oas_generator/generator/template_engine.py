@@ -684,10 +684,60 @@ class CodeGenerator:
 
         # Generate components
         files.update(self.schema_processor.generate_models(output_dir, all_schemas))
+
+        # Inject custom Algod models if this spec targets Algod
+        client_type = self._detect_client_type(spec)
+        if client_type == "Algod":
+            models_dir = output_dir / constants.DirectoryName.SRC / constants.DirectoryName.MODELS
+            # Custom typed block models
+            files[models_dir / "signed-txn-in-block.ts"] = self.renderer.render(
+                "models/block/signed-txn-in-block.ts.j2",
+                {"spec": spec},
+            )
+            files[models_dir / "block.ts"] = self.renderer.render(
+                "models/block/block.ts.j2",
+                {"spec": spec},
+            )
+            files[models_dir / "get-block.ts"] = self.renderer.render(
+                "models/block/get-block.ts.j2",
+                {"spec": spec},
+            )
+
+            # Ensure index exports include the custom models
+            index_path = models_dir / constants.INDEX_FILE
+            base_index = self.renderer.render(constants.MODELS_INDEX_TEMPLATE, {"schemas": all_schemas})
+            extras = (
+                "\n"
+                "export type { Block } from './block';\n"
+                "export { BlockMeta } from './block';\n"
+                "export type { SignedTxnInBlock } from './signed-txn-in-block';\n"
+                "export { SignedTxnInBlockMeta } from './signed-txn-in-block';\n"
+                "export type { GetBlock } from './get-block';\n"
+                "export { GetBlockMeta } from './get-block';\n"
+            )
+            files[index_path] = base_index + extras
         files.update(self.operation_processor.generate_service(output_dir, ops_by_tag, tags, service_class))
         files.update(self._generate_client_files(output_dir, client_class, service_class))
 
         return files
+
+    @staticmethod
+    def _detect_client_type(spec: Schema) -> str:
+        """Detect client type from the OpenAPI spec title."""
+        try:
+            title = (spec.get("info", {}) or {}).get("title", "")
+            if not isinstance(title, str):
+                return "Api"
+            tl = title.lower()
+            if "algod" in tl:
+                return "Algod"
+            if "indexer" in tl:
+                return "Indexer"
+            if "kmd" in tl:
+                return "Kmd"
+            return (title.split()[0] or "Api").title()
+        except Exception:
+            return "Api"
 
     def _generate_runtime(
         self,
