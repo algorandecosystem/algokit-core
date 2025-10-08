@@ -55,9 +55,8 @@ impl Composer {
         };
 
         let rust_composer = {
-            let rust_algod_client = algod_client.inner_algod_client.blocking_lock();
             RustComposer::new(TransactionComposerParams {
-                algod_client: Arc::new(rust_algod_client.clone()),
+                algod_client: algod_client.inner_algod_client.clone(),
                 signer_getter: Arc::new(rust_signer_getter),
                 composer_config: None,
             })
