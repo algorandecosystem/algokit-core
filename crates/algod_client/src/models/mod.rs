@@ -184,3 +184,5 @@ pub mod block;
 pub use self::block::Block;
 pub mod signed_txn_in_block;
 pub use self::signed_txn_in_block::SignedTxnInBlock;
+pub mod application_eval_delta;
+pub use self::application_eval_delta::ApplicationEvalDelta;

@@ -18,6 +18,8 @@ use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
 
 use algokit_transact::AlgorandMsgpack;
 
+use crate::models::ApplicationEvalDelta;
+
 /// SignedTxnInBlock is a SignedTransaction with additional ApplyData and block-specific metadata.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
@@ -49,13 +51,8 @@ pub struct SignedTxnInBlock {
     #[serde(rename = "rc", skip_serializing_if = "Option::is_none")]
     pub close_rewards: Option<u64>,
     /// [dt] State changes from app execution.
-    #[serde(
-        with = "crate::msgpack_value_bytes",
-        default,
-        rename = "dt",
-        skip_serializing_if = "Option::is_none"
-    )]
-    pub eval_delta: Option<Vec<u8>>,
+    #[serde(rename = "dt", skip_serializing_if = "Option::is_none")]
+    pub eval_delta: Option<ApplicationEvalDelta>,
     /// [caid] Asset ID if created.
     #[serde(rename = "caid", skip_serializing_if = "Option::is_none")]
     pub config_asset: Option<u64>,
