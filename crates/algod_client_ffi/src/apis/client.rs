@@ -203,32 +203,18 @@ impl AlgodClientTrait for AlgodClient {
         &self,
         address: String,
         max: Option<u64>,
-        format: Option<Format>,
     ) -> Result<GetPendingTransactionsByAddress, Error> {
         self.inner_algod_client
-            .get_pending_transactions_by_address(
-                &address,
-                max.map(|v| v.into()),
-                format.map(|v| v.into()),
-            )
+            .get_pending_transactions_by_address(&address, max.map(|v| v.into()))
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
     }
 
     /// Get the block for the given round.
-    async fn get_block(
-        &self,
-        round: u64,
-        header_only: Option<bool>,
-        format: Option<Format>,
-    ) -> Result<GetBlock, Error> {
+    async fn get_block(&self, round: u64, header_only: Option<bool>) -> Result<GetBlock, Error> {
         self.inner_algod_client
-            .get_block(
-                round.into(),
-                header_only.map(|v| v.into()),
-                format.map(|v| v.into()),
-            )
+            .get_block(round.into(), header_only.map(|v| v.into()))
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -433,10 +419,9 @@ impl AlgodClientTrait for AlgodClient {
     async fn get_pending_transactions(
         &self,
         max: Option<u64>,
-        format: Option<Format>,
     ) -> Result<GetPendingTransactions, Error> {
         self.inner_algod_client
-            .get_pending_transactions(max.map(|v| v.into()), format.map(|v| v.into()))
+            .get_pending_transactions(max.map(|v| v.into()))
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -446,23 +431,18 @@ impl AlgodClientTrait for AlgodClient {
     async fn pending_transaction_information(
         &self,
         txid: String,
-        format: Option<Format>,
     ) -> Result<PendingTransactionResponse, Error> {
         self.inner_algod_client
-            .pending_transaction_information(&txid, format.map(|v| v.into()))
+            .pending_transaction_information(&txid)
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
     }
 
     /// Get a LedgerStateDelta object for a given round
-    async fn get_ledger_state_delta(
-        &self,
-        round: u64,
-        format: Option<Format>,
-    ) -> Result<LedgerStateDelta, Error> {
+    async fn get_ledger_state_delta(&self, round: u64) -> Result<LedgerStateDelta, Error> {
         self.inner_algod_client
-            .get_ledger_state_delta(round.into(), format.map(|v| v.into()))
+            .get_ledger_state_delta(round.into())
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -472,13 +452,9 @@ impl AlgodClientTrait for AlgodClient {
     async fn get_transaction_group_ledger_state_deltas_for_round(
         &self,
         round: u64,
-        format: Option<Format>,
     ) -> Result<GetTransactionGroupLedgerStateDeltasForRound, Error> {
         self.inner_algod_client
-            .get_transaction_group_ledger_state_deltas_for_round(
-                round.into(),
-                format.map(|v| v.into()),
-            )
+            .get_transaction_group_ledger_state_deltas_for_round(round.into())
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -488,10 +464,9 @@ impl AlgodClientTrait for AlgodClient {
     async fn get_ledger_state_delta_for_transaction_group(
         &self,
         id: String,
-        format: Option<Format>,
     ) -> Result<LedgerStateDelta, Error> {
         self.inner_algod_client
-            .get_ledger_state_delta_for_transaction_group(&id, format.map(|v| v.into()))
+            .get_ledger_state_delta_for_transaction_group(&id)
             .await
             .map(|v| v.into())
             .map_err(|e| e.into())
@@ -723,15 +698,9 @@ pub trait AlgodClientTrait: Send + Sync {
         &self,
         address: String,
         max: Option<u64>,
-        format: Option<Format>,
     ) -> Result<GetPendingTransactionsByAddress, Error>;
     /// Get the block for the given round.
-    async fn get_block(
-        &self,
-        round: u64,
-        header_only: Option<bool>,
-        format: Option<Format>,
-    ) -> Result<GetBlock, Error>;
+    async fn get_block(&self, round: u64, header_only: Option<bool>) -> Result<GetBlock, Error>;
     /// Get the top level transaction IDs for the block on the given round.
     async fn get_block_txids(&self, round: u64) -> Result<GetBlockTxids, Error>;
     /// Get the block hash for the block on the given round.
@@ -795,31 +764,23 @@ pub trait AlgodClientTrait: Send + Sync {
     async fn get_pending_transactions(
         &self,
         max: Option<u64>,
-        format: Option<Format>,
     ) -> Result<GetPendingTransactions, Error>;
     /// Get a specific pending transaction.
     async fn pending_transaction_information(
         &self,
         txid: String,
-        format: Option<Format>,
     ) -> Result<PendingTransactionResponse, Error>;
     /// Get a LedgerStateDelta object for a given round
-    async fn get_ledger_state_delta(
-        &self,
-        round: u64,
-        format: Option<Format>,
-    ) -> Result<LedgerStateDelta, Error>;
+    async fn get_ledger_state_delta(&self, round: u64) -> Result<LedgerStateDelta, Error>;
     /// Get LedgerStateDelta objects for all transaction groups in a given round
     async fn get_transaction_group_ledger_state_deltas_for_round(
         &self,
         round: u64,
-        format: Option<Format>,
     ) -> Result<GetTransactionGroupLedgerStateDeltasForRound, Error>;
     /// Get a LedgerStateDelta object for a given transaction group
     async fn get_ledger_state_delta_for_transaction_group(
         &self,
         id: String,
-        format: Option<Format>,
     ) -> Result<LedgerStateDelta, Error>;
     /// Get a state proof that covers a given round
     async fn get_state_proof(&self, round: u64) -> Result<StateProof, Error>;

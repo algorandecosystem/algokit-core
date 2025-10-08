@@ -25,7 +25,9 @@ use crate::transactions::{
 use algod_client_ffi::{AlgodClient, models::PendingTransactionResponse};
 
 // algokit_utils
-use algokit_utils::transactions::{ComposerParams, composer::Composer as RustComposer};
+use algokit_utils::transactions::{
+    TransactionComposerParams, composer::TransactionComposer as RustComposer,
+};
 
 // NOTE: This struct is a temporary placeholder until we have a proper algod_api_ffi crate with the fully typed response
 // TODO: Now that we have algod_client_ffi, we can remove this and use a proper type. Make sure to merge
@@ -53,8 +55,9 @@ impl Composer {
         };
 
         let rust_composer = {
-            RustComposer::new(ComposerParams {
-                algod_client: algod_client.inner_algod_client.clone(),
+            let rust_algod_client = algod_client.inner_algod_client.blocking_lock();
+            RustComposer::new(TransactionComposerParams {
+                algod_client: Arc::new(rust_algod_client.clone()),
                 signer_getter: Arc::new(rust_signer_getter),
                 composer_config: None,
             })
@@ -102,8 +105,16 @@ impl ComposerTrait for Composer {
                 message: e.to_string(),
             })?;
         Ok(TempSendResponse {
-            transaction_ids: result.transaction_ids,
-            app_ids: result.confirmations.iter().map(|c| c.app_id).collect(),
+            transaction_ids: result
+                .results
+                .iter()
+                .map(|r| r.transaction_id.clone())
+                .collect(),
+            app_ids: result
+                .results
+                .iter()
+                .map(|r| r.confirmation.app_id)
+                .collect(),
         })
     }
 

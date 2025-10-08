@@ -11,7 +11,6 @@
 use algokit_http_client::{HttpClient, HttpMethod};
 use std::collections::HashMap;
 
-use super::parameter_enums::*;
 use super::{AlgodApiError, ContentType, Error};
 use algod_client::apis::GetPendingTransactionsByAddressError as RustGetPendingTransactionsByAddressError;
 

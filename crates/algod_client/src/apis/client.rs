@@ -189,13 +189,11 @@ impl AlgodClient {
         &self,
         address: &str,
         max: Option<u64>,
-        format: Option<Format>,
     ) -> Result<GetPendingTransactionsByAddress, Error> {
         super::get_pending_transactions_by_address::get_pending_transactions_by_address(
             self.http_client.as_ref(),
             address,
             max,
-            format,
         )
         .await
     }
@@ -205,9 +203,8 @@ impl AlgodClient {
         &self,
         round: u64,
         header_only: Option<bool>,
-        format: Option<Format>,
     ) -> Result<GetBlock, Error> {
-        super::get_block::get_block(self.http_client.as_ref(), round, header_only, format).await
+        super::get_block::get_block(self.http_client.as_ref(), round, header_only).await
     }
 
     /// Get the top level transaction IDs for the block on the given round.
@@ -362,54 +359,37 @@ impl AlgodClient {
     pub async fn get_pending_transactions(
         &self,
         max: Option<u64>,
-        format: Option<Format>,
     ) -> Result<GetPendingTransactions, Error> {
-        super::get_pending_transactions::get_pending_transactions(
-            self.http_client.as_ref(),
-            max,
-            format,
-        )
-        .await
+        super::get_pending_transactions::get_pending_transactions(self.http_client.as_ref(), max)
+            .await
     }
 
     /// Get a specific pending transaction.
     pub async fn pending_transaction_information(
         &self,
         txid: &str,
-        format: Option<Format>,
     ) -> Result<PendingTransactionResponse, Error> {
         super::pending_transaction_information::pending_transaction_information(
             self.http_client.as_ref(),
             txid,
-            format,
         )
         .await
     }
 
     /// Get a LedgerStateDelta object for a given round
-    pub async fn get_ledger_state_delta(
-        &self,
-        round: u64,
-        format: Option<Format>,
-    ) -> Result<LedgerStateDelta, Error> {
-        super::get_ledger_state_delta::get_ledger_state_delta(
-            self.http_client.as_ref(),
-            round,
-            format,
-        )
-        .await
+    pub async fn get_ledger_state_delta(&self, round: u64) -> Result<LedgerStateDelta, Error> {
+        super::get_ledger_state_delta::get_ledger_state_delta(self.http_client.as_ref(), round)
+            .await
     }
 
     /// Get LedgerStateDelta objects for all transaction groups in a given round
     pub async fn get_transaction_group_ledger_state_deltas_for_round(
         &self,
         round: u64,
-        format: Option<Format>,
     ) -> Result<GetTransactionGroupLedgerStateDeltasForRound, Error> {
         super::get_transaction_group_ledger_state_deltas_for_round::get_transaction_group_ledger_state_deltas_for_round(
             self.http_client.as_ref(),
             round,
-            format,
         ).await
     }
 
@@ -417,12 +397,10 @@ impl AlgodClient {
     pub async fn get_ledger_state_delta_for_transaction_group(
         &self,
         id: &str,
-        format: Option<Format>,
     ) -> Result<LedgerStateDelta, Error> {
         super::get_ledger_state_delta_for_transaction_group::get_ledger_state_delta_for_transaction_group(
             self.http_client.as_ref(),
             id,
-            format,
         ).await
     }
 
