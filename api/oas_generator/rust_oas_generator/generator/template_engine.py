@@ -477,9 +477,20 @@ class RustCodeGenerator:
     def _generate_base_files(self, context: dict[str, Any], output_dir: Path) -> dict[Path, str]:
         """Generate base library files."""
         src_dir = output_dir / "src"
-        return {
+        files: dict[Path, str] = {
             src_dir / "lib.rs": self.template_engine.render_template("base/lib.rs.j2", context),
         }
+
+        # Inject additional base files for specific clients
+        # Detect client type
+        client_type = self.template_engine.env.globals["get_client_type"](context["spec"])  # type: ignore[index]
+        if client_type == "Algod":
+            # Provide msgpack helper to encode/decode arbitrary msgpack values as bytes
+            files[src_dir / "msgpack_value_bytes.rs"] = self.template_engine.render_template(
+                "base/msgpack_value_bytes.rs.j2", context
+            )
+
+        return files
 
     def _generate_model_files(
         self,
@@ -500,6 +511,20 @@ class RustCodeGenerator:
 
         models_context = {**context, "schemas": schemas}
         files[models_dir / "mod.rs"] = self.template_engine.render_template("models/mod.rs.j2", models_context)
+
+        # Inject custom, hand-authored models for specific clients
+        # Detect client type
+        client_type = self.template_engine.env.globals["get_client_type"](context["spec"])  # type: ignore[index]
+        if client_type == "Algod":
+            # Always generate/override the typed block models
+            files[models_dir / "signed_txn_in_block.rs"] = self.template_engine.render_template(
+                "models/block/signed_txn_in_block.rs.j2", context
+            )
+            files[models_dir / "block.rs"] = self.template_engine.render_template("models/block/block.rs.j2", context)
+            # Override GetBlock with a typed model that references Block
+            files[models_dir / "get_block.rs"] = self.template_engine.render_template(
+                "models/block/get_block.rs.j2", context
+            )
 
         return files
 

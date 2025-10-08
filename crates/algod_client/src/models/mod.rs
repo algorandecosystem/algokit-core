@@ -178,3 +178,9 @@ pub mod teal_dryrun;
 pub use self::teal_dryrun::TealDryrun;
 pub mod get_block_time_stamp_offset;
 pub use self::get_block_time_stamp_offset::GetBlockTimeStampOffset;
+
+// Custom Algod typed block models
+pub mod block;
+pub use self::block::Block;
+pub mod signed_txn_in_block;
+pub use self::signed_txn_in_block::SignedTxnInBlock;
