@@ -17,7 +17,7 @@ export type StateProof = {
   signedWeight: bigint
   sigProofs: MerkleArrayProof
   partProofs: MerkleArrayProof
-  merkleSignatureSaltVersion: bigint
+  merkleSignatureSaltVersion: number
   reveals: Map<bigint, Reveal>
   positionsToReveal: bigint[]
 }
@@ -25,11 +25,11 @@ export type StateProof = {
 export type MerkleArrayProof = {
   path: Uint8Array[]
   hashFactory: HashFactory
-  treeDepth: bigint
+  treeDepth: number
 }
 
 export type HashFactory = {
-  hashType: bigint
+  hashType: number
 }
 
 export type MerkleSignatureVerifier = {

@@ -646,18 +646,18 @@ export function toTransactionDto(transaction: Transaction): TransactionDto {
         S: {
           pth: sp.sigProofs.path.map((p) => bytesCodec.encode(p) ?? bytesCodec.defaultValue()),
           hsh: {
-            t: bigIntCodec.encode(sp.sigProofs.hashFactory.hashType),
+            t: sp.sigProofs.hashFactory.hashType,
           },
-          td: bigIntCodec.encode(sp.sigProofs.treeDepth),
+          td: sp.sigProofs.treeDepth,
         },
         P: {
           pth: sp.partProofs.path.map((p) => bytesCodec.encode(p) ?? bytesCodec.defaultValue()),
           hsh: {
-            t: bigIntCodec.encode(sp.partProofs.hashFactory.hashType),
+            t: sp.partProofs.hashFactory.hashType,
           },
-          td: bigIntCodec.encode(sp.partProofs.treeDepth),
+          td: sp.partProofs.treeDepth,
         },
-        v: bigIntCodec.encode(sp.merkleSignatureSaltVersion),
+        v: sp.merkleSignatureSaltVersion,
         r: new Map(
           Array.from(sp.reveals.entries()).map(([key, reveal]) => [
             key,
@@ -669,9 +669,9 @@ export function toTransactionDto(transaction: Transaction): TransactionDto {
                   prf: {
                     pth: reveal.sigslot.sig.proof.path.map((p) => bytesCodec.encode(p) ?? bytesCodec.defaultValue()),
                     hsh: {
-                      t: bigIntCodec.encode(reveal.sigslot.sig.proof.hashFactory.hashType),
+                      t: reveal.sigslot.sig.proof.hashFactory.hashType,
                     },
-                    td: bigIntCodec.encode(reveal.sigslot.sig.proof.treeDepth),
+                    td: reveal.sigslot.sig.proof.treeDepth,
                   },
                   vkey: {
                     k: bytesCodec.encode(reveal.sigslot.sig.verifyingKey.publicKey),
@@ -836,18 +836,18 @@ export function fromTransactionDto(transactionDto: TransactionDto): Transaction 
               sigProofs: {
                 path: transactionDto.sp.S?.pth?.map((p) => bytesCodec.decode(p)) ?? [],
                 hashFactory: {
-                  hashType: bigIntCodec.decode(transactionDto.sp.S?.hsh?.t),
+                  hashType: transactionDto.sp.S?.hsh?.t,
                 },
-                treeDepth: bigIntCodec.decode(transactionDto.sp.S?.td),
+                treeDepth: transactionDto.sp.S?.td,
               },
               partProofs: {
                 path: transactionDto.sp.P?.pth?.map((p) => bytesCodec.decode(p)) ?? [],
                 hashFactory: {
-                  hashType: bigIntCodec.decode(transactionDto.sp.P?.hsh?.t),
+                  hashType: transactionDto.sp.P?.hsh?.t,
                 },
-                treeDepth: bigIntCodec.decode(transactionDto.sp.P?.td),
+                treeDepth: transactionDto.sp.P?.td,
               },
-              merkleSignatureSaltVersion: bigIntCodec.decode(transactionDto.sp.v),
+              merkleSignatureSaltVersion: transactionDto.sp.v,
               reveals: new Map(
                 Array.from(transactionDto.sp.r?.entries() ?? []).map(([key, reveal]) => [
                   key,
@@ -859,9 +859,9 @@ export function fromTransactionDto(transactionDto: TransactionDto): Transaction 
                         proof: {
                           path: reveal.s?.s?.prf?.pth?.map((p) => bytesCodec.decode(p)) ?? [],
                           hashFactory: {
-                            hashType: bigIntCodec.decode(reveal.s?.s?.prf?.hsh?.t),
+                            hashType: reveal.s?.s?.prf?.hsh?.t,
                           },
-                          treeDepth: bigIntCodec.decode(reveal.s?.s?.prf?.td),
+                          treeDepth: reveal.s?.s?.prf?.td,
                         },
                         verifyingKey: {
                           publicKey: bytesCodec.decode(reveal.s?.s?.vkey?.k),

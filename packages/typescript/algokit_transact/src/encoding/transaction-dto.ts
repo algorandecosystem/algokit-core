@@ -198,7 +198,7 @@ export type HeartbeatProofDto = {
  */
 export type HashFactoryDto = {
   /** Hash type */
-  t?: bigint | number
+  t?: number
 }
 
 /**
@@ -212,7 +212,7 @@ export type MerkleArrayProofDto = {
   hsh?: HashFactoryDto
 
   /** Tree depth */
-  td?: bigint | number
+  td?: number
 }
 
 /**
@@ -301,7 +301,7 @@ export type StateProofDto = {
   P?: MerkleArrayProofDto
 
   /** Merkle signature salt version */
-  v?: bigint | number
+  v?: number
 
   /** Reveals - sparse map from position to reveal elements */
   r?: Map<bigint, RevealDto>
