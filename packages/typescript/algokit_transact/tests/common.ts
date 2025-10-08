@@ -5,7 +5,19 @@ import { OnApplicationComplete, Transaction, TransactionType } from '../src'
 
 const jsonString = fs.readFileSync(path.join(__dirname, 'test_data.json'), 'utf-8')
 
-const NUMERIC_FIELDS = ['fee', 'amount', 'firstValid', 'lastValid', 'assetId', 'total', 'appId', 'voteFirst', 'voteLast', 'voteKeyDilution']
+const NUMERIC_FIELDS = [
+  'fee',
+  'amount',
+  'firstValid',
+  'lastValid',
+  'assetId',
+  'total',
+  'appId',
+  'voteFirst',
+  'voteLast',
+  'voteKeyDilution',
+  'keyDilution',
+]
 
 const transactionTypes = Object.fromEntries(Object.entries(TransactionType).map(([key, value]) => [key, value]))
 const onApplicationCompleteTypes = Object.fromEntries(Object.entries(OnApplicationComplete).map(([key, value]) => [key, value]))
@@ -71,7 +83,7 @@ export const testData =
       | 'optInAssetTransfer'
       | 'assetCreate'
       | 'assetDestroy'
-      | 'assetReconfigure'
+      | 'assetConfig'
       | 'appCall'
       | 'appCreate'
       | 'appUpdate'
@@ -80,7 +92,9 @@ export const testData =
       | 'offlineKeyRegistration'
       | 'nonParticipationKeyRegistration'
       | 'assetFreeze'
-      | 'assetUnfreeze',
+      | 'assetUnfreeze'
+      | 'heartbeat'
+      | 'stateProof',
       TransactionTestData
     >
   >(jsonString)
