@@ -38,7 +38,7 @@ export const SignedTxnInBlockMeta: ModelMetadata = {
     {
       name: 'signedTransaction',
       // flatten signed transaction fields into parent
-      flattened: true as unknown as boolean,
+      flattened: true,
       optional: false,
       nullable: false,
       type: { kind: 'codec', codecKey: 'SignedTransaction' },

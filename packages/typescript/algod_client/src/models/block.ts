@@ -1,11 +1,13 @@
 import type { ModelMetadata } from '../core/model-runtime'
 import type { SignedTxnInBlock } from './signed-txn-in-block'
 import { SignedTxnInBlockMeta } from './signed-txn-in-block'
+import type { BlockStateProofTracking } from './block_state_proof_tracking'
+import { BlockStateProofTrackingMeta } from './block_state_proof_tracking'
 
 /**
  * Block contains the BlockHeader and the list of transactions (Payset).
  */
-export type Block = {
+export interface Block {
   /** [rnd] Round number. */
   round?: bigint
   /** [prev] Previous block hash. */
@@ -64,8 +66,8 @@ export type Block = {
   upgradeApprove?: boolean
   /** [tc] Transaction counter. */
   txnCounter?: bigint
-  /** [spt] State proof tracking data. Map with integer keys in msgpack. */
-  stateProofTracking?: Record<string, unknown>
+  /** [spt] State proof tracking data keyed by state proof type. */
+  stateProofTracking?: BlockStateProofTracking
   /** [partupdrmv] Expired participation accounts. */
   expiredParticipationAccounts?: Uint8Array[]
   /** [partupdabs] Absent participation accounts. */
@@ -107,7 +109,13 @@ export const BlockMeta: ModelMetadata = {
     { name: 'upgradeDelay', wireKey: 'upgradedelay', optional: true, nullable: false, type: { kind: 'scalar', isBigint: true } },
     { name: 'upgradeApprove', wireKey: 'upgradeyes', optional: true, nullable: false, type: { kind: 'scalar' } },
     { name: 'txnCounter', wireKey: 'tc', optional: true, nullable: false, type: { kind: 'scalar', isBigint: true } },
-    { name: 'stateProofTracking', wireKey: 'spt', optional: true, nullable: false, type: { kind: 'scalar' } },
+    {
+      name: 'stateProofTracking',
+      wireKey: 'spt',
+      optional: true,
+      nullable: false,
+      type: { kind: 'model', meta: () => BlockStateProofTrackingMeta },
+    },
     {
       name: 'expiredParticipationAccounts',
       wireKey: 'partupdrmv',

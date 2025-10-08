@@ -708,6 +708,14 @@ class CodeGenerator:
                 "models/block/application-eval-delta.ts.j2",
                 {"spec": spec},
             )
+            files[models_dir / "block_state_proof_tracking_data.ts"] = self.renderer.render(
+                "models/block/block-state-proof-tracking-data.ts.j2",
+                {"spec": spec},
+            )
+            files[models_dir / "block_state_proof_tracking.ts"] = self.renderer.render(
+                "models/block/block-state-proof-tracking.ts.j2",
+                {"spec": spec},
+            )
             files[models_dir / "signed-txn-in-block.ts"] = self.renderer.render(
                 "models/block/signed-txn-in-block.ts.j2",
                 {"spec": spec},
@@ -734,6 +742,10 @@ class CodeGenerator:
                 "export { BlockAccountStateDeltaMeta } from './block-account-state-delta';\n"
                 "export type { BlockAppEvalDelta } from './block-app-eval-delta';\n"
                 "export { BlockAppEvalDeltaMeta } from './block-app-eval-delta';\n"
+                "export type { BlockStateProofTrackingData } from './block_state_proof_tracking_data';\n"
+                "export { BlockStateProofTrackingDataMeta } from './block_state_proof_tracking_data';\n"
+                "export type { BlockStateProofTracking } from './block_state_proof_tracking';\n"
+                "export { BlockStateProofTrackingMeta } from './block_state_proof_tracking';\n"
                 "export type { Block } from './block';\n"
                 "export { BlockMeta } from './block';\n"
                 "export type { SignedTxnInBlock } from './signed-txn-in-block';\n"

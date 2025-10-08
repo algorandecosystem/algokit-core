@@ -483,7 +483,8 @@ class RustCodeGenerator:
 
         # Inject additional base files for specific clients
         # Detect client type
-        client_type = self.template_engine.env.globals["get_client_type"](context["spec"])  # type: ignore[index]
+        client_type_fn = self.template_engine.env.globals.get("get_client_type")
+        client_type = client_type_fn(context["spec"]) if callable(client_type_fn) else "Api"
         if client_type == "Algod":
             # Provide msgpack helper to encode/decode arbitrary msgpack values as bytes
             files[src_dir / "msgpack_value_bytes.rs"] = self.template_engine.render_template(
@@ -514,7 +515,8 @@ class RustCodeGenerator:
 
         # Inject custom, hand-authored models for specific clients
         # Detect client type
-        client_type = self.template_engine.env.globals["get_client_type"](context["spec"])  # type: ignore[index]
+        client_type_fn = self.template_engine.env.globals.get("get_client_type")
+        client_type = client_type_fn(context["spec"]) if callable(client_type_fn) else "Api"
         if client_type == "Algod":
             # Always generate/override the typed block models
             files[models_dir / "block_eval_delta.rs"] = self.template_engine.render_template(
@@ -528,6 +530,12 @@ class RustCodeGenerator:
             )
             files[models_dir / "block_app_eval_delta.rs"] = self.template_engine.render_template(
                 "models/block/block_app_eval_delta.rs.j2", context
+            )
+            files[models_dir / "block_state_proof_tracking_data.rs"] = self.template_engine.render_template(
+                "models/block/block_state_proof_tracking_data.rs.j2", context
+            )
+            files[models_dir / "block_state_proof_tracking.rs"] = self.template_engine.render_template(
+                "models/block/block_state_proof_tracking.rs.j2", context
             )
             files[models_dir / "signed_txn_in_block.rs"] = self.template_engine.render_template(
                 "models/block/signed_txn_in_block.rs.j2", context

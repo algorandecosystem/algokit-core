@@ -19,6 +19,7 @@ use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
 
 use algokit_transact::AlgorandMsgpack;
 
+use crate::models::BlockStateProofTracking;
 use crate::models::SignedTxnInBlock;
 
 /// Block contains the BlockHeader and the list of transactions (Payset).
@@ -123,14 +124,9 @@ pub struct Block {
     /// [tc] Transaction counter.
     #[serde(rename = "tc", skip_serializing_if = "Option::is_none")]
     pub txn_counter: Option<u64>,
-    /// [spt] State proof tracking data. Map with integer keys in msgpack.
-    #[serde(
-        with = "crate::msgpack_value_bytes",
-        default,
-        rename = "spt",
-        skip_serializing_if = "Option::is_none"
-    )]
-    pub state_proof_tracking: Option<Vec<u8>>,
+    /// [spt] State proof tracking data keyed by state proof type.
+    #[serde(rename = "spt", skip_serializing_if = "Option::is_none", default)]
+    pub state_proof_tracking: Option<BlockStateProofTracking>,
     /// [partupdrmv] Expired participation accounts.
     #[serde_as(as = "Option<Vec<Bytes>>")]
     #[serde(rename = "partupdrmv", skip_serializing_if = "Option::is_none")]
