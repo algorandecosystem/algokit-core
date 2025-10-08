@@ -517,8 +517,17 @@ class RustCodeGenerator:
         client_type = self.template_engine.env.globals["get_client_type"](context["spec"])  # type: ignore[index]
         if client_type == "Algod":
             # Always generate/override the typed block models
-            files[models_dir / "application_eval_delta.rs"] = self.template_engine.render_template(
-                "models/block/application_eval_delta.rs.j2", context
+            files[models_dir / "block_eval_delta.rs"] = self.template_engine.render_template(
+                "models/block/block_eval_delta.rs.j2", context
+            )
+            files[models_dir / "block_state_delta.rs"] = self.template_engine.render_template(
+                "models/block/block_state_delta.rs.j2", context
+            )
+            files[models_dir / "block_account_state_delta.rs"] = self.template_engine.render_template(
+                "models/block/block_account_state_delta.rs.j2", context
+            )
+            files[models_dir / "block_app_eval_delta.rs"] = self.template_engine.render_template(
+                "models/block/block_app_eval_delta.rs.j2", context
             )
             files[models_dir / "signed_txn_in_block.rs"] = self.template_engine.render_template(
                 "models/block/signed_txn_in_block.rs.j2", context

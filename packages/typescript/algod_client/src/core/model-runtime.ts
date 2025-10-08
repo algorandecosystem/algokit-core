@@ -61,6 +61,19 @@ export interface ModelMetadata {
   readonly passThrough?: FieldType
 }
 
+// Registry for model metadata to avoid direct circular imports between model files
+const modelMetaRegistry = new Map<string, ModelMetadata>()
+
+export function registerModelMeta(name: string, meta: ModelMetadata): void {
+  modelMetaRegistry.set(name, meta)
+}
+
+export function getModelMeta(name: string): ModelMetadata {
+  const meta = modelMetaRegistry.get(name)
+  if (!meta) throw new Error(`Model metadata not registered: ${name}`)
+  return meta
+}
+
 export interface TypeCodec<TValue = unknown> {
   encode(value: TValue, format: BodyFormat): unknown
   decode(value: unknown, format: BodyFormat): TValue

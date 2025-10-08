@@ -690,6 +690,24 @@ class CodeGenerator:
         if client_type == "Algod":
             models_dir = output_dir / constants.DirectoryName.SRC / constants.DirectoryName.MODELS
             # Custom typed block models
+            # Block-specific models (prefixed to avoid shape collisions)
+            files[models_dir / "block-eval-delta.ts"] = self.renderer.render(
+                "models/block/block-eval-delta.ts.j2",
+                {"spec": spec},
+            )
+            files[models_dir / "block-state-delta.ts"] = self.renderer.render(
+                "models/block/block-state-delta.ts.j2",
+                {"spec": spec},
+            )
+            files[models_dir / "block-account-state-delta.ts"] = self.renderer.render(
+                "models/block/block-account-state-delta.ts.j2",
+                {"spec": spec},
+            )
+            # BlockAppEvalDelta is implemented by repurposing application-eval-delta.ts.j2 to new name
+            files[models_dir / "block-app-eval-delta.ts"] = self.renderer.render(
+                "models/block/application-eval-delta.ts.j2",
+                {"spec": spec},
+            )
             files[models_dir / "signed-txn-in-block.ts"] = self.renderer.render(
                 "models/block/signed-txn-in-block.ts.j2",
                 {"spec": spec},
@@ -708,6 +726,14 @@ class CodeGenerator:
             base_index = self.renderer.render(constants.MODELS_INDEX_TEMPLATE, {"schemas": all_schemas})
             extras = (
                 "\n"
+                "export type { BlockEvalDelta } from './block-eval-delta';\n"
+                "export { BlockEvalDeltaMeta } from './block-eval-delta';\n"
+                "export type { BlockStateDelta } from './block-state-delta';\n"
+                "export { BlockStateDeltaMeta } from './block-state-delta';\n"
+                "export type { BlockAccountStateDelta } from './block-account-state-delta';\n"
+                "export { BlockAccountStateDeltaMeta } from './block-account-state-delta';\n"
+                "export type { BlockAppEvalDelta } from './block-app-eval-delta';\n"
+                "export { BlockAppEvalDeltaMeta } from './block-app-eval-delta';\n"
                 "export type { Block } from './block';\n"
                 "export { BlockMeta } from './block';\n"
                 "export type { SignedTxnInBlock } from './signed-txn-in-block';\n"
