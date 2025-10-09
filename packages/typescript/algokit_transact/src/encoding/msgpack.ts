@@ -20,9 +20,7 @@ export function mapToObject(value: unknown, fieldName?: string): unknown {
   // Preserve Uint8Array as-is
   if (value instanceof Uint8Array) {
     return value
-  }
-
-  if (value instanceof Map) {
+  } else if (value instanceof Map) {
     // Special case: keep "r" field as Map
     if (fieldName === 'r') {
       const newMap = new Map()
@@ -40,12 +38,7 @@ export function mapToObject(value: unknown, fieldName?: string): unknown {
     return obj
   } else if (Array.isArray(value)) {
     return value.map((item) => mapToObject(item))
-  } else if (value !== null && typeof value === 'object') {
-    const obj: unknown = {}
-    for (const [k, v] of Object.entries(value)) {
-      obj[k] = mapToObject(v, k)
-    }
-    return obj
   }
+
   return value
 }

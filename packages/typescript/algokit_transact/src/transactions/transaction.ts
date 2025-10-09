@@ -825,7 +825,7 @@ export function fromTransactionDto(transactionDto: TransactionDto): Transaction 
               signedWeight: bigIntCodec.decode(transactionDto.sp.w),
               sigProofs: fromMerkleArrayProofDto(transactionDto.sp.S),
               partProofs: fromMerkleArrayProofDto(transactionDto.sp.P),
-              merkleSignatureSaltVersion: transactionDto.sp.v ?? 0,
+              merkleSignatureSaltVersion: numberCodec.decode(transactionDto.sp.v),
               reveals: Array.from(transactionDto.sp.r?.entries() ?? []).map(
                 ([key, reveal]) =>
                   ({

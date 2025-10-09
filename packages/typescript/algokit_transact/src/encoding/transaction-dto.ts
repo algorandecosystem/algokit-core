@@ -138,11 +138,9 @@ export type TransactionDto = {
   /** Non-participation flag */
   nonpart?: boolean
 
-  // Heartbeat transaction fields (type: 'hb')
   /** Heartbeat parameters */
   hb?: HeartbeatParamsDto
 
-  // State proof transaction fields (type: 'stpf')
   /** State proof type */
   sptype?: number
 

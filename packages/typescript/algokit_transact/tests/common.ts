@@ -103,28 +103,8 @@ const defaultReviver = (key: string, value: unknown) => {
   return value
 }
 
-const parseJson = (json: string, reviver: (_: string, value: unknown) => unknown = defaultReviver) => {
-  const transactions = JSON.parse(json, reviver) as Record<
-    | 'simplePayment'
-    | 'optInAssetTransfer'
-    | 'assetCreate'
-    | 'assetDestroy'
-    | 'assetConfig'
-    | 'appCall'
-    | 'appCreate'
-    | 'appUpdate'
-    | 'appDelete'
-    | 'onlineKeyRegistration'
-    | 'offlineKeyRegistration'
-    | 'nonParticipationKeyRegistration'
-    | 'assetFreeze'
-    | 'assetUnfreeze'
-    | 'heartbeat'
-    | 'stateProof',
-    TransactionTestData
-  >
-
-  return transactions
+export const parseJson = <T = any>(json: string, reviver: (_: string, value: unknown) => unknown = defaultReviver) => {
+  return JSON.parse(json, reviver) as T
 }
 
 export type TransactionTestData = {
@@ -140,4 +120,25 @@ export type TransactionTestData = {
   multisigSignedBytes: Uint8Array
 }
 
-export const testData = parseJson(jsonString)
+export const testData =
+  parseJson<
+    Record<
+      | 'simplePayment'
+      | 'optInAssetTransfer'
+      | 'assetCreate'
+      | 'assetDestroy'
+      | 'assetReconfigure'
+      | 'appCall'
+      | 'appCreate'
+      | 'appUpdate'
+      | 'appDelete'
+      | 'onlineKeyRegistration'
+      | 'offlineKeyRegistration'
+      | 'nonParticipationKeyRegistration'
+      | 'assetFreeze'
+      | 'assetUnfreeze'
+      | 'heartbeat'
+      | 'stateProof',
+      TransactionTestData
+    >
+  >(jsonString)
