@@ -3,7 +3,7 @@
  */
 export type StateProofTransactionFields = {
   /** State proof type */
-  stateProofType?: bigint
+  stateProofType?: number
 
   /** State proof */
   stateProof?: StateProof
@@ -18,7 +18,7 @@ export type StateProof = {
   sigProofs: MerkleArrayProof
   partProofs: MerkleArrayProof
   merkleSignatureSaltVersion: number
-  reveals: Map<bigint, Reveal>
+  reveals: Reveal[]
   positionsToReveal: bigint[]
 }
 
@@ -59,6 +59,7 @@ export type SigslotCommit = {
 }
 
 export type Reveal = {
+  position: bigint
   sigslot: SigslotCommit
   participant: Participant
 }

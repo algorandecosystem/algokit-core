@@ -635,7 +635,7 @@ export function toTransactionDto(transaction: Transaction): TransactionDto {
   }
 
   if (transaction.stateProof) {
-    txDto.sptype = bigIntCodec.encode(transaction.stateProof.stateProofType)
+    txDto.sptype = transaction.stateProof.stateProofType
 
     if (transaction.stateProof.stateProof) {
       const sp = transaction.stateProof.stateProof
@@ -659,8 +659,8 @@ export function toTransactionDto(transaction: Transaction): TransactionDto {
         },
         v: sp.merkleSignatureSaltVersion,
         r: new Map(
-          Array.from(sp.reveals.entries()).map(([key, reveal]) => [
-            key,
+          sp.reveals.map((reveal) => [
+            reveal.position,
             {
               s: {
                 s: {
