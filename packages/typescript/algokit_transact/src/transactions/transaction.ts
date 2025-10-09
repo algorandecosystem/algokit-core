@@ -300,45 +300,6 @@ export function encodeTransactionRaw(transaction: Transaction): Uint8Array {
 }
 
 /**
- * Converts a Map structure from msgpack decoding to a plain object structure.
- * Maps are converted to objects recursively, except for the special case
- * where the field name is "r" which remains as a Map.
- */
-function mapToObject(value: unknown, fieldName?: string): unknown {
-  // Preserve Uint8Array as-is
-  if (value instanceof Uint8Array) {
-    return value
-  }
-
-  if (value instanceof Map) {
-    // Special case: keep "r" field as Map
-    if (fieldName === 'r') {
-      const newMap = new Map()
-      for (const [k, v] of value.entries()) {
-        newMap.set(k, mapToObject(v))
-      }
-      return newMap
-    }
-
-    // Convert Map to object
-    const obj: unknown = {}
-    for (const [k, v] of value.entries()) {
-      obj[k] = mapToObject(v, k)
-    }
-    return obj
-  } else if (Array.isArray(value)) {
-    return value.map((item) => mapToObject(item))
-  } else if (value !== null && typeof value === 'object') {
-    const obj: unknown = {}
-    for (const [k, v] of Object.entries(value)) {
-      obj[k] = mapToObject(v, k)
-    }
-    return obj
-  }
-  return value
-}
-
-/**
  * Decodes MsgPack bytes into a transaction.
  *
  * # Parameters
@@ -366,10 +327,8 @@ export function decodeTransaction(encoded_transaction: Uint8Array): Transaction 
     }
   }
 
-  const decodedData = decodeMsgpack<unknown>(hasPrefix ? encoded_transaction.slice(prefixBytes.length) : encoded_transaction)
-  const transactionDto = mapToObject(decodedData) as TransactionDto
-
-  return fromTransactionDto(transactionDto)
+  const decodedData = decodeMsgpack<TransactionDto>(hasPrefix ? encoded_transaction.slice(prefixBytes.length) : encoded_transaction)
+  return fromTransactionDto(decodedData)
 }
 
 /**
