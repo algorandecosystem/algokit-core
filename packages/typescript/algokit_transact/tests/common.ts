@@ -2,7 +2,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import { OnApplicationComplete, Transaction, TransactionType } from '../src'
-import { Reveal, StateProof, StateProofTransactionFields } from '../src/transactions/state-proof'
+import { Reveal, SigslotCommit, StateProof, StateProofTransactionFields } from '../src/transactions/state-proof'
 
 const jsonString = fs.readFileSync(path.join(__dirname, 'test_data.json'), 'utf-8')
 
@@ -22,6 +22,10 @@ const BIGINT_FIELDS = [
   'firstAttestedRound',
   'lastAttestedRound',
   'signedWeight',
+  'weight',
+  'keyLifetime',
+  'vectorCommitmentIndex',
+  'lowerSigWeight',
 ]
 
 const transactionTypes = Object.fromEntries(Object.entries(TransactionType).map(([key, value]) => [key, value]))
@@ -79,6 +83,13 @@ const defaultReviver = (key: string, value: unknown) => {
         reveal.position = BigInt(reveal.position)
       }
     })
+  }
+
+  if (key === 'sigslot' && typeof value === 'object' && value !== null) {
+    const sigSlot = value as SigslotCommit
+    if (sigSlot.lowerSigWeight === undefined) {
+      sigSlot.lowerSigWeight = 0n
+    }
   }
 
   if (key === 'transactionType') {

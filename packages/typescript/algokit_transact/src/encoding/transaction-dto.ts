@@ -144,7 +144,7 @@ export type TransactionDto = {
 
   // State proof transaction fields (type: 'stpf')
   /** State proof type */
-  sptype?: bigint | number
+  sptype?: number
 
   /** State proof */
   sp?: StateProofDto

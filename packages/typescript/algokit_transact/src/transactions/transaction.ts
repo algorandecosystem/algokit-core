@@ -10,7 +10,15 @@ import {
 } from '@algorandfoundation/algokit-common'
 import { addressCodec, bigIntCodec, booleanCodec, bytesCodec, numberCodec, OmitEmptyObjectCodec, stringCodec } from '../encoding/codecs'
 import { decodeMsgpack, encodeMsgpack } from '../encoding/msgpack'
-import { AssetParamsDto, HeartbeatParamsDto, HeartbeatProofDto, StateSchemaDto, TransactionDto } from '../encoding/transaction-dto'
+import {
+  AssetParamsDto,
+  HeartbeatParamsDto,
+  HeartbeatProofDto,
+  MerkleArrayProofDto,
+  RevealDto,
+  StateSchemaDto,
+  TransactionDto,
+} from '../encoding/transaction-dto'
 import { AppCallTransactionFields, OnApplicationComplete, StateSchema, validateAppCallTransaction } from './app-call'
 import { AssetConfigTransactionFields, validateAssetConfigTransaction } from './asset-config'
 import { AssetFreezeTransactionFields, validateAssetFreezeTransaction } from './asset-freeze'
@@ -19,7 +27,7 @@ import { getValidationErrorMessage, TransactionValidationError } from './common'
 import { KeyRegistrationTransactionFields, validateKeyRegistrationTransaction } from './key-registration'
 import { PaymentTransactionFields } from './payment'
 import { HeartbeatTransactionFields } from './heartbeat'
-import { StateProofTransactionFields } from './state-proof'
+import { MerkleArrayProof, Reveal, StateProofTransactionFields } from './state-proof'
 
 /**
  * Represents a complete Algorand transaction.
@@ -292,6 +300,45 @@ export function encodeTransactionRaw(transaction: Transaction): Uint8Array {
 }
 
 /**
+ * Converts a Map structure from msgpack decoding to a plain object structure.
+ * Maps are converted to objects recursively, except for the special case
+ * where the field name is "r" which remains as a Map.
+ */
+function mapToObject(value: unknown, fieldName?: string): unknown {
+  // Preserve Uint8Array as-is
+  if (value instanceof Uint8Array) {
+    return value
+  }
+
+  if (value instanceof Map) {
+    // Special case: keep "r" field as Map
+    if (fieldName === 'r') {
+      const newMap = new Map()
+      for (const [k, v] of value.entries()) {
+        newMap.set(k, mapToObject(v))
+      }
+      return newMap
+    }
+
+    // Convert Map to object
+    const obj: unknown = {}
+    for (const [k, v] of value.entries()) {
+      obj[k] = mapToObject(v, k)
+    }
+    return obj
+  } else if (Array.isArray(value)) {
+    return value.map((item) => mapToObject(item))
+  } else if (value !== null && typeof value === 'object') {
+    const obj: unknown = {}
+    for (const [k, v] of Object.entries(value)) {
+      obj[k] = mapToObject(v, k)
+    }
+    return obj
+  }
+  return value
+}
+
+/**
  * Decodes MsgPack bytes into a transaction.
  *
  * # Parameters
@@ -319,8 +366,10 @@ export function decodeTransaction(encoded_transaction: Uint8Array): Transaction 
     }
   }
 
-  const decodedData = decodeMsgpack<TransactionDto>(hasPrefix ? encoded_transaction.slice(prefixBytes.length) : encoded_transaction)
-  return fromTransactionDto(decodedData)
+  const decodedData = decodeMsgpack<unknown>(hasPrefix ? encoded_transaction.slice(prefixBytes.length) : encoded_transaction)
+  const transactionDto = mapToObject(decodedData) as TransactionDto
+
+  return fromTransactionDto(transactionDto)
 }
 
 /**
@@ -635,7 +684,7 @@ export function toTransactionDto(transaction: Transaction): TransactionDto {
   }
 
   if (transaction.stateProof) {
-    txDto.sptype = transaction.stateProof.stateProofType
+    txDto.sptype = numberCodec.encode(transaction.stateProof.stateProofType)
 
     if (transaction.stateProof.stateProof) {
       const sp = transaction.stateProof.stateProof
@@ -643,21 +692,9 @@ export function toTransactionDto(transaction: Transaction): TransactionDto {
       txDto.sp = {
         c: bytesCodec.encode(sp.sigCommit),
         w: bigIntCodec.encode(sp.signedWeight),
-        S: {
-          pth: sp.sigProofs.path.map((p) => bytesCodec.encode(p) ?? bytesCodec.defaultValue()),
-          hsh: {
-            t: sp.sigProofs.hashFactory.hashType,
-          },
-          td: sp.sigProofs.treeDepth,
-        },
-        P: {
-          pth: sp.partProofs.path.map((p) => bytesCodec.encode(p) ?? bytesCodec.defaultValue()),
-          hsh: {
-            t: sp.partProofs.hashFactory.hashType,
-          },
-          td: sp.partProofs.treeDepth,
-        },
-        v: sp.merkleSignatureSaltVersion,
+        S: toMerkleArrayProofDto(sp.sigProofs),
+        P: toMerkleArrayProofDto(sp.partProofs),
+        v: numberCodec.encode(sp.merkleSignatureSaltVersion),
         r: new Map(
           sp.reveals.map((reveal) => [
             reveal.position,
@@ -666,13 +703,7 @@ export function toTransactionDto(transaction: Transaction): TransactionDto {
                 s: {
                   sig: bytesCodec.encode(reveal.sigslot.sig.signature),
                   idx: bigIntCodec.encode(reveal.sigslot.sig.vectorCommitmentIndex),
-                  prf: {
-                    pth: reveal.sigslot.sig.proof.path.map((p) => bytesCodec.encode(p) ?? bytesCodec.defaultValue()),
-                    hsh: {
-                      t: reveal.sigslot.sig.proof.hashFactory.hashType,
-                    },
-                    td: reveal.sigslot.sig.proof.treeDepth,
-                  },
+                  prf: toMerkleArrayProofDto(reveal.sigslot.sig.proof),
                   vkey: {
                     k: bytesCodec.encode(reveal.sigslot.sig.verifyingKey.publicKey),
                   },
@@ -686,10 +717,10 @@ export function toTransactionDto(transaction: Transaction): TransactionDto {
                 },
                 w: bigIntCodec.encode(reveal.participant.weight),
               },
-            },
+            } satisfies RevealDto,
           ]),
         ),
-        pr: sp.positionsToReveal.map((p) => bigIntCodec.encode(p) ?? bigIntCodec.defaultValue()),
+        pr: sp.positionsToReveal.map((p) => bigIntCodec.encode(p) ?? bigIntCodec.defaultValue()), // need to default to 0,
       }
     }
 
@@ -828,41 +859,23 @@ export function fromTransactionDto(transactionDto: TransactionDto): Transaction 
       break
     case TransactionType.StateProof:
       tx.stateProof = {
-        stateProofType: bigIntCodec.decodeOptional(transactionDto.sptype),
+        stateProofType: transactionDto.sptype ?? 0,
         stateProof: transactionDto.sp
           ? {
               sigCommit: bytesCodec.decode(transactionDto.sp.c),
               signedWeight: bigIntCodec.decode(transactionDto.sp.w),
-              sigProofs: {
-                path: transactionDto.sp.S?.pth?.map((p) => bytesCodec.decode(p)) ?? [],
-                hashFactory: {
-                  hashType: transactionDto.sp.S?.hsh?.t,
-                },
-                treeDepth: transactionDto.sp.S?.td,
-              },
-              partProofs: {
-                path: transactionDto.sp.P?.pth?.map((p) => bytesCodec.decode(p)) ?? [],
-                hashFactory: {
-                  hashType: transactionDto.sp.P?.hsh?.t,
-                },
-                treeDepth: transactionDto.sp.P?.td,
-              },
-              merkleSignatureSaltVersion: transactionDto.sp.v,
-              reveals: new Map(
-                Array.from(transactionDto.sp.r?.entries() ?? []).map(([key, reveal]) => [
-                  key,
-                  {
+              sigProofs: fromMerkleArrayProofDto(transactionDto.sp.S),
+              partProofs: fromMerkleArrayProofDto(transactionDto.sp.P),
+              merkleSignatureSaltVersion: transactionDto.sp.v ?? 0,
+              reveals: Array.from(transactionDto.sp.r?.entries() ?? []).map(
+                ([key, reveal]) =>
+                  ({
+                    position: typeof key === 'number' ? BigInt(key) : key,
                     sigslot: {
                       sig: {
                         signature: bytesCodec.decode(reveal.s?.s?.sig),
                         vectorCommitmentIndex: bigIntCodec.decode(reveal.s?.s?.idx),
-                        proof: {
-                          path: reveal.s?.s?.prf?.pth?.map((p) => bytesCodec.decode(p)) ?? [],
-                          hashFactory: {
-                            hashType: reveal.s?.s?.prf?.hsh?.t,
-                          },
-                          treeDepth: reveal.s?.s?.prf?.td,
-                        },
+                        proof: fromMerkleArrayProofDto(reveal.s?.s?.prf),
                         verifyingKey: {
                           publicKey: bytesCodec.decode(reveal.s?.s?.vkey?.k),
                         },
@@ -876,8 +889,7 @@ export function fromTransactionDto(transactionDto: TransactionDto): Transaction 
                       },
                       weight: bigIntCodec.decode(reveal.p?.w),
                     },
-                  },
-                ]),
+                  }) satisfies Reveal,
               ),
               positionsToReveal: transactionDto.sp.pr?.map((p) => bigIntCodec.decode(p)) ?? [],
             }
@@ -896,4 +908,34 @@ export function fromTransactionDto(transactionDto: TransactionDto): Transaction 
   }
 
   return tx
+}
+
+function toMerkleArrayProofDto(model: MerkleArrayProof): MerkleArrayProofDto {
+  return {
+    pth: model.path.map((p) => bytesCodec.encode(p)),
+    hsh: {
+      t: numberCodec.encode(model.hashFactory.hashType),
+    },
+    td: numberCodec.encode(model.treeDepth),
+  }
+}
+
+function fromMerkleArrayProofDto(dto?: MerkleArrayProofDto): MerkleArrayProof {
+  if (!dto) {
+    return {
+      path: [],
+      hashFactory: {
+        hashType: 0,
+      },
+      treeDepth: 0,
+    }
+  }
+
+  return {
+    path: dto.pth?.map((p) => bytesCodec.decode(p)),
+    hashFactory: {
+      hashType: numberCodec.decode(dto.hsh?.t),
+    },
+    treeDepth: numberCodec.decode(dto.td ?? 0),
+  }
 }

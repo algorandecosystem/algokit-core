@@ -1,4 +1,4 @@
-import { describe,  test } from 'vitest'
+import { describe, test } from 'vitest'
 import { testData } from './common'
 import {
   assertAssignFee,
