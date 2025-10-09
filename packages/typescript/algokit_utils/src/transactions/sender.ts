@@ -1,4 +1,3 @@
-import { ABIReturn } from '@algorandfoundation/algokit-abi'
 import { Expand } from '@algorandfoundation/algokit-common'
 import { Transaction } from '@algorandfoundation/algokit-transact'
 import { AssetManager } from '../clients/asset-manager'
@@ -16,7 +15,7 @@ import type {
 import type { AssetConfigParams, AssetCreateParams, AssetDestroyParams } from './asset-config'
 import type { AssetFreezeParams, AssetUnfreezeParams } from './asset-freeze'
 import type { AssetClawbackParams, AssetOptInParams, AssetOptOutParams, AssetTransferParams } from './asset-transfer'
-import { Composer, TransactionComposerConfig, type SendParams, type SendTransactionComposerResults } from './composer'
+import { Composer, TransactionComposerConfig, type SendParams, type TransactionResult } from './composer'
 import type { NonParticipationKeyRegistrationParams, OfflineKeyRegistrationParams, OnlineKeyRegistrationParams } from './key-registration'
 import type { AccountCloseParams, PaymentParams } from './payment'
 
@@ -32,16 +31,14 @@ export type SendAssetCreateResult = Expand<
   }
 >
 
-export type SendAppCallMethodCallResult = Expand<
-  SendResult & {
-    group?: Uint8Array
-    transactionIds: string[]
-    transactions: Transaction[]
-    confirmations: PendingTransactionResponse[]
-    abiReturns: ABIReturn[]
-    abiReturn?: ABIReturn
-  }
->
+export type SendAppCallMethodCallResult = {
+  /** The result of the primary (last) transaction */
+  result: TransactionResult
+  /** All transaction results from the composer */
+  groupResults: TransactionResult[]
+  /** The group ID (optional) */
+  group?: Uint8Array
+}
 
 export type SendAppCreateResult = Expand<
   SendResult & {
@@ -68,12 +65,13 @@ export class TransactionSender {
   ): Promise<SendResult> {
     const composer = this.newGroup()
     addMethod(composer, params)
-    const result = await composer.send(sendParams)
+    const composerResult = await composer.send(sendParams)
 
+    const lastResult = composerResult.results.at(-1)!
     return {
-      transaction: result.transactions.at(-1)!,
-      confirmation: result.confirmations.at(-1)!,
-      transactionId: result.transactionIds.at(-1)!,
+      transaction: lastResult.transaction,
+      confirmation: lastResult.confirmation,
+      transactionId: lastResult.transactionId,
     }
   }
 
@@ -83,11 +81,7 @@ export class TransactionSender {
     transformResult: (baseResult: SendResult) => R,
     sendParams?: SendParams,
   ): Promise<R> {
-    const composer = this.newGroup()
-    addMethod(composer, params)
-    const result = await composer.send(sendParams)
-
-    const baseResult = this.buildSendResult(result)
+    const baseResult = await this.sendSingleTransaction(params, addMethod, sendParams)
     return transformResult(baseResult)
   }
 
@@ -98,18 +92,13 @@ export class TransactionSender {
   ): Promise<SendAppCallMethodCallResult> {
     const composer = this.newGroup()
     addMethod(composer, params)
-    const result = await composer.send(sendParams)
+    const composerResult = await composer.send(sendParams)
 
+    const lastResult = composerResult.results.at(-1)!
     return {
-      transaction: result.transactions.at(-1)!,
-      confirmation: result.confirmations.at(-1)!,
-      transactionId: result.transactionIds.at(-1)!,
-      group: result.group,
-      confirmations: result.confirmations,
-      transactionIds: result.transactionIds,
-      transactions: result.transactions,
-      abiReturns: result.abiReturns,
-      abiReturn: result.abiReturns.at(-1),
+      result: lastResult,
+      groupResults: composerResult.results,
+      group: composerResult.group,
     }
   }
 
@@ -121,14 +110,6 @@ export class TransactionSender {
   ): Promise<R> {
     const baseResult = await this.sendMethodCall(params, addMethod, sendParams)
     return transformResult(baseResult)
-  }
-
-  private buildSendResult(composerResult: SendTransactionComposerResults): SendResult {
-    return {
-      transaction: composerResult.transactions.at(-1)!,
-      confirmation: composerResult.confirmations.at(-1)!,
-      transactionId: composerResult.transactionIds.at(-1)!,
-    }
   }
 
   /**
@@ -385,7 +366,7 @@ export class TransactionSender {
       params,
       (composer, p) => composer.addAppCreateMethodCall(p),
       (baseResult) => {
-        const applicationIndex = baseResult.confirmation.applicationIndex
+        const applicationIndex = baseResult.result.confirmation.applicationIndex
         if (applicationIndex === undefined || applicationIndex <= 0) {
           throw new Error('App creation confirmation missing applicationIndex')
         }

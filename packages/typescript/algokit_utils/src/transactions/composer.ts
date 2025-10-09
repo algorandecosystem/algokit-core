@@ -155,12 +155,22 @@ type GroupResourceToPopulate =
   | { type: GroupResourceType.AssetHolding; data: AssetHoldingReference }
   | { type: GroupResourceType.AppLocal; data: ApplicationLocalReference }
 
+export type TransactionResult = {
+  /** The transaction that was sent */
+  transaction: Transaction
+  /** The transaction ID */
+  transactionId: string
+  /** The confirmation response from the network */
+  confirmation: PendingTransactionResponse
+  /** The ABI return value, if this was an ABI method call */
+  abiReturn?: ABIReturn
+}
+
 export type SendTransactionComposerResults = {
+  /** The group ID (32 bytes) if this was a transaction group */
   group?: Uint8Array
-  transactionIds: string[]
-  transactions: Transaction[]
-  confirmations: PendingTransactionResponse[]
-  abiReturns: ABIReturn[]
+  /** Results for each transaction in the group */
+  results: TransactionResult[]
 }
 
 export type ComposerParams = {
@@ -794,8 +804,8 @@ export class Composer {
 
     await this.algodClient.rawTransaction(encodedBytes)
 
-    const transactionIds = this.signedGroup.map((stxn) => getTransactionId(stxn.transaction))
     const transactions = this.signedGroup.map((stxn) => stxn.transaction)
+    const transactionIds = transactions.map((txn) => getTransactionId(txn))
 
     const confirmations = new Array<PendingTransactionResponse>()
     if (params?.maxRoundsToWaitForConfirmation) {
@@ -805,12 +815,21 @@ export class Composer {
       }
     }
 
+    const abiReturns = this.parseAbiReturnValues(confirmations)
+
+    const results = transactions.map(
+      (transaction, index) =>
+        ({
+          transaction,
+          transactionId: transactionIds[index],
+          confirmation: confirmations[index],
+          abiReturn: abiReturns[index],
+        }) satisfies TransactionResult,
+    )
+
     return {
       group,
-      transactionIds,
-      transactions,
-      confirmations,
-      abiReturns: this.parseAbiReturnValues(confirmations),
+      results,
     }
   }
 
@@ -849,8 +868,8 @@ export class Composer {
     throw new Error(`Transaction ${txId} unconfirmed after ${maxRoundsToWait} rounds`)
   }
 
-  private parseAbiReturnValues(confirmations: PendingTransactionResponse[]): ABIReturn[] {
-    const abiReturns = new Array<ABIReturn>()
+  private parseAbiReturnValues(confirmations: PendingTransactionResponse[]): (ABIReturn | undefined)[] {
+    const abiReturns = new Array<ABIReturn | undefined>()
 
     for (let i = 0; i < confirmations.length; i++) {
       const confirmation = confirmations[i]
@@ -861,7 +880,11 @@ export class Composer {
         if (method) {
           const abiReturn = extractAbiReturnFromLogs(confirmation, method)
           abiReturns.push(abiReturn)
+        } else {
+          abiReturns.push(undefined)
         }
+      } else {
+        abiReturns.push(undefined)
       }
     }
 
