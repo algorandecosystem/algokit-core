@@ -173,7 +173,7 @@ export type SendTransactionComposerResults = {
   results: TransactionResult[]
 }
 
-export type ComposerParams = {
+export type TransactionComposerParams = {
   algodClient: any
   signerGetter: SignerGetter
   composerConfig?: TransactionComposerConfig
@@ -184,7 +184,7 @@ export type TransactionComposerConfig = {
   populateAppCallResources: ResourcePopulation
 }
 
-export class Composer {
+export class TransactionComposer {
   private algodClient: any // TODO: Replace with client once implemented
   private signerGetter: SignerGetter
   private composerConfig: TransactionComposerConfig
@@ -193,7 +193,7 @@ export class Composer {
   private builtGroup?: TransactionWithSigner[]
   private signedGroup?: SignedTransaction[]
 
-  constructor(params: ComposerParams) {
+  constructor(params: TransactionComposerParams) {
     this.algodClient = params.algodClient
     this.signerGetter = params.signerGetter
     this.composerConfig = params.composerConfig ?? {

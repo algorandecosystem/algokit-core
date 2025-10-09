@@ -15,7 +15,7 @@ import type {
 import type { AssetConfigParams, AssetCreateParams, AssetDestroyParams } from './asset-config'
 import type { AssetFreezeParams, AssetUnfreezeParams } from './asset-freeze'
 import type { AssetClawbackParams, AssetOptInParams, AssetOptOutParams, AssetTransferParams } from './asset-transfer'
-import { Composer, TransactionComposerConfig, type SendParams, type TransactionResult } from './composer'
+import { TransactionComposer, TransactionComposerConfig, type SendParams, type TransactionResult } from './composer'
 import type { NonParticipationKeyRegistrationParams, OfflineKeyRegistrationParams, OnlineKeyRegistrationParams } from './key-registration'
 import type { AccountCloseParams, PaymentParams } from './payment'
 
@@ -55,15 +55,15 @@ export type SendAppCreateMethodCallResult = Expand<
 export class TransactionSender {
   constructor(
     private assetManager: AssetManager,
-    private newGroup: (composerConfig?: TransactionComposerConfig) => Composer,
+    private newComposer: (composerConfig?: TransactionComposerConfig) => TransactionComposer,
   ) {}
 
   private async sendSingleTransaction<T>(
     params: T,
-    addMethod: (composer: Composer, params: T) => void,
+    addMethod: (composer: TransactionComposer, params: T) => void,
     sendParams?: SendParams,
   ): Promise<SendResult> {
-    const composer = this.newGroup()
+    const composer = this.newComposer()
     addMethod(composer, params)
     const composerResult = await composer.send(sendParams)
 
@@ -77,7 +77,7 @@ export class TransactionSender {
 
   private async sendSingleTransactionWithResult<T, R>(
     params: T,
-    addMethod: (composer: Composer, params: T) => void,
+    addMethod: (composer: TransactionComposer, params: T) => void,
     transformResult: (baseResult: SendResult) => R,
     sendParams?: SendParams,
   ): Promise<R> {
@@ -87,10 +87,10 @@ export class TransactionSender {
 
   private async sendMethodCall<T>(
     params: T,
-    addMethod: (composer: Composer, params: T) => void,
+    addMethod: (composer: TransactionComposer, params: T) => void,
     sendParams?: SendParams,
   ): Promise<SendAppCallMethodCallResult> {
-    const composer = this.newGroup()
+    const composer = this.newComposer()
     addMethod(composer, params)
     const composerResult = await composer.send(sendParams)
 
@@ -104,7 +104,7 @@ export class TransactionSender {
 
   private async sendMethodCallWithResult<T, R>(
     params: T,
-    addMethod: (composer: Composer, params: T) => void,
+    addMethod: (composer: TransactionComposer, params: T) => void,
     transformResult: (baseResult: SendAppCallMethodCallResult) => R,
     sendParams?: SendParams,
   ): Promise<R> {
