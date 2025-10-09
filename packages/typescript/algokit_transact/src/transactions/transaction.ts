@@ -720,7 +720,7 @@ export function toTransactionDto(transaction: Transaction): TransactionDto {
             } satisfies RevealDto,
           ]),
         ),
-        pr: sp.positionsToReveal.map((p) => bigIntCodec.encode(p) ?? bigIntCodec.defaultValue()), // need to default to 0,
+        pr: sp.positionsToReveal, // Map directly because positionsToReveal array can contain zeros,
       }
     }
 
@@ -870,7 +870,7 @@ export function fromTransactionDto(transactionDto: TransactionDto): Transaction 
               reveals: Array.from(transactionDto.sp.r?.entries() ?? []).map(
                 ([key, reveal]) =>
                   ({
-                    position: typeof key === 'number' ? BigInt(key) : key,
+                    position: bigIntCodec.decode(key),
                     sigslot: {
                       sig: {
                         signature: bytesCodec.decode(reveal.s?.s?.sig),

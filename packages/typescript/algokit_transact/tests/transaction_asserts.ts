@@ -22,9 +22,6 @@ export const assertExample = async (label: string, testData: TransactionTestData
     signature: await ed.signAsync(encodeTransaction(testData.transaction), testData.signingPrivateKey),
   }
   const encodedSignedTxn = encodeSignedTransaction(signedTxn)
-
-  const str1 = Buffer.from(encodedSignedTxn).toString('base64')
-  const str2 = Buffer.from(testData.signedBytes).toString('base64')
   expect(encodedSignedTxn, label).toEqual(testData.signedBytes)
 }
 
