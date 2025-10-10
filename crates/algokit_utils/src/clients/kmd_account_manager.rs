@@ -1,7 +1,9 @@
 use crate::clients::{AccountManagerError, SigningAccount};
 use crate::constants::UNENCRYPTED_DEFAULT_WALLET_NAME;
 use crate::transactions::TransactionComposerParams;
-use crate::{EmptySigner, PaymentParams, TransactionComposer, TransactionSigner};
+use crate::{
+    EmptySigner, PaymentParams, TransactionComposer, TransactionSigner, genesis_id_is_localnet,
+};
 use algod_client::{AlgodClient, models::Account};
 use algokit_transact::Address;
 use kmd_client::{
@@ -235,10 +237,10 @@ impl KmdAccountManager {
                 })?;
 
         let is_localnet = genesis_id_is_localnet(&genesis.id);
-        if (!is_localnet) {
-            Err(AccountManagerError::EnvironmentError {
-                message: "This feature only works on LocalNet",
-            })
+        if !is_localnet {
+            return Err(AccountManagerError::EnvironmentError {
+                message: "This feature only works on LocalNet".into(),
+            });
         }
 
         // Try to get existing wallet account first
@@ -333,14 +335,14 @@ impl KmdAccountManager {
                 })?;
 
         let is_localnet = genesis_id_is_localnet(&genesis.id);
-        if (!is_localnet) {
-            Err(AccountManagerError::EnvironmentError {
+        if !is_localnet {
+            return Err(AccountManagerError::EnvironmentError {
                 message: "This feature only works on LocalNet".into(),
-            })
+            });
         }
 
-        return self
+        return Ok(self
             .get_wallet_account(UNENCRYPTED_DEFAULT_WALLET_NAME, None, None)
-            .await?;
+            .await?);
     }
 }

@@ -15,7 +15,7 @@ pub use clients::{
 pub use algokit_abi::ABIReturn;
 pub use applications::app_client::{AppClient, AppClientError, AppClientParams, AppSourceMaps};
 pub use config::{Config, EventType};
-pub use constants;
+pub use constants::UNENCRYPTED_DEFAULT_WALLET_NAME;
 pub use transactions::{
     AccountCloseParams, AppCallMethodCallParams, AppCallParams, AppCreateMethodCallParams,
     AppCreateParams, AppDeleteMethodCallParams, AppDeleteParams, AppMethodCallArg,

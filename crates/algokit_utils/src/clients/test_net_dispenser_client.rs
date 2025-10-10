@@ -1,7 +1,6 @@
-use algod_client::models::error_response;
 use algokit_transact::Address;
 use reqwest::Client;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use snafu::Snafu;
 use std::time::Duration;
 
@@ -94,7 +93,6 @@ pub struct TestNetDispenserApiClientParams {
 /// It allows you to fund an address with Algo, refund a transaction, and get the funding limit for the Algo asset.
 pub struct TestNetDispenserApiClient {
     auth_token: String,
-    request_timeout: Option<u64>,
     http_client: Client,
 }
 
@@ -129,12 +127,11 @@ impl TestNetDispenserApiClient {
 
         Ok(Self {
             auth_token,
-            request_timeout,
             http_client,
         })
     }
 
-    async fn process_dispenser_request<TRequest: Serialize, TResponse: Deserialize>(
+    async fn process_dispenser_request<TRequest: Serialize, TResponse: DeserializeOwned>(
         &self,
         url_suffix: &str,
         method: &str,
@@ -229,7 +226,7 @@ impl TestNetDispenserApiClient {
             refund_transaction_id: refund_txn_id.to_string(),
         };
 
-        self.process_dispenser_request("refund", "POST", Some(&request_body))
+        self.process_dispenser_request::<RefundRequest, ()>("refund", "POST", Some(&request_body))
             .await?;
 
         Ok(())
@@ -240,8 +237,12 @@ impl TestNetDispenserApiClient {
     /// # Returns
     /// `DispenserLimitResponse` - An object containing the funding limit amount
     pub async fn get_limit(&self) -> Result<DispenserLimitResponse, DispenserError> {
-        let response: LimitResponseDto = self
-            .process_dispenser_request(&format!("fund/{}/limit", ALGO_ASSET_ID), "GET", None)
+        let response = self
+            .process_dispenser_request::<(), LimitResponseDto>(
+                &format!("fund/{}/limit", ALGO_ASSET_ID),
+                "GET",
+                None,
+            )
             .await?;
 
         Ok(DispenserLimitResponse {

@@ -2,8 +2,7 @@ use crate::{
     PaymentParams, SendParams, TransactionComposer, TransactionComposerParams,
     TransactionComposerSendResult, TransactionSigner,
     clients::{
-        DispenserError, DispenserFundResponse, KmdAccountManager, TestNetDispenserApiClient,
-        genesis_id_is_localnet,
+        DispenserFundResponse, KmdAccountManager, TestNetDispenserApiClient, genesis_id_is_localnet,
     },
     common::mnemonic,
     transactions::common::TransactionSignerGetter,
