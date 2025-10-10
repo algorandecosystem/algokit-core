@@ -5,6 +5,7 @@ use algokit_transact::{
     AlgorandMsgpack, PaymentTransactionBuilder, Transaction, TransactionHeaderBuilder,
 };
 use algokit_utils::TransactionSigner;
+use algokit_utils::constants::UNENCRYPTED_DEFAULT_WALLET_NAME;
 use kmd_client::KmdClient;
 use kmd_client::models::{
     ExportKeyRequest, GenerateKeyRequest, InitWalletHandleTokenRequest, ListKeysRequest,
@@ -25,7 +26,7 @@ impl LocalNetDispenser {
     /// Create a new LocalNet dispenser
     pub fn new(client: Arc<AlgodClient>, kmd_client: Arc<KmdClient>) -> Self {
         let kmd_wallet_name = env::var("KMD_WALLET_NAME")
-            .unwrap_or_else(|_| "unencrypted-default-wallet".to_string());
+            .unwrap_or_else(|_| UNENCRYPTED_DEFAULT_WALLET_NAME.to_string());
 
         Self {
             client,
@@ -46,6 +47,7 @@ impl LocalNetDispenser {
         Ok(self.dispenser_account.as_ref().unwrap())
     }
 
+    // TODO: can we use kmd_account_manager here?
     /// Fetch the dispenser account using KMD
     async fn fetch_dispenser_from_kmd(
         &self,

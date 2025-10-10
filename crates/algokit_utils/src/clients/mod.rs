@@ -10,6 +10,7 @@ pub mod test_net_dispenser_client;
 // Re-export commonly used client types
 pub use account_manager::{
     AccountManager, AccountManagerError, EnsureFundedResult, SigningAccount,
+    TestNetDispenserFundedResult,
 };
 pub use algorand_client::AlgorandClient;
 pub use app_manager::{AppManager, AppManagerError};

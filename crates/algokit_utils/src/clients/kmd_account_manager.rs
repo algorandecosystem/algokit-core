@@ -1,4 +1,5 @@
 use crate::clients::{AccountManagerError, SigningAccount};
+use crate::constants::UNENCRYPTED_DEFAULT_WALLET_NAME;
 use crate::transactions::TransactionComposerParams;
 use crate::{EmptySigner, PaymentParams, TransactionComposer, TransactionSigner};
 use algod_client::{AlgodClient, models::Account};
@@ -38,7 +39,6 @@ impl KmdAccountManager {
         Self { kmd, algod }
     }
 
-    /// Gets a wallet handle token for a wallet
     async fn get_wallet_handle(&self, wallet_id: &str) -> Result<String, AccountManagerError> {
         let response = self
             .kmd
@@ -210,7 +210,7 @@ impl KmdAccountManager {
         })
     }
 
-    /// Gets or creates a wallet account
+    /// Gets or creates a LocalNet wallet account
     ///
     /// # Arguments
     ///
@@ -220,11 +220,27 @@ impl KmdAccountManager {
     /// # Returns
     ///
     /// Returns a `KmdAccount` for the wallet account
-    pub async fn get_or_create_wallet_account(
+    pub async fn get_or_create_local_net_wallet_account(
         &self,
         wallet_name: &str,
         fund_with: Option<u64>,
     ) -> Result<KmdAccount, AccountManagerError> {
+        // Check if we're on LocalNet by checking genesis ID
+        let genesis =
+            self.algod
+                .get_genesis()
+                .await
+                .map_err(|e| AccountManagerError::AlgodError {
+                    message: format!("Failed to get genesis information: {}", e),
+                })?;
+
+        let is_localnet = genesis_id_is_localnet(&genesis.id);
+        if (!is_localnet) {
+            Err(AccountManagerError::EnvironmentError {
+                message: "This feature only works on LocalNet",
+            })
+        }
+
         // Try to get existing wallet account first
         if let Ok(account) = self.get_wallet_account(wallet_name, None, None).await {
             return Ok(account);
@@ -275,7 +291,7 @@ impl KmdAccountManager {
             })?;
 
         // Get dispenser account
-        let dispenser = self.get_localnet_dispenser_account().await?;
+        let dispenser = self.get_local_net_dispenser_account().await?;
 
         // Create composer and send payment using the dispenser as the signer getter
         let mut composer = TransactionComposer::new(TransactionComposerParams {
@@ -306,16 +322,25 @@ impl KmdAccountManager {
         Ok(account)
     }
 
-    /// Gets the LocalNet dispenser account
-    ///
-    /// This returns the default funded account from the "unencrypted-default-wallet"
-    /// which is pre-funded on LocalNet.
-    ///
-    /// # Returns
-    ///
-    /// Returns a `KmdAccount` for the dispenser account
-    pub async fn get_localnet_dispenser_account(&self) -> Result<KmdAccount, AccountManagerError> {
-        self.get_wallet_account("unencrypted-default-wallet", None, None)
-            .await
+    pub async fn get_local_net_dispenser_account(&self) -> Result<KmdAccount, AccountManagerError> {
+        // Check if we're on LocalNet by checking genesis ID
+        let genesis =
+            self.algod
+                .get_genesis()
+                .await
+                .map_err(|e| AccountManagerError::AlgodError {
+                    message: format!("Failed to get genesis information: {}", e),
+                })?;
+
+        let is_localnet = genesis_id_is_localnet(&genesis.id);
+        if (!is_localnet) {
+            Err(AccountManagerError::EnvironmentError {
+                message: "This feature only works on LocalNet",
+            })
+        }
+
+        return self
+            .get_wallet_account(UNENCRYPTED_DEFAULT_WALLET_NAME, None, None)
+            .await?;
     }
 }

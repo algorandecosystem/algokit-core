@@ -77,7 +77,7 @@ struct LimitResponseDto {
     amount: u64,
 }
 
-const ALGO_ASSET_ID = 0;
+static ALGO_ASSET_ID: u64 = 0;
 
 /// The parameters to construct a TestNet Dispenser API client.
 #[derive(Debug, Clone)]
@@ -134,31 +134,12 @@ impl TestNetDispenserApiClient {
         })
     }
 
-    /// Get the authentication token.
-    pub fn auth_token(&self) -> &str {
-        &self.auth_token
-    }
-
-    /// Get the request timeout in seconds.
-    pub fn request_timeout(&self) -> Option<u64> {
-        self.request_timeout
-    }
-
-    /// Processes a dispenser API request.
-    ///
-    /// # Parameters
-    /// * `url_suffix` - The URL suffix for the API request
-    /// * `method` - The HTTP method
-    /// * `body` - Optional request body object that implements Serialize
-    ///
-    /// # Returns
-    /// The response as a string
-    async fn process_dispenser_request<T: Serialize>(
+    async fn process_dispenser_request<TRequest: Serialize, TResponse: Serialize>(
         &self,
         url_suffix: &str,
         method: &str,
-        body: Option<&T>,
-    ) -> Result<String, DispenserError> {
+        body: Option<&TRequest>,
+    ) -> Result<TResponse, DispenserError> {
         let url = format!("{}/{}", DISPENSER_BASE_URL, url_suffix);
 
         let mut request = match method {
@@ -204,7 +185,7 @@ impl TestNetDispenserApiClient {
         }
 
         response
-            .text()
+            .json::<TResponse>()
             .await
             .map_err(|e| DispenserError::ParseError { source: e })
     }
@@ -228,7 +209,7 @@ impl TestNetDispenserApiClient {
             asset_id: ALGO_ASSET_ID,
         };
 
-        let response_text = self
+        let response: FundResponseDto = self
             .process_dispenser_request(
                 &format!("fund/{}", ALGO_ASSET_ID),
                 "POST",
@@ -236,26 +217,13 @@ impl TestNetDispenserApiClient {
             )
             .await?;
 
-        let response_dto: FundResponseDto =
-            serde_json::from_str(&response_text).map_err(|e| DispenserError::ApiError {
-                message: format!("Failed to parse fund response: {}", e),
-            })?;
-
         Ok(DispenserFundResponse {
-            transaction_id: response_dto.tx_id,
-            amount: response_dto.amount,
+            transaction_id: response.tx_id,
+            amount: response.amount,
         })
     }
 
     /// Sends a refund request to the dispenser API for the specified refundTxnId.
-    ///
-    /// # Parameters
-    /// * `refund_txn_id` - The transaction ID to refund
-    ///
-    /// # Example
-    /// ```ignore
-    /// client.refund("TRANSACTION_ID_HERE").await?;
-    /// ```
     pub async fn refund(&self, refund_txn_id: &str) -> Result<(), DispenserError> {
         let request_body = RefundRequest {
             refund_transaction_id: refund_txn_id.to_string(),
@@ -271,28 +239,13 @@ impl TestNetDispenserApiClient {
     ///
     /// # Returns
     /// `DispenserLimitResponse` - An object containing the funding limit amount
-    ///
-    /// # Example
-    /// ```ignore
-    /// let limit = client.get_limit().await?;
-    /// println!("Current limit: {} µAlgo", limit.amount);
-    /// ```
     pub async fn get_limit(&self) -> Result<DispenserLimitResponse, DispenserError> {
-        let response_text = self
-            .process_dispenser_request::<()>(
-                &format!("fund/{}/limit", ALGO_ASSET.asset_id),
-                "GET",
-                None,
-            )
+        let response: LimitResponseDto = self
+            .process_dispenser_request(&format!("fund/{}/limit", ALGO_ASSET_ID), "GET", None)
             .await?;
 
-        let response_dto: LimitResponseDto =
-            serde_json::from_str(&response_text).map_err(|e| DispenserError::ApiError {
-                message: format!("Failed to parse limit response: {}", e),
-            })?;
-
         Ok(DispenserLimitResponse {
-            amount: response_dto.amount,
+            amount: response.amount,
         })
     }
 }

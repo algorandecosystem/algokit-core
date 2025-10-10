@@ -1,7 +1,10 @@
 use crate::{
     PaymentParams, SendParams, TransactionComposer, TransactionComposerParams,
     TransactionComposerSendResult, TransactionSigner,
-    clients::{KmdAccountManager, genesis_id_is_localnet},
+    clients::{
+        DispenserError, DispenserFundResponse, KmdAccountManager, TestNetDispenserApiClient,
+        genesis_id_is_localnet,
+    },
     common::mnemonic,
     transactions::common::TransactionSignerGetter,
 };
@@ -243,6 +246,7 @@ impl AccountManager {
             return self.from_mnemonic(&account_mnemonic, sender);
         }
 
+        // TODO: refactor this
         // Check if we're on LocalNet by checking genesis ID
         let genesis =
             self.algod
@@ -258,7 +262,7 @@ impl AccountManager {
         if is_localnet {
             if let Some(kmd_manager) = &self.kmd_account_manager {
                 let kmd_account = kmd_manager
-                    .get_or_create_wallet_account(name, fund_with)
+                    .get_or_create_local_net_wallet_account(name, fund_with)
                     .await?;
 
                 // Register the signer
@@ -353,7 +357,7 @@ impl AccountManager {
             self.from_environment(DISPENSER_ACCOUNT, None).await
         } else {
             // Fall back to LocalNet dispenser
-            self.localnet_dispenser().await
+            self.local_net_dispenser().await
         }
     }
 
@@ -364,7 +368,7 @@ impl AccountManager {
     ///
     /// # Returns
     /// The LocalNet dispenser account's address
-    pub async fn localnet_dispenser(&mut self) -> Result<Address, AccountManagerError> {
+    pub async fn local_net_dispenser(&mut self) -> Result<Address, AccountManagerError> {
         let kmd_manager =
             self.kmd_account_manager
                 .as_ref()
@@ -372,7 +376,7 @@ impl AccountManager {
                     message: "KMD client not available".to_string(),
                 })?;
 
-        let dispenser = kmd_manager.get_localnet_dispenser_account().await?;
+        let dispenser = kmd_manager.get_local_net_dispenser_account().await?;
 
         // Register the signer
         self.set_signer(dispenser.address.clone(), dispenser.signer);
@@ -437,15 +441,6 @@ impl AccountManager {
         })
     }
 
-    /// Get the amount of ALGOs needed to fund an account to reach the minimum spending balance.
-    ///
-    /// # Parameters
-    /// * `sender` - The account address to check
-    /// * `min_spending_balance` - The minimum spending balance (in microALGOs) the account should have above the minimum balance requirement
-    /// * `min_funding_increment` - When funding, the minimum amount to transfer (defaults to 0)
-    ///
-    /// # Returns
-    /// The amount in microALGOs needed to fund the account, or None if the account already has sufficient balance
     async fn get_ensure_funded_amount(
         &self,
         sender: &Address,
@@ -574,6 +569,66 @@ impl AccountManager {
         )
         .await
     }
+
+    /// Funds a given account using the TestNet Dispenser API as a funding source such that
+    /// the account has a certain amount of Algo free to spend (accounting for Algo locked
+    /// in minimum balance requirement).
+    ///
+    /// https://developer.algorand.org/docs/get-details/accounts/#minimum-balance
+    ///
+    /// # Parameters
+    /// * `account_to_fund` - The address of the account to fund
+    /// * `dispenser_client` - The TestNet dispenser funding client
+    /// * `min_spending_balance` - The minimum balance of Algo (in microAlgos) that the account should have available to spend (i.e. on top of minimum balance requirement)
+    /// * `min_funding_increment` - The minimum amount to fund if funding is needed (defaults to 0)
+    ///
+    /// # Returns
+    /// - `Some(DispenserFundResponse)` - The result of executing the dispensing transaction
+    /// - `None` - If no funds were needed
+    pub async fn ensure_funded_from_test_net_dispenser_api(
+        &mut self,
+        account_to_fund: &Address,
+        dispenser_client: &TestNetDispenserApiClient,
+        min_spending_balance: u64,
+        min_funding_increment: u64,
+    ) -> Result<Option<DispenserFundResponse>, AccountManagerError> {
+        // TODO: helper methods to determine network
+        // Check if we're on TestNet by checking genesis ID
+        let genesis =
+            self.algod
+                .get_genesis()
+                .await
+                .map_err(|e| AccountManagerError::AlgodError {
+                    message: format!("Failed to get genesis information: {}", e),
+                })?;
+
+        let is_testnet = genesis.id == "testnet-v1.0";
+
+        if !is_testnet {
+            return Err(AccountManagerError::EnvironmentError {
+                message: "Attempt to fund using TestNet dispenser API on non TestNet network."
+                    .to_string(),
+            });
+        }
+
+        let amount_funded = self
+            .get_ensure_funded_amount(account_to_fund, min_spending_balance, min_funding_increment)
+            .await?;
+
+        match amount_funded {
+            None => Ok(None),
+            Some(amount_funded) => {
+                let result = dispenser_client
+                    .fund(account_to_fund, amount_funded)
+                    .await
+                    .map_err(|e| AccountManagerError::DispenserError {
+                        message: e.to_string(),
+                    })?;
+
+                Ok(Some(result))
+            }
+        }
+    }
 }
 
 /// Result of an ensure funded operation
@@ -619,6 +674,9 @@ pub enum AccountManagerError {
 
     #[snafu(display("KMD error: {message}"))]
     KmdError { message: String },
+
+    #[snafu(display("Dispenser error: {message}"))]
+    DispenserError { message: String },
 }
 
 /// Convert a 25-word mnemonic into a 32-byte secret key
