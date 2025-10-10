@@ -47,7 +47,6 @@ impl KmdAccountManager {
             .init_wallet_handle_token(InitWalletHandleTokenRequest {
                 wallet_id: Some(wallet_id.to_string()),
                 wallet_password: None,
-                ..Default::default()
             })
             .await
             .map_err(|e| AccountManagerError::AlgodError {
@@ -75,7 +74,7 @@ impl KmdAccountManager {
     pub async fn get_wallet_account(
         &self,
         wallet_name: &str,
-        predicate: Option<Box<dyn Fn(&Account) -> bool + Send + Sync>>,
+        predicate: Option<Box<dyn Fn(&Account) -> bool>>,
         sender: Option<Address>,
     ) -> Result<KmdAccount, AccountManagerError> {
         // List wallets to find the wallet ID
@@ -114,7 +113,6 @@ impl KmdAccountManager {
             .kmd
             .list_keys_in_wallet(ListKeysRequest {
                 wallet_handle_token: Some(wallet_handle.clone()),
-                ..Default::default()
             })
             .await
             .map_err(|e| AccountManagerError::KmdError {
@@ -341,8 +339,8 @@ impl KmdAccountManager {
             });
         }
 
-        return Ok(self
+        return self
             .get_wallet_account(UNENCRYPTED_DEFAULT_WALLET_NAME, None, None)
-            .await?);
+            .await;
     }
 }

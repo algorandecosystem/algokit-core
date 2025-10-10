@@ -291,7 +291,7 @@ impl AccountManager {
     pub async fn from_kmd(
         &mut self,
         name: &str,
-        predicate: Option<Box<dyn Fn(&Account) -> bool + Send + Sync>>,
+        predicate: Option<Box<dyn Fn(&Account) -> bool>>,
         sender: Option<Address>,
     ) -> Result<Address, AccountManagerError> {
         let kmd_manager =
