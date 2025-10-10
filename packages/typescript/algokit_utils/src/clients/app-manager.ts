@@ -139,9 +139,8 @@ export class AppManager {
     return {
       appId,
       appAddress: getAppAddress(appId),
-      // TODO: this conversion from base64 encoded string to uint8array may happen inside the algod client
-      approvalProgram: new Uint8Array(Buffer.from(app.params.approvalProgram, 'base64')),
-      clearStateProgram: new Uint8Array(Buffer.from(app.params.clearStateProgram, 'base64')),
+      approvalProgram: AppManager.toBytes(app.params.approvalProgram),
+      clearStateProgram: AppManager.toBytes(app.params.clearStateProgram),
       creator: app.params.creator,
       localInts: Number(app.params.localStateSchema?.numUint ?? 0),
       localByteSlices: Number(app.params.localStateSchema?.numByteSlice ?? 0),
@@ -170,10 +169,11 @@ export class AppManager {
   async getBoxNames(appId: bigint): Promise<BoxName[]> {
     const boxResult = await this.algodClient.getApplicationBoxes(appId)
     return boxResult.boxes.map((b) => {
+      const nameRaw = new Uint8Array(b.name)
       return {
-        nameRaw: new Uint8Array(Buffer.from(b.name)),
-        nameBase64: b.name,
-        name: Buffer.from(b.name).toString('utf-8'),
+        nameRaw,
+        nameBase64: AppManager.bytesToBase64(nameRaw),
+        name: AppManager.bytesToUtf8(nameRaw),
       }
     })
   }
@@ -182,12 +182,12 @@ export class AppManager {
     // Algod expects goal-arg style encoding for box name query param in 'encoding:value'.
     // However our HTTP client decodes base64 automatically into bytes for the Box model fields.
     // The API still requires 'b64:<base64>' for the query parameter value.
-    const processedBoxName = `b64:${Buffer.from(boxName).toString('base64')}`
+    const processedBoxName = `b64:${AppManager.bytesToBase64(boxName)}`
 
     const boxResult = await this.algodClient.getApplicationBoxByName(appId, {
       name: processedBoxName,
     })
-    return new Uint8Array(Buffer.from(boxResult.value))
+    return new Uint8Array(boxResult.value)
   }
 
   async getBoxValues(appId: bigint, boxNames: Uint8Array[]): Promise<Uint8Array[]> {
@@ -200,14 +200,15 @@ export class AppManager {
 
   private static ensureDecodedBytes(bytes: Uint8Array): Uint8Array {
     try {
-      const str = Buffer.from(bytes).toString('utf8')
+      const buffer = Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+      const str = buffer.toString('utf8')
       if (
         str.length > 0 &&
         /^[A-Za-z0-9+/]*={0,2}$/.test(str) &&
         (str.includes('=') || str.includes('+') || str.includes('/') || (str.length % 4 === 0 && str.length >= 8))
       ) {
         const decoded = Buffer.from(str, 'base64')
-        if (!decoded.equals(Buffer.from(bytes))) {
+        if (!decoded.equals(buffer)) {
           return new Uint8Array(decoded)
         }
       }
@@ -221,19 +222,19 @@ export class AppManager {
     const stateValues: Record<string, AppState> = {}
 
     for (const stateVal of state) {
-      const keyRaw = new Uint8Array(Buffer.from(stateVal.key, 'base64'))
+      const keyRaw = AppManager.toBytes(stateVal.key)
       const keyBase64 = stateVal.key
-      const keyString = Buffer.from(keyRaw).toString('base64')
+      const keyString = keyBase64
 
       // TODO: we will need to update the algod client to return int here
       if (stateVal.value.type === 1n) {
-        const valueRaw = AppManager.ensureDecodedBytes(new Uint8Array(Buffer.from(stateVal.value.bytes, 'base64')))
-        const valueBase64 = Buffer.from(valueRaw).toString('base64')
+        const valueRaw = AppManager.ensureDecodedBytes(new Uint8Array(stateVal.value.bytes))
+        const valueBase64 = AppManager.bytesToBase64(valueRaw)
         let valueStr: string
         try {
-          valueStr = Buffer.from(valueRaw).toString('utf8')
+          valueStr = new TextDecoder('utf-8', { fatal: true }).decode(valueRaw)
         } catch {
-          valueStr = Buffer.from(valueRaw).toString('hex')
+          valueStr = Buffer.from(valueRaw.buffer, valueRaw.byteOffset, valueRaw.byteLength).toString('hex')
         }
 
         const bytesState: BytesAppState = {
@@ -343,6 +344,22 @@ export class AppManager {
 
   private static isValidTokenCharacter(ch: string): boolean {
     return /[a-zA-Z0-9_]/.test(ch)
+  }
+
+  private static toBytes(value: Uint8Array | string): Uint8Array {
+    if (typeof value === 'string') {
+      return Uint8Array.from(Buffer.from(value, 'base64'))
+    }
+
+    return new Uint8Array(value)
+  }
+
+  private static bytesToBase64(value: Uint8Array): string {
+    return Buffer.from(value.buffer, value.byteOffset, value.byteLength).toString('base64')
+  }
+
+  private static bytesToUtf8(value: Uint8Array): string {
+    return Buffer.from(value.buffer, value.byteOffset, value.byteLength).toString('utf-8')
   }
 
   static replaceTealTemplateDeployTimeControlParams(tealTemplateCode: string, params: DeploymentMetadata): string {
