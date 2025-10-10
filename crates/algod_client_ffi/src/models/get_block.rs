@@ -9,34 +9,51 @@
  */
 
 use crate::models;
-use algod_client::models::GetBlock as RustGetBlock;
+#[cfg(not(feature = "ffi_uniffi"))]
+use algokit_transact::SignedTransaction as AlgokitSignedTransaction;
+use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "ffi_uniffi")]
 use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
 
-use crate::models::UnknownJsonValue;
+use algokit_transact::AlgorandMsgpack;
+
+use crate::models::Block;
 
 /// Encoded block object.
-#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct GetBlock {
-    /// Block header data.
-    pub block: UnknownJsonValue,
-    /// Optional certificate object. This is only included when the format is set to message pack.
-    pub cert: Option<UnknownJsonValue>,
+    /// Block data including header and transactions.
+    #[serde(rename = "block")]
+    pub block: Block,
+    /// Block certificate (msgpack only).
+    #[serde(
+        with = "crate::msgpack_value_bytes",
+        default,
+        rename = "cert",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub cert: Option<Vec<u8>>,
 }
 
-impl From<RustGetBlock> for GetBlock {
-    fn from(rust_struct: RustGetBlock) -> Self {
-        Self {
-            block: rust_struct.block.into(),
-            cert: rust_struct.cert.map(|v| v.into()),
-        }
+impl AlgorandMsgpack for GetBlock {
+    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
+}
+
+impl GetBlock {
+    /// Constructor for GetBlock
+    pub fn new(block: Block) -> GetBlock {
+        GetBlock { block, cert: None }
     }
-}
 
-impl From<GetBlock> for RustGetBlock {
-    fn from(ffi_struct: GetBlock) -> Self {
-        Self {
-            block: ffi_struct.block.into(),
-            cert: ffi_struct.cert.map(|v| v.into()),
-        }
+    /// Encode this struct to msgpack bytes using AlgorandMsgpack trait
+    pub fn to_msgpack(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        Ok(self.encode()?)
+    }
+
+    /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
+    pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(Self::decode(bytes)?)
     }
 }

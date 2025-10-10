@@ -1,14 +1,11 @@
 import type { ModelMetadata } from '../core/model-runtime'
+import type { Block } from './block'
+import { BlockMeta } from './block'
 
 export type GetBlock = {
-  /**
-   * Block header data.
-   */
-  block: Record<string, unknown>
-
-  /**
-   * Optional certificate object. This is only included when the format is set to message pack.
-   */
+  /** Block data including header and transactions. */
+  block: Block
+  /** Block certificate (msgpack only). */
   cert?: Record<string, unknown>
 }
 
@@ -16,19 +13,7 @@ export const GetBlockMeta: ModelMetadata = {
   name: 'GetBlock',
   kind: 'object',
   fields: [
-    {
-      name: 'block',
-      wireKey: 'block',
-      optional: false,
-      nullable: false,
-      type: { kind: 'scalar' },
-    },
-    {
-      name: 'cert',
-      wireKey: 'cert',
-      optional: true,
-      nullable: false,
-      type: { kind: 'scalar' },
-    },
+    { name: 'block', wireKey: 'block', optional: false, nullable: false, type: { kind: 'model', meta: () => BlockMeta } },
+    { name: 'cert', wireKey: 'cert', optional: true, nullable: false, type: { kind: 'scalar' } },
   ],
 }
