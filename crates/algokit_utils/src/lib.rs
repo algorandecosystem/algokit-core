@@ -23,6 +23,7 @@ pub use transactions::{
     NonParticipationKeyRegistrationParams, OfflineKeyRegistrationParams,
     OnlineKeyRegistrationParams, PaymentParams, ResourcePopulation, SendAppCreateMethodCallResult,
     SendAppCreateResult, SendAppMethodCallResult, SendAssetCreateResult, SendParams, SendResult,
-    TransactionComposer, TransactionComposerSendResult, TransactionCreator, TransactionResult,
-    TransactionSender, TransactionSenderError, TransactionSigner, TransactionWithSigner,
+    TransactionComposer, TransactionComposerParams, TransactionComposerSendResult,
+    TransactionCreator, TransactionResult, TransactionSender, TransactionSenderError,
+    TransactionSigner, TransactionWithSigner,
 };

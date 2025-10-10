@@ -5,7 +5,7 @@ pub mod asset_manager;
 pub mod client_manager;
 pub mod kmd_account_manager;
 pub mod network_client;
-pub mod testnet_dispenser_client;
+pub mod test_net_dispenser_client;
 
 // Re-export commonly used client types
 pub use account_manager::{
@@ -22,7 +22,7 @@ pub use network_client::{
     AlgoClientConfig, AlgoConfig, AlgorandNetwork, AlgorandService, NetworkDetails, TokenHeader,
     genesis_id_is_localnet,
 };
-pub use testnet_dispenser_client::{
+pub use test_net_dispenser_client::{
     DispenserError, DispenserFundResponse, DispenserLimitResponse, TestNetDispenserApiClient,
     TestNetDispenserApiClientParams,
 };

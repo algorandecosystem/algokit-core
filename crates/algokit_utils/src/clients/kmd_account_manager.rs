@@ -1,6 +1,6 @@
 use crate::clients::{AccountManagerError, SigningAccount};
-use crate::transactions::ComposerParams;
-use crate::{Composer, EmptySigner, PaymentParams, TransactionSigner};
+use crate::transactions::TransactionComposerParams;
+use crate::{EmptySigner, PaymentParams, TransactionComposer, TransactionSigner};
 use algod_client::{AlgodClient, models::Account};
 use algokit_transact::Address;
 use kmd_client::{
@@ -278,7 +278,7 @@ impl KmdAccountManager {
         let dispenser = self.get_localnet_dispenser_account().await?;
 
         // Create composer and send payment using the dispenser as the signer getter
-        let mut composer = Composer::new(ComposerParams {
+        let mut composer = TransactionComposer::new(TransactionComposerParams {
             algod_client: self.algod.clone(),
             signer_getter: Arc::new(EmptySigner {}),
             composer_config: None,

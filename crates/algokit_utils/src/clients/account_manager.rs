@@ -1,8 +1,9 @@
 use crate::{
-    Composer, PaymentParams, SendParams, SendTransactionComposerResults, TransactionSigner,
+    PaymentParams, SendParams, TransactionComposer, TransactionComposerParams,
+    TransactionComposerSendResult, TransactionSigner,
     clients::{KmdAccountManager, genesis_id_is_localnet},
     common::mnemonic,
-    transactions::{ComposerParams, common::TransactionSignerGetter},
+    transactions::common::TransactionSignerGetter,
 };
 use algod_client::{AlgodClient, models::Account};
 use algokit_transact::{
@@ -392,7 +393,7 @@ impl AccountManager {
         rekey_to: Address,
         rekey_to_signer: Option<Arc<dyn TransactionSigner>>,
         send_params: Option<SendParams>,
-    ) -> Result<SendTransactionComposerResults, AccountManagerError> {
+    ) -> Result<TransactionComposerSendResult, AccountManagerError> {
         // Create composer
         let mut composer = self.get_composer();
 
@@ -426,8 +427,8 @@ impl AccountManager {
         Ok(result) // TODO: review the return
     }
 
-    fn get_composer(&self) -> Composer {
-        Composer::new(ComposerParams {
+    fn get_composer(&self) -> TransactionComposer {
+        TransactionComposer::new(TransactionComposerParams {
             algod_client: self.algod.clone(),
             signer_getter: Arc::new(AccountManagerSignerGetter {
                 accounts: self.accounts.clone(),
@@ -509,7 +510,7 @@ impl AccountManager {
                 message: format!("Failed to add funding payment: {}", e),
             })?;
 
-        let result =
+        let composer_result =
             composer
                 .send(send_params)
                 .await
@@ -517,11 +518,18 @@ impl AccountManager {
                     message: format!("Failed to send funding transaction: {}", e),
                 })?;
 
-        // TODO: review this return
+        let last_result = composer_result
+            .results
+            .last()
+            .ok_or(AccountManagerError::AlgodError {
+                message: "No transaction returned".to_string(),
+            })?
+            .clone();
+
         Ok(Some(EnsureFundedResult {
-            transaction_id: result.transaction_ids[0].clone(),
-            transaction: result.transactions[0].clone(),
-            confirmation: result.confirmations[0].clone(),
+            transaction_id: last_result.transaction_id,
+            transaction: last_result.transaction,
+            confirmation: last_result.confirmation,
             amount_funded,
         }))
     }

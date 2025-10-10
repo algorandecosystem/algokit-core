@@ -1,3 +1,4 @@
+use algod_client::models::error_response;
 use algokit_transact::Address;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -76,17 +77,7 @@ struct LimitResponseDto {
     amount: u64,
 }
 
-struct DispenserAsset {
-    asset_id: u64,
-    _decimals: u8,
-    _description: &'static str,
-}
-
-const ALGO_ASSET: DispenserAsset = DispenserAsset {
-    asset_id: 0,
-    _decimals: 6,
-    _description: "Algo",
-};
+const ALGO_ASSET_ID = 0;
 
 /// The parameters to construct a TestNet Dispenser API client.
 #[derive(Debug, Clone)]
@@ -193,27 +184,22 @@ impl TestNetDispenserApiClient {
 
         if !response.status().is_success() {
             let status = response.status();
-            let mut error_message = format!("Error processing dispenser API request: {}", status);
+            let error_response = response.json::<ErrorResponse>().await;
 
-            let error_text = response.text().await.unwrap_or_default();
-            // TODO: review this error handling
-
-            // Try to parse error response for code field
-            if let Ok(error_response) = serde_json::from_str::<ErrorResponse>(&error_text) {
-                if let Some(code) = error_response.code {
-                    error_message = code;
-                }
-            } else if status == 400 {
-                // For 400 status, try to extract message field
-                if let Ok(error_response) = serde_json::from_str::<ErrorResponse>(&error_text) {
-                    if let Some(message) = error_response.message {
-                        error_message = message;
-                    }
+            if let Ok(error_response) = error_response {
+                if status == 400 {
+                    return Err(DispenserError::ApiError {
+                        message: error_response.message.unwrap_or_default(),
+                    });
+                } else {
+                    return Err(DispenserError::ApiError {
+                        message: error_response.code.unwrap_or_default(),
+                    });
                 }
             }
 
             return Err(DispenserError::ApiError {
-                message: error_message,
+                message: format!("Error processing dispenser API request: {}", status),
             });
         }
 
@@ -231,12 +217,6 @@ impl TestNetDispenserApiClient {
     ///
     /// # Returns
     /// `DispenserFundResponse` - An object containing the transaction ID and funded amount
-    ///
-    /// # Example
-    /// ```ignore
-    /// let response = client.fund(&address, 100_000_000).await?;
-    /// println!("Funded {} µAlgo in transaction {}", response.amount, response.tx_id);
-    /// ```
     pub async fn fund(
         &self,
         address: &Address,
@@ -245,12 +225,12 @@ impl TestNetDispenserApiClient {
         let request_body = FundRequest {
             receiver: address.to_string(),
             amount,
-            asset_id: ALGO_ASSET.asset_id,
+            asset_id: ALGO_ASSET_ID,
         };
 
         let response_text = self
             .process_dispenser_request(
-                &format!("fund/{}", ALGO_ASSET.asset_id),
+                &format!("fund/{}", ALGO_ASSET_ID),
                 "POST",
                 Some(&request_body),
             )
