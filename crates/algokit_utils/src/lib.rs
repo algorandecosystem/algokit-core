@@ -14,6 +14,7 @@ pub use clients::{
 // Re-export ABI types for convenience
 pub use algokit_abi::ABIReturn;
 pub use applications::app_client::{AppClient, AppClientError, AppClientParams, AppSourceMaps};
+pub use common::mnemonic;
 pub use config::{Config, EventType};
 pub use constants::UNENCRYPTED_DEFAULT_WALLET_NAME;
 pub use transactions::{

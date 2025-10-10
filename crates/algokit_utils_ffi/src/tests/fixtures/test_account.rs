@@ -3,7 +3,7 @@ use algokit_transact::{ALGORAND_SECRET_KEY_BYTE_LENGTH, KeyPairAccount};
 use ed25519_dalek::{SigningKey, VerifyingKey};
 use rand::rngs::OsRng;
 
-use super::mnemonic::{from_key, to_key};
+use algokit_utils::mnemonic::{from_key, to_key};
 
 #[derive(uniffi::Record, Clone)]
 pub struct TestAccount {

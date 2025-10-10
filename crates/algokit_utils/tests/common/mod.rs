@@ -5,7 +5,6 @@ pub mod fixture;
 pub mod indexer_helpers;
 pub mod local_net_dispenser;
 pub mod logging;
-pub mod mnemonic;
 pub mod test_account;
 
 use algokit_abi::Arc56Contract;

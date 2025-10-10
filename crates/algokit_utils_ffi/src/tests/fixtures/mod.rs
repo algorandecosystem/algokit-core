@@ -1,5 +1,4 @@
 pub mod localnet;
-pub mod mnemonic;
 pub mod test_account;
 pub mod test_fixture;
 
