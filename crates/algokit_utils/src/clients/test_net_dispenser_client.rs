@@ -134,7 +134,7 @@ impl TestNetDispenserApiClient {
         })
     }
 
-    async fn process_dispenser_request<TRequest: Serialize, TResponse: Serialize>(
+    async fn process_dispenser_request<TRequest: Serialize, TResponse: Deserialize>(
         &self,
         url_suffix: &str,
         method: &str,

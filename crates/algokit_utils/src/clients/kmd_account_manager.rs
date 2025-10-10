@@ -335,7 +335,7 @@ impl KmdAccountManager {
         let is_localnet = genesis_id_is_localnet(&genesis.id);
         if (!is_localnet) {
             Err(AccountManagerError::EnvironmentError {
-                message: "This feature only works on LocalNet",
+                message: "This feature only works on LocalNet".into(),
             })
         }
 
