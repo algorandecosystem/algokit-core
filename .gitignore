@@ -9,6 +9,7 @@ node_modules/
 .bin/
 .DS_Store
 wheelhouse/
+.env
 
 # Insta snapshot testing
 *.snap.new

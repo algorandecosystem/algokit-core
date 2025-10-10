@@ -185,6 +185,11 @@ impl AlgorandClient {
             .set_signer(sender, signer);
     }
 
+    /// Get access to the AccountManager for account operations
+    pub fn account_manager(&self) -> &Arc<Mutex<AccountManager>> {
+        &self.account_manager
+    }
+
     /// Get a clone of the persistent AppDeployer (shares cache across clones)
     pub fn app_deployer(&self) -> AppDeployer {
         self.app_deployer.clone()
