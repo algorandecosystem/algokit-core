@@ -511,7 +511,7 @@ def _uniffi_check_api_checksums(lib):
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algod_client_ffi_checksum_method_algodclient_get_asset_by_id() != 36064:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_algod_client_ffi_checksum_method_algodclient_get_block() != 61611:
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclient_get_block() != 14702:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algod_client_ffi_checksum_method_algodclient_get_block_hash() != 23974:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
@@ -527,9 +527,9 @@ def _uniffi_check_api_checksums(lib):
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algod_client_ffi_checksum_method_algodclient_get_genesis() != 33262:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_algod_client_ffi_checksum_method_algodclient_get_ledger_state_delta() != 41535:
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclient_get_ledger_state_delta() != 21627:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_algod_client_ffi_checksum_method_algodclient_get_ledger_state_delta_for_transaction_group() != 43525:
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclient_get_ledger_state_delta_for_transaction_group() != 213:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algod_client_ffi_checksum_method_algodclient_get_light_block_header_proof() != 32109:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
@@ -537,9 +537,9 @@ def _uniffi_check_api_checksums(lib):
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algod_client_ffi_checksum_method_algodclient_get_participation_keys() != 50810:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_algod_client_ffi_checksum_method_algodclient_get_pending_transactions() != 27089:
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclient_get_pending_transactions() != 49188:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_algod_client_ffi_checksum_method_algodclient_get_pending_transactions_by_address() != 53966:
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclient_get_pending_transactions_by_address() != 21459:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algod_client_ffi_checksum_method_algodclient_get_ready() != 35284:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
@@ -551,7 +551,7 @@ def _uniffi_check_api_checksums(lib):
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algod_client_ffi_checksum_method_algodclient_get_sync_round() != 48802:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_algod_client_ffi_checksum_method_algodclient_get_transaction_group_ledger_state_deltas_for_round() != 42695:
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclient_get_transaction_group_ledger_state_deltas_for_round() != 34053:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algod_client_ffi_checksum_method_algodclient_get_transaction_proof() != 2103:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
@@ -561,7 +561,7 @@ def _uniffi_check_api_checksums(lib):
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algod_client_ffi_checksum_method_algodclient_metrics() != 58727:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_algod_client_ffi_checksum_method_algodclient_pending_transaction_information() != 45705:
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclient_pending_transaction_information() != 31441:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algod_client_ffi_checksum_method_algodclient_put_debug_settings_prof() != 38244:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
@@ -619,9 +619,9 @@ def _uniffi_check_api_checksums(lib):
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_account_application_information() != 32643:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_pending_transactions_by_address() != 56228:
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_pending_transactions_by_address() != 5346:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_block() != 28675:
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_block() != 26342:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_block_txids() != 18606:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
@@ -659,15 +659,15 @@ def _uniffi_check_api_checksums(lib):
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_transaction_params() != 5378:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_pending_transactions() != 11707:
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_pending_transactions() != 8557:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_pending_transaction_information() != 57930:
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_pending_transaction_information() != 60795:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_ledger_state_delta() != 54683:
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_ledger_state_delta() != 13642:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_transaction_group_ledger_state_deltas_for_round() != 15191:
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_transaction_group_ledger_state_deltas_for_round() != 20230:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_ledger_state_delta_for_transaction_group() != 1328:
+    if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_ledger_state_delta_for_transaction_group() != 60990:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algod_client_ffi_checksum_method_algodclienttrait_get_state_proof() != 11069:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
@@ -1025,9 +1025,9 @@ _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_FFI_ALGOD_CLIENT_TRAIT_METHOD11 = ctypes
 )
 _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_FFI_ALGOD_CLIENT_TRAIT_METHOD12 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,ctypes.c_uint64,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETERUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFutureDroppedCallbackStruct),
 )
-_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_FFI_ALGOD_CLIENT_TRAIT_METHOD13 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,_UniffiRustBuffer,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETERUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFutureDroppedCallbackStruct),
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_FFI_ALGOD_CLIENT_TRAIT_METHOD13 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETERUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFutureDroppedCallbackStruct),
 )
-_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_FFI_ALGOD_CLIENT_TRAIT_METHOD14 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,ctypes.c_uint64,_UniffiRustBuffer,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETERUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFutureDroppedCallbackStruct),
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_FFI_ALGOD_CLIENT_TRAIT_METHOD14 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,ctypes.c_uint64,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETERUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFutureDroppedCallbackStruct),
 )
 _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_FFI_ALGOD_CLIENT_TRAIT_METHOD15 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,ctypes.c_uint64,_UNIFFI_FOREIGN_FUTURE_COMPLETERUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFutureDroppedCallbackStruct),
 )
@@ -1065,15 +1065,15 @@ _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_FFI_ALGOD_CLIENT_TRAIT_METHOD31 = ctypes
 )
 _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_FFI_ALGOD_CLIENT_TRAIT_METHOD32 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UNIFFI_FOREIGN_FUTURE_COMPLETERUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFutureDroppedCallbackStruct),
 )
-_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_FFI_ALGOD_CLIENT_TRAIT_METHOD33 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETERUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFutureDroppedCallbackStruct),
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_FFI_ALGOD_CLIENT_TRAIT_METHOD33 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETERUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFutureDroppedCallbackStruct),
 )
-_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_FFI_ALGOD_CLIENT_TRAIT_METHOD34 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETERUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFutureDroppedCallbackStruct),
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_FFI_ALGOD_CLIENT_TRAIT_METHOD34 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETERUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFutureDroppedCallbackStruct),
 )
-_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_FFI_ALGOD_CLIENT_TRAIT_METHOD35 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,ctypes.c_uint64,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETERUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFutureDroppedCallbackStruct),
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_FFI_ALGOD_CLIENT_TRAIT_METHOD35 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,ctypes.c_uint64,_UNIFFI_FOREIGN_FUTURE_COMPLETERUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFutureDroppedCallbackStruct),
 )
-_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_FFI_ALGOD_CLIENT_TRAIT_METHOD36 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,ctypes.c_uint64,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETERUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFutureDroppedCallbackStruct),
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_FFI_ALGOD_CLIENT_TRAIT_METHOD36 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,ctypes.c_uint64,_UNIFFI_FOREIGN_FUTURE_COMPLETERUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFutureDroppedCallbackStruct),
 )
-_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_FFI_ALGOD_CLIENT_TRAIT_METHOD37 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETERUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFutureDroppedCallbackStruct),
+_UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_FFI_ALGOD_CLIENT_TRAIT_METHOD37 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_UniffiRustBuffer,_UNIFFI_FOREIGN_FUTURE_COMPLETERUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFutureDroppedCallbackStruct),
 )
 _UNIFFI_CALLBACK_INTERFACE_ALGOD_CLIENT_FFI_ALGOD_CLIENT_TRAIT_METHOD38 = ctypes.CFUNCTYPE(None,ctypes.c_uint64,ctypes.c_uint64,_UNIFFI_FOREIGN_FUTURE_COMPLETERUST_BUFFER,ctypes.c_uint64,ctypes.POINTER(_UniffiForeignFutureDroppedCallbackStruct),
 )
@@ -1269,7 +1269,6 @@ _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclient_get_block.argtypes = (
     ctypes.c_uint64,
     ctypes.c_uint64,
     _UniffiRustBuffer,
-    _UniffiRustBuffer,
 )
 _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclient_get_block.restype = ctypes.c_uint64
 _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclient_get_block_hash.argtypes = (
@@ -1306,12 +1305,10 @@ _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclient_get_genesis.restype = c
 _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclient_get_ledger_state_delta.argtypes = (
     ctypes.c_uint64,
     ctypes.c_uint64,
-    _UniffiRustBuffer,
 )
 _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclient_get_ledger_state_delta.restype = ctypes.c_uint64
 _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclient_get_ledger_state_delta_for_transaction_group.argtypes = (
     ctypes.c_uint64,
-    _UniffiRustBuffer,
     _UniffiRustBuffer,
 )
 _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclient_get_ledger_state_delta_for_transaction_group.restype = ctypes.c_uint64
@@ -1332,12 +1329,10 @@ _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclient_get_participation_keys.
 _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclient_get_pending_transactions.argtypes = (
     ctypes.c_uint64,
     _UniffiRustBuffer,
-    _UniffiRustBuffer,
 )
 _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclient_get_pending_transactions.restype = ctypes.c_uint64
 _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclient_get_pending_transactions_by_address.argtypes = (
     ctypes.c_uint64,
-    _UniffiRustBuffer,
     _UniffiRustBuffer,
     _UniffiRustBuffer,
 )
@@ -1366,7 +1361,6 @@ _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclient_get_sync_round.restype 
 _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclient_get_transaction_group_ledger_state_deltas_for_round.argtypes = (
     ctypes.c_uint64,
     ctypes.c_uint64,
-    _UniffiRustBuffer,
 )
 _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclient_get_transaction_group_ledger_state_deltas_for_round.restype = ctypes.c_uint64
 _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclient_get_transaction_proof.argtypes = (
@@ -1391,7 +1385,6 @@ _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclient_metrics.argtypes = (
 _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclient_metrics.restype = ctypes.c_uint64
 _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclient_pending_transaction_information.argtypes = (
     ctypes.c_uint64,
-    _UniffiRustBuffer,
     _UniffiRustBuffer,
 )
 _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclient_pending_transaction_information.restype = ctypes.c_uint64
@@ -1537,13 +1530,11 @@ _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_pending_transa
     ctypes.c_uint64,
     _UniffiRustBuffer,
     _UniffiRustBuffer,
-    _UniffiRustBuffer,
 )
 _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_pending_transactions_by_address.restype = ctypes.c_uint64
 _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_block.argtypes = (
     ctypes.c_uint64,
     ctypes.c_uint64,
-    _UniffiRustBuffer,
     _UniffiRustBuffer,
 )
 _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_block.restype = ctypes.c_uint64
@@ -1644,30 +1635,25 @@ _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_transaction_params
 _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_pending_transactions.argtypes = (
     ctypes.c_uint64,
     _UniffiRustBuffer,
-    _UniffiRustBuffer,
 )
 _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_pending_transactions.restype = ctypes.c_uint64
 _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_pending_transaction_information.argtypes = (
     ctypes.c_uint64,
-    _UniffiRustBuffer,
     _UniffiRustBuffer,
 )
 _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_pending_transaction_information.restype = ctypes.c_uint64
 _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_ledger_state_delta.argtypes = (
     ctypes.c_uint64,
     ctypes.c_uint64,
-    _UniffiRustBuffer,
 )
 _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_ledger_state_delta.restype = ctypes.c_uint64
 _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_transaction_group_ledger_state_deltas_for_round.argtypes = (
     ctypes.c_uint64,
     ctypes.c_uint64,
-    _UniffiRustBuffer,
 )
 _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_transaction_group_ledger_state_deltas_for_round.restype = ctypes.c_uint64
 _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_ledger_state_delta_for_transaction_group.argtypes = (
     ctypes.c_uint64,
-    _UniffiRustBuffer,
     _UniffiRustBuffer,
 )
 _UniffiLib.uniffi_algod_client_ffi_fn_method_algodclienttrait_get_ledger_state_delta_for_transaction_group.restype = ctypes.c_uint64
@@ -19652,12 +19638,12 @@ class AlgodClientTrait():
         Get account information about a given app.
 """
         raise NotImplementedError
-    async def get_pending_transactions_by_address(self, address: str,max: typing.Optional[int],format: typing.Optional[Format]) -> GetPendingTransactionsByAddress:
+    async def get_pending_transactions_by_address(self, address: str,max: typing.Optional[int]) -> GetPendingTransactionsByAddress:
         """
         Get a list of unconfirmed transactions currently in the transaction pool by address.
 """
         raise NotImplementedError
-    async def get_block(self, round: int,header_only: typing.Optional[bool],format: typing.Optional[Format]) -> GetBlock:
+    async def get_block(self, round: int,header_only: typing.Optional[bool]) -> GetBlock:
         """
         Get the block for the given round.
 """
@@ -19752,27 +19738,27 @@ class AlgodClientTrait():
         Get parameters for constructing a new transaction
 """
         raise NotImplementedError
-    async def get_pending_transactions(self, max: typing.Optional[int],format: typing.Optional[Format]) -> GetPendingTransactions:
+    async def get_pending_transactions(self, max: typing.Optional[int]) -> GetPendingTransactions:
         """
         Get a list of unconfirmed transactions currently in the transaction pool.
 """
         raise NotImplementedError
-    async def pending_transaction_information(self, txid: str,format: typing.Optional[Format]) -> PendingTransactionResponse:
+    async def pending_transaction_information(self, txid: str) -> PendingTransactionResponse:
         """
         Get a specific pending transaction.
 """
         raise NotImplementedError
-    async def get_ledger_state_delta(self, round: int,format: typing.Optional[Format]) -> LedgerStateDelta:
+    async def get_ledger_state_delta(self, round: int) -> LedgerStateDelta:
         """
         Get a LedgerStateDelta object for a given round
 """
         raise NotImplementedError
-    async def get_transaction_group_ledger_state_deltas_for_round(self, round: int,format: typing.Optional[Format]) -> GetTransactionGroupLedgerStateDeltasForRound:
+    async def get_transaction_group_ledger_state_deltas_for_round(self, round: int) -> GetTransactionGroupLedgerStateDeltasForRound:
         """
         Get LedgerStateDelta objects for all transaction groups in a given round
 """
         raise NotImplementedError
-    async def get_ledger_state_delta_for_transaction_group(self, id: str,format: typing.Optional[Format]) -> LedgerStateDelta:
+    async def get_ledger_state_delta_for_transaction_group(self, id: str) -> LedgerStateDelta:
         """
         Get a LedgerStateDelta object for a given transaction group
 """
@@ -20144,7 +20130,7 @@ class AlgodClientTraitImpl(AlgodClientTrait):
             _uniffi_lift_return,
             _uniffi_error_converter,
         )
-    async def get_pending_transactions_by_address(self, address: str,max: typing.Optional[int],format: typing.Optional[Format]) -> GetPendingTransactionsByAddress:
+    async def get_pending_transactions_by_address(self, address: str,max: typing.Optional[int]) -> GetPendingTransactionsByAddress:
         """
         Get a list of unconfirmed transactions currently in the transaction pool by address.
 """
@@ -20152,13 +20138,10 @@ class AlgodClientTraitImpl(AlgodClientTrait):
         _UniffiFfiConverterString.check_lower(address)
         
         _UniffiFfiConverterOptionalUInt64.check_lower(max)
-        
-        _UniffiFfiConverterOptionalTypeFormat.check_lower(format)
         _uniffi_lowered_args = (
             self._uniffi_clone_handle(),
             _UniffiFfiConverterString.lower(address),
             _UniffiFfiConverterOptionalUInt64.lower(max),
-            _UniffiFfiConverterOptionalTypeFormat.lower(format),
         )
         _uniffi_lift_return = _UniffiFfiConverterTypeGetPendingTransactionsByAddress.lift
         _uniffi_error_converter = _UniffiFfiConverterTypeError
@@ -20170,7 +20153,7 @@ class AlgodClientTraitImpl(AlgodClientTrait):
             _uniffi_lift_return,
             _uniffi_error_converter,
         )
-    async def get_block(self, round: int,header_only: typing.Optional[bool],format: typing.Optional[Format]) -> GetBlock:
+    async def get_block(self, round: int,header_only: typing.Optional[bool]) -> GetBlock:
         """
         Get the block for the given round.
 """
@@ -20178,13 +20161,10 @@ class AlgodClientTraitImpl(AlgodClientTrait):
         _UniffiFfiConverterUInt64.check_lower(round)
         
         _UniffiFfiConverterOptionalBoolean.check_lower(header_only)
-        
-        _UniffiFfiConverterOptionalTypeFormat.check_lower(format)
         _uniffi_lowered_args = (
             self._uniffi_clone_handle(),
             _UniffiFfiConverterUInt64.lower(round),
             _UniffiFfiConverterOptionalBoolean.lower(header_only),
-            _UniffiFfiConverterOptionalTypeFormat.lower(format),
         )
         _uniffi_lift_return = _UniffiFfiConverterTypeGetBlock.lift
         _uniffi_error_converter = _UniffiFfiConverterTypeError
@@ -20568,18 +20548,15 @@ class AlgodClientTraitImpl(AlgodClientTrait):
             _uniffi_lift_return,
             _uniffi_error_converter,
         )
-    async def get_pending_transactions(self, max: typing.Optional[int],format: typing.Optional[Format]) -> GetPendingTransactions:
+    async def get_pending_transactions(self, max: typing.Optional[int]) -> GetPendingTransactions:
         """
         Get a list of unconfirmed transactions currently in the transaction pool.
 """
         
         _UniffiFfiConverterOptionalUInt64.check_lower(max)
-        
-        _UniffiFfiConverterOptionalTypeFormat.check_lower(format)
         _uniffi_lowered_args = (
             self._uniffi_clone_handle(),
             _UniffiFfiConverterOptionalUInt64.lower(max),
-            _UniffiFfiConverterOptionalTypeFormat.lower(format),
         )
         _uniffi_lift_return = _UniffiFfiConverterTypeGetPendingTransactions.lift
         _uniffi_error_converter = _UniffiFfiConverterTypeError
@@ -20591,18 +20568,15 @@ class AlgodClientTraitImpl(AlgodClientTrait):
             _uniffi_lift_return,
             _uniffi_error_converter,
         )
-    async def pending_transaction_information(self, txid: str,format: typing.Optional[Format]) -> PendingTransactionResponse:
+    async def pending_transaction_information(self, txid: str) -> PendingTransactionResponse:
         """
         Get a specific pending transaction.
 """
         
         _UniffiFfiConverterString.check_lower(txid)
-        
-        _UniffiFfiConverterOptionalTypeFormat.check_lower(format)
         _uniffi_lowered_args = (
             self._uniffi_clone_handle(),
             _UniffiFfiConverterString.lower(txid),
-            _UniffiFfiConverterOptionalTypeFormat.lower(format),
         )
         _uniffi_lift_return = _UniffiFfiConverterTypePendingTransactionResponse.lift
         _uniffi_error_converter = _UniffiFfiConverterTypeError
@@ -20614,18 +20588,15 @@ class AlgodClientTraitImpl(AlgodClientTrait):
             _uniffi_lift_return,
             _uniffi_error_converter,
         )
-    async def get_ledger_state_delta(self, round: int,format: typing.Optional[Format]) -> LedgerStateDelta:
+    async def get_ledger_state_delta(self, round: int) -> LedgerStateDelta:
         """
         Get a LedgerStateDelta object for a given round
 """
         
         _UniffiFfiConverterUInt64.check_lower(round)
-        
-        _UniffiFfiConverterOptionalTypeFormat.check_lower(format)
         _uniffi_lowered_args = (
             self._uniffi_clone_handle(),
             _UniffiFfiConverterUInt64.lower(round),
-            _UniffiFfiConverterOptionalTypeFormat.lower(format),
         )
         _uniffi_lift_return = _UniffiFfiConverterTypeLedgerStateDelta.lift
         _uniffi_error_converter = _UniffiFfiConverterTypeError
@@ -20637,18 +20608,15 @@ class AlgodClientTraitImpl(AlgodClientTrait):
             _uniffi_lift_return,
             _uniffi_error_converter,
         )
-    async def get_transaction_group_ledger_state_deltas_for_round(self, round: int,format: typing.Optional[Format]) -> GetTransactionGroupLedgerStateDeltasForRound:
+    async def get_transaction_group_ledger_state_deltas_for_round(self, round: int) -> GetTransactionGroupLedgerStateDeltasForRound:
         """
         Get LedgerStateDelta objects for all transaction groups in a given round
 """
         
         _UniffiFfiConverterUInt64.check_lower(round)
-        
-        _UniffiFfiConverterOptionalTypeFormat.check_lower(format)
         _uniffi_lowered_args = (
             self._uniffi_clone_handle(),
             _UniffiFfiConverterUInt64.lower(round),
-            _UniffiFfiConverterOptionalTypeFormat.lower(format),
         )
         _uniffi_lift_return = _UniffiFfiConverterTypeGetTransactionGroupLedgerStateDeltasForRound.lift
         _uniffi_error_converter = _UniffiFfiConverterTypeError
@@ -20660,18 +20628,15 @@ class AlgodClientTraitImpl(AlgodClientTrait):
             _uniffi_lift_return,
             _uniffi_error_converter,
         )
-    async def get_ledger_state_delta_for_transaction_group(self, id: str,format: typing.Optional[Format]) -> LedgerStateDelta:
+    async def get_ledger_state_delta_for_transaction_group(self, id: str) -> LedgerStateDelta:
         """
         Get a LedgerStateDelta object for a given transaction group
 """
         
         _UniffiFfiConverterString.check_lower(id)
-        
-        _UniffiFfiConverterOptionalTypeFormat.check_lower(format)
         _uniffi_lowered_args = (
             self._uniffi_clone_handle(),
             _UniffiFfiConverterString.lower(id),
-            _UniffiFfiConverterOptionalTypeFormat.lower(format),
         )
         _uniffi_lift_return = _UniffiFfiConverterTypeLedgerStateDelta.lift
         _uniffi_error_converter = _UniffiFfiConverterTypeError
@@ -21536,14 +21501,13 @@ class _UniffiTraitImplAlgodClientTraitImpl:
             uniffi_handle,
             address,
             max,
-            format,
             uniffi_future_callback,
             uniffi_callback_data,
             uniffi_out_dropped_callback,
         ):
         uniffi_obj = _UniffiFfiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
         def make_call():
-            uniffi_args = (_UniffiFfiConverterString.lift(address), _UniffiFfiConverterOptionalUInt64.lift(max), _UniffiFfiConverterOptionalTypeFormat.lift(format), )
+            uniffi_args = (_UniffiFfiConverterString.lift(address), _UniffiFfiConverterOptionalUInt64.lift(max), )
             uniffi_method = uniffi_obj.get_pending_transactions_by_address
             return uniffi_method(*uniffi_args)
         def handle_success(return_value):
@@ -21577,14 +21541,13 @@ class _UniffiTraitImplAlgodClientTraitImpl:
             uniffi_handle,
             round,
             header_only,
-            format,
             uniffi_future_callback,
             uniffi_callback_data,
             uniffi_out_dropped_callback,
         ):
         uniffi_obj = _UniffiFfiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
         def make_call():
-            uniffi_args = (_UniffiFfiConverterUInt64.lift(round), _UniffiFfiConverterOptionalBoolean.lift(header_only), _UniffiFfiConverterOptionalTypeFormat.lift(format), )
+            uniffi_args = (_UniffiFfiConverterUInt64.lift(round), _UniffiFfiConverterOptionalBoolean.lift(header_only), )
             uniffi_method = uniffi_obj.get_block
             return uniffi_method(*uniffi_args)
         def handle_success(return_value):
@@ -22319,14 +22282,13 @@ class _UniffiTraitImplAlgodClientTraitImpl:
     def get_pending_transactions(
             uniffi_handle,
             max,
-            format,
             uniffi_future_callback,
             uniffi_callback_data,
             uniffi_out_dropped_callback,
         ):
         uniffi_obj = _UniffiFfiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
         def make_call():
-            uniffi_args = (_UniffiFfiConverterOptionalUInt64.lift(max), _UniffiFfiConverterOptionalTypeFormat.lift(format), )
+            uniffi_args = (_UniffiFfiConverterOptionalUInt64.lift(max), )
             uniffi_method = uniffi_obj.get_pending_transactions
             return uniffi_method(*uniffi_args)
         def handle_success(return_value):
@@ -22359,14 +22321,13 @@ class _UniffiTraitImplAlgodClientTraitImpl:
     def pending_transaction_information(
             uniffi_handle,
             txid,
-            format,
             uniffi_future_callback,
             uniffi_callback_data,
             uniffi_out_dropped_callback,
         ):
         uniffi_obj = _UniffiFfiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
         def make_call():
-            uniffi_args = (_UniffiFfiConverterString.lift(txid), _UniffiFfiConverterOptionalTypeFormat.lift(format), )
+            uniffi_args = (_UniffiFfiConverterString.lift(txid), )
             uniffi_method = uniffi_obj.pending_transaction_information
             return uniffi_method(*uniffi_args)
         def handle_success(return_value):
@@ -22399,14 +22360,13 @@ class _UniffiTraitImplAlgodClientTraitImpl:
     def get_ledger_state_delta(
             uniffi_handle,
             round,
-            format,
             uniffi_future_callback,
             uniffi_callback_data,
             uniffi_out_dropped_callback,
         ):
         uniffi_obj = _UniffiFfiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
         def make_call():
-            uniffi_args = (_UniffiFfiConverterUInt64.lift(round), _UniffiFfiConverterOptionalTypeFormat.lift(format), )
+            uniffi_args = (_UniffiFfiConverterUInt64.lift(round), )
             uniffi_method = uniffi_obj.get_ledger_state_delta
             return uniffi_method(*uniffi_args)
         def handle_success(return_value):
@@ -22439,14 +22399,13 @@ class _UniffiTraitImplAlgodClientTraitImpl:
     def get_transaction_group_ledger_state_deltas_for_round(
             uniffi_handle,
             round,
-            format,
             uniffi_future_callback,
             uniffi_callback_data,
             uniffi_out_dropped_callback,
         ):
         uniffi_obj = _UniffiFfiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
         def make_call():
-            uniffi_args = (_UniffiFfiConverterUInt64.lift(round), _UniffiFfiConverterOptionalTypeFormat.lift(format), )
+            uniffi_args = (_UniffiFfiConverterUInt64.lift(round), )
             uniffi_method = uniffi_obj.get_transaction_group_ledger_state_deltas_for_round
             return uniffi_method(*uniffi_args)
         def handle_success(return_value):
@@ -22479,14 +22438,13 @@ class _UniffiTraitImplAlgodClientTraitImpl:
     def get_ledger_state_delta_for_transaction_group(
             uniffi_handle,
             id,
-            format,
             uniffi_future_callback,
             uniffi_callback_data,
             uniffi_out_dropped_callback,
         ):
         uniffi_obj = _UniffiFfiConverterTypeAlgodClientTrait._handle_map.get(uniffi_handle)
         def make_call():
-            uniffi_args = (_UniffiFfiConverterString.lift(id), _UniffiFfiConverterOptionalTypeFormat.lift(format), )
+            uniffi_args = (_UniffiFfiConverterString.lift(id), )
             uniffi_method = uniffi_obj.get_ledger_state_delta_for_transaction_group
             return uniffi_method(*uniffi_args)
         def handle_success(return_value):
@@ -23360,7 +23318,7 @@ class AlgodClientProtocol(typing.Protocol):
         Get asset information.
 """
         raise NotImplementedError
-    async def get_block(self, round: int,header_only: typing.Optional[bool],format: typing.Optional[Format]) -> GetBlock:
+    async def get_block(self, round: int,header_only: typing.Optional[bool]) -> GetBlock:
         """
         Get the block for the given round.
 """
@@ -23400,12 +23358,12 @@ class AlgodClientProtocol(typing.Protocol):
         Gets the genesis information.
 """
         raise NotImplementedError
-    async def get_ledger_state_delta(self, round: int,format: typing.Optional[Format]) -> LedgerStateDelta:
+    async def get_ledger_state_delta(self, round: int) -> LedgerStateDelta:
         """
         Get a LedgerStateDelta object for a given round
 """
         raise NotImplementedError
-    async def get_ledger_state_delta_for_transaction_group(self, id: str,format: typing.Optional[Format]) -> LedgerStateDelta:
+    async def get_ledger_state_delta_for_transaction_group(self, id: str) -> LedgerStateDelta:
         """
         Get a LedgerStateDelta object for a given transaction group
 """
@@ -23425,12 +23383,12 @@ class AlgodClientProtocol(typing.Protocol):
         Return a list of participation keys
 """
         raise NotImplementedError
-    async def get_pending_transactions(self, max: typing.Optional[int],format: typing.Optional[Format]) -> GetPendingTransactions:
+    async def get_pending_transactions(self, max: typing.Optional[int]) -> GetPendingTransactions:
         """
         Get a list of unconfirmed transactions currently in the transaction pool.
 """
         raise NotImplementedError
-    async def get_pending_transactions_by_address(self, address: str,max: typing.Optional[int],format: typing.Optional[Format]) -> GetPendingTransactionsByAddress:
+    async def get_pending_transactions_by_address(self, address: str,max: typing.Optional[int]) -> GetPendingTransactionsByAddress:
         """
         Get a list of unconfirmed transactions currently in the transaction pool by address.
 """
@@ -23460,7 +23418,7 @@ class AlgodClientProtocol(typing.Protocol):
         Returns the minimum sync round the ledger is keeping in cache.
 """
         raise NotImplementedError
-    async def get_transaction_group_ledger_state_deltas_for_round(self, round: int,format: typing.Optional[Format]) -> GetTransactionGroupLedgerStateDeltasForRound:
+    async def get_transaction_group_ledger_state_deltas_for_round(self, round: int) -> GetTransactionGroupLedgerStateDeltasForRound:
         """
         Get LedgerStateDelta objects for all transaction groups in a given round
 """
@@ -23485,7 +23443,7 @@ class AlgodClientProtocol(typing.Protocol):
         Return metrics about algod functioning.
 """
         raise NotImplementedError
-    async def pending_transaction_information(self, txid: str,format: typing.Optional[Format]) -> PendingTransactionResponse:
+    async def pending_transaction_information(self, txid: str) -> PendingTransactionResponse:
         """
         Get a specific pending transaction.
 """
@@ -23930,7 +23888,7 @@ class AlgodClient(AlgodClientProtocol, AlgodClientTrait):
             _uniffi_lift_return,
             _uniffi_error_converter,
         )
-    async def get_block(self, round: int,header_only: typing.Optional[bool],format: typing.Optional[Format]) -> GetBlock:
+    async def get_block(self, round: int,header_only: typing.Optional[bool]) -> GetBlock:
         """
         Get the block for the given round.
 """
@@ -23938,13 +23896,10 @@ class AlgodClient(AlgodClientProtocol, AlgodClientTrait):
         _UniffiFfiConverterUInt64.check_lower(round)
         
         _UniffiFfiConverterOptionalBoolean.check_lower(header_only)
-        
-        _UniffiFfiConverterOptionalTypeFormat.check_lower(format)
         _uniffi_lowered_args = (
             self._uniffi_clone_handle(),
             _UniffiFfiConverterUInt64.lower(round),
             _UniffiFfiConverterOptionalBoolean.lower(header_only),
-            _UniffiFfiConverterOptionalTypeFormat.lower(format),
         )
         _uniffi_lift_return = _UniffiFfiConverterTypeGetBlock.lift
         _uniffi_error_converter = _UniffiFfiConverterTypeError
@@ -24084,18 +24039,15 @@ class AlgodClient(AlgodClientProtocol, AlgodClientTrait):
             _uniffi_lift_return,
             _uniffi_error_converter,
         )
-    async def get_ledger_state_delta(self, round: int,format: typing.Optional[Format]) -> LedgerStateDelta:
+    async def get_ledger_state_delta(self, round: int) -> LedgerStateDelta:
         """
         Get a LedgerStateDelta object for a given round
 """
         
         _UniffiFfiConverterUInt64.check_lower(round)
-        
-        _UniffiFfiConverterOptionalTypeFormat.check_lower(format)
         _uniffi_lowered_args = (
             self._uniffi_clone_handle(),
             _UniffiFfiConverterUInt64.lower(round),
-            _UniffiFfiConverterOptionalTypeFormat.lower(format),
         )
         _uniffi_lift_return = _UniffiFfiConverterTypeLedgerStateDelta.lift
         _uniffi_error_converter = _UniffiFfiConverterTypeError
@@ -24107,18 +24059,15 @@ class AlgodClient(AlgodClientProtocol, AlgodClientTrait):
             _uniffi_lift_return,
             _uniffi_error_converter,
         )
-    async def get_ledger_state_delta_for_transaction_group(self, id: str,format: typing.Optional[Format]) -> LedgerStateDelta:
+    async def get_ledger_state_delta_for_transaction_group(self, id: str) -> LedgerStateDelta:
         """
         Get a LedgerStateDelta object for a given transaction group
 """
         
         _UniffiFfiConverterString.check_lower(id)
-        
-        _UniffiFfiConverterOptionalTypeFormat.check_lower(format)
         _uniffi_lowered_args = (
             self._uniffi_clone_handle(),
             _UniffiFfiConverterString.lower(id),
-            _UniffiFfiConverterOptionalTypeFormat.lower(format),
         )
         _uniffi_lift_return = _UniffiFfiConverterTypeLedgerStateDelta.lift
         _uniffi_error_converter = _UniffiFfiConverterTypeError
@@ -24187,18 +24136,15 @@ class AlgodClient(AlgodClientProtocol, AlgodClientTrait):
             _uniffi_lift_return,
             _uniffi_error_converter,
         )
-    async def get_pending_transactions(self, max: typing.Optional[int],format: typing.Optional[Format]) -> GetPendingTransactions:
+    async def get_pending_transactions(self, max: typing.Optional[int]) -> GetPendingTransactions:
         """
         Get a list of unconfirmed transactions currently in the transaction pool.
 """
         
         _UniffiFfiConverterOptionalUInt64.check_lower(max)
-        
-        _UniffiFfiConverterOptionalTypeFormat.check_lower(format)
         _uniffi_lowered_args = (
             self._uniffi_clone_handle(),
             _UniffiFfiConverterOptionalUInt64.lower(max),
-            _UniffiFfiConverterOptionalTypeFormat.lower(format),
         )
         _uniffi_lift_return = _UniffiFfiConverterTypeGetPendingTransactions.lift
         _uniffi_error_converter = _UniffiFfiConverterTypeError
@@ -24210,7 +24156,7 @@ class AlgodClient(AlgodClientProtocol, AlgodClientTrait):
             _uniffi_lift_return,
             _uniffi_error_converter,
         )
-    async def get_pending_transactions_by_address(self, address: str,max: typing.Optional[int],format: typing.Optional[Format]) -> GetPendingTransactionsByAddress:
+    async def get_pending_transactions_by_address(self, address: str,max: typing.Optional[int]) -> GetPendingTransactionsByAddress:
         """
         Get a list of unconfirmed transactions currently in the transaction pool by address.
 """
@@ -24218,13 +24164,10 @@ class AlgodClient(AlgodClientProtocol, AlgodClientTrait):
         _UniffiFfiConverterString.check_lower(address)
         
         _UniffiFfiConverterOptionalUInt64.check_lower(max)
-        
-        _UniffiFfiConverterOptionalTypeFormat.check_lower(format)
         _uniffi_lowered_args = (
             self._uniffi_clone_handle(),
             _UniffiFfiConverterString.lower(address),
             _UniffiFfiConverterOptionalUInt64.lower(max),
-            _UniffiFfiConverterOptionalTypeFormat.lower(format),
         )
         _uniffi_lift_return = _UniffiFfiConverterTypeGetPendingTransactionsByAddress.lift
         _uniffi_error_converter = _UniffiFfiConverterTypeError
@@ -24324,18 +24267,15 @@ class AlgodClient(AlgodClientProtocol, AlgodClientTrait):
             _uniffi_lift_return,
             _uniffi_error_converter,
         )
-    async def get_transaction_group_ledger_state_deltas_for_round(self, round: int,format: typing.Optional[Format]) -> GetTransactionGroupLedgerStateDeltasForRound:
+    async def get_transaction_group_ledger_state_deltas_for_round(self, round: int) -> GetTransactionGroupLedgerStateDeltasForRound:
         """
         Get LedgerStateDelta objects for all transaction groups in a given round
 """
         
         _UniffiFfiConverterUInt64.check_lower(round)
-        
-        _UniffiFfiConverterOptionalTypeFormat.check_lower(format)
         _uniffi_lowered_args = (
             self._uniffi_clone_handle(),
             _UniffiFfiConverterUInt64.lower(round),
-            _UniffiFfiConverterOptionalTypeFormat.lower(format),
         )
         _uniffi_lift_return = _UniffiFfiConverterTypeGetTransactionGroupLedgerStateDeltasForRound.lift
         _uniffi_error_converter = _UniffiFfiConverterTypeError
@@ -24427,18 +24367,15 @@ class AlgodClient(AlgodClientProtocol, AlgodClientTrait):
             _uniffi_lift_return,
             _uniffi_error_converter,
         )
-    async def pending_transaction_information(self, txid: str,format: typing.Optional[Format]) -> PendingTransactionResponse:
+    async def pending_transaction_information(self, txid: str) -> PendingTransactionResponse:
         """
         Get a specific pending transaction.
 """
         
         _UniffiFfiConverterString.check_lower(txid)
-        
-        _UniffiFfiConverterOptionalTypeFormat.check_lower(format)
         _uniffi_lowered_args = (
             self._uniffi_clone_handle(),
             _UniffiFfiConverterString.lower(txid),
-            _UniffiFfiConverterOptionalTypeFormat.lower(format),
         )
         _uniffi_lift_return = _UniffiFfiConverterTypePendingTransactionResponse.lift
         _uniffi_error_converter = _UniffiFfiConverterTypeError
