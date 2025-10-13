@@ -27,8 +27,8 @@ async fn test_testnet_dispenser_happy_path() -> Result<(), Box<dyn std::error::E
     // Create TestNet dispenser client (assumes ALGOKIT_DISPENSER_ACCESS_TOKEN env var is set)
     let dispenser_client = TestNetDispenserApiClient::new(None)?;
 
-    // Fund 1 ALGO (1,000,000 microAlgos) to the test account
-    let fund_amount = 1_000_000u64; // 1 ALGO in microAlgos
+    // Fund 0.1 ALGO (100,000 microAlgos) to the test account
+    let fund_amount = 100_000u64;
     let fund_response = dispenser_client
         .fund(&test_account_address, fund_amount)
         .await?;

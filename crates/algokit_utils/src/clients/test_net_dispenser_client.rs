@@ -165,13 +165,12 @@ impl TestNetDispenserApiClient {
             let error_response = response.json::<ErrorResponse>().await;
 
             if let Ok(error_response) = error_response {
+                if let Some(code) = error_response.code {
+                    return Err(DispenserError::ApiError { message: code });
+                }
                 if status == 400 {
                     return Err(DispenserError::ApiError {
                         message: error_response.message.unwrap_or_default(),
-                    });
-                } else {
-                    return Err(DispenserError::ApiError {
-                        message: error_response.code.unwrap_or_default(),
                     });
                 }
             }
@@ -201,7 +200,7 @@ impl TestNetDispenserApiClient {
         amount: u64,
     ) -> Result<DispenserFundResponse, DispenserError> {
         let request_body = FundRequest {
-            receiver: address.to_string(),
+            receiver: address.as_str(),
             amount,
             asset_id: ALGO_ASSET_ID,
         };
@@ -212,7 +211,10 @@ impl TestNetDispenserApiClient {
                 "POST",
                 Some(&request_body),
             )
-            .await?;
+            .await
+            .map_err(|e| DispenserError::ApiError {
+                message: format!("Failed to fund account: {}", e),
+            })?;
 
         Ok(DispenserFundResponse {
             transaction_id: response.tx_id,
@@ -227,7 +229,10 @@ impl TestNetDispenserApiClient {
         };
 
         self.process_dispenser_request::<RefundRequest, ()>("refund", "POST", Some(&request_body))
-            .await?;
+            .await
+            .map_err(|e| DispenserError::ApiError {
+                message: format!("Failed to refund: {}", e),
+            })?;
 
         Ok(())
     }
@@ -243,7 +248,10 @@ impl TestNetDispenserApiClient {
                 "GET",
                 None,
             )
-            .await?;
+            .await
+            .map_err(|e| DispenserError::ApiError {
+                message: format!("Failed to get limit: {}", e),
+            })?;
 
         Ok(DispenserLimitResponse {
             amount: response.amount,
