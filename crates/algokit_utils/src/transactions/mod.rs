@@ -8,6 +8,7 @@ pub mod creator;
 pub mod key_registration;
 pub mod payment;
 pub mod sender;
+pub mod utils;
 
 // Re-export commonly used transaction types
 pub use app_call::{
