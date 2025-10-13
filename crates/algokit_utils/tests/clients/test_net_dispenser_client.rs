@@ -2,22 +2,12 @@ use algokit_utils::{
     AlgorandClient, clients::TestNetDispenserApiClient, transactions::utils::wait_for_confirmation,
 };
 
-/// Test happy path for TestNet dispenser client:
-/// 1. Generate a random account using the account manager
-/// 2. Use the dispenser to fund 1 ALGO to the newly created account
-/// 3. Call algod account info to verify the account has 1 ALGO
-/// 4. Refund the ALGO using the dispenser client
-///
 /// This test is ignored by default because it requires a TestNet dispenser API token.
-/// To run this test, use: `cargo test test_testnet_dispenser_happy_path -- --ignored`
 #[tokio::test]
 #[ignore]
-async fn test_testnet_dispenser_happy_path() -> Result<(), Box<dyn std::error::Error + Send + Sync>>
-{
-    // Load environment variables from .env file if it exists
+async fn test_testnet_dispenser() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let _ = dotenvy::dotenv();
 
-    // Create a TestNet AlgorandClient
     let algorand_client = AlgorandClient::testnet(None);
 
     // Generate a random account using the account manager
@@ -26,24 +16,20 @@ async fn test_testnet_dispenser_happy_path() -> Result<(), Box<dyn std::error::E
         account_manager.random()
     };
 
-    // Create TestNet dispenser client (assumes ALGOKIT_DISPENSER_ACCESS_TOKEN env var is set)
     let dispenser_client = TestNetDispenserApiClient::new(None)?;
 
-    // Fund 0.1 ALGO (100,000 microAlgos) to the test account
-    let fund_amount = 100_000u64;
+    let fund_amount = 100_000u64; // 0.1 Algo
     let fund_response = dispenser_client
         .fund(&test_account_address, fund_amount)
         .await?;
 
-    // Verify the funding response
     assert_eq!(fund_response.amount, fund_amount);
     assert!(!fund_response.transaction_id.is_empty());
 
-    // Wait for the funding transaction to be confirmed
     wait_for_confirmation(
         algorand_client.client().algod(),
         &fund_response.transaction_id,
-        10,
+        100,
     )
     .await?;
 
@@ -62,7 +48,7 @@ async fn test_testnet_dispenser_happy_path() -> Result<(), Box<dyn std::error::E
         account_info.amount
     );
 
-    println!("✅ TestNet dispenser happy path test completed successfully!");
+    println!("✅ TestNet dispenser test completed successfully!");
     println!("   - Generated account: {}", test_account_address);
     println!("   - Funded amount: {} microAlgos", fund_amount);
     println!("   - Fund transaction ID: {}", fund_response.transaction_id);
