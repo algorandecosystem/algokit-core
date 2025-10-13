@@ -13,13 +13,13 @@ async fn test_testnet_dispenser() -> Result<(), Box<dyn std::error::Error + Send
     // Generate a random account using the account manager
     let test_account_address = {
         let mut account_manager = algorand_client.account_manager().lock().unwrap();
-        account_manager.random()
+        account_manager.random().address()
     };
 
     let dispenser_client = TestNetDispenserApiClient::new(None)?;
 
     let fund_amount = 100_000u64; // 0.1 Algo
-    let fund_response = dispenser_client
+    let fund_response: algokit_utils::clients::DispenserFundResponse = dispenser_client
         .fund(&test_account_address, fund_amount)
         .await?;
 

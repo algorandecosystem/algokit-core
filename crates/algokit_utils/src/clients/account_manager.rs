@@ -22,7 +22,7 @@ use std::{collections::HashMap, sync::Arc};
 #[derive(Debug, Clone)]
 pub struct SigningAccount {
     /// The ed25519 secret key used for signing transactions
-    secret_key: [u8; ALGORAND_SECRET_KEY_BYTE_LENGTH],
+    pub secret_key: [u8; ALGORAND_SECRET_KEY_BYTE_LENGTH],
 }
 
 impl SigningAccount {
@@ -173,12 +173,12 @@ impl AccountManager {
     /// * `sender` - The optional sender address to use this signer for (aka a rekeyed account)
     ///
     /// # Returns
-    /// The account's address
+    /// The signing account
     pub fn from_mnemonic(
         &mut self,
         mnemonic_secret: &str,
         sender: Option<Address>,
-    ) -> Result<Address, AccountManagerError> {
+    ) -> Result<SigningAccount, AccountManagerError> {
         // Convert mnemonic to secret key
         let secret_key = mnemonic_to_secret_key(mnemonic_secret)?;
 
@@ -187,11 +187,11 @@ impl AccountManager {
         let address = signing_account.address();
 
         // Track the account
-        let signer = Arc::new(signing_account);
+        let signer = Arc::new(signing_account.clone());
         let sender_address = sender.unwrap_or_else(|| address.clone());
         self.set_signer(sender_address, signer);
 
-        Ok(address)
+        Ok(signing_account)
     }
 
     /// Tracks and returns an Algorand account that is a rekeyed version of the given account to a new sender.
@@ -221,12 +221,12 @@ impl AccountManager {
     /// * `_fund_with` - The optional amount in microAlgos to fund the account with when it gets created (when targeting LocalNet), if not specified then 1000 ALGO will be funded from the dispenser account
     ///
     /// # Returns
-    /// The account's address
+    /// The signing account
     pub async fn from_environment(
         &mut self,
         name: &str,
         fund_with: Option<u64>,
-    ) -> Result<Address, AccountManagerError> {
+    ) -> Result<SigningAccount, AccountManagerError> {
         use std::env;
         use std::str::FromStr;
 
@@ -256,10 +256,13 @@ impl AccountManager {
                 .get_or_create_local_net_wallet_account(name, fund_with)
                 .await?;
 
+            // Create signing account from secret key
+            let signing_account = SigningAccount::new(kmd_account.secret_key);
+
             // Register the signer
             self.set_signer(kmd_account.address.clone(), kmd_account.signer);
 
-            return Ok(kmd_account.address);
+            return Ok(signing_account);
         }
 
         Err(AccountManagerError::EnvironmentError {
@@ -278,22 +281,25 @@ impl AccountManager {
     /// * `sender` - The optional sender address to use this signer for (aka a rekeyed account)
     ///
     /// # Returns
-    /// The account's address
+    /// The signing account
     pub async fn from_kmd(
         &mut self,
         name: &str,
         predicate: Option<Box<dyn Fn(&Account) -> bool>>,
         sender: Option<Address>,
-    ) -> Result<Address, AccountManagerError> {
+    ) -> Result<SigningAccount, AccountManagerError> {
         let kmd_account = self
             .kmd_account_manager
             .get_wallet_account(name, predicate, sender)
             .await?;
 
+        // Create signing account from secret key
+        let signing_account = SigningAccount::new(kmd_account.secret_key);
+
         // Register the signer
         self.set_signer(kmd_account.address.clone(), kmd_account.signer);
 
-        Ok(kmd_account.address)
+        Ok(signing_account)
     }
 
     // TODO: implement multisig and logicsig
@@ -301,8 +307,8 @@ impl AccountManager {
     /// Tracks and returns a new, random Algorand account with secret key loaded.
     ///
     /// # Returns
-    /// The account's address
-    pub fn random(&mut self) -> Address {
+    /// The signing account
+    pub fn random(&mut self) -> SigningAccount {
         // Generate a random signing key using ed25519_dalek
         let signing_key = SigningKey::generate(&mut OsRng);
         let secret_key = signing_key.to_bytes();
@@ -312,10 +318,10 @@ impl AccountManager {
         let address = signing_account.address();
 
         // Track the account
-        let signer = Arc::new(signing_account);
+        let signer = Arc::new(signing_account.clone());
         self.set_signer(address.clone(), signer);
 
-        address
+        signing_account
     }
 
     /// Returns an account (with private key loaded) that can act as a dispenser from
@@ -327,8 +333,10 @@ impl AccountManager {
     /// If not present, it will get the default funded account from LocalNet's `unencrypted-default-wallet`.
     ///
     /// # Returns
-    /// The dispenser account's address
-    pub async fn dispenser_from_environment(&mut self) -> Result<Address, AccountManagerError> {
+    /// The dispenser signing account
+    pub async fn dispenser_from_environment(
+        &mut self,
+    ) -> Result<SigningAccount, AccountManagerError> {
         use std::env;
 
         const DISPENSER_ACCOUNT: &str = "DISPENSER";
@@ -351,17 +359,20 @@ impl AccountManager {
     /// that comes pre-funded on LocalNet.
     ///
     /// # Returns
-    /// The LocalNet dispenser account's address
-    pub async fn local_net_dispenser(&mut self) -> Result<Address, AccountManagerError> {
+    /// The LocalNet dispenser signing account
+    pub async fn local_net_dispenser(&mut self) -> Result<SigningAccount, AccountManagerError> {
         let dispenser = self
             .kmd_account_manager
             .get_local_net_dispenser_account()
             .await?;
 
+        // Create signing account from secret key
+        let signing_account = SigningAccount::new(dispenser.secret_key);
+
         // Register the signer
         self.set_signer(dispenser.address.clone(), dispenser.signer);
 
-        Ok(dispenser.address)
+        Ok(signing_account)
     }
 
     /// Rekey an account to a new address.
@@ -538,11 +549,12 @@ impl AccountManager {
     ) -> Result<Option<EnsureFundedResult>, AccountManagerError> {
         // Get the dispenser account from environment
         let dispenser_account = self.dispenser_from_environment().await?;
+        let dispenser_address = dispenser_account.address();
 
         // Delegate to ensure_funded with the dispenser account
         self.ensure_funded(
             account_to_fund,
-            &dispenser_account,
+            &dispenser_address,
             min_spending_balance,
             min_funding_increment,
             send_params,

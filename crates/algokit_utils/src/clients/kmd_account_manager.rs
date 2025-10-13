@@ -13,13 +13,15 @@ use kmd_client::{
 };
 use std::sync::Arc;
 
-/// Represents an account with its address and signer
+/// Represents an account with its address, signer, and secret key
 #[derive(Clone)]
 pub struct KmdAccount {
     /// The address of the account
     pub address: Address,
     /// The signer that can sign transactions for this account
     pub signer: Arc<dyn TransactionSigner>,
+    /// The secret key bytes for the account
+    pub secret_key: [u8; ALGORAND_SECRET_KEY_BYTE_LENGTH],
 }
 
 /// Manages KMD wallets and accounts for LocalNet development
@@ -208,17 +210,19 @@ impl KmdAccountManager {
                     message: "No private key in export response".to_string(),
                 })?;
 
-        // Create signing account from private key
+        // KMD returns a 64-byte key (32-byte seed + 32-byte public key)
+        // We only need the first 32 bytes for the signing key
         let mut key_bytes = [0u8; ALGORAND_SECRET_KEY_BYTE_LENGTH];
-        if private_key.len() != ALGORAND_SECRET_KEY_BYTE_LENGTH {
+        if private_key.len() < ALGORAND_SECRET_KEY_BYTE_LENGTH {
             return Err(AccountManagerError::KmdError {
                 message: format!(
-                    "Invalid private key length: expected {}, got {}",
+                    "Invalid private key length: expected at least {}, got {}",
                     ALGORAND_SECRET_KEY_BYTE_LENGTH,
                     private_key.len()
                 ),
             });
         }
+        // Take only the first 32 bytes (the seed)
         key_bytes.copy_from_slice(&private_key[..ALGORAND_SECRET_KEY_BYTE_LENGTH]);
         let signing_account = SigningAccount::new(key_bytes);
 
@@ -232,6 +236,7 @@ impl KmdAccountManager {
         Ok(KmdAccount {
             address: account_address,
             signer: Arc::new(signing_account),
+            secret_key: key_bytes,
         })
     }
 
