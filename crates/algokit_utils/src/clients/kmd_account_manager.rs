@@ -1,12 +1,9 @@
 use crate::clients::{AccountManagerError, SigningAccount};
 use crate::constants::UNENCRYPTED_DEFAULT_WALLET_NAME;
 use crate::transactions::TransactionComposerParams;
-use crate::{
-    ClientManager, EmptySigner, PaymentParams, TransactionComposer, TransactionSigner,
-    genesis_id_is_localnet,
-};
-use algod_client::{AlgodClient, models::Account};
-use algokit_transact::Address;
+use crate::{ClientManager, EmptySigner, PaymentParams, TransactionComposer, TransactionSigner};
+use algod_client::models::Account;
+use algokit_transact::{ALGORAND_SECRET_KEY_BYTE_LENGTH, Address};
 use kmd_client::{
     apis::client::KmdClient,
     models::{
@@ -70,8 +67,8 @@ impl KmdAccountManager {
     }
 
     async fn get_wallet_handle(&self, wallet_id: &str) -> Result<String, AccountManagerError> {
-        let response = self
-            .kmd
+        let kmd = self.kmd().await?;
+        let response = kmd
             .init_wallet_handle_token(InitWalletHandleTokenRequest {
                 wallet_id: Some(wallet_id.to_string()),
                 wallet_password: None,
@@ -105,10 +102,11 @@ impl KmdAccountManager {
         predicate: Option<Box<dyn Fn(&Account) -> bool>>,
         sender: Option<Address>,
     ) -> Result<KmdAccount, AccountManagerError> {
+        let kmd = self.kmd().await?;
+
         // List wallets to find the wallet ID
         let wallets_response =
-            self.kmd
-                .list_wallets()
+            kmd.list_wallets()
                 .await
                 .map_err(|e| AccountManagerError::KmdError {
                     message: format!("Failed to list wallets: {}", e),
@@ -137,8 +135,7 @@ impl KmdAccountManager {
         let wallet_handle = self.get_wallet_handle(wallet_id).await?;
 
         // List keys in wallet
-        let keys_response = self
-            .kmd
+        let keys_response = kmd
             .list_keys_in_wallet(ListKeysRequest {
                 wallet_handle_token: Some(wallet_handle.clone()),
             })
@@ -168,7 +165,8 @@ impl KmdAccountManager {
             for (i, addr) in addresses.iter().enumerate() {
                 // Get account information from algod
                 let account_info = self
-                    .algod
+                    .client_manager
+                    .algod()
                     .account_information(addr, None, None)
                     .await
                     .map_err(|e| AccountManagerError::KmdError {
@@ -192,8 +190,7 @@ impl KmdAccountManager {
         let address = &addresses[selected_index];
 
         // Export the private key
-        let export_response = self
-            .kmd
+        let export_response = kmd
             .export_key(ExportKeyRequest {
                 address: Some(address.clone()),
                 wallet_handle_token: Some(wallet_handle.clone()),
@@ -212,17 +209,17 @@ impl KmdAccountManager {
                 })?;
 
         // Create signing account from private key
-        // Convert Vec<u8> to [u8; 32]
-        let mut key_bytes = [0u8; 32];
-        if private_key.len() != 32 {
+        let mut key_bytes = [0u8; ALGORAND_SECRET_KEY_BYTE_LENGTH];
+        if private_key.len() != ALGORAND_SECRET_KEY_BYTE_LENGTH {
             return Err(AccountManagerError::KmdError {
                 message: format!(
-                    "Invalid private key length: expected 32, got {}",
+                    "Invalid private key length: expected {}, got {}",
+                    ALGORAND_SECRET_KEY_BYTE_LENGTH,
                     private_key.len()
                 ),
             });
         }
-        key_bytes.copy_from_slice(&private_key[..32]);
+        key_bytes.copy_from_slice(&private_key[..ALGORAND_SECRET_KEY_BYTE_LENGTH]);
         let signing_account = SigningAccount::new(key_bytes);
 
         let account_address = match sender {
@@ -253,16 +250,11 @@ impl KmdAccountManager {
         wallet_name: &str,
         fund_with: Option<u64>,
     ) -> Result<KmdAccount, AccountManagerError> {
-        // Check if we're on LocalNet by checking genesis ID
-        let genesis =
-            self.algod
-                .get_genesis()
-                .await
-                .map_err(|e| AccountManagerError::AlgodError {
-                    message: format!("Failed to get genesis information: {}", e),
-                })?;
-
-        let is_localnet = genesis_id_is_localnet(&genesis.id);
+        let is_localnet = self.client_manager.is_localnet().await.map_err(|e| {
+            AccountManagerError::EnvironmentError {
+                message: format!("Failed to check if the environment is localnet: {}", e),
+            }
+        })?;
         if !is_localnet {
             return Err(AccountManagerError::EnvironmentError {
                 message: "This feature only works on LocalNet".into(),
@@ -274,13 +266,15 @@ impl KmdAccountManager {
             return Ok(account);
         }
 
+        let kmd = self.kmd().await?;
+
         // Wallet doesn't exist or has no accounts, so create it
         let wallet_id = {
             // Create new wallet
-            let create_response = self
-                .kmd
+            let create_response = kmd
                 .create_wallet(CreateWalletRequest {
                     wallet_name: Some(wallet_name.to_string()),
+                    wallet_driver_name: Some("sqlite".to_string()), // TODO: discuss with Al to default this value
                     ..Default::default()
                 })
                 .await
@@ -299,8 +293,7 @@ impl KmdAccountManager {
         let wallet_handle = self.get_wallet_handle(&wallet_id).await?;
 
         // Generate a new key
-        let _generate_response = self
-            .kmd
+        let _generate_response = kmd
             .generate_key(GenerateKeyRequest {
                 wallet_handle_token: Some(wallet_handle.clone()),
                 ..Default::default()
@@ -323,7 +316,7 @@ impl KmdAccountManager {
 
         // Create composer and send payment using the dispenser as the signer getter
         let mut composer = TransactionComposer::new(TransactionComposerParams {
-            algod_client: self.algod.clone(),
+            algod_client: self.client_manager.algod().clone(),
             signer_getter: Arc::new(EmptySigner {}),
             composer_config: None,
         });
@@ -351,16 +344,11 @@ impl KmdAccountManager {
     }
 
     pub async fn get_local_net_dispenser_account(&self) -> Result<KmdAccount, AccountManagerError> {
-        // Check if we're on LocalNet by checking genesis ID
-        let genesis =
-            self.algod
-                .get_genesis()
-                .await
-                .map_err(|e| AccountManagerError::AlgodError {
-                    message: format!("Failed to get genesis information: {}", e),
-                })?;
-
-        let is_localnet = genesis_id_is_localnet(&genesis.id);
+        let is_localnet = self.client_manager.is_localnet().await.map_err(|e| {
+            AccountManagerError::EnvironmentError {
+                message: format!("Failed to check if the environment is localnet: {}", e),
+            }
+        })?;
         if !is_localnet {
             return Err(AccountManagerError::EnvironmentError {
                 message: "This feature only works on LocalNet".into(),

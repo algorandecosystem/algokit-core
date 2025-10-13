@@ -13,7 +13,7 @@ use algokit_transact::Address;
 use std::sync::{Arc, Mutex};
 
 pub struct AlgorandClient {
-    client_manager: ClientManager,
+    client_manager: Arc<ClientManager>,
     asset_manager: AssetManager,
     app_manager: AppManager,
     app_deployer: AppDeployer,
@@ -31,21 +31,10 @@ pub struct AlgorandClientParams {
 
 impl AlgorandClient {
     pub fn new(params: &AlgorandClientParams) -> Self {
-        let client_manager = ClientManager::new(&params.client_config).unwrap();
+        let client_manager = Arc::new(ClientManager::new(&params.client_config).unwrap());
         let algod_client = client_manager.algod();
 
-        // Create KmdAccountManager if KMD client is available
-        let kmd_manager = client_manager.kmd().ok().map(|kmd_client| {
-            Arc::new(crate::clients::KmdAccountManager::new(
-                kmd_client,
-                algod_client.clone(),
-            ))
-        });
-
-        let account_manager = Arc::new(Mutex::new(AccountManager::new(
-            algod_client.clone(),
-            kmd_manager,
-        )));
+        let account_manager = Arc::new(Mutex::new(AccountManager::new(client_manager.clone())));
 
         let new_composer = {
             let algod_client = algod_client.clone();

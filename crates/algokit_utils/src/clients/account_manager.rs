@@ -1,13 +1,11 @@
 use crate::{
-    PaymentParams, SendParams, TransactionComposer, TransactionComposerParams,
+    ClientManager, PaymentParams, SendParams, TransactionComposer, TransactionComposerParams,
     TransactionComposerSendResult, TransactionSigner,
-    clients::{
-        DispenserFundResponse, KmdAccountManager, TestNetDispenserApiClient, genesis_id_is_localnet,
-    },
+    clients::{DispenserFundResponse, KmdAccountManager, TestNetDispenserApiClient},
     common::mnemonic,
     transactions::common::TransactionSignerGetter,
 };
-use algod_client::{AlgodClient, models::Account};
+use algod_client::models::Account;
 use algokit_transact::{
     ALGORAND_SECRET_KEY_BYTE_LENGTH, ALGORAND_SIGNATURE_BYTE_LENGTH, Address, AlgorandMsgpack,
     KeyPairAccount, SignedTransaction, Transaction,
@@ -17,6 +15,8 @@ use ed25519_dalek::{Signer, SigningKey, VerifyingKey};
 use rand::rngs::OsRng;
 use snafu::Snafu;
 use std::{collections::HashMap, sync::Arc};
+
+// TODO: rename test_net to testnet
 
 /// A signing account that can sign transactions using a secret key
 #[derive(Debug, Clone)]
@@ -87,20 +87,17 @@ impl TransactionSigner for SigningAccount {
 pub struct AccountManager {
     default_signer: Option<Arc<dyn TransactionSigner>>,
     accounts: HashMap<Address, Arc<dyn TransactionSigner>>,
-    algod: Arc<AlgodClient>,
-    kmd_account_manager: Option<Arc<KmdAccountManager>>,
+    client_manager: Arc<ClientManager>,
+    kmd_account_manager: Arc<KmdAccountManager>,
 }
 
 impl AccountManager {
-    pub fn new(
-        algod: Arc<AlgodClient>,
-        kmd_account_manager: Option<Arc<KmdAccountManager>>,
-    ) -> Self {
+    pub fn new(client_manager: Arc<ClientManager>) -> Self {
         Self {
             default_signer: None,
             accounts: HashMap::new(),
-            algod,
-            kmd_account_manager,
+            client_manager: client_manager.clone(),
+            kmd_account_manager: Arc::new(KmdAccountManager::new(client_manager.clone())),
         }
     }
 
@@ -159,7 +156,8 @@ impl AccountManager {
     /// # Returns
     /// The account information
     pub async fn get_information(&self, sender: &Address) -> Result<Account, AccountManagerError> {
-        self.algod
+        self.client_manager
+            .algod()
             .account_information(&sender.to_string(), None, None)
             .await
             .map_err(|e| AccountManagerError::AlgodError {
@@ -245,30 +243,23 @@ impl AccountManager {
             return self.from_mnemonic(&account_mnemonic, sender);
         }
 
-        // TODO: refactor this
-        // Check if we're on LocalNet by checking genesis ID
-        let genesis =
-            self.algod
-                .get_genesis()
-                .await
-                .map_err(|e| AccountManagerError::AlgodError {
-                    message: format!("Failed to get genesis information: {}", e),
-                })?;
-
-        let is_localnet = genesis_id_is_localnet(&genesis.id);
+        let is_localnet = self.client_manager.is_localnet().await.map_err(|e| {
+            AccountManagerError::EnvironmentError {
+                message: format!("Failed to check if the environment is localnet: {}", e),
+            }
+        })?;
 
         // Use KMD to get or create wallet account if on LocalNet and KMD is available
         if is_localnet {
-            if let Some(kmd_manager) = &self.kmd_account_manager {
-                let kmd_account = kmd_manager
-                    .get_or_create_local_net_wallet_account(name, fund_with)
-                    .await?;
+            let kmd_account = self
+                .kmd_account_manager
+                .get_or_create_local_net_wallet_account(name, fund_with)
+                .await?;
 
-                // Register the signer
-                self.set_signer(kmd_account.address.clone(), kmd_account.signer);
+            // Register the signer
+            self.set_signer(kmd_account.address.clone(), kmd_account.signer);
 
-                return Ok(kmd_account.address);
-            }
+            return Ok(kmd_account.address);
         }
 
         Err(AccountManagerError::EnvironmentError {
@@ -294,14 +285,8 @@ impl AccountManager {
         predicate: Option<Box<dyn Fn(&Account) -> bool>>,
         sender: Option<Address>,
     ) -> Result<Address, AccountManagerError> {
-        let kmd_manager =
-            self.kmd_account_manager
-                .as_ref()
-                .ok_or_else(|| AccountManagerError::KmdError {
-                    message: "KMD client not available".to_string(),
-                })?;
-
-        let kmd_account = kmd_manager
+        let kmd_account = self
+            .kmd_account_manager
             .get_wallet_account(name, predicate, sender)
             .await?;
 
@@ -368,14 +353,10 @@ impl AccountManager {
     /// # Returns
     /// The LocalNet dispenser account's address
     pub async fn local_net_dispenser(&mut self) -> Result<Address, AccountManagerError> {
-        let kmd_manager =
-            self.kmd_account_manager
-                .as_ref()
-                .ok_or_else(|| AccountManagerError::KmdError {
-                    message: "KMD client not available".to_string(),
-                })?;
-
-        let dispenser = kmd_manager.get_local_net_dispenser_account().await?;
+        let dispenser = self
+            .kmd_account_manager
+            .get_local_net_dispenser_account()
+            .await?;
 
         // Register the signer
         self.set_signer(dispenser.address.clone(), dispenser.signer);
@@ -432,7 +413,7 @@ impl AccountManager {
 
     fn get_composer(&self) -> TransactionComposer {
         TransactionComposer::new(TransactionComposerParams {
-            algod_client: self.algod.clone(),
+            algod_client: self.client_manager.algod().clone(),
             signer_getter: Arc::new(AccountManagerSignerGetter {
                 accounts: self.accounts.clone(),
             }),
@@ -591,18 +572,11 @@ impl AccountManager {
         min_spending_balance: u64,
         min_funding_increment: u64,
     ) -> Result<Option<DispenserFundResponse>, AccountManagerError> {
-        // TODO: helper methods to determine network
-        // Check if we're on TestNet by checking genesis ID
-        let genesis =
-            self.algod
-                .get_genesis()
-                .await
-                .map_err(|e| AccountManagerError::AlgodError {
-                    message: format!("Failed to get genesis information: {}", e),
-                })?;
-
-        let is_testnet = genesis.id == "testnet-v1.0";
-
+        let is_testnet = self.client_manager.is_testnet().await.map_err(|e| {
+            AccountManagerError::EnvironmentError {
+                message: format!("Failed to check if the environment is localnet: {}", e),
+            }
+        })?;
         if !is_testnet {
             return Err(AccountManagerError::EnvironmentError {
                 message: "Attempt to fund using TestNet dispenser API on non TestNet network."
