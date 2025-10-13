@@ -1,4 +1,5 @@
 use crate::config::{Config, EventData, EventType, TxnGroupSimulatedEventData};
+use crate::transactions::utils::wait_for_confirmation;
 use crate::{
     genesis_id_is_localnet,
     transactions::{
@@ -2149,78 +2150,6 @@ impl TransactionComposer {
         Ok(self.signed_group.as_ref().unwrap())
     }
 
-    async fn wait_for_confirmation(
-        &self,
-        tx_id: &str,
-        max_rounds_to_wait: u32,
-    ) -> Result<PendingTransactionResponse, ComposerError> {
-        let status =
-            self.algod_client
-                .get_status()
-                .await
-                .map_err(|e| ComposerError::TransactionError {
-                    message: format!("Failed to get status: {:?}", e),
-                })?;
-
-        let start_round = status.last_round + 1;
-        let mut current_round = start_round;
-
-        while current_round < start_round + max_rounds_to_wait as u64 {
-            match self
-                .algod_client
-                .pending_transaction_information(tx_id)
-                .await
-            {
-                Ok(response) => {
-                    // Check for pool errors first - transaction was kicked out of pool
-                    if !response.pool_error.is_empty() {
-                        return Err(ComposerError::PoolError {
-                            message: format!(
-                                "Transaction {} was rejected; pool error: {}",
-                                tx_id,
-                                response.pool_error.clone()
-                            ),
-                        });
-                    }
-
-                    // Check if transaction is confirmed
-                    if response.confirmed_round.is_some() {
-                        return Ok(response);
-                    }
-                }
-                Err(error) => {
-                    // Only retry for 404 errors (transaction not found yet)
-                    // All other errors indicate permanent issues and should fail fast
-                    let is_retryable = matches!(
-                        &error,
-                        algod_client::apis::Error::Api {
-                            source: algod_client::apis::AlgodApiError::PendingTransactionInformation {
-                                error: algod_client::apis::pending_transaction_information::PendingTransactionInformationError::Status404(_)
-                            }
-                        }
-                    ) || error.to_string().contains("404");
-
-                    if is_retryable {
-                        current_round += 1;
-                        continue;
-                    } else {
-                        return Err(ComposerError::AlgodClientError { source: error });
-                    }
-                }
-            };
-
-            let _ = self.algod_client.wait_for_block(current_round).await;
-            current_round += 1;
-        }
-
-        Err(ComposerError::MaxWaitRoundExpired {
-            message: format!(
-                "Transaction {} unconfirmed after {} rounds",
-                tx_id, max_rounds_to_wait
-            ),
-        })
-    }
-
     pub async fn send(
         &mut self,
         params: Option<SendParams>,
@@ -2321,7 +2250,11 @@ impl TransactionComposer {
 
         let mut confirmations = Vec::new();
         for id in &transaction_ids {
-            let confirmation = self.wait_for_confirmation(id, wait_rounds).await?;
+            let confirmation = wait_for_confirmation(self.algod_client.clone(), id, wait_rounds)
+                .await
+                .map_err(|e| ComposerError::TransactionError {
+                    message: e.to_string(),
+                })?;
             confirmations.push(confirmation);
         }
 

@@ -1,14 +1,18 @@
+use crate::transactions::TransactionError;
+use algod_client::AlgodClient;
+use algod_client::models::PendingTransactionResponse;
+use std::sync::Arc;
+
 pub async fn wait_for_confirmation(
     algod_client: Arc<AlgodClient>,
     tx_id: &str,
     max_rounds_to_wait: u32,
-) -> Result<PendingTransactionResponse, ComposerError> {
-    let status = algod_client
-        .get_status()
-        .await
-        .map_err(|e| ComposerError::TransactionError {
-            message: format!("Failed to get status: {:?}", e),
-        })?;
+) -> Result<PendingTransactionResponse, TransactionError> {
+    let status = algod_client.get_status().await.map_err(|e| {
+        TransactionError::WaitForConfirmationError {
+            message: format!("Failed to get Algod status: {:?}", e),
+        }
+    })?;
 
     let start_round = status.last_round + 1;
     let mut current_round = start_round;
@@ -18,7 +22,7 @@ pub async fn wait_for_confirmation(
             Ok(response) => {
                 // Check for pool errors first - transaction was kicked out of pool
                 if !response.pool_error.is_empty() {
-                    return Err(ComposerError::PoolError {
+                    return Err(TransactionError::WaitForConfirmationError {
                         message: format!(
                             "Transaction {} was rejected; pool error: {}",
                             tx_id,
@@ -48,7 +52,9 @@ pub async fn wait_for_confirmation(
                     current_round += 1;
                     continue;
                 } else {
-                    return Err(ComposerError::AlgodClientError { source: error });
+                    return Err(TransactionError::WaitForConfirmationError {
+                        message: error.to_string(),
+                    });
                 }
             }
         };
@@ -57,7 +63,7 @@ pub async fn wait_for_confirmation(
         current_round += 1;
     }
 
-    Err(ComposerError::MaxWaitRoundExpired {
+    Err(TransactionError::WaitForConfirmationError {
         message: format!(
             "Transaction {} unconfirmed after {} rounds",
             tx_id, max_rounds_to_wait

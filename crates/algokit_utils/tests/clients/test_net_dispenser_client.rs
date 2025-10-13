@@ -1,8 +1,6 @@
-use algod_client::{AlgodClient, models::PendingTransactionResponse};
 use algokit_utils::{
-    AlgorandClient, clients::TestNetDispenserApiClient, transactions::composer::ComposerError,
+    AlgorandClient, clients::TestNetDispenserApiClient, transactions::utils::wait_for_confirmation,
 };
-use std::sync::Arc;
 
 /// Test happy path for TestNet dispenser client:
 /// 1. Generate a random account using the account manager

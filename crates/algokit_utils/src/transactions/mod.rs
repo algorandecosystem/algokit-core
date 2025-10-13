@@ -5,6 +5,7 @@ pub mod asset_transfer;
 pub mod common;
 pub mod composer;
 pub mod creator;
+pub mod errors;
 pub mod key_registration;
 pub mod payment;
 pub mod sender;
@@ -28,6 +29,7 @@ pub use composer::{
     TransactionResult,
 };
 pub use creator::TransactionCreator;
+pub use errors::TransactionError;
 pub use key_registration::{
     NonParticipationKeyRegistrationParams, OfflineKeyRegistrationParams,
     OnlineKeyRegistrationParams,
