@@ -2,7 +2,8 @@ use crate::clients::{AccountManagerError, SigningAccount};
 use crate::constants::UNENCRYPTED_DEFAULT_WALLET_NAME;
 use crate::transactions::TransactionComposerParams;
 use crate::{
-    EmptySigner, PaymentParams, TransactionComposer, TransactionSigner, genesis_id_is_localnet,
+    ClientManager, EmptySigner, PaymentParams, TransactionComposer, TransactionSigner,
+    genesis_id_is_localnet,
 };
 use algod_client::{AlgodClient, models::Account};
 use algokit_transact::Address;
@@ -26,19 +27,46 @@ pub struct KmdAccount {
 
 /// Manages KMD wallets and accounts for LocalNet development
 pub struct KmdAccountManager {
-    kmd: Arc<KmdClient>,
-    algod: Arc<AlgodClient>,
+    client_manager: Arc<ClientManager>,
 }
 
 impl KmdAccountManager {
-    /// Creates a new KMD account manager
-    ///
-    /// # Arguments
-    ///
-    /// * `kmd` - The KMD client to use
-    /// * `algod` - The Algod client to use for account information queries
-    pub fn new(kmd: Arc<KmdClient>, algod: Arc<AlgodClient>) -> Self {
-        Self { kmd, algod }
+    pub fn new(client_manager: Arc<ClientManager>) -> Self {
+        Self { client_manager }
+    }
+
+    async fn kmd(&self) -> Result<Arc<KmdClient>, AccountManagerError> {
+        if let Ok(kmd_client) = self.client_manager.kmd() {
+            return Ok(kmd_client);
+        }
+
+        let is_localnet = self.client_manager.is_localnet().await.map_err(|e| {
+            AccountManagerError::EnvironmentError {
+                message: format!("Failed to check if the environment is localnet: {}", e),
+            }
+        })?;
+
+        if !is_localnet {
+            return Err(AccountManagerError::KmdError {
+                // TODO: make this message better
+                message: "KMD is only available on LocalNet".to_string(),
+            });
+        }
+
+        let config = ClientManager::get_config_from_environment_or_localnet();
+        let kmd_config = config
+            .kmd_config
+            .ok_or_else(|| AccountManagerError::KmdError {
+                message: "No KMD configuration found for LocalNet environment".to_string(),
+            })?;
+
+        let kmd_client = ClientManager::get_kmd_client(&kmd_config).map_err(|e| {
+            AccountManagerError::KmdError {
+                message: format!("Failed to create KMD client: {}", e),
+            }
+        })?;
+
+        Ok(Arc::new(kmd_client))
     }
 
     async fn get_wallet_handle(&self, wallet_id: &str) -> Result<String, AccountManagerError> {
