@@ -1,4 +1,4 @@
-import { AlgodClient, ApiError } from '@algorandfoundation/algod-client'
+import { AlgodClient, ApiError, type BaseHttpRequest, type ClientConfig as HttpClientConfig } from '@algorandfoundation/algod-client'
 import { IndexerClient } from '@algorandfoundation/indexer-client'
 import { KmdClient } from '@algorandfoundation/kmd-client'
 import { Buffer } from 'buffer'
@@ -10,7 +10,10 @@ import {
   NetworkDetails,
   TokenHeader,
   genesisIdIsLocalNet,
+  genesisIdIsMainnet,
+  genesisIdIsTestnet,
 } from './network-client'
+import { RetryHttpRequest } from './http/retry-http-request'
 
 export interface ClientManagerClients {
   algod: AlgodClient
@@ -23,22 +26,43 @@ interface NetworkCache {
   promise?: Promise<NetworkDetails>
 }
 
+type HttpClientFactoryResult = {
+  clientConfig: HttpClientConfig
+  request?: BaseHttpRequest
+}
+
+type HttpClientFactory = (config: AlgoClientConfig, defaultHeaderName: string) => HttpClientFactoryResult
+
+export type ClientManagerErrorCode = 'INDEXER_NOT_CONFIGURED' | 'KMD_NOT_CONFIGURED' | 'ENVIRONMENT_MISSING'
+
+export class ClientManagerError extends Error {
+  readonly code: ClientManagerErrorCode
+  readonly details?: Record<string, unknown>
+
+  constructor(code: ClientManagerErrorCode, message: string, details?: Record<string, unknown>) {
+    super(message)
+    this.name = 'ClientManagerError'
+    this.code = code
+    this.details = details
+  }
+}
+
 export class ClientManager {
+  private static httpClientFactory?: HttpClientFactory
   private readonly algodClient: AlgodClient
   private readonly indexerClient?: IndexerClient
   private readonly kmdClient?: KmdClient
   private readonly networkCache: NetworkCache = {}
 
   constructor(clientsOrConfig: ClientManagerClients | AlgoConfig) {
-    const clients = 'algod' in clientsOrConfig
-      ? clientsOrConfig
-      : {
-          algod: ClientManager.getAlgodClient(clientsOrConfig.algodConfig),
-          indexer: clientsOrConfig.indexerConfig
-            ? ClientManager.getIndexerClient(clientsOrConfig.indexerConfig)
-            : undefined,
-          kmd: clientsOrConfig.kmdConfig ? ClientManager.getKmdClient(clientsOrConfig.kmdConfig) : undefined,
-        }
+    const clients =
+      'algod' in clientsOrConfig
+        ? clientsOrConfig
+        : {
+            algod: ClientManager.getAlgodClient(clientsOrConfig.algodConfig),
+            indexer: clientsOrConfig.indexerConfig ? ClientManager.getIndexerClient(clientsOrConfig.indexerConfig) : undefined,
+            kmd: clientsOrConfig.kmdConfig ? ClientManager.getKmdClient(clientsOrConfig.kmdConfig) : undefined,
+          }
 
     this.algodClient = clients.algod
     this.indexerClient = clients.indexer
@@ -53,7 +77,7 @@ export class ClientManager {
   /** Returns an Indexer API client or throws if not configured. */
   get indexer(): IndexerClient {
     if (!this.indexerClient) {
-      throw new Error('Attempt to use Indexer client without configuring one')
+      throw new ClientManagerError('INDEXER_NOT_CONFIGURED', 'Attempt to use Indexer client without configuring one')
     }
     return this.indexerClient
   }
@@ -66,7 +90,7 @@ export class ClientManager {
   /** Returns a KMD API client or throws if not configured. */
   get kmd(): KmdClient {
     if (!this.kmdClient) {
-      throw new Error('Attempt to use KMD client without configuring one')
+      throw new ClientManagerError('KMD_NOT_CONFIGURED', 'Attempt to use KMD client without configuring one')
     }
     return this.kmdClient
   }
@@ -83,14 +107,16 @@ export class ClientManager {
     }
 
     if (!this.networkCache.promise) {
-      this.networkCache.promise = this.fetchNetworkDetails().then((details) => {
-        this.networkCache.value = details
-        this.networkCache.promise = undefined
-        return details
-      }).catch((error) => {
-        this.networkCache.promise = undefined
-        throw error
-      })
+      this.networkCache.promise = this.fetchNetworkDetails()
+        .then((details) => {
+          this.networkCache.value = details
+          this.networkCache.promise = undefined
+          return details
+        })
+        .catch((error) => {
+          this.networkCache.promise = undefined
+          throw error
+        })
     }
 
     return this.networkCache.promise
@@ -120,33 +146,100 @@ export class ClientManager {
   }
 
   /**
+   * TODO: Provide TestNet dispenser helper once dependencies are ported from legacy algokit-utils-ts.
+   */
+  getTestNetDispenser(_params: unknown): never {
+    throw new Error('TODO: getTestNetDispenser is not yet implemented in the TypeScript ClientManager')
+  }
+
+  /**
+   * TODO: Provide environment-based TestNet dispenser helper once dependencies are ported from legacy algokit-utils-ts.
+   */
+  getTestNetDispenserFromEnvironment(_params?: unknown): never {
+    throw new Error('TODO: getTestNetDispenserFromEnvironment is not yet implemented in the TypeScript ClientManager')
+  }
+
+  /**
+   * TODO: Provide app factory support once app client abstractions are ported from legacy algokit-utils-ts.
+   */
+  getAppFactory(_params: unknown): never {
+    throw new Error('TODO: getAppFactory is not yet implemented in the TypeScript ClientManager')
+  }
+
+  /**
+   * TODO: Provide app client lookup by creator and name after porting legacy algokit-utils-ts.
+   */
+  async getAppClientByCreatorAndName(_params: unknown): Promise<never> {
+    throw new Error('TODO: getAppClientByCreatorAndName is not yet implemented in the TypeScript ClientManager')
+  }
+
+  /**
+   * TODO: Provide app client lookup by ID after porting legacy algokit-utils-ts.
+   */
+  getAppClientById(_params: unknown): never {
+    throw new Error('TODO: getAppClientById is not yet implemented in the TypeScript ClientManager')
+  }
+
+  /**
+   * TODO: Provide app client lookup by network after porting legacy algokit-utils-ts.
+   */
+  async getAppClientByNetwork(_params: unknown): Promise<never> {
+    throw new Error('TODO: getAppClientByNetwork is not yet implemented in the TypeScript ClientManager')
+  }
+
+  /**
+   * TODO: Provide typed app client lookup after porting legacy algokit-utils-ts.
+   */
+  async getTypedAppClientByCreatorAndName(_typedClient: unknown, _params: unknown): Promise<never> {
+    throw new Error('TODO: getTypedAppClientByCreatorAndName is not yet implemented in the TypeScript ClientManager')
+  }
+
+  /**
+   * TODO: Provide typed app client lookup by ID after porting legacy algokit-utils-ts.
+   */
+  getTypedAppClientById(_typedClient: unknown, _params: unknown): never {
+    throw new Error('TODO: getTypedAppClientById is not yet implemented in the TypeScript ClientManager')
+  }
+
+  /**
+   * TODO: Provide typed app client lookup by network after porting legacy algokit-utils-ts.
+   */
+  async getTypedAppClientByNetwork(_typedClient: unknown, _params?: unknown): Promise<never> {
+    throw new Error('TODO: getTypedAppClientByNetwork is not yet implemented in the TypeScript ClientManager')
+  }
+
+  /**
+   * TODO: Provide typed app factory construction after porting legacy algokit-utils-ts.
+   */
+  getTypedAppFactory(_typedFactory: unknown, _params?: unknown): never {
+    throw new Error('TODO: getTypedAppFactory is not yet implemented in the TypeScript ClientManager')
+  }
+
+  /**
    * Derive configuration from the environment if possible, otherwise default to a localnet configuration.
    */
   static getConfigFromEnvironmentOrLocalNet(): AlgoConfig {
-    try {
-      const algodConfig = this.getAlgodConfigFromEnvironment()
-      const indexerConfig = this.safeGetConfig(this.getIndexerConfigFromEnvironment.bind(this))
+    if (!process || !process.env) {
+      throw new Error('Attempt to get default client configuration from a non Node.js context; supply the config instead')
+    }
+    const [algodConfig, indexerConfig, kmdConfig] = process.env.ALGOD_SERVER
+      ? [
+          ClientManager.getAlgodConfigFromEnvironment(),
+          process.env.INDEXER_SERVER ? ClientManager.getIndexerConfigFromEnvironment() : undefined,
+          !process.env.ALGOD_SERVER.includes('mainnet') && !process.env.ALGOD_SERVER.includes('testnet')
+            ? { ...ClientManager.getAlgodConfigFromEnvironment(), port: process?.env?.KMD_PORT ?? '4002' }
+            : undefined,
+        ]
+      : [
+          ClientManager.getDefaultLocalNetConfig(AlgorandService.Algod),
+          ClientManager.getDefaultLocalNetConfig(AlgorandService.Indexer),
+          ClientManager.getDefaultLocalNetConfig(AlgorandService.Kmd),
+        ]
 
-      const isPublicNetwork = /mainnet|testnet/.test(algodConfig.server)
-      const kmdConfig = isPublicNetwork
-        ? undefined
-        : this.safeGetConfig(() => this.getKmdConfigFromEnvironment(algodConfig)) ?? {
-            server: algodConfig.server,
-            port: this.parsePort(process.env.KMD_PORT) ?? this.parsePort(process.env.ALGOD_PORT) ?? 4002,
-            token: process.env.KMD_TOKEN ?? process.env.ALGOD_TOKEN,
-          }
-
-      return {
-        algodConfig,
-        indexerConfig,
-        kmdConfig,
-      }
-    } catch (error) {
-      return {
-        algodConfig: this.getDefaultLocalnetConfig(AlgorandService.Algod),
-        indexerConfig: this.getDefaultLocalnetConfig(AlgorandService.Indexer),
-        kmdConfig: this.getDefaultLocalnetConfig(AlgorandService.Kmd),
-      }
+    return {
+      algodConfig,
+      indexerConfig,
+      kmdConfig,
     }
   }
 
@@ -157,7 +250,9 @@ export class ClientManager {
   static getIndexerConfigFromEnvironment(): AlgoClientConfig {
     const server = process.env.INDEXER_SERVER
     if (!server) {
-      throw new Error('INDEXER_SERVER environment variable not found')
+      throw new ClientManagerError('ENVIRONMENT_MISSING', 'INDEXER_SERVER environment variable not found', {
+        variable: 'INDEXER_SERVER',
+      })
     }
 
     const port = this.parsePort(process.env.INDEXER_PORT)
@@ -177,7 +272,9 @@ export class ClientManager {
   static getAlgodConfigFromEnvironment(): AlgoClientConfig {
     const server = process.env.ALGOD_SERVER
     if (!server) {
-      throw new Error('ALGOD_SERVER environment variable not found')
+      throw new ClientManagerError('ENVIRONMENT_MISSING', 'ALGOD_SERVER environment variable not found', {
+        variable: 'ALGOD_SERVER',
+      })
     }
 
     const port = this.parsePort(process.env.ALGOD_PORT)
@@ -198,13 +295,12 @@ export class ClientManager {
   static getKmdConfigFromEnvironment(fallbackAlgodConfig?: AlgoClientConfig): AlgoClientConfig {
     const server = process.env.KMD_SERVER ?? fallbackAlgodConfig?.server ?? process.env.ALGOD_SERVER
     if (!server) {
-      throw new Error('KMD_SERVER environment variable not found')
+      throw new ClientManagerError('ENVIRONMENT_MISSING', 'KMD_SERVER environment variable not found', {
+        variable: 'KMD_SERVER',
+      })
     }
 
-    const port = this.parsePort(process.env.KMD_PORT)
-      ?? fallbackAlgodConfig?.port
-      ?? this.parsePort(process.env.ALGOD_PORT)
-      ?? 4002
+    const port = this.parsePort(process.env.KMD_PORT) ?? fallbackAlgodConfig?.port ?? this.parsePort(process.env.ALGOD_PORT) ?? 4002
 
     const token = process.env.KMD_TOKEN ?? process.env.ALGOD_TOKEN
 
@@ -215,10 +311,17 @@ export class ClientManager {
     }
   }
 
-  /**
-   * Returns an Algonode configuration for the provided network and service.
+  /** Returns the Algorand configuration to point to the free tier of the AlgoNode service.
+   *
+   * @param network Which network to connect to - TestNet or MainNet
+   * @param config Which algod config to return - Algod or Indexer
+   * @returns The AlgoNode client configuration
+   * @example
+   * ```typescript
+   * const config = ClientManager.getAlgoNodeConfig('testnet', 'algod')
+   * ```
    */
-  static getAlgonodeConfig(network: string, service: AlgorandService): AlgoClientConfig {
+  static getAlgoNodeConfig(network: string, service: AlgorandService): AlgoClientConfig {
     if (service === AlgorandService.Kmd) {
       throw new Error('KMD is not available on algonode')
     }
@@ -231,15 +334,26 @@ export class ClientManager {
     }
   }
 
-  /**
-   * Returns a default localnet configuration for the provided service.
+  /** Returns the Algorand configuration to point to the default LocalNet.
+   *
+   * @param configOrPort Which algod config to return - algod, kmd, or indexer OR a port number
+   * @returns The LocalNet client configuration
+   * @example
+   * ```typescript
+   * const config = ClientManager.getDefaultLocalNetConfig('algod')
+   * ```
    */
-  static getDefaultLocalnetConfig(service: AlgorandService): AlgoClientConfig {
-    const port = service === AlgorandService.Algod ? 4001 : service === AlgorandService.Indexer ? 8980 : 4002
-
+  public static getDefaultLocalNetConfig(configOrPort: AlgorandService | number): AlgoClientConfig {
     return {
-      server: 'http://localhost',
-      port,
+      server: `http://localhost`,
+      port:
+        configOrPort === AlgorandService.Algod
+          ? 4001
+          : configOrPort === AlgorandService.Indexer
+            ? 8980
+            : configOrPort === AlgorandService.Kmd
+              ? 4002
+              : configOrPort,
       token: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
     }
   }
@@ -248,24 +362,24 @@ export class ClientManager {
    * Creates an Algod client for the given configuration.
    */
   static getAlgodClient(config: AlgoClientConfig): AlgodClient {
-    const clientConfig = this.createHttpClientConfig(config, 'X-Algo-API-Token')
-    return new AlgodClient(clientConfig)
+    const { clientConfig, request } = this.createHttpClientComponents(config, 'X-Algo-API-Token')
+    return new AlgodClient(clientConfig, request)
   }
 
   /**
    * Creates an Indexer client for the given configuration.
    */
   static getIndexerClient(config: AlgoClientConfig): IndexerClient {
-    const clientConfig = this.createHttpClientConfig(config, 'X-Indexer-API-Token')
-    return new IndexerClient(clientConfig)
+    const { clientConfig, request } = this.createHttpClientComponents(config, 'X-Indexer-API-Token')
+    return new IndexerClient(clientConfig, request)
   }
 
   /**
    * Creates a KMD client for the given configuration.
    */
   static getKmdClient(config: AlgoClientConfig): KmdClient {
-    const clientConfig = this.createHttpClientConfig(config, 'X-KMD-API-Token')
-    return new KmdClient(clientConfig)
+    const { clientConfig, request } = this.createHttpClientComponents(config, 'X-KMD-API-Token')
+    return new KmdClient(clientConfig, request)
   }
 
   /**
@@ -297,8 +411,8 @@ export class ClientManager {
       const genesisHash = Buffer.from(params.genesisHash ?? new Uint8Array()).toString('base64')
 
       return {
-        isTestnet: genesisId === 'testnet-v1.0',
-        isMainnet: genesisId === 'mainnet-v1.0',
+        isTestnet: genesisIdIsTestnet(genesisId),
+        isMainnet: genesisIdIsMainnet(genesisId),
         isLocalnet: genesisIdIsLocalNet(genesisId),
         genesisId,
         genesisHash,
@@ -311,10 +425,28 @@ export class ClientManager {
     }
   }
 
-  private static createHttpClientConfig(config: AlgoClientConfig, defaultHeaderName: string) {
+  private static createHttpClientComponents(config: AlgoClientConfig, defaultHeaderName: string): HttpClientFactoryResult {
+    if (this.httpClientFactory) {
+      return this.httpClientFactory(config, defaultHeaderName)
+    }
+    const clientConfig = this.buildHttpClientConfig(config, defaultHeaderName)
+    return {
+      clientConfig,
+      request: new RetryHttpRequest(clientConfig),
+    }
+  }
+
+  private static buildHttpClientConfig(config: AlgoClientConfig, defaultHeaderName: string): HttpClientConfig {
     const baseUrl = this.buildBaseUrl(config)
     const headers = this.buildHeaders(config.token, defaultHeaderName)
     return headers ? { baseUrl, headers } : { baseUrl }
+  }
+
+  /**
+   * Configure a custom HTTP client factory, e.g. to integrate the retry-enabled HTTP layer.
+   */
+  static configureHttpClientFactory(factory: HttpClientFactory | undefined): void {
+    this.httpClientFactory = factory
   }
 
   private static buildHeaders(token: TokenHeader | undefined, defaultHeaderName: string): Record<string, string> | undefined {
