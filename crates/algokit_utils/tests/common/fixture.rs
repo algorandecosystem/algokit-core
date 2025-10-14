@@ -9,7 +9,7 @@ use algod_client::AlgodClient;
 use algokit_transact::Transaction;
 use algokit_utils::clients::algorand_client::AlgorandClientParams;
 use algokit_utils::transactions::TransactionComposerConfig;
-use algokit_utils::{AlgoConfig, AlgorandClient, ClientManager};
+use algokit_utils::{AlgoConfig, AlgorandClient, ClientManager, PaymentParams};
 use indexer_client::IndexerClient;
 use kmd_client::KmdClient;
 use rstest::*;
@@ -79,42 +79,33 @@ impl AlgorandFixture {
     }
 
     async fn generate_account_internal(
-        algod: Arc<AlgodClient>,
-        kmd: Arc<KmdClient>,
         algorand_client: &mut AlgorandClient,
         config: Option<TestAccountConfig>,
     ) -> Result<TestAccount, Box<dyn std::error::Error + Send + Sync>> {
-        let config = config.unwrap_or_default();
-        let mut dispenser = LocalNetDispenser::new(algod.clone(), kmd.clone());
-
         // Generate new account using ed25519_dalek
         let test_account = TestAccount::generate()?;
         let test_account_address = test_account.account().address();
+        let config = config.unwrap_or_default();
 
-        // Fund the account based on network type
-        match config.network_type {
-            NetworkType::LocalNet => {
-                dispenser
-                    .fund_account(&test_account_address.to_string(), config.initial_funds)
-                    .await?;
-            }
-            NetworkType::TestNet => {
-                return Err(format!(
-                    "⚠ TestNet funding not yet implemented. Please fund manually: {}",
-                    test_account_address
-                )
-                .into());
-            }
-            NetworkType::MainNet => {
-                return Err(format!(
-                    "⚠ MainNet detected. Account generated but not funded: {}",
-                    test_account_address
-                )
-                .into());
-            }
-        }
+        let mut account_manager = algorand_client.account_manager().lock().unwrap();
+        let dispenser = account_manager.dispenser_from_environment().await?;
+
+        algorand_client
+            .send()
+            .payment(
+                PaymentParams {
+                    sender: dispenser.address(),
+                    receiver: test_account_address,
+                    amount: config.initial_funds,
+                    note: Some(b"Funding test account".to_vec()),
+                    ..Default::default()
+                },
+                None,
+            )
+            .await?;
 
         algorand_client.set_signer(test_account_address, Arc::new(test_account.clone()));
+
         Ok(test_account)
     }
 

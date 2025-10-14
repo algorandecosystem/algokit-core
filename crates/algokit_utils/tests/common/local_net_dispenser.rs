@@ -1,11 +1,13 @@
+use std::error::Error;
 use std::{env, sync::Arc};
 
 use algod_client::AlgodClient;
 use algokit_transact::{
     AlgorandMsgpack, PaymentTransactionBuilder, Transaction, TransactionHeaderBuilder,
 };
-use algokit_utils::TransactionSigner;
+use algokit_utils::clients::KmdAccountManager;
 use algokit_utils::constants::UNENCRYPTED_DEFAULT_WALLET_NAME;
+use algokit_utils::{ClientManager, TransactionSigner};
 use kmd_client::KmdClient;
 use kmd_client::models::{
     ExportKeyRequest, GenerateKeyRequest, InitWalletHandleTokenRequest, ListKeysRequest,
@@ -16,23 +18,19 @@ use crate::common::TestAccount;
 
 /// LocalNet dispenser for funding test accounts using KMD
 pub struct LocalNetDispenser {
-    client: Arc<AlgodClient>,
-    kmd_client: Arc<KmdClient>,
-    kmd_wallet_name: String,
-    dispenser_account: Option<TestAccount>,
+    client_manager: Arc<ClientManager>,
+    kmd_account_manager: KmdAccountManager,
 }
 
 impl LocalNetDispenser {
     /// Create a new LocalNet dispenser
-    pub fn new(client: Arc<AlgodClient>, kmd_client: Arc<KmdClient>) -> Self {
-        let kmd_wallet_name = env::var("KMD_WALLET_NAME")
-            .unwrap_or_else(|_| UNENCRYPTED_DEFAULT_WALLET_NAME.to_string());
+    pub fn new(client_manager: Arc<ClientManager>) -> Self {
+        // TODO: PD - check with Al about KMD_WALLET_NAME
 
+        let kmd_account_manager = KmdAccountManager::new(client_manager.clone());
         Self {
-            client,
-            kmd_client,
-            kmd_wallet_name,
-            dispenser_account: None,
+            client_manager,
+            kmd_account_manager,
         }
     }
 
@@ -49,9 +47,7 @@ impl LocalNetDispenser {
 
     // TODO: PD - can we use kmd_account_manager here?
     /// Fetch the dispenser account using KMD
-    async fn fetch_dispenser_from_kmd(
-        &self,
-    ) -> Result<TestAccount, Box<dyn std::error::Error + Send + Sync>> {
+    async fn fetch_dispenser_from_kmd(&self) -> Result<TestAccount, Box<dyn Error + Send + Sync>> {
         let wallets_response = self
             .kmd_client
             .list_wallets()
@@ -185,6 +181,8 @@ impl LocalNetDispenser {
         recipient_address: &str,
         amount: u64,
     ) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+        self.kmd_account_manager.
+
         // Get transaction parameters first (before borrowing self mutably)
         let params = self
             .client

@@ -24,7 +24,6 @@ pub struct SigningAccount {
 }
 
 impl SigningAccount {
-    // TODO: PD - maybe convert this to mnemonic
     /// Create a new SigningAccount from a secret key
     pub fn new(secret_key: [u8; ALGORAND_SECRET_KEY_BYTE_LENGTH]) -> Self {
         Self { secret_key }
