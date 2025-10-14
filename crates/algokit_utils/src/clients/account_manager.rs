@@ -433,7 +433,7 @@ impl AccountManager {
         &self,
         sender: &Address,
         min_spending_balance: u64,
-        min_funding_increment: u64,
+        min_funding_increment: Option<u64>,
     ) -> Result<Option<u64>, AccountManagerError> {
         let account_info = self.get_information(sender).await?;
         let current_spending_balance = account_info.amount.saturating_sub(account_info.min_balance);
@@ -441,7 +441,7 @@ impl AccountManager {
         let amount_funded = calculate_fund_amount(
             min_spending_balance,
             current_spending_balance,
-            min_funding_increment,
+            min_funding_increment.unwrap_or_default(),
         );
 
         Ok(amount_funded)
@@ -457,7 +457,7 @@ impl AccountManager {
     /// * `account_to_fund` - The address of the account to fund
     /// * `dispenser_account` - The address of the account to use as a dispenser funding source
     /// * `min_spending_balance` - The minimum balance of Algo (in microAlgos) that the account should have available to spend (i.e. on top of minimum balance requirement)
-    /// * `min_funding_increment` - The minimum amount to fund if funding is needed (defaults to 0)
+    /// * `min_funding_increment` - The Optional minimum amount to fund if funding is needed (defaults to 0)
     /// * `send_params` - Optional parameters to control the execution of the transaction
     ///
     /// # Returns
@@ -468,7 +468,7 @@ impl AccountManager {
         account_to_fund: &Address,
         dispenser_account: &Address,
         min_spending_balance: u64,
-        min_funding_increment: u64,
+        min_funding_increment: Option<u64>,
         send_params: Option<SendParams>,
     ) -> Result<Option<EnsureFundedResult>, AccountManagerError> {
         let amount_funded = self
@@ -531,7 +531,7 @@ impl AccountManager {
     /// # Parameters
     /// * `account_to_fund` - The address of the account to fund
     /// * `min_spending_balance` - The minimum balance of Algo (in microAlgos) that the account should have available to spend (i.e. on top of minimum balance requirement)
-    /// * `min_funding_increment` - The minimum amount to fund if funding is needed (defaults to 0)
+    /// * `min_funding_increment` - The optional minimum amount to fund if funding is needed (defaults to 0)
     /// * `send_params` - Optional parameters to control the execution of the transaction
     ///
     /// # Returns
@@ -541,7 +541,7 @@ impl AccountManager {
         &mut self,
         account_to_fund: &Address,
         min_spending_balance: u64,
-        min_funding_increment: u64,
+        min_funding_increment: Option<u64>,
         send_params: Option<SendParams>,
     ) -> Result<Option<EnsureFundedResult>, AccountManagerError> {
         // Get the dispenser account from environment
@@ -569,7 +569,7 @@ impl AccountManager {
     /// * `account_to_fund` - The address of the account to fund
     /// * `dispenser_client` - The TestNet dispenser funding client
     /// * `min_spending_balance` - The minimum balance of Algo (in microAlgos) that the account should have available to spend (i.e. on top of minimum balance requirement)
-    /// * `min_funding_increment` - The minimum amount to fund if funding is needed (defaults to 0)
+    /// * `min_funding_increment` - The optional minimum amount to fund if funding is needed (defaults to 0)
     ///
     /// # Returns
     /// - `Some(DispenserFundResponse)` - The result of executing the dispensing transaction
@@ -579,7 +579,7 @@ impl AccountManager {
         account_to_fund: &Address,
         dispenser_client: &TestNetDispenserApiClient,
         min_spending_balance: u64,
-        min_funding_increment: u64,
+        min_funding_increment: Option<u64>,
     ) -> Result<Option<DispenserFundResponse>, AccountManagerError> {
         let is_testnet = self.client_manager.is_testnet().await.map_err(|e| {
             AccountManagerError::EnvironmentError {

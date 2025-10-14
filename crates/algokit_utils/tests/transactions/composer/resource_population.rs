@@ -1,6 +1,5 @@
 use crate::common::{
-    AlgorandFixture, AlgorandFixtureResult, LocalNetDispenser, TestAccountConfig, TestResult,
-    algorand_fixture,
+    AlgorandFixture, AlgorandFixtureResult, TestAccountConfig, TestResult, algorand_fixture,
 };
 use algokit_abi::{ABIMethod, ABIType, ABIValue};
 use algokit_test_artifacts::resource_population;
@@ -1174,11 +1173,14 @@ async fn fund_app_account(
     app_id: u64,
     amount: u64,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let mut dispenser = LocalNetDispenser::new(context.algod.clone(), context.kmd.clone());
+    let mut account_manager = context.algorand_client.account_manager().lock().unwrap();
+    let dispenser = account_manager.dispenser_from_environment().await?;
+
     let app_address = Address::from_app_id(&app_id);
-    dispenser
-        .fund_account(&app_address.to_string(), amount)
+    account_manager
+        .ensure_funded(&app_address, &dispenser.address(), amount, None, None)
         .await?;
+
     Ok(())
 }
 

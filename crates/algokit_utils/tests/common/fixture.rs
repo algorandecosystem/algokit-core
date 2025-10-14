@@ -1,10 +1,6 @@
-use std::sync::Arc;
-
-use crate::common::LocalNetDispenser;
-use crate::common::logging::init_test_logging;
-
 use super::indexer_helpers::wait_for_indexer_transaction;
 use super::test_account::{NetworkType, TestAccount, TestAccountConfig};
+use crate::common::logging::init_test_logging;
 use algod_client::AlgodClient;
 use algokit_transact::Transaction;
 use algokit_utils::clients::algorand_client::AlgorandClientParams;
@@ -13,6 +9,7 @@ use algokit_utils::{AlgoConfig, AlgorandClient, ClientManager, PaymentParams};
 use indexer_client::IndexerClient;
 use kmd_client::KmdClient;
 use rstest::*;
+use std::sync::Arc;
 
 pub struct AlgorandFixture {
     pub algod: Arc<AlgodClient>,
@@ -57,8 +54,6 @@ impl AlgorandFixture {
         let mut algorand_client = AlgorandClient::new(params);
 
         let test_account = Self::generate_account_internal(
-            algod.clone(),
-            kmd.clone(),
             &mut algorand_client,
             Some(TestAccountConfig {
                 initial_funds: 10_000_000,
@@ -89,13 +84,14 @@ impl AlgorandFixture {
 
         let mut account_manager = algorand_client.account_manager().lock().unwrap();
         let dispenser = account_manager.dispenser_from_environment().await?;
+        drop(account_manager); // Release the lock
 
         algorand_client
             .send()
             .payment(
                 PaymentParams {
                     sender: dispenser.address(),
-                    receiver: test_account_address,
+                    receiver: test_account_address.clone(),
                     amount: config.initial_funds,
                     note: Some(b"Funding test account".to_vec()),
                     ..Default::default()
@@ -113,13 +109,7 @@ impl AlgorandFixture {
         &mut self,
         config: Option<TestAccountConfig>,
     ) -> Result<TestAccount, Box<dyn std::error::Error + Send + Sync>> {
-        Self::generate_account_internal(
-            self.algod.clone(),
-            self.kmd.clone(),
-            &mut self.algorand_client,
-            config,
-        )
-        .await
+        Self::generate_account_internal(&mut self.algorand_client, config).await
     }
 }
 

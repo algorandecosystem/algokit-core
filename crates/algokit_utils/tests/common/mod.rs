@@ -3,7 +3,6 @@
 pub mod app_fixture;
 pub mod fixture;
 pub mod indexer_helpers;
-pub mod local_net_dispenser;
 pub mod logging;
 pub mod test_account;
 
@@ -26,7 +25,6 @@ pub use fixture::{AlgorandFixture, AlgorandFixtureResult, algorand_fixture};
 pub use indexer_helpers::{
     IndexerWaitConfig, IndexerWaitError, wait_for_indexer, wait_for_indexer_transaction,
 };
-pub use local_net_dispenser::LocalNetDispenser;
 pub use test_account::{NetworkType, TestAccount, TestAccountConfig};
 
 pub type TestResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
