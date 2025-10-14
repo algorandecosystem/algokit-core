@@ -16,8 +16,6 @@ use rand::rngs::OsRng;
 use snafu::Snafu;
 use std::{collections::HashMap, sync::Arc};
 
-// TODO: PD - rename test_net to testnet
-
 /// A signing account that can sign transactions using a secret key
 #[derive(Debug, Clone)]
 pub struct SigningAccount {
@@ -577,7 +575,7 @@ impl AccountManager {
     /// # Returns
     /// - `Some(DispenserFundResponse)` - The result of executing the dispensing transaction
     /// - `None` - If no funds were needed
-    pub async fn ensure_funded_from_test_net_dispenser_api(
+    pub async fn ensure_funded_from_testnet_dispenser_api(
         &mut self,
         account_to_fund: &Address,
         dispenser_client: &TestNetDispenserApiClient,
