@@ -224,6 +224,7 @@ class SchemaProcessor:
                     is_signed_txn=signed_txn,
                     is_optional=is_optional,
                     is_nullable=is_nullable,
+                    default_value=prop_schema.get("default"),
                 )
             )
 

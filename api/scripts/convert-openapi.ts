@@ -1015,6 +1015,13 @@ async function processKmdSpec() {
           "x-algokit-bytes-base64": true,
         },
       },
+      {
+        fieldName: "wallet_driver_name",
+        addItems: {
+          // Inject default wallet driver name used by KMD when not provided
+          default: "sqlite",
+        },
+      },
     ],
     vendorExtensionTransforms: [
       {

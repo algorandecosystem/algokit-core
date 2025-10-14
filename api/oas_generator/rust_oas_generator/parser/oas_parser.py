@@ -384,6 +384,8 @@ class Property:
     vendor_extensions: list[tuple[str, Any]] = field(default_factory=list)
     format: str | None = None
     items: "Property | None" = None
+    # OpenAPI default value for this property, if present
+    default_value: Any | None = None
     rust_name: str = field(init=False)
     rust_field_name: str = field(init=False)
     rust_type_with_msgpack: str = field(init=False)
@@ -1011,6 +1013,7 @@ class OASParser:
             vendor_extensions=prop_vendor_extensions,
             format=prop_data.get("format"),
             items=items_property,
+            default_value=prop_data.get("default"),
         )
 
     def _extract_property_vendor_extensions(self, prop_data: dict[str, Any]) -> list[tuple[str, Any]]:

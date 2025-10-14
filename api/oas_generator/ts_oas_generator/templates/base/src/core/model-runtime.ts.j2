@@ -47,6 +47,8 @@ export interface FieldMetadata {
    * are merged into the parent object (no own wire key).
    */
   readonly flattened?: boolean;
+  /** Default value from OpenAPI schema, if present. */
+  readonly defaultValue?: unknown;
 }
 
 export type ModelKind = 'object' | 'array' | 'passthrough';
@@ -137,6 +139,12 @@ export class AlgorandSerializer {
     );
     if (ctx.direction === 'encode') {
       const src = value as Record<string, unknown>;
+      // Apply default values for missing fields before encoding (OpenAPI defaults)
+      for (const field of fields) {
+        if (src[field.name] === undefined && field.defaultValue !== undefined) {
+          (src as Record<string, unknown>)[field.name] = field.defaultValue;
+        }
+      }
       const out: Record<string, unknown> = {};
       for (const field of fields) {
         const fieldValue = src[field.name];
@@ -161,6 +169,12 @@ export class AlgorandSerializer {
     }
 
     const src = value as Record<string, unknown>;
+    // Apply default values for missing fields (OpenAPI defaults)
+    for (const field of fields) {
+      if (src[field.name] === undefined && field.defaultValue !== undefined) {
+        (src as Record<string, unknown>)[field.name] = field.defaultValue;
+      }
+    }
     const out: Record<string, unknown> = {};
     const fieldByWire = new Map(fields.filter((f) => !!f.wireKey).map((field) => [field.wireKey as string, field]));
 

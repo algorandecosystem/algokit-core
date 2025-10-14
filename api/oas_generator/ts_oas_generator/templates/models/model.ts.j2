@@ -81,6 +81,7 @@ export const {{ modelName }}Meta: ModelMetadata = {
       optional: {{ 'true' if f.is_optional else 'false' }},
       nullable: {{ 'true' if f.is_nullable else 'false' }},
       type: {{ field_type(f) }},
+      {% if f.default_value is not none %}defaultValue: {{ f.default_value | ts_string_literal if f.ts_type == 'string' else f.default_value }},{% endif %}
     },
 {%   endfor %}
   ],

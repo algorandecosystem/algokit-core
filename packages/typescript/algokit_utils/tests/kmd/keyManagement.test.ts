@@ -19,7 +19,6 @@ describe('KMD key management', () => {
     const createWalletResponse = await client.createWallet({
       body: {
         walletName,
-        walletDriverName: WALLET_DRIVER,
         walletPassword: env.walletPassword,
       } satisfies CreateWalletRequest,
     })

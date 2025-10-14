@@ -92,7 +92,17 @@ pub type {{ schema.rust_struct_name }} = {{ schema.underlying_rust_type }};
         {% set _ = complex_signed_tx_fields.append(property) %}
     {% endif %}
 {% endfor %}
-{% set needs_manual_default = complex_signed_tx_fields|length > 0 %}
+{# Determine if any optional properties have OpenAPI defaults #}
+{% set ns = namespace(has_optional_default=false, has_any_default=false) %}
+{% for property in schema.properties %}
+    {% if (not property.required) and (property.default_value is not none) %}
+        {% set ns.has_optional_default = true %}
+    {% endif %}
+    {% if property.default_value is not none %}
+        {% set ns.has_any_default = true %}
+    {% endif %}
+{% endfor %}
+{% set needs_manual_default = complex_signed_tx_fields|length > 0 or ns.has_optional_default or ns.has_any_default %}
 #[derive(Clone, {% if not needs_manual_default %}Default, {% endif %}Debug, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 {% if schema.vendor_extensions.get('x-algokit-signed-txn') %}
@@ -133,7 +143,9 @@ pub struct {{ schema.rust_struct_name }} {
     {% endif %}
     {% endif %}
     {% endif %}
-    #[serde(rename = "{{ property.name }}"{% if not property.required %}, skip_serializing_if = "Option::is_none"{% endif %})]
+    #[serde(
+        rename = "{{ property.name }}"{% if not property.required %}, skip_serializing_if = "Option::is_none"{% endif %}{% if property.default_value is not none %}, default = "{{ schema.rust_struct_name }}::default_{{ property.rust_field_name }}"{% endif %}
+    )]
     {% if property.is_signed_transaction %}
     pub {{ property.rust_field_name }}: {% if property.required %}{% if property.rust_type.startswith('Vec<') %}Vec<AlgokitSignedTransaction>{% else %}AlgokitSignedTransaction{% endif %}{% else %}Option<{% if property.rust_type.startswith('Vec<') %}Vec<AlgokitSignedTransaction>{% else %}AlgokitSignedTransaction{% endif %}>{% endif %},
     {% else %}
@@ -175,13 +187,43 @@ impl Default for {{ schema.rust_struct_name }} {
             {% elif property.required %}
             {{ property.rust_field_name }}: {% if property.rust_type == "String" %}"".to_string(){% elif property.rust_type.startswith('Vec<') %}Vec::new(){% elif property.rust_type.startswith('i') or property.rust_type.startswith('u') %}0{% elif property.rust_type == "bool" %}false{% elif property.rust_type == "serde_json::Value" %}serde_json::Value::Null{% else %}Default::default(){% endif %},
             {% else %}
-            {{ property.rust_field_name }}: None,
+            {{ property.rust_field_name }}: {% if property.default_value is not none %}{{ schema.rust_struct_name }}::default_{{ property.rust_field_name }}(){% else %}None{% endif %},
             {% endif %}
 {% endfor %}
         }
     }
 }
 {% endif %}
+
+{% for property in schema.properties %}
+{% if property.default_value is not none %}
+impl {{ schema.rust_struct_name }} {
+    fn default_{{ property.rust_field_name }}() -> {% if property.required %}{{ property.rust_type_with_msgpack }}{% else %}Option<{{ property.rust_type_with_msgpack }}>{% endif %} {
+        {% if property.required %}
+            {% if property.rust_type == "String" %}
+            {{ property.default_value | rust_string_literal }}.to_string()
+            {% elif property.rust_type.startswith('u') or property.rust_type.startswith('i') %}
+            {{ property.default_value | string }}
+            {% elif property.rust_type == "bool" %}
+            {{ 'true' if property.default_value else 'false' }}
+            {% else %}
+            Default::default()
+            {% endif %}
+        {% else %}
+            {% if property.rust_type == "String" %}
+            Some({{ property.default_value | rust_string_literal }}.to_string())
+            {% elif property.rust_type.startswith('u') or property.rust_type.startswith('i') %}
+            Some({{ property.default_value | string }})
+            {% elif property.rust_type == "bool" %}
+            Some({{ 'true' if property.default_value else 'false' }})
+            {% else %}
+            Some(Default::default())
+            {% endif %}
+        {% endif %}
+    }
+}
+{% endif %}
+{% endfor %}
 
 {% if schema.vendor_extensions.get('x-algokit-signed-txn') and not schema.underlying_rust_type %}
 impl From<AlgokitSignedTransaction> for {{ schema.rust_struct_name }} {

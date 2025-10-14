@@ -279,7 +279,6 @@ impl KmdAccountManager {
             let create_response = kmd
                 .create_wallet(CreateWalletRequest {
                     wallet_name: Some(wallet_name.to_string()),
-                    wallet_driver_name: Some("sqlite".to_string()), // TODO: PD - discuss with Al to default this value
                     ..Default::default()
                 })
                 .await

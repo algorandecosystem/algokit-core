@@ -22,7 +22,6 @@ async fn wallet_lifecycle() -> Result<(), Box<dyn std::error::Error + Send + Syn
     let create_response = client
         .create_wallet(CreateWalletRequest {
             wallet_name: Some(wallet_name.clone()),
-            wallet_driver_name: Some("sqlite".to_string()),
             wallet_password: Some("testpass".to_string()),
             ..Default::default()
         })

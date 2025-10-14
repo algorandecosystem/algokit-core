@@ -122,6 +122,7 @@ class FieldDescriptor:
     is_signed_txn: bool
     is_optional: bool
     is_nullable: bool
+    default_value: Any | None = None
 
 
 @dataclass

@@ -29,6 +29,7 @@ export const CreateWalletRequestMeta: ModelMetadata = {
       optional: true,
       nullable: false,
       type: { kind: 'scalar' },
+      defaultValue: `sqlite`,
     },
     {
       name: 'walletName',
