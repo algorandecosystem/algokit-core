@@ -1,4 +1,4 @@
-use algokit_transact::Address;
+use algokit_transact::{Address, constants::MAX_TX_GROUP_SIZE};
 use algokit_utils::{
     clients::asset_manager::AssetManagerError,
     transactions::{AssetCreateParams, AssetOptInParams},
@@ -185,6 +185,31 @@ async fn test_bulk_opt_in_success(#[future] algorand_fixture: AlgorandFixtureRes
     Ok(())
 }
 
+#[rstest]
+#[tokio::test]
+async fn test_bulk_opt_in_batches(#[future] algorand_fixture: AlgorandFixtureResult) -> TestResult {
+    let mut algorand_fixture = algorand_fixture.await?;
+    let asset_count = MAX_TX_GROUP_SIZE + 4;
+
+    let assets = create_multiple_test_assets(&mut algorand_fixture, asset_count).await?;
+    let asset_ids: Vec<u64> = assets.iter().map(|(id, _)| *id).collect();
+
+    let opt_in_account = algorand_fixture.generate_account(None).await?;
+    let opt_in_address = opt_in_account.account().address();
+
+    let asset_manager = algorand_fixture.algorand_client.asset();
+    let results = asset_manager
+        .bulk_opt_in(&opt_in_address, &asset_ids)
+        .await?;
+
+    assert_eq!(results.len(), asset_count);
+    for (expected, actual) in asset_ids.iter().zip(results.iter()) {
+        assert_eq!(expected, &actual.asset_id);
+    }
+
+    Ok(())
+}
+
 /// Test bulk opt-in with empty asset list
 #[rstest]
 #[tokio::test]
@@ -267,6 +292,46 @@ async fn test_bulk_opt_out_success(
             .await;
         // Should get an error because the account is no longer opted in
         assert!(result.is_err());
+    }
+
+    Ok(())
+}
+
+#[rstest]
+#[tokio::test]
+async fn test_bulk_opt_out_batches(
+    #[future] algorand_fixture: AlgorandFixtureResult,
+) -> TestResult {
+    let mut algorand_fixture = algorand_fixture.await?;
+    let asset_count = MAX_TX_GROUP_SIZE + 2;
+
+    let assets = create_multiple_test_assets(&mut algorand_fixture, asset_count).await?;
+    let asset_ids: Vec<u64> = assets.iter().map(|(id, _)| *id).collect();
+
+    let test_account = algorand_fixture.generate_account(None).await?;
+    let test_address = test_account.account().address();
+
+    let asset_manager = algorand_fixture.algorand_client.asset();
+
+    let mut composer = algorand_fixture.algorand_client.new_composer(None);
+    for &asset_id in &asset_ids {
+        let opt_in_params = AssetOptInParams {
+            sender: test_address.clone(),
+            signer: Some(Arc::new(test_account.clone())),
+            asset_id,
+            ..Default::default()
+        };
+        composer.add_asset_opt_in(opt_in_params)?;
+    }
+    composer.send(Default::default()).await?;
+
+    let results = asset_manager
+        .bulk_opt_out(&test_address, &asset_ids, None)
+        .await?;
+
+    assert_eq!(results.len(), asset_count);
+    for (expected, actual) in asset_ids.iter().zip(results.iter()) {
+        assert_eq!(expected, &actual.asset_id);
     }
 
     Ok(())
