@@ -1,8 +1,8 @@
 use algod_client::apis::{AlgodClient, Error as AlgodError};
 use algod_client::models::{AccountAssetInformation as AlgodAccountAssetInformation, Asset};
-use algokit_transact::Address;
+use algokit_transact::{Address, constants::MAX_TX_GROUP_SIZE};
 use snafu::Snafu;
-use std::{str::FromStr, sync::Arc};
+use std::{collections::HashMap, str::FromStr, sync::Arc};
 
 use crate::transactions::{
     AssetOptInParams, AssetOptOutParams, ComposerError, TransactionComposer,
@@ -93,7 +93,7 @@ pub struct AssetInformation {
     /// The optional name of the unit of this asset as bytes.
     ///
     /// Max size is 8 bytes.
-    pub unit_name_b64: Option<Vec<u8>>,
+    pub unit_name_bytes: Option<Vec<u8>>,
 
     /// The optional name of the asset.
     ///
@@ -103,7 +103,7 @@ pub struct AssetInformation {
     /// The optional name of the asset as bytes.
     ///
     /// Max size is 32 bytes.
-    pub asset_name_b64: Option<Vec<u8>>,
+    pub asset_name_bytes: Option<Vec<u8>>,
 
     /// Optional URL where more information about the asset can be retrieved (e.g. metadata).
     ///
@@ -113,7 +113,7 @@ pub struct AssetInformation {
     /// Optional URL where more information about the asset can be retrieved as bytes.
     ///
     /// Max size is 96 bytes.
-    pub url_b64: Option<Vec<u8>>,
+    pub url_bytes: Option<Vec<u8>>,
 
     /// 32-byte hash of some metadata that is relevant to the asset and/or asset holders.
     ///
@@ -134,11 +134,11 @@ impl From<Asset> for AssetInformation {
             freeze: asset.params.freeze,
             clawback: asset.params.clawback,
             unit_name: asset.params.unit_name,
-            unit_name_b64: asset.params.unit_name_b64,
+            unit_name_bytes: asset.params.unit_name_b64,
             asset_name: asset.params.name,
-            asset_name_b64: asset.params.name_b64,
+            asset_name_bytes: asset.params.name_b64,
             url: asset.params.url,
-            url_b64: asset.params.url_b64,
+            url_bytes: asset.params.url_b64,
             metadata_hash: asset.params.metadata_hash,
         }
     }
@@ -203,36 +203,35 @@ impl AssetManager {
             return Ok(Vec::new());
         }
 
-        let mut composer = (self.new_composer)(None);
+        let mut bulk_results = Vec::with_capacity(asset_ids.len());
 
-        // Add asset opt-in transactions for each asset
-        for &asset_id in asset_ids {
-            let opt_in_params = AssetOptInParams {
-                sender: account.clone(),
-                asset_id,
-                ..Default::default()
-            };
+        for asset_chunk in asset_ids.chunks(MAX_TX_GROUP_SIZE) {
+            let mut composer = (self.new_composer)(None);
 
-            composer
-                .add_asset_opt_in(opt_in_params)
+            for &asset_id in asset_chunk {
+                let opt_in_params = AssetOptInParams {
+                    sender: account.clone(),
+                    asset_id,
+                    ..Default::default()
+                };
+
+                composer
+                    .add_asset_opt_in(opt_in_params)
+                    .map_err(|e| AssetManagerError::ComposerError { source: e })?;
+            }
+
+            let composer_result = composer
+                .send(Default::default())
+                .await
                 .map_err(|e| AssetManagerError::ComposerError { source: e })?;
+
+            bulk_results.extend(asset_chunk.iter().zip(composer_result.results.iter()).map(
+                |(&asset_id, result)| BulkAssetOptInOutResult {
+                    asset_id,
+                    transaction_id: result.transaction_id.clone(),
+                },
+            ));
         }
-
-        // Send the transaction group
-        let composer_result = composer
-            .send(Default::default())
-            .await
-            .map_err(|e| AssetManagerError::ComposerError { source: e })?;
-
-        // Map transaction IDs back to assets
-        let bulk_results: Vec<BulkAssetOptInOutResult> = asset_ids
-            .iter()
-            .zip(composer_result.results.iter())
-            .map(|(&asset_id, result)| BulkAssetOptInOutResult {
-                asset_id,
-                transaction_id: result.transaction_id.clone(),
-            })
-            .collect();
 
         Ok(bulk_results)
     }
@@ -269,45 +268,49 @@ impl AssetManager {
         }
 
         // Fetch asset information to get creators
-        let mut asset_creators = Vec::new();
+        let mut asset_creators = HashMap::with_capacity(asset_ids.len());
         for &asset_id in asset_ids {
             let asset_info = self.get_by_id(asset_id).await?;
             let creator = Address::from_str(&asset_info.creator)
                 .map_err(|_| AssetManagerError::AssetNotFound { asset_id })?;
-            asset_creators.push(creator);
+            asset_creators.insert(asset_id, creator);
         }
 
-        let mut composer = (self.new_composer)(None);
+        let mut bulk_results = Vec::with_capacity(asset_ids.len());
 
-        // Add asset opt-out transactions for each asset
-        for (i, &asset_id) in asset_ids.iter().enumerate() {
-            let opt_out_params = AssetOptOutParams {
-                sender: account.clone(),
-                asset_id,
-                close_remainder_to: Some(asset_creators[i].clone()),
-                ..Default::default()
-            };
+        for asset_chunk in asset_ids.chunks(MAX_TX_GROUP_SIZE) {
+            let mut composer = (self.new_composer)(None);
 
-            composer
-                .add_asset_opt_out(opt_out_params)
+            for &asset_id in asset_chunk {
+                let creator = asset_creators
+                    .get(&asset_id)
+                    .cloned()
+                    .expect("Creator information should be available for all asset IDs");
+
+                let opt_out_params = AssetOptOutParams {
+                    sender: account.clone(),
+                    asset_id,
+                    close_remainder_to: Some(creator),
+                    ..Default::default()
+                };
+
+                composer
+                    .add_asset_opt_out(opt_out_params)
+                    .map_err(|e| AssetManagerError::ComposerError { source: e })?;
+            }
+
+            let composer_result = composer
+                .send(Default::default())
+                .await
                 .map_err(|e| AssetManagerError::ComposerError { source: e })?;
+
+            bulk_results.extend(asset_chunk.iter().zip(composer_result.results.iter()).map(
+                |(&asset_id, result)| BulkAssetOptInOutResult {
+                    asset_id,
+                    transaction_id: result.transaction_id.clone(),
+                },
+            ));
         }
-
-        // Send the transaction group
-        let composer_result = composer
-            .send(Default::default())
-            .await
-            .map_err(|e| AssetManagerError::ComposerError { source: e })?;
-
-        // Map transaction IDs back to assets
-        let bulk_results: Vec<BulkAssetOptInOutResult> = asset_ids
-            .iter()
-            .zip(composer_result.results.iter())
-            .map(|(&asset_id, result)| BulkAssetOptInOutResult {
-                asset_id,
-                transaction_id: result.transaction_id.clone(),
-            })
-            .collect();
 
         Ok(bulk_results)
     }
