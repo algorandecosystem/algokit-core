@@ -20,6 +20,10 @@ export enum AlgorandService {
   Kmd = 'kmd',
 }
 
+const LOCALNET_GENESIS_IDS = new Set(['devnet-v1', 'sandnet-v1', 'dockernet-v1'])
+const TESTNET_GENESIS_IDS = new Set(['testnet-v1.0', 'testnet-v1', 'testnet'])
+const MAINNET_GENESIS_IDS = new Set(['mainnet-v1.0', 'mainnet-v1', 'mainnet'])
+
 /** Config for an Algorand SDK client. */
 export interface AlgoClientConfig {
   /** Base URL of the server e.g. http://localhost, https://testnet-api.algonode.cloud/, etc. */
@@ -60,5 +64,13 @@ export interface NetworkDetails {
  * @returns Whether the given genesis ID is associated with a LocalNet network
  */
 export function genesisIdIsLocalNet(genesisId: string): boolean {
-  return genesisId === 'devnet-v1' || genesisId === 'sandnet-v1' || genesisId === 'dockernet-v1'
+  return LOCALNET_GENESIS_IDS.has(genesisId)
+}
+
+export function genesisIdIsTestnet(genesisId: string): boolean {
+  return TESTNET_GENESIS_IDS.has(genesisId)
+}
+
+export function genesisIdIsMainnet(genesisId: string): boolean {
+  return MAINNET_GENESIS_IDS.has(genesisId)
 }
