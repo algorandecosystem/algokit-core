@@ -199,13 +199,10 @@ export class AssetManager {
         clawback: asset.params.clawback,
         unitName: asset.params.unitName,
         unitNameAsBytes: asset.params.unitNameB64,
-        unitNameB64: asset.params.unitNameB64,
         assetName: asset.params.name,
         assetNameAsBytes: asset.params.nameB64,
-        assetNameB64: asset.params.nameB64,
         url: asset.params.url,
         urlAsBytes: asset.params.urlB64,
-        urlB64: asset.params.urlB64,
         metadataHash: asset.params.metadataHash,
       }
     } catch (error) {
@@ -249,10 +246,9 @@ export class AssetManager {
       return []
     }
 
-    const normalizedAssetIds = assetIds.map((assetId) => BigInt(assetId))
     const results: BulkAssetOptInOutResult[] = []
 
-    for (const batch of chunkArray(normalizedAssetIds, MAX_TX_GROUP_SIZE)) {
+    for (const batch of chunkArray(assetIds, MAX_TX_GROUP_SIZE)) {
       const composer = this.newComposer()
 
       for (const assetId of batch) {
@@ -300,12 +296,11 @@ export class AssetManager {
       return []
     }
 
-    const normalizedAssetIds = assetIds.map((assetId) => BigInt(assetId))
     const shouldCheckBalance = ensureZeroBalance ?? false
     const results: BulkAssetOptInOutResult[] = []
 
     if (shouldCheckBalance) {
-      for (const assetId of normalizedAssetIds) {
+      for (const assetId of assetIds) {
         const accountInfo = await this.getAccountInformation(account, assetId).catch((error: unknown) => {
           if (error instanceof AssetManagerError && error.code === 'NOT_OPTED_IN') {
             throw new AssetManagerError(
@@ -334,7 +329,7 @@ export class AssetManager {
 
     const creatorCache = new Map<bigint, string>()
 
-    for (const batch of chunkArray(normalizedAssetIds, MAX_TX_GROUP_SIZE)) {
+    for (const batch of chunkArray(assetIds, MAX_TX_GROUP_SIZE)) {
       const composer = this.newComposer()
 
       const creators: string[] = []
