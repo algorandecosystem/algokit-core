@@ -16,7 +16,7 @@ use rand::rngs::OsRng;
 use snafu::Snafu;
 use std::{collections::HashMap, sync::Arc};
 
-// TODO: rename test_net to testnet
+// TODO: PD - rename test_net to testnet
 
 /// A signing account that can sign transactions using a secret key
 #[derive(Debug, Clone)]
@@ -26,7 +26,7 @@ pub struct SigningAccount {
 }
 
 impl SigningAccount {
-    // TODO: maybe convert this to mnemonic
+    // TODO: PD - maybe convert this to mnemonic
     /// Create a new SigningAccount from a secret key
     pub fn new(secret_key: [u8; ALGORAND_SECRET_KEY_BYTE_LENGTH]) -> Self {
         Self { secret_key }
@@ -302,7 +302,7 @@ impl AccountManager {
         Ok(signing_account)
     }
 
-    // TODO: implement multisig and logicsig
+    // TODO: PD - implement multisig and logicsig
 
     /// Tracks and returns a new, random Algorand account with secret key loaded.
     ///

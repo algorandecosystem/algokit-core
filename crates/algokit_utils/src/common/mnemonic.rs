@@ -1,8 +1,6 @@
 use sha2::{Digest, Sha512_256};
 use std::collections::HashMap;
 
-// TODO: consolidate this file
-
 const BITS_PER_WORD: usize = 11;
 const KEY_LEN_BYTES: usize = 32;
 const MNEM_LEN_WORDS: usize = 25; // includes checksum word

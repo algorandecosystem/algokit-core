@@ -47,7 +47,7 @@ impl LocalNetDispenser {
         Ok(self.dispenser_account.as_ref().unwrap())
     }
 
-    // TODO: can we use kmd_account_manager here?
+    // TODO: PD - can we use kmd_account_manager here?
     /// Fetch the dispenser account using KMD
     async fn fetch_dispenser_from_kmd(
         &self,

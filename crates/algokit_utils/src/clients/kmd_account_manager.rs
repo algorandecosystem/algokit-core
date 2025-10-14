@@ -47,7 +47,7 @@ impl KmdAccountManager {
 
         if !is_localnet {
             return Err(AccountManagerError::KmdError {
-                // TODO: make this message better
+                // TODO: PD - make this message better
                 message: "KMD is only available on LocalNet".to_string(),
             });
         }
@@ -279,7 +279,7 @@ impl KmdAccountManager {
             let create_response = kmd
                 .create_wallet(CreateWalletRequest {
                     wallet_name: Some(wallet_name.to_string()),
-                    wallet_driver_name: Some("sqlite".to_string()), // TODO: discuss with Al to default this value
+                    wallet_driver_name: Some("sqlite".to_string()), // TODO: PD - discuss with Al to default this value
                     ..Default::default()
                 })
                 .await
