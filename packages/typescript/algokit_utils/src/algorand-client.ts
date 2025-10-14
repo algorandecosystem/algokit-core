@@ -2,11 +2,7 @@ import { AppManager } from './clients/app-manager'
 import { AssetManager } from './clients/asset-manager'
 import { ClientManager } from './clients/client-manager'
 import { AlgoConfig, AlgorandService } from './clients/network-client'
-import {
-  TransactionComposer,
-  TransactionComposerConfig,
-  TransactionComposerParams,
-} from './transactions/composer'
+import { TransactionComposer, TransactionComposerConfig, TransactionComposerParams } from './transactions/composer'
 import { SignerGetter, TransactionSigner } from './transactions/common'
 import type { TransactionParams } from '@algorandfoundation/algod-client'
 
@@ -139,29 +135,38 @@ export class AlgorandClient {
 
   /** Creates an AlgorandClient configured for a local development network. */
   static localnet(composerConfig?: TransactionComposerConfig): AlgorandClient {
-    return AlgorandClient.fromConfig({
-      algodConfig: ClientManager.getDefaultLocalnetConfig(AlgorandService.Algod),
-      indexerConfig: ClientManager.getDefaultLocalnetConfig(AlgorandService.Indexer),
-      kmdConfig: ClientManager.getDefaultLocalnetConfig(AlgorandService.Kmd),
-    }, composerConfig)
+    return AlgorandClient.fromConfig(
+      {
+        algodConfig: ClientManager.getDefaultLocalnetConfig(AlgorandService.Algod),
+        indexerConfig: ClientManager.getDefaultLocalnetConfig(AlgorandService.Indexer),
+        kmdConfig: ClientManager.getDefaultLocalnetConfig(AlgorandService.Kmd),
+      },
+      composerConfig,
+    )
   }
 
   /** Creates an AlgorandClient configured for Algonode TestNet. */
   static testnet(composerConfig?: TransactionComposerConfig): AlgorandClient {
-    return AlgorandClient.fromConfig({
-      algodConfig: ClientManager.getAlgonodeConfig('testnet', AlgorandService.Algod),
-      indexerConfig: ClientManager.getAlgonodeConfig('testnet', AlgorandService.Indexer),
-      kmdConfig: undefined,
-    }, composerConfig)
+    return AlgorandClient.fromConfig(
+      {
+        algodConfig: ClientManager.getAlgoNodeConfig('testnet', AlgorandService.Algod),
+        indexerConfig: ClientManager.getAlgoNodeConfig('testnet', AlgorandService.Indexer),
+        kmdConfig: undefined,
+      },
+      composerConfig,
+    )
   }
 
   /** Creates an AlgorandClient configured for Algonode MainNet. */
   static mainnet(composerConfig?: TransactionComposerConfig): AlgorandClient {
-    return AlgorandClient.fromConfig({
-      algodConfig: ClientManager.getAlgonodeConfig('mainnet', AlgorandService.Algod),
-      indexerConfig: ClientManager.getAlgonodeConfig('mainnet', AlgorandService.Indexer),
-      kmdConfig: undefined,
-    }, composerConfig)
+    return AlgorandClient.fromConfig(
+      {
+        algodConfig: ClientManager.getAlgoNodeConfig('mainnet', AlgorandService.Algod),
+        indexerConfig: ClientManager.getAlgoNodeConfig('mainnet', AlgorandService.Indexer),
+        kmdConfig: undefined,
+      },
+      composerConfig,
+    )
   }
 
   /** Creates an AlgorandClient from environment configuration or defaults to localnet. */
