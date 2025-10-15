@@ -1,8 +1,8 @@
 use super::indexer_helpers::wait_for_indexer_transaction;
-use super::test_account::{NetworkType, TestAccount, TestAccountConfig};
 use crate::common::logging::init_test_logging;
 use algod_client::AlgodClient;
 use algokit_transact::Transaction;
+use algokit_utils::clients::SigningAccount;
 use algokit_utils::clients::algorand_client::AlgorandClientParams;
 use algokit_utils::transactions::TransactionComposerConfig;
 use algokit_utils::{AlgoConfig, AlgorandClient, ClientManager, PaymentParams};
@@ -11,12 +11,30 @@ use kmd_client::KmdClient;
 use rstest::*;
 use std::sync::Arc;
 
+/// Test account configuration
+#[derive(Debug, Clone)]
+pub struct TestAccountConfig {
+    /// Initial funding amount in microALGOs (default: 10 ALGO = 10,000,000 microALGOs)
+    pub initial_funds: u64,
+    /// Optional note for funding transaction
+    pub funding_note: Option<String>,
+}
+
+impl Default for TestAccountConfig {
+    fn default() -> Self {
+        Self {
+            initial_funds: 10_000_000, // 10 ALGO
+            funding_note: None,
+        }
+    }
+}
+
 pub struct AlgorandFixture {
     pub algod: Arc<AlgodClient>,
     pub indexer: Arc<IndexerClient>,
     pub kmd: Arc<KmdClient>,
     pub algorand_client: AlgorandClient,
-    pub test_account: TestAccount,
+    pub test_account: SigningAccount,
 }
 
 pub type AlgorandFixtureResult = Result<AlgorandFixture, Box<dyn std::error::Error + Send + Sync>>;
@@ -57,7 +75,6 @@ impl AlgorandFixture {
             &mut algorand_client,
             Some(TestAccountConfig {
                 initial_funds: 10_000_000,
-                network_type: NetworkType::LocalNet,
                 funding_note: Some("AlgorandFixture test account".to_string()),
             }),
         )
@@ -76,9 +93,9 @@ impl AlgorandFixture {
     async fn generate_account_internal(
         algorand_client: &mut AlgorandClient,
         config: Option<TestAccountConfig>,
-    ) -> Result<TestAccount, Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<SigningAccount, Box<dyn std::error::Error + Send + Sync>> {
         // Generate new account using ed25519_dalek
-        let test_account = TestAccount::generate()?;
+        let test_account = SigningAccount::generate();
         let test_account_address = test_account.account().address();
         let config = config.unwrap_or_default();
 
@@ -94,7 +111,13 @@ impl AlgorandFixture {
                     sender: dispenser.address(),
                     receiver: test_account_address.clone(),
                     amount: config.initial_funds,
-                    note: Some(b"Funding test account".to_vec()),
+                    note: Some(
+                        config
+                            .funding_note
+                            .unwrap_or_else(|| "Funding test account".to_string())
+                            .as_bytes()
+                            .to_vec(),
+                    ),
                     ..Default::default()
                 },
                 None,
@@ -111,7 +134,7 @@ impl AlgorandFixture {
     pub async fn generate_account(
         &mut self,
         config: Option<TestAccountConfig>,
-    ) -> Result<TestAccount, Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<SigningAccount, Box<dyn std::error::Error + Send + Sync>> {
         Self::generate_account_internal(&mut self.algorand_client, config).await
     }
 }

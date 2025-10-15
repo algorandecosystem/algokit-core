@@ -4,7 +4,6 @@ pub mod app_fixture;
 pub mod fixture;
 pub mod indexer_helpers;
 pub mod logging;
-pub mod test_account;
 
 use algokit_abi::Arc56Contract;
 use algokit_utils::AppCreateParams;
@@ -21,11 +20,12 @@ pub use app_fixture::{
     nested_contract_fixture, sandbox_app_fixture, sandbox_spec, testing_app_fixture,
     testing_app_puya_fixture, testing_app_puya_spec, testing_app_spec,
 };
-pub use fixture::{AlgorandFixture, AlgorandFixtureResult, algorand_fixture};
+pub use fixture::{AlgorandFixture, AlgorandFixtureResult, TestAccountConfig, algorand_fixture};
 pub use indexer_helpers::{
     IndexerWaitConfig, IndexerWaitError, wait_for_indexer, wait_for_indexer_transaction,
 };
-pub use test_account::{NetworkType, TestAccount, TestAccountConfig};
+// Re-export SigningAccount from the main crate for test convenience
+pub use algokit_utils::clients::SigningAccount;
 
 pub type TestResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
 

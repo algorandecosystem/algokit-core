@@ -1,6 +1,6 @@
-use crate::common::TestAccount;
 use crate::common::{
-    AlgorandFixture, AlgorandFixtureResult, TestResult, algorand_fixture, testing_app_spec,
+    AlgorandFixture, AlgorandFixtureResult, SigningAccount, TestResult, algorand_fixture,
+    testing_app_spec,
 };
 use algokit_abi::{ABIValue, Arc56Contract};
 use algokit_transact::Address;
@@ -31,7 +31,7 @@ fn abi_str_arg(s: &str) -> AppMethodCallArg {
     AppMethodCallArg::ABIValue(algokit_abi::ABIValue::from(s))
 }
 
-fn into_factory_inputs(fixture: AlgorandFixture) -> (Arc<AlgorandClient>, TestAccount) {
+fn into_factory_inputs(fixture: AlgorandFixture) -> (Arc<AlgorandClient>, SigningAccount) {
     let AlgorandFixture {
         algorand_client,
         test_account,
@@ -44,7 +44,7 @@ fn into_factory_inputs(fixture: AlgorandFixture) -> (Arc<AlgorandClient>, TestAc
 /// Construct an `AppFactory` for a provided ARC-56 spec with common defaults.
 pub async fn build_app_factory_with_spec(
     algorand_client: Arc<AlgorandClient>,
-    test_account: TestAccount,
+    test_account: SigningAccount,
     app_spec: Arc56Contract,
     opts: AppFactoryOptions,
 ) -> AppFactory {
@@ -78,7 +78,7 @@ pub async fn build_app_factory_with_spec(
 
 async fn build_testing_app_factory(
     algorand_client: Arc<AlgorandClient>,
-    test_account: TestAccount,
+    test_account: SigningAccount,
     opts: AppFactoryOptions,
 ) -> AppFactory {
     build_app_factory_with_spec(algorand_client, test_account, testing_app_spec(), opts).await

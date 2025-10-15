@@ -1,6 +1,4 @@
-use crate::common::{
-    AlgorandFixtureResult, NetworkType, TestAccountConfig, TestResult, algorand_fixture,
-};
+use crate::common::{AlgorandFixtureResult, TestAccountConfig, TestResult, algorand_fixture};
 use algokit_transact::{
     AlgorandMsgpack, PaymentTransactionBuilder, Transaction, TransactionHeaderBuilder,
 };
@@ -21,13 +19,11 @@ async fn test_raw_transaction_broadcast(
     // Create account manager and generate test accounts
     let sender_config = TestAccountConfig {
         initial_funds: 10_000_000, // 10 ALGO
-        network_type: NetworkType::LocalNet,
         funding_note: Some("Test sender account".to_string()),
     };
 
     let receiver_config = TestAccountConfig {
         initial_funds: 1_000_000, // 1 ALGO
-        network_type: NetworkType::LocalNet,
         funding_note: Some("Test receiver account".to_string()),
     };
 

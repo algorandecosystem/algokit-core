@@ -1,5 +1,5 @@
 use crate::common::{
-    AlgorandFixture, AlgorandFixtureResult, TestAccount, TestResult, algorand_fixture,
+    AlgorandFixture, AlgorandFixtureResult, SigningAccount, TestResult, algorand_fixture,
     deploy_arc56_contract,
 };
 use algokit_abi::{ABIValue, Arc56Contract};
@@ -397,7 +397,7 @@ async fn opt_in_to_asset(
     algorand_fixture: &AlgorandFixture,
     address: Address,
     asset_id: u64,
-    account: TestAccount,
+    account: SigningAccount,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let params = AssetOptInParams {
         sender: address,

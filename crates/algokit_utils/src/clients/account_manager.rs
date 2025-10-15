@@ -32,12 +32,67 @@ impl SigningAccount {
         Self { secret_key }
     }
 
+    /// Generate a new random SigningAccount
+    pub fn generate() -> Self {
+        let signing_key = SigningKey::generate(&mut OsRng);
+        Self {
+            secret_key: signing_key.to_bytes(),
+        }
+    }
+
+    /// Create a SigningAccount from a mnemonic string
+    pub fn from_mnemonic(mnemonic_str: &str) -> Result<Self, AccountManagerError> {
+        let secret_key = mnemonic_to_secret_key(mnemonic_str)?;
+        Ok(Self { secret_key })
+    }
+
+    /// Create a SigningAccount from secret key bytes (supports 32 or 64 byte keys)
+    pub fn from_secret_key(secret_key: &[u8]) -> Result<Self, AccountManagerError> {
+        let key_slice = match secret_key.len() {
+            ALGORAND_SECRET_KEY_BYTE_LENGTH => secret_key,
+            len if len == ALGORAND_SECRET_KEY_BYTE_LENGTH * 2 => {
+                &secret_key[..ALGORAND_SECRET_KEY_BYTE_LENGTH]
+            }
+            other => {
+                return Err(AccountManagerError::MnemonicError {
+                    message: format!(
+                        "Secret key must be {} or {} bytes, got {}",
+                        ALGORAND_SECRET_KEY_BYTE_LENGTH,
+                        ALGORAND_SECRET_KEY_BYTE_LENGTH * 2,
+                        other
+                    ),
+                });
+            }
+        };
+
+        let mut key_bytes = [0u8; ALGORAND_SECRET_KEY_BYTE_LENGTH];
+        key_bytes.copy_from_slice(key_slice);
+
+        Ok(Self {
+            secret_key: key_bytes,
+        })
+    }
+
     /// Get the account's address
     pub fn address(&self) -> Address {
         let signing_key = SigningKey::from_bytes(&self.secret_key);
         let verifying_key: VerifyingKey = (&signing_key).into();
         let account = KeyPairAccount::from_pubkey(&verifying_key.to_bytes());
         account.address()
+    }
+
+    /// Get the account as a KeyPairAccount (for compatibility with algokit_transact)
+    pub fn account(&self) -> KeyPairAccount {
+        let signing_key = SigningKey::from_bytes(&self.secret_key);
+        let verifying_key: VerifyingKey = (&signing_key).into();
+        KeyPairAccount::from_pubkey(&verifying_key.to_bytes())
+    }
+
+    /// Get the account's mnemonic (25-word Algorand mnemonic)
+    pub fn mnemonic(&self) -> Result<String, AccountManagerError> {
+        mnemonic::from_key(&self.secret_key).map_err(|e| AccountManagerError::MnemonicError {
+            message: e.to_string(),
+        })
     }
 }
 
@@ -309,12 +364,8 @@ impl AccountManager {
     /// # Returns
     /// The signing account
     pub fn random(&mut self) -> SigningAccount {
-        // Generate a random signing key using ed25519_dalek
-        let signing_key = SigningKey::generate(&mut OsRng);
-        let secret_key = signing_key.to_bytes();
-
-        // Create signing account
-        let signing_account = SigningAccount::new(secret_key);
+        // Generate a random signing account
+        let signing_account = SigningAccount::generate();
         let address = signing_account.address();
 
         // Track the account
