@@ -9,6 +9,7 @@
  */
 
 use crate::models;
+use algod_client::models::BlockAppEvalDelta as RustBlockAppEvalDelta;
 use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
 use std::collections::HashMap;
 
@@ -28,4 +29,44 @@ pub struct BlockAppEvalDelta {
     pub shared_accounts: Option<Vec<Vec<u8>>>,
     /// [lg] Application log outputs as strings (msgpack strings).
     pub logs: Option<Vec<String>>,
+}
+
+impl From<RustBlockAppEvalDelta> for BlockAppEvalDelta {
+    fn from(rust_struct: RustBlockAppEvalDelta) -> Self {
+        Self {
+            global_delta: rust_struct
+                .global_delta
+                .map(|v| v.into_iter().map(|(k, v)| (k, v.into())).collect()),
+            local_deltas: rust_struct.local_deltas.map(|v| {
+                v.into_iter()
+                    .map(|(k, v)| (k, v.into_iter().map(|(k2, v2)| (k2, v2.into())).collect()))
+                    .collect()
+            }),
+            inner_txns: rust_struct
+                .inner_txns
+                .map(|v| v.into_iter().map(|tx| tx.into()).collect()),
+            shared_accounts: rust_struct.shared_accounts,
+            logs: rust_struct.logs,
+        }
+    }
+}
+
+impl From<BlockAppEvalDelta> for RustBlockAppEvalDelta {
+    fn from(ffi_struct: BlockAppEvalDelta) -> Self {
+        Self {
+            global_delta: ffi_struct
+                .global_delta
+                .map(|v| v.into_iter().map(|(k, v)| (k, v.into())).collect()),
+            local_deltas: ffi_struct.local_deltas.map(|v| {
+                v.into_iter()
+                    .map(|(k, v)| (k, v.into_iter().map(|(k2, v2)| (k2, v2.into())).collect()))
+                    .collect()
+            }),
+            inner_txns: ffi_struct
+                .inner_txns
+                .map(|v| v.into_iter().map(|tx| tx.into()).collect()),
+            shared_accounts: ffi_struct.shared_accounts,
+            logs: ffi_struct.logs,
+        }
+    }
 }

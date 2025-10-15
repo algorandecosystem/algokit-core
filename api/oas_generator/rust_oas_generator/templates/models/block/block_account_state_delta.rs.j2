@@ -12,6 +12,8 @@ use crate::models;
 {% if not ffi %}
 use serde::{Deserialize, Serialize};
 use algokit_transact::AlgorandMsgpack;
+{% else %}
+use algod_client::models::BlockAccountStateDelta as RustBlockAccountStateDelta;
 {% endif %}
 use crate::models::BlockStateDelta;
 
@@ -66,6 +68,26 @@ impl BlockAccountStateDelta {
     /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
     pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
         Ok(Self::decode(bytes)?)
+    }
+}
+{% endif %}
+
+{% if ffi %}
+impl From<RustBlockAccountStateDelta> for BlockAccountStateDelta {
+    fn from(rust_struct: RustBlockAccountStateDelta) -> Self {
+        Self {
+            address: rust_struct.address,
+            delta: rust_struct.delta.into_iter().map(|(k, v)| (k, v.into())).collect(),
+        }
+    }
+}
+
+impl From<BlockAccountStateDelta> for RustBlockAccountStateDelta {
+    fn from(ffi_struct: BlockAccountStateDelta) -> Self {
+        Self {
+            address: ffi_struct.address,
+            delta: ffi_struct.delta.into_iter().map(|(k, v)| (k, v.into())).collect(),
+        }
     }
 }
 {% endif %}

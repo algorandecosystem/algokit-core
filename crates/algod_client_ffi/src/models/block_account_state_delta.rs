@@ -10,10 +10,37 @@
 
 use crate::models;
 use crate::models::BlockStateDelta;
+use algod_client::models::BlockAccountStateDelta as RustBlockAccountStateDelta;
 
 /// BlockAccountStateDelta pairs an address with a BlockStateDelta map.
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct BlockAccountStateDelta {
     pub address: String,
     pub delta: BlockStateDelta,
+}
+
+impl From<RustBlockAccountStateDelta> for BlockAccountStateDelta {
+    fn from(rust_struct: RustBlockAccountStateDelta) -> Self {
+        Self {
+            address: rust_struct.address,
+            delta: rust_struct
+                .delta
+                .into_iter()
+                .map(|(k, v)| (k, v.into()))
+                .collect(),
+        }
+    }
+}
+
+impl From<BlockAccountStateDelta> for RustBlockAccountStateDelta {
+    fn from(ffi_struct: BlockAccountStateDelta) -> Self {
+        Self {
+            address: ffi_struct.address,
+            delta: ffi_struct
+                .delta
+                .into_iter()
+                .map(|(k, v)| (k, v.into()))
+                .collect(),
+        }
+    }
 }

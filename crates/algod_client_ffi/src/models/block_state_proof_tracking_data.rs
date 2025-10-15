@@ -9,6 +9,7 @@
  */
 
 use crate::models;
+use algod_client::models::BlockStateProofTrackingData as RustBlockStateProofTrackingData;
 
 /// Tracking metadata for a specific StateProofType.
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
@@ -19,4 +20,24 @@ pub struct BlockStateProofTrackingData {
     pub state_proof_online_total_weight: Option<u64>,
     /// [n] Next round for which state proofs are accepted.
     pub state_proof_next_round: Option<u64>,
+}
+
+impl From<RustBlockStateProofTrackingData> for BlockStateProofTrackingData {
+    fn from(rust_struct: RustBlockStateProofTrackingData) -> Self {
+        Self {
+            state_proof_voters_commitment: rust_struct.state_proof_voters_commitment,
+            state_proof_online_total_weight: rust_struct.state_proof_online_total_weight,
+            state_proof_next_round: rust_struct.state_proof_next_round,
+        }
+    }
+}
+
+impl From<BlockStateProofTrackingData> for RustBlockStateProofTrackingData {
+    fn from(ffi_struct: BlockStateProofTrackingData) -> Self {
+        Self {
+            state_proof_voters_commitment: ffi_struct.state_proof_voters_commitment,
+            state_proof_online_total_weight: ffi_struct.state_proof_online_total_weight,
+            state_proof_next_round: ffi_struct.state_proof_next_round,
+        }
+    }
 }

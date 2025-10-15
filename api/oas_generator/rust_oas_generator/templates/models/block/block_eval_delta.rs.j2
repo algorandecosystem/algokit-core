@@ -12,6 +12,8 @@ use crate::models;
 {% if not ffi %}
 use serde::{Deserialize, Serialize};
 use algokit_transact::AlgorandMsgpack;
+{% else %}
+use algod_client::models::BlockEvalDelta as RustBlockEvalDelta;
 {% endif %}
 
 /// BlockEvalDelta represents a TEAL value delta (block/msgpack wire keys).
@@ -77,6 +79,28 @@ impl BlockEvalDelta {
     /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
     pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
         Ok(Self::decode(bytes)?)
+    }
+}
+{% endif %}
+
+{% if ffi %}
+impl From<RustBlockEvalDelta> for BlockEvalDelta {
+    fn from(rust_struct: RustBlockEvalDelta) -> Self {
+        Self {
+            action: rust_struct.action,
+            bytes: rust_struct.bytes,
+            uint: rust_struct.uint,
+        }
+    }
+}
+
+impl From<BlockEvalDelta> for RustBlockEvalDelta {
+    fn from(ffi_struct: BlockEvalDelta) -> Self {
+        Self {
+            action: ffi_struct.action,
+            bytes: ffi_struct.bytes,
+            uint: ffi_struct.uint,
+        }
     }
 }
 {% endif %}

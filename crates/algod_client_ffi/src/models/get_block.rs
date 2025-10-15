@@ -9,6 +9,7 @@
  */
 
 use crate::models;
+use algod_client::models::GetBlock as RustGetBlock;
 use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
 
 use crate::models::Block;
@@ -20,4 +21,22 @@ pub struct GetBlock {
     pub block: Block,
     /// Block certificate (msgpack only).
     pub cert: Option<Vec<u8>>,
+}
+
+impl From<RustGetBlock> for GetBlock {
+    fn from(rust_struct: RustGetBlock) -> Self {
+        Self {
+            block: rust_struct.block.into(),
+            cert: rust_struct.cert,
+        }
+    }
+}
+
+impl From<GetBlock> for RustGetBlock {
+    fn from(ffi_struct: GetBlock) -> Self {
+        Self {
+            block: ffi_struct.block.into(),
+            cert: ffi_struct.cert,
+        }
+    }
 }

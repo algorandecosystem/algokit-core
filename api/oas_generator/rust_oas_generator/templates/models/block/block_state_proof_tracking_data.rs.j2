@@ -13,6 +13,8 @@ use crate::models;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, Bytes};
 use algokit_transact::AlgorandMsgpack;
+{% else %}
+use algod_client::models::BlockStateProofTrackingData as RustBlockStateProofTrackingData;
 {% endif %}
 
 /// Tracking metadata for a specific StateProofType.
@@ -71,6 +73,28 @@ impl BlockStateProofTrackingData {
     /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
     pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
         Ok(Self::decode(bytes)?)
+    }
+}
+{% endif %}
+
+{% if ffi %}
+impl From<RustBlockStateProofTrackingData> for BlockStateProofTrackingData {
+    fn from(rust_struct: RustBlockStateProofTrackingData) -> Self {
+        Self {
+            state_proof_voters_commitment: rust_struct.state_proof_voters_commitment,
+            state_proof_online_total_weight: rust_struct.state_proof_online_total_weight,
+            state_proof_next_round: rust_struct.state_proof_next_round,
+        }
+    }
+}
+
+impl From<BlockStateProofTrackingData> for RustBlockStateProofTrackingData {
+    fn from(ffi_struct: BlockStateProofTrackingData) -> Self {
+        Self {
+            state_proof_voters_commitment: ffi_struct.state_proof_voters_commitment,
+            state_proof_online_total_weight: ffi_struct.state_proof_online_total_weight,
+            state_proof_next_round: ffi_struct.state_proof_next_round,
+        }
     }
 }
 {% endif %}

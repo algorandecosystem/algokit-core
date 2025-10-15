@@ -15,6 +15,7 @@ use serde::{Deserialize, Serialize};
 use algokit_transact::AlgorandMsgpack;
 {% else %}
 use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
+use algod_client::models::GetBlock as RustGetBlock;
 {% endif %}
 
 use crate::models::Block;
@@ -77,6 +78,26 @@ impl GetBlock {
     /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
     pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
         Ok(Self::decode(bytes)?)
+    }
+}
+{% endif %}
+
+{% if ffi %}
+impl From<RustGetBlock> for GetBlock {
+    fn from(rust_struct: RustGetBlock) -> Self {
+        Self {
+            block: rust_struct.block.into(),
+            cert: rust_struct.cert,
+        }
+    }
+}
+
+impl From<GetBlock> for RustGetBlock {
+    fn from(ffi_struct: GetBlock) -> Self {
+        Self {
+            block: ffi_struct.block.into(),
+            cert: ffi_struct.cert,
+        }
     }
 }
 {% endif %}

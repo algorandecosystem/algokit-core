@@ -9,6 +9,7 @@
  */
 
 use crate::models;
+use algod_client::models::Block as RustBlock;
 use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
 
 use crate::models::BlockStateProofTracking;
@@ -83,4 +84,92 @@ pub struct Block {
     pub absent_participation_accounts: Option<Vec<Vec<u8>>>,
     /// [txns] Block transactions (Payset).
     pub transactions: Option<Vec<SignedTxnInBlock>>,
+}
+
+impl From<RustBlock> for Block {
+    fn from(rust_struct: RustBlock) -> Self {
+        Self {
+            round: rust_struct.round,
+            previous_block_hash: rust_struct.previous_block_hash,
+            previous_block_hash_512: rust_struct.previous_block_hash_512,
+            seed: rust_struct.seed,
+            transactions_root: rust_struct.transactions_root,
+            transactions_root_sha256: rust_struct.transactions_root_sha256,
+            transactions_root_sha512: rust_struct.transactions_root_sha512,
+            timestamp: rust_struct.timestamp,
+            genesis_id: rust_struct.genesis_id,
+            genesis_hash: rust_struct.genesis_hash,
+            proposer: rust_struct.proposer,
+            fees_collected: rust_struct.fees_collected,
+            bonus: rust_struct.bonus,
+            proposer_payout: rust_struct.proposer_payout,
+            fee_sink: rust_struct.fee_sink,
+            rewards_pool: rust_struct.rewards_pool,
+            rewards_level: rust_struct.rewards_level,
+            rewards_rate: rust_struct.rewards_rate,
+            rewards_residue: rust_struct.rewards_residue,
+            rewards_recalculation_round: rust_struct.rewards_recalculation_round,
+            current_protocol: rust_struct.current_protocol,
+            next_protocol: rust_struct.next_protocol,
+            next_protocol_approvals: rust_struct.next_protocol_approvals,
+            next_protocol_vote_before: rust_struct.next_protocol_vote_before,
+            next_protocol_switch_on: rust_struct.next_protocol_switch_on,
+            upgrade_propose: rust_struct.upgrade_propose,
+            upgrade_delay: rust_struct.upgrade_delay,
+            upgrade_approve: rust_struct.upgrade_approve,
+            txn_counter: rust_struct.txn_counter,
+            state_proof_tracking: rust_struct
+                .state_proof_tracking
+                .map(|v| v.into_iter().map(|(k, v)| (k, v.into())).collect()),
+            expired_participation_accounts: rust_struct.expired_participation_accounts,
+            absent_participation_accounts: rust_struct.absent_participation_accounts,
+            transactions: rust_struct
+                .transactions
+                .map(|v| v.into_iter().map(|tx| tx.into()).collect()),
+        }
+    }
+}
+
+impl From<Block> for RustBlock {
+    fn from(ffi_struct: Block) -> Self {
+        Self {
+            round: ffi_struct.round,
+            previous_block_hash: ffi_struct.previous_block_hash,
+            previous_block_hash_512: ffi_struct.previous_block_hash_512,
+            seed: ffi_struct.seed,
+            transactions_root: ffi_struct.transactions_root,
+            transactions_root_sha256: ffi_struct.transactions_root_sha256,
+            transactions_root_sha512: ffi_struct.transactions_root_sha512,
+            timestamp: ffi_struct.timestamp,
+            genesis_id: ffi_struct.genesis_id,
+            genesis_hash: ffi_struct.genesis_hash,
+            proposer: ffi_struct.proposer,
+            fees_collected: ffi_struct.fees_collected,
+            bonus: ffi_struct.bonus,
+            proposer_payout: ffi_struct.proposer_payout,
+            fee_sink: ffi_struct.fee_sink,
+            rewards_pool: ffi_struct.rewards_pool,
+            rewards_level: ffi_struct.rewards_level,
+            rewards_rate: ffi_struct.rewards_rate,
+            rewards_residue: ffi_struct.rewards_residue,
+            rewards_recalculation_round: ffi_struct.rewards_recalculation_round,
+            current_protocol: ffi_struct.current_protocol,
+            next_protocol: ffi_struct.next_protocol,
+            next_protocol_approvals: ffi_struct.next_protocol_approvals,
+            next_protocol_vote_before: ffi_struct.next_protocol_vote_before,
+            next_protocol_switch_on: ffi_struct.next_protocol_switch_on,
+            upgrade_propose: ffi_struct.upgrade_propose,
+            upgrade_delay: ffi_struct.upgrade_delay,
+            upgrade_approve: ffi_struct.upgrade_approve,
+            txn_counter: ffi_struct.txn_counter,
+            state_proof_tracking: ffi_struct
+                .state_proof_tracking
+                .map(|v| v.into_iter().map(|(k, v)| (k, v.into())).collect()),
+            expired_participation_accounts: ffi_struct.expired_participation_accounts,
+            absent_participation_accounts: ffi_struct.absent_participation_accounts,
+            transactions: ffi_struct
+                .transactions
+                .map(|v| v.into_iter().map(|tx| tx.into()).collect()),
+        }
+    }
 }

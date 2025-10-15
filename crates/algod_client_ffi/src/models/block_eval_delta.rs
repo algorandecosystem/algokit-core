@@ -9,6 +9,7 @@
  */
 
 use crate::models;
+use algod_client::models::BlockEvalDelta as RustBlockEvalDelta;
 
 /// BlockEvalDelta represents a TEAL value delta (block/msgpack wire keys).
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
@@ -19,4 +20,24 @@ pub struct BlockEvalDelta {
     pub bytes: Option<String>,
     /// [ui] uint value.
     pub uint: Option<u64>,
+}
+
+impl From<RustBlockEvalDelta> for BlockEvalDelta {
+    fn from(rust_struct: RustBlockEvalDelta) -> Self {
+        Self {
+            action: rust_struct.action,
+            bytes: rust_struct.bytes,
+            uint: rust_struct.uint,
+        }
+    }
+}
+
+impl From<BlockEvalDelta> for RustBlockEvalDelta {
+    fn from(ffi_struct: BlockEvalDelta) -> Self {
+        Self {
+            action: ffi_struct.action,
+            bytes: ffi_struct.bytes,
+            uint: ffi_struct.uint,
+        }
+    }
 }

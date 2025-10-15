@@ -9,6 +9,7 @@
  */
 
 use crate::models;
+use algod_client::models::SignedTxnInBlock as RustSignedTxnInBlock;
 use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
 
 use crate::models::BlockAppEvalDelta;
@@ -40,4 +41,42 @@ pub struct SignedTxnInBlock {
     pub has_genesis_id: Option<bool>,
     /// [hgh] Has genesis hash flag.
     pub has_genesis_hash: Option<bool>,
+}
+
+impl From<RustSignedTxnInBlock> for SignedTxnInBlock {
+    fn from(rust_struct: RustSignedTxnInBlock) -> Self {
+        Self {
+            signed_transaction: rust_struct.signed_transaction.into(),
+            logic_signature: rust_struct.logic_signature,
+            closing_amount: rust_struct.closing_amount,
+            asset_closing_amount: rust_struct.asset_closing_amount,
+            sender_rewards: rust_struct.sender_rewards,
+            receiver_rewards: rust_struct.receiver_rewards,
+            close_rewards: rust_struct.close_rewards,
+            eval_delta: rust_struct.eval_delta.map(|v| v.into()),
+            config_asset: rust_struct.config_asset,
+            application_id: rust_struct.application_id,
+            has_genesis_id: rust_struct.has_genesis_id,
+            has_genesis_hash: rust_struct.has_genesis_hash,
+        }
+    }
+}
+
+impl From<SignedTxnInBlock> for RustSignedTxnInBlock {
+    fn from(ffi_struct: SignedTxnInBlock) -> Self {
+        Self {
+            signed_transaction: ffi_struct.signed_transaction.into(),
+            logic_signature: ffi_struct.logic_signature,
+            closing_amount: ffi_struct.closing_amount,
+            asset_closing_amount: ffi_struct.asset_closing_amount,
+            sender_rewards: ffi_struct.sender_rewards,
+            receiver_rewards: ffi_struct.receiver_rewards,
+            close_rewards: ffi_struct.close_rewards,
+            eval_delta: ffi_struct.eval_delta.map(|v| v.into()),
+            config_asset: ffi_struct.config_asset,
+            application_id: ffi_struct.application_id,
+            has_genesis_id: ffi_struct.has_genesis_id,
+            has_genesis_hash: ffi_struct.has_genesis_hash,
+        }
+    }
 }
