@@ -267,9 +267,11 @@ impl {{ schema.rust_struct_name }} {
 }
 {% endif %}
 
+{% set empty_struct = not (schema.schema_type == 'array' and schema.underlying_rust_type) and (schema.properties | length) == 0 %}
+
 {% if ffi %}
 impl From<Rust{{ schema.rust_struct_name }}> for {{ schema.rust_struct_name }} {
-    fn from(rust_struct: Rust{{ schema.rust_struct_name }}) -> Self {
+    fn from({% if empty_struct %}_{% endif %}rust_struct: Rust{{ schema.rust_struct_name }}) -> Self {
         {% if schema.schema_type == 'array' and schema.underlying_rust_type %}
         Self(rust_struct.into_iter().map(|v| v.into()).collect())
         {% else %}
@@ -299,7 +301,7 @@ impl From<Rust{{ schema.rust_struct_name }}> for {{ schema.rust_struct_name }} {
 {% if schema.rust_struct_name not in skip_from_types %}
 
 impl From<{{ schema.rust_struct_name }}> for Rust{{ schema.rust_struct_name }} {
-    fn from(ffi_struct: {{ schema.rust_struct_name }}) -> Self {
+    fn from({% if empty_struct  %}_{% endif %}ffi_struct: {{ schema.rust_struct_name }}) -> Self {
         {% if schema.schema_type == 'array' and schema.underlying_rust_type %}
         ffi_struct.0.into_iter().map(|v| v.into()).collect()
         {% else %}

@@ -17,13 +17,13 @@ use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
 pub struct LedgerStateDelta {}
 
 impl From<RustLedgerStateDelta> for LedgerStateDelta {
-    fn from(rust_struct: RustLedgerStateDelta) -> Self {
+    fn from(_rust_struct: RustLedgerStateDelta) -> Self {
         Self {}
     }
 }
 
 impl From<LedgerStateDelta> for RustLedgerStateDelta {
-    fn from(ffi_struct: LedgerStateDelta) -> Self {
+    fn from(_ffi_struct: LedgerStateDelta) -> Self {
         Self {}
     }
 }
