@@ -4540,6 +4540,832 @@ class _UniffiFfiConverterTypeAssetHoldingReference(_UniffiConverterRustBuffer):
         _UniffiFfiConverterUInt64.write(value.asset, buf)
 
 @dataclass
+class BlockStateProofTrackingData:
+    """
+    Tracking metadata for a specific StateProofType.
+"""
+    def __init__(self, *, state_proof_voters_commitment:typing.Optional[bytes], state_proof_online_total_weight:typing.Optional[int], state_proof_next_round:typing.Optional[int]):
+        self.state_proof_voters_commitment = state_proof_voters_commitment
+        self.state_proof_online_total_weight = state_proof_online_total_weight
+        self.state_proof_next_round = state_proof_next_round
+        
+        
+
+    
+    def __str__(self):
+        return "BlockStateProofTrackingData(state_proof_voters_commitment={}, state_proof_online_total_weight={}, state_proof_next_round={})".format(self.state_proof_voters_commitment, self.state_proof_online_total_weight, self.state_proof_next_round)
+    def __eq__(self, other):
+        if self.state_proof_voters_commitment != other.state_proof_voters_commitment:
+            return False
+        if self.state_proof_online_total_weight != other.state_proof_online_total_weight:
+            return False
+        if self.state_proof_next_round != other.state_proof_next_round:
+            return False
+        return True
+
+class _UniffiFfiConverterTypeBlockStateProofTrackingData(_UniffiConverterRustBuffer):
+    @staticmethod
+    def read(buf):
+        return BlockStateProofTrackingData(
+            state_proof_voters_commitment=_UniffiFfiConverterOptionalBytes.read(buf),
+            state_proof_online_total_weight=_UniffiFfiConverterOptionalUInt64.read(buf),
+            state_proof_next_round=_UniffiFfiConverterOptionalUInt64.read(buf),
+        )
+
+    @staticmethod
+    def check_lower(value):
+        _UniffiFfiConverterOptionalBytes.check_lower(value.state_proof_voters_commitment)
+        _UniffiFfiConverterOptionalUInt64.check_lower(value.state_proof_online_total_weight)
+        _UniffiFfiConverterOptionalUInt64.check_lower(value.state_proof_next_round)
+
+    @staticmethod
+    def write(value, buf):
+        _UniffiFfiConverterOptionalBytes.write(value.state_proof_voters_commitment, buf)
+        _UniffiFfiConverterOptionalUInt64.write(value.state_proof_online_total_weight, buf)
+        _UniffiFfiConverterOptionalUInt64.write(value.state_proof_next_round, buf)
+
+class _UniffiFfiConverterMapUInt64TypeBlockStateProofTrackingData(_UniffiConverterRustBuffer):
+    @classmethod
+    def check_lower(cls, items):
+        for (key, value) in items.items():
+            _UniffiFfiConverterUInt64.check_lower(key)
+            _UniffiFfiConverterTypeBlockStateProofTrackingData.check_lower(value)
+
+    @classmethod
+    def write(cls, items, buf):
+        buf.write_i32(len(items))
+        for (key, value) in items.items():
+            _UniffiFfiConverterUInt64.write(key, buf)
+            _UniffiFfiConverterTypeBlockStateProofTrackingData.write(value, buf)
+
+    @classmethod
+    def read(cls, buf):
+        count = buf.read_i32()
+        if count < 0:
+            raise InternalError("Unexpected negative map size")
+
+        # It would be nice to use a dict comprehension,
+        # but in Python 3.7 and before the evaluation order is not according to spec,
+        # so we we're reading the value before the key.
+        # This loop makes the order explicit: first reading the key, then the value.
+        d = {}
+        for i in range(count):
+            key = _UniffiFfiConverterUInt64.read(buf)
+            val = _UniffiFfiConverterTypeBlockStateProofTrackingData.read(buf)
+            d[key] = val
+        return d
+
+class _UniffiFfiConverterOptionalMapUInt64TypeBlockStateProofTrackingData(_UniffiConverterRustBuffer):
+    @classmethod
+    def check_lower(cls, value):
+        if value is not None:
+            _UniffiFfiConverterMapUInt64TypeBlockStateProofTrackingData.check_lower(value)
+
+    @classmethod
+    def write(cls, value, buf):
+        if value is None:
+            buf.write_u8(0)
+            return
+
+        buf.write_u8(1)
+        _UniffiFfiConverterMapUInt64TypeBlockStateProofTrackingData.write(value, buf)
+
+    @classmethod
+    def read(cls, buf):
+        flag = buf.read_u8()
+        if flag == 0:
+            return None
+        elif flag == 1:
+            return _UniffiFfiConverterMapUInt64TypeBlockStateProofTrackingData.read(buf)
+        else:
+            raise InternalError("Unexpected flag byte for optional type")
+
+class _UniffiFfiConverterOptionalSequenceBytes(_UniffiConverterRustBuffer):
+    @classmethod
+    def check_lower(cls, value):
+        if value is not None:
+            _UniffiFfiConverterSequenceBytes.check_lower(value)
+
+    @classmethod
+    def write(cls, value, buf):
+        if value is None:
+            buf.write_u8(0)
+            return
+
+        buf.write_u8(1)
+        _UniffiFfiConverterSequenceBytes.write(value, buf)
+
+    @classmethod
+    def read(cls, buf):
+        flag = buf.read_u8()
+        if flag == 0:
+            return None
+        elif flag == 1:
+            return _UniffiFfiConverterSequenceBytes.read(buf)
+        else:
+            raise InternalError("Unexpected flag byte for optional type")
+
+
+
+@dataclass
+class BlockEvalDelta:
+    """
+    BlockEvalDelta represents a TEAL value delta (block/msgpack wire keys).
+"""
+    def __init__(self, *, action:int, bytes:typing.Optional[str], uint:typing.Optional[int]):
+        self.action = action
+        self.bytes = bytes
+        self.uint = uint
+        
+        
+
+    
+    def __str__(self):
+        return "BlockEvalDelta(action={}, bytes={}, uint={})".format(self.action, self.bytes, self.uint)
+    def __eq__(self, other):
+        if self.action != other.action:
+            return False
+        if self.bytes != other.bytes:
+            return False
+        if self.uint != other.uint:
+            return False
+        return True
+
+class _UniffiFfiConverterTypeBlockEvalDelta(_UniffiConverterRustBuffer):
+    @staticmethod
+    def read(buf):
+        return BlockEvalDelta(
+            action=_UniffiFfiConverterUInt32.read(buf),
+            bytes=_UniffiFfiConverterOptionalString.read(buf),
+            uint=_UniffiFfiConverterOptionalUInt64.read(buf),
+        )
+
+    @staticmethod
+    def check_lower(value):
+        _UniffiFfiConverterUInt32.check_lower(value.action)
+        _UniffiFfiConverterOptionalString.check_lower(value.bytes)
+        _UniffiFfiConverterOptionalUInt64.check_lower(value.uint)
+
+    @staticmethod
+    def write(value, buf):
+        _UniffiFfiConverterUInt32.write(value.action, buf)
+        _UniffiFfiConverterOptionalString.write(value.bytes, buf)
+        _UniffiFfiConverterOptionalUInt64.write(value.uint, buf)
+
+class _UniffiFfiConverterMapStringTypeBlockEvalDelta(_UniffiConverterRustBuffer):
+    @classmethod
+    def check_lower(cls, items):
+        for (key, value) in items.items():
+            _UniffiFfiConverterString.check_lower(key)
+            _UniffiFfiConverterTypeBlockEvalDelta.check_lower(value)
+
+    @classmethod
+    def write(cls, items, buf):
+        buf.write_i32(len(items))
+        for (key, value) in items.items():
+            _UniffiFfiConverterString.write(key, buf)
+            _UniffiFfiConverterTypeBlockEvalDelta.write(value, buf)
+
+    @classmethod
+    def read(cls, buf):
+        count = buf.read_i32()
+        if count < 0:
+            raise InternalError("Unexpected negative map size")
+
+        # It would be nice to use a dict comprehension,
+        # but in Python 3.7 and before the evaluation order is not according to spec,
+        # so we we're reading the value before the key.
+        # This loop makes the order explicit: first reading the key, then the value.
+        d = {}
+        for i in range(count):
+            key = _UniffiFfiConverterString.read(buf)
+            val = _UniffiFfiConverterTypeBlockEvalDelta.read(buf)
+            d[key] = val
+        return d
+
+class _UniffiFfiConverterOptionalMapStringTypeBlockEvalDelta(_UniffiConverterRustBuffer):
+    @classmethod
+    def check_lower(cls, value):
+        if value is not None:
+            _UniffiFfiConverterMapStringTypeBlockEvalDelta.check_lower(value)
+
+    @classmethod
+    def write(cls, value, buf):
+        if value is None:
+            buf.write_u8(0)
+            return
+
+        buf.write_u8(1)
+        _UniffiFfiConverterMapStringTypeBlockEvalDelta.write(value, buf)
+
+    @classmethod
+    def read(cls, buf):
+        flag = buf.read_u8()
+        if flag == 0:
+            return None
+        elif flag == 1:
+            return _UniffiFfiConverterMapStringTypeBlockEvalDelta.read(buf)
+        else:
+            raise InternalError("Unexpected flag byte for optional type")
+
+class _UniffiFfiConverterMapUInt64MapStringTypeBlockEvalDelta(_UniffiConverterRustBuffer):
+    @classmethod
+    def check_lower(cls, items):
+        for (key, value) in items.items():
+            _UniffiFfiConverterUInt64.check_lower(key)
+            _UniffiFfiConverterMapStringTypeBlockEvalDelta.check_lower(value)
+
+    @classmethod
+    def write(cls, items, buf):
+        buf.write_i32(len(items))
+        for (key, value) in items.items():
+            _UniffiFfiConverterUInt64.write(key, buf)
+            _UniffiFfiConverterMapStringTypeBlockEvalDelta.write(value, buf)
+
+    @classmethod
+    def read(cls, buf):
+        count = buf.read_i32()
+        if count < 0:
+            raise InternalError("Unexpected negative map size")
+
+        # It would be nice to use a dict comprehension,
+        # but in Python 3.7 and before the evaluation order is not according to spec,
+        # so we we're reading the value before the key.
+        # This loop makes the order explicit: first reading the key, then the value.
+        d = {}
+        for i in range(count):
+            key = _UniffiFfiConverterUInt64.read(buf)
+            val = _UniffiFfiConverterMapStringTypeBlockEvalDelta.read(buf)
+            d[key] = val
+        return d
+
+class _UniffiFfiConverterOptionalMapUInt64MapStringTypeBlockEvalDelta(_UniffiConverterRustBuffer):
+    @classmethod
+    def check_lower(cls, value):
+        if value is not None:
+            _UniffiFfiConverterMapUInt64MapStringTypeBlockEvalDelta.check_lower(value)
+
+    @classmethod
+    def write(cls, value, buf):
+        if value is None:
+            buf.write_u8(0)
+            return
+
+        buf.write_u8(1)
+        _UniffiFfiConverterMapUInt64MapStringTypeBlockEvalDelta.write(value, buf)
+
+    @classmethod
+    def read(cls, buf):
+        flag = buf.read_u8()
+        if flag == 0:
+            return None
+        elif flag == 1:
+            return _UniffiFfiConverterMapUInt64MapStringTypeBlockEvalDelta.read(buf)
+        else:
+            raise InternalError("Unexpected flag byte for optional type")
+
+class _UniffiFfiConverterSequenceString(_UniffiConverterRustBuffer):
+    @classmethod
+    def check_lower(cls, value):
+        for item in value:
+            _UniffiFfiConverterString.check_lower(item)
+
+    @classmethod
+    def write(cls, value, buf):
+        items = len(value)
+        buf.write_i32(items)
+        for item in value:
+            _UniffiFfiConverterString.write(item, buf)
+
+    @classmethod
+    def read(cls, buf):
+        count = buf.read_i32()
+        if count < 0:
+            raise InternalError("Unexpected negative sequence length")
+
+        return [
+            _UniffiFfiConverterString.read(buf) for i in range(count)
+        ]
+
+class _UniffiFfiConverterOptionalSequenceString(_UniffiConverterRustBuffer):
+    @classmethod
+    def check_lower(cls, value):
+        if value is not None:
+            _UniffiFfiConverterSequenceString.check_lower(value)
+
+    @classmethod
+    def write(cls, value, buf):
+        if value is None:
+            buf.write_u8(0)
+            return
+
+        buf.write_u8(1)
+        _UniffiFfiConverterSequenceString.write(value, buf)
+
+    @classmethod
+    def read(cls, buf):
+        flag = buf.read_u8()
+        if flag == 0:
+            return None
+        elif flag == 1:
+            return _UniffiFfiConverterSequenceString.read(buf)
+        else:
+            raise InternalError("Unexpected flag byte for optional type")
+
+@dataclass
+class BlockAppEvalDelta:
+    """
+    BlockAppEvalDelta matches msgpack wire for blocks; uses BlockStateDelta maps.
+"""
+    def __init__(self, *, global_delta:typing.Optional[dict[str, BlockEvalDelta]], local_deltas:typing.Optional[dict[int, dict[str, BlockEvalDelta]]], inner_txns:typing.Optional[typing.List[SignedTxnInBlock]], shared_accounts:typing.Optional[typing.List[bytes]], logs:typing.Optional[typing.List[str]]):
+        self.global_delta = global_delta
+        self.local_deltas = local_deltas
+        self.inner_txns = inner_txns
+        self.shared_accounts = shared_accounts
+        self.logs = logs
+        
+        
+
+    
+    def __str__(self):
+        return "BlockAppEvalDelta(global_delta={}, local_deltas={}, inner_txns={}, shared_accounts={}, logs={})".format(self.global_delta, self.local_deltas, self.inner_txns, self.shared_accounts, self.logs)
+    def __eq__(self, other):
+        if self.global_delta != other.global_delta:
+            return False
+        if self.local_deltas != other.local_deltas:
+            return False
+        if self.inner_txns != other.inner_txns:
+            return False
+        if self.shared_accounts != other.shared_accounts:
+            return False
+        if self.logs != other.logs:
+            return False
+        return True
+
+class _UniffiFfiConverterTypeBlockAppEvalDelta(_UniffiConverterRustBuffer):
+    @staticmethod
+    def read(buf):
+        return BlockAppEvalDelta(
+            global_delta=_UniffiFfiConverterOptionalMapStringTypeBlockEvalDelta.read(buf),
+            local_deltas=_UniffiFfiConverterOptionalMapUInt64MapStringTypeBlockEvalDelta.read(buf),
+            inner_txns=_UniffiFfiConverterOptionalSequenceTypeSignedTxnInBlock.read(buf),
+            shared_accounts=_UniffiFfiConverterOptionalSequenceBytes.read(buf),
+            logs=_UniffiFfiConverterOptionalSequenceString.read(buf),
+        )
+
+    @staticmethod
+    def check_lower(value):
+        _UniffiFfiConverterOptionalMapStringTypeBlockEvalDelta.check_lower(value.global_delta)
+        _UniffiFfiConverterOptionalMapUInt64MapStringTypeBlockEvalDelta.check_lower(value.local_deltas)
+        _UniffiFfiConverterOptionalSequenceTypeSignedTxnInBlock.check_lower(value.inner_txns)
+        _UniffiFfiConverterOptionalSequenceBytes.check_lower(value.shared_accounts)
+        _UniffiFfiConverterOptionalSequenceString.check_lower(value.logs)
+
+    @staticmethod
+    def write(value, buf):
+        _UniffiFfiConverterOptionalMapStringTypeBlockEvalDelta.write(value.global_delta, buf)
+        _UniffiFfiConverterOptionalMapUInt64MapStringTypeBlockEvalDelta.write(value.local_deltas, buf)
+        _UniffiFfiConverterOptionalSequenceTypeSignedTxnInBlock.write(value.inner_txns, buf)
+        _UniffiFfiConverterOptionalSequenceBytes.write(value.shared_accounts, buf)
+        _UniffiFfiConverterOptionalSequenceString.write(value.logs, buf)
+
+class _UniffiFfiConverterOptionalTypeBlockAppEvalDelta(_UniffiConverterRustBuffer):
+    @classmethod
+    def check_lower(cls, value):
+        if value is not None:
+            _UniffiFfiConverterTypeBlockAppEvalDelta.check_lower(value)
+
+    @classmethod
+    def write(cls, value, buf):
+        if value is None:
+            buf.write_u8(0)
+            return
+
+        buf.write_u8(1)
+        _UniffiFfiConverterTypeBlockAppEvalDelta.write(value, buf)
+
+    @classmethod
+    def read(cls, buf):
+        flag = buf.read_u8()
+        if flag == 0:
+            return None
+        elif flag == 1:
+            return _UniffiFfiConverterTypeBlockAppEvalDelta.read(buf)
+        else:
+            raise InternalError("Unexpected flag byte for optional type")
+
+@dataclass
+class SignedTxnInBlock:
+    """
+    SignedTxnInBlock is a SignedTransaction with additional ApplyData and block-specific metadata.
+"""
+    def __init__(self, *, signed_transaction:algokit_transact_ffi.SignedTransaction, logic_signature:typing.Optional[bytes], closing_amount:typing.Optional[int], asset_closing_amount:typing.Optional[int], sender_rewards:typing.Optional[int], receiver_rewards:typing.Optional[int], close_rewards:typing.Optional[int], eval_delta:typing.Optional[BlockAppEvalDelta], config_asset:typing.Optional[int], application_id:typing.Optional[int], has_genesis_id:typing.Optional[bool], has_genesis_hash:typing.Optional[bool]):
+        self.signed_transaction = signed_transaction
+        self.logic_signature = logic_signature
+        self.closing_amount = closing_amount
+        self.asset_closing_amount = asset_closing_amount
+        self.sender_rewards = sender_rewards
+        self.receiver_rewards = receiver_rewards
+        self.close_rewards = close_rewards
+        self.eval_delta = eval_delta
+        self.config_asset = config_asset
+        self.application_id = application_id
+        self.has_genesis_id = has_genesis_id
+        self.has_genesis_hash = has_genesis_hash
+        
+        
+
+    
+    def __str__(self):
+        return "SignedTxnInBlock(signed_transaction={}, logic_signature={}, closing_amount={}, asset_closing_amount={}, sender_rewards={}, receiver_rewards={}, close_rewards={}, eval_delta={}, config_asset={}, application_id={}, has_genesis_id={}, has_genesis_hash={})".format(self.signed_transaction, self.logic_signature, self.closing_amount, self.asset_closing_amount, self.sender_rewards, self.receiver_rewards, self.close_rewards, self.eval_delta, self.config_asset, self.application_id, self.has_genesis_id, self.has_genesis_hash)
+    def __eq__(self, other):
+        if self.signed_transaction != other.signed_transaction:
+            return False
+        if self.logic_signature != other.logic_signature:
+            return False
+        if self.closing_amount != other.closing_amount:
+            return False
+        if self.asset_closing_amount != other.asset_closing_amount:
+            return False
+        if self.sender_rewards != other.sender_rewards:
+            return False
+        if self.receiver_rewards != other.receiver_rewards:
+            return False
+        if self.close_rewards != other.close_rewards:
+            return False
+        if self.eval_delta != other.eval_delta:
+            return False
+        if self.config_asset != other.config_asset:
+            return False
+        if self.application_id != other.application_id:
+            return False
+        if self.has_genesis_id != other.has_genesis_id:
+            return False
+        if self.has_genesis_hash != other.has_genesis_hash:
+            return False
+        return True
+
+class _UniffiFfiConverterTypeSignedTxnInBlock(_UniffiConverterRustBuffer):
+    @staticmethod
+    def read(buf):
+        return SignedTxnInBlock(
+            signed_transaction=algokit_transact_ffi._UniffiFfiConverterTypeSignedTransaction.read(buf),
+            logic_signature=_UniffiFfiConverterOptionalBytes.read(buf),
+            closing_amount=_UniffiFfiConverterOptionalUInt64.read(buf),
+            asset_closing_amount=_UniffiFfiConverterOptionalUInt64.read(buf),
+            sender_rewards=_UniffiFfiConverterOptionalUInt64.read(buf),
+            receiver_rewards=_UniffiFfiConverterOptionalUInt64.read(buf),
+            close_rewards=_UniffiFfiConverterOptionalUInt64.read(buf),
+            eval_delta=_UniffiFfiConverterOptionalTypeBlockAppEvalDelta.read(buf),
+            config_asset=_UniffiFfiConverterOptionalUInt64.read(buf),
+            application_id=_UniffiFfiConverterOptionalUInt64.read(buf),
+            has_genesis_id=_UniffiFfiConverterOptionalBoolean.read(buf),
+            has_genesis_hash=_UniffiFfiConverterOptionalBoolean.read(buf),
+        )
+
+    @staticmethod
+    def check_lower(value):
+        algokit_transact_ffi._UniffiFfiConverterTypeSignedTransaction.check_lower(value.signed_transaction)
+        _UniffiFfiConverterOptionalBytes.check_lower(value.logic_signature)
+        _UniffiFfiConverterOptionalUInt64.check_lower(value.closing_amount)
+        _UniffiFfiConverterOptionalUInt64.check_lower(value.asset_closing_amount)
+        _UniffiFfiConverterOptionalUInt64.check_lower(value.sender_rewards)
+        _UniffiFfiConverterOptionalUInt64.check_lower(value.receiver_rewards)
+        _UniffiFfiConverterOptionalUInt64.check_lower(value.close_rewards)
+        _UniffiFfiConverterOptionalTypeBlockAppEvalDelta.check_lower(value.eval_delta)
+        _UniffiFfiConverterOptionalUInt64.check_lower(value.config_asset)
+        _UniffiFfiConverterOptionalUInt64.check_lower(value.application_id)
+        _UniffiFfiConverterOptionalBoolean.check_lower(value.has_genesis_id)
+        _UniffiFfiConverterOptionalBoolean.check_lower(value.has_genesis_hash)
+
+    @staticmethod
+    def write(value, buf):
+        algokit_transact_ffi._UniffiFfiConverterTypeSignedTransaction.write(value.signed_transaction, buf)
+        _UniffiFfiConverterOptionalBytes.write(value.logic_signature, buf)
+        _UniffiFfiConverterOptionalUInt64.write(value.closing_amount, buf)
+        _UniffiFfiConverterOptionalUInt64.write(value.asset_closing_amount, buf)
+        _UniffiFfiConverterOptionalUInt64.write(value.sender_rewards, buf)
+        _UniffiFfiConverterOptionalUInt64.write(value.receiver_rewards, buf)
+        _UniffiFfiConverterOptionalUInt64.write(value.close_rewards, buf)
+        _UniffiFfiConverterOptionalTypeBlockAppEvalDelta.write(value.eval_delta, buf)
+        _UniffiFfiConverterOptionalUInt64.write(value.config_asset, buf)
+        _UniffiFfiConverterOptionalUInt64.write(value.application_id, buf)
+        _UniffiFfiConverterOptionalBoolean.write(value.has_genesis_id, buf)
+        _UniffiFfiConverterOptionalBoolean.write(value.has_genesis_hash, buf)
+
+class _UniffiFfiConverterSequenceTypeSignedTxnInBlock(_UniffiConverterRustBuffer):
+    @classmethod
+    def check_lower(cls, value):
+        for item in value:
+            _UniffiFfiConverterTypeSignedTxnInBlock.check_lower(item)
+
+    @classmethod
+    def write(cls, value, buf):
+        items = len(value)
+        buf.write_i32(items)
+        for item in value:
+            _UniffiFfiConverterTypeSignedTxnInBlock.write(item, buf)
+
+    @classmethod
+    def read(cls, buf):
+        count = buf.read_i32()
+        if count < 0:
+            raise InternalError("Unexpected negative sequence length")
+
+        return [
+            _UniffiFfiConverterTypeSignedTxnInBlock.read(buf) for i in range(count)
+        ]
+
+class _UniffiFfiConverterOptionalSequenceTypeSignedTxnInBlock(_UniffiConverterRustBuffer):
+    @classmethod
+    def check_lower(cls, value):
+        if value is not None:
+            _UniffiFfiConverterSequenceTypeSignedTxnInBlock.check_lower(value)
+
+    @classmethod
+    def write(cls, value, buf):
+        if value is None:
+            buf.write_u8(0)
+            return
+
+        buf.write_u8(1)
+        _UniffiFfiConverterSequenceTypeSignedTxnInBlock.write(value, buf)
+
+    @classmethod
+    def read(cls, buf):
+        flag = buf.read_u8()
+        if flag == 0:
+            return None
+        elif flag == 1:
+            return _UniffiFfiConverterSequenceTypeSignedTxnInBlock.read(buf)
+        else:
+            raise InternalError("Unexpected flag byte for optional type")
+
+@dataclass
+class Block:
+    """
+    Block contains the BlockHeader and the list of transactions (Payset).
+"""
+    def __init__(self, *, round:typing.Optional[int], previous_block_hash:typing.Optional[bytes], previous_block_hash_512:typing.Optional[bytes], seed:typing.Optional[bytes], transactions_root:typing.Optional[bytes], transactions_root_sha256:typing.Optional[bytes], transactions_root_sha512:typing.Optional[bytes], timestamp:typing.Optional[int], genesis_id:typing.Optional[str], genesis_hash:typing.Optional[bytes], proposer:typing.Optional[bytes], fees_collected:typing.Optional[int], bonus:typing.Optional[int], proposer_payout:typing.Optional[int], fee_sink:typing.Optional[bytes], rewards_pool:typing.Optional[bytes], rewards_level:typing.Optional[int], rewards_rate:typing.Optional[int], rewards_residue:typing.Optional[int], rewards_recalculation_round:typing.Optional[int], current_protocol:typing.Optional[str], next_protocol:typing.Optional[str], next_protocol_approvals:typing.Optional[int], next_protocol_vote_before:typing.Optional[int], next_protocol_switch_on:typing.Optional[int], upgrade_propose:typing.Optional[str], upgrade_delay:typing.Optional[int], upgrade_approve:typing.Optional[bool], txn_counter:typing.Optional[int], state_proof_tracking:typing.Optional[dict[int, BlockStateProofTrackingData]], expired_participation_accounts:typing.Optional[typing.List[bytes]], absent_participation_accounts:typing.Optional[typing.List[bytes]], transactions:typing.Optional[typing.List[SignedTxnInBlock]]):
+        self.round = round
+        self.previous_block_hash = previous_block_hash
+        self.previous_block_hash_512 = previous_block_hash_512
+        self.seed = seed
+        self.transactions_root = transactions_root
+        self.transactions_root_sha256 = transactions_root_sha256
+        self.transactions_root_sha512 = transactions_root_sha512
+        self.timestamp = timestamp
+        self.genesis_id = genesis_id
+        self.genesis_hash = genesis_hash
+        self.proposer = proposer
+        self.fees_collected = fees_collected
+        self.bonus = bonus
+        self.proposer_payout = proposer_payout
+        self.fee_sink = fee_sink
+        self.rewards_pool = rewards_pool
+        self.rewards_level = rewards_level
+        self.rewards_rate = rewards_rate
+        self.rewards_residue = rewards_residue
+        self.rewards_recalculation_round = rewards_recalculation_round
+        self.current_protocol = current_protocol
+        self.next_protocol = next_protocol
+        self.next_protocol_approvals = next_protocol_approvals
+        self.next_protocol_vote_before = next_protocol_vote_before
+        self.next_protocol_switch_on = next_protocol_switch_on
+        self.upgrade_propose = upgrade_propose
+        self.upgrade_delay = upgrade_delay
+        self.upgrade_approve = upgrade_approve
+        self.txn_counter = txn_counter
+        self.state_proof_tracking = state_proof_tracking
+        self.expired_participation_accounts = expired_participation_accounts
+        self.absent_participation_accounts = absent_participation_accounts
+        self.transactions = transactions
+        
+        
+
+    
+    def __str__(self):
+        return "Block(round={}, previous_block_hash={}, previous_block_hash_512={}, seed={}, transactions_root={}, transactions_root_sha256={}, transactions_root_sha512={}, timestamp={}, genesis_id={}, genesis_hash={}, proposer={}, fees_collected={}, bonus={}, proposer_payout={}, fee_sink={}, rewards_pool={}, rewards_level={}, rewards_rate={}, rewards_residue={}, rewards_recalculation_round={}, current_protocol={}, next_protocol={}, next_protocol_approvals={}, next_protocol_vote_before={}, next_protocol_switch_on={}, upgrade_propose={}, upgrade_delay={}, upgrade_approve={}, txn_counter={}, state_proof_tracking={}, expired_participation_accounts={}, absent_participation_accounts={}, transactions={})".format(self.round, self.previous_block_hash, self.previous_block_hash_512, self.seed, self.transactions_root, self.transactions_root_sha256, self.transactions_root_sha512, self.timestamp, self.genesis_id, self.genesis_hash, self.proposer, self.fees_collected, self.bonus, self.proposer_payout, self.fee_sink, self.rewards_pool, self.rewards_level, self.rewards_rate, self.rewards_residue, self.rewards_recalculation_round, self.current_protocol, self.next_protocol, self.next_protocol_approvals, self.next_protocol_vote_before, self.next_protocol_switch_on, self.upgrade_propose, self.upgrade_delay, self.upgrade_approve, self.txn_counter, self.state_proof_tracking, self.expired_participation_accounts, self.absent_participation_accounts, self.transactions)
+    def __eq__(self, other):
+        if self.round != other.round:
+            return False
+        if self.previous_block_hash != other.previous_block_hash:
+            return False
+        if self.previous_block_hash_512 != other.previous_block_hash_512:
+            return False
+        if self.seed != other.seed:
+            return False
+        if self.transactions_root != other.transactions_root:
+            return False
+        if self.transactions_root_sha256 != other.transactions_root_sha256:
+            return False
+        if self.transactions_root_sha512 != other.transactions_root_sha512:
+            return False
+        if self.timestamp != other.timestamp:
+            return False
+        if self.genesis_id != other.genesis_id:
+            return False
+        if self.genesis_hash != other.genesis_hash:
+            return False
+        if self.proposer != other.proposer:
+            return False
+        if self.fees_collected != other.fees_collected:
+            return False
+        if self.bonus != other.bonus:
+            return False
+        if self.proposer_payout != other.proposer_payout:
+            return False
+        if self.fee_sink != other.fee_sink:
+            return False
+        if self.rewards_pool != other.rewards_pool:
+            return False
+        if self.rewards_level != other.rewards_level:
+            return False
+        if self.rewards_rate != other.rewards_rate:
+            return False
+        if self.rewards_residue != other.rewards_residue:
+            return False
+        if self.rewards_recalculation_round != other.rewards_recalculation_round:
+            return False
+        if self.current_protocol != other.current_protocol:
+            return False
+        if self.next_protocol != other.next_protocol:
+            return False
+        if self.next_protocol_approvals != other.next_protocol_approvals:
+            return False
+        if self.next_protocol_vote_before != other.next_protocol_vote_before:
+            return False
+        if self.next_protocol_switch_on != other.next_protocol_switch_on:
+            return False
+        if self.upgrade_propose != other.upgrade_propose:
+            return False
+        if self.upgrade_delay != other.upgrade_delay:
+            return False
+        if self.upgrade_approve != other.upgrade_approve:
+            return False
+        if self.txn_counter != other.txn_counter:
+            return False
+        if self.state_proof_tracking != other.state_proof_tracking:
+            return False
+        if self.expired_participation_accounts != other.expired_participation_accounts:
+            return False
+        if self.absent_participation_accounts != other.absent_participation_accounts:
+            return False
+        if self.transactions != other.transactions:
+            return False
+        return True
+
+class _UniffiFfiConverterTypeBlock(_UniffiConverterRustBuffer):
+    @staticmethod
+    def read(buf):
+        return Block(
+            round=_UniffiFfiConverterOptionalUInt64.read(buf),
+            previous_block_hash=_UniffiFfiConverterOptionalBytes.read(buf),
+            previous_block_hash_512=_UniffiFfiConverterOptionalBytes.read(buf),
+            seed=_UniffiFfiConverterOptionalBytes.read(buf),
+            transactions_root=_UniffiFfiConverterOptionalBytes.read(buf),
+            transactions_root_sha256=_UniffiFfiConverterOptionalBytes.read(buf),
+            transactions_root_sha512=_UniffiFfiConverterOptionalBytes.read(buf),
+            timestamp=_UniffiFfiConverterOptionalUInt64.read(buf),
+            genesis_id=_UniffiFfiConverterOptionalString.read(buf),
+            genesis_hash=_UniffiFfiConverterOptionalBytes.read(buf),
+            proposer=_UniffiFfiConverterOptionalBytes.read(buf),
+            fees_collected=_UniffiFfiConverterOptionalUInt64.read(buf),
+            bonus=_UniffiFfiConverterOptionalUInt64.read(buf),
+            proposer_payout=_UniffiFfiConverterOptionalUInt64.read(buf),
+            fee_sink=_UniffiFfiConverterOptionalBytes.read(buf),
+            rewards_pool=_UniffiFfiConverterOptionalBytes.read(buf),
+            rewards_level=_UniffiFfiConverterOptionalUInt64.read(buf),
+            rewards_rate=_UniffiFfiConverterOptionalUInt64.read(buf),
+            rewards_residue=_UniffiFfiConverterOptionalUInt64.read(buf),
+            rewards_recalculation_round=_UniffiFfiConverterOptionalUInt64.read(buf),
+            current_protocol=_UniffiFfiConverterOptionalString.read(buf),
+            next_protocol=_UniffiFfiConverterOptionalString.read(buf),
+            next_protocol_approvals=_UniffiFfiConverterOptionalUInt64.read(buf),
+            next_protocol_vote_before=_UniffiFfiConverterOptionalUInt64.read(buf),
+            next_protocol_switch_on=_UniffiFfiConverterOptionalUInt64.read(buf),
+            upgrade_propose=_UniffiFfiConverterOptionalString.read(buf),
+            upgrade_delay=_UniffiFfiConverterOptionalUInt64.read(buf),
+            upgrade_approve=_UniffiFfiConverterOptionalBoolean.read(buf),
+            txn_counter=_UniffiFfiConverterOptionalUInt64.read(buf),
+            state_proof_tracking=_UniffiFfiConverterOptionalMapUInt64TypeBlockStateProofTrackingData.read(buf),
+            expired_participation_accounts=_UniffiFfiConverterOptionalSequenceBytes.read(buf),
+            absent_participation_accounts=_UniffiFfiConverterOptionalSequenceBytes.read(buf),
+            transactions=_UniffiFfiConverterOptionalSequenceTypeSignedTxnInBlock.read(buf),
+        )
+
+    @staticmethod
+    def check_lower(value):
+        _UniffiFfiConverterOptionalUInt64.check_lower(value.round)
+        _UniffiFfiConverterOptionalBytes.check_lower(value.previous_block_hash)
+        _UniffiFfiConverterOptionalBytes.check_lower(value.previous_block_hash_512)
+        _UniffiFfiConverterOptionalBytes.check_lower(value.seed)
+        _UniffiFfiConverterOptionalBytes.check_lower(value.transactions_root)
+        _UniffiFfiConverterOptionalBytes.check_lower(value.transactions_root_sha256)
+        _UniffiFfiConverterOptionalBytes.check_lower(value.transactions_root_sha512)
+        _UniffiFfiConverterOptionalUInt64.check_lower(value.timestamp)
+        _UniffiFfiConverterOptionalString.check_lower(value.genesis_id)
+        _UniffiFfiConverterOptionalBytes.check_lower(value.genesis_hash)
+        _UniffiFfiConverterOptionalBytes.check_lower(value.proposer)
+        _UniffiFfiConverterOptionalUInt64.check_lower(value.fees_collected)
+        _UniffiFfiConverterOptionalUInt64.check_lower(value.bonus)
+        _UniffiFfiConverterOptionalUInt64.check_lower(value.proposer_payout)
+        _UniffiFfiConverterOptionalBytes.check_lower(value.fee_sink)
+        _UniffiFfiConverterOptionalBytes.check_lower(value.rewards_pool)
+        _UniffiFfiConverterOptionalUInt64.check_lower(value.rewards_level)
+        _UniffiFfiConverterOptionalUInt64.check_lower(value.rewards_rate)
+        _UniffiFfiConverterOptionalUInt64.check_lower(value.rewards_residue)
+        _UniffiFfiConverterOptionalUInt64.check_lower(value.rewards_recalculation_round)
+        _UniffiFfiConverterOptionalString.check_lower(value.current_protocol)
+        _UniffiFfiConverterOptionalString.check_lower(value.next_protocol)
+        _UniffiFfiConverterOptionalUInt64.check_lower(value.next_protocol_approvals)
+        _UniffiFfiConverterOptionalUInt64.check_lower(value.next_protocol_vote_before)
+        _UniffiFfiConverterOptionalUInt64.check_lower(value.next_protocol_switch_on)
+        _UniffiFfiConverterOptionalString.check_lower(value.upgrade_propose)
+        _UniffiFfiConverterOptionalUInt64.check_lower(value.upgrade_delay)
+        _UniffiFfiConverterOptionalBoolean.check_lower(value.upgrade_approve)
+        _UniffiFfiConverterOptionalUInt64.check_lower(value.txn_counter)
+        _UniffiFfiConverterOptionalMapUInt64TypeBlockStateProofTrackingData.check_lower(value.state_proof_tracking)
+        _UniffiFfiConverterOptionalSequenceBytes.check_lower(value.expired_participation_accounts)
+        _UniffiFfiConverterOptionalSequenceBytes.check_lower(value.absent_participation_accounts)
+        _UniffiFfiConverterOptionalSequenceTypeSignedTxnInBlock.check_lower(value.transactions)
+
+    @staticmethod
+    def write(value, buf):
+        _UniffiFfiConverterOptionalUInt64.write(value.round, buf)
+        _UniffiFfiConverterOptionalBytes.write(value.previous_block_hash, buf)
+        _UniffiFfiConverterOptionalBytes.write(value.previous_block_hash_512, buf)
+        _UniffiFfiConverterOptionalBytes.write(value.seed, buf)
+        _UniffiFfiConverterOptionalBytes.write(value.transactions_root, buf)
+        _UniffiFfiConverterOptionalBytes.write(value.transactions_root_sha256, buf)
+        _UniffiFfiConverterOptionalBytes.write(value.transactions_root_sha512, buf)
+        _UniffiFfiConverterOptionalUInt64.write(value.timestamp, buf)
+        _UniffiFfiConverterOptionalString.write(value.genesis_id, buf)
+        _UniffiFfiConverterOptionalBytes.write(value.genesis_hash, buf)
+        _UniffiFfiConverterOptionalBytes.write(value.proposer, buf)
+        _UniffiFfiConverterOptionalUInt64.write(value.fees_collected, buf)
+        _UniffiFfiConverterOptionalUInt64.write(value.bonus, buf)
+        _UniffiFfiConverterOptionalUInt64.write(value.proposer_payout, buf)
+        _UniffiFfiConverterOptionalBytes.write(value.fee_sink, buf)
+        _UniffiFfiConverterOptionalBytes.write(value.rewards_pool, buf)
+        _UniffiFfiConverterOptionalUInt64.write(value.rewards_level, buf)
+        _UniffiFfiConverterOptionalUInt64.write(value.rewards_rate, buf)
+        _UniffiFfiConverterOptionalUInt64.write(value.rewards_residue, buf)
+        _UniffiFfiConverterOptionalUInt64.write(value.rewards_recalculation_round, buf)
+        _UniffiFfiConverterOptionalString.write(value.current_protocol, buf)
+        _UniffiFfiConverterOptionalString.write(value.next_protocol, buf)
+        _UniffiFfiConverterOptionalUInt64.write(value.next_protocol_approvals, buf)
+        _UniffiFfiConverterOptionalUInt64.write(value.next_protocol_vote_before, buf)
+        _UniffiFfiConverterOptionalUInt64.write(value.next_protocol_switch_on, buf)
+        _UniffiFfiConverterOptionalString.write(value.upgrade_propose, buf)
+        _UniffiFfiConverterOptionalUInt64.write(value.upgrade_delay, buf)
+        _UniffiFfiConverterOptionalBoolean.write(value.upgrade_approve, buf)
+        _UniffiFfiConverterOptionalUInt64.write(value.txn_counter, buf)
+        _UniffiFfiConverterOptionalMapUInt64TypeBlockStateProofTrackingData.write(value.state_proof_tracking, buf)
+        _UniffiFfiConverterOptionalSequenceBytes.write(value.expired_participation_accounts, buf)
+        _UniffiFfiConverterOptionalSequenceBytes.write(value.absent_participation_accounts, buf)
+        _UniffiFfiConverterOptionalSequenceTypeSignedTxnInBlock.write(value.transactions, buf)
+
+@dataclass
+class BlockAccountStateDelta:
+    """
+    BlockAccountStateDelta pairs an address with a BlockStateDelta map.
+"""
+    def __init__(self, *, address:str, delta:dict[str, BlockEvalDelta]):
+        self.address = address
+        self.delta = delta
+        
+        
+
+    
+    def __str__(self):
+        return "BlockAccountStateDelta(address={}, delta={})".format(self.address, self.delta)
+    def __eq__(self, other):
+        if self.address != other.address:
+            return False
+        if self.delta != other.delta:
+            return False
+        return True
+
+class _UniffiFfiConverterTypeBlockAccountStateDelta(_UniffiConverterRustBuffer):
+    @staticmethod
+    def read(buf):
+        return BlockAccountStateDelta(
+            address=_UniffiFfiConverterString.read(buf),
+            delta=_UniffiFfiConverterMapStringTypeBlockEvalDelta.read(buf),
+        )
+
+    @staticmethod
+    def check_lower(value):
+        _UniffiFfiConverterString.check_lower(value.address)
+        _UniffiFfiConverterMapStringTypeBlockEvalDelta.check_lower(value.delta)
+
+    @staticmethod
+    def write(value, buf):
+        _UniffiFfiConverterString.write(value.address, buf)
+        _UniffiFfiConverterMapStringTypeBlockEvalDelta.write(value.delta, buf)
+
+@dataclass
 class Box:
     """
     Box name and its content.
@@ -4754,8 +5580,6 @@ class _UniffiFfiConverterTypeDebugSettingsProf(_UniffiConverterRustBuffer):
     def write(value, buf):
         _UniffiFfiConverterOptionalUInt64.write(value.block_rate, buf)
         _UniffiFfiConverterOptionalUInt64.write(value.mutex_rate, buf)
-
-
 
 class _UniffiFfiConverterSequenceTypeSignedTransaction(_UniffiConverterRustBuffer):
     @classmethod
@@ -5051,54 +5875,6 @@ class _UniffiFfiConverterTypeDryrunState(_UniffiConverterRustBuffer):
         _UniffiFfiConverterOptionalSequenceTypeTealValue.write(value.scratch, buf)
         _UniffiFfiConverterOptionalString.write(value.error, buf)
 
-class _UniffiFfiConverterSequenceString(_UniffiConverterRustBuffer):
-    @classmethod
-    def check_lower(cls, value):
-        for item in value:
-            _UniffiFfiConverterString.check_lower(item)
-
-    @classmethod
-    def write(cls, value, buf):
-        items = len(value)
-        buf.write_i32(items)
-        for item in value:
-            _UniffiFfiConverterString.write(item, buf)
-
-    @classmethod
-    def read(cls, buf):
-        count = buf.read_i32()
-        if count < 0:
-            raise InternalError("Unexpected negative sequence length")
-
-        return [
-            _UniffiFfiConverterString.read(buf) for i in range(count)
-        ]
-
-class _UniffiFfiConverterOptionalSequenceString(_UniffiConverterRustBuffer):
-    @classmethod
-    def check_lower(cls, value):
-        if value is not None:
-            _UniffiFfiConverterSequenceString.check_lower(value)
-
-    @classmethod
-    def write(cls, value, buf):
-        if value is None:
-            buf.write_u8(0)
-            return
-
-        buf.write_u8(1)
-        _UniffiFfiConverterSequenceString.write(value, buf)
-
-    @classmethod
-    def read(cls, buf):
-        flag = buf.read_u8()
-        if flag == 0:
-            return None
-        elif flag == 1:
-            return _UniffiFfiConverterSequenceString.read(buf)
-        else:
-            raise InternalError("Unexpected flag byte for optional type")
-
 class _UniffiFfiConverterSequenceTypeDryrunState(_UniffiConverterRustBuffer):
     @classmethod
     def check_lower(cls, value):
@@ -5217,31 +5993,6 @@ class _UniffiFfiConverterOptionalSequenceTypeAccountStateDelta(_UniffiConverterR
             return None
         elif flag == 1:
             return _UniffiFfiConverterSequenceTypeAccountStateDelta.read(buf)
-        else:
-            raise InternalError("Unexpected flag byte for optional type")
-
-class _UniffiFfiConverterOptionalSequenceBytes(_UniffiConverterRustBuffer):
-    @classmethod
-    def check_lower(cls, value):
-        if value is not None:
-            _UniffiFfiConverterSequenceBytes.check_lower(value)
-
-    @classmethod
-    def write(cls, value, buf):
-        if value is None:
-            buf.write_u8(0)
-            return
-
-        buf.write_u8(1)
-        _UniffiFfiConverterSequenceBytes.write(value, buf)
-
-    @classmethod
-    def read(cls, buf):
-        flag = buf.read_u8()
-        if flag == 0:
-            return None
-        elif flag == 1:
-            return _UniffiFfiConverterSequenceBytes.read(buf)
         else:
             raise InternalError("Unexpected flag byte for optional type")
 
@@ -5631,7 +6382,7 @@ class GetBlock:
     """
     Encoded block object.
 """
-    def __init__(self, *, block:UnknownJsonValue, cert:typing.Optional[UnknownJsonValue]):
+    def __init__(self, *, block:Block, cert:typing.Optional[bytes]):
         self.block = block
         self.cert = cert
         
@@ -5651,19 +6402,19 @@ class _UniffiFfiConverterTypeGetBlock(_UniffiConverterRustBuffer):
     @staticmethod
     def read(buf):
         return GetBlock(
-            block=_UniffiFfiConverterTypeUnknownJsonValue.read(buf),
-            cert=_UniffiFfiConverterOptionalTypeUnknownJsonValue.read(buf),
+            block=_UniffiFfiConverterTypeBlock.read(buf),
+            cert=_UniffiFfiConverterOptionalBytes.read(buf),
         )
 
     @staticmethod
     def check_lower(value):
-        _UniffiFfiConverterTypeUnknownJsonValue.check_lower(value.block)
-        _UniffiFfiConverterOptionalTypeUnknownJsonValue.check_lower(value.cert)
+        _UniffiFfiConverterTypeBlock.check_lower(value.block)
+        _UniffiFfiConverterOptionalBytes.check_lower(value.cert)
 
     @staticmethod
     def write(value, buf):
-        _UniffiFfiConverterTypeUnknownJsonValue.write(value.block, buf)
-        _UniffiFfiConverterOptionalTypeUnknownJsonValue.write(value.cert, buf)
+        _UniffiFfiConverterTypeBlock.write(value.block, buf)
+        _UniffiFfiConverterOptionalBytes.write(value.cert, buf)
 
 @dataclass
 class GetBlockHash:
@@ -24819,6 +25570,12 @@ __all__ = [
     "ApplicationLocalReference",
     "ApplicationStateOperation",
     "AssetHoldingReference",
+    "BlockStateProofTrackingData",
+    "BlockEvalDelta",
+    "BlockAppEvalDelta",
+    "SignedTxnInBlock",
+    "Block",
+    "BlockAccountStateDelta",
     "Box",
     "BoxDescriptor",
     "BoxReference",
