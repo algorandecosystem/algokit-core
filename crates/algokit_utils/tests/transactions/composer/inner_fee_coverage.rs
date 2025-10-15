@@ -1830,7 +1830,7 @@ async fn fund_app_accounts(
         .algorand_client
         .account_manager()
         .lock()
-        .unwrap();
+        .await;
     let dispenser = account_manager.dispenser_from_environment().await?;
 
     for app_id in app_ids {

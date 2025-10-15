@@ -10,7 +10,8 @@ use crate::transactions::{
 use crate::{AccountManager, TransactionSigner};
 use algod_client::models::TransactionParams;
 use algokit_transact::Address;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 pub struct AlgorandClient {
     client_manager: Arc<ClientManager>,
@@ -167,11 +168,8 @@ impl AlgorandClient {
         })
     }
 
-    pub fn set_signer(&mut self, sender: Address, signer: Arc<dyn TransactionSigner>) {
-        self.account_manager
-            .lock()
-            .unwrap()
-            .set_signer(sender, signer);
+    pub async fn set_signer(&mut self, sender: Address, signer: Arc<dyn TransactionSigner>) {
+        self.account_manager.lock().await.set_signer(sender, signer);
     }
 
     /// Get access to the AccountManager for account operations

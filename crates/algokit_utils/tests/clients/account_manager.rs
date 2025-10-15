@@ -19,7 +19,7 @@ async fn test_from_environment(#[future] algorand_fixture: AlgorandFixtureResult
         .algorand_client
         .account_manager()
         .lock()
-        .unwrap();
+        .await;
 
     // Get the account from environment (will create a new one on LocalNet)
     let account = account_manager
@@ -59,7 +59,7 @@ async fn same_account_is_subsequently_retrieved(
         .algorand_client
         .account_manager()
         .lock()
-        .unwrap();
+        .await;
 
     // Get the account from environment twice with the same name
     let account = account_manager.from_environment(&name, None).await?;
@@ -98,7 +98,7 @@ async fn environment_is_used_in_preference_to_kmd(
         .algorand_client
         .account_manager()
         .lock()
-        .unwrap();
+        .await;
 
     // Create an account via KMD
     let account = account_manager.from_environment(&name, None).await?;
@@ -165,7 +165,7 @@ async fn rekeyed_account_is_retrievable(
         .algorand_client
         .account_manager()
         .lock()
-        .unwrap();
+        .await;
 
     // Perform the rekey operation
     account_manager

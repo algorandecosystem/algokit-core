@@ -1,7 +1,7 @@
 use algokit_transact::{Address, EMPTY_SIGNATURE, SignedTransaction, Transaction};
 use async_trait::async_trait;
 use derive_more::Debug;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 #[async_trait]
 pub trait TransactionSigner: Send + Sync {
@@ -24,9 +24,11 @@ pub trait TransactionSignerGetter: Send + Sync {
     fn get_signer(&self, address: Address) -> Result<Arc<dyn TransactionSigner>, String>;
 }
 
-impl<T: TransactionSignerGetter> TransactionSignerGetter for Mutex<T> {
+impl<T: TransactionSignerGetter> TransactionSignerGetter for tokio::sync::Mutex<T> {
     fn get_signer(&self, address: Address) -> Result<Arc<dyn TransactionSigner>, String> {
-        self.lock().map_err(|e| e.to_string())?.get_signer(address)
+        self.try_lock()
+            .map_err(|e| format!("Failed to acquire lock: {}", e))?
+            .get_signer(address)
     }
 }
 

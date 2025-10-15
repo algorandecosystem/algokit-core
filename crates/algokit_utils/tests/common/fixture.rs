@@ -82,9 +82,10 @@ impl AlgorandFixture {
         let test_account_address = test_account.account().address();
         let config = config.unwrap_or_default();
 
-        let mut account_manager = algorand_client.account_manager().lock().unwrap();
-        let dispenser = account_manager.dispenser_from_environment().await?;
-        drop(account_manager); // Release the lock
+        let dispenser = {
+            let mut account_manager = algorand_client.account_manager().lock().await;
+            account_manager.dispenser_from_environment().await?
+        };
 
         algorand_client
             .send()
@@ -100,7 +101,9 @@ impl AlgorandFixture {
             )
             .await?;
 
-        algorand_client.set_signer(test_account_address, Arc::new(test_account.clone()));
+        algorand_client
+            .set_signer(test_account_address, Arc::new(test_account.clone()))
+            .await;
 
         Ok(test_account)
     }

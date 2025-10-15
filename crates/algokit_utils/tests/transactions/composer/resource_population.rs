@@ -1173,7 +1173,7 @@ async fn fund_app_account(
     app_id: u64,
     amount: u64,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let mut account_manager = context.algorand_client.account_manager().lock().unwrap();
+    let mut account_manager = context.algorand_client.account_manager().lock().await;
     let dispenser = account_manager.dispenser_from_environment().await?;
 
     let app_address = Address::from_app_id(&app_id);

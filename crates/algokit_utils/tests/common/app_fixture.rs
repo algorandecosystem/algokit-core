@@ -51,7 +51,9 @@ pub async fn build_app_fixture(
     .await?;
 
     let mut algorand = AlgorandClient::default_localnet(None);
-    algorand.set_signer(sender.clone(), Arc::new(fixture.test_account.clone()));
+    algorand
+        .set_signer(sender.clone(), Arc::new(fixture.test_account.clone()))
+        .await;
     let client = AppClient::new(AppClientParams {
         app_id,
         app_spec: spec.clone(),

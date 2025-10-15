@@ -1,5 +1,5 @@
-use crate::clients::{AccountManagerError, SigningAccount};
 use crate::clients::account_manager::AccountPredicate;
+use crate::clients::{AccountManagerError, SigningAccount};
 use crate::constants::UNENCRYPTED_DEFAULT_WALLET_NAME;
 use crate::transactions::TransactionComposerParams;
 use crate::{ClientManager, EmptySigner, PaymentParams, TransactionComposer, TransactionSigner};

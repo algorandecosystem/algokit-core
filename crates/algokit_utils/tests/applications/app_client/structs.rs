@@ -36,7 +36,9 @@ async fn test_nested_structs_described_by_structure(
     .await?;
 
     let mut algorand = RootAlgorandClient::default_localnet(None);
-    algorand.set_signer(sender.clone(), Arc::new(fixture.test_account.clone()));
+    algorand
+        .set_signer(sender.clone(), Arc::new(fixture.test_account.clone()))
+        .await;
     let app_client = algokit_utils::applications::app_client::AppClient::new(
         algokit_utils::applications::app_client::AppClientParams {
             app_id,
@@ -146,7 +148,9 @@ async fn test_nested_structs_referenced_by_name(
     .await?;
 
     let mut algorand = RootAlgorandClient::default_localnet(None);
-    algorand.set_signer(sender.clone(), Arc::new(fixture.test_account.clone()));
+    algorand
+        .set_signer(sender.clone(), Arc::new(fixture.test_account.clone()))
+        .await;
     let app_client = algokit_utils::applications::app_client::AppClient::new(
         algokit_utils::applications::app_client::AppClientParams {
             app_id,

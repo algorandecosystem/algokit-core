@@ -12,7 +12,7 @@ async fn test_testnet_dispenser() -> Result<(), Box<dyn std::error::Error + Send
 
     // Generate a random account using the account manager
     let test_account_address = {
-        let mut account_manager = algorand_client.account_manager().lock().unwrap();
+        let mut account_manager = algorand_client.account_manager().lock().await;
         account_manager.random().address()
     };
 
