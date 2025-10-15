@@ -51,9 +51,11 @@ impl From<RustBlockAppEvalDelta> for BlockAppEvalDelta {
     }
 }
 
-impl From<BlockAppEvalDelta> for RustBlockAppEvalDelta {
-    fn from(ffi_struct: BlockAppEvalDelta) -> Self {
-        Self {
+impl TryFrom<BlockAppEvalDelta> for RustBlockAppEvalDelta {
+    type Error = algokit_transact_ffi::AlgoKitTransactError;
+
+    fn try_from(ffi_struct: BlockAppEvalDelta) -> Result<Self, Self::Error> {
+        Ok(Self {
             global_delta: ffi_struct
                 .global_delta
                 .map(|v| v.into_iter().map(|(k, v)| (k, v.into())).collect()),
@@ -64,9 +66,14 @@ impl From<BlockAppEvalDelta> for RustBlockAppEvalDelta {
             }),
             inner_txns: ffi_struct
                 .inner_txns
-                .map(|v| v.into_iter().map(|tx| tx.into()).collect()),
+                .map(|v| {
+                    v.into_iter()
+                        .map(|tx| tx.try_into())
+                        .collect::<Result<Vec<_>, _>>()
+                })
+                .transpose()?,
             shared_accounts: ffi_struct.shared_accounts,
             logs: ffi_struct.logs,
-        }
+        })
     }
 }

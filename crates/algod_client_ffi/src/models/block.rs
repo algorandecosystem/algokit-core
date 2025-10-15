@@ -130,9 +130,11 @@ impl From<RustBlock> for Block {
     }
 }
 
-impl From<Block> for RustBlock {
-    fn from(ffi_struct: Block) -> Self {
-        Self {
+impl TryFrom<Block> for RustBlock {
+    type Error = algokit_transact_ffi::AlgoKitTransactError;
+
+    fn try_from(ffi_struct: Block) -> Result<Self, Self::Error> {
+        Ok(Self {
             round: ffi_struct.round,
             previous_block_hash: ffi_struct.previous_block_hash,
             previous_block_hash_512: ffi_struct.previous_block_hash_512,
@@ -169,7 +171,12 @@ impl From<Block> for RustBlock {
             absent_participation_accounts: ffi_struct.absent_participation_accounts,
             transactions: ffi_struct
                 .transactions
-                .map(|v| v.into_iter().map(|tx| tx.into()).collect()),
-        }
+                .map(|v| {
+                    v.into_iter()
+                        .map(|tx| tx.try_into())
+                        .collect::<Result<Vec<_>, _>>()
+                })
+                .transpose()?,
+        })
     }
 }

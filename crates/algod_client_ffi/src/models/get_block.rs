@@ -32,11 +32,13 @@ impl From<RustGetBlock> for GetBlock {
     }
 }
 
-impl From<GetBlock> for RustGetBlock {
-    fn from(ffi_struct: GetBlock) -> Self {
-        Self {
-            block: ffi_struct.block.into(),
+impl TryFrom<GetBlock> for RustGetBlock {
+    type Error = algokit_transact_ffi::AlgoKitTransactError;
+
+    fn try_from(ffi_struct: GetBlock) -> Result<Self, Self::Error> {
+        Ok(Self {
+            block: ffi_struct.block.try_into()?,
             cert: ffi_struct.cert,
-        }
+        })
     }
 }

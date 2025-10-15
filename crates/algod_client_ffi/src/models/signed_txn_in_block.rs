@@ -62,21 +62,23 @@ impl From<RustSignedTxnInBlock> for SignedTxnInBlock {
     }
 }
 
-impl From<SignedTxnInBlock> for RustSignedTxnInBlock {
-    fn from(ffi_struct: SignedTxnInBlock) -> Self {
-        Self {
-            signed_transaction: ffi_struct.signed_transaction.into(),
+impl TryFrom<SignedTxnInBlock> for RustSignedTxnInBlock {
+    type Error = algokit_transact_ffi::AlgoKitTransactError;
+
+    fn try_from(ffi_struct: SignedTxnInBlock) -> Result<Self, Self::Error> {
+        Ok(Self {
+            signed_transaction: ffi_struct.signed_transaction.try_into()?,
             logic_signature: ffi_struct.logic_signature,
             closing_amount: ffi_struct.closing_amount,
             asset_closing_amount: ffi_struct.asset_closing_amount,
             sender_rewards: ffi_struct.sender_rewards,
             receiver_rewards: ffi_struct.receiver_rewards,
             close_rewards: ffi_struct.close_rewards,
-            eval_delta: ffi_struct.eval_delta.map(|v| v.into()),
+            eval_delta: ffi_struct.eval_delta.map(|v| v.try_into()).transpose()?,
             config_asset: ffi_struct.config_asset,
             application_id: ffi_struct.application_id,
             has_genesis_id: ffi_struct.has_genesis_id,
             has_genesis_hash: ffi_struct.has_genesis_hash,
-        }
+        })
     }
 }
