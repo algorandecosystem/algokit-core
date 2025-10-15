@@ -9,20 +9,14 @@
  */
 
 use crate::models;
-#[cfg(not(feature = "ffi_uniffi"))]
+use algokit_transact::AlgorandMsgpack;
 use algokit_transact::SignedTransaction as AlgokitSignedTransaction;
 use serde::{Deserialize, Serialize};
-
-#[cfg(feature = "ffi_uniffi")]
-use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
-
-use algokit_transact::AlgorandMsgpack;
 
 use crate::models::Block;
 
 /// Encoded block object.
-#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GetBlock {
     /// Block data including header and transactions.
     #[serde(rename = "block")]
@@ -37,13 +31,27 @@ pub struct GetBlock {
     pub cert: Option<Vec<u8>>,
 }
 
+impl Default for GetBlock {
+    fn default() -> Self {
+        Self {
+            block: Block::default(),
+            cert: None,
+        }
+    }
+}
+
 impl AlgorandMsgpack for GetBlock {
-    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
+    const PREFIX: &'static [u8] = b"";
 }
 
 impl GetBlock {
-    /// Constructor for GetBlock
-    pub fn new(block: Block) -> GetBlock {
+    /// Default constructor for GetBlock
+    pub fn new() -> GetBlock {
+        GetBlock::default()
+    }
+
+    /// Constructor with block parameter
+    pub fn with_block(block: Block) -> GetBlock {
         GetBlock { block, cert: None }
     }
 

@@ -9,20 +9,14 @@
  */
 
 use crate::models;
-#[cfg(not(feature = "ffi_uniffi"))]
+use algokit_transact::AlgorandMsgpack;
 use algokit_transact::SignedTransaction as AlgokitSignedTransaction;
 use serde::{Deserialize, Serialize};
-
-#[cfg(feature = "ffi_uniffi")]
-use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
-
-use algokit_transact::AlgorandMsgpack;
 
 use crate::models::BlockAppEvalDelta;
 
 /// SignedTxnInBlock is a SignedTransaction with additional ApplyData and block-specific metadata.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct SignedTxnInBlock {
     /// SignedTransaction fields (flattened from algokit_transact)
     #[serde(flatten)]
@@ -66,7 +60,6 @@ pub struct SignedTxnInBlock {
     #[serde(rename = "hgh", skip_serializing_if = "Option::is_none")]
     pub has_genesis_hash: Option<bool>,
 }
-
 impl Default for SignedTxnInBlock {
     fn default() -> Self {
         Self {

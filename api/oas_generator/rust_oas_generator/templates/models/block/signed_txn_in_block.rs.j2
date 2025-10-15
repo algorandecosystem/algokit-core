@@ -9,64 +9,91 @@
  */
 
 use crate::models;
-#[cfg(not(feature = "ffi_uniffi"))]
+{% if not ffi %}
 use algokit_transact::SignedTransaction as AlgokitSignedTransaction;
 use serde::{Deserialize, Serialize};
-
-#[cfg(feature = "ffi_uniffi")]
-use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
-
 use algokit_transact::AlgorandMsgpack;
+{% else %}
+use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
+{% endif %}
 
 use crate::models::BlockAppEvalDelta;
 
 /// SignedTxnInBlock is a SignedTransaction with additional ApplyData and block-specific metadata.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
+#[derive(Clone, Debug, PartialEq)]
+{% if ffi %}
+#[derive(uniffi::Record)]
+{% else %}
+#[derive(Serialize, Deserialize)]
+{% endif %}
 pub struct SignedTxnInBlock {
     /// SignedTransaction fields (flattened from algokit_transact)
+    {% if not ffi %}
     #[serde(flatten)]
+    {% endif %}
     pub signed_transaction: AlgokitSignedTransaction,
     /// [lsig] Logic signature (program signature).
+    {% if not ffi %}
     #[serde(
         with = "crate::msgpack_value_bytes",
         default,
         rename = "lsig",
         skip_serializing_if = "Option::is_none"
     )]
+    {% endif %}
     pub logic_signature: Option<Vec<u8>>,
     /// [ca] Rewards applied to close-remainder-to account.
+    {% if not ffi %}
     #[serde(rename = "ca", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub closing_amount: Option<u64>,
     /// [aca] Asset closing amount.
+    {% if not ffi %}
     #[serde(rename = "aca", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub asset_closing_amount: Option<u64>,
     /// [rs] Sender rewards.
+    {% if not ffi %}
     #[serde(rename = "rs", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub sender_rewards: Option<u64>,
     /// [rr] Receiver rewards.
+    {% if not ffi %}
     #[serde(rename = "rr", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub receiver_rewards: Option<u64>,
     /// [rc] Close rewards.
+    {% if not ffi %}
     #[serde(rename = "rc", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub close_rewards: Option<u64>,
     /// [dt] State changes from app execution.
+    {% if not ffi %}
     #[serde(rename = "dt", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub eval_delta: Option<BlockAppEvalDelta>,
     /// [caid] Asset ID if created.
+    {% if not ffi %}
     #[serde(rename = "caid", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub config_asset: Option<u64>,
     /// [apid] App ID if created.
+    {% if not ffi %}
     #[serde(rename = "apid", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub application_id: Option<u64>,
     /// [hgi] Has genesis ID flag.
+    {% if not ffi %}
     #[serde(rename = "hgi", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub has_genesis_id: Option<bool>,
     /// [hgh] Has genesis hash flag.
+    {% if not ffi %}
     #[serde(rename = "hgh", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub has_genesis_hash: Option<bool>,
 }
-
+{% if not ffi %}
 impl Default for SignedTxnInBlock {
     fn default() -> Self {
         Self {
@@ -131,3 +158,4 @@ impl SignedTxnInBlock {
         Ok(Self::decode(bytes)?)
     }
 }
+{% endif %}

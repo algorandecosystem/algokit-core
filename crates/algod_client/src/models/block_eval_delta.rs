@@ -9,13 +9,11 @@
  */
 
 use crate::models;
+use algokit_transact::AlgorandMsgpack;
 use serde::{Deserialize, Serialize};
 
-use algokit_transact::AlgorandMsgpack;
-
 /// BlockEvalDelta represents a TEAL value delta (block/msgpack wire keys).
-#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct BlockEvalDelta {
     /// [at] delta action.
     #[serde(rename = "at")]
@@ -28,13 +26,28 @@ pub struct BlockEvalDelta {
     pub uint: Option<u64>,
 }
 
+impl Default for BlockEvalDelta {
+    fn default() -> Self {
+        Self {
+            action: 0,
+            bytes: None,
+            uint: None,
+        }
+    }
+}
+
 impl AlgorandMsgpack for BlockEvalDelta {
     const PREFIX: &'static [u8] = b"";
 }
 
 impl BlockEvalDelta {
-    /// Constructor for BlockEvalDelta
-    pub fn new(action: u32) -> BlockEvalDelta {
+    /// Default constructor for BlockEvalDelta
+    pub fn new() -> BlockEvalDelta {
+        BlockEvalDelta::default()
+    }
+
+    /// Constructor with action parameter
+    pub fn with_action(action: u32) -> BlockEvalDelta {
         BlockEvalDelta {
             action,
             bytes: None,

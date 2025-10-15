@@ -6,7 +6,7 @@
 
 pub mod apis;
 pub mod models;
-{% if client_type == "Algod" %}
+{% if client_type == "Algod" and not ffi %}
 pub mod msgpack_value_bytes;
 {% endif %}
 

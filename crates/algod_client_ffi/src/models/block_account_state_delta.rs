@@ -10,20 +10,10 @@
 
 use crate::models;
 use crate::models::BlockStateDelta;
-use serde::{Deserialize, Serialize};
 
 /// BlockAccountStateDelta pairs an address with a BlockStateDelta map.
-#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct BlockAccountStateDelta {
-    #[serde(rename = "address")]
     pub address: String,
-    #[serde(rename = "delta")]
     pub delta: BlockStateDelta,
-}
-
-impl BlockAccountStateDelta {
-    pub fn new(address: String, delta: BlockStateDelta) -> Self {
-        Self { address, delta }
-    }
 }

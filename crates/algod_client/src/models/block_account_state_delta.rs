@@ -10,11 +10,11 @@
 
 use crate::models;
 use crate::models::BlockStateDelta;
+use algokit_transact::AlgorandMsgpack;
 use serde::{Deserialize, Serialize};
 
 /// BlockAccountStateDelta pairs an address with a BlockStateDelta map.
-#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct BlockAccountStateDelta {
     #[serde(rename = "address")]
     pub address: String,
@@ -22,8 +22,37 @@ pub struct BlockAccountStateDelta {
     pub delta: BlockStateDelta,
 }
 
+impl Default for BlockAccountStateDelta {
+    fn default() -> Self {
+        Self {
+            address: String::new(),
+            delta: Default::default(),
+        }
+    }
+}
+
+impl AlgorandMsgpack for BlockAccountStateDelta {
+    const PREFIX: &'static [u8] = b"";
+}
+
 impl BlockAccountStateDelta {
-    pub fn new(address: String, delta: BlockStateDelta) -> Self {
+    /// Default constructor for BlockAccountStateDelta
+    pub fn new() -> BlockAccountStateDelta {
+        BlockAccountStateDelta::default()
+    }
+
+    /// Constructor with parameters
+    pub fn with_params(address: String, delta: BlockStateDelta) -> Self {
         Self { address, delta }
+    }
+
+    /// Encode this struct to msgpack bytes using AlgorandMsgpack trait
+    pub fn to_msgpack(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        Ok(self.encode()?)
+    }
+
+    /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
+    pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(Self::decode(bytes)?)
     }
 }

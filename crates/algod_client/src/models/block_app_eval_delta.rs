@@ -9,24 +9,19 @@
  */
 
 use crate::models;
-#[cfg(not(feature = "ffi_uniffi"))]
+use algokit_transact::AlgorandMsgpack;
 use algokit_transact::SignedTransaction as AlgokitSignedTransaction;
 use serde::{Deserialize, Serialize};
 use serde_with::{Bytes, serde_as};
 use std::collections::HashMap;
 
-#[cfg(feature = "ffi_uniffi")]
-use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
-
-use algokit_transact::AlgorandMsgpack;
-
 use crate::models::BlockStateDelta;
 use crate::models::SignedTxnInBlock;
 
 /// BlockAppEvalDelta matches msgpack wire for blocks; uses BlockStateDelta maps.
+#[derive(Clone, Debug, PartialEq)]
 #[serde_as]
-#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
+#[derive(Serialize, Deserialize)]
 pub struct BlockAppEvalDelta {
     /// [gd] Global state delta for the application.
     #[serde(rename = "gd", skip_serializing_if = "Option::is_none")]
@@ -46,12 +41,35 @@ pub struct BlockAppEvalDelta {
     pub logs: Option<Vec<String>>,
 }
 
+impl Default for BlockAppEvalDelta {
+    fn default() -> Self {
+        Self {
+            global_delta: None,
+            local_deltas: None,
+            inner_txns: None,
+            shared_accounts: None,
+            logs: None,
+        }
+    }
+}
+
 impl AlgorandMsgpack for BlockAppEvalDelta {
     const PREFIX: &'static [u8] = b"";
 }
 
 impl BlockAppEvalDelta {
+    /// Default constructor for BlockAppEvalDelta
     pub fn new() -> BlockAppEvalDelta {
         BlockAppEvalDelta::default()
+    }
+
+    /// Encode this struct to msgpack bytes using AlgorandMsgpack trait
+    pub fn to_msgpack(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        Ok(self.encode()?)
+    }
+
+    /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
+    pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(Self::decode(bytes)?)
     }
 }

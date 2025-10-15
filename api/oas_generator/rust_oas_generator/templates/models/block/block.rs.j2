@@ -9,139 +9,249 @@
  */
 
 use crate::models;
-#[cfg(not(feature = "ffi_uniffi"))]
+{% if not ffi %}
 use algokit_transact::SignedTransaction as AlgokitSignedTransaction;
 use serde::{Deserialize, Serialize};
 use serde_with::{Bytes, serde_as};
-
-#[cfg(feature = "ffi_uniffi")]
-use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
-
 use algokit_transact::AlgorandMsgpack;
+{% else %}
+use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
+{% endif %}
 
 use crate::models::SignedTxnInBlock;
 use crate::models::BlockStateProofTracking;
 
 /// Block contains the BlockHeader and the list of transactions (Payset).
+#[derive(Clone, Debug, PartialEq)]
+{% if not ffi %}
 #[serde_as]
-#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
+#[derive(Serialize, Deserialize)]
+{% else %}
+#[derive(uniffi::Record)]
+{% endif %}
 pub struct Block {
     /// [rnd] Round number.
+    {% if not ffi %}
     #[serde(rename = "rnd", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub round: Option<u64>,
     /// [prev] Previous block hash.
+    {% if not ffi %}
     #[serde_as(as = "Option<Bytes>")]
     #[serde(rename = "prev", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub previous_block_hash: Option<Vec<u8>>,
     /// [prev512] Previous block hash using SHA-512.
+    {% if not ffi %}
     #[serde_as(as = "Option<Bytes>")]
     #[serde(rename = "prev512", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub previous_block_hash_512: Option<Vec<u8>>,
     /// [seed] Sortition seed.
+    {% if not ffi %}
     #[serde_as(as = "Option<Bytes>")]
     #[serde(rename = "seed", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub seed: Option<Vec<u8>>,
     /// [txn] Root of transaction merkle tree using SHA512_256.
+    {% if not ffi %}
     #[serde_as(as = "Option<Bytes>")]
     #[serde(rename = "txn", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub transactions_root: Option<Vec<u8>>,
     /// [txn256] Root of transaction vector commitment using SHA256.
+    {% if not ffi %}
     #[serde_as(as = "Option<Bytes>")]
     #[serde(rename = "txn256", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub transactions_root_sha256: Option<Vec<u8>>,
     /// [txn512] Root of transaction vector commitment using SHA512.
+    {% if not ffi %}
     #[serde_as(as = "Option<Bytes>")]
     #[serde(rename = "txn512", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub transactions_root_sha512: Option<Vec<u8>>,
     /// [ts] Block timestamp in seconds since epoch.
+    {% if not ffi %}
     #[serde(rename = "ts", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub timestamp: Option<u64>,
     /// [gen] Genesis ID.
+    {% if not ffi %}
     #[serde(rename = "gen", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub genesis_id: Option<String>,
     /// [gh] Genesis hash.
+    {% if not ffi %}
     #[serde_as(as = "Option<Bytes>")]
     #[serde(rename = "gh", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub genesis_hash: Option<Vec<u8>>,
     /// [prp] Proposer address.
+    {% if not ffi %}
     #[serde_as(as = "Option<Bytes>")]
     #[serde(rename = "prp", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub proposer: Option<Vec<u8>>,
     /// [fc] Fees collected in this block.
+    {% if not ffi %}
     #[serde(rename = "fc", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub fees_collected: Option<u64>,
     /// [bi] Bonus incentive for block proposal.
+    {% if not ffi %}
     #[serde(rename = "bi", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub bonus: Option<u64>,
     /// [pp] Proposer payout.
+    {% if not ffi %}
     #[serde(rename = "pp", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub proposer_payout: Option<u64>,
     /// [fees] FeeSink address.
+    {% if not ffi %}
     #[serde_as(as = "Option<Bytes>")]
     #[serde(rename = "fees", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub fee_sink: Option<Vec<u8>>,
     /// [rwd] RewardsPool address.
+    {% if not ffi %}
     #[serde_as(as = "Option<Bytes>")]
     #[serde(rename = "rwd", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub rewards_pool: Option<Vec<u8>>,
     /// [earn] Rewards level.
+    {% if not ffi %}
     #[serde(rename = "earn", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub rewards_level: Option<u64>,
     /// [rate] Rewards rate.
+    {% if not ffi %}
     #[serde(rename = "rate", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub rewards_rate: Option<u64>,
     /// [frac] Rewards residue.
+    {% if not ffi %}
     #[serde(rename = "frac", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub rewards_residue: Option<u64>,
     /// [rwcalr] Rewards recalculation round.
+    {% if not ffi %}
     #[serde(rename = "rwcalr", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub rewards_recalculation_round: Option<u64>,
     /// [proto] Current consensus protocol.
+    {% if not ffi %}
     #[serde(rename = "proto", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub current_protocol: Option<String>,
     /// [nextproto] Next proposed protocol.
+    {% if not ffi %}
     #[serde(rename = "nextproto", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub next_protocol: Option<String>,
     /// [nextyes] Next protocol approvals.
+    {% if not ffi %}
     #[serde(rename = "nextyes", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub next_protocol_approvals: Option<u64>,
     /// [nextbefore] Next protocol vote deadline.
+    {% if not ffi %}
     #[serde(rename = "nextbefore", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub next_protocol_vote_before: Option<u64>,
     /// [nextswitch] Next protocol switch round.
+    {% if not ffi %}
     #[serde(rename = "nextswitch", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub next_protocol_switch_on: Option<u64>,
     /// [upgradeprop] Upgrade proposal.
+    {% if not ffi %}
     #[serde(rename = "upgradeprop", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub upgrade_propose: Option<String>,
     /// [upgradedelay] Upgrade delay in rounds.
+    {% if not ffi %}
     #[serde(rename = "upgradedelay", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub upgrade_delay: Option<u64>,
     /// [upgradeyes] Upgrade approval flag.
+    {% if not ffi %}
     #[serde(rename = "upgradeyes", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub upgrade_approve: Option<bool>,
     /// [tc] Transaction counter.
+    {% if not ffi %}
     #[serde(rename = "tc", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub txn_counter: Option<u64>,
     /// [spt] State proof tracking data keyed by state proof type.
+    {% if not ffi %}
     #[serde(rename = "spt", skip_serializing_if = "Option::is_none", default)]
+    {% endif %}
     pub state_proof_tracking: Option<BlockStateProofTracking>,
     /// [partupdrmv] Expired participation accounts.
+    {% if not ffi %}
     #[serde_as(as = "Option<Vec<Bytes>>")]
     #[serde(rename = "partupdrmv", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub expired_participation_accounts: Option<Vec<Vec<u8>>>,
     /// [partupdabs] Absent participation accounts.
+    {% if not ffi %}
     #[serde_as(as = "Option<Vec<Bytes>>")]
     #[serde(rename = "partupdabs", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub absent_participation_accounts: Option<Vec<Vec<u8>>>,
     /// [txns] Block transactions (Payset).
+    {% if not ffi %}
     #[serde(rename = "txns", skip_serializing_if = "Option::is_none")]
+    {% endif %}
     pub transactions: Option<Vec<SignedTxnInBlock>>,
 }
 
+{% if not ffi %}
+impl Default for Block {
+    fn default() -> Self {
+        Self {
+            round: None,
+            previous_block_hash: None,
+            previous_block_hash_512: None,
+            seed: None,
+            transactions_root: None,
+            transactions_root_sha256: None,
+            transactions_root_sha512: None,
+            timestamp: None,
+            genesis_id: None,
+            genesis_hash: None,
+            proposer: None,
+            fees_collected: None,
+            bonus: None,
+            proposer_payout: None,
+            fee_sink: None,
+            rewards_pool: None,
+            rewards_level: None,
+            rewards_rate: None,
+            rewards_residue: None,
+            rewards_recalculation_round: None,
+            current_protocol: None,
+            next_protocol: None,
+            next_protocol_approvals: None,
+            next_protocol_vote_before: None,
+            next_protocol_switch_on: None,
+            upgrade_propose: None,
+            upgrade_delay: None,
+            upgrade_approve: None,
+            txn_counter: None,
+            state_proof_tracking: None,
+            expired_participation_accounts: None,
+            absent_participation_accounts: None,
+            transactions: None,
+        }
+    }
+}
+
 impl AlgorandMsgpack for Block {
-    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
+    const PREFIX: &'static [u8] = b"";
 }
 
 impl Block {
@@ -160,3 +270,4 @@ impl Block {
         Ok(Self::decode(bytes)?)
     }
 }
+{% endif %}

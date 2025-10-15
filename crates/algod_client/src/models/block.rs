@@ -9,23 +9,18 @@
  */
 
 use crate::models;
-#[cfg(not(feature = "ffi_uniffi"))]
+use algokit_transact::AlgorandMsgpack;
 use algokit_transact::SignedTransaction as AlgokitSignedTransaction;
 use serde::{Deserialize, Serialize};
 use serde_with::{Bytes, serde_as};
-
-#[cfg(feature = "ffi_uniffi")]
-use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
-
-use algokit_transact::AlgorandMsgpack;
 
 use crate::models::BlockStateProofTracking;
 use crate::models::SignedTxnInBlock;
 
 /// Block contains the BlockHeader and the list of transactions (Payset).
+#[derive(Clone, Debug, PartialEq)]
 #[serde_as]
-#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
+#[derive(Serialize, Deserialize)]
 pub struct Block {
     /// [rnd] Round number.
     #[serde(rename = "rnd", skip_serializing_if = "Option::is_none")]
@@ -140,8 +135,48 @@ pub struct Block {
     pub transactions: Option<Vec<SignedTxnInBlock>>,
 }
 
+impl Default for Block {
+    fn default() -> Self {
+        Self {
+            round: None,
+            previous_block_hash: None,
+            previous_block_hash_512: None,
+            seed: None,
+            transactions_root: None,
+            transactions_root_sha256: None,
+            transactions_root_sha512: None,
+            timestamp: None,
+            genesis_id: None,
+            genesis_hash: None,
+            proposer: None,
+            fees_collected: None,
+            bonus: None,
+            proposer_payout: None,
+            fee_sink: None,
+            rewards_pool: None,
+            rewards_level: None,
+            rewards_rate: None,
+            rewards_residue: None,
+            rewards_recalculation_round: None,
+            current_protocol: None,
+            next_protocol: None,
+            next_protocol_approvals: None,
+            next_protocol_vote_before: None,
+            next_protocol_switch_on: None,
+            upgrade_propose: None,
+            upgrade_delay: None,
+            upgrade_approve: None,
+            txn_counter: None,
+            state_proof_tracking: None,
+            expired_participation_accounts: None,
+            absent_participation_accounts: None,
+            transactions: None,
+        }
+    }
+}
+
 impl AlgorandMsgpack for Block {
-    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
+    const PREFIX: &'static [u8] = b"";
 }
 
 impl Block {

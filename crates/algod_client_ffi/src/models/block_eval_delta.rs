@@ -9,46 +9,14 @@
  */
 
 use crate::models;
-use serde::{Deserialize, Serialize};
-
-use algokit_transact::AlgorandMsgpack;
 
 /// BlockEvalDelta represents a TEAL value delta (block/msgpack wire keys).
-#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct BlockEvalDelta {
     /// [at] delta action.
-    #[serde(rename = "at")]
     pub action: u32,
     /// [bs] bytes value.
-    #[serde(rename = "bs", skip_serializing_if = "Option::is_none")]
     pub bytes: Option<String>,
     /// [ui] uint value.
-    #[serde(rename = "ui", skip_serializing_if = "Option::is_none")]
     pub uint: Option<u64>,
-}
-
-impl AlgorandMsgpack for BlockEvalDelta {
-    const PREFIX: &'static [u8] = b"";
-}
-
-impl BlockEvalDelta {
-    /// Constructor for BlockEvalDelta
-    pub fn new(action: u32) -> BlockEvalDelta {
-        BlockEvalDelta {
-            action,
-            bytes: None,
-            uint: None,
-        }
-    }
-
-    /// Encode this struct to msgpack bytes using AlgorandMsgpack trait
-    pub fn to_msgpack(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-        Ok(self.encode()?)
-    }
-
-    /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
-    pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
-        Ok(Self::decode(bytes)?)
-    }
 }
