@@ -45,24 +45,19 @@ impl KmdAccountManager {
             }
         })?;
 
-        if !is_localnet {
-            return Err(AccountManagerError::KmdError {
-                // TODO: PD - make this message better
-                message: "KMD is only available on LocalNet".to_string(),
-            });
-        }
-
-        let config = ClientManager::get_config_from_environment_or_localnet();
-        let kmd_config = config
-            .kmd_config
-            .ok_or_else(|| AccountManagerError::KmdError {
-                message: "No KMD configuration found for LocalNet environment".to_string(),
-            })?;
-
-        let kmd_client = ClientManager::get_kmd_client(&kmd_config).map_err(|e| {
-            AccountManagerError::KmdError {
-                message: format!("Failed to create KMD client: {}", e),
+        let kmd_client: Option<KmdClient> = match is_localnet {
+            false => None,
+            true => {
+                let config = ClientManager::get_config_from_environment_or_localnet();
+                config
+                    .kmd_config
+                    .and_then(|cfg| ClientManager::get_kmd_client(&cfg).ok())
             }
+        };
+
+        let kmd_client = kmd_client.ok_or_else(|| AccountManagerError::KmdError {
+            message: "Attempt to use Kmd client in AlgoKit instance with no Kmd configured"
+                .to_string(),
         })?;
 
         Ok(Arc::new(kmd_client))
