@@ -1,8 +1,8 @@
 use crate::clients::{AccountManagerError, SigningAccount};
+use crate::clients::account_manager::AccountPredicate;
 use crate::constants::UNENCRYPTED_DEFAULT_WALLET_NAME;
 use crate::transactions::TransactionComposerParams;
 use crate::{ClientManager, EmptySigner, PaymentParams, TransactionComposer, TransactionSigner};
-use algod_client::models::Account;
 use algokit_transact::{ALGORAND_SECRET_KEY_BYTE_LENGTH, Address};
 use kmd_client::{
     apis::client::KmdClient,
@@ -96,7 +96,7 @@ impl KmdAccountManager {
     pub async fn get_wallet_account(
         &self,
         wallet_name: &str,
-        predicate: Option<Box<dyn Fn(&Account) -> bool>>,
+        predicate: AccountPredicate,
         sender: Option<Address>,
     ) -> Result<KmdAccount, AccountManagerError> {
         let kmd = self.kmd().await?;

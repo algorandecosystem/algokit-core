@@ -16,6 +16,9 @@ use rand::rngs::OsRng;
 use snafu::Snafu;
 use std::{collections::HashMap, sync::Arc};
 
+/// A predicate function used to filter accounts based on their information from algod
+pub type AccountPredicate = Option<Box<dyn Fn(&Account) -> bool>>;
+
 /// A signing account that can sign transactions using a secret key
 #[derive(Debug, Clone)]
 pub struct SigningAccount {
@@ -282,7 +285,7 @@ impl AccountManager {
     pub async fn from_kmd(
         &mut self,
         name: &str,
-        predicate: Option<Box<dyn Fn(&Account) -> bool>>,
+        predicate: AccountPredicate,
         sender: Option<Address>,
     ) -> Result<SigningAccount, AccountManagerError> {
         let kmd_account = self

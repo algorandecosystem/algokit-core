@@ -8,7 +8,7 @@ pub mod network_client;
 pub mod testnet_dispenser_client;
 
 pub use account_manager::{
-    AccountManager, AccountManagerError, EnsureFundedResult, SigningAccount,
+    AccountManager, AccountManagerError, AccountPredicate, EnsureFundedResult, SigningAccount,
 };
 pub use algorand_client::AlgorandClient;
 pub use app_manager::{AppManager, AppManagerError};
