@@ -5,6 +5,7 @@ use algokit_abi::{ABIMethod, ABIType, ABIValue};
 use algokit_test_artifacts::resource_population;
 use algokit_transact::Transaction;
 use algokit_transact::{Address, BoxReference, OnApplicationComplete, StateSchema};
+use algokit_utils::clients::account_manager::EnsureFundedParams;
 use algokit_utils::transactions::TransactionComposerConfig;
 use algokit_utils::transactions::composer::ResourcePopulation;
 use algokit_utils::{AppCallParams, AppCreateParams, PaymentParams};
@@ -1174,11 +1175,14 @@ async fn fund_app_account(
     amount: u64,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let mut account_manager = context.algorand_client.account_manager().lock().await;
-    let dispenser = account_manager.dispenser_from_environment().await?;
 
     let app_address = Address::from_app_id(&app_id);
+    let funding_params = EnsureFundedParams {
+        min_spending_balance: amount,
+        ..Default::default()
+    };
     account_manager
-        .ensure_funded(&app_address, &dispenser.address(), amount, None, None)
+        .ensure_funded_from_environment(&app_address, &funding_params, None)
         .await?;
 
     Ok(())

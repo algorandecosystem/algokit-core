@@ -486,16 +486,15 @@ impl AccountManager {
     async fn get_ensure_funded_amount(
         &self,
         sender: &Address,
-        min_spending_balance: u64,
-        min_funding_increment: Option<u64>,
+        funding_params: &EnsureFundedParams,
     ) -> Result<Option<u64>, AccountManagerError> {
         let account_info = self.get_information(sender).await?;
         let current_spending_balance = account_info.amount.saturating_sub(account_info.min_balance);
 
         let amount_funded = calculate_fund_amount(
-            min_spending_balance,
+            funding_params.min_spending_balance,
             current_spending_balance,
-            min_funding_increment.unwrap_or_default(),
+            funding_params.min_funding_increment.unwrap_or_default(),
         );
 
         Ok(amount_funded)
@@ -510,8 +509,7 @@ impl AccountManager {
     /// # Parameters
     /// * `account_to_fund` - The address of the account to fund
     /// * `dispenser_account` - The address of the account to use as a dispenser funding source
-    /// * `min_spending_balance` - The minimum balance of Algo (in microAlgos) that the account should have available to spend (i.e. on top of minimum balance requirement)
-    /// * `min_funding_increment` - The Optional minimum amount to fund if funding is needed (defaults to 0)
+    /// * `funding_params` - The parameters specifying the funding requirements
     /// * `send_params` - Optional parameters to control the execution of the transaction
     ///
     /// # Returns
@@ -521,12 +519,11 @@ impl AccountManager {
         &mut self,
         account_to_fund: &Address,
         dispenser_account: &Address,
-        min_spending_balance: u64,
-        min_funding_increment: Option<u64>,
+        funding_params: &EnsureFundedParams,
         send_params: Option<SendParams>,
     ) -> Result<Option<EnsureFundedResult>, AccountManagerError> {
         let amount_funded = self
-            .get_ensure_funded_amount(account_to_fund, min_spending_balance, min_funding_increment)
+            .get_ensure_funded_amount(account_to_fund, funding_params)
             .await?;
 
         if amount_funded.is_none() {
@@ -541,6 +538,14 @@ impl AccountManager {
                 sender: dispenser_account.clone(),
                 receiver: account_to_fund.clone(),
                 amount: amount_funded,
+                note: funding_params.note.clone(),
+                lease: funding_params.lease,
+                static_fee: funding_params.static_fee,
+                extra_fee: funding_params.extra_fee,
+                max_fee: funding_params.max_fee,
+                validity_window: funding_params.validity_window,
+                first_valid_round: funding_params.first_valid_round,
+                last_valid_round: funding_params.last_valid_round,
                 ..Default::default()
             })
             .map_err(|e| AccountManagerError::AlgodError {
@@ -584,8 +589,7 @@ impl AccountManager {
     ///
     /// # Parameters
     /// * `account_to_fund` - The address of the account to fund
-    /// * `min_spending_balance` - The minimum balance of Algo (in microAlgos) that the account should have available to spend (i.e. on top of minimum balance requirement)
-    /// * `min_funding_increment` - The optional minimum amount to fund if funding is needed (defaults to 0)
+    /// * `funding_params` - Parameters for funding
     /// * `send_params` - Optional parameters to control the execution of the transaction
     ///
     /// # Returns
@@ -594,8 +598,7 @@ impl AccountManager {
     pub async fn ensure_funded_from_environment(
         &mut self,
         account_to_fund: &Address,
-        min_spending_balance: u64,
-        min_funding_increment: Option<u64>,
+        funding_params: &EnsureFundedParams,
         send_params: Option<SendParams>,
     ) -> Result<Option<EnsureFundedResult>, AccountManagerError> {
         // Get the dispenser account from environment
@@ -606,8 +609,7 @@ impl AccountManager {
         self.ensure_funded(
             account_to_fund,
             &dispenser_address,
-            min_spending_balance,
-            min_funding_increment,
+            funding_params,
             send_params,
         )
         .await
@@ -622,8 +624,7 @@ impl AccountManager {
     /// # Parameters
     /// * `account_to_fund` - The address of the account to fund
     /// * `dispenser_client` - The TestNet dispenser funding client
-    /// * `min_spending_balance` - The minimum balance of Algo (in microAlgos) that the account should have available to spend (i.e. on top of minimum balance requirement)
-    /// * `min_funding_increment` - The optional minimum amount to fund if funding is needed (defaults to 0)
+    /// * `funding_params` - Parameters for funding
     ///
     /// # Returns
     /// - `Some(DispenserFundResponse)` - The result of executing the dispensing transaction
@@ -632,8 +633,7 @@ impl AccountManager {
         &mut self,
         account_to_fund: &Address,
         dispenser_client: &TestNetDispenserApiClient,
-        min_spending_balance: u64,
-        min_funding_increment: Option<u64>,
+        funding_params: &EnsureFundedParams,
     ) -> Result<Option<DispenserFundResponse>, AccountManagerError> {
         let is_testnet = self.client_manager.is_testnet().await.map_err(|e| {
             AccountManagerError::EnvironmentError {
@@ -648,7 +648,7 @@ impl AccountManager {
         }
 
         let amount_funded = self
-            .get_ensure_funded_amount(account_to_fund, min_spending_balance, min_funding_increment)
+            .get_ensure_funded_amount(account_to_fund, funding_params)
             .await?;
 
         match amount_funded {
@@ -665,6 +665,37 @@ impl AccountManager {
             }
         }
     }
+}
+
+/// Parameters for ensuring an account is funded
+#[derive(Clone, Default, derive_more::Debug)]
+pub struct EnsureFundedParams {
+    /// Note to attach to the transaction. Max of 1000 bytes.
+    pub note: Option<Vec<u8>>,
+    /// Prevent multiple transactions with the same lease being included within the validity window.
+    ///
+    /// A [lease](https://dev.algorand.co/concepts/transactions/leases)
+    /// enforces a mutually exclusive transaction (useful to prevent double-posting and other scenarios).
+    pub lease: Option<[u8; 32]>,
+    /// The static transaction fee. In most cases you want to use extra fee unless setting the fee to 0 to be covered by another transaction.
+    pub static_fee: Option<u64>,
+    /// The fee to pay IN ADDITION to the suggested fee. Useful for manually covering inner transaction fees.
+    pub extra_fee: Option<u64>,
+    /// Throw an error if the fee for the transaction is more than this amount; prevents overspending on fees during high congestion periods.
+    pub max_fee: Option<u64>,
+    /// How many rounds the transaction should be valid for, if not specified then the registered default validity window will be used.
+    pub validity_window: Option<u32>,
+    /// Set the first round this transaction is valid.
+    /// If left undefined, the value from algod will be used.
+    ///
+    /// We recommend you only set this when you intentionally want this to be some time in the future.
+    pub first_valid_round: Option<u64>,
+    /// The last round this transaction is valid. It is recommended to use validity window instead.
+    pub last_valid_round: Option<u64>,
+    /// The minimum balance of Algo (in microAlgos) that the account should have available to spend
+    pub min_spending_balance: u64,
+    /// The optional minimum amount to fund if funding is needed (defaults to 0)
+    pub min_funding_increment: Option<u64>,
 }
 
 /// Result of an ensure funded operation

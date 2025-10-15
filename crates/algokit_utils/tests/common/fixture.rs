@@ -3,6 +3,7 @@ use crate::common::logging::init_test_logging;
 use algod_client::AlgodClient;
 use algokit_transact::Transaction;
 use algokit_utils::clients::SigningAccount;
+use algokit_utils::clients::account_manager::EnsureFundedParams;
 use algokit_utils::clients::algorand_client::AlgorandClientParams;
 use algokit_utils::transactions::TransactionComposerConfig;
 use algokit_utils::{AlgoConfig, AlgorandClient, ClientManager, PaymentParams};
@@ -100,30 +101,26 @@ impl AlgorandFixture {
         let test_account_address = test_account.account().address();
         let config = config.unwrap_or_default();
 
-        let dispenser = {
+        {
             let mut account_manager = algorand_client.account_manager().lock().await;
-            account_manager.dispenser_from_environment().await?
-        };
-
-        algorand_client
-            .send()
-            .payment(
-                PaymentParams {
-                    sender: dispenser.address(),
-                    receiver: test_account_address.clone(),
-                    amount: config.initial_funds,
-                    note: Some(
-                        config
-                            .funding_note
-                            .unwrap_or_else(|| "Funding test account".to_string())
-                            .as_bytes()
-                            .to_vec(),
-                    ),
-                    ..Default::default()
-                },
-                None,
-            )
-            .await?;
+            account_manager
+                .ensure_funded_from_environment(
+                    &test_account_address,
+                    &EnsureFundedParams {
+                        min_spending_balance: config.initial_funds,
+                        note: Some(
+                            config
+                                .funding_note
+                                .unwrap_or_else(|| "Funding test account".to_string())
+                                .as_bytes()
+                                .to_vec(),
+                        ),
+                        ..Default::default()
+                    },
+                    None,
+                )
+                .await?;
+        } // Lock is explicitly dropped here
 
         algorand_client
             .set_signer(test_account_address, Arc::new(test_account.clone()))
