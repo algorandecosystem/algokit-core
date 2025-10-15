@@ -223,7 +223,7 @@ impl AccountManager {
     /// Tracks and returns an Algorand account with secret key loaded (i.e. that can sign transactions) by taking the mnemonic secret.
     ///
     /// # Parameters
-    /// * `mnemonic_secret` - The mnemonic secret representing the private key of an account; **Note: Be careful how the mnemonic is handled**,
+    /// * `mnemonic` - The mnemonic representing the private key of an account; **Note: Be careful how the mnemonic is handled**,
     ///   never commit it into source control and ideally load it from the environment (ideally via a secret storage service) rather than the file system.
     /// * `sender` - The optional sender address to use this signer for (aka a rekeyed account)
     ///
@@ -231,11 +231,11 @@ impl AccountManager {
     /// The signing account
     pub fn from_mnemonic(
         &mut self,
-        mnemonic_secret: &str,
+        mnemonic: &str,
         sender: Option<Address>,
     ) -> Result<SigningAccount, AccountManagerError> {
         // Convert mnemonic to secret key
-        let secret_key = mnemonic_to_secret_key(mnemonic_secret)?;
+        let secret_key = mnemonic_to_secret_key(mnemonic)?;
 
         // Create signing account
         let signing_account = SigningAccount::new(secret_key);

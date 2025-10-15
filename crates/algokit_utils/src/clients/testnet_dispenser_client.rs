@@ -115,12 +115,12 @@ impl TestNetDispenserApiClient {
 
         let auth_token = auth_token.ok_or(DispenserError::MissingAuthToken)?;
 
-        let request_timeout = params.and_then(|p| p.request_timeout);
-
-        let timeout_secs = request_timeout.unwrap_or(DEFAULT_DISPENSER_REQUEST_TIMEOUT);
+        let request_timeout = params
+            .and_then(|p| p.request_timeout)
+            .unwrap_or(DEFAULT_DISPENSER_REQUEST_TIMEOUT);
 
         let http_client = Client::builder()
-            .timeout(Duration::from_secs(timeout_secs))
+            .timeout(Duration::from_secs(request_timeout))
             .build()
             .map_err(|e| DispenserError::RequestError { source: e })?;
 
