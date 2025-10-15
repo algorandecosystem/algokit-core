@@ -1,7 +1,7 @@
 use super::indexer_helpers::wait_for_indexer_transaction;
 use crate::common::logging::init_test_logging;
 use algod_client::AlgodClient;
-use algokit_transact::Transaction;
+use algokit_transact::{Address, Transaction};
 use algokit_utils::clients::SigningAccount;
 use algokit_utils::clients::account_manager::EnsureFundedParams;
 use algokit_utils::clients::algorand_client::AlgorandClientParams;
@@ -101,32 +101,41 @@ impl AlgorandFixture {
         let test_account_address = test_account.account().address();
         let config = config.unwrap_or_default();
 
-        {
-            let mut account_manager = algorand_client.account_manager().lock().await;
-            account_manager
-                .ensure_funded_from_environment(
-                    &test_account_address,
-                    &EnsureFundedParams {
-                        min_spending_balance: config.initial_funds,
-                        note: Some(
-                            config
-                                .funding_note
-                                .unwrap_or_else(|| "Funding test account".to_string())
-                                .as_bytes()
-                                .to_vec(),
-                        ),
-                        ..Default::default()
-                    },
-                    None,
-                )
-                .await?;
-        } // Lock is explicitly dropped here
+        Self::fund_account(algorand_client, &test_account_address, &config).await?;
 
         algorand_client
             .set_signer(test_account_address, Arc::new(test_account.clone()))
             .await;
 
         Ok(test_account)
+    }
+
+    async fn fund_account(
+        algorand_client: &Arc<AlgorandClient>,
+        account_address: &Address,
+        config: &TestAccountConfig,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        let mut account_manager = algorand_client.account_manager().lock().await;
+        account_manager
+            .ensure_funded_from_environment(
+                account_address,
+                &EnsureFundedParams {
+                    min_spending_balance: config.initial_funds,
+                    note: Some(
+                        config
+                            .funding_note
+                            .clone()
+                            .unwrap_or_else(|| "Funding test account".to_string())
+                            .as_bytes()
+                            .to_vec(),
+                    ),
+                    ..Default::default()
+                },
+                None,
+            )
+            .await?;
+
+        Ok(())
     }
 
     pub async fn generate_account(
