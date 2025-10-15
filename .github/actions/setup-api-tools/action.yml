@@ -13,11 +13,11 @@ runs:
     - uses: dtolnay/rust-toolchain@master
       with:
         toolchain: 1.85.0
-        components: rustfmt
-    
+        components: rustfmt, clippy
+
     - name: Install uv
       uses: astral-sh/setup-uv@v5
-    
+
     - name: Install uv dependencies
       working-directory: api/oas_generator
       shell: bash
