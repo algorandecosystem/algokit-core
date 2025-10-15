@@ -34,11 +34,11 @@ impl From<RustSimulateTransactionResult> for SimulateTransactionResult {
     fn from(rust_struct: RustSimulateTransactionResult) -> Self {
         Self {
             txn_result: rust_struct.txn_result.into(),
-            app_budget_consumed: rust_struct.app_budget_consumed.map(|v| v.into()),
-            logic_sig_budget_consumed: rust_struct.logic_sig_budget_consumed.map(|v| v.into()),
+            app_budget_consumed: rust_struct.app_budget_consumed,
+            logic_sig_budget_consumed: rust_struct.logic_sig_budget_consumed,
             exec_trace: rust_struct.exec_trace.map(|v| v.into()),
             unnamed_resources_accessed: rust_struct.unnamed_resources_accessed.map(|v| v.into()),
-            fixed_signer: rust_struct.fixed_signer.map(|v| v.into()),
+            fixed_signer: rust_struct.fixed_signer,
         }
     }
 }

@@ -25,10 +25,10 @@ pub struct DryrunSource {
 impl From<RustDryrunSource> for DryrunSource {
     fn from(rust_struct: RustDryrunSource) -> Self {
         Self {
-            field_name: rust_struct.field_name.into(),
-            source: rust_struct.source.into(),
-            txn_index: rust_struct.txn_index.into(),
-            app_index: rust_struct.app_index.into(),
+            field_name: rust_struct.field_name,
+            source: rust_struct.source,
+            txn_index: rust_struct.txn_index,
+            app_index: rust_struct.app_index,
         }
     }
 }
@@ -36,10 +36,10 @@ impl From<RustDryrunSource> for DryrunSource {
 impl From<DryrunSource> for RustDryrunSource {
     fn from(ffi_struct: DryrunSource) -> Self {
         Self {
-            field_name: ffi_struct.field_name.into(),
-            source: ffi_struct.source.into(),
-            txn_index: ffi_struct.txn_index.into(),
-            app_index: ffi_struct.app_index.into(),
+            field_name: ffi_struct.field_name,
+            source: ffi_struct.source,
+            txn_index: ffi_struct.txn_index,
+            app_index: ffi_struct.app_index,
         }
     }
 }

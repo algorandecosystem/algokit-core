@@ -13,7 +13,7 @@ use algokit_transact::AlgorandMsgpack;
 use serde::{Deserialize, Serialize};
 
 /// BlockEvalDelta represents a TEAL value delta (block/msgpack wire keys).
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Default)]
 pub struct BlockEvalDelta {
     /// [at] delta action.
     #[serde(rename = "at")]
@@ -24,16 +24,6 @@ pub struct BlockEvalDelta {
     /// [ui] uint value.
     #[serde(rename = "ui", skip_serializing_if = "Option::is_none")]
     pub uint: Option<u64>,
-}
-
-impl Default for BlockEvalDelta {
-    fn default() -> Self {
-        Self {
-            action: 0,
-            bytes: None,
-            uint: None,
-        }
-    }
 }
 
 impl AlgorandMsgpack for BlockEvalDelta {

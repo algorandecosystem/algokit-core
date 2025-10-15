@@ -26,8 +26,8 @@ impl From<RustTealDryrun> for TealDryrun {
     fn from(rust_struct: RustTealDryrun) -> Self {
         Self {
             txns: rust_struct.txns.into_iter().map(|v| v.into()).collect(),
-            error: rust_struct.error.into(),
-            protocol_version: rust_struct.protocol_version.into(),
+            error: rust_struct.error,
+            protocol_version: rust_struct.protocol_version,
         }
     }
 }

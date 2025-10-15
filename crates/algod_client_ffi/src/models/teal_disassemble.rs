@@ -21,7 +21,7 @@ pub struct TealDisassemble {
 impl From<RustTealDisassemble> for TealDisassemble {
     fn from(rust_struct: RustTealDisassemble) -> Self {
         Self {
-            result: rust_struct.result.into(),
+            result: rust_struct.result,
         }
     }
 }
@@ -29,7 +29,7 @@ impl From<RustTealDisassemble> for TealDisassemble {
 impl From<TealDisassemble> for RustTealDisassemble {
     fn from(ffi_struct: TealDisassemble) -> Self {
         Self {
-            result: ffi_struct.result.into(),
+            result: ffi_struct.result,
         }
     }
 }

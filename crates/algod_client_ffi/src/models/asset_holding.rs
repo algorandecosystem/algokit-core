@@ -29,9 +29,9 @@ pub struct AssetHolding {
 impl From<RustAssetHolding> for AssetHolding {
     fn from(rust_struct: RustAssetHolding) -> Self {
         Self {
-            amount: rust_struct.amount.into(),
-            asset_id: rust_struct.asset_id.into(),
-            is_frozen: rust_struct.is_frozen.into(),
+            amount: rust_struct.amount,
+            asset_id: rust_struct.asset_id,
+            is_frozen: rust_struct.is_frozen,
         }
     }
 }
@@ -39,9 +39,9 @@ impl From<RustAssetHolding> for AssetHolding {
 impl From<AssetHolding> for RustAssetHolding {
     fn from(ffi_struct: AssetHolding) -> Self {
         Self {
-            amount: ffi_struct.amount.into(),
-            asset_id: ffi_struct.asset_id.into(),
-            is_frozen: ffi_struct.is_frozen.into(),
+            amount: ffi_struct.amount,
+            asset_id: ffi_struct.asset_id,
+            is_frozen: ffi_struct.is_frozen,
         }
     }
 }

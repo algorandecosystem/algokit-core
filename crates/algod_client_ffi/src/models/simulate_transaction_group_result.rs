@@ -39,12 +39,10 @@ impl From<RustSimulateTransactionGroupResult> for SimulateTransactionGroupResult
                 .into_iter()
                 .map(|v| v.into())
                 .collect(),
-            failure_message: rust_struct.failure_message.map(|v| v.into()),
-            failed_at: rust_struct
-                .failed_at
-                .map(|v| v.into_iter().map(|v| v.into()).collect()),
-            app_budget_added: rust_struct.app_budget_added.map(|v| v.into()),
-            app_budget_consumed: rust_struct.app_budget_consumed.map(|v| v.into()),
+            failure_message: rust_struct.failure_message,
+            failed_at: rust_struct.failed_at.map(|v| v.into_iter().collect()),
+            app_budget_added: rust_struct.app_budget_added,
+            app_budget_consumed: rust_struct.app_budget_consumed,
             unnamed_resources_accessed: rust_struct.unnamed_resources_accessed.map(|v| v.into()),
         }
     }

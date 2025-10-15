@@ -34,8 +34,8 @@ pub struct SimulateTransaction {
 impl From<RustSimulateTransaction> for SimulateTransaction {
     fn from(rust_struct: RustSimulateTransaction) -> Self {
         Self {
-            version: rust_struct.version.into(),
-            last_round: rust_struct.last_round.into(),
+            version: rust_struct.version,
+            last_round: rust_struct.last_round,
             txn_groups: rust_struct
                 .txn_groups
                 .into_iter()

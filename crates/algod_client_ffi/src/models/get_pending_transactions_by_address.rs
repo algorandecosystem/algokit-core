@@ -31,7 +31,7 @@ impl From<RustGetPendingTransactionsByAddress> for GetPendingTransactionsByAddre
                 .into_iter()
                 .map(|v| v.into())
                 .collect(),
-            total_transactions: rust_struct.total_transactions.into(),
+            total_transactions: rust_struct.total_transactions,
         }
     }
 }

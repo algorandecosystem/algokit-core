@@ -21,7 +21,7 @@ pub struct StartCatchup {
 impl From<RustStartCatchup> for StartCatchup {
     fn from(rust_struct: RustStartCatchup) -> Self {
         Self {
-            catchup_message: rust_struct.catchup_message.into(),
+            catchup_message: rust_struct.catchup_message,
         }
     }
 }
@@ -29,7 +29,7 @@ impl From<RustStartCatchup> for StartCatchup {
 impl From<StartCatchup> for RustStartCatchup {
     fn from(ffi_struct: StartCatchup) -> Self {
         Self {
-            catchup_message: ffi_struct.catchup_message.into(),
+            catchup_message: ffi_struct.catchup_message,
         }
     }
 }

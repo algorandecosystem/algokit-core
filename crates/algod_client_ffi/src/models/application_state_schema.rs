@@ -24,8 +24,8 @@ pub struct ApplicationStateSchema {
 impl From<RustApplicationStateSchema> for ApplicationStateSchema {
     fn from(rust_struct: RustApplicationStateSchema) -> Self {
         Self {
-            num_uint: rust_struct.num_uint.into(),
-            num_byte_slice: rust_struct.num_byte_slice.into(),
+            num_uint: rust_struct.num_uint,
+            num_byte_slice: rust_struct.num_byte_slice,
         }
     }
 }
@@ -33,8 +33,8 @@ impl From<RustApplicationStateSchema> for ApplicationStateSchema {
 impl From<ApplicationStateSchema> for RustApplicationStateSchema {
     fn from(ffi_struct: ApplicationStateSchema) -> Self {
         Self {
-            num_uint: ffi_struct.num_uint.into(),
-            num_byte_slice: ffi_struct.num_byte_slice.into(),
+            num_uint: ffi_struct.num_uint,
+            num_byte_slice: ffi_struct.num_byte_slice,
         }
     }
 }

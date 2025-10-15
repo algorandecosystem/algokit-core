@@ -593,7 +593,7 @@ def _uniffi_check_api_checksums(lib):
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algokit_utils_ffi_checksum_method_composer_build() != 13184:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_algokit_utils_ffi_checksum_method_composer_send() != 25144:
+    if lib.uniffi_algokit_utils_ffi_checksum_method_composer_send() != 53274:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algokit_utils_ffi_checksum_method_composer_wait_for_confirmation() != 62038:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
@@ -601,7 +601,7 @@ def _uniffi_check_api_checksums(lib):
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algokit_utils_ffi_checksum_method_composertrait_build() != 44731:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_algokit_utils_ffi_checksum_method_composertrait_send() != 4472:
+    if lib.uniffi_algokit_utils_ffi_checksum_method_composertrait_send() != 14646:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_algokit_utils_ffi_checksum_method_composertrait_wait_for_confirmation() != 13649:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
@@ -3460,6 +3460,104 @@ class _UniffiFfiConverterTypeABIMethod(_UniffiConverterRustBuffer):
         _UniffiFfiConverterSequenceTypeABIMethodArg.write(value.args, buf)
         _UniffiFfiConverterOptionalTypeABIType.write(value.returns, buf)
         _UniffiFfiConverterOptionalString.write(value.description, buf)
+
+class _UniffiFfiConverterOptionalTypeABIValue(_UniffiConverterRustBuffer):
+    @classmethod
+    def check_lower(cls, value):
+        if value is not None:
+            _UniffiFfiConverterTypeABIValue.check_lower(value)
+
+    @classmethod
+    def write(cls, value, buf):
+        if value is None:
+            buf.write_u8(0)
+            return
+
+        buf.write_u8(1)
+        _UniffiFfiConverterTypeABIValue.write(value, buf)
+
+    @classmethod
+    def read(cls, buf):
+        flag = buf.read_u8()
+        if flag == 0:
+            return None
+        elif flag == 1:
+            return _UniffiFfiConverterTypeABIValue.read(buf)
+        else:
+            raise InternalError("Unexpected flag byte for optional type")
+
+class _UniffiFfiConverterOptionalTypeUtilsError(_UniffiConverterRustBuffer):
+    @classmethod
+    def check_lower(cls, value):
+        if value is not None:
+            _UniffiFfiConverterTypeUtilsError.check_lower(value)
+
+    @classmethod
+    def write(cls, value, buf):
+        if value is None:
+            buf.write_u8(0)
+            return
+
+        buf.write_u8(1)
+        _UniffiFfiConverterTypeUtilsError.write(value, buf)
+
+    @classmethod
+    def read(cls, buf):
+        flag = buf.read_u8()
+        if flag == 0:
+            return None
+        elif flag == 1:
+            return _UniffiFfiConverterTypeUtilsError.read(buf)
+        else:
+            raise InternalError("Unexpected flag byte for optional type")
+
+@dataclass
+class AbiReturn:
+    def __init__(self, *, method:AbiMethod, raw_return_value:bytes, return_value:typing.Optional[AbiValue], decode_error:typing.Optional[UtilsError]):
+        self.method = method
+        self.raw_return_value = raw_return_value
+        self.return_value = return_value
+        self.decode_error = decode_error
+        
+        
+
+    
+    def __str__(self):
+        return "AbiReturn(method={}, raw_return_value={}, return_value={}, decode_error={})".format(self.method, self.raw_return_value, self.return_value, self.decode_error)
+    def __eq__(self, other):
+        if self.method != other.method:
+            return False
+        if self.raw_return_value != other.raw_return_value:
+            return False
+        if self.return_value != other.return_value:
+            return False
+        if self.decode_error != other.decode_error:
+            return False
+        return True
+
+class _UniffiFfiConverterTypeABIReturn(_UniffiConverterRustBuffer):
+    @staticmethod
+    def read(buf):
+        return AbiReturn(
+            method=_UniffiFfiConverterTypeABIMethod.read(buf),
+            raw_return_value=_UniffiFfiConverterBytes.read(buf),
+            return_value=_UniffiFfiConverterOptionalTypeABIValue.read(buf),
+            decode_error=_UniffiFfiConverterOptionalTypeUtilsError.read(buf),
+        )
+
+    @staticmethod
+    def check_lower(value):
+        _UniffiFfiConverterTypeABIMethod.check_lower(value.method)
+        _UniffiFfiConverterBytes.check_lower(value.raw_return_value)
+        _UniffiFfiConverterOptionalTypeABIValue.check_lower(value.return_value)
+        _UniffiFfiConverterOptionalTypeUtilsError.check_lower(value.decode_error)
+
+    @staticmethod
+    def write(value, buf):
+        _UniffiFfiConverterTypeABIMethod.write(value.method, buf)
+        _UniffiFfiConverterBytes.write(value.raw_return_value, buf)
+        _UniffiFfiConverterOptionalTypeABIValue.write(value.return_value, buf)
+        _UniffiFfiConverterOptionalTypeUtilsError.write(value.decode_error, buf)
 
 
 
@@ -9103,65 +9201,6 @@ class _UniffiFfiConverterTypeSuggestedParams(_UniffiConverterRustBuffer):
         _UniffiFfiConverterBytes.write(value.genesis_hash, buf)
         _UniffiFfiConverterString.write(value.genesis_id, buf)
 
-class _UniffiFfiConverterSequenceOptionalUInt64(_UniffiConverterRustBuffer):
-    @classmethod
-    def check_lower(cls, value):
-        for item in value:
-            _UniffiFfiConverterOptionalUInt64.check_lower(item)
-
-    @classmethod
-    def write(cls, value, buf):
-        items = len(value)
-        buf.write_i32(items)
-        for item in value:
-            _UniffiFfiConverterOptionalUInt64.write(item, buf)
-
-    @classmethod
-    def read(cls, buf):
-        count = buf.read_i32()
-        if count < 0:
-            raise InternalError("Unexpected negative sequence length")
-
-        return [
-            _UniffiFfiConverterOptionalUInt64.read(buf) for i in range(count)
-        ]
-
-@dataclass
-class TempSendResponse:
-    def __init__(self, *, transaction_ids:typing.List[str], app_ids:typing.List[typing.Optional[int]]):
-        self.transaction_ids = transaction_ids
-        self.app_ids = app_ids
-        
-        
-
-    
-    def __str__(self):
-        return "TempSendResponse(transaction_ids={}, app_ids={})".format(self.transaction_ids, self.app_ids)
-    def __eq__(self, other):
-        if self.transaction_ids != other.transaction_ids:
-            return False
-        if self.app_ids != other.app_ids:
-            return False
-        return True
-
-class _UniffiFfiConverterTypeTempSendResponse(_UniffiConverterRustBuffer):
-    @staticmethod
-    def read(buf):
-        return TempSendResponse(
-            transaction_ids=_UniffiFfiConverterSequenceString.read(buf),
-            app_ids=_UniffiFfiConverterSequenceOptionalUInt64.read(buf),
-        )
-
-    @staticmethod
-    def check_lower(value):
-        _UniffiFfiConverterSequenceString.check_lower(value.transaction_ids)
-        _UniffiFfiConverterSequenceOptionalUInt64.check_lower(value.app_ids)
-
-    @staticmethod
-    def write(value, buf):
-        _UniffiFfiConverterSequenceString.write(value.transaction_ids, buf)
-        _UniffiFfiConverterSequenceOptionalUInt64.write(value.app_ids, buf)
-
 @dataclass
 class TestAccount:
     def __init__(self, *, address:str, private_key:bytes, mnemonic:str):
@@ -9328,6 +9367,140 @@ class _UniffiFfiConverterTypeTestSuiteResult(_UniffiConverterRustBuffer):
         _UniffiFfiConverterSequenceTypeTestResult.write(value.results, buf)
         _UniffiFfiConverterBoolean.write(value.all_passed, buf)
         _UniffiFfiConverterUInt64.write(value.total_duration_ms, buf)
+
+
+
+class _UniffiFfiConverterOptionalTypeABIReturn(_UniffiConverterRustBuffer):
+    @classmethod
+    def check_lower(cls, value):
+        if value is not None:
+            _UniffiFfiConverterTypeABIReturn.check_lower(value)
+
+    @classmethod
+    def write(cls, value, buf):
+        if value is None:
+            buf.write_u8(0)
+            return
+
+        buf.write_u8(1)
+        _UniffiFfiConverterTypeABIReturn.write(value, buf)
+
+    @classmethod
+    def read(cls, buf):
+        flag = buf.read_u8()
+        if flag == 0:
+            return None
+        elif flag == 1:
+            return _UniffiFfiConverterTypeABIReturn.read(buf)
+        else:
+            raise InternalError("Unexpected flag byte for optional type")
+
+@dataclass
+class TransactionResult:
+    def __init__(self, *, transaction:algokit_transact.Transaction, transaction_id:str, confirmation:algod_client_ffi.PendingTransactionResponse, abi_return:typing.Optional[AbiReturn]):
+        self.transaction = transaction
+        self.transaction_id = transaction_id
+        self.confirmation = confirmation
+        self.abi_return = abi_return
+        
+        
+
+    
+    def __str__(self):
+        return "TransactionResult(transaction={}, transaction_id={}, confirmation={}, abi_return={})".format(self.transaction, self.transaction_id, self.confirmation, self.abi_return)
+    def __eq__(self, other):
+        if self.transaction != other.transaction:
+            return False
+        if self.transaction_id != other.transaction_id:
+            return False
+        if self.confirmation != other.confirmation:
+            return False
+        if self.abi_return != other.abi_return:
+            return False
+        return True
+
+class _UniffiFfiConverterTypeTransactionResult(_UniffiConverterRustBuffer):
+    @staticmethod
+    def read(buf):
+        return TransactionResult(
+            transaction=algokit_transact._UniffiFfiConverterTypeTransaction.read(buf),
+            transaction_id=_UniffiFfiConverterString.read(buf),
+            confirmation=algod_client_ffi._UniffiFfiConverterTypePendingTransactionResponse.read(buf),
+            abi_return=_UniffiFfiConverterOptionalTypeABIReturn.read(buf),
+        )
+
+    @staticmethod
+    def check_lower(value):
+        algokit_transact._UniffiFfiConverterTypeTransaction.check_lower(value.transaction)
+        _UniffiFfiConverterString.check_lower(value.transaction_id)
+        algod_client_ffi._UniffiFfiConverterTypePendingTransactionResponse.check_lower(value.confirmation)
+        _UniffiFfiConverterOptionalTypeABIReturn.check_lower(value.abi_return)
+
+    @staticmethod
+    def write(value, buf):
+        algokit_transact._UniffiFfiConverterTypeTransaction.write(value.transaction, buf)
+        _UniffiFfiConverterString.write(value.transaction_id, buf)
+        algod_client_ffi._UniffiFfiConverterTypePendingTransactionResponse.write(value.confirmation, buf)
+        _UniffiFfiConverterOptionalTypeABIReturn.write(value.abi_return, buf)
+
+class _UniffiFfiConverterSequenceTypeTransactionResult(_UniffiConverterRustBuffer):
+    @classmethod
+    def check_lower(cls, value):
+        for item in value:
+            _UniffiFfiConverterTypeTransactionResult.check_lower(item)
+
+    @classmethod
+    def write(cls, value, buf):
+        items = len(value)
+        buf.write_i32(items)
+        for item in value:
+            _UniffiFfiConverterTypeTransactionResult.write(item, buf)
+
+    @classmethod
+    def read(cls, buf):
+        count = buf.read_i32()
+        if count < 0:
+            raise InternalError("Unexpected negative sequence length")
+
+        return [
+            _UniffiFfiConverterTypeTransactionResult.read(buf) for i in range(count)
+        ]
+
+@dataclass
+class TransactionComposerSendResult:
+    def __init__(self, *, group:typing.Optional[bytes], results:typing.List[TransactionResult]):
+        self.group = group
+        self.results = results
+        
+        
+
+    
+    def __str__(self):
+        return "TransactionComposerSendResult(group={}, results={})".format(self.group, self.results)
+    def __eq__(self, other):
+        if self.group != other.group:
+            return False
+        if self.results != other.results:
+            return False
+        return True
+
+class _UniffiFfiConverterTypeTransactionComposerSendResult(_UniffiConverterRustBuffer):
+    @staticmethod
+    def read(buf):
+        return TransactionComposerSendResult(
+            group=_UniffiFfiConverterOptionalBytes.read(buf),
+            results=_UniffiFfiConverterSequenceTypeTransactionResult.read(buf),
+        )
+
+    @staticmethod
+    def check_lower(value):
+        _UniffiFfiConverterOptionalBytes.check_lower(value.group)
+        _UniffiFfiConverterSequenceTypeTransactionResult.check_lower(value.results)
+
+    @staticmethod
+    def write(value, buf):
+        _UniffiFfiConverterOptionalBytes.write(value.group, buf)
+        _UniffiFfiConverterSequenceTypeTransactionResult.write(value.results, buf)
 
 @dataclass
 class TransactionInfo:
@@ -9653,13 +9826,11 @@ class _UniffiFfiConverterTypeABIStruct:
         buf.write_u64(cls.lower(value))
 
 
-
-
 class ComposerTrait():
     
     async def build(self, ) -> None:
         raise NotImplementedError
-    async def send(self, ) -> TempSendResponse:
+    async def send(self, ) -> TransactionComposerSendResult:
         raise NotImplementedError
     async def wait_for_confirmation(self, tx_id: str,max_rounds_to_wait: int) -> algod_client_ffi.PendingTransactionResponse:
         raise NotImplementedError
@@ -9738,11 +9909,11 @@ class ComposerTraitImpl(ComposerTrait):
             _uniffi_lift_return,
             _uniffi_error_converter,
         )
-    async def send(self, ) -> TempSendResponse:
+    async def send(self, ) -> TransactionComposerSendResult:
         _uniffi_lowered_args = (
             self._uniffi_clone_handle(),
         )
-        _uniffi_lift_return = _UniffiFfiConverterTypeTempSendResponse.lift
+        _uniffi_lift_return = _UniffiFfiConverterTypeTransactionComposerSendResult.lift
         _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
         return await _uniffi_rust_call_async(
             _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composertrait_send(*_uniffi_lowered_args),
@@ -10102,7 +10273,7 @@ class _UniffiTraitImplComposerTraitImpl:
             uniffi_future_callback(
                 uniffi_callback_data,
                 _UniffiForeignFutureResultRustBuffer(
-                    _UniffiFfiConverterTypeTempSendResponse.lower(return_value),
+                    _UniffiFfiConverterTypeTransactionComposerSendResult.lower(return_value),
                     _UniffiRustCallStatus.default()
                 )
             )
@@ -10659,7 +10830,7 @@ class ComposerProtocol(typing.Protocol):
         raise NotImplementedError
     async def build(self, ) -> None:
         raise NotImplementedError
-    async def send(self, ) -> TempSendResponse:
+    async def send(self, ) -> TransactionComposerSendResult:
         raise NotImplementedError
     async def wait_for_confirmation(self, tx_id: str,max_rounds_to_wait: int) -> algod_client_ffi.PendingTransactionResponse:
         raise NotImplementedError
@@ -10986,11 +11157,11 @@ class Composer(ComposerProtocol, ComposerTrait):
             _uniffi_lift_return,
             _uniffi_error_converter,
         )
-    async def send(self, ) -> TempSendResponse:
+    async def send(self, ) -> TransactionComposerSendResult:
         _uniffi_lowered_args = (
             self._uniffi_clone_handle(),
         )
-        _uniffi_lift_return = _UniffiFfiConverterTypeTempSendResponse.lift
+        _uniffi_lift_return = _UniffiFfiConverterTypeTransactionComposerSendResult.lift
         _uniffi_error_converter = _UniffiFfiConverterTypeUtilsError
         return await _uniffi_rust_call_async(
             _UniffiLib.uniffi_algokit_utils_ffi_fn_method_composer_send(*_uniffi_lowered_args),
@@ -11697,6 +11868,7 @@ __all__ = [
     "StructFieldType",
     "AbiMethodArg",
     "AbiMethod",
+    "AbiReturn",
     "AccountCloseParams",
     "AccountInfo",
     "AppCreateParams",
@@ -11723,10 +11895,11 @@ __all__ = [
     "AppCallMethodCallParams",
     "CommonParams",
     "SuggestedParams",
-    "TempSendResponse",
     "TestAccount",
     "TestResult",
     "TestSuiteResult",
+    "TransactionResult",
+    "TransactionComposerSendResult",
     "TransactionInfo",
     "run_asset_freeze_test_suite",
     "AbiValue",

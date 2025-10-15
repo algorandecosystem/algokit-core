@@ -25,9 +25,9 @@ pub struct GetSupply {
 impl From<RustGetSupply> for GetSupply {
     fn from(rust_struct: RustGetSupply) -> Self {
         Self {
-            current_round: rust_struct.current_round.into(),
-            online_money: rust_struct.online_money.into(),
-            total_money: rust_struct.total_money.into(),
+            current_round: rust_struct.current_round,
+            online_money: rust_struct.online_money,
+            total_money: rust_struct.total_money,
         }
     }
 }
@@ -35,9 +35,9 @@ impl From<RustGetSupply> for GetSupply {
 impl From<GetSupply> for RustGetSupply {
     fn from(ffi_struct: GetSupply) -> Self {
         Self {
-            current_round: ffi_struct.current_round.into(),
-            online_money: ffi_struct.online_money.into(),
-            total_money: ffi_struct.total_money.into(),
+            current_round: ffi_struct.current_round,
+            online_money: ffi_struct.online_money,
+            total_money: ffi_struct.total_money,
         }
     }
 }

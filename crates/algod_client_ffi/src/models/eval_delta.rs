@@ -26,9 +26,9 @@ pub struct EvalDelta {
 impl From<RustEvalDelta> for EvalDelta {
     fn from(rust_struct: RustEvalDelta) -> Self {
         Self {
-            action: rust_struct.action.into(),
-            bytes: rust_struct.bytes.map(|v| v.into()),
-            uint: rust_struct.uint.map(|v| v.into()),
+            action: rust_struct.action,
+            bytes: rust_struct.bytes,
+            uint: rust_struct.uint,
         }
     }
 }
@@ -36,9 +36,9 @@ impl From<RustEvalDelta> for EvalDelta {
 impl From<EvalDelta> for RustEvalDelta {
     fn from(ffi_struct: EvalDelta) -> Self {
         Self {
-            action: ffi_struct.action.into(),
-            bytes: ffi_struct.bytes.map(|v| v.into()),
-            uint: ffi_struct.uint.map(|v| v.into()),
+            action: ffi_struct.action,
+            bytes: ffi_struct.bytes,
+            uint: ffi_struct.uint,
         }
     }
 }

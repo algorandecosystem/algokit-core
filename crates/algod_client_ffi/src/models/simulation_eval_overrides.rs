@@ -32,12 +32,12 @@ pub struct SimulationEvalOverrides {
 impl From<RustSimulationEvalOverrides> for SimulationEvalOverrides {
     fn from(rust_struct: RustSimulationEvalOverrides) -> Self {
         Self {
-            allow_empty_signatures: rust_struct.allow_empty_signatures.map(|v| v.into()),
-            allow_unnamed_resources: rust_struct.allow_unnamed_resources.map(|v| v.into()),
-            max_log_calls: rust_struct.max_log_calls.map(|v| v.into()),
-            max_log_size: rust_struct.max_log_size.map(|v| v.into()),
-            extra_opcode_budget: rust_struct.extra_opcode_budget.map(|v| v.into()),
-            fix_signers: rust_struct.fix_signers.map(|v| v.into()),
+            allow_empty_signatures: rust_struct.allow_empty_signatures,
+            allow_unnamed_resources: rust_struct.allow_unnamed_resources,
+            max_log_calls: rust_struct.max_log_calls,
+            max_log_size: rust_struct.max_log_size,
+            extra_opcode_budget: rust_struct.extra_opcode_budget,
+            fix_signers: rust_struct.fix_signers,
         }
     }
 }
@@ -45,12 +45,12 @@ impl From<RustSimulationEvalOverrides> for SimulationEvalOverrides {
 impl From<SimulationEvalOverrides> for RustSimulationEvalOverrides {
     fn from(ffi_struct: SimulationEvalOverrides) -> Self {
         Self {
-            allow_empty_signatures: ffi_struct.allow_empty_signatures.map(|v| v.into()),
-            allow_unnamed_resources: ffi_struct.allow_unnamed_resources.map(|v| v.into()),
-            max_log_calls: ffi_struct.max_log_calls.map(|v| v.into()),
-            max_log_size: ffi_struct.max_log_size.map(|v| v.into()),
-            extra_opcode_budget: ffi_struct.extra_opcode_budget.map(|v| v.into()),
-            fix_signers: ffi_struct.fix_signers.map(|v| v.into()),
+            allow_empty_signatures: ffi_struct.allow_empty_signatures,
+            allow_unnamed_resources: ffi_struct.allow_unnamed_resources,
+            max_log_calls: ffi_struct.max_log_calls,
+            max_log_size: ffi_struct.max_log_size,
+            extra_opcode_budget: ffi_struct.extra_opcode_budget,
+            fix_signers: ffi_struct.fix_signers,
         }
     }
 }

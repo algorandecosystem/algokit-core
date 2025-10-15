@@ -24,7 +24,7 @@ pub struct TealKeyValue {
 impl From<RustTealKeyValue> for TealKeyValue {
     fn from(rust_struct: RustTealKeyValue) -> Self {
         Self {
-            key: rust_struct.key.into(),
+            key: rust_struct.key,
             value: rust_struct.value.into(),
         }
     }
@@ -33,7 +33,7 @@ impl From<RustTealKeyValue> for TealKeyValue {
 impl From<TealKeyValue> for RustTealKeyValue {
     fn from(ffi_struct: TealKeyValue) -> Self {
         Self {
-            key: ffi_struct.key.into(),
+            key: ffi_struct.key,
             value: ffi_struct.value.into(),
         }
     }

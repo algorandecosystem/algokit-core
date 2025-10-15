@@ -27,7 +27,7 @@ pub struct ApplicationLocalState {
 impl From<RustApplicationLocalState> for ApplicationLocalState {
     fn from(rust_struct: RustApplicationLocalState) -> Self {
         Self {
-            id: rust_struct.id.into(),
+            id: rust_struct.id,
             schema: rust_struct.schema.into(),
             key_value: rust_struct.key_value.map(|v| v.into()),
         }
@@ -37,7 +37,7 @@ impl From<RustApplicationLocalState> for ApplicationLocalState {
 impl From<ApplicationLocalState> for RustApplicationLocalState {
     fn from(ffi_struct: ApplicationLocalState) -> Self {
         Self {
-            id: ffi_struct.id.into(),
+            id: ffi_struct.id,
             schema: ffi_struct.schema.into(),
             key_value: ffi_struct.key_value.map(|v| v.into()),
         }

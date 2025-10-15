@@ -21,7 +21,7 @@ use crate::models::SignedTxnInBlock;
 /// BlockAppEvalDelta matches msgpack wire for blocks; uses BlockStateDelta maps.
 #[derive(Clone, Debug, PartialEq)]
 #[serde_as]
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Default)]
 pub struct BlockAppEvalDelta {
     /// [gd] Global state delta for the application.
     #[serde(rename = "gd", skip_serializing_if = "Option::is_none")]
@@ -39,18 +39,6 @@ pub struct BlockAppEvalDelta {
     /// [lg] Application log outputs as strings (msgpack strings).
     #[serde(rename = "lg", skip_serializing_if = "Option::is_none")]
     pub logs: Option<Vec<String>>,
-}
-
-impl Default for BlockAppEvalDelta {
-    fn default() -> Self {
-        Self {
-            global_delta: None,
-            local_deltas: None,
-            inner_txns: None,
-            shared_accounts: None,
-            logs: None,
-        }
-    }
 }
 
 impl AlgorandMsgpack for BlockAppEvalDelta {

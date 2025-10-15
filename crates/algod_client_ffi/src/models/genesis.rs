@@ -30,14 +30,14 @@ impl From<RustGenesis> for Genesis {
     fn from(rust_struct: RustGenesis) -> Self {
         Self {
             alloc: rust_struct.alloc.into_iter().map(|v| v.into()).collect(),
-            comment: rust_struct.comment.map(|v| v.into()),
-            devmode: rust_struct.devmode.map(|v| v.into()),
-            fees: rust_struct.fees.into(),
-            id: rust_struct.id.into(),
-            network: rust_struct.network.into(),
-            proto: rust_struct.proto.into(),
-            rwd: rust_struct.rwd.into(),
-            timestamp: rust_struct.timestamp.into(),
+            comment: rust_struct.comment,
+            devmode: rust_struct.devmode,
+            fees: rust_struct.fees,
+            id: rust_struct.id,
+            network: rust_struct.network,
+            proto: rust_struct.proto,
+            rwd: rust_struct.rwd,
+            timestamp: rust_struct.timestamp,
         }
     }
 }
@@ -46,14 +46,14 @@ impl From<Genesis> for RustGenesis {
     fn from(ffi_struct: Genesis) -> Self {
         Self {
             alloc: ffi_struct.alloc.into_iter().map(|v| v.into()).collect(),
-            comment: ffi_struct.comment.map(|v| v.into()),
-            devmode: ffi_struct.devmode.map(|v| v.into()),
-            fees: ffi_struct.fees.into(),
-            id: ffi_struct.id.into(),
-            network: ffi_struct.network.into(),
-            proto: ffi_struct.proto.into(),
-            rwd: ffi_struct.rwd.into(),
-            timestamp: ffi_struct.timestamp.into(),
+            comment: ffi_struct.comment,
+            devmode: ffi_struct.devmode,
+            fees: ffi_struct.fees,
+            id: ffi_struct.id,
+            network: ffi_struct.network,
+            proto: ffi_struct.proto,
+            rwd: ffi_struct.rwd,
+            timestamp: ffi_struct.timestamp,
         }
     }
 }

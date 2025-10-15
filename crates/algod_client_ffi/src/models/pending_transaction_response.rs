@@ -51,22 +51,20 @@ pub struct PendingTransactionResponse {
 impl From<RustPendingTransactionResponse> for PendingTransactionResponse {
     fn from(rust_struct: RustPendingTransactionResponse) -> Self {
         Self {
-            asset_id: rust_struct.asset_id.map(|v| v.into()),
-            app_id: rust_struct.app_id.map(|v| v.into()),
-            close_rewards: rust_struct.close_rewards.map(|v| v.into()),
-            closing_amount: rust_struct.closing_amount.map(|v| v.into()),
-            asset_closing_amount: rust_struct.asset_closing_amount.map(|v| v.into()),
-            confirmed_round: rust_struct.confirmed_round.map(|v| v.into()),
-            pool_error: rust_struct.pool_error.into(),
-            receiver_rewards: rust_struct.receiver_rewards.map(|v| v.into()),
-            sender_rewards: rust_struct.sender_rewards.map(|v| v.into()),
+            asset_id: rust_struct.asset_id,
+            app_id: rust_struct.app_id,
+            close_rewards: rust_struct.close_rewards,
+            closing_amount: rust_struct.closing_amount,
+            asset_closing_amount: rust_struct.asset_closing_amount,
+            confirmed_round: rust_struct.confirmed_round,
+            pool_error: rust_struct.pool_error,
+            receiver_rewards: rust_struct.receiver_rewards,
+            sender_rewards: rust_struct.sender_rewards,
             local_state_delta: rust_struct
                 .local_state_delta
                 .map(|v| v.into_iter().map(|v| v.into()).collect()),
             global_state_delta: rust_struct.global_state_delta.map(|v| v.into()),
-            logs: rust_struct
-                .logs
-                .map(|v| v.into_iter().map(|v| v.into()).collect()),
+            logs: rust_struct.logs.map(|v| v.into_iter().collect()),
             inner_txns: rust_struct
                 .inner_txns
                 .map(|v| v.into_iter().map(|v| v.into()).collect()),

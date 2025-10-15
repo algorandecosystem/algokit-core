@@ -24,7 +24,7 @@ pub struct AccountStateDelta {
 impl From<RustAccountStateDelta> for AccountStateDelta {
     fn from(rust_struct: RustAccountStateDelta) -> Self {
         Self {
-            address: rust_struct.address.into(),
+            address: rust_struct.address,
             delta: rust_struct.delta.into(),
         }
     }
@@ -33,7 +33,7 @@ impl From<RustAccountStateDelta> for AccountStateDelta {
 impl From<AccountStateDelta> for RustAccountStateDelta {
     fn from(ffi_struct: AccountStateDelta) -> Self {
         Self {
-            address: ffi_struct.address.into(),
+            address: ffi_struct.address,
             delta: ffi_struct.delta.into(),
         }
     }

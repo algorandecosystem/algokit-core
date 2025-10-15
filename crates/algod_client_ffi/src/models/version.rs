@@ -26,9 +26,9 @@ impl From<RustVersion> for Version {
     fn from(rust_struct: RustVersion) -> Self {
         Self {
             build: rust_struct.build.into(),
-            genesis_hash_b64: rust_struct.genesis_hash_b64.into(),
-            genesis_id: rust_struct.genesis_id.into(),
-            versions: rust_struct.versions.into_iter().map(|v| v.into()).collect(),
+            genesis_hash_b64: rust_struct.genesis_hash_b64,
+            genesis_id: rust_struct.genesis_id,
+            versions: rust_struct.versions.into_iter().collect(),
         }
     }
 }
@@ -37,9 +37,9 @@ impl From<Version> for RustVersion {
     fn from(ffi_struct: Version) -> Self {
         Self {
             build: ffi_struct.build.into(),
-            genesis_hash_b64: ffi_struct.genesis_hash_b64.into(),
-            genesis_id: ffi_struct.genesis_id.into(),
-            versions: ffi_struct.versions.into_iter().map(|v| v.into()).collect(),
+            genesis_hash_b64: ffi_struct.genesis_hash_b64,
+            genesis_id: ffi_struct.genesis_id,
+            versions: ffi_struct.versions.into_iter().collect(),
         }
     }
 }

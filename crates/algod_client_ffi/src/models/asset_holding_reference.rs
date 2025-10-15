@@ -24,8 +24,8 @@ pub struct AssetHoldingReference {
 impl From<RustAssetHoldingReference> for AssetHoldingReference {
     fn from(rust_struct: RustAssetHoldingReference) -> Self {
         Self {
-            account: rust_struct.account.into(),
-            asset: rust_struct.asset.into(),
+            account: rust_struct.account,
+            asset: rust_struct.asset,
         }
     }
 }
@@ -33,8 +33,8 @@ impl From<RustAssetHoldingReference> for AssetHoldingReference {
 impl From<AssetHoldingReference> for RustAssetHoldingReference {
     fn from(ffi_struct: AssetHoldingReference) -> Self {
         Self {
-            account: ffi_struct.account.into(),
-            asset: ffi_struct.asset.into(),
+            account: ffi_struct.account,
+            asset: ffi_struct.asset,
         }
     }
 }

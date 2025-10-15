@@ -24,7 +24,7 @@ pub struct EvalDeltaKeyValue {
 impl From<RustEvalDeltaKeyValue> for EvalDeltaKeyValue {
     fn from(rust_struct: RustEvalDeltaKeyValue) -> Self {
         Self {
-            key: rust_struct.key.into(),
+            key: rust_struct.key,
             value: rust_struct.value.into(),
         }
     }
@@ -33,7 +33,7 @@ impl From<RustEvalDeltaKeyValue> for EvalDeltaKeyValue {
 impl From<EvalDeltaKeyValue> for RustEvalDeltaKeyValue {
     fn from(ffi_struct: EvalDeltaKeyValue) -> Self {
         Self {
-            key: ffi_struct.key.into(),
+            key: ffi_struct.key,
             value: ffi_struct.value.into(),
         }
     }

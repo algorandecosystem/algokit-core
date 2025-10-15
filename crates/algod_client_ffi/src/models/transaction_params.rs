@@ -37,12 +37,12 @@ pub struct TransactionParams {
 impl From<RustTransactionParams> for TransactionParams {
     fn from(rust_struct: RustTransactionParams) -> Self {
         Self {
-            consensus_version: rust_struct.consensus_version.into(),
-            fee: rust_struct.fee.into(),
-            genesis_hash: rust_struct.genesis_hash.into(),
-            genesis_id: rust_struct.genesis_id.into(),
-            last_round: rust_struct.last_round.into(),
-            min_fee: rust_struct.min_fee.into(),
+            consensus_version: rust_struct.consensus_version,
+            fee: rust_struct.fee,
+            genesis_hash: rust_struct.genesis_hash,
+            genesis_id: rust_struct.genesis_id,
+            last_round: rust_struct.last_round,
+            min_fee: rust_struct.min_fee,
         }
     }
 }
@@ -50,12 +50,12 @@ impl From<RustTransactionParams> for TransactionParams {
 impl From<TransactionParams> for RustTransactionParams {
     fn from(ffi_struct: TransactionParams) -> Self {
         Self {
-            consensus_version: ffi_struct.consensus_version.into(),
-            fee: ffi_struct.fee.into(),
-            genesis_hash: ffi_struct.genesis_hash.into(),
-            genesis_id: ffi_struct.genesis_id.into(),
-            last_round: ffi_struct.last_round.into(),
-            min_fee: ffi_struct.min_fee.into(),
+            consensus_version: ffi_struct.consensus_version,
+            fee: ffi_struct.fee,
+            genesis_hash: ffi_struct.genesis_hash,
+            genesis_id: ffi_struct.genesis_id,
+            last_round: ffi_struct.last_round,
+            min_fee: ffi_struct.min_fee,
         }
     }
 }

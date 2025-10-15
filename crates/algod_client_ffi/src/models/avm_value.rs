@@ -26,9 +26,9 @@ pub struct AvmValue {
 impl From<RustAvmValue> for AvmValue {
     fn from(rust_struct: RustAvmValue) -> Self {
         Self {
-            r#type: rust_struct.r#type.into(),
-            bytes: rust_struct.bytes.map(|v| v.into()),
-            uint: rust_struct.uint.map(|v| v.into()),
+            r#type: rust_struct.r#type,
+            bytes: rust_struct.bytes,
+            uint: rust_struct.uint,
         }
     }
 }
@@ -36,9 +36,9 @@ impl From<RustAvmValue> for AvmValue {
 impl From<AvmValue> for RustAvmValue {
     fn from(ffi_struct: AvmValue) -> Self {
         Self {
-            r#type: ffi_struct.r#type.into(),
-            bytes: ffi_struct.bytes.map(|v| v.into()),
-            uint: ffi_struct.uint.map(|v| v.into()),
+            r#type: ffi_struct.r#type,
+            bytes: ffi_struct.bytes,
+            uint: ffi_struct.uint,
         }
     }
 }

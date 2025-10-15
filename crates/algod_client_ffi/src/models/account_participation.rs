@@ -32,12 +32,12 @@ pub struct AccountParticipation {
 impl From<RustAccountParticipation> for AccountParticipation {
     fn from(rust_struct: RustAccountParticipation) -> Self {
         Self {
-            selection_participation_key: rust_struct.selection_participation_key.into(),
-            vote_first_valid: rust_struct.vote_first_valid.into(),
-            vote_key_dilution: rust_struct.vote_key_dilution.into(),
-            vote_last_valid: rust_struct.vote_last_valid.into(),
-            vote_participation_key: rust_struct.vote_participation_key.into(),
-            state_proof_key: rust_struct.state_proof_key.map(|v| v.into()),
+            selection_participation_key: rust_struct.selection_participation_key,
+            vote_first_valid: rust_struct.vote_first_valid,
+            vote_key_dilution: rust_struct.vote_key_dilution,
+            vote_last_valid: rust_struct.vote_last_valid,
+            vote_participation_key: rust_struct.vote_participation_key,
+            state_proof_key: rust_struct.state_proof_key,
         }
     }
 }
@@ -45,12 +45,12 @@ impl From<RustAccountParticipation> for AccountParticipation {
 impl From<AccountParticipation> for RustAccountParticipation {
     fn from(ffi_struct: AccountParticipation) -> Self {
         Self {
-            selection_participation_key: ffi_struct.selection_participation_key.into(),
-            vote_first_valid: ffi_struct.vote_first_valid.into(),
-            vote_key_dilution: ffi_struct.vote_key_dilution.into(),
-            vote_last_valid: ffi_struct.vote_last_valid.into(),
-            vote_participation_key: ffi_struct.vote_participation_key.into(),
-            state_proof_key: ffi_struct.state_proof_key.map(|v| v.into()),
+            selection_participation_key: ffi_struct.selection_participation_key,
+            vote_first_valid: ffi_struct.vote_first_valid,
+            vote_key_dilution: ffi_struct.vote_key_dilution,
+            vote_last_valid: ffi_struct.vote_last_valid,
+            vote_participation_key: ffi_struct.vote_participation_key,
+            state_proof_key: ffi_struct.state_proof_key,
         }
     }
 }

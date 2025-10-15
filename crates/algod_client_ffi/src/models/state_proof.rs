@@ -25,7 +25,7 @@ impl From<RustStateProof> for StateProof {
     fn from(rust_struct: RustStateProof) -> Self {
         Self {
             message: rust_struct.message.into(),
-            state_proof: rust_struct.state_proof.into(),
+            state_proof: rust_struct.state_proof,
         }
     }
 }
@@ -34,7 +34,7 @@ impl From<StateProof> for RustStateProof {
     fn from(ffi_struct: StateProof) -> Self {
         Self {
             message: ffi_struct.message.into(),
-            state_proof: ffi_struct.state_proof.into(),
+            state_proof: ffi_struct.state_proof,
         }
     }
 }

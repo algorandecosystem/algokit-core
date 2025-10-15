@@ -21,7 +21,7 @@ pub struct GetSyncRound {
 impl From<RustGetSyncRound> for GetSyncRound {
     fn from(rust_struct: RustGetSyncRound) -> Self {
         Self {
-            round: rust_struct.round.into(),
+            round: rust_struct.round,
         }
     }
 }
@@ -29,7 +29,7 @@ impl From<RustGetSyncRound> for GetSyncRound {
 impl From<GetSyncRound> for RustGetSyncRound {
     fn from(ffi_struct: GetSyncRound) -> Self {
         Self {
-            round: ffi_struct.round.into(),
+            round: ffi_struct.round,
         }
     }
 }

@@ -27,7 +27,7 @@ pub struct AccountApplicationInformation {
 impl From<RustAccountApplicationInformation> for AccountApplicationInformation {
     fn from(rust_struct: RustAccountApplicationInformation) -> Self {
         Self {
-            round: rust_struct.round.into(),
+            round: rust_struct.round,
             app_local_state: rust_struct.app_local_state.map(|v| v.into()),
             created_app: rust_struct.created_app.map(|v| v.into()),
         }

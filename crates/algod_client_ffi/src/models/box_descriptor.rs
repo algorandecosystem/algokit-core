@@ -21,7 +21,7 @@ pub struct BoxDescriptor {
 impl From<RustBoxDescriptor> for BoxDescriptor {
     fn from(rust_struct: RustBoxDescriptor) -> Self {
         Self {
-            name: rust_struct.name.into(),
+            name: rust_struct.name,
         }
     }
 }
@@ -29,7 +29,7 @@ impl From<RustBoxDescriptor> for BoxDescriptor {
 impl From<BoxDescriptor> for RustBoxDescriptor {
     fn from(ffi_struct: BoxDescriptor) -> Self {
         Self {
-            name: ffi_struct.name.into(),
+            name: ffi_struct.name,
         }
     }
 }

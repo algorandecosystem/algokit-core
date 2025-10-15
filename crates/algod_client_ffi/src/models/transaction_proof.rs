@@ -31,11 +31,11 @@ pub struct TransactionProof {
 impl From<RustTransactionProof> for TransactionProof {
     fn from(rust_struct: RustTransactionProof) -> Self {
         Self {
-            proof: rust_struct.proof.into(),
-            stibhash: rust_struct.stibhash.into(),
-            treedepth: rust_struct.treedepth.into(),
-            idx: rust_struct.idx.into(),
-            hashtype: rust_struct.hashtype.into(),
+            proof: rust_struct.proof,
+            stibhash: rust_struct.stibhash,
+            treedepth: rust_struct.treedepth,
+            idx: rust_struct.idx,
+            hashtype: rust_struct.hashtype,
         }
     }
 }
@@ -43,11 +43,11 @@ impl From<RustTransactionProof> for TransactionProof {
 impl From<TransactionProof> for RustTransactionProof {
     fn from(ffi_struct: TransactionProof) -> Self {
         Self {
-            proof: ffi_struct.proof.into(),
-            stibhash: ffi_struct.stibhash.into(),
-            treedepth: ffi_struct.treedepth.into(),
-            idx: ffi_struct.idx.into(),
-            hashtype: ffi_struct.hashtype.into(),
+            proof: ffi_struct.proof,
+            stibhash: ffi_struct.stibhash,
+            treedepth: ffi_struct.treedepth,
+            idx: ffi_struct.idx,
+            hashtype: ffi_struct.hashtype,
         }
     }
 }

@@ -31,11 +31,11 @@ pub struct ApplicationStateOperation {
 impl From<RustApplicationStateOperation> for ApplicationStateOperation {
     fn from(rust_struct: RustApplicationStateOperation) -> Self {
         Self {
-            operation: rust_struct.operation.into(),
-            app_state_type: rust_struct.app_state_type.into(),
-            key: rust_struct.key.into(),
+            operation: rust_struct.operation,
+            app_state_type: rust_struct.app_state_type,
+            key: rust_struct.key,
             new_value: rust_struct.new_value.map(|v| v.into()),
-            account: rust_struct.account.map(|v| v.into()),
+            account: rust_struct.account,
         }
     }
 }
@@ -43,11 +43,11 @@ impl From<RustApplicationStateOperation> for ApplicationStateOperation {
 impl From<ApplicationStateOperation> for RustApplicationStateOperation {
     fn from(ffi_struct: ApplicationStateOperation) -> Self {
         Self {
-            operation: ffi_struct.operation.into(),
-            app_state_type: ffi_struct.app_state_type.into(),
-            key: ffi_struct.key.into(),
+            operation: ffi_struct.operation,
+            app_state_type: ffi_struct.app_state_type,
+            key: ffi_struct.key,
             new_value: ffi_struct.new_value.map(|v| v.into()),
-            account: ffi_struct.account.map(|v| v.into()),
+            account: ffi_struct.account,
         }
     }
 }

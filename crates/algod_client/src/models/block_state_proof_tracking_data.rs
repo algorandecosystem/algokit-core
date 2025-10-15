@@ -16,7 +16,7 @@ use serde_with::{Bytes, serde_as};
 /// Tracking metadata for a specific StateProofType.
 #[derive(Clone, Debug, PartialEq)]
 #[serde_as]
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Default)]
 pub struct BlockStateProofTrackingData {
     /// [v] Vector commitment root of state proof voters (may be absent when not applicable).
     #[serde_as(as = "Option<Bytes>")]
@@ -28,16 +28,6 @@ pub struct BlockStateProofTrackingData {
     /// [n] Next round for which state proofs are accepted.
     #[serde(rename = "n", skip_serializing_if = "Option::is_none", default)]
     pub state_proof_next_round: Option<u64>,
-}
-
-impl Default for BlockStateProofTrackingData {
-    fn default() -> Self {
-        Self {
-            state_proof_voters_commitment: None,
-            state_proof_online_total_weight: None,
-            state_proof_next_round: None,
-        }
-    }
 }
 
 impl AlgorandMsgpack for BlockStateProofTrackingData {

@@ -21,7 +21,7 @@ pub struct AbortCatchup {
 impl From<RustAbortCatchup> for AbortCatchup {
     fn from(rust_struct: RustAbortCatchup) -> Self {
         Self {
-            catchup_message: rust_struct.catchup_message.into(),
+            catchup_message: rust_struct.catchup_message,
         }
     }
 }
@@ -29,7 +29,7 @@ impl From<RustAbortCatchup> for AbortCatchup {
 impl From<AbortCatchup> for RustAbortCatchup {
     fn from(ffi_struct: AbortCatchup) -> Self {
         Self {
-            catchup_message: ffi_struct.catchup_message.into(),
+            catchup_message: ffi_struct.catchup_message,
         }
     }
 }

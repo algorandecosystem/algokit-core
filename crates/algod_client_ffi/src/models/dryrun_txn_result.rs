@@ -38,35 +38,29 @@ pub struct DryrunTxnResult {
 impl From<RustDryrunTxnResult> for DryrunTxnResult {
     fn from(rust_struct: RustDryrunTxnResult) -> Self {
         Self {
-            disassembly: rust_struct
-                .disassembly
-                .into_iter()
-                .map(|v| v.into())
-                .collect(),
+            disassembly: rust_struct.disassembly.into_iter().collect(),
             logic_sig_disassembly: rust_struct
                 .logic_sig_disassembly
-                .map(|v| v.into_iter().map(|v| v.into()).collect()),
+                .map(|v| v.into_iter().collect()),
             logic_sig_trace: rust_struct
                 .logic_sig_trace
                 .map(|v| v.into_iter().map(|v| v.into()).collect()),
             logic_sig_messages: rust_struct
                 .logic_sig_messages
-                .map(|v| v.into_iter().map(|v| v.into()).collect()),
+                .map(|v| v.into_iter().collect()),
             app_call_trace: rust_struct
                 .app_call_trace
                 .map(|v| v.into_iter().map(|v| v.into()).collect()),
             app_call_messages: rust_struct
                 .app_call_messages
-                .map(|v| v.into_iter().map(|v| v.into()).collect()),
+                .map(|v| v.into_iter().collect()),
             global_delta: rust_struct.global_delta.map(|v| v.into()),
             local_deltas: rust_struct
                 .local_deltas
                 .map(|v| v.into_iter().map(|v| v.into()).collect()),
-            logs: rust_struct
-                .logs
-                .map(|v| v.into_iter().map(|v| v.into()).collect()),
-            budget_added: rust_struct.budget_added.map(|v| v.into()),
-            budget_consumed: rust_struct.budget_consumed.map(|v| v.into()),
+            logs: rust_struct.logs.map(|v| v.into_iter().collect()),
+            budget_added: rust_struct.budget_added,
+            budget_consumed: rust_struct.budget_consumed,
         }
     }
 }

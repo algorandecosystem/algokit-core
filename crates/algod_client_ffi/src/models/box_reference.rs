@@ -24,8 +24,8 @@ pub struct BoxReference {
 impl From<RustBoxReference> for BoxReference {
     fn from(rust_struct: RustBoxReference) -> Self {
         Self {
-            app: rust_struct.app.into(),
-            name: rust_struct.name.into(),
+            app: rust_struct.app,
+            name: rust_struct.name,
         }
     }
 }
@@ -33,8 +33,8 @@ impl From<RustBoxReference> for BoxReference {
 impl From<BoxReference> for RustBoxReference {
     fn from(ffi_struct: BoxReference) -> Self {
         Self {
-            app: ffi_struct.app.into(),
-            name: ffi_struct.name.into(),
+            app: ffi_struct.app,
+            name: ffi_struct.name,
         }
     }
 }

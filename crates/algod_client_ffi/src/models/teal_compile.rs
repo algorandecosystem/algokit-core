@@ -27,8 +27,8 @@ pub struct TealCompile {
 impl From<RustTealCompile> for TealCompile {
     fn from(rust_struct: RustTealCompile) -> Self {
         Self {
-            hash: rust_struct.hash.into(),
-            result: rust_struct.result.into(),
+            hash: rust_struct.hash,
+            result: rust_struct.result,
             sourcemap: rust_struct.sourcemap.map(|v| v.into()),
         }
     }
@@ -37,8 +37,8 @@ impl From<RustTealCompile> for TealCompile {
 impl From<TealCompile> for RustTealCompile {
     fn from(ffi_struct: TealCompile) -> Self {
         Self {
-            hash: ffi_struct.hash.into(),
-            result: ffi_struct.result.into(),
+            hash: ffi_struct.hash,
+            result: ffi_struct.result,
             sourcemap: ffi_struct.sourcemap.map(|v| v.into()),
         }
     }

@@ -14,21 +14,12 @@ use algokit_transact::AlgorandMsgpack;
 use serde::{Deserialize, Serialize};
 
 /// BlockAccountStateDelta pairs an address with a BlockStateDelta map.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Default)]
 pub struct BlockAccountStateDelta {
     #[serde(rename = "address")]
     pub address: String,
     #[serde(rename = "delta")]
     pub delta: BlockStateDelta,
-}
-
-impl Default for BlockAccountStateDelta {
-    fn default() -> Self {
-        Self {
-            address: String::new(),
-            delta: Default::default(),
-        }
-    }
 }
 
 impl AlgorandMsgpack for BlockAccountStateDelta {

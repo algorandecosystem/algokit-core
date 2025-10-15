@@ -29,13 +29,13 @@ pub struct DryrunState {
 impl From<RustDryrunState> for DryrunState {
     fn from(rust_struct: RustDryrunState) -> Self {
         Self {
-            line: rust_struct.line.into(),
-            pc: rust_struct.pc.into(),
+            line: rust_struct.line,
+            pc: rust_struct.pc,
             stack: rust_struct.stack.into_iter().map(|v| v.into()).collect(),
             scratch: rust_struct
                 .scratch
                 .map(|v| v.into_iter().map(|v| v.into()).collect()),
-            error: rust_struct.error.map(|v| v.into()),
+            error: rust_struct.error,
         }
     }
 }
@@ -43,13 +43,13 @@ impl From<RustDryrunState> for DryrunState {
 impl From<DryrunState> for RustDryrunState {
     fn from(ffi_struct: DryrunState) -> Self {
         Self {
-            line: ffi_struct.line.into(),
-            pc: ffi_struct.pc.into(),
+            line: ffi_struct.line,
+            pc: ffi_struct.pc,
             stack: ffi_struct.stack.into_iter().map(|v| v.into()).collect(),
             scratch: ffi_struct
                 .scratch
                 .map(|v| v.into_iter().map(|v| v.into()).collect()),
-            error: ffi_struct.error.map(|v| v.into()),
+            error: ffi_struct.error,
         }
     }
 }

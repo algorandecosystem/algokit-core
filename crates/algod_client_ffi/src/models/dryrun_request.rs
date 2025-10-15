@@ -37,9 +37,9 @@ impl From<RustDryrunRequest> for DryrunRequest {
             txns: rust_struct.txns.into_iter().map(|v| v.into()).collect(),
             accounts: rust_struct.accounts.into_iter().map(|v| v.into()).collect(),
             apps: rust_struct.apps.into_iter().map(|v| v.into()).collect(),
-            protocol_version: rust_struct.protocol_version.into(),
-            round: rust_struct.round.into(),
-            latest_timestamp: rust_struct.latest_timestamp.into(),
+            protocol_version: rust_struct.protocol_version,
+            round: rust_struct.round,
+            latest_timestamp: rust_struct.latest_timestamp,
             sources: rust_struct.sources.into_iter().map(|v| v.into()).collect(),
         }
     }
@@ -64,9 +64,9 @@ impl TryFrom<DryrunRequest> for RustDryrunRequest {
                 .collect::<Result<_, _>>()?,
             accounts: ffi_struct.accounts.into_iter().map(|v| v.into()).collect(),
             apps: ffi_struct.apps.into_iter().map(|v| v.into()).collect(),
-            protocol_version: ffi_struct.protocol_version.into(),
-            round: ffi_struct.round.into(),
-            latest_timestamp: ffi_struct.latest_timestamp.into(),
+            protocol_version: ffi_struct.protocol_version,
+            round: ffi_struct.round,
+            latest_timestamp: ffi_struct.latest_timestamp,
             sources: ffi_struct.sources.into_iter().map(|v| v.into()).collect(),
         })
     }

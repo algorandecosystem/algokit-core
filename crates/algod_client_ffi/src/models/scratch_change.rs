@@ -25,7 +25,7 @@ pub struct ScratchChange {
 impl From<RustScratchChange> for ScratchChange {
     fn from(rust_struct: RustScratchChange) -> Self {
         Self {
-            slot: rust_struct.slot.into(),
+            slot: rust_struct.slot,
             new_value: rust_struct.new_value.into(),
         }
     }
@@ -34,7 +34,7 @@ impl From<RustScratchChange> for ScratchChange {
 impl From<ScratchChange> for RustScratchChange {
     fn from(ffi_struct: ScratchChange) -> Self {
         Self {
-            slot: ffi_struct.slot.into(),
+            slot: ffi_struct.slot,
             new_value: ffi_struct.new_value.into(),
         }
     }

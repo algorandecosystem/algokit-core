@@ -24,8 +24,8 @@ pub struct ApplicationLocalReference {
 impl From<RustApplicationLocalReference> for ApplicationLocalReference {
     fn from(rust_struct: RustApplicationLocalReference) -> Self {
         Self {
-            account: rust_struct.account.into(),
-            app: rust_struct.app.into(),
+            account: rust_struct.account,
+            app: rust_struct.app,
         }
     }
 }
@@ -33,8 +33,8 @@ impl From<RustApplicationLocalReference> for ApplicationLocalReference {
 impl From<ApplicationLocalReference> for RustApplicationLocalReference {
     fn from(ffi_struct: ApplicationLocalReference) -> Self {
         Self {
-            account: ffi_struct.account.into(),
-            app: ffi_struct.app.into(),
+            account: ffi_struct.account,
+            app: ffi_struct.app,
         }
     }
 }

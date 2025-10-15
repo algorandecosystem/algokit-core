@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 use crate::models::Block;
 
 /// Encoded block object.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Default)]
 pub struct GetBlock {
     /// Block data including header and transactions.
     #[serde(rename = "block")]
@@ -29,15 +29,6 @@ pub struct GetBlock {
         skip_serializing_if = "Option::is_none"
     )]
     pub cert: Option<Vec<u8>>,
-}
-
-impl Default for GetBlock {
-    fn default() -> Self {
-        Self {
-            block: Block::default(),
-            cert: None,
-        }
-    }
 }
 
 impl AlgorandMsgpack for GetBlock {

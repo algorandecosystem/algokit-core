@@ -29,11 +29,11 @@ pub struct StateProofMessage {
 impl From<RustStateProofMessage> for StateProofMessage {
     fn from(rust_struct: RustStateProofMessage) -> Self {
         Self {
-            block_headers_commitment: rust_struct.block_headers_commitment.into(),
-            voters_commitment: rust_struct.voters_commitment.into(),
-            ln_proven_weight: rust_struct.ln_proven_weight.into(),
-            first_attested_round: rust_struct.first_attested_round.into(),
-            last_attested_round: rust_struct.last_attested_round.into(),
+            block_headers_commitment: rust_struct.block_headers_commitment,
+            voters_commitment: rust_struct.voters_commitment,
+            ln_proven_weight: rust_struct.ln_proven_weight,
+            first_attested_round: rust_struct.first_attested_round,
+            last_attested_round: rust_struct.last_attested_round,
         }
     }
 }
@@ -41,11 +41,11 @@ impl From<RustStateProofMessage> for StateProofMessage {
 impl From<StateProofMessage> for RustStateProofMessage {
     fn from(ffi_struct: StateProofMessage) -> Self {
         Self {
-            block_headers_commitment: ffi_struct.block_headers_commitment.into(),
-            voters_commitment: ffi_struct.voters_commitment.into(),
-            ln_proven_weight: ffi_struct.ln_proven_weight.into(),
-            first_attested_round: ffi_struct.first_attested_round.into(),
-            last_attested_round: ffi_struct.last_attested_round.into(),
+            block_headers_commitment: ffi_struct.block_headers_commitment,
+            voters_commitment: ffi_struct.voters_commitment,
+            ln_proven_weight: ffi_struct.ln_proven_weight,
+            first_attested_round: ffi_struct.first_attested_round,
+            last_attested_round: ffi_struct.last_attested_round,
         }
     }
 }

@@ -202,6 +202,15 @@ fn generate_rs_client(config: &RsClientConfig) -> Result<()> {
         )?;
 
         run(
+            &format!(
+                "cargo clippy --allow-dirty --fix --manifest-path Cargo.toml -p {}",
+                package_name
+            ),
+            None,
+            None,
+        )?;
+
+        run(
             &format!("cargo fmt --manifest-path Cargo.toml -p {}", package_name),
             None,
             None,

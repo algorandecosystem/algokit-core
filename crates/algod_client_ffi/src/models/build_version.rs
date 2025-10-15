@@ -24,12 +24,12 @@ pub struct BuildVersion {
 impl From<RustBuildVersion> for BuildVersion {
     fn from(rust_struct: RustBuildVersion) -> Self {
         Self {
-            branch: rust_struct.branch.into(),
-            build_number: rust_struct.build_number.into(),
-            channel: rust_struct.channel.into(),
-            commit_hash: rust_struct.commit_hash.into(),
-            major: rust_struct.major.into(),
-            minor: rust_struct.minor.into(),
+            branch: rust_struct.branch,
+            build_number: rust_struct.build_number,
+            channel: rust_struct.channel,
+            commit_hash: rust_struct.commit_hash,
+            major: rust_struct.major,
+            minor: rust_struct.minor,
         }
     }
 }
@@ -37,12 +37,12 @@ impl From<RustBuildVersion> for BuildVersion {
 impl From<BuildVersion> for RustBuildVersion {
     fn from(ffi_struct: BuildVersion) -> Self {
         Self {
-            branch: ffi_struct.branch.into(),
-            build_number: ffi_struct.build_number.into(),
-            channel: ffi_struct.channel.into(),
-            commit_hash: ffi_struct.commit_hash.into(),
-            major: ffi_struct.major.into(),
-            minor: ffi_struct.minor.into(),
+            branch: ffi_struct.branch,
+            build_number: ffi_struct.build_number,
+            channel: ffi_struct.channel,
+            commit_hash: ffi_struct.commit_hash,
+            major: ffi_struct.major,
+            minor: ffi_struct.minor,
         }
     }
 }

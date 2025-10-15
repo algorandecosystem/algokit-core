@@ -24,7 +24,7 @@ pub struct AvmKeyValue {
 impl From<RustAvmKeyValue> for AvmKeyValue {
     fn from(rust_struct: RustAvmKeyValue) -> Self {
         Self {
-            key: rust_struct.key.into(),
+            key: rust_struct.key,
             value: rust_struct.value.into(),
         }
     }
@@ -33,7 +33,7 @@ impl From<RustAvmKeyValue> for AvmKeyValue {
 impl From<AvmKeyValue> for RustAvmKeyValue {
     fn from(ffi_struct: AvmKeyValue) -> Self {
         Self {
-            key: ffi_struct.key.into(),
+            key: ffi_struct.key,
             value: ffi_struct.value.into(),
         }
     }

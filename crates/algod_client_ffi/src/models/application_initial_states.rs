@@ -28,7 +28,7 @@ pub struct ApplicationInitialStates {
 impl From<RustApplicationInitialStates> for ApplicationInitialStates {
     fn from(rust_struct: RustApplicationInitialStates) -> Self {
         Self {
-            id: rust_struct.id.into(),
+            id: rust_struct.id,
             app_locals: rust_struct
                 .app_locals
                 .map(|v| v.into_iter().map(|v| v.into()).collect()),
@@ -41,7 +41,7 @@ impl From<RustApplicationInitialStates> for ApplicationInitialStates {
 impl From<ApplicationInitialStates> for RustApplicationInitialStates {
     fn from(ffi_struct: ApplicationInitialStates) -> Self {
         Self {
-            id: ffi_struct.id.into(),
+            id: ffi_struct.id,
             app_locals: ffi_struct
                 .app_locals
                 .map(|v| v.into_iter().map(|v| v.into()).collect()),

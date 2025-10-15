@@ -25,7 +25,7 @@ impl From<RustLedgerStateDeltaForTransactionGroup> for LedgerStateDeltaForTransa
     fn from(rust_struct: RustLedgerStateDeltaForTransactionGroup) -> Self {
         Self {
             delta: rust_struct.delta.into(),
-            ids: rust_struct.ids.into_iter().map(|v| v.into()).collect(),
+            ids: rust_struct.ids.into_iter().collect(),
         }
     }
 }
@@ -34,7 +34,7 @@ impl From<LedgerStateDeltaForTransactionGroup> for RustLedgerStateDeltaForTransa
     fn from(ffi_struct: LedgerStateDeltaForTransactionGroup) -> Self {
         Self {
             delta: ffi_struct.delta.into(),
-            ids: ffi_struct.ids.into_iter().map(|v| v.into()).collect(),
+            ids: ffi_struct.ids.into_iter().collect(),
         }
     }
 }

@@ -21,7 +21,7 @@ pub struct AddParticipationKey {
 impl From<RustAddParticipationKey> for AddParticipationKey {
     fn from(rust_struct: RustAddParticipationKey) -> Self {
         Self {
-            part_id: rust_struct.part_id.into(),
+            part_id: rust_struct.part_id,
         }
     }
 }
@@ -29,7 +29,7 @@ impl From<RustAddParticipationKey> for AddParticipationKey {
 impl From<AddParticipationKey> for RustAddParticipationKey {
     fn from(ffi_struct: AddParticipationKey) -> Self {
         Self {
-            part_id: ffi_struct.part_id.into(),
+            part_id: ffi_struct.part_id,
         }
     }
 }

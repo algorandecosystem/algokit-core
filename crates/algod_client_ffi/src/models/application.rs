@@ -25,7 +25,7 @@ pub struct Application {
 impl From<RustApplication> for Application {
     fn from(rust_struct: RustApplication) -> Self {
         Self {
-            id: rust_struct.id.into(),
+            id: rust_struct.id,
             params: rust_struct.params.into(),
         }
     }
@@ -34,7 +34,7 @@ impl From<RustApplication> for Application {
 impl From<Application> for RustApplication {
     fn from(ffi_struct: Application) -> Self {
         Self {
-            id: ffi_struct.id.into(),
+            id: ffi_struct.id,
             params: ffi_struct.params.into(),
         }
     }

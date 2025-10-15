@@ -25,9 +25,9 @@ pub struct LightBlockHeaderProof {
 impl From<RustLightBlockHeaderProof> for LightBlockHeaderProof {
     fn from(rust_struct: RustLightBlockHeaderProof) -> Self {
         Self {
-            index: rust_struct.index.into(),
-            treedepth: rust_struct.treedepth.into(),
-            proof: rust_struct.proof.into(),
+            index: rust_struct.index,
+            treedepth: rust_struct.treedepth,
+            proof: rust_struct.proof,
         }
     }
 }
@@ -35,9 +35,9 @@ impl From<RustLightBlockHeaderProof> for LightBlockHeaderProof {
 impl From<LightBlockHeaderProof> for RustLightBlockHeaderProof {
     fn from(ffi_struct: LightBlockHeaderProof) -> Self {
         Self {
-            index: ffi_struct.index.into(),
-            treedepth: ffi_struct.treedepth.into(),
-            proof: ffi_struct.proof.into(),
+            index: ffi_struct.index,
+            treedepth: ffi_struct.treedepth,
+            proof: ffi_struct.proof,
         }
     }
 }

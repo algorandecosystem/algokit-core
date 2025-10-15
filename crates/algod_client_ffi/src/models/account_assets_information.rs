@@ -26,8 +26,8 @@ pub struct AccountAssetsInformation {
 impl From<RustAccountAssetsInformation> for AccountAssetsInformation {
     fn from(rust_struct: RustAccountAssetsInformation) -> Self {
         Self {
-            round: rust_struct.round.into(),
-            next_token: rust_struct.next_token.map(|v| v.into()),
+            round: rust_struct.round,
+            next_token: rust_struct.next_token,
             asset_holdings: rust_struct
                 .asset_holdings
                 .map(|v| v.into_iter().map(|v| v.into()).collect()),
@@ -38,8 +38,8 @@ impl From<RustAccountAssetsInformation> for AccountAssetsInformation {
 impl From<AccountAssetsInformation> for RustAccountAssetsInformation {
     fn from(ffi_struct: AccountAssetsInformation) -> Self {
         Self {
-            round: ffi_struct.round.into(),
-            next_token: ffi_struct.next_token.map(|v| v.into()),
+            round: ffi_struct.round,
+            next_token: ffi_struct.next_token,
             asset_holdings: ffi_struct
                 .asset_holdings
                 .map(|v| v.into_iter().map(|v| v.into()).collect()),

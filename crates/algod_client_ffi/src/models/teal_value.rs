@@ -26,9 +26,9 @@ pub struct TealValue {
 impl From<RustTealValue> for TealValue {
     fn from(rust_struct: RustTealValue) -> Self {
         Self {
-            r#type: rust_struct.r#type.into(),
-            bytes: rust_struct.bytes.into(),
-            uint: rust_struct.uint.into(),
+            r#type: rust_struct.r#type,
+            bytes: rust_struct.bytes,
+            uint: rust_struct.uint,
         }
     }
 }
@@ -36,9 +36,9 @@ impl From<RustTealValue> for TealValue {
 impl From<TealValue> for RustTealValue {
     fn from(ffi_struct: TealValue) -> Self {
         Self {
-            r#type: ffi_struct.r#type.into(),
-            bytes: ffi_struct.bytes.into(),
-            uint: ffi_struct.uint.into(),
+            r#type: ffi_struct.r#type,
+            bytes: ffi_struct.bytes,
+            uint: ffi_struct.uint,
         }
     }
 }

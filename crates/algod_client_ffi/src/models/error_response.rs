@@ -25,7 +25,7 @@ impl From<RustErrorResponse> for ErrorResponse {
     fn from(rust_struct: RustErrorResponse) -> Self {
         Self {
             data: rust_struct.data.map(|v| v.into()),
-            message: rust_struct.message.into(),
+            message: rust_struct.message,
         }
     }
 }
@@ -34,7 +34,7 @@ impl From<ErrorResponse> for RustErrorResponse {
     fn from(ffi_struct: ErrorResponse) -> Self {
         Self {
             data: ffi_struct.data.map(|v| v.into()),
-            message: ffi_struct.message.into(),
+            message: ffi_struct.message,
         }
     }
 }

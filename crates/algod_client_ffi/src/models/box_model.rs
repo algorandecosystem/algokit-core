@@ -25,9 +25,9 @@ pub struct Box {
 impl From<RustBox> for Box {
     fn from(rust_struct: RustBox) -> Self {
         Self {
-            round: rust_struct.round.into(),
-            name: rust_struct.name.into(),
-            value: rust_struct.value.into(),
+            round: rust_struct.round,
+            name: rust_struct.name,
+            value: rust_struct.value,
         }
     }
 }
@@ -35,9 +35,9 @@ impl From<RustBox> for Box {
 impl From<Box> for RustBox {
     fn from(ffi_struct: Box) -> Self {
         Self {
-            round: ffi_struct.round.into(),
-            name: ffi_struct.name.into(),
-            value: ffi_struct.value.into(),
+            round: ffi_struct.round,
+            name: ffi_struct.name,
+            value: ffi_struct.value,
         }
     }
 }

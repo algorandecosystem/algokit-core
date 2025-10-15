@@ -25,7 +25,7 @@ pub struct Asset {
 impl From<RustAsset> for Asset {
     fn from(rust_struct: RustAsset) -> Self {
         Self {
-            index: rust_struct.index.into(),
+            index: rust_struct.index,
             params: rust_struct.params.into(),
         }
     }
@@ -34,7 +34,7 @@ impl From<RustAsset> for Asset {
 impl From<Asset> for RustAsset {
     fn from(ffi_struct: Asset) -> Self {
         Self {
-            index: ffi_struct.index.into(),
+            index: ffi_struct.index,
             params: ffi_struct.params.into(),
         }
     }

@@ -36,14 +36,14 @@ pub struct ApplicationParams {
 impl From<RustApplicationParams> for ApplicationParams {
     fn from(rust_struct: RustApplicationParams) -> Self {
         Self {
-            creator: rust_struct.creator.into(),
-            approval_program: rust_struct.approval_program.into(),
-            clear_state_program: rust_struct.clear_state_program.into(),
-            extra_program_pages: rust_struct.extra_program_pages.map(|v| v.into()),
+            creator: rust_struct.creator,
+            approval_program: rust_struct.approval_program,
+            clear_state_program: rust_struct.clear_state_program,
+            extra_program_pages: rust_struct.extra_program_pages,
             local_state_schema: rust_struct.local_state_schema.map(|v| v.into()),
             global_state_schema: rust_struct.global_state_schema.map(|v| v.into()),
             global_state: rust_struct.global_state.map(|v| v.into()),
-            version: rust_struct.version.map(|v| v.into()),
+            version: rust_struct.version,
         }
     }
 }
@@ -51,14 +51,14 @@ impl From<RustApplicationParams> for ApplicationParams {
 impl From<ApplicationParams> for RustApplicationParams {
     fn from(ffi_struct: ApplicationParams) -> Self {
         Self {
-            creator: ffi_struct.creator.into(),
-            approval_program: ffi_struct.approval_program.into(),
-            clear_state_program: ffi_struct.clear_state_program.into(),
-            extra_program_pages: ffi_struct.extra_program_pages.map(|v| v.into()),
+            creator: ffi_struct.creator,
+            approval_program: ffi_struct.approval_program,
+            clear_state_program: ffi_struct.clear_state_program,
+            extra_program_pages: ffi_struct.extra_program_pages,
             local_state_schema: ffi_struct.local_state_schema.map(|v| v.into()),
             global_state_schema: ffi_struct.global_state_schema.map(|v| v.into()),
             global_state: ffi_struct.global_state.map(|v| v.into()),
-            version: ffi_struct.version.map(|v| v.into()),
+            version: ffi_struct.version,
         }
     }
 }

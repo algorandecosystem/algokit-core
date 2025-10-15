@@ -36,17 +36,15 @@ pub struct SimulationOpcodeTraceUnit {
 impl From<RustSimulationOpcodeTraceUnit> for SimulationOpcodeTraceUnit {
     fn from(rust_struct: RustSimulationOpcodeTraceUnit) -> Self {
         Self {
-            pc: rust_struct.pc.into(),
+            pc: rust_struct.pc,
             scratch_changes: rust_struct
                 .scratch_changes
                 .map(|v| v.into_iter().map(|v| v.into()).collect()),
             state_changes: rust_struct
                 .state_changes
                 .map(|v| v.into_iter().map(|v| v.into()).collect()),
-            spawned_inners: rust_struct
-                .spawned_inners
-                .map(|v| v.into_iter().map(|v| v.into()).collect()),
-            stack_pop_count: rust_struct.stack_pop_count.map(|v| v.into()),
+            spawned_inners: rust_struct.spawned_inners.map(|v| v.into_iter().collect()),
+            stack_pop_count: rust_struct.stack_pop_count,
             stack_additions: rust_struct
                 .stack_additions
                 .map(|v| v.into_iter().map(|v| v.into()).collect()),
@@ -57,17 +55,15 @@ impl From<RustSimulationOpcodeTraceUnit> for SimulationOpcodeTraceUnit {
 impl From<SimulationOpcodeTraceUnit> for RustSimulationOpcodeTraceUnit {
     fn from(ffi_struct: SimulationOpcodeTraceUnit) -> Self {
         Self {
-            pc: ffi_struct.pc.into(),
+            pc: ffi_struct.pc,
             scratch_changes: ffi_struct
                 .scratch_changes
                 .map(|v| v.into_iter().map(|v| v.into()).collect()),
             state_changes: ffi_struct
                 .state_changes
                 .map(|v| v.into_iter().map(|v| v.into()).collect()),
-            spawned_inners: ffi_struct
-                .spawned_inners
-                .map(|v| v.into_iter().map(|v| v.into()).collect()),
-            stack_pop_count: ffi_struct.stack_pop_count.map(|v| v.into()),
+            spawned_inners: ffi_struct.spawned_inners.map(|v| v.into_iter().collect()),
+            stack_pop_count: ffi_struct.stack_pop_count,
             stack_additions: ffi_struct
                 .stack_additions
                 .map(|v| v.into_iter().map(|v| v.into()).collect()),

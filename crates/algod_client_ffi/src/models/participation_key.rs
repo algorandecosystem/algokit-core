@@ -36,13 +36,13 @@ pub struct ParticipationKey {
 impl From<RustParticipationKey> for ParticipationKey {
     fn from(rust_struct: RustParticipationKey) -> Self {
         Self {
-            id: rust_struct.id.into(),
-            address: rust_struct.address.into(),
-            effective_first_valid: rust_struct.effective_first_valid.map(|v| v.into()),
-            effective_last_valid: rust_struct.effective_last_valid.map(|v| v.into()),
-            last_vote: rust_struct.last_vote.map(|v| v.into()),
-            last_block_proposal: rust_struct.last_block_proposal.map(|v| v.into()),
-            last_state_proof: rust_struct.last_state_proof.map(|v| v.into()),
+            id: rust_struct.id,
+            address: rust_struct.address,
+            effective_first_valid: rust_struct.effective_first_valid,
+            effective_last_valid: rust_struct.effective_last_valid,
+            last_vote: rust_struct.last_vote,
+            last_block_proposal: rust_struct.last_block_proposal,
+            last_state_proof: rust_struct.last_state_proof,
             key: rust_struct.key.into(),
         }
     }
@@ -51,13 +51,13 @@ impl From<RustParticipationKey> for ParticipationKey {
 impl From<ParticipationKey> for RustParticipationKey {
     fn from(ffi_struct: ParticipationKey) -> Self {
         Self {
-            id: ffi_struct.id.into(),
-            address: ffi_struct.address.into(),
-            effective_first_valid: ffi_struct.effective_first_valid.map(|v| v.into()),
-            effective_last_valid: ffi_struct.effective_last_valid.map(|v| v.into()),
-            last_vote: ffi_struct.last_vote.map(|v| v.into()),
-            last_block_proposal: ffi_struct.last_block_proposal.map(|v| v.into()),
-            last_state_proof: ffi_struct.last_state_proof.map(|v| v.into()),
+            id: ffi_struct.id,
+            address: ffi_struct.address,
+            effective_first_valid: ffi_struct.effective_first_valid,
+            effective_last_valid: ffi_struct.effective_last_valid,
+            last_vote: ffi_struct.last_vote,
+            last_block_proposal: ffi_struct.last_block_proposal,
+            last_state_proof: ffi_struct.last_state_proof,
             key: ffi_struct.key.into(),
         }
     }

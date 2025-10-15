@@ -23,8 +23,8 @@ pub struct GenesisAllocation {
 impl From<RustGenesisAllocation> for GenesisAllocation {
     fn from(rust_struct: RustGenesisAllocation) -> Self {
         Self {
-            addr: rust_struct.addr.into(),
-            comment: rust_struct.comment.into(),
+            addr: rust_struct.addr,
+            comment: rust_struct.comment,
             state: rust_struct.state.into(),
         }
     }
@@ -33,8 +33,8 @@ impl From<RustGenesisAllocation> for GenesisAllocation {
 impl From<GenesisAllocation> for RustGenesisAllocation {
     fn from(ffi_struct: GenesisAllocation) -> Self {
         Self {
-            addr: ffi_struct.addr.into(),
-            comment: ffi_struct.comment.into(),
+            addr: ffi_struct.addr,
+            comment: ffi_struct.comment,
             state: ffi_struct.state.into(),
         }
     }

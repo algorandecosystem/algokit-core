@@ -21,7 +21,7 @@ pub struct GetBlockHash {
 impl From<RustGetBlockHash> for GetBlockHash {
     fn from(rust_struct: RustGetBlockHash) -> Self {
         Self {
-            block_hash: rust_struct.block_hash.into(),
+            block_hash: rust_struct.block_hash,
         }
     }
 }
@@ -29,7 +29,7 @@ impl From<RustGetBlockHash> for GetBlockHash {
 impl From<GetBlockHash> for RustGetBlockHash {
     fn from(ffi_struct: GetBlockHash) -> Self {
         Self {
-            block_hash: ffi_struct.block_hash.into(),
+            block_hash: ffi_struct.block_hash,
         }
     }
 }

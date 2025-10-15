@@ -21,7 +21,7 @@ pub struct GetBlockTimeStampOffset {
 impl From<RustGetBlockTimeStampOffset> for GetBlockTimeStampOffset {
     fn from(rust_struct: RustGetBlockTimeStampOffset) -> Self {
         Self {
-            offset: rust_struct.offset.into(),
+            offset: rust_struct.offset,
         }
     }
 }
@@ -29,7 +29,7 @@ impl From<RustGetBlockTimeStampOffset> for GetBlockTimeStampOffset {
 impl From<GetBlockTimeStampOffset> for RustGetBlockTimeStampOffset {
     fn from(ffi_struct: GetBlockTimeStampOffset) -> Self {
         Self {
-            offset: ffi_struct.offset.into(),
+            offset: ffi_struct.offset,
         }
     }
 }

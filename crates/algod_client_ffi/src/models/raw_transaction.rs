@@ -21,7 +21,7 @@ pub struct RawTransaction {
 impl From<RustRawTransaction> for RawTransaction {
     fn from(rust_struct: RustRawTransaction) -> Self {
         Self {
-            tx_id: rust_struct.tx_id.into(),
+            tx_id: rust_struct.tx_id,
         }
     }
 }
@@ -29,7 +29,7 @@ impl From<RustRawTransaction> for RawTransaction {
 impl From<RawTransaction> for RustRawTransaction {
     fn from(ffi_struct: RawTransaction) -> Self {
         Self {
-            tx_id: ffi_struct.tx_id.into(),
+            tx_id: ffi_struct.tx_id,
         }
     }
 }
