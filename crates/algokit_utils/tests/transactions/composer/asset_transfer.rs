@@ -8,7 +8,7 @@ use rstest::*;
 async fn test_asset_transfer_transaction(
     #[future] algorand_fixture: AlgorandFixtureResult,
 ) -> TestResult {
-    let mut algorand_fixture = algorand_fixture.await?;
+    let algorand_fixture = algorand_fixture.await?;
     let asset_creator_address = algorand_fixture.test_account.account().address();
 
     let mut composer = algorand_fixture.algorand_client.new_composer(None);

@@ -82,7 +82,7 @@ async fn test_accounts_errors_when_resource_population_disabled(
         sender_address,
         app_id,
         method_selectors,
-        mut algorand_fixture,
+        algorand_fixture,
         abi_types,
         ..
     } = fixture.await?;
@@ -138,7 +138,7 @@ async fn test_accounts_populated_when_resource_population_enabled(
         sender_address,
         app_id,
         method_selectors,
-        mut algorand_fixture,
+        algorand_fixture,
         abi_types,
         ..
     } = fixture.await?;
@@ -475,7 +475,7 @@ async fn test_cross_product_assets_and_accounts_errors_when_resource_population_
         sender_address,
         app_id,
         method_selectors,
-        mut algorand_fixture,
+        algorand_fixture,
         abi_types,
         ..
     } = fixture.await?;
@@ -530,7 +530,7 @@ async fn test_cross_product_assets_and_accounts_populated_when_resource_populati
         sender_address,
         app_id,
         method_selectors,
-        mut algorand_fixture,
+        algorand_fixture,
         abi_types,
         ..
     } = fixture.await?;
@@ -582,7 +582,7 @@ async fn test_cross_product_account_app_errors_when_resource_population_disabled
         sender_address,
         app_id,
         method_selectors,
-        mut algorand_fixture,
+        algorand_fixture,
         abi_types,
         ..
     } = fixture.await?;
@@ -642,7 +642,7 @@ async fn test_cross_product_account_app_populated_when_resource_population_enabl
         app_id,
         external_app_id,
         method_selectors,
-        mut algorand_fixture,
+        algorand_fixture,
         abi_types,
         ..
     } = fixture.await?;
@@ -712,7 +712,7 @@ async fn test_mixed_avm_version_same_account(
         sender_address,
         app_id: avm_8_app_id,
         method_selectors,
-        mut algorand_fixture,
+        algorand_fixture,
         abi_types,
         ..
     } = fixture.await?;
@@ -1006,7 +1006,7 @@ async fn test_rekeyed_account(
         sender_address,
         external_app_id,
         method_selectors,
-        mut algorand_fixture,
+        algorand_fixture,
         ..
     } = fixture.await?;
     let mut composer = algorand_fixture

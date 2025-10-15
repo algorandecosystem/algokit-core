@@ -9,7 +9,7 @@ use crate::common::{AlgorandFixtureResult, TestResult, algorand_fixture};
 async fn test_basic_payment_transaction(
     #[future] algorand_fixture: AlgorandFixtureResult,
 ) -> TestResult {
-    let mut algorand_fixture = algorand_fixture.await?;
+    let algorand_fixture = algorand_fixture.await?;
     let sender_address = algorand_fixture.test_account.account().address();
 
     let receiver = algorand_fixture.generate_account(None).await?;
@@ -46,7 +46,7 @@ async fn test_basic_payment_transaction(
 async fn test_basic_account_close_transaction(
     #[future] algorand_fixture: AlgorandFixtureResult,
 ) -> TestResult {
-    let mut algorand_fixture = algorand_fixture.await?;
+    let algorand_fixture = algorand_fixture.await?;
     let sender_address = algorand_fixture.test_account.account().address();
 
     let close_remainder_to = algorand_fixture.generate_account(None).await?;
@@ -92,7 +92,7 @@ async fn test_basic_account_close_transaction(
 async fn test_payment_transactions_with_signers(
     #[future] algorand_fixture: AlgorandFixtureResult,
 ) -> TestResult {
-    let mut algorand_fixture = algorand_fixture.await?;
+    let algorand_fixture = algorand_fixture.await?;
     let receiver_addr = algorand_fixture.test_account.account().address();
 
     // Generate a new account that will be the sender

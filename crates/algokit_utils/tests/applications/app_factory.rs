@@ -37,8 +37,7 @@ fn into_factory_inputs(fixture: AlgorandFixture) -> (Arc<AlgorandClient>, Signin
         test_account,
         ..
     } = fixture;
-    #[allow(clippy::arc_with_non_send_sync)]
-    (Arc::new(algorand_client), test_account)
+    (algorand_client, test_account)
 }
 
 /// Construct an `AppFactory` for a provided ARC-56 spec with common defaults.
@@ -374,7 +373,7 @@ async fn call_app_with_too_many_args(
 #[rstest]
 #[tokio::test]
 async fn call_app_with_rekey(#[future] algorand_fixture: AlgorandFixtureResult) -> TestResult {
-    let mut fixture = algorand_fixture.await?;
+    let fixture = algorand_fixture.await?;
     let sender = fixture.test_account.account().address();
     // Generate a new account to rekey to before consuming the fixture
     let rekey_to = fixture.generate_account(None).await?;

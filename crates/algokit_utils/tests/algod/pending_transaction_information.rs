@@ -11,7 +11,7 @@ use std::convert::TryInto;
 async fn test_pending_transaction_broadcast(
     #[future] algorand_fixture: AlgorandFixtureResult,
 ) -> TestResult {
-    let mut algorand_fixture = algorand_fixture.await?;
+    let algorand_fixture = algorand_fixture.await?;
 
     // Create algod client using ClientManager
     let algod_client = algorand_fixture.algod.clone();

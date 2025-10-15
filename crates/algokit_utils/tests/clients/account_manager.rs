@@ -145,7 +145,7 @@ async fn environment_is_used_in_preference_to_kmd(
 async fn rekeyed_account_is_retrievable(
     #[future] algorand_fixture: AlgorandFixtureResult,
 ) -> TestResult {
-    let mut algorand_fixture = algorand_fixture.await?;
+    let algorand_fixture = algorand_fixture.await?;
 
     // Generate two accounts: one to be rekeyed and one to rekey to
     let rekeyed = algorand_fixture

@@ -49,7 +49,7 @@ async fn test_create_then_call_app(
 async fn test_construct_transaction_with_abi_encoding_including_transaction(
     #[future] testing_app_fixture: crate::common::AppFixtureResult,
 ) -> TestResult {
-    let mut f = testing_app_fixture.await?;
+    let f = testing_app_fixture.await?;
     let funded_account = f.algorand_fixture.generate_account(None).await?;
     let funded_addr = funded_account.account().address();
 
@@ -155,7 +155,7 @@ async fn test_call_app_with_too_many_args(
 async fn test_call_app_with_rekey(
     #[future] testing_app_fixture: crate::common::AppFixtureResult,
 ) -> TestResult {
-    let mut f = testing_app_fixture.await?;
+    let f = testing_app_fixture.await?;
     let sender = f.sender_address;
 
     let rekey_to_account = f.algorand_fixture.generate_account(None).await?;
@@ -199,7 +199,7 @@ async fn test_call_app_with_rekey(
 async fn test_sign_all_transactions_in_group_with_abi_call_with_transaction_arg(
     #[future] testing_app_fixture: crate::common::AppFixtureResult,
 ) -> TestResult {
-    let mut f = testing_app_fixture.await?;
+    let f = testing_app_fixture.await?;
     let _sender = f.sender_address;
 
     let funded_account = f.algorand_fixture.generate_account(None).await?;
@@ -279,7 +279,7 @@ async fn test_sign_all_transactions_in_group_with_abi_call_with_transaction_arg(
 async fn test_sign_transaction_in_group_with_different_signer_if_provided(
     #[future] testing_app_fixture: crate::common::AppFixtureResult,
 ) -> TestResult {
-    let mut f = testing_app_fixture.await?;
+    let f = testing_app_fixture.await?;
     let sender = f.sender_address;
 
     let new_account = f.algorand_fixture.generate_account(None).await?;
@@ -327,7 +327,7 @@ async fn test_sign_nested_transactions_in_group_with_different_signers(
     #[future] nested_contract_fixture: crate::common::AppFixtureResult,
 ) -> TestResult {
     eprintln!("=== Starting test_sign_transaction_in_group_with_different_signer_if_provided2 ===");
-    let mut f = nested_contract_fixture.await?;
+    let f = nested_contract_fixture.await?;
     let bob_account = f.algorand_fixture.generate_account(None).await?;
     let bob_addr = bob_account.account().address();
 

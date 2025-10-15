@@ -104,7 +104,7 @@ async fn params_build_method_call_and_defaults(
 async fn params_build_includes_foreign_references_from_args(
     #[future] testing_app_fixture: crate::common::AppFixtureResult,
 ) -> TestResult {
-    let mut f = testing_app_fixture.await?;
+    let f = testing_app_fixture.await?;
     let sender = f.sender_address.clone();
     let client = &f.client;
     let extra = f.algorand_fixture.generate_account(None).await?;

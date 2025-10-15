@@ -10,7 +10,7 @@ use crate::common::{AlgorandFixtureResult, TestResult, algorand_fixture};
 async fn test_payment_and_asset_create_group(
     #[future] algorand_fixture: AlgorandFixtureResult,
 ) -> TestResult {
-    let mut algorand_fixture = algorand_fixture.await?;
+    let algorand_fixture = algorand_fixture.await?;
     let sender_address = algorand_fixture.test_account.account().address();
 
     let receiver = algorand_fixture.generate_account(None).await?;
@@ -139,7 +139,7 @@ async fn test_payment_and_asset_create_group(
 async fn test_add_transactions_to_group_max_size(
     #[future] algorand_fixture: AlgorandFixtureResult,
 ) -> TestResult {
-    let mut algorand_fixture = algorand_fixture.await?;
+    let algorand_fixture = algorand_fixture.await?;
     let sender_address = algorand_fixture.test_account.account().address();
 
     let receiver = algorand_fixture.generate_account(None).await?;
@@ -181,7 +181,7 @@ async fn test_add_transactions_to_group_max_size(
 async fn test_add_transaction_to_group_too_big(
     #[future] algorand_fixture: AlgorandFixtureResult,
 ) -> TestResult {
-    let mut algorand_fixture = algorand_fixture.await?;
+    let algorand_fixture = algorand_fixture.await?;
     let sender_address = algorand_fixture.test_account.account().address();
 
     let receiver = algorand_fixture.generate_account(None).await?;

@@ -191,7 +191,7 @@ async fn test_bulk_opt_in_success(#[future] algorand_fixture: AlgorandFixtureRes
 async fn test_bulk_opt_in_empty_list(
     #[future] algorand_fixture: AlgorandFixtureResult,
 ) -> TestResult {
-    let mut algorand_fixture = algorand_fixture.await?;
+    let algorand_fixture = algorand_fixture.await?;
 
     let test_account = algorand_fixture.generate_account(None).await?;
     let test_address = test_account.account().address();
@@ -278,7 +278,7 @@ async fn test_bulk_opt_out_success(
 async fn test_bulk_opt_out_empty_list(
     #[future] algorand_fixture: AlgorandFixtureResult,
 ) -> TestResult {
-    let mut algorand_fixture = algorand_fixture.await?;
+    let algorand_fixture = algorand_fixture.await?;
 
     let test_account = algorand_fixture.generate_account(None).await?;
     let test_address = test_account.account().address();

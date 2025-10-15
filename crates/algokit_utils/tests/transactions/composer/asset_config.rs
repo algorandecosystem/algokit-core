@@ -82,7 +82,7 @@ async fn test_asset_create_transaction(
 async fn test_asset_config_transaction(
     #[future] algorand_fixture: Result<AlgorandFixture, Box<dyn std::error::Error + Send + Sync>>,
 ) -> TestResult {
-    let mut algorand_fixture = algorand_fixture.await?;
+    let algorand_fixture = algorand_fixture.await?;
     let sender_address = algorand_fixture.test_account.account().address();
 
     let new_manager_addr: Address = algorand_fixture

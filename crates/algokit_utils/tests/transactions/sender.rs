@@ -18,7 +18,7 @@ use std::sync::Arc;
 async fn test_payment_returns_rich_result(
     #[future] algorand_fixture: AlgorandFixtureResult,
 ) -> TestResult {
-    let mut algorand_fixture = algorand_fixture.await?;
+    let algorand_fixture = algorand_fixture.await?;
 
     let sender_address = algorand_fixture.test_account.account().address();
     let receiver = algorand_fixture.generate_account(None).await?;
@@ -47,7 +47,7 @@ async fn test_payment_returns_rich_result(
 async fn test_zero_amount_payment_allowed(
     #[future] algorand_fixture: AlgorandFixtureResult,
 ) -> TestResult {
-    let mut algorand_fixture = algorand_fixture.await?;
+    let algorand_fixture = algorand_fixture.await?;
 
     let sender_address = algorand_fixture.test_account.account().address();
     let receiver = algorand_fixture.generate_account(None).await?;
@@ -195,7 +195,7 @@ async fn test_abi_method_returns_enhanced_processing(
 async fn test_asset_opt_out_uses_asset_manager_coordination(
     #[future] algorand_fixture: AlgorandFixtureResult,
 ) -> TestResult {
-    let mut algorand_fixture = algorand_fixture.await?;
+    let algorand_fixture = algorand_fixture.await?;
     let sender_address: Address = algorand_fixture.test_account.account().address();
 
     // Create asset and opt-in account
@@ -237,7 +237,7 @@ async fn test_asset_opt_out_uses_asset_manager_coordination(
 async fn test_asset_opt_out_with_balance_validation(
     #[future] algorand_fixture: AlgorandFixtureResult,
 ) -> TestResult {
-    let mut algorand_fixture = algorand_fixture.await?;
+    let algorand_fixture = algorand_fixture.await?;
     let sender_address: Address = algorand_fixture.test_account.account().address();
 
     // Create asset and transfer some to account
@@ -299,7 +299,7 @@ async fn test_asset_opt_out_with_balance_validation(
 async fn test_validation_error_propagation(
     #[future] algorand_fixture: AlgorandFixtureResult,
 ) -> TestResult {
-    let mut algorand_fixture = algorand_fixture.await?;
+    let algorand_fixture = algorand_fixture.await?;
 
     let opt_out_account = algorand_fixture.generate_account(None).await?;
     let opt_out_address = opt_out_account.account().address();
@@ -335,7 +335,7 @@ async fn test_validation_error_propagation(
 async fn test_transaction_confirmation_integration(
     #[future] algorand_fixture: AlgorandFixtureResult,
 ) -> TestResult {
-    let mut algorand_fixture = algorand_fixture.await?;
+    let algorand_fixture = algorand_fixture.await?;
     let sender_address: Address = algorand_fixture.test_account.account().address();
     let receiver = algorand_fixture.generate_account(None).await?;
 

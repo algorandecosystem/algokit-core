@@ -119,7 +119,6 @@ impl TestNetDispenserApiClient {
 
         let timeout_secs = request_timeout.unwrap_or(DEFAULT_DISPENSER_REQUEST_TIMEOUT);
 
-        // Use the default Rust HTTP client
         let http_client = Client::builder()
             .timeout(Duration::from_secs(timeout_secs))
             .build()

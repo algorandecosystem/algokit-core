@@ -2,10 +2,9 @@ use crate::common::{AlgorandFixtureResult, TestResult, algorand_fixture, deploy_
 use algokit_abi::{ABIValue, Arc56Contract};
 use algokit_utils::applications::app_client::AppClientMethodCallParams;
 use algokit_utils::transactions::TransactionComposerConfig;
-use algokit_utils::{AlgorandClient as RootAlgorandClient, AppMethodCallArg, ResourcePopulation};
+use algokit_utils::{AppMethodCallArg, ResourcePopulation};
 use rstest::*;
 use std::collections::HashMap;
-use std::sync::Arc;
 
 fn get_nested_struct_spec() -> Arc56Contract {
     let json = algokit_test_artifacts::nested_struct_storage::APPLICATION_ARC56;
@@ -35,15 +34,11 @@ async fn test_nested_structs_described_by_structure(
     )
     .await?;
 
-    let mut algorand = RootAlgorandClient::default_localnet(None);
-    algorand
-        .set_signer(sender.clone(), Arc::new(fixture.test_account.clone()))
-        .await;
     let app_client = algokit_utils::applications::app_client::AppClient::new(
         algokit_utils::applications::app_client::AppClientParams {
             app_id,
             app_spec: spec,
-            algorand: algorand.into(),
+            algorand: fixture.algorand_client.clone(),
             app_name: None,
             default_sender: Some(sender.to_string()),
             default_signer: None,
@@ -147,15 +142,11 @@ async fn test_nested_structs_referenced_by_name(
     )
     .await?;
 
-    let mut algorand = RootAlgorandClient::default_localnet(None);
-    algorand
-        .set_signer(sender.clone(), Arc::new(fixture.test_account.clone()))
-        .await;
     let app_client = algokit_utils::applications::app_client::AppClient::new(
         algokit_utils::applications::app_client::AppClientParams {
             app_id,
             app_spec: spec,
-            algorand: algorand.into(),
+            algorand: fixture.algorand_client.clone(),
             app_name: None,
             default_sender: Some(sender.to_string()),
             default_signer: None,

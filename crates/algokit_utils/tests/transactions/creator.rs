@@ -25,7 +25,7 @@ async fn payment_transaction(
     #[case] amount: u64,
     #[future] algorand_fixture: AlgorandFixtureResult,
 ) -> TestResult {
-    let mut algorand_fixture = algorand_fixture.await?;
+    let algorand_fixture = algorand_fixture.await?;
     let sender_address = algorand_fixture.test_account.account().address();
     let receiver = algorand_fixture.generate_account(None).await?;
     let creator = algorand_fixture.algorand_client.create();
@@ -66,7 +66,7 @@ async fn asset_operations(
     #[case] test_case: AssetTestCase,
     #[future] algorand_fixture: AlgorandFixtureResult,
 ) -> TestResult {
-    let mut algorand_fixture = algorand_fixture.await?;
+    let algorand_fixture = algorand_fixture.await?;
     let sender_address = algorand_fixture.test_account.account().address();
 
     match test_case {
@@ -504,7 +504,7 @@ async fn transaction_creator_accepts_all_parameters(
 async fn transaction_has_valid_defaults(
     #[future] algorand_fixture: AlgorandFixtureResult,
 ) -> TestResult {
-    let mut algorand_fixture = algorand_fixture.await?;
+    let algorand_fixture = algorand_fixture.await?;
     let sender_address = algorand_fixture.test_account.account().address();
     let receiver = algorand_fixture.generate_account(None).await?;
 

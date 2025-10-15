@@ -575,7 +575,7 @@ async fn test_get_pay_txn_amount_app_call_method_call(
         sender_address,
         app_id,
         arc56_contract,
-        mut algorand_fixture,
+        algorand_fixture,
     } = arc56_algorand_fixture.await?;
 
     let receiver = algorand_fixture.generate_account(None).await?;
@@ -629,7 +629,7 @@ async fn test_get_pay_txn_amount_app_call_method_call_using_a_different_signer(
         sender_address,
         app_id,
         arc56_contract,
-        mut algorand_fixture,
+        algorand_fixture,
     } = arc56_algorand_fixture.await?;
 
     let receiver = algorand_fixture.generate_account(None).await?;
@@ -688,7 +688,7 @@ async fn test_get_returned_value_of_app_call_txn_app_call_method_call(
         sender_address,
         app_id,
         arc56_contract,
-        mut algorand_fixture,
+        algorand_fixture,
     } = arc56_algorand_fixture.await?;
 
     let receiver = algorand_fixture.generate_account(None).await?;
@@ -754,7 +754,7 @@ async fn test_get_returned_value_of_nested_app_call_method_calls(
         sender_address,
         app_id,
         arc56_contract,
-        mut algorand_fixture,
+        algorand_fixture,
     } = arc56_algorand_fixture.await?;
 
     let receiver = algorand_fixture.generate_account(None).await?;
@@ -982,7 +982,7 @@ async fn test_more_than_15_args_with_ref_types_app_call_method_call(
         sender_address,
         app_id,
         arc56_contract,
-        mut algorand_fixture,
+        algorand_fixture,
     } = arc56_algorand_fixture.await?;
 
     let receiver = algorand_fixture
@@ -1293,7 +1293,7 @@ fn ensure_abi_return(
 #[rstest]
 #[tokio::test]
 async fn test_double_nested(#[future] algorand_fixture: AlgorandFixtureResult) -> TestResult {
-    let mut algorand_fixture = algorand_fixture.await?;
+    let algorand_fixture = algorand_fixture.await?;
     let mut composer = algorand_fixture.algorand_client.new_composer(None);
 
     let sender_address = algorand_fixture.test_account.account().address();

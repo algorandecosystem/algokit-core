@@ -30,7 +30,7 @@ async fn test_asset_freeze_unfreeze(
     // 10. Verify account holding shows asset is no longer frozen via algod API
     // 11. Prove unfreeze works by successfully transferring the asset
 
-    let mut algorand_fixture = algorand_fixture.await?;
+    let algorand_fixture = algorand_fixture.await?;
     let asset_creator_addr = algorand_fixture.test_account.account().address();
 
     // Create a target account to hold the asset

@@ -15,7 +15,7 @@ use crate::common::{
 #[rstest]
 #[tokio::test]
 async fn finds_sent_transaction(#[future] algorand_fixture: AlgorandFixtureResult) -> TestResult {
-    let mut algorand_fixture = algorand_fixture.await?;
+    let algorand_fixture = algorand_fixture.await?;
 
     let sender = algorand_fixture.test_account.account().address();
     let receiver = algorand_fixture.generate_account(None).await?;

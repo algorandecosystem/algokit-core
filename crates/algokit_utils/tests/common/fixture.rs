@@ -33,7 +33,7 @@ pub struct AlgorandFixture {
     pub algod: Arc<AlgodClient>,
     pub indexer: Arc<IndexerClient>,
     pub kmd: Arc<KmdClient>,
-    pub algorand_client: AlgorandClient,
+    pub algorand_client: Arc<AlgorandClient>,
     pub test_account: SigningAccount,
 }
 
@@ -69,10 +69,10 @@ impl AlgorandFixture {
             .unwrap(),
         );
 
-        let mut algorand_client = AlgorandClient::new(params);
+        let algorand_client = Arc::new(AlgorandClient::new(params));
 
         let test_account = Self::generate_account_internal(
-            &mut algorand_client,
+            &algorand_client,
             Some(TestAccountConfig {
                 initial_funds: 10_000_000,
                 funding_note: Some("AlgorandFixture test account".to_string()),
@@ -91,7 +91,7 @@ impl AlgorandFixture {
     }
 
     async fn generate_account_internal(
-        algorand_client: &mut AlgorandClient,
+        algorand_client: &Arc<AlgorandClient>,
         config: Option<TestAccountConfig>,
     ) -> Result<SigningAccount, Box<dyn std::error::Error + Send + Sync>> {
         // Generate new account using ed25519_dalek
@@ -132,10 +132,10 @@ impl AlgorandFixture {
     }
 
     pub async fn generate_account(
-        &mut self,
+        &self,
         config: Option<TestAccountConfig>,
     ) -> Result<SigningAccount, Box<dyn std::error::Error + Send + Sync>> {
-        Self::generate_account_internal(&mut self.algorand_client, config).await
+        Self::generate_account_internal(&self.algorand_client, config).await
     }
 }
 

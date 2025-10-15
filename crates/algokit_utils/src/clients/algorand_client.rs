@@ -168,7 +168,7 @@ impl AlgorandClient {
         })
     }
 
-    pub async fn set_signer(&mut self, sender: Address, signer: Arc<dyn TransactionSigner>) {
+    pub async fn set_signer(&self, sender: Address, signer: Arc<dyn TransactionSigner>) {
         self.account_manager.lock().await.set_signer(sender, signer);
     }
 
