@@ -35,22 +35,18 @@ use std::sync::Arc;
 /// It wraps the lower-level endpoint functions with a more ergonomic interface.
 /// All methods return a unified `Error` type that can represent any endpoint error.
 #[derive(Clone)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Object))]
 pub struct KmdClient {
     http_client: Arc<dyn HttpClient>,
 }
 
-#[cfg_attr(feature = "ffi_uniffi", uniffi::export)]
 impl KmdClient {
     /// Create a new KmdClient with a custom http client.
-    #[cfg_attr(feature = "ffi_uniffi", uniffi::constructor)]
     pub fn new(http_client: Arc<dyn HttpClient>) -> Self {
         Self { http_client }
     }
 
     /// Create a new KmdClient for Algorand TestNet.
     #[cfg(feature = "default_client")]
-    #[cfg_attr(feature = "ffi_uniffi", uniffi::constructor)]
     pub fn testnet() -> Self {
         let http_client = Arc::new(DefaultHttpClient::new("http://localhost:7833"));
         Self::new(http_client)
@@ -58,7 +54,6 @@ impl KmdClient {
 
     /// Create a new KmdClient for Algorand MainNet.
     #[cfg(feature = "default_client")]
-    #[cfg_attr(feature = "ffi_uniffi", uniffi::constructor)]
     pub fn mainnet() -> Self {
         let http_client = Arc::new(DefaultHttpClient::new("http://localhost:7833"));
         Self::new(http_client)
@@ -66,7 +61,6 @@ impl KmdClient {
 
     /// Create a new KmdClient for a local localnet environment.
     #[cfg(feature = "default_client")]
-    #[cfg_attr(feature = "ffi_uniffi", uniffi::constructor)]
     pub fn localnet() -> Self {
         let http_client = Arc::new(
             DefaultHttpClient::with_header(
@@ -78,11 +72,11 @@ impl KmdClient {
         );
         Self::new(http_client)
     }
+}
+impl KmdClient {
     /// Gets the current swagger spec.
     pub async fn swagger_handler(&self) -> Result<String, Error> {
-        let result = super::swagger_handler::swagger_handler(self.http_client.as_ref()).await;
-
-        result
+        super::swagger_handler::swagger_handler(self.http_client.as_ref()).await
     }
 
     /// Generate a key
@@ -90,16 +84,12 @@ impl KmdClient {
         &self,
         request: GenerateKeyRequest,
     ) -> Result<PostKeyResponse, Error> {
-        let result = super::generate_key::generate_key(self.http_client.as_ref(), request).await;
-
-        result
+        super::generate_key::generate_key(self.http_client.as_ref(), request).await
     }
 
     /// Delete a key
     pub async fn delete_key(&self) -> Result<DeleteKeyResponse, Error> {
-        let result = super::delete_key::delete_key(self.http_client.as_ref()).await;
-
-        result
+        super::delete_key::delete_key(self.http_client.as_ref()).await
     }
 
     /// Export a key
@@ -107,9 +97,7 @@ impl KmdClient {
         &self,
         request: ExportKeyRequest,
     ) -> Result<PostKeyExportResponse, Error> {
-        let result = super::export_key::export_key(self.http_client.as_ref(), request).await;
-
-        result
+        super::export_key::export_key(self.http_client.as_ref(), request).await
     }
 
     /// Import a key
@@ -117,9 +105,7 @@ impl KmdClient {
         &self,
         request: ImportKeyRequest,
     ) -> Result<PostKeyImportResponse, Error> {
-        let result = super::import_key::import_key(self.http_client.as_ref(), request).await;
-
-        result
+        super::import_key::import_key(self.http_client.as_ref(), request).await
     }
 
     /// List keys in wallet
@@ -127,11 +113,7 @@ impl KmdClient {
         &self,
         request: ListKeysRequest,
     ) -> Result<PostKeyListResponse, Error> {
-        let result =
-            super::list_keys_in_wallet::list_keys_in_wallet(self.http_client.as_ref(), request)
-                .await;
-
-        result
+        super::list_keys_in_wallet::list_keys_in_wallet(self.http_client.as_ref(), request).await
     }
 
     /// Export the master derivation key from a wallet
@@ -139,17 +121,12 @@ impl KmdClient {
         &self,
         request: ExportMasterKeyRequest,
     ) -> Result<PostMasterKeyExportResponse, Error> {
-        let result =
-            super::export_master_key::export_master_key(self.http_client.as_ref(), request).await;
-
-        result
+        super::export_master_key::export_master_key(self.http_client.as_ref(), request).await
     }
 
     /// Delete a multisig
     pub async fn delete_multisig(&self) -> Result<DeleteMultisigResponse, Error> {
-        let result = super::delete_multisig::delete_multisig(self.http_client.as_ref()).await;
-
-        result
+        super::delete_multisig::delete_multisig(self.http_client.as_ref()).await
     }
 
     /// Export multisig address metadata
@@ -157,10 +134,7 @@ impl KmdClient {
         &self,
         request: ExportMultisigRequest,
     ) -> Result<PostMultisigExportResponse, Error> {
-        let result =
-            super::export_multisig::export_multisig(self.http_client.as_ref(), request).await;
-
-        result
+        super::export_multisig::export_multisig(self.http_client.as_ref(), request).await
     }
 
     /// Import a multisig account
@@ -168,10 +142,7 @@ impl KmdClient {
         &self,
         request: ImportMultisigRequest,
     ) -> Result<PostMultisigImportResponse, Error> {
-        let result =
-            super::import_multisig::import_multisig(self.http_client.as_ref(), request).await;
-
-        result
+        super::import_multisig::import_multisig(self.http_client.as_ref(), request).await
     }
 
     /// List multisig accounts
@@ -179,9 +150,7 @@ impl KmdClient {
         &self,
         request: ListMultisigRequest,
     ) -> Result<PostMultisigListResponse, Error> {
-        let result = super::list_multisg::list_multisg(self.http_client.as_ref(), request).await;
-
-        result
+        super::list_multisg::list_multisg(self.http_client.as_ref(), request).await
     }
 
     /// Sign a multisig transaction
@@ -189,13 +158,11 @@ impl KmdClient {
         &self,
         request: SignMultisigRequest,
     ) -> Result<PostMultisigTransactionSignResponse, Error> {
-        let result = super::sign_multisig_transaction::sign_multisig_transaction(
+        super::sign_multisig_transaction::sign_multisig_transaction(
             self.http_client.as_ref(),
             request,
         )
-        .await;
-
-        result
+        .await
     }
 
     /// Sign a program for a multisig account
@@ -203,11 +170,8 @@ impl KmdClient {
         &self,
         request: SignProgramMultisigRequest,
     ) -> Result<PostMultisigProgramSignResponse, Error> {
-        let result =
-            super::sign_multisig_program::sign_multisig_program(self.http_client.as_ref(), request)
-                .await;
-
-        result
+        super::sign_multisig_program::sign_multisig_program(self.http_client.as_ref(), request)
+            .await
     }
 
     /// Sign program
@@ -215,9 +179,7 @@ impl KmdClient {
         &self,
         request: SignProgramRequest,
     ) -> Result<PostProgramSignResponse, Error> {
-        let result = super::sign_program::sign_program(self.http_client.as_ref(), request).await;
-
-        result
+        super::sign_program::sign_program(self.http_client.as_ref(), request).await
     }
 
     /// Sign a transaction
@@ -225,10 +187,7 @@ impl KmdClient {
         &self,
         request: SignTransactionRequest,
     ) -> Result<PostTransactionSignResponse, Error> {
-        let result =
-            super::sign_transaction::sign_transaction(self.http_client.as_ref(), request).await;
-
-        result
+        super::sign_transaction::sign_transaction(self.http_client.as_ref(), request).await
     }
 
     /// Create a wallet
@@ -236,9 +195,7 @@ impl KmdClient {
         &self,
         request: CreateWalletRequest,
     ) -> Result<PostWalletResponse, Error> {
-        let result = super::create_wallet::create_wallet(self.http_client.as_ref(), request).await;
-
-        result
+        super::create_wallet::create_wallet(self.http_client.as_ref(), request).await
     }
 
     /// Get wallet info
@@ -246,10 +203,7 @@ impl KmdClient {
         &self,
         request: WalletInfoRequest,
     ) -> Result<PostWalletInfoResponse, Error> {
-        let result =
-            super::get_wallet_info::get_wallet_info(self.http_client.as_ref(), request).await;
-
-        result
+        super::get_wallet_info::get_wallet_info(self.http_client.as_ref(), request).await
     }
 
     /// Initialize a wallet handle token
@@ -257,13 +211,11 @@ impl KmdClient {
         &self,
         request: InitWalletHandleTokenRequest,
     ) -> Result<PostWalletInitResponse, Error> {
-        let result = super::init_wallet_handle_token::init_wallet_handle_token(
+        super::init_wallet_handle_token::init_wallet_handle_token(
             self.http_client.as_ref(),
             request,
         )
-        .await;
-
-        result
+        .await
     }
 
     /// Release a wallet handle token
@@ -271,13 +223,11 @@ impl KmdClient {
         &self,
         request: ReleaseWalletHandleTokenRequest,
     ) -> Result<PostWalletReleaseResponse, Error> {
-        let result = super::release_wallet_handle_token::release_wallet_handle_token(
+        super::release_wallet_handle_token::release_wallet_handle_token(
             self.http_client.as_ref(),
             request,
         )
-        .await;
-
-        result
+        .await
     }
 
     /// Rename a wallet
@@ -285,9 +235,7 @@ impl KmdClient {
         &self,
         request: RenameWalletRequest,
     ) -> Result<PostWalletRenameResponse, Error> {
-        let result = super::rename_wallet::rename_wallet(self.http_client.as_ref(), request).await;
-
-        result
+        super::rename_wallet::rename_wallet(self.http_client.as_ref(), request).await
     }
 
     /// Renew a wallet handle token
@@ -295,33 +243,20 @@ impl KmdClient {
         &self,
         request: RenewWalletHandleTokenRequest,
     ) -> Result<PostWalletRenewResponse, Error> {
-        let result = super::renew_wallet_handle_token::renew_wallet_handle_token(
+        super::renew_wallet_handle_token::renew_wallet_handle_token(
             self.http_client.as_ref(),
             request,
         )
-        .await;
-
-        result
+        .await
     }
 
     /// List wallets
     pub async fn list_wallets(&self) -> Result<GetWalletsResponse, Error> {
-        let result = super::list_wallets::list_wallets(self.http_client.as_ref()).await;
-
-        result
+        super::list_wallets::list_wallets(self.http_client.as_ref()).await
     }
 
     /// Retrieves the current version
     pub async fn get_version(&self) -> Result<VersionsResponse, Error> {
-        let result = super::get_version::get_version(self.http_client.as_ref()).await;
-
-        result
+        super::get_version::get_version(self.http_client.as_ref()).await
     }
 }
-
-#[cfg(not(feature = "ffi_uniffi"))]
-impl KmdClient {}
-
-#[cfg_attr(feature = "ffi_uniffi", uniffi::export)]
-#[cfg(feature = "ffi_uniffi")]
-impl KmdClient {}

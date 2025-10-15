@@ -21,7 +21,6 @@ use crate::models::LookupApplicationLogsById;
 /// struct for typed errors of method [`lookup_application_logs_by_id`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum LookupApplicationLogsByIdError {
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),

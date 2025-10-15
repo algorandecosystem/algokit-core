@@ -13,7 +13,6 @@ use serde::{Deserialize, Serialize};
 
 /// APIV1POSTKeyRequest is the request for `POST /v1/key`
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct GenerateKeyRequest {
     #[serde(rename = "display_mnemonic", skip_serializing_if = "Option::is_none")]
     pub display_mnemonic: Option<bool>,

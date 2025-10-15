@@ -16,7 +16,6 @@ use crate::models::WalletHandle;
 /// APIV1POSTWalletRenewResponse is the response to `POST /v1/wallet/renew`
 /// friendly:RenewWalletHandleTokenResponse
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct PostWalletRenewResponse {
     #[serde(rename = "error", skip_serializing_if = "Option::is_none")]
     pub error: Option<bool>,

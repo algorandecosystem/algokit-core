@@ -23,7 +23,6 @@ use crate::models::RenameWalletRequest;
 /// struct for typed errors of method [`rename_wallet`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum RenameWalletError {
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),

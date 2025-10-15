@@ -15,7 +15,6 @@ use crate::models::PublicKey;
 
 /// APIV1POSTMultisigImportRequest is the request for `POST /v1/multisig/import`
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct ImportMultisigRequest {
     #[serde(rename = "multisig_version", skip_serializing_if = "Option::is_none")]
     pub multisig_version: Option<u8>,

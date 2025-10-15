@@ -14,7 +14,6 @@ use serde::{Deserialize, Serialize};
 /// APIV1POSTKeyImportResponse is the response to `POST /v1/key/import`
 /// friendly:ImportKeyResponse
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct PostKeyImportResponse {
     #[serde(rename = "address", skip_serializing_if = "Option::is_none")]
     pub address: Option<String>,

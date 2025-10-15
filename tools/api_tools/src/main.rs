@@ -155,6 +155,7 @@ struct RsClientConfig {
     output_rel: &'static str,
     package_name: &'static str,
     description: &'static str,
+    generate_ffi_crate: bool,
 }
 
 const ALGOD_RS_CLIENT: RsClientConfig = RsClientConfig {
@@ -162,6 +163,7 @@ const ALGOD_RS_CLIENT: RsClientConfig = RsClientConfig {
     output_rel: "crates/algod_client",
     package_name: "algod_client",
     description: "API client for algod interaction.",
+    generate_ffi_crate: true,
 };
 
 const INDEXER_RS_CLIENT: RsClientConfig = RsClientConfig {
@@ -169,6 +171,7 @@ const INDEXER_RS_CLIENT: RsClientConfig = RsClientConfig {
     output_rel: "crates/indexer_client",
     package_name: "indexer_client",
     description: "API client for indexer interaction.",
+    generate_ffi_crate: false,
 };
 
 const KMD_RS_CLIENT: RsClientConfig = RsClientConfig {
@@ -176,10 +179,15 @@ const KMD_RS_CLIENT: RsClientConfig = RsClientConfig {
     output_rel: "crates/kmd_client",
     package_name: "kmd_client",
     description: "API client for kmd interaction.",
+    generate_ffi_crate: false,
 };
 
 fn generate_rs_client(config: &RsClientConfig) -> Result<()> {
     for ffi in [true, false] {
+        if ffi && !config.generate_ffi_crate {
+            continue;
+        }
+
         let output_rel = if ffi {
             format!("{}_ffi", config.output_rel)
         } else {

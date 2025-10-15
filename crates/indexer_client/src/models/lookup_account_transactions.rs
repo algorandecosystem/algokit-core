@@ -14,7 +14,6 @@ use crate::models::Transaction;
 
 /// (empty)
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct LookupAccountTransactions {
     /// Round at which the results were computed.
     #[serde(rename = "current-round")]

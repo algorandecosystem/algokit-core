@@ -13,7 +13,6 @@ use serde::{Deserialize, Serialize};
 
 /// APIV1POSTWalletInfoRequest is the request for `POST /v1/wallet/info`
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct WalletInfoRequest {
     #[serde(
         rename = "wallet_handle_token",

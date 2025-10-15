@@ -21,7 +21,6 @@ use crate::models::{SearchForAccounts, UnknownJsonValue};
 /// struct for typed errors of method [`search_for_accounts`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum SearchForAccountsError {
     Status400(UnknownJsonValue),
     Status500(UnknownJsonValue),

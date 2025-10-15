@@ -23,7 +23,6 @@ use crate::models::SignTransactionRequest;
 /// struct for typed errors of method [`sign_transaction`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum SignTransactionError {
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),

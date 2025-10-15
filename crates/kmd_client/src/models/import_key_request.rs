@@ -15,7 +15,6 @@ use serde_with::{Bytes, serde_as};
 /// APIV1POSTKeyImportRequest is the request for `POST /v1/key/import`
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct ImportKeyRequest {
     #[serde_as(as = "Option<serde_with::base64::Base64>")]
     #[serde(rename = "private_key", skip_serializing_if = "Option::is_none")]

@@ -23,7 +23,6 @@ use crate::models::SignProgramRequest;
 /// struct for typed errors of method [`sign_program`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum SignProgramError {
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),

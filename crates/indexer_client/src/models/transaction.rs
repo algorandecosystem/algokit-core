@@ -30,7 +30,6 @@ use crate::models::TransactionStateProof;
 /// data/transactions/transaction.go : Transaction
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct Transaction {
     #[serde(
         rename = "application-transaction",
@@ -62,13 +61,13 @@ pub struct Transaction {
         skip_serializing_if = "Option::is_none"
     )]
     pub heartbeat_transaction: Option<TransactionHeartbeat>,
-    /// \[sgnr\] this is included with signed transactions when the signing address does not equal the sender. The backend can use this to ensure that auth addr is equal to the accounts auth addr.
+    /// [sgnr] this is included with signed transactions when the signing address does not equal the sender. The backend can use this to ensure that auth addr is equal to the accounts auth addr.
     #[serde(rename = "auth-addr", skip_serializing_if = "Option::is_none")]
     pub auth_addr: Option<String>,
-    /// \[rc\] rewards applied to close-remainder-to account.
+    /// [rc] rewards applied to close-remainder-to account.
     #[serde(rename = "close-rewards", skip_serializing_if = "Option::is_none")]
     pub close_rewards: Option<u64>,
-    /// \[ca\] closing amount for transaction.
+    /// [ca] closing amount for transaction.
     #[serde(rename = "closing-amount", skip_serializing_if = "Option::is_none")]
     pub closing_amount: Option<u64>,
     /// Round when the transaction was confirmed.
@@ -86,20 +85,20 @@ pub struct Transaction {
         skip_serializing_if = "Option::is_none"
     )]
     pub created_asset_index: Option<u64>,
-    /// \[fee\] Transaction fee.
+    /// [fee] Transaction fee.
     #[serde(rename = "fee")]
     pub fee: u64,
-    /// \[fv\] First valid round for this transaction.
+    /// [fv] First valid round for this transaction.
     #[serde(rename = "first-valid")]
     pub first_valid: u32,
-    /// \[gh\] Hash of genesis block.
+    /// [gh] Hash of genesis block.
     #[serde_as(as = "Option<serde_with::base64::Base64>")]
     #[serde(rename = "genesis-hash", skip_serializing_if = "Option::is_none")]
     pub genesis_hash: Option<Vec<u8>>,
-    /// \[gen\] genesis block ID.
+    /// [gen] genesis block ID.
     #[serde(rename = "genesis-id", skip_serializing_if = "Option::is_none")]
     pub genesis_id: Option<String>,
-    /// \[grp\] Base64 encoded byte array of a sha512/256 digest. When present indicates that this transaction is part of a transaction group and the value is the sha512/256 hash of the transactions in that group.
+    /// [grp] Base64 encoded byte array of a sha512/256 digest. When present indicates that this transaction is part of a transaction group and the value is the sha512/256 hash of the transactions in that group.
     #[serde_as(as = "Option<serde_with::base64::Base64>")]
     #[serde(rename = "group", skip_serializing_if = "Option::is_none")]
     pub group: Option<Vec<u8>>,
@@ -111,14 +110,14 @@ pub struct Transaction {
     pub intra_round_offset: Option<u64>,
     #[serde(rename = "keyreg-transaction", skip_serializing_if = "Option::is_none")]
     pub keyreg_transaction: Option<TransactionKeyreg>,
-    /// \[lv\] Last valid round for this transaction.
+    /// [lv] Last valid round for this transaction.
     #[serde(rename = "last-valid")]
     pub last_valid: u32,
-    /// \[lx\] Base64 encoded 32-byte array. Lease enforces mutual exclusion of transactions.  If this field is nonzero, then once the transaction is confirmed, it acquires the lease identified by the (Sender, Lease) pair of the transaction until the LastValid round passes.  While this transaction possesses the lease, no other transaction specifying this lease can be confirmed.
+    /// [lx] Base64 encoded 32-byte array. Lease enforces mutual exclusion of transactions.  If this field is nonzero, then once the transaction is confirmed, it acquires the lease identified by the (Sender, Lease) pair of the transaction until the LastValid round passes.  While this transaction possesses the lease, no other transaction specifying this lease can be confirmed.
     #[serde_as(as = "Option<serde_with::base64::Base64>")]
     #[serde(rename = "lease", skip_serializing_if = "Option::is_none")]
     pub lease: Option<Vec<u8>>,
-    /// \[note\] Free form data.
+    /// [note] Free form data.
     #[serde_as(as = "Option<serde_with::base64::Base64>")]
     #[serde(rename = "note", skip_serializing_if = "Option::is_none")]
     pub note: Option<Vec<u8>>,
@@ -127,42 +126,42 @@ pub struct Transaction {
         skip_serializing_if = "Option::is_none"
     )]
     pub payment_transaction: Option<TransactionPayment>,
-    /// \[rr\] rewards applied to receiver account.
+    /// [rr] rewards applied to receiver account.
     #[serde(rename = "receiver-rewards", skip_serializing_if = "Option::is_none")]
     pub receiver_rewards: Option<u64>,
-    /// \[rekey\] when included in a valid transaction, the accounts auth addr will be updated with this value and future signatures must be signed with the key represented by this address.
+    /// [rekey] when included in a valid transaction, the accounts auth addr will be updated with this value and future signatures must be signed with the key represented by this address.
     #[serde(rename = "rekey-to", skip_serializing_if = "Option::is_none")]
     pub rekey_to: Option<String>,
     /// Time when the block this transaction is in was confirmed.
     #[serde(rename = "round-time", skip_serializing_if = "Option::is_none")]
     pub round_time: Option<u64>,
-    /// \[snd\] Sender's address.
+    /// [snd] Sender's address.
     #[serde(rename = "sender")]
     pub sender: String,
-    /// \[rs\] rewards applied to sender account.
+    /// [rs] rewards applied to sender account.
     #[serde(rename = "sender-rewards", skip_serializing_if = "Option::is_none")]
     pub sender_rewards: Option<u64>,
     #[serde(rename = "signature", skip_serializing_if = "Option::is_none")]
     pub signature: Option<TransactionSignature>,
-    /// \[type\] Indicates what type of transaction this is. Different types have different fields.
+    /// [type] Indicates what type of transaction this is. Different types have different fields.
     ///
     /// Valid types, and where their fields are stored:
-    ///   * \[pay\] payment-transaction
-    ///   * \[keyreg\] keyreg-transaction
-    ///   * \[acfg\] asset-config-transaction
-    ///   * \[axfer\] asset-transfer-transaction
-    ///   * \[afrz\] asset-freeze-transaction
-    ///   * \[appl\] application-transaction
-    ///   * \[stpf\] state-proof-transaction
-    ///   * \[hb\] heartbeat-transaction
+    ///   * [pay] payment-transaction
+    ///   * [keyreg] keyreg-transaction
+    ///   * [acfg] asset-config-transaction
+    ///   * [axfer] asset-transfer-transaction
+    ///   * [afrz] asset-freeze-transaction
+    ///   * [appl] application-transaction
+    ///   * [stpf] state-proof-transaction
+    ///   * [hb] heartbeat-transaction
     #[serde(rename = "tx-type")]
     pub tx_type: String,
-    /// \[ld\] Local state key/value changes for the application being executed by this transaction.
+    /// [ld] Local state key/value changes for the application being executed by this transaction.
     #[serde(rename = "local-state-delta", skip_serializing_if = "Option::is_none")]
     pub local_state_delta: Option<Vec<AccountStateDelta>>,
     #[serde(rename = "global-state-delta", skip_serializing_if = "Option::is_none")]
     pub global_state_delta: Option<StateDelta>,
-    /// \[lg\] Logs for the application being executed by this transaction.
+    /// [lg] Logs for the application being executed by this transaction.
     #[serde_as(as = "Option<Vec<serde_with::base64::Base64>>")]
     #[serde(rename = "logs", skip_serializing_if = "Option::is_none")]
     pub logs: Option<Vec<Vec<u8>>>,

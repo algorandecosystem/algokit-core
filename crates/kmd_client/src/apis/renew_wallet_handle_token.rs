@@ -23,7 +23,6 @@ use crate::models::RenewWalletHandleTokenRequest;
 /// struct for typed errors of method [`renew_wallet_handle_token`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum RenewWalletHandleTokenError {
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),

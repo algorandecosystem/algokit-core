@@ -21,7 +21,6 @@ use crate::models::{SearchForApplications, UnknownJsonValue};
 /// struct for typed errors of method [`search_for_applications`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum SearchForApplicationsError {
     Status500(UnknownJsonValue),
     DefaultResponse(),

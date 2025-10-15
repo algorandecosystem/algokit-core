@@ -15,18 +15,17 @@ use serde::{Deserialize, Serialize};
 /// Definition:
 /// data/transactions/payment.go : PaymentTxnFields
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct TransactionPayment {
-    /// \[amt\] number of MicroAlgos intended to be transferred.
+    /// [amt] number of MicroAlgos intended to be transferred.
     #[serde(rename = "amount")]
     pub amount: u64,
     /// Number of MicroAlgos that were sent to the close-remainder-to address when closing the sender account.
     #[serde(rename = "close-amount", skip_serializing_if = "Option::is_none")]
     pub close_amount: Option<u64>,
-    /// \[close\] when set, indicates that the sending account should be closed and all remaining funds be transferred to this address.
+    /// [close] when set, indicates that the sending account should be closed and all remaining funds be transferred to this address.
     #[serde(rename = "close-remainder-to", skip_serializing_if = "Option::is_none")]
     pub close_remainder_to: Option<String>,
-    /// \[rcv\] receiver's address.
+    /// [rcv] receiver's address.
     #[serde(rename = "receiver")]
     pub receiver: String,
 }

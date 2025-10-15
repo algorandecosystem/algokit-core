@@ -17,7 +17,6 @@ use crate::models::Signature;
 /// MultisigSubsig is a struct that holds a pair of public key and signatures
 /// signatures may be empty
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct MultisigSubsig {
     #[serde(rename = "Key", skip_serializing_if = "Option::is_none")]
     pub key: Option<PublicKey>,

@@ -1845,7 +1845,6 @@ name = "indexer_client"
 version = "2.0.0"
 dependencies = [
  "algokit_http_client",
- "algokit_transact_ffi",
  "base64 0.22.1",
  "serde",
  "serde_bytes",
@@ -1855,7 +1854,6 @@ dependencies = [
  "snafu",
  "tokio",
  "tokio-test",
- "uniffi",
  "url",
  "uuid",
 ]
@@ -1970,7 +1968,6 @@ name = "kmd_client"
 version = "0.0.1"
 dependencies = [
  "algokit_http_client",
- "algokit_transact_ffi",
  "base64 0.22.1",
  "serde",
  "serde_bytes",
@@ -1980,7 +1977,6 @@ dependencies = [
  "snafu",
  "tokio",
  "tokio-test",
- "uniffi",
  "url",
  "uuid",
 ]

@@ -14,7 +14,6 @@ use crate::models::MiniAssetHolding;
 
 /// (empty)
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct LookupAssetBalances {
     #[serde(rename = "balances")]
     pub balances: Vec<MiniAssetHolding>,

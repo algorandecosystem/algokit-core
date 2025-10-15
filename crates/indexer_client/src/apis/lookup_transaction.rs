@@ -21,7 +21,6 @@ use crate::models::{LookupTransaction, UnknownJsonValue};
 /// struct for typed errors of method [`lookup_transaction`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum LookupTransactionError {
     Status400(UnknownJsonValue),
     Status404(UnknownJsonValue),

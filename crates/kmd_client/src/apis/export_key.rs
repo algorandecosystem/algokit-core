@@ -23,7 +23,6 @@ use crate::models::ExportKeyRequest;
 /// struct for typed errors of method [`export_key`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum ExportKeyError {
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),

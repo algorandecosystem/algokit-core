@@ -16,7 +16,6 @@ use crate::models::Wallet;
 /// APIV1POSTWalletResponse is the response to `POST /v1/wallet`
 /// friendly:CreateWalletResponse
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct PostWalletResponse {
     #[serde(rename = "error", skip_serializing_if = "Option::is_none")]
     pub error: Option<bool>,

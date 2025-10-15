@@ -23,7 +23,6 @@ use crate::models::ListKeysRequest;
 /// struct for typed errors of method [`list_keys_in_wallet`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum ListKeysInWalletError {
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),

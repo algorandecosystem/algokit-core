@@ -17,13 +17,12 @@ use crate::models::TransactionSignatureMultisig;
 /// Validation signature associated with some data. Only one of the signatures should be provided.
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct TransactionSignature {
     #[serde(rename = "logicsig", skip_serializing_if = "Option::is_none")]
     pub logicsig: Option<TransactionSignatureLogicsig>,
     #[serde(rename = "multisig", skip_serializing_if = "Option::is_none")]
     pub multisig: Option<TransactionSignatureMultisig>,
-    /// \[sig\] Standard ed25519 signature.
+    /// [sig] Standard ed25519 signature.
     #[serde_as(as = "Option<serde_with::base64::Base64>")]
     #[serde(rename = "sig", skip_serializing_if = "Option::is_none")]
     pub sig: Option<Vec<u8>>,

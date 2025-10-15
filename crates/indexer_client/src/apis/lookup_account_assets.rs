@@ -21,7 +21,6 @@ use crate::models::{LookupAccountAssets, UnknownJsonValue};
 /// struct for typed errors of method [`lookup_account_assets`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum LookupAccountAssetsError {
     Status400(UnknownJsonValue),
     Status404(UnknownJsonValue),

@@ -13,19 +13,18 @@ use serde_with::{Bytes, serde_as};
 
 use crate::models::TransactionSignatureMultisig;
 
-/// \[lsig\] Programatic transaction signature.
+/// [lsig] Programatic transaction signature.
 ///
 /// Definition:
 /// data/transactions/logicsig.go
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct TransactionSignatureLogicsig {
-    /// \[arg\] Logic arguments, base64 encoded.
+    /// [arg] Logic arguments, base64 encoded.
     #[serde_as(as = "Option<serde_with::base64::Base64>")]
     #[serde(rename = "args", skip_serializing_if = "Option::is_none")]
     pub args: Option<Vec<u8>>,
-    /// \[l\] Program signed by a signature or multi signature, or hashed to be the address of an account. Base64 encoded TEAL program.
+    /// [l] Program signed by a signature or multi signature, or hashed to be the address of an account. Base64 encoded TEAL program.
     #[serde_as(as = "serde_with::base64::Base64")]
     #[serde(rename = "logic")]
     pub logic: Vec<u8>,
@@ -36,7 +35,7 @@ pub struct TransactionSignatureLogicsig {
         skip_serializing_if = "Option::is_none"
     )]
     pub logic_multisig_signature: Option<TransactionSignatureMultisig>,
-    /// \[sig\] ed25519 signature.
+    /// [sig] ed25519 signature.
     #[serde_as(as = "Option<serde_with::base64::Base64>")]
     #[serde(rename = "signature", skip_serializing_if = "Option::is_none")]
     pub signature: Option<Vec<u8>>,
