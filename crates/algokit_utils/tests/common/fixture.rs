@@ -69,6 +69,7 @@ impl AlgorandFixture {
             .unwrap(),
         );
 
+        #[allow(clippy::arc_with_non_send_sync)]
         let algorand_client = Arc::new(AlgorandClient::new(params));
 
         let test_account = Self::generate_account_internal(
