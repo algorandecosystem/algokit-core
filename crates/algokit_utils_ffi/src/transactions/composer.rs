@@ -26,16 +26,50 @@ use algod_client_ffi::{AlgodClient, models::PendingTransactionResponse};
 
 // algokit_utils
 use algokit_utils::transactions::{
-    TransactionComposerParams, composer::TransactionComposer as RustComposer,
+    TransactionComposerParams, TransactionResult as RustTransactionResult,
+    composer::TransactionComposer as RustComposer,
 };
 
-// NOTE: This struct is a temporary placeholder until we have a proper algod_api_ffi crate with the fully typed response
-// TODO: Now that we have algod_client_ffi, we can remove this and use a proper type. Make sure to merge
-// https://github.com/algorandfoundation/algokit-core/pull/272 into this branch before doing so
+use algokit_transact_ffi::Transaction;
+
+use super::app_call::ABIReturn;
+
 #[derive(uniffi::Record)]
-pub struct TempSendResponse {
-    pub transaction_ids: Vec<String>,
-    pub app_ids: Vec<Option<u64>>,
+pub struct TransactionResult {
+    pub transaction: Transaction,
+    pub transaction_id: String,
+    pub confirmation: PendingTransactionResponse,
+    pub abi_return: Option<ABIReturn>,
+}
+
+impl From<RustTransactionResult> for TransactionResult {
+    fn from(rust_struct: RustTransactionResult) -> Self {
+        Self {
+            transaction: rust_struct.transaction.into(),
+            transaction_id: rust_struct.transaction_id,
+            confirmation: rust_struct.confirmation.into(),
+            abi_return: rust_struct.abi_return.map(|r| r.into()),
+        }
+    }
+}
+
+#[derive(uniffi::Record)]
+pub struct TransactionComposerSendResult {
+    pub group: Option<Vec<u8>>,
+    pub results: Vec<TransactionResult>,
+}
+
+impl From<algokit_utils::transactions::composer::TransactionComposerSendResult>
+    for TransactionComposerSendResult
+{
+    fn from(
+        rust_struct: algokit_utils::transactions::composer::TransactionComposerSendResult,
+    ) -> Self {
+        Self {
+            group: rust_struct.group.map(|g| g.to_vec()),
+            results: rust_struct.results.into_iter().map(|r| r.into()).collect(),
+        }
+    }
 }
 
 #[derive(uniffi::Object)]
@@ -95,26 +129,15 @@ impl ComposerTrait for Composer {
             .map(|r| r.into())
     }
 
-    async fn send(&self) -> Result<TempSendResponse, UtilsError> {
+    async fn send(&self) -> Result<TransactionComposerSendResult, UtilsError> {
         let mut composer = self.inner_composer.blocking_lock();
-        let result = composer
+        composer
             .send(None)
             .await
             .map_err(|e| UtilsError::UtilsError {
                 message: e.to_string(),
-            })?;
-        Ok(TempSendResponse {
-            transaction_ids: result
-                .results
-                .iter()
-                .map(|r| r.transaction_id.clone())
-                .collect(),
-            app_ids: result
-                .results
-                .iter()
-                .map(|r| r.confirmation.app_id)
-                .collect(),
-        })
+            })
+            .map(|r| r.into())
     }
 
     async fn build(&self) -> Result<(), UtilsError> {
@@ -301,7 +324,7 @@ impl ComposerTrait for Composer {
 #[async_trait]
 pub trait ComposerTrait: Send + Sync {
     async fn build(&self) -> Result<(), UtilsError>;
-    async fn send(&self) -> Result<TempSendResponse, UtilsError>;
+    async fn send(&self) -> Result<TransactionComposerSendResult, UtilsError>;
     async fn wait_for_confirmation(
         &self,
         tx_id: String,

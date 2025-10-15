@@ -97,13 +97,13 @@ impl TestFixture {
 
         // Build and send transaction
         composer.build().await?;
-        let tx_ids = composer.send().await?;
+        let result = composer.send().await?;
 
         // Return first transaction ID
-        tx_ids
-            .transaction_ids
+        result
+            .results
             .first()
-            .cloned()
+            .map(|r| r.transaction_id.clone())
             .ok_or_else(|| UtilsError::UtilsError {
                 message: "No transaction ID returned".to_string(),
             })
@@ -152,13 +152,17 @@ impl TestFixture {
 
         // Build and send
         composer.build().await?;
-        let tx_ids = composer.send().await?.transaction_ids;
+        let result = composer.send().await?;
+
+        let tx_id = result
+            .results
+            .first()
+            .map(|r| r.transaction_id.clone())
+            .ok_or_else(|| UtilsError::UtilsError {
+                message: "No transaction ID returned".to_string(),
+            })?;
 
         // Wait for confirmation to get asset ID
-        let tx_id = tx_ids.first().ok_or_else(|| UtilsError::UtilsError {
-            message: "No transaction ID returned".to_string(),
-        })?;
-
         let info = composer.wait_for_confirmation(tx_id.clone(), 3).await?;
 
         info.asset_id.ok_or_else(|| UtilsError::UtilsError {
