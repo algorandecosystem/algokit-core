@@ -31,7 +31,7 @@ export function mapToObject(value: unknown, fieldName?: string): unknown {
     }
 
     // Convert Map to object
-    const obj: unknown = {}
+    const obj: Record<string, unknown> = {}
     for (const [k, v] of value.entries()) {
       obj[k] = mapToObject(v, k)
     }
