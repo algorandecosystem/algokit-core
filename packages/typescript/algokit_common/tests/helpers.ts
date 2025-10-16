@@ -8,12 +8,11 @@ import {
   getTransactionId,
   groupTransactions as groupTxns,
 } from '@algorandfoundation/algokit-transact'
-import { IndexerClient } from '@algorandfoundation/indexer-client'
 import { KmdClient } from '@algorandfoundation/kmd-client'
+import { AlgodClient, PendingTransactionResponse } from '@algorandfoundation/algod-client'
 import algosdk from 'algosdk'
 import * as ed from '@noble/ed25519'
 import { Buffer } from 'node:buffer'
-import { runWhenIndexerCaughtUp } from '../../algokit_utils/src/testing/indexer'
 
 export interface AlgodTestConfig {
   algodBaseUrl: string
@@ -28,6 +27,17 @@ export function getAlgodEnv(): AlgodTestConfig {
     algodApiToken: process.env.ALGOD_API_TOKEN ?? 'a'.repeat(64),
     senderMnemonic: process.env.SENDER_MNEMONIC,
   }
+}
+
+export async function waitForConfirmation(algod: AlgodClient, txId: string, attempts = 30): Promise<PendingTransactionResponse> {
+  for (let i = 0; i < attempts; i++) {
+    const pending = await algod.pendingTransactionInformation(txId)
+    if (pending.confirmedRound !== undefined && pending.confirmedRound > 0n) {
+      return pending
+    }
+    await new Promise((resolve) => setTimeout(resolve, 500))
+  }
+  throw new Error(`Transaction ${txId} unconfirmed after ${attempts} attempts`)
 }
 
 export async function getSenderMnemonic(): Promise<string> {
@@ -161,12 +171,9 @@ export interface CreatedAppInfo {
   txId: string
 }
 
-function getAlgodClient(): algosdk.Algodv2 {
+function getAlgodClient(): AlgodClient {
   const env = getAlgodEnv()
-  const url = new URL(env.algodBaseUrl)
-  const server = `${url.protocol}//${url.hostname}`
-  const port = Number(url.port || 4001)
-  return new algosdk.Algodv2(env.algodApiToken, server, port)
+  return new AlgodClient({ baseUrl: env.algodBaseUrl, apiToken: env.algodApiToken })
 }
 
 function decodeGenesisHash(genesisHash: string | Uint8Array): Uint8Array {
@@ -176,21 +183,21 @@ function decodeGenesisHash(genesisHash: string | Uint8Array): Uint8Array {
   return new Uint8Array(Buffer.from(genesisHash, 'base64'))
 }
 
-async function submitTransaction(transaction: Transaction, algod: algosdk.Algodv2, secretKey: Uint8Array): Promise<{ txId: string }> {
+async function submitTransaction(transaction: Transaction, algod: AlgodClient, secretKey: Uint8Array): Promise<{ txId: string }> {
   const signed = await signTransaction(transaction, secretKey)
   const raw = encodeSignedTransaction(signed)
   const txId = getTransactionId(transaction)
-  await algod.sendRawTransaction(raw).do()
-  await algosdk.waitForConfirmation(algod, txId, 10)
+  await algod.rawTransaction({ body: raw })
+  await waitForConfirmation(algod, txId, 10)
   return { txId }
 }
 
 export async function createDummyAsset(): Promise<CreatedAssetInfo> {
   const { address, secretKey } = await getSenderAccount()
   const algod = getAlgodClient()
-  const sp = await algod.getTransactionParams().do()
+  const sp = await algod.transactionParams()
 
-  const firstValid = BigInt(sp.firstValid ?? sp.lastValid)
+  const firstValid = sp.lastRound
   const lastValid = firstValid + 1_000n
 
   const transaction: Transaction = {
@@ -199,7 +206,7 @@ export async function createDummyAsset(): Promise<CreatedAssetInfo> {
     firstValid,
     lastValid,
     genesisHash: decodeGenesisHash(sp.genesisHash),
-    genesisId: sp.genesisID,
+    genesisId: sp.genesisId,
     fee: sp.minFee,
     assetConfig: {
       assetId: 0n,
@@ -217,7 +224,7 @@ export async function createDummyAsset(): Promise<CreatedAssetInfo> {
 
   const { txId } = await submitTransaction(transaction, algod, secretKey)
 
-  const assetId = (await algod.pendingTransactionInformation(txId).do()).assetIndex as bigint | undefined
+  const assetId = (await algod.pendingTransactionInformation(txId)).assetId as bigint | undefined
   if (!assetId) {
     throw new Error('Asset creation transaction confirmed without returning an asset id')
   }
@@ -228,21 +235,21 @@ export async function createDummyAsset(): Promise<CreatedAssetInfo> {
 export async function createDummyApp(): Promise<CreatedAppInfo> {
   const { address, secretKey } = await getSenderAccount()
   const algod = getAlgodClient()
-  const sp = await algod.getTransactionParams().do()
+  const sp = await algod.transactionParams()
 
   const approvalProgramSource = '#pragma version 8\nint 1'
   const clearProgramSource = '#pragma version 8\nint 1'
 
   const compile = async (source: string) => {
-    const result = await algod.compile(source).do()
+    const result = await algod.tealCompile({ body: source })
     return new Uint8Array(Buffer.from(result.result, 'base64'))
   }
 
   const approvalProgram = await compile(approvalProgramSource)
   const clearProgram = await compile(clearProgramSource)
 
-  const firstValid = BigInt(sp.firstValid ?? sp.lastValid)
-  const lastValid = firstValid + 1_000n
+  const firstValid = sp.lastRound
+  const lastValid = sp.lastRound + 1_000n
 
   const transaction: Transaction = {
     transactionType: TransactionType.AppCall,
@@ -251,7 +258,7 @@ export async function createDummyApp(): Promise<CreatedAppInfo> {
     fee: sp.minFee,
     lastValid,
     genesisHash: decodeGenesisHash(sp.genesisHash),
-    genesisId: sp.genesisID,
+    genesisId: sp.genesisId,
     appCall: {
       appId: 0n,
       onComplete: OnApplicationComplete.NoOp,
@@ -270,7 +277,7 @@ export async function createDummyApp(): Promise<CreatedAppInfo> {
 
   const { txId } = await submitTransaction(transaction, algod, secretKey)
 
-  const appId = (await algod.pendingTransactionInformation(txId).do()).applicationIndex
+  const appId = (await algod.pendingTransactionInformation(txId)).appId
   if (!appId) {
     throw new Error('Application creation transaction confirmed without returning an app id')
   }
@@ -283,10 +290,4 @@ export function getIndexerEnv(): IndexerTestConfig {
     indexerBaseUrl: process.env.INDEXER_BASE_URL ?? 'http://localhost:8980',
     indexerApiToken: process.env.INDEXER_API_TOKEN ?? 'a'.repeat(64),
   }
-}
-
-export async function waitForIndexerTransaction(indexer: IndexerClient, txId: string): Promise<void> {
-  await runWhenIndexerCaughtUp(async () => {
-    await indexer.lookupTransaction(txId)
-  })
 }

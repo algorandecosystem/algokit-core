@@ -1,5 +1,5 @@
 import type { AlgodClient } from '@algorandfoundation/algod-client'
-import { signTransaction as signTransactionHelper, getSenderAccount } from '../../../algokit_common/tests/helpers'
+import { signTransaction as signTransactionHelper, getSenderAccount, waitForConfirmation } from '../../../algokit_common/tests/helpers'
 import { AssetManager } from '../../src/clients/asset-manager'
 import { ClientManager } from '../../src/clients/client-manager'
 import { TransactionComposer } from '../../src/transactions/composer'
@@ -8,7 +8,6 @@ import type { AssetCreateParams } from '../../src/transactions/asset-config'
 import type { AssetTransferParams } from '../../src/transactions/asset-transfer'
 import type { PaymentParams } from '../../src/transactions/payment'
 import type { Transaction, SignedTransaction } from '@algorandfoundation/algokit-transact'
-import type { PendingTransactionResponse } from '@algorandfoundation/algod-client'
 import algosdk from 'algosdk'
 import { randomBytes } from 'crypto'
 
@@ -179,19 +178,4 @@ function createTransactionSigner(secretKey: Uint8Array): TransactionSigner {
       return signed
     },
   }
-}
-
-async function waitForConfirmation(algod: AlgodClient, txId: string, attempts = 30): Promise<PendingTransactionResponse> {
-  for (let i = 0; i < attempts; i++) {
-    const pending = await algod.pendingTransactionInformation(txId)
-    if (pending.confirmedRound !== undefined && pending.confirmedRound > 0n) {
-      return pending
-    }
-    await delay(500)
-  }
-  throw new Error(`Transaction ${txId} unconfirmed after ${attempts} attempts`)
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
 }

@@ -1,6 +1,7 @@
 import { expect, it, describe } from 'vitest'
 import { IndexerClient } from '@algorandfoundation/indexer-client'
-import { createDummyAsset, getIndexerEnv, waitForIndexerTransaction } from '../../../algokit_common/tests/helpers'
+import { createDummyAsset, getIndexerEnv } from '../../../algokit_common/tests/helpers'
+import { runWhenIndexerCaughtUp } from '../../src'
 
 describe('Indexer search transactions', () => {
   it('should search for transactions', async () => {
@@ -8,7 +9,9 @@ describe('Indexer search transactions', () => {
     const env = getIndexerEnv()
     const client = new IndexerClient({ baseUrl: env.indexerBaseUrl, apiToken: env.indexerApiToken ?? undefined })
 
-    await waitForIndexerTransaction(client, txId)
+    await runWhenIndexerCaughtUp(async () => {
+      await client.lookupTransaction(txId)
+    })
 
     const res = await client.searchForTransactions()
     expect(res).toHaveProperty('transactions')

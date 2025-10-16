@@ -138,7 +138,7 @@ export class TransactionSender {
       (composer, p) => composer.addAssetCreate(p),
       (baseResult) => {
         const assetId = baseResult.confirmation.assetId
-        if (assetId === undefined || assetId <= 0) {
+        if (assetId === undefined || assetId <= 0n) {
           throw new Error('Asset creation confirmation missing assetId')
         }
         return {
@@ -309,7 +309,7 @@ export class TransactionSender {
       (composer, p) => composer.addAppCreate(p),
       (baseResult) => {
         const appId = baseResult.confirmation.appId
-        if (appId === undefined || appId <= 0) {
+        if (appId === undefined || appId <= 0n) {
           throw new Error('App creation confirmation missing appId')
         }
         return {
@@ -367,7 +367,7 @@ export class TransactionSender {
       (composer, p) => composer.addAppCreateMethodCall(p),
       (baseResult) => {
         const appId = baseResult.result.confirmation.appId
-        if (appId === undefined || appId <= 0) {
+        if (appId === undefined || appId <= 0n) {
           throw new Error('App creation confirmation missing appId')
         }
         return {
