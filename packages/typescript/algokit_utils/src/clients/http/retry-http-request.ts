@@ -142,7 +142,7 @@ export class RetryHttpRequest extends BaseHttpRequest {
     }
 
     const headers: Record<string, string> = {
-      ...(typeof this.config.headers === 'function' ? await this.config.headers() : this.config.headers ?? {}),
+      ...(typeof this.config.headers === 'function' ? await this.config.headers() : (this.config.headers ?? {})),
       ...(options.headers ?? {}),
     }
 

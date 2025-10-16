@@ -32,14 +32,27 @@ describe.sequential('ClientManager integration', () => {
     const manager = createClientManager()
     const network = await manager.network()
 
-    const [isLocal, isTest, isMain] = await Promise.all([
-      manager.isLocalNet(),
-      manager.isTestNet(),
-      manager.isMainNet(),
-    ])
+    const [isLocal, isTest, isMain] = await Promise.all([manager.isLocalNet(), manager.isTestNet(), manager.isMainNet()])
 
     expect(isLocal).toBe(network.isLocalnet)
     expect(isTest).toBe(network.isTestnet)
     expect(isMain).toBe(network.isMainnet)
+  }, 30_000)
+
+  it('validates network details structure for localnet', async () => {
+    const manager = createClientManager()
+    const details = await manager.network()
+
+    // Verify structure
+    expect(details.genesisId.length).toBeGreaterThan(0)
+    expect(details.genesisHash.length).toBeGreaterThan(0)
+
+    // Verify exactly one network type is detected
+    const networkFlags = [details.isLocalnet, details.isTestnet, details.isMainnet]
+    const activeNetworks = networkFlags.filter(Boolean)
+    expect(activeNetworks).toHaveLength(1)
+
+    // Should detect as localnet for local config
+    expect(details.isLocalnet).toBe(true)
   }, 30_000)
 })

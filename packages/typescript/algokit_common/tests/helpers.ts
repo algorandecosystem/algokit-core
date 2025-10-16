@@ -48,9 +48,7 @@ export async function getSenderMnemonic(): Promise<string> {
     throw new Error('No KMD wallets available')
   }
 
-  const wallet =
-    wallets.find((w) => (w.name ?? '').toLowerCase() === preferredWalletName.toLowerCase()) ??
-    wallets[0]
+  const wallet = wallets.find((w) => (w.name ?? '').toLowerCase() === preferredWalletName.toLowerCase()) ?? wallets[0]
 
   const walletId = wallet.id
   if (!walletId) {

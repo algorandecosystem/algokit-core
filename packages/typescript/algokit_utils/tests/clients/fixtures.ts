@@ -93,10 +93,7 @@ export async function createAssetTestContext(): Promise<AssetTestContext> {
   }
 }
 
-export async function createTestAsset(
-  context: AssetTestContext,
-  overrides: Partial<AssetCreateParams> = {},
-): Promise<bigint> {
+export async function createTestAsset(context: AssetTestContext, overrides: Partial<AssetCreateParams> = {}): Promise<bigint> {
   const composer = context.newComposer()
   const params: AssetCreateParams = {
     sender: context.creator.address,
@@ -132,10 +129,7 @@ export async function createTestAsset(
   return pending.assetId
 }
 
-export async function createFundedAccount(
-  context: AssetTestContext,
-  initialFunding: bigint = 5_000_000n,
-): Promise<TestAccount> {
+export async function createFundedAccount(context: AssetTestContext, initialFunding: bigint = 5_000_000n): Promise<TestAccount> {
   const generated = algosdk.generateAccount() // TODO: Remove algosdk dependency
   const account: TestAccount = {
     address: generated.addr.toString(),
