@@ -1,5 +1,4 @@
 // TODO: Once all the abstractions and http clients have been implement, then this should be removed.
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Transaction composer implementation based on the Rust AlgoKit Core composer.
  * This provides a clean interface for building and executing transaction groups.
@@ -24,6 +23,7 @@ import {
   getTransactionId,
   groupTransactions,
 } from '@algorandfoundation/algokit-transact'
+import { AlgodClient, ApiError } from '@algorandfoundation/algod-client'
 import { genesisIdIsLocalNet } from '../clients/network-client'
 import {
   ApplicationLocalReference,
@@ -174,7 +174,7 @@ export type SendTransactionComposerResults = {
 }
 
 export type TransactionComposerParams = {
-  algodClient: any
+  algodClient: AlgodClient
   signerGetter: SignerGetter
   composerConfig?: TransactionComposerConfig
 }
@@ -185,7 +185,7 @@ export type TransactionComposerConfig = {
 }
 
 export class TransactionComposer {
-  private algodClient: any // TODO: Replace with client once implemented
+  private algodClient: AlgodClient
   private signerGetter: SignerGetter
   private composerConfig: TransactionComposerConfig
 
@@ -348,7 +348,7 @@ export class TransactionComposer {
 
   private async getSuggestedParams(): Promise<TransactionParams> {
     // TODO: Add caching with expiration
-    return await this.algodClient.getTransactionParams()
+    return await this.algodClient.transactionParams()
   }
 
   private buildTransactionHeader(
@@ -465,9 +465,7 @@ export class TransactionComposer {
           transaction = buildNonParticipationKeyRegistration(ctxn.data, header)
           break
         default:
-          // This should never happen if all cases are covered
-
-          throw new Error(`Unsupported transaction type: ${(ctxn as any).type}`)
+          throw new Error('Unsupported transaction type encountered while building transaction group')
       }
 
       if (calculateFee) {
@@ -802,7 +800,7 @@ export class TransactionComposer {
     const encodedTxns = encodeSignedTransactions(this.signedGroup)
     const encodedBytes = concatArrays(...encodedTxns)
 
-    await this.algodClient.rawTransaction(encodedBytes)
+    await this.algodClient.rawTransaction({ body: encodedBytes })
 
     const transactions = this.signedGroup.map((stxn) => stxn.transaction)
     const transactionIds = transactions.map((txn) => getTransactionId(txn))
@@ -838,8 +836,8 @@ export class TransactionComposer {
   }
 
   private async waitForConfirmation(txId: string, maxRoundsToWait: number): Promise<PendingTransactionResponse> {
-    const status = await this.algodClient.status().do()
-    const startRound = status.lastRound + 1
+    const status = await this.algodClient.getStatus()
+    const startRound = status.lastRound + 1n
     let currentRound = startRound
     while (currentRound < startRound + BigInt(maxRoundsToWait)) {
       try {
@@ -855,13 +853,12 @@ export class TransactionComposer {
           }
         }
       } catch (e: unknown) {
-        // TODO: Handle the 404 correctly once algod client is build
-        if (e instanceof Error && e.message.includes('404')) {
+        if (e instanceof ApiError && e.status === 404) {
           currentRound++
           continue
         }
       }
-      await this.algodClient.statusAfterBlock(currentRound)
+      await this.algodClient.waitForBlock(currentRound)
       currentRound++
     }
 
