@@ -1,6 +1,6 @@
 import { expect, it, describe } from 'vitest'
 import { IndexerClient } from '@algorandfoundation/indexer-client'
-import { createDummyAsset, getIndexerEnv, waitForIndexerTransaction } from './helpers'
+import { createDummyAsset, getIndexerEnv, waitForIndexerTransaction } from '../../../algokit_common/tests/helpers'
 
 describe('Indexer search transactions', () => {
   it('should search for transactions', async () => {

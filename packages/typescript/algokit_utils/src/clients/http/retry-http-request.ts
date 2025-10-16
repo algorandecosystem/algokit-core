@@ -157,7 +157,9 @@ export class RetryHttpRequest extends BaseHttpRequest {
       headers['Authorization'] = `Basic ${btoa(`${this.config.username}:${this.config.password}`)}`
     }
 
-    let payload: BodyInit | undefined
+    type FetchRequestInit = Parameters<typeof fetch>[1]
+    type FetchBody = FetchRequestInit extends { body?: infer B } ? B : undefined
+    let payload: FetchBody
     if (options.body != null) {
       const { body } = options
       if (body instanceof Uint8Array) {

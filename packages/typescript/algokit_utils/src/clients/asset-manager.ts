@@ -219,7 +219,7 @@ export class AssetManager {
    */
   async getAccountInformation(sender: string, assetId: bigint): Promise<AccountAssetInformation> {
     try {
-      return await this.algodClient.accountAssetInformation(sender, assetId)
+      return await this.algodClient.accountAssetInformation(sender, assetId, { format: 'json' })
     } catch (error) {
       if (error instanceof ApiError) {
         if (error.status === 404) {

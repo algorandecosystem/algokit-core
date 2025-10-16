@@ -1,8 +1,3 @@
-import { describe } from 'vitest'
-import algosdk from 'algosdk'
-import * as ed from '@noble/ed25519'
-import { Buffer } from 'node:buffer'
-
 import {
   type Transaction,
   type SignedTransaction,
@@ -11,9 +6,147 @@ import {
   encodeTransaction,
   encodeSignedTransaction,
   getTransactionId,
+  groupTransactions as groupTxns,
 } from '@algorandfoundation/algokit-transact'
 import { IndexerClient } from '@algorandfoundation/indexer-client'
-import { runWhenIndexerCaughtUp } from '../../src/testing/indexer'
+import { KmdClient } from '@algorandfoundation/kmd-client'
+import algosdk from 'algosdk'
+import * as ed from '@noble/ed25519'
+import { Buffer } from 'node:buffer'
+import { runWhenIndexerCaughtUp } from '../../algokit_utils/src/testing/indexer'
+
+export interface AlgodTestConfig {
+  algodBaseUrl: string
+  algodApiToken?: string
+  senderMnemonic?: string
+}
+
+export function getAlgodEnv(): AlgodTestConfig {
+  return {
+    algodBaseUrl: process.env.ALGOD_BASE_URL ?? 'http://localhost:4001',
+    // Default token for localnet (Algorand sandbox / Algokit LocalNet)
+    algodApiToken: process.env.ALGOD_API_TOKEN ?? 'a'.repeat(64),
+    senderMnemonic: process.env.SENDER_MNEMONIC,
+  }
+}
+
+export async function getSenderMnemonic(): Promise<string> {
+  if (process.env.SENDER_MNEMONIC) return process.env.SENDER_MNEMONIC
+  const kmdBase = process.env.KMD_BASE_URL ?? 'http://localhost:4002'
+  const kmdToken = process.env.KMD_API_TOKEN ?? 'a'.repeat(64)
+  const walletPassword = process.env.KMD_WALLET_PASSWORD ?? ''
+  const preferredWalletName = process.env.KMD_WALLET_NAME ?? 'unencrypted-default-wallet'
+
+  const kmd = new KmdClient({
+    baseUrl: kmdBase,
+    apiToken: kmdToken,
+  })
+
+  const walletsResponse = await kmd.listWallets()
+  const wallets = walletsResponse.wallets ?? []
+  if (wallets.length === 0) {
+    throw new Error('No KMD wallets available')
+  }
+
+  const wallet =
+    wallets.find((w) => (w.name ?? '').toLowerCase() === preferredWalletName.toLowerCase()) ??
+    wallets[0]
+
+  const walletId = wallet.id
+  if (!walletId) {
+    throw new Error('Wallet returned from KMD does not have an id')
+  }
+
+  const handleResponse = await kmd.initWalletHandleToken({
+    body: {
+      walletId,
+      walletPassword,
+    },
+  })
+
+  const walletHandleToken = handleResponse.walletHandleToken
+  if (!walletHandleToken) {
+    throw new Error('Failed to obtain wallet handle token from KMD')
+  }
+
+  try {
+    const keysResponse = await kmd.listKeysInWallet({
+      body: {
+        walletHandleToken,
+      },
+    })
+    let address = keysResponse.addresses?.[0]
+    if (!address) {
+      const generated = await kmd.generateKey({
+        body: {
+          walletHandleToken,
+          displayMnemonic: false,
+        },
+      })
+      address = generated.address ?? undefined
+    }
+
+    if (!address) {
+      throw new Error('Unable to determine or generate a wallet key from KMD')
+    }
+
+    const exportResponse = await kmd.exportKey({
+      body: {
+        walletHandleToken,
+        walletPassword,
+        address,
+      },
+    })
+
+    const exportedKey = exportResponse.privateKey
+    if (!exportedKey) {
+      throw new Error('KMD key export did not return a private key')
+    }
+
+    const secretKey = new Uint8Array(exportedKey)
+    return algosdk.secretKeyToMnemonic(secretKey)
+  } finally {
+    await kmd
+      .releaseWalletHandleToken({
+        body: {
+          walletHandleToken,
+        },
+      })
+      .catch(() => undefined)
+  }
+}
+
+/**
+ * Convenience helper: derive the sender account (address + keys) used for tests.
+ * Returns:
+ *  - address: Algorand address string
+ *  - secretKey: 64-byte Ed25519 secret key (private + public)
+ *  - mnemonic: the 25-word mnemonic
+ */
+export async function getSenderAccount(): Promise<{
+  address: string
+  secretKey: Uint8Array
+  mnemonic: string
+}> {
+  const mnemonic = await getSenderMnemonic()
+  const { addr, sk } = algosdk.mnemonicToSecretKey(mnemonic) // TODO: Remove algosdk dependency
+  const secretKey = new Uint8Array(sk)
+  return { address: typeof addr === 'string' ? addr : addr.toString(), secretKey, mnemonic }
+}
+
+export async function signTransaction(transaction: Transaction, secretKey: Uint8Array): Promise<SignedTransaction> {
+  const encodedTxn = encodeTransaction(transaction)
+  const signature = await ed.signAsync(encodedTxn, secretKey.slice(0, 32))
+
+  return {
+    transaction,
+    signature,
+  }
+}
+
+export function groupTransactions(transactions: Transaction[]): Transaction[] {
+  return groupTxns(transactions)
+}
 
 export interface IndexerTestConfig {
   indexerBaseUrl: string
@@ -30,51 +163,12 @@ export interface CreatedAppInfo {
   txId: string
 }
 
-export async function getSenderMnemonic(): Promise<string> {
-  if (process.env.SENDER_MNEMONIC) return process.env.SENDER_MNEMONIC
-
-  const kmdBase = process.env.KMD_BASE_URL ?? 'http://localhost:4002'
-  const kmdToken = process.env.KMD_API_TOKEN ?? 'a'.repeat(64)
-  const url = new URL(kmdBase)
-  const server = `${url.protocol}//${url.hostname}`
-  const port = Number(url.port || 4002)
-
-  // TODO: Replace with native KMD
-  const kmd = new algosdk.Kmd(kmdToken, server, port)
-  const wallets = await kmd.listWallets()
-  const wallet = wallets.wallets.find((w: { name: string }) => w.name === 'unencrypted-default-wallet') ?? wallets.wallets[0]
-  if (!wallet) throw new Error('No KMD wallet found on localnet')
-
-  const handle = await kmd.initWalletHandle(wallet.id, '')
-  try {
-    const keys = await kmd.listKeys(handle.wallet_handle_token)
-    let address: string | undefined = keys.addresses[0]
-    if (!address) {
-      const generated = await kmd.generateKey(handle.wallet_handle_token)
-      address = generated.address
-    }
-    const exported = await kmd.exportKey(handle.wallet_handle_token, '', address!)
-    const sk = new Uint8Array(exported.private_key)
-    return algosdk.secretKeyToMnemonic(sk)
-  } finally {
-    await kmd.releaseWalletHandle(handle.wallet_handle_token)
-  }
-}
-
-async function getSenderAccount(): Promise<{ address: string; secretKey: Uint8Array; mnemonic: string }> {
-  const mnemonic = await getSenderMnemonic()
-  const { addr, sk } = algosdk.mnemonicToSecretKey(mnemonic)
-  const address = typeof addr === 'string' ? addr : addr.toString()
-  return { address, secretKey: new Uint8Array(sk), mnemonic }
-}
-
 function getAlgodClient(): algosdk.Algodv2 {
-  const algodBase = process.env.ALGOD_BASE_URL ?? 'http://localhost:4001'
-  const algodToken = process.env.ALGOD_API_TOKEN ?? 'a'.repeat(64)
-  const url = new URL(algodBase)
+  const env = getAlgodEnv()
+  const url = new URL(env.algodBaseUrl)
   const server = `${url.protocol}//${url.hostname}`
   const port = Number(url.port || 4001)
-  return new algosdk.Algodv2(algodToken, server, port)
+  return new algosdk.Algodv2(env.algodApiToken, server, port)
 }
 
 function decodeGenesisHash(genesisHash: string | Uint8Array): Uint8Array {
@@ -82,15 +176,6 @@ function decodeGenesisHash(genesisHash: string | Uint8Array): Uint8Array {
     return new Uint8Array(genesisHash)
   }
   return new Uint8Array(Buffer.from(genesisHash, 'base64'))
-}
-
-async function signTransaction(transaction: Transaction, secretKey: Uint8Array): Promise<SignedTransaction> {
-  const encodedTxn = encodeTransaction(transaction)
-  const signature = await ed.signAsync(encodedTxn, secretKey.slice(0, 32))
-  return {
-    transaction,
-    signature,
-  }
 }
 
 async function submitTransaction(transaction: Transaction, algod: algosdk.Algodv2, secretKey: Uint8Array): Promise<{ txId: string }> {
@@ -200,10 +285,6 @@ export function getIndexerEnv(): IndexerTestConfig {
     indexerBaseUrl: process.env.INDEXER_BASE_URL ?? 'http://localhost:8980',
     indexerApiToken: process.env.INDEXER_API_TOKEN ?? 'a'.repeat(64),
   }
-}
-
-export function maybeDescribe(name: string, fn: (env: IndexerTestConfig) => void) {
-  describe(name, () => fn(getIndexerEnv()))
 }
 
 export async function waitForIndexerTransaction(indexer: IndexerClient, txId: string): Promise<void> {

@@ -23,17 +23,19 @@ import {
   getTransactionId,
   groupTransactions,
 } from '@algorandfoundation/algokit-transact'
-import { AlgodClient, ApiError } from '@algorandfoundation/algod-client'
-import { genesisIdIsLocalNet } from '../clients/network-client'
 import {
-  ApplicationLocalReference,
-  AssetHoldingReference,
-  BoxReference,
-  PendingTransactionResponse,
-  SimulateResponse,
-  SimulateUnnamedResourcesAccessed,
-  TransactionParams,
-} from '../temp'
+  AlgodClient,
+  ApiError,
+  type ApplicationLocalReference,
+  type AssetHoldingReference,
+  type BoxReference,
+  type PendingTransactionResponse,
+  type SimulateRequest,
+  type SimulateTransaction,
+  type SimulateUnnamedResourcesAccessed,
+  type TransactionParams,
+} from '@algorandfoundation/algod-client'
+import { genesisIdIsLocalNet } from '../clients/network-client'
 import {
   AppCallMethodCallParams,
   AppCallParams,
@@ -666,7 +668,7 @@ export class TransactionComposer {
         }) satisfies SignedTransaction,
     )
 
-    const simulateRequest = {
+    const simulateRequest: SimulateRequest = {
       txnGroups: [
         {
           txns: signedTransactions,
@@ -677,7 +679,7 @@ export class TransactionComposer {
       fixSigners: true,
     }
 
-    const response: SimulateResponse = await this.algodClient.simulateTransaction(simulateRequest)
+    const response: SimulateTransaction = await this.algodClient.simulateTransaction({ body: simulateRequest })
     const groupResponse = response.txnGroups[0]
 
     // Handle any simulation failures
