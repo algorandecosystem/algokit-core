@@ -248,8 +248,12 @@ export async function waitForConfirmation(
       }
     } catch (e: unknown) {
       if (e instanceof ApiError && e.status === 404) {
+        // Transaction not yet in pool, wait for next block
+        await algodClient.waitForBlock(currentRound)
         currentRound++
         continue
+      } else {
+        throw e
       }
     }
 

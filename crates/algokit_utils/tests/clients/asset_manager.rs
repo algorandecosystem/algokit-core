@@ -44,7 +44,9 @@ async fn test_get_asset_by_id_nonexistent(
         .expect_err("expected asset lookup to fail");
     assert!(matches!(
         error,
-        AssetManagerError::AssetNotFound { asset_id: 999_999_999 }
+        AssetManagerError::AssetNotFound {
+            asset_id: 999_999_999
+        }
     ));
 
     Ok(())

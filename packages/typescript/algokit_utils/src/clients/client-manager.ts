@@ -1,4 +1,10 @@
-import { AlgodClient, ApiError, type BaseHttpRequest, type ClientConfig as HttpClientConfig } from '@algorandfoundation/algod-client'
+import {
+  AlgodClient,
+  ApiError,
+  FetchHttpRequest,
+  type BaseHttpRequest,
+  type ClientConfig as HttpClientConfig,
+} from '@algorandfoundation/algod-client'
 import { IndexerClient } from '@algorandfoundation/indexer-client'
 import { KmdClient } from '@algorandfoundation/kmd-client'
 import { Buffer } from 'buffer'
@@ -13,7 +19,6 @@ import {
   genesisIdIsMainnet,
   genesisIdIsTestnet,
 } from './network-client'
-import { RetryHttpRequest } from './http/retry-http-request'
 
 export interface ClientManagerClients {
   algod: AlgodClient
@@ -412,7 +417,7 @@ export class ClientManager {
     const clientConfig = this.buildHttpClientConfig(config, defaultHeaderName)
     return {
       clientConfig,
-      request: new RetryHttpRequest(clientConfig),
+      request: new FetchHttpRequest(clientConfig),
     }
   }
 

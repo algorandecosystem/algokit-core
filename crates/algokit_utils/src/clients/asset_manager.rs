@@ -185,7 +185,7 @@ impl AssetManager {
             .await
             .map_err(|error| {
                 map_get_asset_by_id_error(&error, asset_id)
-                    .unwrap_or_else(|| AssetManagerError::AlgodClientError { source: error })
+                    .unwrap_or(AssetManagerError::AlgodClientError { source: error })
             })?;
 
         Ok(asset.into())
@@ -205,7 +205,7 @@ impl AssetManager {
             .await
             .map_err(|error| {
                 map_account_asset_information_error(&error, sender_str.as_str(), asset_id)
-                    .unwrap_or_else(|| AssetManagerError::AlgodClientError { source: error })
+                    .unwrap_or(AssetManagerError::AlgodClientError { source: error })
             })
     }
 
@@ -354,22 +354,28 @@ impl AssetManager {
 
 fn map_get_asset_by_id_error(error: &AlgodError, asset_id: u64) -> Option<AssetManagerError> {
     match error {
-        AlgodError::Api { source } => match source {
-            AlgodApiError::GetAssetById { error } => match error {
-                GetAssetByIdError::Status404(_) => {
+        AlgodError::Api {
+            source:
+                AlgodApiError::GetAssetById {
+                    error: GetAssetByIdError::Status404(_),
+                },
+        } => Some(AssetManagerError::AssetNotFound { asset_id }),
+        AlgodError::Api { .. } => None,
+        AlgodError::Http { source } => {
+            // Prefer structured status when available, fallback to message matching for older clients
+            match source {
+                HttpError::StatusError { status, .. } if *status == 404 => {
                     Some(AssetManagerError::AssetNotFound { asset_id })
                 }
-                _ => None,
-            },
-            _ => None,
-        },
-        AlgodError::Http { source } => http_error_message(source).and_then(|message| {
-            if message.contains("status 404") {
-                Some(AssetManagerError::AssetNotFound { asset_id })
-            } else {
-                None
+                _ => http_error_message(source).and_then(|message| {
+                    if message.contains("status 404") {
+                        Some(AssetManagerError::AssetNotFound { asset_id })
+                    } else {
+                        None
+                    }
+                }),
             }
-        }),
+        }
         _ => None,
     }
 }
@@ -380,33 +386,47 @@ fn map_account_asset_information_error(
     asset_id: u64,
 ) -> Option<AssetManagerError> {
     match error {
-        AlgodError::Api { source } => match source {
-            AlgodApiError::AccountAssetInformation { error } => match error {
-                AccountAssetInformationError::Status400(_) => {
+        AlgodError::Api {
+            source:
+                AlgodApiError::AccountAssetInformation {
+                    error: AccountAssetInformationError::Status400(_),
+                },
+        } => Some(AssetManagerError::AccountNotFound {
+            address: address.to_string(),
+        }),
+        AlgodError::Api { .. } => None,
+        AlgodError::Http { source } => {
+            // Prefer structured status when available, fallback to message matching for older clients
+            match source {
+                HttpError::StatusError { status, .. } if *status == 404 => {
+                    Some(AssetManagerError::NotOptedIn {
+                        address: address.to_string(),
+                        asset_id,
+                    })
+                }
+                HttpError::StatusError { status, .. } if *status == 400 => {
                     Some(AssetManagerError::AccountNotFound {
                         address: address.to_string(),
                     })
                 }
-                _ => None,
-            },
-            _ => None,
-        },
-        AlgodError::Http { source } => http_error_message(source).and_then(|message| {
-            if message.contains("status 404") {
-                Some(AssetManagerError::NotOptedIn {
-                    address: address.to_string(),
-                    asset_id,
-                })
-            } else if message.contains("status 400")
-                || message.to_ascii_lowercase().contains("account not found")
-            {
-                Some(AssetManagerError::AccountNotFound {
-                    address: address.to_string(),
-                })
-            } else {
-                None
+                _ => http_error_message(source).and_then(|message| {
+                    if message.contains("status 404") {
+                        Some(AssetManagerError::NotOptedIn {
+                            address: address.to_string(),
+                            asset_id,
+                        })
+                    } else if message.contains("status 400")
+                        || message.to_ascii_lowercase().contains("account not found")
+                    {
+                        Some(AssetManagerError::AccountNotFound {
+                            address: address.to_string(),
+                        })
+                    } else {
+                        None
+                    }
+                }),
             }
-        }),
+        }
         _ => None,
     }
 }
@@ -414,6 +434,7 @@ fn map_account_asset_information_error(
 fn http_error_message(error: &HttpError) -> Option<&str> {
     match error {
         HttpError::RequestError { message } => Some(message.as_str()),
+        HttpError::StatusError { message, .. } => Some(message.as_str()),
     }
 }
 

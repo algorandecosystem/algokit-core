@@ -149,10 +149,9 @@ export async function getSenderAccount(): Promise<{
     }
     throw error
   }
-  const privateKey = secretKey.slice(0, 32)
   const publicKey = secretKey.slice(32)
   const address = addressFromPublicKey(publicKey)
-  return { address, secretKey: concatArrays(privateKey, publicKey), mnemonic }
+  return { address, secretKey, mnemonic }
 }
 
 export async function signTransaction(transaction: Transaction, secretKey: Uint8Array): Promise<SignedTransaction> {

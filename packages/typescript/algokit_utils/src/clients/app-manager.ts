@@ -205,7 +205,6 @@ export class AppManager {
     for (const stateVal of state) {
       const keyRaw = toBytes(stateVal.key)
       const keyBase64 = stateVal.key
-      const keyString = keyBase64
 
       // TODO: we will need to update the algod client to return int here
       if (stateVal.value.type === 1n) {
@@ -225,14 +224,14 @@ export class AppManager {
           valueBase64,
           value: valueStr,
         }
-        stateValues[keyString] = bytesState
+        stateValues[keyBase64] = bytesState
       } else if (stateVal.value.type === 2n) {
         const uintState: UintAppState = {
           keyRaw,
           keyBase64,
           value: BigInt(stateVal.value.uint),
         }
-        stateValues[keyString] = uintState
+        stateValues[keyBase64] = uintState
       } else {
         throw new Error(`Unknown state data type: ${stateVal.value.type}`)
       }

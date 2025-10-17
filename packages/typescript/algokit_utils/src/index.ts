@@ -3,7 +3,6 @@ export * from './clients/asset-manager'
 export * from './clients/client-manager'
 export * from './clients/app-manager'
 export * from './clients/network-client'
-export * from './clients/http/retry-http-request'
 export * from './testing/indexer'
 
 export * from '@algorandfoundation/algokit-transact'
