@@ -276,21 +276,26 @@ impl AssetManager {
             asset_creators.insert(asset_id, creator);
         }
 
-        let mut bulk_results = Vec::with_capacity(asset_ids.len());
+        let asset_creator_pairs: Vec<(u64, Address)> = asset_ids
+            .iter()
+            .map(|&asset_id| {
+                let creator = asset_creators
+                    .remove(&asset_id)
+                    .expect("Creator information should be available for all asset IDs");
+                (asset_id, creator)
+            })
+            .collect();
 
-        for asset_chunk in asset_ids.chunks(MAX_TX_GROUP_SIZE) {
+        let mut bulk_results = Vec::with_capacity(asset_creator_pairs.len());
+
+        for asset_chunk in asset_creator_pairs.chunks(MAX_TX_GROUP_SIZE) {
             let mut composer = (self.new_composer)(None);
 
-            for &asset_id in asset_chunk {
-                let creator = asset_creators
-                    .get(&asset_id)
-                    .cloned()
-                    .expect("Creator information should be available for all asset IDs");
-
+            for (asset_id, creator) in asset_chunk.iter() {
                 let opt_out_params = AssetOptOutParams {
                     sender: account.clone(),
-                    asset_id,
-                    close_remainder_to: Some(creator),
+                    asset_id: *asset_id,
+                    close_remainder_to: Some(creator.clone()),
                     ..Default::default()
                 };
 
@@ -305,8 +310,8 @@ impl AssetManager {
                 .map_err(|e| AssetManagerError::ComposerError { source: e })?;
 
             bulk_results.extend(asset_chunk.iter().zip(composer_result.results.iter()).map(
-                |(&asset_id, result)| BulkAssetOptInOutResult {
-                    asset_id,
+                |((asset_id, _), result)| BulkAssetOptInOutResult {
+                    asset_id: *asset_id,
                     transaction_id: result.transaction_id.clone(),
                 },
             ));

@@ -313,19 +313,7 @@ async fn test_bulk_opt_out_batches(
 
     let asset_manager = algorand_fixture.algorand_client.asset();
 
-    for asset_chunk in asset_ids.chunks(MAX_TX_GROUP_SIZE) {
-        let mut composer = algorand_fixture.algorand_client.new_composer(None);
-        for &asset_id in asset_chunk {
-            let opt_in_params = AssetOptInParams {
-                sender: test_address.clone(),
-                signer: Some(Arc::new(test_account.clone())),
-                asset_id,
-                ..Default::default()
-            };
-            composer.add_asset_opt_in(opt_in_params)?;
-        }
-        composer.send(Default::default()).await?;
-    }
+    asset_manager.bulk_opt_in(&test_address, &asset_ids).await?;
 
     let results = asset_manager
         .bulk_opt_out(&test_address, &asset_ids, None)
