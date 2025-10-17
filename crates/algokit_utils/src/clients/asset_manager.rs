@@ -1,8 +1,16 @@
-use algod_client::apis::{AlgodClient, Error as AlgodError};
+use algod_client::apis::{
+    AlgodApiError, AlgodClient, Error as AlgodError,
+    account_asset_information::AccountAssetInformationError, get_asset_by_id::GetAssetByIdError,
+};
 use algod_client::models::{AccountAssetInformation as AlgodAccountAssetInformation, Asset};
+use algokit_http_client::HttpError;
 use algokit_transact::{Address, constants::MAX_TX_GROUP_SIZE};
 use snafu::Snafu;
-use std::{collections::HashMap, str::FromStr, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    str::FromStr,
+    sync::Arc,
+};
 
 use crate::transactions::{
     AssetOptInParams, AssetOptOutParams, ComposerError, TransactionComposer,
@@ -175,7 +183,10 @@ impl AssetManager {
             .algod_client
             .get_asset_by_id(asset_id)
             .await
-            .map_err(|e| AssetManagerError::AlgodClientError { source: e })?;
+            .map_err(|error| {
+                map_get_asset_by_id_error(&error, asset_id)
+                    .unwrap_or_else(|| AssetManagerError::AlgodClientError { source: error })
+            })?;
 
         Ok(asset.into())
     }
@@ -188,10 +199,14 @@ impl AssetManager {
         sender: &Address,
         asset_id: u64,
     ) -> Result<AlgodAccountAssetInformation, AssetManagerError> {
+        let sender_str = sender.to_string();
         self.algod_client
-            .account_asset_information(&sender.to_string(), asset_id, None)
+            .account_asset_information(sender_str.as_str(), asset_id, None)
             .await
-            .map_err(|e| AssetManagerError::AlgodClientError { source: e })
+            .map_err(|error| {
+                map_account_asset_information_error(&error, sender_str.as_str(), asset_id)
+                    .unwrap_or_else(|| AssetManagerError::AlgodClientError { source: error })
+            })
     }
 
     pub async fn bulk_opt_in(
@@ -203,9 +218,17 @@ impl AssetManager {
             return Ok(Vec::new());
         }
 
-        let mut bulk_results = Vec::with_capacity(asset_ids.len());
+        // Ignore duplicate asset IDs while preserving input order
+        let mut seen: HashSet<u64> = HashSet::with_capacity(asset_ids.len());
+        let unique_ids: Vec<u64> = asset_ids
+            .iter()
+            .copied()
+            .filter(|id| seen.insert(*id))
+            .collect();
 
-        for asset_chunk in asset_ids.chunks(MAX_TX_GROUP_SIZE) {
+        let mut bulk_results = Vec::with_capacity(unique_ids.len());
+
+        for asset_chunk in unique_ids.chunks(MAX_TX_GROUP_SIZE) {
             let mut composer = (self.new_composer)(None);
 
             for &asset_id in asset_chunk {
@@ -246,11 +269,19 @@ impl AssetManager {
             return Ok(Vec::new());
         }
 
+        // Ignore duplicate asset IDs while preserving input order
+        let mut seen: HashSet<u64> = HashSet::with_capacity(asset_ids.len());
+        let unique_ids: Vec<u64> = asset_ids
+            .iter()
+            .copied()
+            .filter(|id| seen.insert(*id))
+            .collect();
+
         let should_check_balance = ensure_zero_balance.unwrap_or(false);
 
         // If we need to check balances, verify they are all zero
         if should_check_balance {
-            for &asset_id in asset_ids {
+            for &asset_id in unique_ids.iter() {
                 let account_info = self.get_account_information(account, asset_id).await?;
                 let balance = account_info
                     .asset_holding
@@ -268,15 +299,15 @@ impl AssetManager {
         }
 
         // Fetch asset information to get creators
-        let mut asset_creators = HashMap::with_capacity(asset_ids.len());
-        for &asset_id in asset_ids {
+        let mut asset_creators = HashMap::with_capacity(unique_ids.len());
+        for &asset_id in unique_ids.iter() {
             let asset_info = self.get_by_id(asset_id).await?;
             let creator = Address::from_str(&asset_info.creator)
                 .map_err(|_| AssetManagerError::AssetNotFound { asset_id })?;
             asset_creators.insert(asset_id, creator);
         }
 
-        let asset_creator_pairs: Vec<(u64, Address)> = asset_ids
+        let asset_creator_pairs: Vec<(u64, Address)> = unique_ids
             .iter()
             .map(|&asset_id| {
                 let creator = asset_creators
@@ -318,6 +349,71 @@ impl AssetManager {
         }
 
         Ok(bulk_results)
+    }
+}
+
+fn map_get_asset_by_id_error(error: &AlgodError, asset_id: u64) -> Option<AssetManagerError> {
+    match error {
+        AlgodError::Api { source } => match source {
+            AlgodApiError::GetAssetById { error } => match error {
+                GetAssetByIdError::Status404(_) => {
+                    Some(AssetManagerError::AssetNotFound { asset_id })
+                }
+                _ => None,
+            },
+            _ => None,
+        },
+        AlgodError::Http { source } => http_error_message(source).and_then(|message| {
+            if message.contains("status 404") {
+                Some(AssetManagerError::AssetNotFound { asset_id })
+            } else {
+                None
+            }
+        }),
+        _ => None,
+    }
+}
+
+fn map_account_asset_information_error(
+    error: &AlgodError,
+    address: &str,
+    asset_id: u64,
+) -> Option<AssetManagerError> {
+    match error {
+        AlgodError::Api { source } => match source {
+            AlgodApiError::AccountAssetInformation { error } => match error {
+                AccountAssetInformationError::Status400(_) => {
+                    Some(AssetManagerError::AccountNotFound {
+                        address: address.to_string(),
+                    })
+                }
+                _ => None,
+            },
+            _ => None,
+        },
+        AlgodError::Http { source } => http_error_message(source).and_then(|message| {
+            if message.contains("status 404") {
+                Some(AssetManagerError::NotOptedIn {
+                    address: address.to_string(),
+                    asset_id,
+                })
+            } else if message.contains("status 400")
+                || message.to_ascii_lowercase().contains("account not found")
+            {
+                Some(AssetManagerError::AccountNotFound {
+                    address: address.to_string(),
+                })
+            } else {
+                None
+            }
+        }),
+        _ => None,
+    }
+}
+
+fn http_error_message(error: &HttpError) -> Option<&str> {
+    match error {
+        HttpError::RequestError { message } => Some(message.as_str()),
     }
 }
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createClientManager } from './fixtures'
+import { createClientManager } from '../fixtures'
 
 describe.sequential('ClientManager integration', () => {
   it('caches network details across sequential calls', async () => {

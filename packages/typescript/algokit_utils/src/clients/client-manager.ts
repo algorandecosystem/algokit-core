@@ -33,20 +33,6 @@ type HttpClientFactoryResult = {
 
 type HttpClientFactory = (config: AlgoClientConfig, defaultHeaderName: string) => HttpClientFactoryResult
 
-export type ClientManagerErrorCode = 'INDEXER_NOT_CONFIGURED' | 'KMD_NOT_CONFIGURED' | 'ENVIRONMENT_MISSING'
-
-export class ClientManagerError extends Error {
-  readonly code: ClientManagerErrorCode
-  readonly details?: Record<string, unknown>
-
-  constructor(code: ClientManagerErrorCode, message: string, details?: Record<string, unknown>) {
-    super(message)
-    this.name = 'ClientManagerError'
-    this.code = code
-    this.details = details
-  }
-}
-
 export class ClientManager {
   private static httpClientFactory?: HttpClientFactory
   private readonly algodClient: AlgodClient
@@ -77,7 +63,7 @@ export class ClientManager {
   /** Returns an Indexer API client or throws if not configured. */
   get indexer(): IndexerClient {
     if (!this.indexerClient) {
-      throw new ClientManagerError('INDEXER_NOT_CONFIGURED', 'Attempt to use Indexer client without configuring one')
+      throw new Error('Attempt to use Indexer client without configuring one')
     }
     return this.indexerClient
   }
@@ -90,7 +76,7 @@ export class ClientManager {
   /** Returns a KMD API client or throws if not configured. */
   get kmd(): KmdClient {
     if (!this.kmdClient) {
-      throw new ClientManagerError('KMD_NOT_CONFIGURED', 'Attempt to use KMD client without configuring one')
+      throw new Error('Attempt to use KMD client without configuring one')
     }
     return this.kmdClient
   }
@@ -250,9 +236,7 @@ export class ClientManager {
   static getIndexerConfigFromEnvironment(): AlgoClientConfig {
     const server = process.env.INDEXER_SERVER
     if (!server) {
-      throw new ClientManagerError('ENVIRONMENT_MISSING', 'INDEXER_SERVER environment variable not found', {
-        variable: 'INDEXER_SERVER',
-      })
+      throw new Error('INDEXER_SERVER environment variable not found')
     }
 
     const port = this.parsePort(process.env.INDEXER_PORT)
@@ -272,9 +256,7 @@ export class ClientManager {
   static getAlgodConfigFromEnvironment(): AlgoClientConfig {
     const server = process.env.ALGOD_SERVER
     if (!server) {
-      throw new ClientManagerError('ENVIRONMENT_MISSING', 'ALGOD_SERVER environment variable not found', {
-        variable: 'ALGOD_SERVER',
-      })
+      throw new Error('ALGOD_SERVER environment variable not found')
     }
 
     const port = this.parsePort(process.env.ALGOD_PORT)
@@ -295,9 +277,7 @@ export class ClientManager {
   static getKmdConfigFromEnvironment(fallbackAlgodConfig?: AlgoClientConfig): AlgoClientConfig {
     const server = process.env.KMD_SERVER ?? fallbackAlgodConfig?.server ?? process.env.ALGOD_SERVER
     if (!server) {
-      throw new ClientManagerError('ENVIRONMENT_MISSING', 'KMD_SERVER environment variable not found', {
-        variable: 'KMD_SERVER',
-      })
+      throw new Error('KMD_SERVER environment variable not found')
     }
 
     const port = this.parsePort(process.env.KMD_PORT) ?? fallbackAlgodConfig?.port ?? this.parsePort(process.env.ALGOD_PORT) ?? 4002

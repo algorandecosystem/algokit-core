@@ -25,7 +25,6 @@ import {
 } from '@algorandfoundation/algokit-transact'
 import {
   AlgodClient,
-  ApiError,
   type ApplicationLocalReference,
   type AssetHoldingReference,
   type BoxReference,
@@ -95,6 +94,7 @@ import {
   TransactionSigner,
   TransactionWithSigner,
   TransactionWithSignerComposerTransaction,
+  waitForConfirmation,
 } from './common'
 import { FeeDelta, FeePriority } from './fee-coverage'
 import {
@@ -467,7 +467,7 @@ export class TransactionComposer {
           transaction = buildNonParticipationKeyRegistration(ctxn.data, header)
           break
         default:
-          throw new Error('Unsupported transaction type encountered while building transaction group')
+          throw new Error(`Unsupported transaction type: ${(ctxn as { type: ComposerTransactionType }).type}`)
       }
 
       if (calculateFee) {
@@ -810,7 +810,7 @@ export class TransactionComposer {
     const confirmations = new Array<PendingTransactionResponse>()
     if (params?.maxRoundsToWaitForConfirmation) {
       for (const id of transactionIds) {
-        const confirmation = await this.waitForConfirmation(id, waitRounds)
+        const confirmation = await waitForConfirmation(this.algodClient, id, waitRounds)
         confirmations.push(confirmation)
       }
     }
@@ -835,36 +835,6 @@ export class TransactionComposer {
 
   public count(): number {
     return this.transactions.length
-  }
-
-  private async waitForConfirmation(txId: string, maxRoundsToWait: number): Promise<PendingTransactionResponse> {
-    const status = await this.algodClient.getStatus()
-    const startRound = status.lastRound + 1n
-    let currentRound = startRound
-    while (currentRound < startRound + BigInt(maxRoundsToWait)) {
-      try {
-        const pendingInfo = await this.algodClient.pendingTransactionInformation(txId)
-        const confirmedRound = pendingInfo.confirmedRound
-        if (confirmedRound !== undefined && confirmedRound > 0n) {
-          return pendingInfo
-        } else {
-          const poolError = pendingInfo.poolError
-          if (poolError !== undefined && poolError.length > 0) {
-            // If there was a pool error, then the transaction has been rejected!
-            throw new Error(`Transaction ${txId} was rejected; pool error: ${poolError}`)
-          }
-        }
-      } catch (e: unknown) {
-        if (e instanceof ApiError && e.status === 404) {
-          currentRound++
-          continue
-        }
-      }
-      await this.algodClient.waitForBlock(currentRound)
-      currentRound++
-    }
-
-    throw new Error(`Transaction ${txId} unconfirmed after ${maxRoundsToWait} rounds`)
   }
 
   private parseAbiReturnValues(confirmations: PendingTransactionResponse[]): (ABIReturn | undefined)[] {

@@ -2,6 +2,7 @@ import sha512 from 'js-sha512'
 import { getAppAddress } from '@algorandfoundation/algokit-common'
 import { AlgodClient, TealKeyValueStore } from '@algorandfoundation/algod-client'
 import { Buffer } from 'buffer'
+import { bytesToBase64, bytesToUtf8, ensureDecodedBytes, toBytes } from '../util'
 
 export enum TealTemplateValueType {
   Int = 'int',
@@ -139,8 +140,8 @@ export class AppManager {
     return {
       appId,
       appAddress: getAppAddress(appId),
-      approvalProgram: AppManager.toBytes(app.params.approvalProgram),
-      clearStateProgram: AppManager.toBytes(app.params.clearStateProgram),
+      approvalProgram: toBytes(app.params.approvalProgram),
+      clearStateProgram: toBytes(app.params.clearStateProgram),
       creator: app.params.creator,
       localInts: Number(app.params.localStateSchema?.numUint ?? 0),
       localByteSlices: Number(app.params.localStateSchema?.numByteSlice ?? 0),
@@ -172,8 +173,8 @@ export class AppManager {
       const nameRaw = new Uint8Array(b.name)
       return {
         nameRaw,
-        nameBase64: AppManager.bytesToBase64(nameRaw),
-        name: AppManager.bytesToUtf8(nameRaw),
+        nameBase64: bytesToBase64(nameRaw),
+        name: bytesToUtf8(nameRaw),
       }
     })
   }
@@ -182,7 +183,7 @@ export class AppManager {
     // Algod expects goal-arg style encoding for box name query param in 'encoding:value'.
     // However our HTTP client decodes base64 automatically into bytes for the Box model fields.
     // The API still requires 'b64:<base64>' for the query parameter value.
-    const processedBoxName = `b64:${AppManager.bytesToBase64(boxName)}`
+    const processedBoxName = `b64:${bytesToBase64(boxName)}`
 
     const boxResult = await this.algodClient.getApplicationBoxByName(appId, {
       name: processedBoxName,
@@ -198,38 +199,18 @@ export class AppManager {
     return values
   }
 
-  private static ensureDecodedBytes(bytes: Uint8Array): Uint8Array {
-    try {
-      const buffer = Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength)
-      const str = buffer.toString('utf8')
-      if (
-        str.length > 0 &&
-        /^[A-Za-z0-9+/]*={0,2}$/.test(str) &&
-        (str.includes('=') || str.includes('+') || str.includes('/') || (str.length % 4 === 0 && str.length >= 8))
-      ) {
-        const decoded = Buffer.from(str, 'base64')
-        if (!decoded.equals(buffer)) {
-          return new Uint8Array(decoded)
-        }
-      }
-    } catch {
-      // Not valid UTF-8 or base64, return as-is
-    }
-    return bytes
-  }
-
   static decodeAppState(state: TealKeyValueStore): Record<string, AppState> {
     const stateValues: Record<string, AppState> = {}
 
     for (const stateVal of state) {
-      const keyRaw = AppManager.toBytes(stateVal.key)
+      const keyRaw = toBytes(stateVal.key)
       const keyBase64 = stateVal.key
       const keyString = keyBase64
 
       // TODO: we will need to update the algod client to return int here
       if (stateVal.value.type === 1n) {
-        const valueRaw = AppManager.ensureDecodedBytes(new Uint8Array(stateVal.value.bytes))
-        const valueBase64 = AppManager.bytesToBase64(valueRaw)
+        const valueRaw = ensureDecodedBytes(new Uint8Array(stateVal.value.bytes))
+        const valueBase64 = bytesToBase64(valueRaw)
         let valueStr: string
         try {
           valueStr = new TextDecoder('utf-8', { fatal: true }).decode(valueRaw)
@@ -344,22 +325,6 @@ export class AppManager {
 
   private static isValidTokenCharacter(ch: string): boolean {
     return /[a-zA-Z0-9_]/.test(ch)
-  }
-
-  private static toBytes(value: Uint8Array | string): Uint8Array {
-    if (typeof value === 'string') {
-      return Uint8Array.from(Buffer.from(value, 'base64'))
-    }
-
-    return new Uint8Array(value)
-  }
-
-  private static bytesToBase64(value: Uint8Array): string {
-    return Buffer.from(value.buffer, value.byteOffset, value.byteLength).toString('base64')
-  }
-
-  private static bytesToUtf8(value: Uint8Array): string {
-    return Buffer.from(value.buffer, value.byteOffset, value.byteLength).toString('utf-8')
   }
 
   static replaceTealTemplateDeployTimeControlParams(tealTemplateCode: string, params: DeploymentMetadata): string {

@@ -38,11 +38,13 @@ async fn test_get_asset_by_id_nonexistent(
     let asset_manager = algorand_fixture.algorand_client.asset();
 
     // Test non-existent asset
-    let result = asset_manager.get_by_id(999999999).await;
-    assert!(result.is_err());
+    let error = asset_manager
+        .get_by_id(999_999_999)
+        .await
+        .expect_err("expected asset lookup to fail");
     assert!(matches!(
-        result.unwrap_err(),
-        AssetManagerError::AlgodClientError { source: _ }
+        error,
+        AssetManagerError::AssetNotFound { asset_id: 999_999_999 }
     ));
 
     Ok(())
@@ -93,11 +95,15 @@ async fn test_get_account_information_not_opted_in(
         .get_account_information(&test_account.account().address(), asset_id)
         .await;
 
-    // For non-opted-in accounts, algod returns 404 which becomes an AlgodClientError
-    assert!(result.is_err());
+    // For non-opted-in accounts, we should surface a dedicated NotOptedIn error
+    let error = result.expect_err("expected account asset lookup to fail");
+    let expected_address = test_account.account().address().to_string();
     assert!(matches!(
-        result.unwrap_err(),
-        AssetManagerError::AlgodClientError { source: _ }
+        error,
+        AssetManagerError::NotOptedIn {
+            ref address,
+            asset_id: err_asset_id
+        } if address == &expected_address && err_asset_id == asset_id
     ));
 
     Ok(())

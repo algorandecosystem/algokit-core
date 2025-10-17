@@ -47,8 +47,6 @@
     "@algorandfoundation/algod-client": "../algod_client/dist",
     "@algorandfoundation/algokit-transact": "../algokit_transact/dist",
     "@algorandfoundation/indexer-client": "../indexer_client/dist",
-    "@algorandfoundation/kmd-client": "../kmd_client/dist",
-    "@noble/ed25519": "^3.0.0",
-    "algosdk": "^3.5.0"
+    "@algorandfoundation/kmd-client": "../kmd_client/dist"
   }
 }
