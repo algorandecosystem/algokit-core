@@ -13,21 +13,21 @@ sdk_txn = core_to_sdk_transaction(core_txn)
 
 
 def test_bench_core_encode(benchmark):
-    """Benchmark encoding a simple payment transaction"""
+    """Benchmark encoding a transaction using algokit_transact (ffi)"""
     def encode():
         encode_transaction(core_txn)
 
     benchmark(encode)
 
 def test_bench_sdk_encode(benchmark):
-    """Benchmark encoding a simple payment transaction using the SDK function"""
+    """Benchmark encoding a transaction using the SDK function"""
     def encode():
         encoding.msgpack_encode(sdk_txn)
 
     benchmark(encode)
 
 def test_bench_core_decode(benchmark):
-    """Benchmark decoding a simple payment transaction"""
+    """Benchmark decoding a transaction using algokit_transact (ffi)"""
     encoded_txn = encode_transaction(core_txn)
 
     def decode():
@@ -36,7 +36,7 @@ def test_bench_core_decode(benchmark):
     benchmark(decode)
 
 def test_bench_sdk_decode(benchmark):
-    """Benchmark decoding a simple payment transaction using the SDK function"""
+    """Benchmark decoding a transaction using the SDK function"""
     sdk_encoded = encoding.msgpack_encode(sdk_txn)
 
     def decode():
