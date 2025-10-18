@@ -14,7 +14,6 @@ use serde::{Deserialize, Serialize};
 /// VersionsResponse is the response to `GET /versions`
 /// friendly:VersionsResponse
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct VersionsResponse {
     #[serde(rename = "versions", skip_serializing_if = "Option::is_none")]
     pub versions: Option<Vec<String>>,

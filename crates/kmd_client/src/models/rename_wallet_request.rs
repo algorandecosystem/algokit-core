@@ -13,7 +13,6 @@ use serde::{Deserialize, Serialize};
 
 /// APIV1POSTWalletRenameRequest is the request for `POST /v1/wallet/rename`
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct RenameWalletRequest {
     #[serde(rename = "wallet_id", skip_serializing_if = "Option::is_none")]
     pub wallet_id: Option<String>,

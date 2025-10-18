@@ -23,7 +23,6 @@ use crate::models::{ErrorResponse, RawTransaction};
 /// struct for typed errors of method [`raw_transaction`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum RawTransactionError {
     Status400(ErrorResponse),
     Status401(ErrorResponse),

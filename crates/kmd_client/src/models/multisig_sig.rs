@@ -15,7 +15,6 @@ use crate::models::MultisigSubsig;
 
 /// MultisigSig is the structure that holds multiple Subsigs
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct MultisigSig {
     #[serde(rename = "Subsigs", skip_serializing_if = "Option::is_none")]
     pub subsigs: Option<Vec<MultisigSubsig>>,

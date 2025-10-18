@@ -22,7 +22,6 @@ use crate::models::{ErrorResponse, LightBlockHeaderProof};
 /// struct for typed errors of method [`get_light_block_header_proof`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum GetLightBlockHeaderProofError {
     Status401(ErrorResponse),
     Status404(ErrorResponse),

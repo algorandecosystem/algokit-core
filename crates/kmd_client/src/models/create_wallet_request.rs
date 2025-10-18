@@ -15,7 +15,6 @@ use crate::models::MasterDerivationKey;
 
 /// APIV1POSTWalletRequest is the request for `POST /v1/wallet`
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct CreateWalletRequest {
     #[serde(
         rename = "master_derivation_key",

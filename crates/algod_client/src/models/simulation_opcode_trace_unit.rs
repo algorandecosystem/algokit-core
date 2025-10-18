@@ -9,14 +9,9 @@
  */
 
 use crate::models;
-#[cfg(not(feature = "ffi_uniffi"))]
+use algokit_transact::AlgorandMsgpack;
 use algokit_transact::SignedTransaction as AlgokitSignedTransaction;
 use serde::{Deserialize, Serialize};
-
-#[cfg(feature = "ffi_uniffi")]
-use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
-
-use algokit_transact::AlgorandMsgpack;
 
 use crate::models::ApplicationStateOperation;
 use crate::models::AvmValue;
@@ -24,7 +19,6 @@ use crate::models::ScratchChange;
 
 /// The set of trace information and effect from evaluating a single opcode.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct SimulationOpcodeTraceUnit {
     /// The program counter of the current opcode being evaluated.
     #[serde(rename = "pc")]

@@ -22,29 +22,28 @@ use crate::models::StateSchema;
 /// data/transactions/application.go : ApplicationCallTxnFields
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct TransactionApplication {
-    /// \[apid\] ID of the application being configured or empty if creating.
+    /// [apid] ID of the application being configured or empty if creating.
     #[serde(rename = "application-id")]
     pub application_id: u64,
     #[serde(rename = "on-completion")]
     pub on_completion: OnCompletion,
-    /// \[apaa\] transaction specific arguments accessed from the application's approval-program and clear-state-program.
+    /// [apaa] transaction specific arguments accessed from the application's approval-program and clear-state-program.
     #[serde(rename = "application-args", skip_serializing_if = "Option::is_none")]
     pub application_args: Option<Vec<String>>,
-    /// \[al\] Access unifies `accounts`, `foreign-apps`, `foreign-assets`, and `box-references` under a single list. If access is non-empty, these lists must be empty. If access is empty, those lists may be non-empty.
+    /// [al] Access unifies `accounts`, `foreign-apps`, `foreign-assets`, and `box-references` under a single list. If access is non-empty, these lists must be empty. If access is empty, those lists may be non-empty.
     #[serde(rename = "access", skip_serializing_if = "Option::is_none")]
     pub access: Option<Vec<ResourceRef>>,
-    /// \[apat\] List of accounts in addition to the sender that may be accessed from the application's approval-program and clear-state-program.
+    /// [apat] List of accounts in addition to the sender that may be accessed from the application's approval-program and clear-state-program.
     #[serde(rename = "accounts", skip_serializing_if = "Option::is_none")]
     pub accounts: Option<Vec<String>>,
-    /// \[apbx\] the boxes that can be accessed by this transaction (and others in the same group).
+    /// [apbx] the boxes that can be accessed by this transaction (and others in the same group).
     #[serde(rename = "box-references", skip_serializing_if = "Option::is_none")]
     pub box_references: Option<Vec<BoxReference>>,
-    /// \[apfa\] Lists the applications in addition to the application-id whose global states may be accessed by this application's approval-program and clear-state-program. The access is read-only.
+    /// [apfa] Lists the applications in addition to the application-id whose global states may be accessed by this application's approval-program and clear-state-program. The access is read-only.
     #[serde(rename = "foreign-apps", skip_serializing_if = "Option::is_none")]
     pub foreign_apps: Option<Vec<u64>>,
-    /// \[apas\] lists the assets whose parameters may be accessed by this application's ApprovalProgram and ClearStateProgram. The access is read-only.
+    /// [apas] lists the assets whose parameters may be accessed by this application's ApprovalProgram and ClearStateProgram. The access is read-only.
     #[serde(rename = "foreign-assets", skip_serializing_if = "Option::is_none")]
     pub foreign_assets: Option<Vec<u64>>,
     #[serde(rename = "local-state-schema", skip_serializing_if = "Option::is_none")]
@@ -54,24 +53,24 @@ pub struct TransactionApplication {
         skip_serializing_if = "Option::is_none"
     )]
     pub global_state_schema: Option<StateSchema>,
-    /// \[apap\] Logic executed for every application transaction, except when on-completion is set to "clear". It can read and write global state for the application, as well as account-specific local state. Approval programs may reject the transaction.
+    /// [apap] Logic executed for every application transaction, except when on-completion is set to "clear". It can read and write global state for the application, as well as account-specific local state. Approval programs may reject the transaction.
     #[serde_as(as = "Option<serde_with::base64::Base64>")]
     #[serde(rename = "approval-program", skip_serializing_if = "Option::is_none")]
     pub approval_program: Option<Vec<u8>>,
-    /// \[apsu\] Logic executed for application transactions with on-completion set to "clear". It can read and write global state for the application, as well as account-specific local state. Clear state programs cannot reject the transaction.
+    /// [apsu] Logic executed for application transactions with on-completion set to "clear". It can read and write global state for the application, as well as account-specific local state. Clear state programs cannot reject the transaction.
     #[serde_as(as = "Option<serde_with::base64::Base64>")]
     #[serde(
         rename = "clear-state-program",
         skip_serializing_if = "Option::is_none"
     )]
     pub clear_state_program: Option<Vec<u8>>,
-    /// \[epp\] specifies the additional app program len requested in pages.
+    /// [epp] specifies the additional app program len requested in pages.
     #[serde(
         rename = "extra-program-pages",
         skip_serializing_if = "Option::is_none"
     )]
     pub extra_program_pages: Option<u32>,
-    /// \[aprv\] the lowest application version for which this transaction should immediately fail. 0 indicates that no version check should be performed.
+    /// [aprv] the lowest application version for which this transaction should immediately fail. 0 indicates that no version check should be performed.
     #[serde(rename = "reject-version", skip_serializing_if = "Option::is_none")]
     pub reject_version: Option<u64>,
 }

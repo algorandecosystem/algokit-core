@@ -12,24 +12,23 @@ use serde::{Deserialize, Serialize};
 
 /// Fields relating to rewards,
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct BlockRewards {
-    /// \[fees\] accepts transaction fees, it can only spend to the incentive pool.
+    /// [fees] accepts transaction fees, it can only spend to the incentive pool.
     #[serde(rename = "fee-sink")]
     pub fee_sink: String,
-    /// \[rwcalr\] number of leftover MicroAlgos after the distribution of rewards-rate MicroAlgos for every reward unit in the next round.
+    /// [rwcalr] number of leftover MicroAlgos after the distribution of rewards-rate MicroAlgos for every reward unit in the next round.
     #[serde(rename = "rewards-calculation-round")]
     pub rewards_calculation_round: u64,
-    /// \[earn\] How many rewards, in MicroAlgos, have been distributed to each RewardUnit of MicroAlgos since genesis.
+    /// [earn] How many rewards, in MicroAlgos, have been distributed to each RewardUnit of MicroAlgos since genesis.
     #[serde(rename = "rewards-level")]
     pub rewards_level: u64,
-    /// \[rwd\] accepts periodic injections from the fee-sink and continually redistributes them as rewards.
+    /// [rwd] accepts periodic injections from the fee-sink and continually redistributes them as rewards.
     #[serde(rename = "rewards-pool")]
     pub rewards_pool: String,
-    /// \[rate\] Number of new MicroAlgos added to the participation stake from rewards at the next round.
+    /// [rate] Number of new MicroAlgos added to the participation stake from rewards at the next round.
     #[serde(rename = "rewards-rate")]
     pub rewards_rate: u64,
-    /// \[frac\] Number of leftover MicroAlgos after the distribution of RewardsRate/rewardUnits MicroAlgos for every reward unit in the next round.
+    /// [frac] Number of leftover MicroAlgos after the distribution of RewardsRate/rewardUnits MicroAlgos for every reward unit in the next round.
     #[serde(rename = "rewards-residue")]
     pub rewards_residue: u64,
 }

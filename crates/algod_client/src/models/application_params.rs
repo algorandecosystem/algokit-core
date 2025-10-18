@@ -9,15 +9,11 @@
  */
 
 use crate::models;
-#[cfg(not(feature = "ffi_uniffi"))]
-use algokit_transact::SignedTransaction as AlgokitSignedTransaction;
 use serde::{Deserialize, Serialize};
 use serde_with::{Bytes, serde_as};
 
-#[cfg(feature = "ffi_uniffi")]
-use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
-
 use algokit_transact::AlgorandMsgpack;
+use algokit_transact::SignedTransaction as AlgokitSignedTransaction;
 
 use crate::models::ApplicationStateSchema;
 use crate::models::TealKeyValueStore;
@@ -25,20 +21,19 @@ use crate::models::TealKeyValueStore;
 /// Stores the global information associated with an application.
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct ApplicationParams {
     /// The address that created this application. This is the address where the parameters and global state for this application can be found.
     #[serde(rename = "creator")]
     pub creator: String,
-    /// \[approv\] approval program.
+    /// [approv] approval program.
     #[serde_as(as = "serde_with::base64::Base64")]
     #[serde(rename = "approval-program")]
     pub approval_program: Vec<u8>,
-    /// \[clearp\] approval program.
+    /// [clearp] approval program.
     #[serde_as(as = "serde_with::base64::Base64")]
     #[serde(rename = "clear-state-program")]
     pub clear_state_program: Vec<u8>,
-    /// \[epp\] the amount of extra program pages available to this app.
+    /// [epp] the amount of extra program pages available to this app.
     #[serde(
         rename = "extra-program-pages",
         skip_serializing_if = "Option::is_none"
@@ -53,7 +48,7 @@ pub struct ApplicationParams {
     pub global_state_schema: Option<ApplicationStateSchema>,
     #[serde(rename = "global-state", skip_serializing_if = "Option::is_none")]
     pub global_state: Option<TealKeyValueStore>,
-    /// \[v\] the number of updates to the application programs
+    /// [v] the number of updates to the application programs
     #[serde(rename = "version", skip_serializing_if = "Option::is_none")]
     pub version: Option<u64>,
 }

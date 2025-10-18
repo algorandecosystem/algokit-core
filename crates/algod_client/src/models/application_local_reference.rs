@@ -9,18 +9,12 @@
  */
 
 use crate::models;
-#[cfg(not(feature = "ffi_uniffi"))]
+use algokit_transact::AlgorandMsgpack;
 use algokit_transact::SignedTransaction as AlgokitSignedTransaction;
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "ffi_uniffi")]
-use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
-
-use algokit_transact::AlgorandMsgpack;
-
 /// References an account's local state for an application.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct ApplicationLocalReference {
     /// Address of the account with the local state.
     #[serde(rename = "account")]

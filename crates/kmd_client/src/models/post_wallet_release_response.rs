@@ -14,7 +14,6 @@ use serde::{Deserialize, Serialize};
 /// APIV1POSTWalletReleaseResponse is the response to `POST /v1/wallet/release`
 /// friendly:ReleaseWalletHandleTokenResponse
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct PostWalletReleaseResponse {
     #[serde(rename = "error", skip_serializing_if = "Option::is_none")]
     pub error: Option<bool>,

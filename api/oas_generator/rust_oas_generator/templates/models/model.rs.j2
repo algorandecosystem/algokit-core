@@ -12,22 +12,23 @@
 {% from 'macros/enum_macros.j2' import generate_string_enum %}
 
 use crate::models;
-use serde::{Deserialize, Serialize};
+{% if not ffi %} use serde::{Deserialize, Serialize}; {% endif %}
+{% if ffi %} use algod_client::models::{{ schema.rust_struct_name }} as Rust{{ schema.rust_struct_name }}; {% endif %}
 {% if schema.is_string_enum %}
 use std::fmt;
 use std::str::FromStr;
 {% endif %}
-{% if schema.has_msgpack_fields %}
+{% if not ffi and schema.has_msgpack_fields %}
 use serde_with::{Bytes, serde_as};
 {% endif %}
 {% if schema.has_signed_transaction_fields or schema.implements_algokit_msgpack %}
-#[cfg(not(feature = "ffi_uniffi"))]
+
+{% if not ffi %}
 use algokit_transact::SignedTransaction as AlgokitSignedTransaction;
-
-#[cfg(feature = "ffi_uniffi")]
-use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
-
 use algokit_transact::AlgorandMsgpack;
+{% else %}
+use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
+{% endif %}
 {% endif %}
 
 {# Generate imports for custom types used in this schema #}
@@ -74,7 +75,14 @@ use crate::models::{{ schema.underlying_rust_type }};
 {% if schema.description %}
 {{ schema.description | rust_doc_comment }}
 {% endif %}
+{% if ffi %}
+#[derive(Clone, Debug, PartialEq)]
+pub struct {{ schema.rust_struct_name }}({{ schema.underlying_rust_type }});
+
+uniffi::custom_newtype!({{ schema.rust_struct_name }}, {{ schema.underlying_rust_type }});
+{% else %}
 pub type {{ schema.rust_struct_name }} = {{ schema.underlying_rust_type }};
+{% endif %}
 {# Handle string enum schemas as Rust enums #}
 {% elif schema.is_string_enum %}
 {{ generate_string_enum(schema.rust_struct_name, schema.enum_values, schema.description) }}
@@ -82,7 +90,7 @@ pub type {{ schema.rust_struct_name }} = {{ schema.underlying_rust_type }};
 {% if schema.description %}
 {{ schema.description | rust_doc_comment }}
 {% endif %}
-{% if schema.has_msgpack_fields %}
+{% if not ffi and schema.has_msgpack_fields %}
 #[serde_as]
 {% endif %}
 {% set has_signed_tx = schema.has_signed_transaction_fields %}
@@ -93,8 +101,12 @@ pub type {{ schema.rust_struct_name }} = {{ schema.underlying_rust_type }};
     {% endif %}
 {% endfor %}
 {% set needs_manual_default = complex_signed_tx_fields|length > 0 %}
-#[derive(Clone, {% if not needs_manual_default %}Default, {% endif %}Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
+#[derive(Clone, {% if not needs_manual_default and not ffi %}Default, {% endif %}Debug, PartialEq)]
+{% if ffi %}
+#[derive(uniffi::Record)]
+{% else %}
+#[derive(Serialize, Deserialize)]
+{% endif %}
 {% if schema.vendor_extensions.get('x-algokit-signed-txn') %}
 // This struct represents a SignedTransaction and can be converted to/from AlgoKit's SignedTransaction
 {% endif %}
@@ -104,6 +116,7 @@ pub struct {{ schema.rust_struct_name }} {
     {{ property.description | rust_doc_comment(4) }}
     {% endif %}
     {% set is_account_related = schema.name in ['Account', 'AccountParticipation', 'AssetHolding', 'ApplicationLocalState', 'Application', 'Asset', 'AssetParams', 'ApplicationParams'] %}
+    {% if not ffi %}
     {% if schema.implements_algokit_msgpack and not is_account_related %}
     {% if property.is_base64_encoded %}
     {% if property.required %}
@@ -134,6 +147,7 @@ pub struct {{ schema.rust_struct_name }} {
     {% endif %}
     {% endif %}
     #[serde(rename = "{{ property.name }}"{% if not property.required %}, skip_serializing_if = "Option::is_none"{% endif %})]
+    {% endif %}
     {% if property.is_signed_transaction %}
     pub {{ property.rust_field_name }}: {% if property.required %}{% if property.rust_type.startswith('Vec<') %}Vec<AlgokitSignedTransaction>{% else %}AlgokitSignedTransaction{% endif %}{% else %}Option<{% if property.rust_type.startswith('Vec<') %}Vec<AlgokitSignedTransaction>{% else %}AlgokitSignedTransaction{% endif %}>{% endif %},
     {% else %}
@@ -143,7 +157,7 @@ pub struct {{ schema.rust_struct_name }} {
 }
 {% endif %}
 
-{% if needs_manual_default %}
+{% if not ffi and needs_manual_default %}
 impl Default for {{ schema.rust_struct_name }} {
     fn default() -> Self {
         Self {
@@ -208,7 +222,7 @@ impl TryFrom<{{ schema.rust_struct_name }}> for AlgokitSignedTransaction {
 }
 {% endif %}
 
-{% if schema.implements_algokit_msgpack and not schema.underlying_rust_type and not schema.is_string_enum %}
+{% if not ffi and schema.implements_algokit_msgpack and not schema.underlying_rust_type and not schema.is_string_enum %}
 impl AlgorandMsgpack for {{ schema.rust_struct_name }} {
     {% if schema.vendor_extensions.get('x-algokit-signed-txn') %}
     const PREFIX: &'static [u8] = b"";  // No prefix for SignedTransaction
@@ -218,7 +232,7 @@ impl AlgorandMsgpack for {{ schema.rust_struct_name }} {
 }
 {% endif %}
 
-{% if not schema.underlying_rust_type and not schema.is_string_enum %}
+{% if not ffi and not schema.underlying_rust_type and not schema.is_string_enum %}
 impl {{ schema.rust_struct_name }} {
     {% if schema.has_required_fields %}
     /// Constructor for {{ schema.rust_struct_name }}
@@ -251,4 +265,136 @@ impl {{ schema.rust_struct_name }} {
     }
     {% endif %}
 }
+{% endif %}
+
+{% set empty_struct = not (schema.schema_type == 'array' and schema.underlying_rust_type) and (schema.properties | length) == 0 %}
+
+{% if ffi %}
+impl From<Rust{{ schema.rust_struct_name }}> for {{ schema.rust_struct_name }} {
+    fn from({% if empty_struct %}_{% endif %}rust_struct: Rust{{ schema.rust_struct_name }}) -> Self {
+        {% if schema.schema_type == 'array' and schema.underlying_rust_type %}
+        Self(rust_struct.into_iter().map(|v| v.into()).collect())
+        {% else %}
+        Self {
+{% for property in schema.properties %}
+            {% if property.required %}
+            {% if "Vec<" in property.rust_type %}
+            {{ property.rust_field_name }}: rust_struct.{{ property.rust_field_name }}.into_iter().map(|v| v.into()).collect(),
+            {% else %}
+            {{ property.rust_field_name }}: rust_struct.{{ property.rust_field_name }}.into(),
+            {% endif %}
+            {% else %}
+            {% if "Vec<" in property.rust_type  %}
+            {{ property.rust_field_name }}: rust_struct.{{ property.rust_field_name }}.map(|v| v.into_iter().map(|v| v.into()).collect()),
+            {% else %}
+            {{ property.rust_field_name }}: rust_struct.{{ property.rust_field_name }}.map(|v| v.into()),
+            {% endif %}
+            {% endif %}
+{% endfor %}
+        }
+{%endif%}
+    }
+}
+
+{# These types would require a TyFrom impl, most are return values only so there is no need to go from Ffi to Rust #}
+{% set skip_from_types = ["GetPendingTransactions", "GetPendingTransactionsByAddress", "SimulateRequestTransactionGroup", "PendingTransactionResponse", "SimulateTransactionResult", "SimulateTransactionGroupResult", "SimulateTransaction", "SimulateRequest", "DryrunRequest", "DryrunTxnResult", "TealDryrun", "AccountApplicationInformation"] %}
+{% if schema.rust_struct_name not in skip_from_types %}
+
+impl From<{{ schema.rust_struct_name }}> for Rust{{ schema.rust_struct_name }} {
+    fn from({% if empty_struct  %}_{% endif %}ffi_struct: {{ schema.rust_struct_name }}) -> Self {
+        {% if schema.schema_type == 'array' and schema.underlying_rust_type %}
+        ffi_struct.0.into_iter().map(|v| v.into()).collect()
+        {% else %}
+        Self {
+{% for property in schema.properties %}
+            {% if property.required %}
+            {% if "Vec<" in property.rust_type %}
+            {{ property.rust_field_name }}: ffi_struct.{{ property.rust_field_name }}.into_iter().map(|v| v.into()).collect(),
+            {% else %}
+            {{ property.rust_field_name }}: ffi_struct.{{ property.rust_field_name }}.into(),
+            {% endif %}
+            {% else %}
+            {% if "Vec<" in property.rust_type %}
+            {{ property.rust_field_name }}: ffi_struct.{{ property.rust_field_name }}.map(|v| v.into_iter().map(|v| v.into()).collect()),
+            {% else %}
+            {{ property.rust_field_name }}: ffi_struct.{{ property.rust_field_name }}.map(|v| v.into()),
+            {% endif %}
+            {% endif %}
+{% endfor %}
+        }
+    {% endif %}
+    }
+}
+{% elif schema.rust_struct_name == "SimulateRequestTransactionGroup"%}
+impl TryFrom<SimulateRequestTransactionGroup> for RustSimulateRequestTransactionGroup {
+    type Error = algokit_transact_ffi::AlgoKitTransactError;
+
+    fn try_from(ffi_struct: SimulateRequestTransactionGroup) -> Result<Self, Self::Error> {
+        Ok(Self {
+            txns: ffi_struct
+                .txns
+                .into_iter()
+                .map(|v| {
+                    v.try_into()
+                })
+                .collect::<Result<_, _>>()?,
+        })
+    }
+}
+{% elif schema.rust_struct_name == "SimulateRequest"%}
+impl TryFrom<SimulateRequest> for RustSimulateRequest {
+    type Error = crate::apis::Error;
+
+    fn try_from(ffi_struct: SimulateRequest) -> Result<Self, Self::Error> {
+        Ok(Self {
+            txn_groups: ffi_struct
+                .txn_groups
+                .into_iter()
+                .map(|v| {
+                v.try_into()
+                    .map_err(|e: algokit_transact_ffi::AlgoKitTransactError| {
+                        crate::apis::Error::Serde {
+                            message: e.to_string(),
+                        }
+                    })
+                })
+                .collect::<Result<_, _>>()?,
+            round: ffi_struct.round.map(|v| v.into()),
+            allow_empty_signatures: ffi_struct.allow_empty_signatures.map(|v| v.into()),
+            allow_more_logging: ffi_struct.allow_more_logging.map(|v| v.into()),
+            allow_unnamed_resources: ffi_struct.allow_unnamed_resources.map(|v| v.into()),
+            extra_opcode_budget: ffi_struct.extra_opcode_budget.map(|v| v.into()),
+            exec_trace_config: ffi_struct.exec_trace_config.map(|v| v.into()),
+            fix_signers: ffi_struct.fix_signers.map(|v| v.into()),
+        })
+    }
+}
+{% elif schema.rust_struct_name == "DryrunRequest" %}
+impl TryFrom<DryrunRequest> for RustDryrunRequest {
+    type Error = crate::apis::Error;
+
+    fn try_from(ffi_struct: DryrunRequest) -> Result<Self, Self::Error> {
+        Ok(Self {
+            txns: ffi_struct
+                .txns
+                .into_iter()
+                .map(|v| {
+                    v.try_into()
+                        .map_err(|e: algokit_transact_ffi::AlgoKitTransactError| {
+                            crate::apis::Error::Serde {
+                                message: e.to_string(),
+                            }
+                        })
+                })
+                .collect::<Result<_, _>>()?,
+            accounts: ffi_struct.accounts.into_iter().map(|v| v.into()).collect(),
+            apps: ffi_struct.apps.into_iter().map(|v| v.into()).collect(),
+            protocol_version: ffi_struct.protocol_version.into(),
+            round: ffi_struct.round.into(),
+            latest_timestamp: ffi_struct.latest_timestamp.into(),
+            sources: ffi_struct.sources.into_iter().map(|v| v.into()).collect(),
+        })
+    }
+}
+{% endif %}
 {% endif %}

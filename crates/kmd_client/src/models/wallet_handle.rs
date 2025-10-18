@@ -16,7 +16,6 @@ use crate::models::Wallet;
 /// APIV1WalletHandle includes the wallet the handle corresponds to
 /// and the number of number of seconds to expiration
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct WalletHandle {
     #[serde(rename = "expires_seconds", skip_serializing_if = "Option::is_none")]
     pub expires_seconds: Option<u64>,

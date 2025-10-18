@@ -207,6 +207,13 @@ class ResponseAnalyzer:
         return error_types
 
     @staticmethod
+    def parse_error_type(error_type: str) -> dict[str, str | None]:
+        variant = error_type.split("(")[0]
+        inner_type = error_type.split("(")[1].rstrip(")") if "(" in error_type else None
+
+        return {"variant": variant, "inner_type": inner_type}
+
+    @staticmethod
     def get_response_types_by_filter(
         operations: list[Operation],
         filter_func: Callable[[str, Response], bool],
@@ -341,6 +348,7 @@ class RustTemplateEngine:
             "group_operations_by_tag": op_analyzer.group_operations_by_tag,
             # Response analysis
             "get_error_types": resp_analyzer.get_error_types,
+            "parse_error_type": resp_analyzer.parse_error_type,
             "get_success_response_type": resp_analyzer.get_success_response_type,
             "get_all_response_types": resp_analyzer.get_all_response_types,
             "get_endpoint_response_types": lambda op: resp_analyzer.get_all_response_types([op]),
@@ -463,6 +471,7 @@ class RustCodeGenerator:
             "schemas": spec.schemas,
             "content_types": spec.content_types,
             "custom_description": custom_description,
+            "ffi": "ffi" in package_name.lower(),
         }
 
         files = {}
@@ -485,7 +494,7 @@ class RustCodeGenerator:
         # Detect client type
         client_type_fn = self.template_engine.env.globals.get("get_client_type")
         client_type = client_type_fn(context["spec"]) if callable(client_type_fn) else "Api"
-        if client_type == "Algod":
+        if client_type == "Algod" and not context.get("ffi", False):
             # Provide msgpack helper to encode/decode arbitrary msgpack values as bytes
             files[src_dir / "msgpack_value_bytes.rs"] = self.template_engine.render_template(
                 "base/msgpack_value_bytes.rs.j2", context

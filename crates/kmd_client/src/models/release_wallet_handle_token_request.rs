@@ -13,7 +13,6 @@ use serde::{Deserialize, Serialize};
 
 /// APIV1POSTWalletReleaseRequest is the request for `POST /v1/wallet/release`
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct ReleaseWalletHandleTokenRequest {
     #[serde(
         rename = "wallet_handle_token",

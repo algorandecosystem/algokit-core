@@ -22,7 +22,6 @@ use crate::models::{ErrorResponse, TealCompile};
 /// struct for typed errors of method [`teal_compile`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum TealCompileError {
     Status400(ErrorResponse),
     Status401(ErrorResponse),

@@ -16,7 +16,6 @@ use crate::models::Wallet;
 /// APIV1POSTWalletRenameResponse is the response to `POST /v1/wallet/rename`
 /// friendly:RenameWalletResponse
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct PostWalletRenameResponse {
     #[serde(rename = "error", skip_serializing_if = "Option::is_none")]
     pub error: Option<bool>,

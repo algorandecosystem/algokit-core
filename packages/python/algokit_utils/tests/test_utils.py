@@ -7,7 +7,8 @@ from algokit_transact import (
     Transaction,
     encode_transaction,
 )
-from algokit_utils import AlgodClient, TransactionSigner
+from algokit_utils import TransactionSigner
+from algokit_utils.algod_client_ffi import AlgodClient
 from algokit_utils.algokit_utils_ffi import (
     AbiMethod,
     AbiMethodArg,

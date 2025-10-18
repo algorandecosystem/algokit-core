@@ -14,7 +14,6 @@ use serde::{Deserialize, Serialize};
 /// APIV1POSTMultisigListResponse is the response to `POST /v1/multisig/list`
 /// friendly:ListMultisigResponse
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct PostMultisigListResponse {
     #[serde(rename = "addresses", skip_serializing_if = "Option::is_none")]
     pub addresses: Option<Vec<String>>,

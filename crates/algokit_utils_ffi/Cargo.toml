@@ -8,6 +8,7 @@ crate-type = ["lib", "cdylib", "staticlib"]
 
 [dependencies]
 algod_client = { version = "0.0.1", path = "../algod_client", default-features = false }
+algod_client_ffi = { version = "0.0.1", path = "../algod_client_ffi" }
 algokit_abi = { version = "0.1.0", path = "../algokit_abi" }
 algokit_http_client = { version = "0.1.0", path = "../algokit_http_client", features = ["ffi_uniffi"], default-features = false }
 algokit_transact = { version = "0.1.0", path = "../algokit_transact" }

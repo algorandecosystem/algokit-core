@@ -23,7 +23,6 @@ use crate::models::{ErrorResponse, ParticipationKey};
 /// struct for typed errors of method [`append_keys`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum AppendKeysError {
     Status400(ErrorResponse),
     Status401(ErrorResponse),

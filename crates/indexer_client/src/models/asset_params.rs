@@ -13,13 +13,12 @@ use serde_with::{Bytes, serde_as};
 
 /// AssetParams specifies the parameters for an asset.
 ///
-/// \[apar\] when part of an AssetConfig transaction.
+/// [apar] when part of an AssetConfig transaction.
 ///
 /// Definition:
 /// data/transactions/asset.go : AssetParams
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct AssetParams {
     /// Address of account used to clawback holdings of this asset.  If empty, clawback is not permitted.
     #[serde(rename = "clawback", skip_serializing_if = "Option::is_none")]

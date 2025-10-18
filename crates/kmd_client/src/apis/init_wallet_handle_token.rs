@@ -23,7 +23,6 @@ use crate::models::InitWalletHandleTokenRequest;
 /// struct for typed errors of method [`init_wallet_handle_token`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum InitWalletHandleTokenError {
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),

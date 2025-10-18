@@ -13,7 +13,6 @@ use serde::{Deserialize, Serialize};
 
 /// APIV1POSTMultisigListRequest is the request for `POST /v1/multisig/list`
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct ListMultisigRequest {
     #[serde(
         rename = "wallet_handle_token",

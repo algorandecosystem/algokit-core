@@ -12,12 +12,11 @@ use serde::{Deserialize, Serialize};
 
 /// LocalsRef names a local state by referring to an Address and App it belongs to.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct LocalsRef {
-    /// \[d\] Address in access list, or the sender of the transaction.
+    /// [d] Address in access list, or the sender of the transaction.
     #[serde(rename = "address")]
     pub address: String,
-    /// \[p\] Application ID for app in access list, or zero if referring to the called application.
+    /// [p] Application ID for app in access list, or zero if referring to the called application.
     #[serde(rename = "app")]
     pub app: u64,
 }

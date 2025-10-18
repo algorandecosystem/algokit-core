@@ -21,7 +21,6 @@ use crate::models::{SearchForApplicationBoxes, UnknownJsonValue};
 /// struct for typed errors of method [`search_for_application_boxes`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum SearchForApplicationBoxesError {
     Status400(UnknownJsonValue),
     Status404(UnknownJsonValue),

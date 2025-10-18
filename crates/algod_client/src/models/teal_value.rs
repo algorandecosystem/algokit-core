@@ -9,29 +9,24 @@
  */
 
 use crate::models;
-#[cfg(not(feature = "ffi_uniffi"))]
-use algokit_transact::SignedTransaction as AlgokitSignedTransaction;
 use serde::{Deserialize, Serialize};
 use serde_with::{Bytes, serde_as};
 
-#[cfg(feature = "ffi_uniffi")]
-use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
-
 use algokit_transact::AlgorandMsgpack;
+use algokit_transact::SignedTransaction as AlgokitSignedTransaction;
 
 /// Represents a TEAL value.
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct TealValue {
-    /// \[tt\] value type. Value `1` refers to **bytes**, value `2` refers to **uint**
+    /// [tt] value type. Value `1` refers to **bytes**, value `2` refers to **uint**
     #[serde(rename = "type")]
     pub r#type: u64,
-    /// \[tb\] bytes value.
+    /// [tb] bytes value.
     #[serde_as(as = "Bytes")]
     #[serde(rename = "bytes")]
     pub bytes: Vec<u8>,
-    /// \[ui\] uint value.
+    /// [ui] uint value.
     #[serde(rename = "uint")]
     pub uint: u64,
 }

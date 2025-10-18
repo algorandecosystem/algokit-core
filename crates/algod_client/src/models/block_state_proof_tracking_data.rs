@@ -9,15 +9,14 @@
  */
 
 use crate::models;
+use algokit_transact::AlgorandMsgpack;
 use serde::{Deserialize, Serialize};
 use serde_with::{Bytes, serde_as};
 
-use algokit_transact::AlgorandMsgpack;
-
 /// Tracking metadata for a specific StateProofType.
+#[derive(Clone, Debug, PartialEq)]
 #[serde_as]
-#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
+#[derive(Serialize, Deserialize, Default)]
 pub struct BlockStateProofTrackingData {
     /// [v] Vector commitment root of state proof voters (may be absent when not applicable).
     #[serde_as(as = "Option<Bytes>")]
@@ -36,7 +35,18 @@ impl AlgorandMsgpack for BlockStateProofTrackingData {
 }
 
 impl BlockStateProofTrackingData {
+    /// Default constructor for BlockStateProofTrackingData
     pub fn new() -> BlockStateProofTrackingData {
         BlockStateProofTrackingData::default()
+    }
+
+    /// Encode this struct to msgpack bytes using AlgorandMsgpack trait
+    pub fn to_msgpack(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        Ok(self.encode()?)
+    }
+
+    /// Decode msgpack bytes to this struct using AlgorandMsgpack trait
+    pub fn from_msgpack(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(Self::decode(bytes)?)
     }
 }

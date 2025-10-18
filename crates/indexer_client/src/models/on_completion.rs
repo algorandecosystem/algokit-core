@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::str::FromStr;
 
-/// \[apan\] defines the what additional actions occur with the transaction.
+/// [apan] defines the what additional actions occur with the transaction.
 ///
 /// Valid types:
 ///   * noop
@@ -22,7 +22,6 @@ use std::str::FromStr;
 ///   * update
 ///   * delete
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Enum))]
 pub enum OnCompletion {
     /// noop
     #[serde(rename = "noop")]

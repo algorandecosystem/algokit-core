@@ -9,39 +9,34 @@
  */
 
 use crate::models;
-#[cfg(not(feature = "ffi_uniffi"))]
-use algokit_transact::SignedTransaction as AlgokitSignedTransaction;
 use serde::{Deserialize, Serialize};
 use serde_with::{Bytes, serde_as};
 
-#[cfg(feature = "ffi_uniffi")]
-use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
-
 use algokit_transact::AlgorandMsgpack;
+use algokit_transact::SignedTransaction as AlgokitSignedTransaction;
 
 /// AccountParticipation describes the parameters used by this account in consensus protocol.
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct AccountParticipation {
-    /// \[sel\] Selection public key (if any) currently registered for this round.
+    /// [sel] Selection public key (if any) currently registered for this round.
     #[serde_as(as = "serde_with::base64::Base64")]
     #[serde(rename = "selection-participation-key")]
     pub selection_participation_key: Vec<u8>,
-    /// \[voteFst\] First round for which this participation is valid.
+    /// [voteFst] First round for which this participation is valid.
     #[serde(rename = "vote-first-valid")]
     pub vote_first_valid: u64,
-    /// \[voteKD\] Number of subkeys in each batch of participation keys.
+    /// [voteKD] Number of subkeys in each batch of participation keys.
     #[serde(rename = "vote-key-dilution")]
     pub vote_key_dilution: u64,
-    /// \[voteLst\] Last round for which this participation is valid.
+    /// [voteLst] Last round for which this participation is valid.
     #[serde(rename = "vote-last-valid")]
     pub vote_last_valid: u64,
-    /// \[vote\] root participation public key (if any) currently registered for this round.
+    /// [vote] root participation public key (if any) currently registered for this round.
     #[serde_as(as = "serde_with::base64::Base64")]
     #[serde(rename = "vote-participation-key")]
     pub vote_participation_key: Vec<u8>,
-    /// \[stprf\] Root of the state proof key (if any)
+    /// [stprf] Root of the state proof key (if any)
     #[serde_as(as = "Option<serde_with::base64::Base64>")]
     #[serde(rename = "state-proof-key", skip_serializing_if = "Option::is_none")]
     pub state_proof_key: Option<Vec<u8>>,

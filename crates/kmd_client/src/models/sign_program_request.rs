@@ -15,7 +15,6 @@ use serde_with::{Bytes, serde_as};
 /// APIV1POSTProgramSignRequest is the request for `POST /v1/program/sign`
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct SignProgramRequest {
     #[serde(rename = "address", skip_serializing_if = "Option::is_none")]
     pub address: Option<String>,

@@ -15,7 +15,6 @@ use crate::models::TxType;
 
 /// APIV1Wallet is the API's representation of a wallet
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct Wallet {
     #[serde(rename = "driver_name", skip_serializing_if = "Option::is_none")]
     pub driver_name: Option<String>,

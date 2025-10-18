@@ -2,12 +2,11 @@
 #![allow(unused_imports)]
 #![allow(clippy::too_many_arguments)]
 
-#[cfg(feature = "ffi_uniffi")]
-uniffi::setup_scaffolding!();
+{% if ffi %} uniffi::setup_scaffolding!(); {% endif %}
 
 pub mod apis;
 pub mod models;
-{% if client_type == "Algod" %}
+{% if client_type == "Algod" and not ffi %}
 pub mod msgpack_value_bytes;
 {% endif %}
 

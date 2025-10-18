@@ -23,7 +23,6 @@ use crate::models::{ErrorResponse, TransactionProof};
 /// struct for typed errors of method [`get_transaction_proof`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum GetTransactionProofError {
     Status400(ErrorResponse),
     Status401(ErrorResponse),

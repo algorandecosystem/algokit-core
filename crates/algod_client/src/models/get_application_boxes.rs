@@ -15,7 +15,6 @@ use crate::models::BoxDescriptor;
 
 /// Box names of an application
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct GetApplicationBoxes {
     #[serde(rename = "boxes")]
     pub boxes: Vec<BoxDescriptor>,

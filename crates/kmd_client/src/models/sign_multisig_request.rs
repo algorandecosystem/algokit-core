@@ -19,7 +19,6 @@ use crate::models::PublicKey;
 /// APIV1POSTMultisigTransactionSignRequest is the request for `POST /v1/multisig/sign`
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct SignMultisigRequest {
     #[serde(rename = "partial_multisig", skip_serializing_if = "Option::is_none")]
     pub partial_multisig: Option<MultisigSig>,

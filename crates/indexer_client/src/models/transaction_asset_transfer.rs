@@ -15,24 +15,23 @@ use serde::{Deserialize, Serialize};
 /// Definition:
 /// data/transactions/asset.go : AssetTransferTxnFields
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct TransactionAssetTransfer {
-    /// \[aamt\] Amount of asset to transfer. A zero amount transferred to self allocates that asset in the account's Assets map.
+    /// [aamt] Amount of asset to transfer. A zero amount transferred to self allocates that asset in the account's Assets map.
     #[serde(rename = "amount")]
     pub amount: u64,
-    /// \[xaid\] ID of the asset being transferred.
+    /// [xaid] ID of the asset being transferred.
     #[serde(rename = "asset-id")]
     pub asset_id: u64,
     /// Number of assets transferred to the close-to account as part of the transaction.
     #[serde(rename = "close-amount", skip_serializing_if = "Option::is_none")]
     pub close_amount: Option<u64>,
-    /// \[aclose\] Indicates that the asset should be removed from the account's Assets map, and specifies where the remaining asset holdings should be transferred.  It's always valid to transfer remaining asset holdings to the creator account.
+    /// [aclose] Indicates that the asset should be removed from the account's Assets map, and specifies where the remaining asset holdings should be transferred.  It's always valid to transfer remaining asset holdings to the creator account.
     #[serde(rename = "close-to", skip_serializing_if = "Option::is_none")]
     pub close_to: Option<String>,
-    /// \[arcv\] Recipient address of the transfer.
+    /// [arcv] Recipient address of the transfer.
     #[serde(rename = "receiver")]
     pub receiver: String,
-    /// \[asnd\] The effective sender during a clawback transactions. If this is not a zero value, the real transaction sender must be the Clawback address from the AssetParams.
+    /// [asnd] The effective sender during a clawback transactions. If this is not a zero value, the real transaction sender must be the Clawback address from the AssetParams.
     #[serde(rename = "sender", skip_serializing_if = "Option::is_none")]
     pub sender: Option<String>,
 }

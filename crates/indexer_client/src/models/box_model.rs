@@ -14,16 +14,15 @@ use serde_with::{Bytes, serde_as};
 /// Box name and its content.
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct Box {
     /// The round for which this information is relevant
     #[serde(rename = "round")]
     pub round: u64,
-    /// \[name\] box name, base64 encoded
+    /// [name] box name, base64 encoded
     #[serde_as(as = "serde_with::base64::Base64")]
     #[serde(rename = "name")]
     pub name: Vec<u8>,
-    /// \[value\] box value, base64 encoded.
+    /// [value] box value, base64 encoded.
     #[serde_as(as = "serde_with::base64::Base64")]
     #[serde(rename = "value")]
     pub value: Vec<u8>,

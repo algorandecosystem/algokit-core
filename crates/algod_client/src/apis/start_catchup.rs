@@ -22,7 +22,6 @@ use crate::models::{ErrorResponse, StartCatchup};
 /// struct for typed errors of method [`start_catchup`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum StartCatchupError {
     Status400(ErrorResponse),
     Status401(ErrorResponse),

@@ -23,7 +23,6 @@ use crate::models::WalletInfoRequest;
 /// struct for typed errors of method [`get_wallet_info`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum GetWalletInfoError {
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),

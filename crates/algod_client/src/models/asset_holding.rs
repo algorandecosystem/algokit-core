@@ -9,29 +9,23 @@
  */
 
 use crate::models;
-#[cfg(not(feature = "ffi_uniffi"))]
+use algokit_transact::AlgorandMsgpack;
 use algokit_transact::SignedTransaction as AlgokitSignedTransaction;
 use serde::{Deserialize, Serialize};
-
-#[cfg(feature = "ffi_uniffi")]
-use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
-
-use algokit_transact::AlgorandMsgpack;
 
 /// Describes an asset held by an account.
 ///
 /// Definition:
 /// data/basics/userBalance.go : AssetHolding
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct AssetHolding {
-    /// \[a\] number of units held.
+    /// [a] number of units held.
     #[serde(rename = "amount")]
     pub amount: u64,
     /// Asset ID of the holding.
     #[serde(rename = "asset-id")]
     pub asset_id: u64,
-    /// \[f\] whether or not the holding is frozen.
+    /// [f] whether or not the holding is frozen.
     #[serde(rename = "is-frozen")]
     pub is_frozen: bool,
 }

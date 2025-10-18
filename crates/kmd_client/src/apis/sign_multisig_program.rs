@@ -23,7 +23,6 @@ use crate::models::SignProgramMultisigRequest;
 /// struct for typed errors of method [`sign_multisig_program`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum SignMultisigProgramError {
     DefaultResponse(),
     UnknownValue(crate::models::UnknownJsonValue),

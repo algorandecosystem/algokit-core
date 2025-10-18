@@ -21,7 +21,6 @@ use crate::models::{Box, UnknownJsonValue};
 /// struct for typed errors of method [`lookup_application_box_by_id_and_name`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum LookupApplicationBoxByIdAndNameError {
     Status400(UnknownJsonValue),
     Status404(UnknownJsonValue),

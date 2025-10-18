@@ -9,20 +9,14 @@
  */
 
 use crate::models;
-#[cfg(not(feature = "ffi_uniffi"))]
+use algokit_transact::AlgorandMsgpack;
 use algokit_transact::SignedTransaction as AlgokitSignedTransaction;
 use serde::{Deserialize, Serialize};
-
-#[cfg(feature = "ffi_uniffi")]
-use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
-
-use algokit_transact::AlgorandMsgpack;
 
 use crate::models::UnknownJsonValue;
 
 /// An error response with optional data field.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct ErrorResponse {
     #[serde(rename = "data", skip_serializing_if = "Option::is_none")]
     pub data: Option<UnknownJsonValue>,

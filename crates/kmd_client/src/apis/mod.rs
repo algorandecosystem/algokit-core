@@ -40,7 +40,6 @@ use snafu::Snafu;
 
 /// Unified error type that can represent any API error from any endpoint
 #[derive(Debug, Snafu)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum KmdApiError {
     #[snafu(display("Swagger_handler error: {error:?}"))]
     SwaggerHandler {
@@ -270,7 +269,6 @@ impl From<get_version::GetVersionError> for KmdApiError {
 
 /// The main error type for all kmd client operations
 #[derive(Debug, Snafu)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum Error {
     #[snafu(display("HTTP error: {source}"))]
     Http {
@@ -304,12 +302,12 @@ impl From<&str> for ContentType {
     }
 }
 
+// Re-export the consolidated client
+pub use client::KmdClient;
+
 pub fn urlencode<T: AsRef<str>>(s: T) -> String {
     ::url::form_urlencoded::byte_serialize(s.as_ref().as_bytes()).collect()
 }
-
-// Re-export the consolidated client
-pub use client::KmdClient;
 
 // Re-export all endpoint functions
 pub use create_wallet::{CreateWalletError, create_wallet};

@@ -17,7 +17,6 @@ use crate::models::PublicKey;
 /// APIV1POSTTransactionSignRequest is the request for `POST /v1/transaction/sign`
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct SignTransactionRequest {
     #[serde(rename = "public_key", skip_serializing_if = "Option::is_none")]
     pub public_key: Option<PublicKey>,

@@ -1,13 +1,11 @@
 use super::{localnet, test_account::TestAccount};
-use crate::{
-    clients::algod_client::AlgodClientTrait,
-    transactions::{
-        asset_config::AssetCreateParams,
-        common::{TransactionSignerGetter, UtilsError},
-        composer::ComposerFactory,
-        payment::PaymentParams,
-    },
+use crate::transactions::{
+    asset_config::AssetCreateParams,
+    common::{TransactionSignerGetter, UtilsError},
+    composer::ComposerFactory,
+    payment::PaymentParams,
 };
+use algod_client_ffi::apis::client::AlgodClientTrait;
 use std::sync::{Arc, Mutex};
 
 /// Test fixture that provides high-level test operations using foreign traits
@@ -95,16 +93,17 @@ impl TestFixture {
         };
 
         // Add payment to composer
-        composer.add_payment(payment_params).await?;
+        composer.add_payment(payment_params)?;
 
         // Build and send transaction
         composer.build().await?;
-        let tx_ids = composer.send().await?;
+        let result = composer.send().await?;
 
         // Return first transaction ID
-        tx_ids
+        result
+            .results
             .first()
-            .cloned()
+            .map(|r| r.transaction_id.clone())
             .ok_or_else(|| UtilsError::UtilsError {
                 message: "No transaction ID returned".to_string(),
             })
@@ -149,21 +148,22 @@ impl TestFixture {
         };
 
         // Add asset create to composer
-        composer.add_asset_create(asset_params).await?;
+        composer.add_asset_create(asset_params)?;
 
         // Build and send
         composer.build().await?;
-        let tx_ids = composer.send().await?;
+        let result = composer.send().await?;
+
+        let tx_id = result
+            .results
+            .first()
+            .map(|r| r.transaction_id.clone())
+            .ok_or_else(|| UtilsError::UtilsError {
+                message: "No transaction ID returned".to_string(),
+            })?;
 
         // Wait for confirmation to get asset ID
-        let tx_id = tx_ids.first().ok_or_else(|| UtilsError::UtilsError {
-            message: "No transaction ID returned".to_string(),
-        })?;
-
-        let info = self
-            .algod_client
-            .wait_for_confirmation(tx_id.clone())
-            .await?;
+        let info = composer.wait_for_confirmation(tx_id.clone(), 3).await?;
 
         info.asset_id.ok_or_else(|| UtilsError::UtilsError {
             message: "No asset ID in transaction result".to_string(),

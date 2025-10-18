@@ -16,7 +16,6 @@ use crate::models::MasterDerivationKey;
 /// APIV1POSTMasterKeyExportResponse is the response to `POST /v1/master-key/export`
 /// friendly:ExportMasterKeyResponse
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct PostMasterKeyExportResponse {
     #[serde(rename = "error", skip_serializing_if = "Option::is_none")]
     pub error: Option<bool>,

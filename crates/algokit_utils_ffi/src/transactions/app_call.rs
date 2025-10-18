@@ -13,7 +13,7 @@ use crate::create_transaction_params;
 use algokit_abi::{
     ABIMethod as RustABIMethod, ABIMethodArg as RustABIMethodArg,
     ABIMethodArgType as RustABIMethodArgType, ABIReferenceType as RustABIReferenceType,
-    ABITransactionType as RustABITransactionType,
+    ABIReturn as RustABIReturn, ABITransactionType as RustABITransactionType,
     abi_method::ABIReferenceValue as RustABIReferenceValue,
 };
 
@@ -213,6 +213,37 @@ impl From<RustABIMethod> for ABIMethod {
             args: value.args.into_iter().map(|arg| arg.into()).collect(),
             returns: value.returns.map(|r| Arc::new(ABIType { abi_type: r })),
             description: value.description,
+        }
+    }
+}
+
+#[derive(uniffi::Record)]
+pub struct ABIReturn {
+    /// The method that was called.
+    pub method: ABIMethod,
+    /// The raw return value as bytes.
+    ///
+    /// This value will be empty if the method does not return a value (return type "void")
+    pub raw_return_value: Vec<u8>,
+    /// The parsed ABI return value.
+    ///
+    /// This value will be undefined if decoding failed or the method does not return a value (return type "void")
+    pub return_value: Option<Arc<ABIValue>>,
+    /// Any error that occurred during decoding, or undefined if decoding was successful
+    pub decode_error: Option<UtilsError>,
+}
+
+impl From<RustABIReturn> for ABIReturn {
+    fn from(value: RustABIReturn) -> Self {
+        ABIReturn {
+            method: value.method.into(),
+            raw_return_value: value.raw_return_value,
+            return_value: value
+                .return_value
+                .map(|rv| Arc::new(ABIValue { rust_value: rv })),
+            decode_error: value.decode_error.map(|e| UtilsError::UtilsError {
+                message: e.to_string(),
+            }),
         }
     }
 }

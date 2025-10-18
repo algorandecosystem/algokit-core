@@ -14,7 +14,6 @@ use crate::models::UnknownJsonValue;
 
 /// A health check response.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct HealthCheck {
     /// Current version.
     #[serde(rename = "version")]

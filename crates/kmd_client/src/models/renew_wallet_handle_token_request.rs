@@ -13,7 +13,6 @@ use serde::{Deserialize, Serialize};
 
 /// APIV1POSTWalletRenewRequest is the request for `POST /v1/wallet/renew`
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct RenewWalletHandleTokenRequest {
     #[serde(
         rename = "wallet_handle_token",

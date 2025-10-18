@@ -14,7 +14,6 @@ use serde::{Deserialize, Serialize};
 /// APIV1POSTMultisigImportResponse is the response to `POST /v1/multisig/import`
 /// friendly:ImportMultisigResponse
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct PostMultisigImportResponse {
     #[serde(rename = "address", skip_serializing_if = "Option::is_none")]
     pub address: Option<String>,

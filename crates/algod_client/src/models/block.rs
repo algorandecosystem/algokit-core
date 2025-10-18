@@ -9,23 +9,18 @@
  */
 
 use crate::models;
-#[cfg(not(feature = "ffi_uniffi"))]
+use algokit_transact::AlgorandMsgpack;
 use algokit_transact::SignedTransaction as AlgokitSignedTransaction;
 use serde::{Deserialize, Serialize};
 use serde_with::{Bytes, serde_as};
-
-#[cfg(feature = "ffi_uniffi")]
-use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
-
-use algokit_transact::AlgorandMsgpack;
 
 use crate::models::BlockStateProofTracking;
 use crate::models::SignedTxnInBlock;
 
 /// Block contains the BlockHeader and the list of transactions (Payset).
+#[derive(Clone, Debug, PartialEq)]
 #[serde_as]
-#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
+#[derive(Serialize, Deserialize, Default)]
 pub struct Block {
     /// [rnd] Round number.
     #[serde(rename = "rnd", skip_serializing_if = "Option::is_none")]
@@ -141,7 +136,7 @@ pub struct Block {
 }
 
 impl AlgorandMsgpack for Block {
-    const PREFIX: &'static [u8] = b""; // Adjust prefix as needed for your specific type
+    const PREFIX: &'static [u8] = b"";
 }
 
 impl Block {

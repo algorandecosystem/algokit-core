@@ -23,7 +23,6 @@ use crate::models::{ErrorResponse, TealDisassemble};
 /// struct for typed errors of method [`teal_disassemble`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum TealDisassembleError {
     Status400(ErrorResponse),
     Status401(ErrorResponse),

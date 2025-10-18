@@ -13,13 +13,12 @@ use serde_with::{Bytes, serde_as};
 
 #[serde_as]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct StateProofVerifier {
-    /// \[cmt\] Represents the root of the vector commitment tree.
+    /// [cmt] Represents the root of the vector commitment tree.
     #[serde_as(as = "Option<serde_with::base64::Base64>")]
     #[serde(rename = "commitment", skip_serializing_if = "Option::is_none")]
     pub commitment: Option<Vec<u8>>,
-    /// \[lf\] Key lifetime.
+    /// [lf] Key lifetime.
     #[serde(rename = "key-lifetime", skip_serializing_if = "Option::is_none")]
     pub key_lifetime: Option<u64>,
 }

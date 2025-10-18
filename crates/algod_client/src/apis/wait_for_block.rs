@@ -22,7 +22,6 @@ use crate::models::{ErrorResponse, WaitForBlock};
 /// struct for typed errors of method [`wait_for_block`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum WaitForBlockError {
     Status400(ErrorResponse),
     Status401(ErrorResponse),

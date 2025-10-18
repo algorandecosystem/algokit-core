@@ -155,6 +155,7 @@ struct RsClientConfig {
     output_rel: &'static str,
     package_name: &'static str,
     description: &'static str,
+    generate_ffi_crate: bool,
 }
 
 const ALGOD_RS_CLIENT: RsClientConfig = RsClientConfig {
@@ -162,6 +163,7 @@ const ALGOD_RS_CLIENT: RsClientConfig = RsClientConfig {
     output_rel: "crates/algod_client",
     package_name: "algod_client",
     description: "API client for algod interaction.",
+    generate_ffi_crate: true,
 };
 
 const INDEXER_RS_CLIENT: RsClientConfig = RsClientConfig {
@@ -169,6 +171,7 @@ const INDEXER_RS_CLIENT: RsClientConfig = RsClientConfig {
     output_rel: "crates/indexer_client",
     package_name: "indexer_client",
     description: "API client for indexer interaction.",
+    generate_ffi_crate: false,
 };
 
 const KMD_RS_CLIENT: RsClientConfig = RsClientConfig {
@@ -176,26 +179,51 @@ const KMD_RS_CLIENT: RsClientConfig = RsClientConfig {
     output_rel: "crates/kmd_client",
     package_name: "kmd_client",
     description: "API client for kmd interaction.",
+    generate_ffi_crate: false,
 };
 
 fn generate_rs_client(config: &RsClientConfig) -> Result<()> {
-    run(
-        &format!(
-            "uv run python -m rust_oas_generator.cli ../specs/{}.oas3.json --output ../../{}/ --package-name {} --description \"{}\"",
-            config.spec, config.output_rel, config.package_name, config.description
-        ),
-        Some(Path::new("api/oas_generator")),
-        None,
-    )?;
+    for ffi in [true, false] {
+        if ffi && !config.generate_ffi_crate {
+            continue;
+        }
 
-    run(
-        &format!(
-            "cargo fmt --manifest-path Cargo.toml -p {}",
-            config.package_name
-        ),
-        None,
-        None,
-    )?;
+        let output_rel = if ffi {
+            format!("{}_ffi", config.output_rel)
+        } else {
+            config.output_rel.to_string()
+        };
+
+        let package_name = if ffi {
+            format!("{}_ffi", config.package_name)
+        } else {
+            config.package_name.to_string()
+        };
+
+        run(
+            &format!(
+                "uv run python -m rust_oas_generator.cli ../specs/{}.oas3.json --output ../../{}/ --package-name {} --description \"{}\"",
+                config.spec, output_rel, package_name, config.description
+            ),
+            Some(Path::new("api/oas_generator")),
+            None,
+        )?;
+
+        run(
+            &format!(
+                "cargo clippy --allow-dirty --fix --manifest-path Cargo.toml -p {}",
+                package_name
+            ),
+            None,
+            None,
+        )?;
+
+        run(
+            &format!("cargo fmt --manifest-path Cargo.toml -p {}", package_name),
+            None,
+            None,
+        )?;
+    }
 
     Ok(())
 }

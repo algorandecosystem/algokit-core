@@ -23,7 +23,6 @@ use crate::models::{ErrorResponse, LedgerStateDelta};
 /// struct for typed errors of method [`get_ledger_state_delta`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum GetLedgerStateDeltaError {
     Status401(ErrorResponse),
     Status404(ErrorResponse),

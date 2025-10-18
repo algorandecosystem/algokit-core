@@ -14,7 +14,6 @@ use serde::{Deserialize, Serialize};
 /// APIV1DELETEKeyResponse is the response to `DELETE /v1/key`
 /// friendly:DeleteKeyResponse
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct DeleteKeyResponse {
     #[serde(rename = "error", skip_serializing_if = "Option::is_none")]
     pub error: Option<bool>,

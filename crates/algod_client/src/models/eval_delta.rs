@@ -9,26 +9,20 @@
  */
 
 use crate::models;
-#[cfg(not(feature = "ffi_uniffi"))]
+use algokit_transact::AlgorandMsgpack;
 use algokit_transact::SignedTransaction as AlgokitSignedTransaction;
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "ffi_uniffi")]
-use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
-
-use algokit_transact::AlgorandMsgpack;
-
 /// Represents a TEAL value delta.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct EvalDelta {
-    /// \[at\] delta action.
+    /// [at] delta action.
     #[serde(rename = "action")]
     pub action: u32,
-    /// \[bs\] bytes value.
+    /// [bs] bytes value.
     #[serde(rename = "bytes", skip_serializing_if = "Option::is_none")]
     pub bytes: Option<String>,
-    /// \[ui\] uint value.
+    /// [ui] uint value.
     #[serde(rename = "uint", skip_serializing_if = "Option::is_none")]
     pub uint: Option<u64>,
 }

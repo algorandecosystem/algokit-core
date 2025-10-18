@@ -13,7 +13,6 @@ use serde::{Deserialize, Serialize};
 
 /// APIV1POSTMasterKeyExportRequest is the request for `POST /v1/master-key/export`
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct ExportMasterKeyRequest {
     #[serde(
         rename = "wallet_handle_token",

@@ -9,14 +9,9 @@
  */
 
 use crate::models;
-#[cfg(not(feature = "ffi_uniffi"))]
+use algokit_transact::AlgorandMsgpack;
 use algokit_transact::SignedTransaction as AlgokitSignedTransaction;
 use serde::{Deserialize, Serialize};
-
-#[cfg(feature = "ffi_uniffi")]
-use algokit_transact_ffi::SignedTransaction as AlgokitSignedTransaction;
-
-use algokit_transact::AlgorandMsgpack;
 
 use crate::models::AccountParticipation;
 use crate::models::Application;
@@ -30,12 +25,11 @@ use crate::models::AssetHolding;
 /// Definition:
 /// data/basics/userBalance.go : AccountData
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Record))]
 pub struct Account {
     /// the account public key
     #[serde(rename = "address")]
     pub address: String,
-    /// \[algo\] total number of MicroAlgos in the account
+    /// [algo] total number of MicroAlgos in the account
     #[serde(rename = "amount")]
     pub amount: u64,
     /// MicroAlgo balance required by the account.
@@ -46,7 +40,7 @@ pub struct Account {
     /// specifies the amount of MicroAlgos in the account, without the pending rewards.
     #[serde(rename = "amount-without-pending-rewards")]
     pub amount_without_pending_rewards: u64,
-    /// \[appl\] applications local data stored in this account.
+    /// [appl] applications local data stored in this account.
     ///
     /// Note the raw object uses `map[int] -> AppLocalState` for this type.
     #[serde(rename = "apps-local-state", skip_serializing_if = "Option::is_none")]
@@ -56,13 +50,13 @@ pub struct Account {
     pub total_apps_opted_in: u64,
     #[serde(rename = "apps-total-schema", skip_serializing_if = "Option::is_none")]
     pub apps_total_schema: Option<ApplicationStateSchema>,
-    /// \[teap\] the sum of all extra application program pages for this account.
+    /// [teap] the sum of all extra application program pages for this account.
     #[serde(
         rename = "apps-total-extra-pages",
         skip_serializing_if = "Option::is_none"
     )]
     pub apps_total_extra_pages: Option<u64>,
-    /// \[asset\] assets held by this account.
+    /// [asset] assets held by this account.
     ///
     /// Note the raw object uses `map[int] -> AssetHolding` for this type.
     #[serde(rename = "assets", skip_serializing_if = "Option::is_none")]
@@ -70,7 +64,7 @@ pub struct Account {
     /// The count of all assets that have been opted in, equivalent to the count of AssetHolding objects held by this account.
     #[serde(rename = "total-assets-opted-in")]
     pub total_assets_opted_in: u64,
-    /// \[appp\] parameters of applications created by this account including app global data.
+    /// [appp] parameters of applications created by this account including app global data.
     ///
     /// Note: the raw account uses `map[int] -> AppParams` for this type.
     #[serde(rename = "created-apps", skip_serializing_if = "Option::is_none")]
@@ -78,7 +72,7 @@ pub struct Account {
     /// The count of all apps (AppParams objects) created by this account.
     #[serde(rename = "total-created-apps")]
     pub total_created_apps: u64,
-    /// \[apar\] parameters of assets created by this account.
+    /// [apar] parameters of assets created by this account.
     ///
     /// Note: the raw account uses `map[int] -> Asset` for this type.
     #[serde(rename = "created-assets", skip_serializing_if = "Option::is_none")]
@@ -86,10 +80,10 @@ pub struct Account {
     /// The count of all assets (AssetParams objects) created by this account.
     #[serde(rename = "total-created-assets")]
     pub total_created_assets: u64,
-    /// \[tbx\] The number of existing boxes created by this account's app.
+    /// [tbx] The number of existing boxes created by this account's app.
     #[serde(rename = "total-boxes", skip_serializing_if = "Option::is_none")]
     pub total_boxes: Option<u64>,
-    /// \[tbxb\] The total number of bytes used by this account's app's box keys and values.
+    /// [tbxb] The total number of bytes used by this account's app's box keys and values.
     #[serde(rename = "total-box-bytes", skip_serializing_if = "Option::is_none")]
     pub total_box_bytes: Option<u64>,
     #[serde(rename = "participation", skip_serializing_if = "Option::is_none")]
@@ -100,16 +94,16 @@ pub struct Account {
     /// amount of MicroAlgos of pending rewards in this account.
     #[serde(rename = "pending-rewards")]
     pub pending_rewards: u64,
-    /// \[ebase\] used as part of the rewards computation. Only applicable to accounts which are participating.
+    /// [ebase] used as part of the rewards computation. Only applicable to accounts which are participating.
     #[serde(rename = "reward-base", skip_serializing_if = "Option::is_none")]
     pub reward_base: Option<u64>,
-    /// \[ern\] total rewards of MicroAlgos the account has received, including pending rewards.
+    /// [ern] total rewards of MicroAlgos the account has received, including pending rewards.
     #[serde(rename = "rewards")]
     pub rewards: u64,
     /// The round for which this information is relevant.
     #[serde(rename = "round")]
     pub round: u64,
-    /// \[onl\] delegation status of the account's MicroAlgos
+    /// [onl] delegation status of the account's MicroAlgos
     ///   * Offline - indicates that the associated account is delegated.
     ///   *  Online  - indicates that the associated account used as part of the delegation pool.
     ///   *   NotParticipating - indicates that the associated account is neither a delegator nor a delegate.
@@ -121,7 +115,7 @@ pub struct Account {
     ///   * lsig
     #[serde(rename = "sig-type", skip_serializing_if = "Option::is_none")]
     pub sig_type: Option<String>,
-    /// \[spend\] the address against which signing should be checked. If empty, the address of the current account is used. This field can be updated in any transaction by setting the RekeyTo field.
+    /// [spend] the address against which signing should be checked. If empty, the address of the current account is used. This field can be updated in any transaction by setting the RekeyTo field.
     #[serde(rename = "auth-addr", skip_serializing_if = "Option::is_none")]
     pub auth_addr: Option<String>,
     /// The round in which this account last proposed the block.

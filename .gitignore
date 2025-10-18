@@ -24,8 +24,8 @@ AGENTS.md
 .kiro/
 
 packages/python/**/*algokit_*.py
-packages/python**/*.dll
-packages/python**/*.so
-packages/python**/*.dylib
-packages/python**/*.whl
+packages/python/**/*.dll
+packages/python/**/*.so
+packages/python/**/*.dylib
+packages/python/**/*.whl
 

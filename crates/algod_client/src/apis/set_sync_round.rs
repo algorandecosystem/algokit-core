@@ -22,7 +22,6 @@ use crate::models::ErrorResponse;
 /// struct for typed errors of method [`set_sync_round`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum SetSyncRoundError {
     Status400(ErrorResponse),
     Status401(ErrorResponse),

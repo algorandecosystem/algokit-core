@@ -21,7 +21,6 @@ use super::{AlgodApiError, ContentType, Error};
 /// struct for typed errors of method [`health_check`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum HealthCheckError {
     Statusdefault(),
     DefaultResponse(),

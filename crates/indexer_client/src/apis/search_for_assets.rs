@@ -21,7 +21,6 @@ use crate::models::{SearchForAssets, UnknownJsonValue};
 /// struct for typed errors of method [`search_for_assets`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum SearchForAssetsError {
     Status400(UnknownJsonValue),
     Status500(UnknownJsonValue),
