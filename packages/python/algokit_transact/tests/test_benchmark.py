@@ -2,7 +2,6 @@ import base64
 from algokit_transact.algokit_transact_ffi import decode_transaction, encode_transaction, encode_transaction_raw
 from . import TEST_DATA
 from algosdk import encoding
-import msgpack
 
 def core_to_sdk_transaction(core_txn):
     encoded_txn = encode_transaction_raw(core_txn)
