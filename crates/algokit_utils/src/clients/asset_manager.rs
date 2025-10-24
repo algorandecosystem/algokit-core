@@ -201,7 +201,7 @@ impl AssetManager {
     ) -> Result<AlgodAccountAssetInformation, AssetManagerError> {
         let sender_str = sender.to_string();
         self.algod_client
-            .account_asset_information(sender_str.as_str(), asset_id, None)
+            .account_asset_information(sender_str.as_str(), asset_id)
             .await
             .map_err(|error| {
                 map_account_asset_information_error(&error, sender_str.as_str(), asset_id)
