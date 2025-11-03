@@ -44,3 +44,5 @@ algokit_transact/_algokit_transact/
 Thumbs.db
 ehthumbs.db
 Desktop.ini
+
+/.polytest*

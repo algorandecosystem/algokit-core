@@ -36,3 +36,9 @@ pytest = ">=7.4.4"
 [tool.poetry.group.build.dependencies]
 auditwheel = "^6.4.0"
 patchelf = { version = "^0.17.2.2", markers = "sys_platform == 'linux'" }
+
+[tool.poetry.group.dev.dependencies]
+poethepoet = "^0.37.0"
+
+[tool.poe.tasks]
+polytest = "polytest --config test_configs/transact.json --git https://github.com/joe-p/algokit-polytest#main run -t pytest"
