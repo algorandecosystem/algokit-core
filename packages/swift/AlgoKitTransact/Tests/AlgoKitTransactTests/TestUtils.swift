@@ -9,7 +9,7 @@ struct TransactionTestData: Codable {
   }
 
   struct TransactionData: Codable {
-    let sender: AddressData
+    let sender: String
     let fee: UInt64
     let transactionType: String
     let firstValid: UInt64
@@ -17,14 +17,14 @@ struct TransactionTestData: Codable {
     let genesisHash: [UInt8]
     let genesisId: String
     let note: [UInt8]?
-    let rekeyTo: AddressData?
+    let rekeyTo: String?
     let lease: [UInt8]?
     let group: [UInt8]?
     let payment: PaymentFieldsData
   }
 
   struct PaymentFieldsData: Codable {
-    let receiver: AddressData
+    let receiver: String
     let amount: UInt64
   }
 
@@ -50,28 +50,18 @@ func loadTestData() throws -> TestData {
 func makeTransaction(from testData: TransactionTestData) -> Transaction {
   return Transaction(
     transactionType: .payment,
-    sender: Address(
-      address: testData.transaction.sender.address,
-      pubKey: Data(testData.transaction.sender.pubKey)
-    ),
+    sender: testData.transaction.sender,
     fee: testData.transaction.fee,
     firstValid: testData.transaction.firstValid,
     lastValid: testData.transaction.lastValid,
     genesisHash: Data(testData.transaction.genesisHash),
     genesisId: testData.transaction.genesisId,
     note: testData.transaction.note != nil ? Data(testData.transaction.note!) : nil,
-    rekeyTo: testData.transaction.rekeyTo != nil
-      ? Address(
-        address: testData.transaction.rekeyTo!.address,
-        pubKey: Data(testData.transaction.rekeyTo!.pubKey)
-      ) : nil,
+    rekeyTo: testData.transaction.rekeyTo,
     lease: testData.transaction.lease != nil ? Data(testData.transaction.lease!) : nil,
     group: testData.transaction.group != nil ? Data(testData.transaction.group!) : nil,
     payment: PaymentTransactionFields(
-      receiver: Address(
-        address: testData.transaction.payment.receiver.address,
-        pubKey: Data(testData.transaction.payment.receiver.pubKey)
-      ),
+      receiver: testData.transaction.payment.receiver,
       amount: testData.transaction.payment.amount,
       closeRemainderTo: nil
     ),

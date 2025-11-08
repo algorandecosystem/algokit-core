@@ -13,8 +13,11 @@ func genericTransactionMalformedBytes() throws {
   let simplePayment = testData.simplePayment
   let badBytes = Data(simplePayment.unsignedBytes[13..<37])
   do {
-    _ = try decodeTransaction(bytes: badBytes)
+    _ = try decodeTransaction(encodedTx: badBytes)
     #expect(Bool(false), "Expected DecodingError to be thrown")
+  } catch AlgoKitTransactError.InputError {
+    // Success - expected error was thrown
+    #expect(Bool(true))
   } catch AlgoKitTransactError.DecodingError {
     // Success - expected error was thrown
     #expect(Bool(true))
@@ -24,9 +27,9 @@ func genericTransactionMalformedBytes() throws {
 @Test("Generic Transaction: encode 0 bytes")
 func genericTransactionEncode0Bytes() throws {
   do {
-    _ = try decodeTransaction(bytes: Data())
+    _ = try decodeTransaction(encodedTx: Data())
     #expect(Bool(false), "Expected DecodingError to be thrown")
-  } catch AlgoKitTransactError.DecodingError(let message) {
+  } catch AlgoKitTransactError.InputError(let message) {
     #expect(message == "attempted to decode 0 bytes")
   }
 }
