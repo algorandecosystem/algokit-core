@@ -32,6 +32,10 @@ jobs:
       - name: Build AAR
         run: cargo pkg transact aar
 
+      - name: Test
+        working-directory: packages/android/algokit_transact
+        run: ./gradlew test
+
       - name: Archive Build Output
         uses: actions/upload-artifact@v4
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
