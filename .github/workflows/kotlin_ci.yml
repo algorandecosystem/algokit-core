@@ -2,6 +2,9 @@ name: Kotlin CI
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
   pull_request:
     branches:
       - main
@@ -35,6 +38,7 @@ jobs:
 
       - name: Archive Build Output
         uses: actions/upload-artifact@v4
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         with:
           name: algokit_transact.aar
           path: packages/android/algokit_transact/build/outputs/aar/algokit_transact-release.aar
