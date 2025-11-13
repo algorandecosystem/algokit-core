@@ -1,4 +1,4 @@
-mod kotlin;
+mod android;
 mod python;
 mod swift;
 
@@ -17,8 +17,8 @@ enum Language {
     #[value(alias = "py")]
     Python,
     Swift,
-    #[value(alias = "kt")]
-    Kotlin,
+    #[value(alias = "aar")]
+    Android,
 }
 
 impl Display for Language {
@@ -26,7 +26,7 @@ impl Display for Language {
         match self {
             Language::Python => f.write_str("python"),
             Language::Swift => f.write_str("swift"),
-            Language::Kotlin => f.write_str("kotlin"),
+            Language::Android => f.write_str("android"),
         }
     }
 }
@@ -36,7 +36,7 @@ impl Language {
         match self {
             Self::Python => python::build(pkg),
             Self::Swift => swift::build(pkg),
-            Self::Kotlin => kotlin::build(pkg),
+            Self::Android => android::build(pkg),
         }
     }
 

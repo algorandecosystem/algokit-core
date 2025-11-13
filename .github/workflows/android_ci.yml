@@ -1,4 +1,4 @@
-name: Kotlin CI
+name: Android CI
 
 on:
   workflow_dispatch:
@@ -30,7 +30,7 @@ jobs:
           ndk-version: r27d
 
       - name: Build AAR
-        run: cargo pkg transact kotlin
+        run: cargo pkg transact aar
 
       - name: Archive Build Output
         uses: actions/upload-artifact@v4
