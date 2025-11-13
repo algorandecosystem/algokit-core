@@ -16,7 +16,7 @@ cargo pkg transact kt
 
 ### Android
 
-First you need a connected android device. You can either use a phsyical device or start an emulator.
+First you need a connected android device. You can either use a physical device or start an emulator.
 
 To see available emulators:
 
