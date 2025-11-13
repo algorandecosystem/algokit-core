@@ -56,7 +56,11 @@ pub fn build(package: &Package) -> Result<()> {
         None,
     )?;
 
-    run("./gradlew assembleRelease", Some(&gradle_root_dir), None)?;
+    run(
+        "sh -c './gradlew assembleRelease'",
+        Some(&gradle_root_dir),
+        None,
+    )?;
 
     Ok(())
 }
