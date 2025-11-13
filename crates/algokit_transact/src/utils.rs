@@ -32,7 +32,7 @@ pub fn sort_msgpack_value(value: rmpv::Value) -> Result<rmpv::Value, AlgoKitTran
                     rmpv::Value::Binary(bytes) => binary_entries.push((bytes, sorted_v)),
                     _ => {
                         return Err(AlgoKitTransactError::InputError {
-                            message: "Unsupported MessagePack map key type; only integer, string, and binary keys are supported".to_string(),
+                            err_msg: "Unsupported MessagePack map key type; only integer, string, and binary keys are supported".to_string(),
                         })
                     }
                 }
