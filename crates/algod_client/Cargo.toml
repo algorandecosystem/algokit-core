@@ -9,6 +9,7 @@ edition = "2024"
 [features]
 default = ["default_client"]
 default_client = ["algokit_http_client/default_client"]
+ffi_uniffi = ["dep:uniffi", "algokit_http_client/ffi_uniffi", "dep:algokit_transact_ffi"]
 
 [dependencies]
 # Core serialization
@@ -26,10 +27,15 @@ serde_bytes = "^0.11"
 algokit_http_client = { path = "../algokit_http_client", features = ["ffi_uniffi"] }
 url = "^2.5"
 
+# Uniffi for FFI bindings
+uniffi = { workspace = true, optional = true }
+algokit_transact_ffi = { optional = true, version = "0.1.0", path = "../algokit_transact_ffi" }
+
 # AlgoKit dependencies for msgpack and signed transactions
 algokit_transact = { path = "../algokit_transact" }
 # MessagePack serialization
 rmp-serde = "^1.1"
+rmpv = { version = "1.3.0", features = ["with-serde"] }
 
 # Error handling
 snafu = { workspace = true }

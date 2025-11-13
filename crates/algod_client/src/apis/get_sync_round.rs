@@ -22,6 +22,7 @@ use crate::models::{ErrorResponse, GetSyncRound};
 /// struct for typed errors of method [`get_sync_round`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
+#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum GetSyncRoundError {
     Status400(ErrorResponse),
     Status401(ErrorResponse),
@@ -29,7 +30,7 @@ pub enum GetSyncRoundError {
     Status503(ErrorResponse),
     Statusdefault(),
     DefaultResponse(),
-    UnknownValue(serde_json::Value),
+    UnknownValue(crate::models::UnknownJsonValue),
 }
 
 /// Gets the minimum sync round for the ledger.
@@ -39,7 +40,6 @@ pub async fn get_sync_round(http_client: &dyn HttpClient) -> Result<GetSyncRound
     let query_params: HashMap<String, String> = HashMap::new();
 
     let mut headers: HashMap<String, String> = HashMap::new();
-    headers.insert("Content-Type".to_string(), "application/json".to_string());
     headers.insert("Accept".to_string(), "application/json".to_string());
 
     let body = None;

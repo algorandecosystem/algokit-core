@@ -37,9 +37,12 @@ cargo api <subcommand>
 - `test-oas` - Test the OAS generator
 - `format-oas` - Format the OAS generator code
 - `lint-oas` - Lint and type-check the OAS generator
-- `format-algod` - Format generated Rust code
-- `generate-algod` - Generate algod API client
-- `convert-openapi` - Convert OpenAPI specification
+- `format-algod` / `format-indexer` / `format-kmd` - Format generated Rust clients
+- `generate-algod` / `generate-indexer` / `generate-kmd` - Generate Rust API clients
+- `generate-ts-algod` / `generate-ts-indexer` / `generate-ts-kmd` - Generate TypeScript API clients
+- `generate-all` / `generate-ts-all` - Generate all Rust or TypeScript clients
+- `convert-openapi` - Convert all OpenAPI specifications
+- `convert-algod` / `convert-indexer` / `convert-kmd` - Convert individual OpenAPI specs
 
 #### 3. Documentation Building
 
@@ -71,7 +74,7 @@ pre-commit run --all-files
 pre-commit install # to auto run on each commit
 ```
 
-The hooks will automatically run `cargo fmt --check`, `cargo clippy`, `cargo check`, `cargo test` on every commit.
+The hooks will automatically run `cargo fmt --check`, `cargo clippy`, `cargo check`, and the Rust test suite via `cargo t` (cargo-nextest, plus doc tests) on every commit.
 
 ## Development Workflow
 
@@ -79,12 +82,15 @@ The hooks will automatically run `cargo fmt --check`, `cargo clippy`, `cargo che
 
 1. **Make changes to the core crates** (e.g., `algokit_transact`)
 1. **Run tests** to ensure functionality works:
+
    ```bash
-   cargo test -p algokit_transact
+   cargo t -p algokit_transact
    ```
+
 1. **Test FFI layer** if your changes affect the interface:
+
    ```bash
-   cargo test -p algokit_transact_ffi
+   cargo t -p algokit_transact_ffi
    ```
 
 ### When Developing Language Bindings
@@ -92,10 +98,13 @@ The hooks will automatically run `cargo fmt --check`, `cargo clippy`, `cargo che
 #### Python Development
 
 1. **Build the Python bindings**:
+
    ```bash
    cargo pkg algokit_transact python
    ```
+
 1. **Test Python bindings**:
+
    ```bash
    cd packages/python/algokit_transact
    poetry run pytest
@@ -104,6 +113,7 @@ The hooks will automatically run `cargo fmt --check`, `cargo clippy`, `cargo che
 #### Swift Development
 
 1. **Build the Swift bindings**:
+
    ```bash
    cargo pkg algokit_transact swift
    ```
@@ -113,22 +123,19 @@ The hooks will automatically run `cargo fmt --check`, `cargo clippy`, `cargo che
 1. **Run Rust tests**:
 
    ```bash
-   cargo test
+   cargo t
    ```
 
 1. **Run specific crate tests**:
 
    ```bash
-   cargo test -p algokit_transact
-   cargo test -p algokit_transact_ffi
+   cargo t -p algokit_transact
+   cargo t -p algokit_transact_ffi
    ```
 
 1. **Run language-specific tests**:
 
    ```bash
-   # TypeScript
-   cd packages/typescript/algokit_transact && bun test
-
    # Python
    cd packages/python/algokit_transact && poetry run pytest
    ```
@@ -142,9 +149,7 @@ The hooks will automatically run `cargo fmt --check`, `cargo clippy`, `cargo che
 Or manually:
 
 ```bash
-cargo test                                    # Rust tests
-cargo pkg algokit_transact typescript        # Build TS
-cd packages/typescript/algokit_transact && bun test  # Test TS
+cargo t                                        # Rust tests (cargo-nextest)
 cargo pkg algokit_transact python            # Build Python
 cd packages/python/algokit_transact && poetry run pytest  # Test Python
 ```
@@ -157,10 +162,12 @@ The `algokit_abi` crate uses [insta](https://insta.rs/) for snapshot testing to 
 
 - Tests may fail if snapshots need updating after code changes
 - To review and approve new snapshots, run:
+
   ```bash
   cd crates/algokit_abi
   cargo insta review
   ```
+
 - The `cargo-insta` tool is available in the workspace (no global installation needed)
 - For more information on snapshot testing, see the [insta documentation](https://insta.rs/docs/)
 

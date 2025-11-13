@@ -12,7 +12,6 @@ use algokit_http_client::{HttpClient, HttpMethod};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use super::parameter_enums::*;
 use super::{AlgodApiError, ContentType, Error};
 use algokit_transact::AlgorandMsgpack;
 
@@ -24,6 +23,7 @@ use crate::models::{ErrorResponse, GetPendingTransactionsByAddress};
 /// struct for typed errors of method [`get_pending_transactions_by_address`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
+#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum GetPendingTransactionsByAddressError {
     Status400(ErrorResponse),
     Status401(ErrorResponse),
@@ -31,7 +31,7 @@ pub enum GetPendingTransactionsByAddressError {
     Status503(ErrorResponse),
     Statusdefault(),
     DefaultResponse(),
-    UnknownValue(serde_json::Value),
+    UnknownValue(crate::models::UnknownJsonValue),
 }
 
 /// Get the list of pending transactions by address, sorted by priority, in decreasing order, truncated at the end at MAX. If MAX = 0, returns all pending transactions.
@@ -39,11 +39,9 @@ pub async fn get_pending_transactions_by_address(
     http_client: &dyn HttpClient,
     address: &str,
     max: Option<u64>,
-    format: Option<Format>,
 ) -> Result<GetPendingTransactionsByAddress, Error> {
     let p_address = address;
     let p_max = max;
-    let p_format = format;
 
     let path = format!(
         "/v2/accounts/{address}/transactions/pending",
@@ -54,23 +52,10 @@ pub async fn get_pending_transactions_by_address(
     if let Some(value) = p_max {
         query_params.insert("max".to_string(), value.to_string());
     }
-    if let Some(value) = p_format {
-        query_params.insert("format".to_string(), value.to_string());
-    }
-
-    let use_msgpack = p_format.map(|f| f != Format::Json).unwrap_or(true);
+    query_params.insert("format".to_string(), "msgpack".to_string());
 
     let mut headers: HashMap<String, String> = HashMap::new();
-    if use_msgpack {
-        headers.insert(
-            "Content-Type".to_string(),
-            "application/msgpack".to_string(),
-        );
-        headers.insert("Accept".to_string(), "application/msgpack".to_string());
-    } else {
-        headers.insert("Content-Type".to_string(), "application/json".to_string());
-        headers.insert("Accept".to_string(), "application/json".to_string());
-    }
+    headers.insert("Accept".to_string(), "application/msgpack".to_string());
 
     let body = None;
 

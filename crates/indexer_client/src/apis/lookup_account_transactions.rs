@@ -15,18 +15,19 @@ use super::parameter_enums::*;
 use super::{ContentType, Error, IndexerApiError};
 
 // Import all custom types used by this endpoint
-use crate::models::LookupAccountTransactions;
+use crate::models::{LookupAccountTransactions, UnknownJsonValue};
 
 // Import request body type if needed
 
 /// struct for typed errors of method [`lookup_account_transactions`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
+#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum LookupAccountTransactionsError {
-    Status400(serde_json::Value),
-    Status500(serde_json::Value),
+    Status400(UnknownJsonValue),
+    Status500(UnknownJsonValue),
     DefaultResponse(),
-    UnknownValue(serde_json::Value),
+    UnknownValue(crate::models::UnknownJsonValue),
 }
 
 /// Lookup account transactions. Transactions are returned newest to oldest.
@@ -119,7 +120,6 @@ pub async fn lookup_account_transactions(
     }
 
     let mut headers: HashMap<String, String> = HashMap::new();
-    headers.insert("Content-Type".to_string(), "application/json".to_string());
     headers.insert("Accept".to_string(), "application/json".to_string());
 
     let body = None;

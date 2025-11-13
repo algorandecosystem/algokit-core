@@ -22,13 +22,14 @@ use crate::models::{ErrorResponse, TransactionParams};
 /// struct for typed errors of method [`transaction_params`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
+#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum TransactionParamsError {
     Status401(ErrorResponse),
     Status500(ErrorResponse),
     Status503(ErrorResponse),
     Statusdefault(),
     DefaultResponse(),
-    UnknownValue(serde_json::Value),
+    UnknownValue(crate::models::UnknownJsonValue),
 }
 
 /// Get parameters for constructing a new transaction
@@ -38,7 +39,6 @@ pub async fn transaction_params(http_client: &dyn HttpClient) -> Result<Transact
     let query_params: HashMap<String, String> = HashMap::new();
 
     let mut headers: HashMap<String, String> = HashMap::new();
-    headers.insert("Content-Type".to_string(), "application/json".to_string());
     headers.insert("Accept".to_string(), "application/json".to_string());
 
     let body = None;

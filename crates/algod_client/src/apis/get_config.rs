@@ -21,10 +21,11 @@ use super::{AlgodApiError, ContentType, Error};
 /// struct for typed errors of method [`get_config`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
+#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum GetConfigError {
     Statusdefault(),
     DefaultResponse(),
-    UnknownValue(serde_json::Value),
+    UnknownValue(crate::models::UnknownJsonValue),
 }
 
 /// Returns the merged (defaults + overrides) config file in json.
@@ -34,7 +35,6 @@ pub async fn get_config(http_client: &dyn HttpClient) -> Result<String, Error> {
     let query_params: HashMap<String, String> = HashMap::new();
 
     let mut headers: HashMap<String, String> = HashMap::new();
-    headers.insert("Content-Type".to_string(), "application/json".to_string());
     headers.insert("Accept".to_string(), "application/json".to_string());
 
     let body = None;

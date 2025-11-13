@@ -1,11 +1,8 @@
-use std::collections::HashMap;
-use std::env;
-use std::path::{Path, PathBuf};
-use std::process::Output;
-
 use clap::{Parser, Subcommand};
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{Result, eyre};
 use duct::cmd;
+use once_cell::sync::OnceCell;
+use std::path::{Path, PathBuf};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about = "API development tools", long_about = None)]
@@ -32,12 +29,18 @@ enum Commands {
     /// Format generated indexer Rust code
     #[command(name = "format-indexer")]
     FormatIndexer,
+    /// Format generated KMD Rust code
+    #[command(name = "format-kmd")]
+    FormatKmd,
     /// Generate algod API client
     #[command(name = "generate-algod")]
     GenerateAlgod,
     /// Generate indexer API client
     #[command(name = "generate-indexer")]
     GenerateIndexer,
+    /// Generate KMD API client
+    #[command(name = "generate-kmd")]
+    GenerateKmd,
     /// Generate both algod and indexer API clients
     #[command(name = "generate-all")]
     GenerateAll,
@@ -50,38 +53,96 @@ enum Commands {
     /// Convert indexer OpenAPI specification only
     #[command(name = "convert-indexer")]
     ConvertIndexer,
+    /// Convert kmd OpenAPI specification only
+    #[command(name = "convert-kmd")]
+    ConvertKmd,
 }
 
-fn get_repo_root() -> PathBuf {
-    let manifest_dir = env!("CARGO_MANIFEST_DIR");
-    let repo_root = Path::new(manifest_dir)
-        .parent() // tools/
-        .unwrap()
-        .parent() // repo root
-        .unwrap();
+fn repo_root() -> &'static Path {
+    static ROOT: OnceCell<PathBuf> = OnceCell::new();
 
-    PathBuf::from(repo_root)
+    ROOT.get_or_init(|| {
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(|dir| dir.parent())
+            .map(Path::to_path_buf)
+            .expect("invalid repository layout")
+    })
+    .as_path()
 }
 
-fn run(
-    command_str: &str,
-    dir: Option<&Path>,
-    env_vars: Option<HashMap<String, String>>,
-) -> Result<Output> {
-    let parsed_command: Vec<String> = shlex::Shlex::new(command_str).collect();
+fn run(command_str: &str, dir: Option<&Path>, env_vars: Option<&[(&str, &str)]>) -> Result<()> {
+    let mut tokens = shlex::Shlex::new(command_str);
+    let program = tokens
+        .next()
+        .ok_or_else(|| eyre!("command string must not be empty"))?;
+    let args: Vec<_> = tokens.collect();
 
-    let working_dir = get_repo_root().join(dir.unwrap_or(Path::new("")));
-    let mut command = cmd(&parsed_command[0], &parsed_command[1..])
-        .dir(&working_dir)
-        .stderr_to_stdout();
+    let working_dir = dir
+        .map(|path| repo_root().join(path))
+        .unwrap_or_else(|| repo_root().to_path_buf());
 
-    if let Some(env_vars) = env_vars {
-        for (key, value) in &env_vars {
-            command = command.env(key, value);
-        }
+    let mut expr = cmd(program, args).dir(&working_dir).stderr_to_stdout();
+
+    if let Some(vars) = env_vars {
+        expr = vars
+            .iter()
+            .fold(expr, |cmd, (key, value)| cmd.env(key, value));
     }
 
-    Ok(command.run()?)
+    expr.run()?;
+    Ok(())
+}
+
+#[derive(Clone, Copy)]
+struct RsClientConfig {
+    spec: &'static str,
+    output_rel: &'static str,
+    package_name: &'static str,
+    description: &'static str,
+}
+
+const ALGOD_RS_CLIENT: RsClientConfig = RsClientConfig {
+    spec: "algod",
+    output_rel: "crates/algod_client",
+    package_name: "algod_client",
+    description: "API client for algod interaction.",
+};
+
+const INDEXER_RS_CLIENT: RsClientConfig = RsClientConfig {
+    spec: "indexer",
+    output_rel: "crates/indexer_client",
+    package_name: "indexer_client",
+    description: "API client for indexer interaction.",
+};
+
+const KMD_RS_CLIENT: RsClientConfig = RsClientConfig {
+    spec: "kmd",
+    output_rel: "crates/kmd_client",
+    package_name: "kmd_client",
+    description: "API client for kmd interaction.",
+};
+
+fn generate_rs_client(config: &RsClientConfig) -> Result<()> {
+    run(
+        &format!(
+            "uv run python -m rust_oas_generator.cli ../specs/{}.oas3.json --output ../../{}/ --package-name {} --description \"{}\"",
+            config.spec, config.output_rel, config.package_name, config.description
+        ),
+        Some(Path::new("api/oas_generator")),
+        None,
+    )?;
+
+    run(
+        &format!(
+            "cargo fmt --manifest-path Cargo.toml -p {}",
+            config.package_name
+        ),
+        None,
+        None,
+    )?;
+
+    Ok(())
 }
 
 fn execute_command(command: &Commands) -> Result<()> {
@@ -122,76 +183,47 @@ fn execute_command(command: &Commands) -> Result<()> {
                 None,
             )?;
         }
+        Commands::FormatKmd => {
+            run(
+                "cargo fmt --manifest-path Cargo.toml -p kmd_client",
+                None,
+                None,
+            )?;
+        }
         Commands::GenerateAlgod => {
-            // Generate the client
-            run(
-                "uv run python -m rust_oas_generator.cli ../specs/algod.oas3.json --output ../../crates/algod_client/ --package-name algod_client --description \"API client for algod interaction.\"",
-                Some(Path::new("api/oas_generator")),
-                None,
-            )?;
-            // Format the generated code
-            run(
-                "cargo fmt --manifest-path Cargo.toml -p algod_client",
-                None,
-                None,
-            )?;
+            generate_rs_client(&ALGOD_RS_CLIENT)?;
         }
         Commands::GenerateIndexer => {
-            // Generate the client
-            run(
-                "uv run python -m rust_oas_generator.cli ../specs/indexer.oas3.json --output ../../crates/indexer_client/ --package-name indexer_client --description \"API client for indexer interaction.\"",
-                Some(Path::new("api/oas_generator")),
-                None,
-            )?;
-            // Format the generated code
-            run(
-                "cargo fmt --manifest-path Cargo.toml -p indexer_client",
-                None,
-                None,
-            )?;
+            generate_rs_client(&INDEXER_RS_CLIENT)?;
+        }
+        Commands::GenerateKmd => {
+            generate_rs_client(&KMD_RS_CLIENT)?;
         }
         Commands::GenerateAll => {
-            // Generate algod client
-            run(
-                "uv run python -m rust_oas_generator.cli ../specs/algod.oas3.json --output ../../crates/algod_client/ --package-name algod_client --description \"API client for algod interaction.\"",
-                Some(Path::new("api/oas_generator")),
-                None,
-            )?;
-            // Generate indexer client
-            run(
-                "uv run python -m rust_oas_generator.cli ../specs/indexer.oas3.json --output ../../crates/indexer_client/ --package-name indexer_client --description \"API client for indexer interaction.\"",
-                Some(Path::new("api/oas_generator")),
-                None,
-            )?;
-            // Format both generated codes
-            run(
-                "cargo fmt --manifest-path Cargo.toml -p algod_client",
-                None,
-                None,
-            )?;
-            run(
-                "cargo fmt --manifest-path Cargo.toml -p indexer_client",
-                None,
-                None,
-            )?;
+            generate_rs_client(&ALGOD_RS_CLIENT)?;
+            generate_rs_client(&INDEXER_RS_CLIENT)?;
+            generate_rs_client(&KMD_RS_CLIENT)?;
         }
         Commands::ConvertOpenapi => {
-            run(
-                "bun scripts/convert-openapi.ts",
-                Some(Path::new("api")),
-                None,
-            )?;
+            run("npm run convert-openapi", Some(Path::new("api")), None)?;
         }
         Commands::ConvertAlgod => {
             run(
-                "bun scripts/convert-openapi.ts --algod-only",
+                "npm run convert-openapi -- --algod-only",
                 Some(Path::new("api")),
                 None,
             )?;
         }
         Commands::ConvertIndexer => {
             run(
-                "bun scripts/convert-openapi.ts --indexer-only",
+                "npm run convert-openapi -- --indexer-only",
+                Some(Path::new("api")),
+                None,
+            )?;
+        }
+        Commands::ConvertKmd => {
+            run(
+                "npm run convert-openapi -- --kmd-only",
                 Some(Path::new("api")),
                 None,
             )?;

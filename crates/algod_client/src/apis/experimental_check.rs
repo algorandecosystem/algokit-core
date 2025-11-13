@@ -21,11 +21,12 @@ use super::{AlgodApiError, ContentType, Error};
 /// struct for typed errors of method [`experimental_check`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
+#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum ExperimentalCheckError {
     Status404(),
     Statusdefault(),
     DefaultResponse(),
-    UnknownValue(serde_json::Value),
+    UnknownValue(crate::models::UnknownJsonValue),
 }
 
 /// Returns OK if experimental API is enabled.
@@ -35,7 +36,6 @@ pub async fn experimental_check(http_client: &dyn HttpClient) -> Result<(), Erro
     let query_params: HashMap<String, String> = HashMap::new();
 
     let mut headers: HashMap<String, String> = HashMap::new();
-    headers.insert("Content-Type".to_string(), "application/json".to_string());
     headers.insert("Accept".to_string(), "application/json".to_string());
 
     let body = None;

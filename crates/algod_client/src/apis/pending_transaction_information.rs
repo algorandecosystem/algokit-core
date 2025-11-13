@@ -12,7 +12,6 @@ use algokit_http_client::{HttpClient, HttpMethod};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use super::parameter_enums::*;
 use super::{AlgodApiError, ContentType, Error};
 use algokit_transact::AlgorandMsgpack;
 
@@ -24,13 +23,14 @@ use crate::models::{ErrorResponse, PendingTransactionResponse};
 /// struct for typed errors of method [`pending_transaction_information`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
+#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum PendingTransactionInformationError {
     Status400(ErrorResponse),
     Status401(ErrorResponse),
     Status404(ErrorResponse),
     Statusdefault(),
     DefaultResponse(),
-    UnknownValue(serde_json::Value),
+    UnknownValue(crate::models::UnknownJsonValue),
 }
 
 /// Given a transaction ID of a recently submitted transaction, it returns information about it.  There are several cases when this might succeed:
@@ -42,10 +42,8 @@ pub enum PendingTransactionInformationError {
 pub async fn pending_transaction_information(
     http_client: &dyn HttpClient,
     txid: &str,
-    format: Option<Format>,
 ) -> Result<PendingTransactionResponse, Error> {
     let p_txid = txid;
-    let p_format = format;
 
     let path = format!(
         "/v2/transactions/pending/{txid}",
@@ -53,23 +51,10 @@ pub async fn pending_transaction_information(
     );
 
     let mut query_params: HashMap<String, String> = HashMap::new();
-    if let Some(value) = p_format {
-        query_params.insert("format".to_string(), value.to_string());
-    }
-
-    let use_msgpack = p_format.map(|f| f != Format::Json).unwrap_or(true);
+    query_params.insert("format".to_string(), "msgpack".to_string());
 
     let mut headers: HashMap<String, String> = HashMap::new();
-    if use_msgpack {
-        headers.insert(
-            "Content-Type".to_string(),
-            "application/msgpack".to_string(),
-        );
-        headers.insert("Accept".to_string(), "application/msgpack".to_string());
-    } else {
-        headers.insert("Content-Type".to_string(), "application/json".to_string());
-        headers.insert("Accept".to_string(), "application/json".to_string());
-    }
+    headers.insert("Accept".to_string(), "application/msgpack".to_string());
 
     let body = None;
 

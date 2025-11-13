@@ -3,7 +3,7 @@ use crate::clients::app_manager::{AppState, BoxName};
 use crate::clients::network_client::NetworkDetails;
 use crate::transactions::{TransactionComposerConfig, TransactionSigner};
 use crate::{AlgorandClient, clients::app_manager::BoxIdentifier};
-use crate::{SendParams, SendTransactionResult};
+use crate::{SendParams, SendResult};
 use algokit_abi::{ABIType, ABIValue, Arc56Contract};
 use algokit_transact::Address;
 use std::collections::HashMap;
@@ -25,21 +25,21 @@ pub struct BoxValue {
 }
 mod compilation;
 mod error;
-mod error_transformation;
+pub(crate) mod error_transformation;
 mod params_builder;
-mod sender;
 mod state_accessor;
 mod transaction_builder;
+mod transaction_sender;
 mod types;
 mod utils;
 pub use error::AppClientError;
 use params_builder::ParamsBuilder;
-pub use sender::TransactionSender;
 pub use state_accessor::StateAccessor;
 pub use transaction_builder::TransactionBuilder;
+pub use transaction_sender::TransactionSender;
 pub use types::{
     AppClientBareCallParams, AppClientMethodCallParams, AppClientParams, AppSourceMaps,
-    CompilationParams, FundAppAccountParams,
+    CompilationParams, FundAppAccountParams, LogicError,
 };
 
 type BoxNameFilter = Box<dyn Fn(&BoxName) -> bool>;
@@ -48,7 +48,7 @@ type BoxNameFilter = Box<dyn Fn(&BoxName) -> bool>;
 pub struct AppClient {
     app_id: u64,
     app_spec: Arc56Contract,
-    algorand: AlgorandClient,
+    algorand: Arc<AlgorandClient>,
     default_sender: Option<String>,
     default_signer: Option<Arc<dyn TransactionSigner>>,
     source_maps: Option<AppSourceMaps>,
@@ -77,7 +77,7 @@ impl AppClient {
     /// or the network's genesis hash present in the node's suggested params.
     pub async fn from_network(
         app_spec: Arc56Contract,
-        algorand: AlgorandClient,
+        algorand: Arc<AlgorandClient>,
         app_name: Option<String>,
         default_sender: Option<String>,
         default_signer: Option<Arc<dyn TransactionSigner>>,
@@ -124,7 +124,7 @@ impl AppClient {
         creator_address: &str,
         app_name: &str,
         app_spec: Arc56Contract,
-        algorand: AlgorandClient,
+        algorand: Arc<AlgorandClient>,
         default_sender: Option<String>,
         default_signer: Option<Arc<dyn TransactionSigner>>,
         source_maps: Option<AppSourceMaps>,
@@ -262,7 +262,7 @@ impl AppClient {
         &self,
         params: FundAppAccountParams,
         send_params: Option<SendParams>,
-    ) -> Result<SendTransactionResult, AppClientError> {
+    ) -> Result<SendResult, AppClientError> {
         self.send().fund_app_account(params, send_params).await
     }
 

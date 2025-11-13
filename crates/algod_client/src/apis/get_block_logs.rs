@@ -22,13 +22,14 @@ use crate::models::{ErrorResponse, GetBlockLogs};
 /// struct for typed errors of method [`get_block_logs`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
+#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum GetBlockLogsError {
     Status400(ErrorResponse),
     Status401(ErrorResponse),
     Status404(ErrorResponse),
     Status500(ErrorResponse),
     DefaultResponse(),
-    UnknownValue(serde_json::Value),
+    UnknownValue(crate::models::UnknownJsonValue),
 }
 
 /// Get all of the logs from outer and inner app calls in the given round
@@ -43,7 +44,6 @@ pub async fn get_block_logs(
     let query_params: HashMap<String, String> = HashMap::new();
 
     let mut headers: HashMap<String, String> = HashMap::new();
-    headers.insert("Content-Type".to_string(), "application/json".to_string());
     headers.insert("Accept".to_string(), "application/json".to_string());
 
     let body = None;

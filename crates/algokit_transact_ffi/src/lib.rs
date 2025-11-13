@@ -1,5 +1,5 @@
 mod multisig;
-mod transactions;
+pub mod transactions;
 
 use algokit_transact::constants::*;
 use algokit_transact::{
@@ -15,6 +15,8 @@ pub use transactions::AssetFreezeTransactionFields;
 pub use transactions::AssetTransferTransactionFields;
 pub use transactions::KeyRegistrationTransactionFields;
 pub use transactions::PaymentTransactionFields;
+pub use transactions::StateProofTransactionFields;
+pub use transactions::{HeartbeatProof, HeartbeatTransactionFields};
 
 use snafu::Snafu;
 
@@ -96,6 +98,8 @@ pub enum TransactionType {
     AssetConfig,
     KeyRegistration,
     AppCall,
+    Heartbeat,
+    StateProof,
 }
 
 #[ffi_record]
@@ -191,6 +195,10 @@ pub struct Transaction {
     key_registration: Option<KeyRegistrationTransactionFields>,
 
     asset_freeze: Option<AssetFreezeTransactionFields>,
+
+    heartbeat: Option<HeartbeatTransactionFields>,
+
+    state_proof: Option<StateProofTransactionFields>,
 }
 
 impl TryFrom<Transaction> for algokit_transact::Transaction {
@@ -205,6 +213,8 @@ impl TryFrom<Transaction> for algokit_transact::Transaction {
             transaction.key_registration.is_some(),
             transaction.app_call.is_some(),
             transaction.asset_freeze.is_some(),
+            transaction.heartbeat.is_some(),
+            transaction.state_proof.is_some(),
         ]
         .into_iter()
         .filter(|&x| x)
@@ -235,6 +245,12 @@ impl TryFrom<Transaction> for algokit_transact::Transaction {
                 transaction.try_into()?,
             )),
             TransactionType::AssetFreeze => Ok(algokit_transact::Transaction::AssetFreeze(
+                transaction.try_into()?,
+            )),
+            TransactionType::Heartbeat => Ok(algokit_transact::Transaction::Heartbeat(
+                transaction.try_into()?,
+            )),
+            TransactionType::StateProof => Ok(algokit_transact::Transaction::StateProof(
                 transaction.try_into()?,
             )),
         }
@@ -269,10 +285,8 @@ impl TryFrom<Transaction> for algokit_transact::TransactionHeader {
     }
 }
 
-impl TryFrom<algokit_transact::Transaction> for Transaction {
-    type Error = AlgoKitTransactError;
-
-    fn try_from(transaction: algokit_transact::Transaction) -> Result<Self, AlgoKitTransactError> {
+impl From<algokit_transact::Transaction> for Transaction {
+    fn from(transaction: algokit_transact::Transaction) -> Self {
         match transaction {
             algokit_transact::Transaction::Payment(payment) => {
                 let payment_fields = payment.clone().into();
@@ -280,6 +294,8 @@ impl TryFrom<algokit_transact::Transaction> for Transaction {
                     payment.header,
                     TransactionType::Payment,
                     Some(payment_fields),
+                    None,
+                    None,
                     None,
                     None,
                     None,
@@ -298,6 +314,8 @@ impl TryFrom<algokit_transact::Transaction> for Transaction {
                     None,
                     None,
                     None,
+                    None,
+                    None,
                 )
             }
             algokit_transact::Transaction::AssetConfig(asset_config) => {
@@ -308,6 +326,8 @@ impl TryFrom<algokit_transact::Transaction> for Transaction {
                     None,
                     None,
                     Some(asset_config_fields),
+                    None,
+                    None,
                     None,
                     None,
                     None,
@@ -324,6 +344,8 @@ impl TryFrom<algokit_transact::Transaction> for Transaction {
                     Some(app_call_fields),
                     None,
                     None,
+                    None,
+                    None,
                 )
             }
             algokit_transact::Transaction::KeyRegistration(key_registration) => {
@@ -336,6 +358,8 @@ impl TryFrom<algokit_transact::Transaction> for Transaction {
                     None,
                     None,
                     Some(key_registration_fields),
+                    None,
+                    None,
                     None,
                 )
             }
@@ -350,6 +374,38 @@ impl TryFrom<algokit_transact::Transaction> for Transaction {
                     None,
                     None,
                     Some(asset_freeze_fields),
+                    None,
+                    None,
+                )
+            }
+            algokit_transact::Transaction::Heartbeat(heartbeat) => {
+                let heartbeat_fields = heartbeat.clone().into();
+                build_transaction(
+                    heartbeat.header,
+                    TransactionType::Heartbeat,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    Some(heartbeat_fields),
+                    None,
+                )
+            }
+            algokit_transact::Transaction::StateProof(state_proof) => {
+                let state_proof_fields = state_proof.clone().into();
+                build_transaction(
+                    state_proof.header,
+                    TransactionType::StateProof,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    Some(state_proof_fields),
                 )
             }
         }
@@ -374,7 +430,7 @@ pub struct SignedTransaction {
 impl From<algokit_transact::SignedTransaction> for SignedTransaction {
     fn from(signed_transaction: algokit_transact::SignedTransaction) -> Self {
         Self {
-            transaction: signed_transaction.transaction.try_into().unwrap(),
+            transaction: signed_transaction.transaction.into(),
             signature: signed_transaction.signature.map(|sig| sig.into()),
             auth_address: signed_transaction.auth_address.map(|addr| addr.as_str()),
             multisignature: signed_transaction.multisignature.map(Into::into),
@@ -436,8 +492,10 @@ fn build_transaction(
     app_call: Option<AppCallTransactionFields>,
     key_registration: Option<KeyRegistrationTransactionFields>,
     asset_freeze: Option<AssetFreezeTransactionFields>,
-) -> Result<Transaction, AlgoKitTransactError> {
-    Ok(Transaction {
+    heartbeat: Option<HeartbeatTransactionFields>,
+    state_proof: Option<StateProofTransactionFields>,
+) -> Transaction {
+    Transaction {
         transaction_type,
         sender: header.sender.as_str(),
         fee: header.fee,
@@ -455,7 +513,9 @@ fn build_transaction(
         app_call,
         key_registration,
         asset_freeze,
-    })
+        heartbeat,
+        state_proof,
+    }
 }
 
 /// Get the transaction type from the encoded transaction.
@@ -473,6 +533,8 @@ pub fn get_encoded_transaction_type(
         algokit_transact::Transaction::AppCall(_) => Ok(TransactionType::AppCall),
         algokit_transact::Transaction::KeyRegistration(_) => Ok(TransactionType::KeyRegistration),
         algokit_transact::Transaction::AssetFreeze(_) => Ok(TransactionType::AssetFreeze),
+        algokit_transact::Transaction::Heartbeat(_) => Ok(TransactionType::Heartbeat),
+        algokit_transact::Transaction::StateProof(_) => Ok(TransactionType::StateProof),
     }
 }
 
@@ -515,7 +577,7 @@ pub fn encode_transaction_raw(transaction: Transaction) -> Result<Vec<u8>, AlgoK
 #[ffi_func]
 pub fn decode_transaction(encoded_tx: &[u8]) -> Result<Transaction, AlgoKitTransactError> {
     let ctx: algokit_transact::Transaction = algokit_transact::Transaction::decode(encoded_tx)?;
-    ctx.try_into()
+    Ok(ctx.into())
 }
 
 /// Decodes a collection of MsgPack bytes into a transaction collection.
@@ -598,8 +660,8 @@ pub fn group_transactions(
     let grouped_txs: Vec<Transaction> = txs
         .assign_group()?
         .into_iter()
-        .map(|tx| tx.try_into())
-        .collect::<Result<Vec<_>, _>>()?;
+        .map(|tx| tx.into())
+        .collect();
 
     Ok(grouped_txs)
 }
@@ -688,7 +750,7 @@ pub fn assign_fee(
 
     let updated_txn = txn.assign_fee(fee_params_internal)?;
 
-    updated_txn.try_into()
+    Ok(updated_txn.into())
 }
 
 /// Decodes a signed transaction.
@@ -772,18 +834,9 @@ mod tests {
             157, 37, 101, 171, 205, 211, 38, 98, 250, 86, 254, 215, 115, 126, 212, 252, 24, 53,
             199, 142, 152, 75, 250, 200, 173, 128, 52, 142, 13, 193, 184, 137,
         ];
-        let tx1 = TestDataMother::simple_payment()
-            .transaction
-            .try_into()
-            .unwrap();
-        let tx2 = TestDataMother::simple_asset_transfer()
-            .transaction
-            .try_into()
-            .unwrap();
-        let tx3 = TestDataMother::opt_in_asset_transfer()
-            .transaction
-            .try_into()
-            .unwrap();
+        let tx1 = TestDataMother::simple_payment().transaction.into();
+        let tx2 = TestDataMother::simple_asset_transfer().transaction.into();
+        let tx3 = TestDataMother::opt_in_asset_transfer().transaction.into();
         let txs = vec![tx1, tx2, tx3];
 
         let grouped_txs = group_transactions(txs.clone()).unwrap();

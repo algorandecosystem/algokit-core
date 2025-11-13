@@ -22,9 +22,10 @@ use crate::models::DebugSettingsProf;
 /// struct for typed errors of method [`put_debug_settings_prof`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
+#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum PutDebugSettingsProfError {
     DefaultResponse(),
-    UnknownValue(serde_json::Value),
+    UnknownValue(crate::models::UnknownJsonValue),
 }
 
 /// Enables blocking and mutex profiles, and returns the old settings
@@ -36,7 +37,6 @@ pub async fn put_debug_settings_prof(
     let query_params: HashMap<String, String> = HashMap::new();
 
     let mut headers: HashMap<String, String> = HashMap::new();
-    headers.insert("Content-Type".to_string(), "application/json".to_string());
     headers.insert("Accept".to_string(), "application/json".to_string());
 
     let body = None;

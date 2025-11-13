@@ -22,12 +22,13 @@ use crate::models::{ErrorResponse, GetStatus};
 /// struct for typed errors of method [`get_status`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
+#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum GetStatusError {
     Status401(ErrorResponse),
     Status500(String),
     Statusdefault(),
     DefaultResponse(),
-    UnknownValue(serde_json::Value),
+    UnknownValue(crate::models::UnknownJsonValue),
 }
 
 /// Gets the current node status.
@@ -37,7 +38,6 @@ pub async fn get_status(http_client: &dyn HttpClient) -> Result<GetStatus, Error
     let query_params: HashMap<String, String> = HashMap::new();
 
     let mut headers: HashMap<String, String> = HashMap::new();
-    headers.insert("Content-Type".to_string(), "application/json".to_string());
     headers.insert("Accept".to_string(), "application/json".to_string());
 
     let body = None;

@@ -33,10 +33,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-api-tools
-      
+
       - name: Run OAS generator linting
         run: cargo api lint-oas
-      
+
       - name: Run OAS generator tests
         run: cargo api test-oas
 
@@ -45,7 +45,7 @@ jobs:
     needs: oas_lint_and_test
     strategy:
       matrix:
-        client: [algod, indexer]
+        client: [algod, indexer, kmd]
         include:
           - client: algod
             output_dir: crates/algod_client
@@ -54,10 +54,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-api-tools
-      
+
       - name: Generate ${{ matrix.client }} API client
         run: cargo api generate-${{ matrix.client }}
-      
+
       - name: Check for output stability
         run: |
           git add -N ${{ matrix.output_dir }}
@@ -66,6 +66,7 @@ jobs:
             echo "🔧 To fix: Run 'cargo api generate-${{ matrix.client }}' locally and commit the changes"
             exit 1
           fi
-      
+
       - name: Verify generated code compiles
         run: cargo check --manifest-path Cargo.toml -p ${{ matrix.client }}_client
+

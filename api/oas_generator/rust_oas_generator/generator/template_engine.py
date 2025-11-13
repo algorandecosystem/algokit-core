@@ -202,7 +202,7 @@ class ResponseAnalyzer:
 
         if not any("DefaultResponse" in t for t in error_types):
             error_types.append("DefaultResponse()")
-        error_types.append("UnknownValue(serde_json::Value)")
+        error_types.append("UnknownValue(crate::models::UnknownJsonValue)")
 
         return error_types
 
@@ -361,6 +361,7 @@ class RustTemplateEngine:
             "get_request_body_name": lambda op: "request" if op.request_body else None,
             "is_request_body_required": lambda op: bool(op.request_body and op.request_body.get("required", False)),
             "should_import_request_body_type": type_analyzer.should_import_request_body_type,
+            "is_empty_request_body": lambda op: self._is_empty_request_body(op),
             # Client type detection
             "get_client_type": lambda spec: self._detect_client_type_from_spec(spec),
         }
@@ -397,6 +398,34 @@ class RustTemplateEngine:
     def _rust_vec(rust_type: str) -> str:
         """Wrap Rust type in Vec."""
         return f"Vec<{rust_type}>"
+
+    def _is_empty_request_body(self, operation: Operation) -> bool:
+        """Check if a request body has no meaningful content (empty object)."""
+        if not operation.request_body:
+            return True
+
+        # Check the content schemas
+        content = operation.request_body.get("content", {})
+        for _, media_obj in content.items():
+            schema = media_obj.get("schema", {})
+
+            # If there's a $ref, we need to resolve it
+            if "$ref" in schema:
+                ref_name = schema["$ref"].split("/")[-1]
+                # Look up the schema in components
+                if hasattr(self, "spec") and self.spec:
+                    components = self.spec.get("components", {})
+                    schemas = components.get("schemas", {})
+                    schema = schemas.get(ref_name, {})
+
+            # Check if schema has any properties
+            properties = schema.get("properties", {})
+            required = schema.get("required", [])
+
+            if properties or required:
+                return False
+
+        return True
 
     def _detect_client_type_from_spec(self, spec: ParsedSpec | dict[str, Any]) -> str:
         """Detect client type from the OpenAPI specification.
@@ -448,9 +477,21 @@ class RustCodeGenerator:
     def _generate_base_files(self, context: dict[str, Any], output_dir: Path) -> dict[Path, str]:
         """Generate base library files."""
         src_dir = output_dir / "src"
-        return {
+        files: dict[Path, str] = {
             src_dir / "lib.rs": self.template_engine.render_template("base/lib.rs.j2", context),
         }
+
+        # Inject additional base files for specific clients
+        # Detect client type
+        client_type_fn = self.template_engine.env.globals.get("get_client_type")
+        client_type = client_type_fn(context["spec"]) if callable(client_type_fn) else "Api"
+        if client_type == "Algod":
+            # Provide msgpack helper to encode/decode arbitrary msgpack values as bytes
+            files[src_dir / "msgpack_value_bytes.rs"] = self.template_engine.render_template(
+                "base/msgpack_value_bytes.rs.j2", context
+            )
+
+        return files
 
     def _generate_model_files(
         self,
@@ -471,6 +512,39 @@ class RustCodeGenerator:
 
         models_context = {**context, "schemas": schemas}
         files[models_dir / "mod.rs"] = self.template_engine.render_template("models/mod.rs.j2", models_context)
+
+        # Inject custom, hand-authored models for specific clients
+        # Detect client type
+        client_type_fn = self.template_engine.env.globals.get("get_client_type")
+        client_type = client_type_fn(context["spec"]) if callable(client_type_fn) else "Api"
+        if client_type == "Algod":
+            # Always generate/override the typed block models
+            files[models_dir / "block_eval_delta.rs"] = self.template_engine.render_template(
+                "models/block/block_eval_delta.rs.j2", context
+            )
+            files[models_dir / "block_state_delta.rs"] = self.template_engine.render_template(
+                "models/block/block_state_delta.rs.j2", context
+            )
+            files[models_dir / "block_account_state_delta.rs"] = self.template_engine.render_template(
+                "models/block/block_account_state_delta.rs.j2", context
+            )
+            files[models_dir / "block_app_eval_delta.rs"] = self.template_engine.render_template(
+                "models/block/block_app_eval_delta.rs.j2", context
+            )
+            files[models_dir / "block_state_proof_tracking_data.rs"] = self.template_engine.render_template(
+                "models/block/block_state_proof_tracking_data.rs.j2", context
+            )
+            files[models_dir / "block_state_proof_tracking.rs"] = self.template_engine.render_template(
+                "models/block/block_state_proof_tracking.rs.j2", context
+            )
+            files[models_dir / "signed_txn_in_block.rs"] = self.template_engine.render_template(
+                "models/block/signed_txn_in_block.rs.j2", context
+            )
+            files[models_dir / "block.rs"] = self.template_engine.render_template("models/block/block.rs.j2", context)
+            # Override GetBlock with a typed model that references Block
+            files[models_dir / "get_block.rs"] = self.template_engine.render_template(
+                "models/block/get_block.rs.j2", context
+            )
 
         return files
 

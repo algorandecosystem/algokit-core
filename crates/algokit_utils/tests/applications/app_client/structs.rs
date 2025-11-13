@@ -41,7 +41,7 @@ async fn test_nested_structs_described_by_structure(
         algokit_utils::applications::app_client::AppClientParams {
             app_id,
             app_spec: spec,
-            algorand,
+            algorand: algorand.into(),
             app_name: None,
             default_sender: Some(sender.to_string()),
             default_signer: None,
@@ -86,7 +86,7 @@ async fn test_nested_structs_described_by_structure(
         )
         .await?;
 
-    let abi_ret = result.abi_return.expect("abi return");
+    let abi_ret = result.result.abi_return.expect("abi return");
     let value = abi_ret.return_value.expect("decoded value");
     match value {
         ABIValue::Struct(ref outer) => {
@@ -151,7 +151,7 @@ async fn test_nested_structs_referenced_by_name(
         algokit_utils::applications::app_client::AppClientParams {
             app_id,
             app_spec: spec,
-            algorand,
+            algorand: algorand.into(),
             app_name: None,
             default_sender: Some(sender.to_string()),
             default_signer: None,
@@ -191,7 +191,7 @@ async fn test_nested_structs_referenced_by_name(
         )
         .await?;
 
-    let abi_ret = result.abi_return.expect("abi return");
+    let abi_ret = result.result.abi_return.expect("abi return");
     let value = abi_ret.return_value.expect("decoded value");
     match value {
         ABIValue::Struct(ref outer) => {

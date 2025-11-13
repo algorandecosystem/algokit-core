@@ -22,11 +22,12 @@ use crate::models::{ErrorResponse, GetBlockTimeStampOffset};
 /// struct for typed errors of method [`get_block_time_stamp_offset`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
+#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum GetBlockTimeStampOffsetError {
     Status400(ErrorResponse),
     Statusdefault(),
     DefaultResponse(),
-    UnknownValue(serde_json::Value),
+    UnknownValue(crate::models::UnknownJsonValue),
 }
 
 /// Gets the current timestamp offset.
@@ -38,7 +39,6 @@ pub async fn get_block_time_stamp_offset(
     let query_params: HashMap<String, String> = HashMap::new();
 
     let mut headers: HashMap<String, String> = HashMap::new();
-    headers.insert("Content-Type".to_string(), "application/json".to_string());
     headers.insert("Accept".to_string(), "application/json".to_string());
 
     let body = None;

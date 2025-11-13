@@ -22,6 +22,7 @@ use crate::models::ErrorResponse;
 /// struct for typed errors of method [`generate_participation_keys`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
+#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum GenerateParticipationKeysError {
     Status400(ErrorResponse),
     Status401(ErrorResponse),
@@ -29,7 +30,7 @@ pub enum GenerateParticipationKeysError {
     Status503(ErrorResponse),
     Statusdefault(),
     DefaultResponse(),
-    UnknownValue(serde_json::Value),
+    UnknownValue(crate::models::UnknownJsonValue),
 }
 
 /// Generate and install participation keys to the node.
@@ -58,7 +59,6 @@ pub async fn generate_participation_keys(
     query_params.insert("last".to_string(), p_last.to_string());
 
     let mut headers: HashMap<String, String> = HashMap::new();
-    headers.insert("Content-Type".to_string(), "application/json".to_string());
     headers.insert("Accept".to_string(), "application/json".to_string());
 
     let body = None;

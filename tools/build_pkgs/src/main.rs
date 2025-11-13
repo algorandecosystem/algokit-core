@@ -1,7 +1,6 @@
 mod kotlin;
 mod python;
 mod swift;
-mod typescript;
 
 use std::collections::HashMap;
 use std::env;
@@ -17,8 +16,6 @@ use duct::cmd;
 enum Language {
     #[value(alias = "py")]
     Python,
-    #[value(alias = "ts")]
-    Typescript,
     Swift,
     #[value(alias = "kt")]
     Kotlin,
@@ -28,7 +25,6 @@ impl Display for Language {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Language::Python => f.write_str("python"),
-            Language::Typescript => f.write_str("typescript"),
             Language::Swift => f.write_str("swift"),
             Language::Kotlin => f.write_str("kotlin"),
         }
@@ -39,14 +35,13 @@ impl Language {
     fn build(&self, pkg: &Package) -> Result<()> {
         match self {
             Self::Python => python::build(pkg),
-            Self::Typescript => typescript::build(pkg),
             Self::Swift => swift::build(pkg),
             Self::Kotlin => kotlin::build(pkg),
         }
     }
 
     fn iter() -> impl Iterator<Item = Language> {
-        [Self::Python, Self::Typescript, Self::Swift].into_iter()
+        [Self::Python, Self::Swift].into_iter()
     }
 }
 
@@ -54,12 +49,15 @@ impl Language {
 enum Package {
     #[value(alias = "algokit_transact")]
     Transact,
+    #[value(alias = "algokit_utils")]
+    Utils,
 }
 
 impl Display for Package {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Package::Transact => f.write_str("algokit_transact"),
+            Package::Utils => f.write_str("algokit_utils"),
         }
     }
 }
@@ -68,6 +66,7 @@ impl Package {
     fn crate_name(&self) -> String {
         match self {
             Self::Transact => "algokit_transact_ffi",
+            Self::Utils => "algokit_utils_ffi",
         }
         .to_string()
     }

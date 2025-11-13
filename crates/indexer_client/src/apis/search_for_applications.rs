@@ -14,17 +14,18 @@ use std::collections::HashMap;
 use super::{ContentType, Error, IndexerApiError};
 
 // Import all custom types used by this endpoint
-use crate::models::SearchForApplications;
+use crate::models::{SearchForApplications, UnknownJsonValue};
 
 // Import request body type if needed
 
 /// struct for typed errors of method [`search_for_applications`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
+#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum SearchForApplicationsError {
-    Status500(serde_json::Value),
+    Status500(UnknownJsonValue),
     DefaultResponse(),
-    UnknownValue(serde_json::Value),
+    UnknownValue(crate::models::UnknownJsonValue),
 }
 
 /// Search for applications
@@ -62,7 +63,6 @@ pub async fn search_for_applications(
     }
 
     let mut headers: HashMap<String, String> = HashMap::new();
-    headers.insert("Content-Type".to_string(), "application/json".to_string());
     headers.insert("Accept".to_string(), "application/json".to_string());
 
     let body = None;

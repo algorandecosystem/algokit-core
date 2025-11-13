@@ -14,19 +14,20 @@ use std::collections::HashMap;
 use super::{ContentType, Error, IndexerApiError};
 
 // Import all custom types used by this endpoint
-use crate::models::LookupAccountAssets;
+use crate::models::{LookupAccountAssets, UnknownJsonValue};
 
 // Import request body type if needed
 
 /// struct for typed errors of method [`lookup_account_assets`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
+#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum LookupAccountAssetsError {
-    Status400(serde_json::Value),
-    Status404(serde_json::Value),
-    Status500(serde_json::Value),
+    Status400(UnknownJsonValue),
+    Status404(UnknownJsonValue),
+    Status500(UnknownJsonValue),
     DefaultResponse(),
-    UnknownValue(serde_json::Value),
+    UnknownValue(crate::models::UnknownJsonValue),
 }
 
 /// Lookup an account's asset holdings, optionally for a specific ID.
@@ -64,7 +65,6 @@ pub async fn lookup_account_assets(
     }
 
     let mut headers: HashMap<String, String> = HashMap::new();
-    headers.insert("Content-Type".to_string(), "application/json".to_string());
     headers.insert("Accept".to_string(), "application/json".to_string());
 
     let body = None;

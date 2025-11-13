@@ -1,11 +1,13 @@
+use crate::applications::AppDeployer;
 use crate::clients::app_manager::AppManager;
 use crate::clients::asset_manager::AssetManager;
 use crate::clients::client_manager::ClientManager;
 use crate::clients::network_client::{AlgoConfig, AlgorandService};
 use crate::transactions::{
-    Composer, ComposerParams, TransactionComposerConfig, TransactionCreator, TransactionSender,
+    TransactionComposer, TransactionComposerConfig, TransactionComposerParams, TransactionCreator,
+    TransactionSender,
 };
-use crate::{AccountManager, ComposerError, TransactionSigner};
+use crate::{AccountManager, TransactionSigner};
 use algod_client::models::TransactionParams;
 use algokit_transact::Address;
 use std::sync::{Arc, Mutex};
@@ -14,6 +16,7 @@ pub struct AlgorandClient {
     client_manager: ClientManager,
     asset_manager: AssetManager,
     app_manager: AppManager,
+    app_deployer: AppDeployer,
     transaction_sender: TransactionSender,
     transaction_creator: TransactionCreator,
     account_manager: Arc<Mutex<AccountManager>>,
@@ -33,50 +36,42 @@ impl AlgorandClient {
 
         let account_manager = Arc::new(Mutex::new(AccountManager::new()));
 
-        let get_signer = {
-            let account_manager = account_manager.clone();
-            move |address| {
-                account_manager
-                    .lock()
-                    .unwrap()
-                    .get_signer(address)
-                    .map_err(|e| ComposerError::SigningError {
-                        message: e.to_string(),
-                    })
-            }
-        };
-        let new_group = {
+        let new_composer = {
             let algod_client = algod_client.clone();
-            let get_signer = get_signer.clone();
+            let account_manager = account_manager.clone();
             let default_composer_config = params.composer_config.clone();
             move |composer_config: Option<TransactionComposerConfig>| {
-                Composer::new(ComposerParams {
+                TransactionComposer::new(TransactionComposerParams {
                     algod_client: algod_client.clone(),
-                    signer_getter: Arc::new(get_signer.clone()),
+                    signer_getter: account_manager.clone(),
                     composer_config: composer_config.or_else(|| default_composer_config.clone()),
                 })
             }
         };
 
         let algod_client_for_asset = algod_client.clone();
-        let asset_manager = AssetManager::new(algod_client_for_asset.clone(), new_group.clone());
+        let asset_manager = AssetManager::new(algod_client_for_asset.clone(), new_composer.clone());
         let app_manager = AppManager::new(algod_client.clone());
 
-        // Create closure for new_group function
-        let transaction_sender = TransactionSender::new(
-            new_group.clone(),
-            asset_manager.clone(),
-            app_manager.clone(),
-        );
+        // Create closure for new_composer function
+        let transaction_sender =
+            TransactionSender::new(new_composer.clone(), asset_manager.clone());
 
         // Create closure for TransactionCreator
-        let transaction_creator = TransactionCreator::new(new_group.clone());
+        let transaction_creator = TransactionCreator::new(new_composer.clone());
+
+        let app_deployer = AppDeployer::new(
+            app_manager.clone(),
+            transaction_sender.clone(),
+            Some(client_manager.indexer().unwrap()),
+        );
 
         Self {
             client_manager,
             account_manager: account_manager.clone(),
             asset_manager,
             app_manager,
+            app_deployer,
             transaction_sender,
             transaction_creator,
             default_composer_config: params.composer_config.clone(),
@@ -114,23 +109,10 @@ impl AlgorandClient {
     }
 
     /// Create a new transaction composer for building transaction groups
-    pub fn new_group(&self, params: Option<TransactionComposerConfig>) -> Composer {
-        let get_signer = {
-            let account_manager = self.account_manager.clone();
-            move |address| {
-                account_manager
-                    .lock()
-                    .unwrap()
-                    .get_signer(address)
-                    .map_err(|e| ComposerError::SigningError {
-                        message: e.to_string(),
-                    })
-            }
-        };
-
-        Composer::new(ComposerParams {
+    pub fn new_composer(&self, params: Option<TransactionComposerConfig>) -> TransactionComposer {
+        TransactionComposer::new(TransactionComposerParams {
             algod_client: self.client_manager.algod().clone(),
-            signer_getter: Arc::new(get_signer),
+            signer_getter: self.account_manager.clone(),
             composer_config: params.or_else(|| self.default_composer_config.clone()),
         })
     }
@@ -190,5 +172,10 @@ impl AlgorandClient {
             .lock()
             .unwrap()
             .set_signer(sender, signer);
+    }
+
+    /// Get a clone of the persistent AppDeployer (shares cache across clones)
+    pub fn app_deployer(&self) -> AppDeployer {
+        self.app_deployer.clone()
     }
 }

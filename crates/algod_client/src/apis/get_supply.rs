@@ -22,11 +22,12 @@ use crate::models::{ErrorResponse, GetSupply};
 /// struct for typed errors of method [`get_supply`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
+#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum GetSupplyError {
     Status401(ErrorResponse),
     Statusdefault(),
     DefaultResponse(),
-    UnknownValue(serde_json::Value),
+    UnknownValue(crate::models::UnknownJsonValue),
 }
 
 /// Get the current supply reported by the ledger.
@@ -36,7 +37,6 @@ pub async fn get_supply(http_client: &dyn HttpClient) -> Result<GetSupply, Error
     let query_params: HashMap<String, String> = HashMap::new();
 
     let mut headers: HashMap<String, String> = HashMap::new();
-    headers.insert("Content-Type".to_string(), "application/json".to_string());
     headers.insert("Accept".to_string(), "application/json".to_string());
 
     let body = None;

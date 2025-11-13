@@ -35,7 +35,7 @@ async fn from_network_resolves_id(#[future] algorand_fixture: AlgorandFixtureRes
 
     let client = AppClient::from_network(
         spec_with_networks,
-        RootAlgorandClient::default_localnet(None),
+        RootAlgorandClient::default_localnet(None).into(),
         None,
         None,
         None,
@@ -94,15 +94,16 @@ async fn from_creator_and_name_resolves_and_can_call(
         ..Default::default()
     };
 
-    let mut composer = fixture.algorand_client.new_group(None);
+    let mut composer = fixture.algorand_client.new_composer(None);
     composer.add_app_create(create_params)?;
     let create_group = composer.send(None).await?;
-    let app_id = create_group.confirmations[0]
+    let app_id = create_group.results[0]
+        .confirmation
         .app_id
         .expect("No app ID returned");
 
     fixture
-        .wait_for_indexer_transaction(&create_group.transaction_ids[0])
+        .wait_for_indexer_transaction(&create_group.results[0].transaction_id)
         .await?;
 
     let algorand = RootAlgorandClient::default_localnet(None);
@@ -110,7 +111,7 @@ async fn from_creator_and_name_resolves_and_can_call(
         &sender.to_string(),
         &app_name,
         spec.clone(),
-        algorand,
+        algorand.into(),
         Some(sender.to_string()),
         Some(Arc::new(fixture.test_account.clone())),
         None,
@@ -136,7 +137,7 @@ async fn from_creator_and_name_resolves_and_can_call(
         )
         .await?;
 
-    let abi_ret = res.abi_return.as_ref().expect("abi return");
+    let abi_ret = res.result.abi_return.as_ref().expect("abi return");
     match &abi_ret.return_value {
         Some(ABIValue::String(s)) => assert_eq!(s, "Hello, test"),
         _ => return Err("expected string return".into()),

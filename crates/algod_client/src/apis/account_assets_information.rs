@@ -22,13 +22,14 @@ use crate::models::{AccountAssetsInformation, ErrorResponse};
 /// struct for typed errors of method [`account_assets_information`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
+#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum AccountAssetsInformationError {
     Status400(ErrorResponse),
     Status401(ErrorResponse),
     Status500(ErrorResponse),
     Statusdefault(),
     DefaultResponse(),
-    UnknownValue(serde_json::Value),
+    UnknownValue(crate::models::UnknownJsonValue),
 }
 
 /// Lookup an account's asset holdings.
@@ -56,7 +57,6 @@ pub async fn account_assets_information(
     }
 
     let mut headers: HashMap<String, String> = HashMap::new();
-    headers.insert("Content-Type".to_string(), "application/json".to_string());
     headers.insert("Accept".to_string(), "application/json".to_string());
 
     let body = None;

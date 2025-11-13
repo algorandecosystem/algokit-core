@@ -22,6 +22,7 @@ use crate::models::{ErrorResponse, LightBlockHeaderProof};
 /// struct for typed errors of method [`get_light_block_header_proof`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
+#[cfg_attr(feature = "ffi_uniffi", derive(uniffi::Error))]
 pub enum GetLightBlockHeaderProofError {
     Status401(ErrorResponse),
     Status404(ErrorResponse),
@@ -30,7 +31,7 @@ pub enum GetLightBlockHeaderProofError {
     Status503(ErrorResponse),
     Statusdefault(),
     DefaultResponse(),
-    UnknownValue(serde_json::Value),
+    UnknownValue(crate::models::UnknownJsonValue),
 }
 
 /// Gets a proof for a given light block header inside a state proof commitment
@@ -45,7 +46,6 @@ pub async fn get_light_block_header_proof(
     let query_params: HashMap<String, String> = HashMap::new();
 
     let mut headers: HashMap<String, String> = HashMap::new();
-    headers.insert("Content-Type".to_string(), "application/json".to_string());
     headers.insert("Accept".to_string(), "application/json".to_string());
 
     let body = None;
