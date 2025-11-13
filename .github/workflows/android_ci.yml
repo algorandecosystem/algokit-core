@@ -51,6 +51,7 @@ jobs:
       - name: Android Test
         uses: reactivecircus/android-emulator-runner@v2
         with:
+          api-level: 34
           script: ./gradlew connectedAndroidTest
           working-directory: packages/android/algokit_transact
 
