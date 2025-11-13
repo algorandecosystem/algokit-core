@@ -1,4 +1,7 @@
 /target
+*.dylib
+*.a
+*.so
 .zed/
 .venv/
 crates/**/dist/
@@ -18,7 +21,6 @@ build/
 *.iml
 local.properties
 gradle-wrapper.jar
-*.so
 
 # Insta snapshot testing
 *.snap.new
@@ -32,4 +34,5 @@ AGENTS.md
 .opencode/
 .references/
 .kiro/
+.kotlin/
 
