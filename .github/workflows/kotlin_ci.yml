@@ -29,12 +29,8 @@ jobs:
         with:
           ndk-version: r27d
 
-      - name: Generate Kotlin Code From Rust
-        run: cargo pkg transact kotlin
-
       - name: Build AAR
-        run: ./gradlew assembleRelease
-        working-directory: packages/android/algokit_transact
+        run: cargo pkg transact kotlin
 
       - name: Archive Build Output
         uses: actions/upload-artifact@v4
