@@ -36,6 +36,14 @@ android {
     kotlinOptions {
         jvmTarget = "21"
     }
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+            all {
+                it.systemProperty("jna.library.path", "src/test/resources")
+            }
+        }
+    }
 }
 
 dependencies {
