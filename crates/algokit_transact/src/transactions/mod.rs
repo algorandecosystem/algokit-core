@@ -115,7 +115,7 @@ impl Transaction {
         if let Some(max_fee) = request.max_fee {
             if calculated_fee > max_fee {
                 return Err(AlgoKitTransactError::InputError {
-                    err_msg:format!(
+                    err_msg: format!(
                         "Transaction fee {} µALGO is greater than max fee {} µALGO",
                         calculated_fee, max_fee
                     ),
@@ -207,7 +207,7 @@ impl AlgorandMsgpack for SignedTransaction {
                 Ok(stxn)
             }
             _ => Err(AlgoKitTransactError::InputError {
-                err_msg:format!(
+                err_msg: format!(
                     "expected signed transaction to be a map, but got a: {:#?}",
                     value.type_id()
                 ),
