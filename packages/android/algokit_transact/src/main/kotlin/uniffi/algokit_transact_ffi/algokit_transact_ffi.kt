@@ -1831,6 +1831,82 @@ public object FfiConverterTypeBoxReference: FfiConverterRustBuffer<BoxReference>
 
 
 
+/**
+ * Represents a signature in the merkle signature scheme using falcon signatures
+ * as an underlying crypto scheme. It consists of an ephemeral public key, a signature, a merkle
+ * verification path and an index. The merkle signature considered valid only if the Signature is
+ * verified under the ephemeral public key and the Merkle verification path verifies that the
+ * ephemeral public key is located at the given index of the tree (for the root given in the
+ * long-term public key). More details can be found on Algorand's spec
+ */
+data class FalconSignatureStruct (
+    var `signature`: kotlin.ByteArray, 
+    var `vectorCommitmentIndex`: kotlin.ULong, 
+    var `proof`: MerkleArrayProof, 
+    var `verifyingKey`: FalconVerifier
+) {
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFalconSignatureStruct: FfiConverterRustBuffer<FalconSignatureStruct> {
+    override fun read(buf: ByteBuffer): FalconSignatureStruct {
+        return FalconSignatureStruct(
+            FfiConverterByteArray.read(buf),
+            FfiConverterULong.read(buf),
+            FfiConverterTypeMerkleArrayProof.read(buf),
+            FfiConverterTypeFalconVerifier.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FalconSignatureStruct) = (
+            FfiConverterByteArray.allocationSize(value.`signature`) +
+            FfiConverterULong.allocationSize(value.`vectorCommitmentIndex`) +
+            FfiConverterTypeMerkleArrayProof.allocationSize(value.`proof`) +
+            FfiConverterTypeFalconVerifier.allocationSize(value.`verifyingKey`)
+    )
+
+    override fun write(value: FalconSignatureStruct, buf: ByteBuffer) {
+            FfiConverterByteArray.write(value.`signature`, buf)
+            FfiConverterULong.write(value.`vectorCommitmentIndex`, buf)
+            FfiConverterTypeMerkleArrayProof.write(value.`proof`, buf)
+            FfiConverterTypeFalconVerifier.write(value.`verifyingKey`, buf)
+    }
+}
+
+
+
+data class FalconVerifier (
+    var `publicKey`: kotlin.ByteArray
+) {
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFalconVerifier: FfiConverterRustBuffer<FalconVerifier> {
+    override fun read(buf: ByteBuffer): FalconVerifier {
+        return FalconVerifier(
+            FfiConverterByteArray.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FalconVerifier) = (
+            FfiConverterByteArray.allocationSize(value.`publicKey`)
+    )
+
+    override fun write(value: FalconVerifier, buf: ByteBuffer) {
+            FfiConverterByteArray.write(value.`publicKey`, buf)
+    }
+}
+
+
+
 data class FeeParams (
     var `feePerByte`: kotlin.ULong, 
     var `minFee`: kotlin.ULong, 
@@ -1866,6 +1942,160 @@ public object FfiConverterTypeFeeParams: FfiConverterRustBuffer<FeeParams> {
             FfiConverterULong.write(value.`minFee`, buf)
             FfiConverterOptionalULong.write(value.`extraFee`, buf)
             FfiConverterOptionalULong.write(value.`maxFee`, buf)
+    }
+}
+
+
+
+data class HashFactory (
+    var `hashType`: kotlin.ULong
+) {
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeHashFactory: FfiConverterRustBuffer<HashFactory> {
+    override fun read(buf: ByteBuffer): HashFactory {
+        return HashFactory(
+            FfiConverterULong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: HashFactory) = (
+            FfiConverterULong.allocationSize(value.`hashType`)
+    )
+
+    override fun write(value: HashFactory, buf: ByteBuffer) {
+            FfiConverterULong.write(value.`hashType`, buf)
+    }
+}
+
+
+
+/**
+ * Parameters for a heartbeat transaction proof.
+ */
+data class HeartbeatProof (
+    /**
+     * Signature (64 bytes).
+     */
+    var `sig`: kotlin.ByteArray, 
+    /**
+     * Public key (32 bytes).
+     */
+    var `pk`: kotlin.ByteArray, 
+    /**
+     * Public key 2 (32 bytes).
+     */
+    var `pk2`: kotlin.ByteArray, 
+    /**
+     * Public key 1 signature (64 bytes).
+     */
+    var `pk1Sig`: kotlin.ByteArray, 
+    /**
+     * Public key 2 signature (64 bytes).
+     */
+    var `pk2Sig`: kotlin.ByteArray
+) {
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeHeartbeatProof: FfiConverterRustBuffer<HeartbeatProof> {
+    override fun read(buf: ByteBuffer): HeartbeatProof {
+        return HeartbeatProof(
+            FfiConverterByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: HeartbeatProof) = (
+            FfiConverterByteArray.allocationSize(value.`sig`) +
+            FfiConverterByteArray.allocationSize(value.`pk`) +
+            FfiConverterByteArray.allocationSize(value.`pk2`) +
+            FfiConverterByteArray.allocationSize(value.`pk1Sig`) +
+            FfiConverterByteArray.allocationSize(value.`pk2Sig`)
+    )
+
+    override fun write(value: HeartbeatProof, buf: ByteBuffer) {
+            FfiConverterByteArray.write(value.`sig`, buf)
+            FfiConverterByteArray.write(value.`pk`, buf)
+            FfiConverterByteArray.write(value.`pk2`, buf)
+            FfiConverterByteArray.write(value.`pk1Sig`, buf)
+            FfiConverterByteArray.write(value.`pk2Sig`, buf)
+    }
+}
+
+
+
+/**
+ * Parameters to define a heartbeat transaction.
+ *
+ * Used to maintain participation in Algorand consensus.
+ */
+data class HeartbeatTransactionFields (
+    /**
+     * Heartbeat address.
+     */
+    var `address`: kotlin.String, 
+    /**
+     * Heartbeat proof.
+     */
+    var `proof`: HeartbeatProof, 
+    /**
+     * Heartbeat seed.
+     */
+    var `seed`: kotlin.ByteArray, 
+    /**
+     * Heartbeat vote ID (32 bytes).
+     */
+    var `voteId`: kotlin.ByteArray, 
+    /**
+     * Heartbeat key dilution.
+     */
+    var `keyDilution`: kotlin.ULong
+) {
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeHeartbeatTransactionFields: FfiConverterRustBuffer<HeartbeatTransactionFields> {
+    override fun read(buf: ByteBuffer): HeartbeatTransactionFields {
+        return HeartbeatTransactionFields(
+            FfiConverterString.read(buf),
+            FfiConverterTypeHeartbeatProof.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterULong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: HeartbeatTransactionFields) = (
+            FfiConverterString.allocationSize(value.`address`) +
+            FfiConverterTypeHeartbeatProof.allocationSize(value.`proof`) +
+            FfiConverterByteArray.allocationSize(value.`seed`) +
+            FfiConverterByteArray.allocationSize(value.`voteId`) +
+            FfiConverterULong.allocationSize(value.`keyDilution`)
+    )
+
+    override fun write(value: HeartbeatTransactionFields, buf: ByteBuffer) {
+            FfiConverterString.write(value.`address`, buf)
+            FfiConverterTypeHeartbeatProof.write(value.`proof`, buf)
+            FfiConverterByteArray.write(value.`seed`, buf)
+            FfiConverterByteArray.write(value.`voteId`, buf)
+            FfiConverterULong.write(value.`keyDilution`, buf)
     }
 }
 
@@ -1972,6 +2202,74 @@ public object FfiConverterTypeKeyRegistrationTransactionFields: FfiConverterRust
 
 
 
+data class MerkleArrayProof (
+    var `path`: List<kotlin.ByteArray>, 
+    var `hashFactory`: HashFactory, 
+    var `treeDepth`: kotlin.ULong
+) {
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeMerkleArrayProof: FfiConverterRustBuffer<MerkleArrayProof> {
+    override fun read(buf: ByteBuffer): MerkleArrayProof {
+        return MerkleArrayProof(
+            FfiConverterSequenceByteArray.read(buf),
+            FfiConverterTypeHashFactory.read(buf),
+            FfiConverterULong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: MerkleArrayProof) = (
+            FfiConverterSequenceByteArray.allocationSize(value.`path`) +
+            FfiConverterTypeHashFactory.allocationSize(value.`hashFactory`) +
+            FfiConverterULong.allocationSize(value.`treeDepth`)
+    )
+
+    override fun write(value: MerkleArrayProof, buf: ByteBuffer) {
+            FfiConverterSequenceByteArray.write(value.`path`, buf)
+            FfiConverterTypeHashFactory.write(value.`hashFactory`, buf)
+            FfiConverterULong.write(value.`treeDepth`, buf)
+    }
+}
+
+
+
+data class MerkleSignatureVerifier (
+    var `commitment`: kotlin.ByteArray, 
+    var `keyLifetime`: kotlin.ULong
+) {
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeMerkleSignatureVerifier: FfiConverterRustBuffer<MerkleSignatureVerifier> {
+    override fun read(buf: ByteBuffer): MerkleSignatureVerifier {
+        return MerkleSignatureVerifier(
+            FfiConverterByteArray.read(buf),
+            FfiConverterULong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: MerkleSignatureVerifier) = (
+            FfiConverterByteArray.allocationSize(value.`commitment`) +
+            FfiConverterULong.allocationSize(value.`keyLifetime`)
+    )
+
+    override fun write(value: MerkleSignatureVerifier, buf: ByteBuffer) {
+            FfiConverterByteArray.write(value.`commitment`, buf)
+            FfiConverterULong.write(value.`keyLifetime`, buf)
+    }
+}
+
+
+
 /**
  * Representation of an Algorand multisignature signature.
  */
@@ -2063,6 +2361,47 @@ public object FfiConverterTypeMultisigSubsignature: FfiConverterRustBuffer<Multi
 
 
 
+/**
+ * A Participant corresponds to an account whose AccountData.Status is Online, and for which the
+ * expected sigRound satisfies AccountData.VoteFirstValid <= sigRound <= AccountData.VoteLastValid.
+ *
+ * In the Algorand ledger, it is possible for multiple accounts to have the same PK. Thus, the PK is
+ * not necessarily unique among Participants. However, each account will produce a unique Participant
+ * struct, to avoid potential DoS attacks where one account claims to have the same VoteID PK as
+ * another account.
+ */
+data class Participant (
+    var `verifier`: MerkleSignatureVerifier, 
+    var `weight`: kotlin.ULong
+) {
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeParticipant: FfiConverterRustBuffer<Participant> {
+    override fun read(buf: ByteBuffer): Participant {
+        return Participant(
+            FfiConverterTypeMerkleSignatureVerifier.read(buf),
+            FfiConverterULong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: Participant) = (
+            FfiConverterTypeMerkleSignatureVerifier.allocationSize(value.`verifier`) +
+            FfiConverterULong.allocationSize(value.`weight`)
+    )
+
+    override fun write(value: Participant, buf: ByteBuffer) {
+            FfiConverterTypeMerkleSignatureVerifier.write(value.`verifier`, buf)
+            FfiConverterULong.write(value.`weight`, buf)
+    }
+}
+
+
+
 data class PaymentTransactionFields (
     var `receiver`: kotlin.String, 
     var `amount`: kotlin.ULong, 
@@ -2094,6 +2433,46 @@ public object FfiConverterTypePaymentTransactionFields: FfiConverterRustBuffer<P
             FfiConverterString.write(value.`receiver`, buf)
             FfiConverterULong.write(value.`amount`, buf)
             FfiConverterOptionalString.write(value.`closeRemainderTo`, buf)
+    }
+}
+
+
+
+/**
+ * A single array position revealed as part of a state proof. It reveals an element of the
+ * signature array and the corresponding element of the participants array.
+ */
+data class Reveal (
+    var `position`: kotlin.ULong, 
+    var `sigslot`: SigslotCommit, 
+    var `participant`: Participant
+) {
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeReveal: FfiConverterRustBuffer<Reveal> {
+    override fun read(buf: ByteBuffer): Reveal {
+        return Reveal(
+            FfiConverterULong.read(buf),
+            FfiConverterTypeSigslotCommit.read(buf),
+            FfiConverterTypeParticipant.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: Reveal) = (
+            FfiConverterULong.allocationSize(value.`position`) +
+            FfiConverterTypeSigslotCommit.allocationSize(value.`sigslot`) +
+            FfiConverterTypeParticipant.allocationSize(value.`participant`)
+    )
+
+    override fun write(value: Reveal, buf: ByteBuffer) {
+            FfiConverterULong.write(value.`position`, buf)
+            FfiConverterTypeSigslotCommit.write(value.`sigslot`, buf)
+            FfiConverterTypeParticipant.write(value.`participant`, buf)
     }
 }
 
@@ -2146,6 +2525,170 @@ public object FfiConverterTypeSignedTransaction: FfiConverterRustBuffer<SignedTr
             FfiConverterOptionalByteArray.write(value.`signature`, buf)
             FfiConverterOptionalString.write(value.`authAddress`, buf)
             FfiConverterOptionalTypeMultisigSignature.write(value.`multisignature`, buf)
+    }
+}
+
+
+
+data class SigslotCommit (
+    var `sig`: FalconSignatureStruct, 
+    var `lowerSigWeight`: kotlin.ULong
+) {
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeSigslotCommit: FfiConverterRustBuffer<SigslotCommit> {
+    override fun read(buf: ByteBuffer): SigslotCommit {
+        return SigslotCommit(
+            FfiConverterTypeFalconSignatureStruct.read(buf),
+            FfiConverterULong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: SigslotCommit) = (
+            FfiConverterTypeFalconSignatureStruct.allocationSize(value.`sig`) +
+            FfiConverterULong.allocationSize(value.`lowerSigWeight`)
+    )
+
+    override fun write(value: SigslotCommit, buf: ByteBuffer) {
+            FfiConverterTypeFalconSignatureStruct.write(value.`sig`, buf)
+            FfiConverterULong.write(value.`lowerSigWeight`, buf)
+    }
+}
+
+
+
+data class StateProof (
+    var `sigCommit`: kotlin.ByteArray, 
+    var `signedWeight`: kotlin.ULong, 
+    var `sigProofs`: MerkleArrayProof, 
+    var `partProofs`: MerkleArrayProof, 
+    var `merkleSignatureSaltVersion`: kotlin.ULong, 
+    var `reveals`: List<Reveal>, 
+    var `positionsToReveal`: List<kotlin.ULong>
+) {
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeStateProof: FfiConverterRustBuffer<StateProof> {
+    override fun read(buf: ByteBuffer): StateProof {
+        return StateProof(
+            FfiConverterByteArray.read(buf),
+            FfiConverterULong.read(buf),
+            FfiConverterTypeMerkleArrayProof.read(buf),
+            FfiConverterTypeMerkleArrayProof.read(buf),
+            FfiConverterULong.read(buf),
+            FfiConverterSequenceTypeReveal.read(buf),
+            FfiConverterSequenceULong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: StateProof) = (
+            FfiConverterByteArray.allocationSize(value.`sigCommit`) +
+            FfiConverterULong.allocationSize(value.`signedWeight`) +
+            FfiConverterTypeMerkleArrayProof.allocationSize(value.`sigProofs`) +
+            FfiConverterTypeMerkleArrayProof.allocationSize(value.`partProofs`) +
+            FfiConverterULong.allocationSize(value.`merkleSignatureSaltVersion`) +
+            FfiConverterSequenceTypeReveal.allocationSize(value.`reveals`) +
+            FfiConverterSequenceULong.allocationSize(value.`positionsToReveal`)
+    )
+
+    override fun write(value: StateProof, buf: ByteBuffer) {
+            FfiConverterByteArray.write(value.`sigCommit`, buf)
+            FfiConverterULong.write(value.`signedWeight`, buf)
+            FfiConverterTypeMerkleArrayProof.write(value.`sigProofs`, buf)
+            FfiConverterTypeMerkleArrayProof.write(value.`partProofs`, buf)
+            FfiConverterULong.write(value.`merkleSignatureSaltVersion`, buf)
+            FfiConverterSequenceTypeReveal.write(value.`reveals`, buf)
+            FfiConverterSequenceULong.write(value.`positionsToReveal`, buf)
+    }
+}
+
+
+
+data class StateProofMessage (
+    var `blockHeadersCommitment`: kotlin.ByteArray, 
+    var `votersCommitment`: kotlin.ByteArray, 
+    var `lnProvenWeight`: kotlin.ULong, 
+    var `firstAttestedRound`: kotlin.ULong, 
+    var `lastAttestedRound`: kotlin.ULong
+) {
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeStateProofMessage: FfiConverterRustBuffer<StateProofMessage> {
+    override fun read(buf: ByteBuffer): StateProofMessage {
+        return StateProofMessage(
+            FfiConverterByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterULong.read(buf),
+            FfiConverterULong.read(buf),
+            FfiConverterULong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: StateProofMessage) = (
+            FfiConverterByteArray.allocationSize(value.`blockHeadersCommitment`) +
+            FfiConverterByteArray.allocationSize(value.`votersCommitment`) +
+            FfiConverterULong.allocationSize(value.`lnProvenWeight`) +
+            FfiConverterULong.allocationSize(value.`firstAttestedRound`) +
+            FfiConverterULong.allocationSize(value.`lastAttestedRound`)
+    )
+
+    override fun write(value: StateProofMessage, buf: ByteBuffer) {
+            FfiConverterByteArray.write(value.`blockHeadersCommitment`, buf)
+            FfiConverterByteArray.write(value.`votersCommitment`, buf)
+            FfiConverterULong.write(value.`lnProvenWeight`, buf)
+            FfiConverterULong.write(value.`firstAttestedRound`, buf)
+            FfiConverterULong.write(value.`lastAttestedRound`, buf)
+    }
+}
+
+
+
+data class StateProofTransactionFields (
+    var `stateProofType`: kotlin.ULong? = null, 
+    var `stateProof`: StateProof? = null, 
+    var `message`: StateProofMessage? = null
+) {
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeStateProofTransactionFields: FfiConverterRustBuffer<StateProofTransactionFields> {
+    override fun read(buf: ByteBuffer): StateProofTransactionFields {
+        return StateProofTransactionFields(
+            FfiConverterOptionalULong.read(buf),
+            FfiConverterOptionalTypeStateProof.read(buf),
+            FfiConverterOptionalTypeStateProofMessage.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: StateProofTransactionFields) = (
+            FfiConverterOptionalULong.allocationSize(value.`stateProofType`) +
+            FfiConverterOptionalTypeStateProof.allocationSize(value.`stateProof`) +
+            FfiConverterOptionalTypeStateProofMessage.allocationSize(value.`message`)
+    )
+
+    override fun write(value: StateProofTransactionFields, buf: ByteBuffer) {
+            FfiConverterOptionalULong.write(value.`stateProofType`, buf)
+            FfiConverterOptionalTypeStateProof.write(value.`stateProof`, buf)
+            FfiConverterOptionalTypeStateProofMessage.write(value.`message`, buf)
     }
 }
 
@@ -2223,7 +2766,9 @@ data class Transaction (
     var `assetConfig`: AssetConfigTransactionFields? = null, 
     var `appCall`: AppCallTransactionFields? = null, 
     var `keyRegistration`: KeyRegistrationTransactionFields? = null, 
-    var `assetFreeze`: AssetFreezeTransactionFields? = null
+    var `assetFreeze`: AssetFreezeTransactionFields? = null, 
+    var `heartbeat`: HeartbeatTransactionFields? = null, 
+    var `stateProof`: StateProofTransactionFields? = null
 ) {
     
     companion object
@@ -2252,6 +2797,8 @@ public object FfiConverterTypeTransaction: FfiConverterRustBuffer<Transaction> {
             FfiConverterOptionalTypeAppCallTransactionFields.read(buf),
             FfiConverterOptionalTypeKeyRegistrationTransactionFields.read(buf),
             FfiConverterOptionalTypeAssetFreezeTransactionFields.read(buf),
+            FfiConverterOptionalTypeHeartbeatTransactionFields.read(buf),
+            FfiConverterOptionalTypeStateProofTransactionFields.read(buf),
         )
     }
 
@@ -2272,7 +2819,9 @@ public object FfiConverterTypeTransaction: FfiConverterRustBuffer<Transaction> {
             FfiConverterOptionalTypeAssetConfigTransactionFields.allocationSize(value.`assetConfig`) +
             FfiConverterOptionalTypeAppCallTransactionFields.allocationSize(value.`appCall`) +
             FfiConverterOptionalTypeKeyRegistrationTransactionFields.allocationSize(value.`keyRegistration`) +
-            FfiConverterOptionalTypeAssetFreezeTransactionFields.allocationSize(value.`assetFreeze`)
+            FfiConverterOptionalTypeAssetFreezeTransactionFields.allocationSize(value.`assetFreeze`) +
+            FfiConverterOptionalTypeHeartbeatTransactionFields.allocationSize(value.`heartbeat`) +
+            FfiConverterOptionalTypeStateProofTransactionFields.allocationSize(value.`stateProof`)
     )
 
     override fun write(value: Transaction, buf: ByteBuffer) {
@@ -2293,6 +2842,8 @@ public object FfiConverterTypeTransaction: FfiConverterRustBuffer<Transaction> {
             FfiConverterOptionalTypeAppCallTransactionFields.write(value.`appCall`, buf)
             FfiConverterOptionalTypeKeyRegistrationTransactionFields.write(value.`keyRegistration`, buf)
             FfiConverterOptionalTypeAssetFreezeTransactionFields.write(value.`assetFreeze`, buf)
+            FfiConverterOptionalTypeHeartbeatTransactionFields.write(value.`heartbeat`, buf)
+            FfiConverterOptionalTypeStateProofTransactionFields.write(value.`stateProof`, buf)
     }
 }
 
@@ -2556,7 +3107,9 @@ enum class TransactionType {
     ASSET_FREEZE,
     ASSET_CONFIG,
     KEY_REGISTRATION,
-    APP_CALL;
+    APP_CALL,
+    HEARTBEAT,
+    STATE_PROOF;
     companion object
 }
 
@@ -2874,6 +3427,38 @@ public object FfiConverterOptionalTypeAssetTransferTransactionFields: FfiConvert
 /**
  * @suppress
  */
+public object FfiConverterOptionalTypeHeartbeatTransactionFields: FfiConverterRustBuffer<HeartbeatTransactionFields?> {
+    override fun read(buf: ByteBuffer): HeartbeatTransactionFields? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeHeartbeatTransactionFields.read(buf)
+    }
+
+    override fun allocationSize(value: HeartbeatTransactionFields?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeHeartbeatTransactionFields.allocationSize(value)
+        }
+    }
+
+    override fun write(value: HeartbeatTransactionFields?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeHeartbeatTransactionFields.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalTypeKeyRegistrationTransactionFields: FfiConverterRustBuffer<KeyRegistrationTransactionFields?> {
     override fun read(buf: ByteBuffer): KeyRegistrationTransactionFields? {
         if (buf.get().toInt() == 0) {
@@ -2960,6 +3545,102 @@ public object FfiConverterOptionalTypePaymentTransactionFields: FfiConverterRust
         } else {
             buf.put(1)
             FfiConverterTypePaymentTransactionFields.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeStateProof: FfiConverterRustBuffer<StateProof?> {
+    override fun read(buf: ByteBuffer): StateProof? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeStateProof.read(buf)
+    }
+
+    override fun allocationSize(value: StateProof?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeStateProof.allocationSize(value)
+        }
+    }
+
+    override fun write(value: StateProof?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeStateProof.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeStateProofMessage: FfiConverterRustBuffer<StateProofMessage?> {
+    override fun read(buf: ByteBuffer): StateProofMessage? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeStateProofMessage.read(buf)
+    }
+
+    override fun allocationSize(value: StateProofMessage?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeStateProofMessage.allocationSize(value)
+        }
+    }
+
+    override fun write(value: StateProofMessage?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeStateProofMessage.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeStateProofTransactionFields: FfiConverterRustBuffer<StateProofTransactionFields?> {
+    override fun read(buf: ByteBuffer): StateProofTransactionFields? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeStateProofTransactionFields.read(buf)
+    }
+
+    override fun allocationSize(value: StateProofTransactionFields?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeStateProofTransactionFields.allocationSize(value)
+        }
+    }
+
+    override fun write(value: StateProofTransactionFields?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeStateProofTransactionFields.write(value, buf)
         }
     }
 }
@@ -3260,6 +3941,34 @@ public object FfiConverterSequenceTypeMultisigSubsignature: FfiConverterRustBuff
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeMultisigSubsignature.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeReveal: FfiConverterRustBuffer<List<Reveal>> {
+    override fun read(buf: ByteBuffer): List<Reveal> {
+        val len = buf.getInt()
+        return List<Reveal>(len) {
+            FfiConverterTypeReveal.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<Reveal>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeReveal.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<Reveal>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeReveal.write(it, buf)
         }
     }
 }
