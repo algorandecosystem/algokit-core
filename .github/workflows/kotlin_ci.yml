@@ -1,0 +1,40 @@
+name: Kotlin CI
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v5
+
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.85.0
+          targets: aarch64-linux-android, arm-linux-androideabi, armv7-linux-androideabi, i686-linux-android, thumbv7neon-linux-androideabi, x86_64-linux-android
+
+      - name: Install Cargo-NDK
+        run: cargo install cargo-ndk
+
+      - name: Install Android ndk
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r27d
+
+      - name: Generate Kotlin Code From Rust
+        run: cargo pkg transact kotlin
+
+      - name: Build AAR
+        run: ./gradlew assembleRelease
+        working-directory: packages/android/algokit_transact
+
+      - name: Archive Build Output
+        uses: actions/upload-artifact@v4
+        with:
+          name: algokit_transact.aar
+          path: packages/android/algokit_transact/build/outputs/aar/algokit_transact-release.aar
