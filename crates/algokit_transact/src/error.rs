@@ -12,19 +12,19 @@ use snafu::Snafu;
 /// manipulating, serializing, or deserializing Algorand transactions.
 #[derive(Debug, Snafu)]
 pub enum AlgoKitTransactError {
-    #[snafu(display("Error ocurred during encoding: {source}"))]
+    #[snafu(display("Error occurred during encoding: {source}"))]
     EncodingError { source: rmp_serde::encode::Error },
 
-    #[snafu(display("Error ocurred during decoding: {source}"))]
+    #[snafu(display("Error occurred during decoding: {source}"))]
     DecodingError { source: rmp_serde::decode::Error },
 
-    #[snafu(display("Error ocurred during msgpack encoding: {source}"))]
+    #[snafu(display("Error occurred during msgpack encoding: {source}"))]
     MsgpackEncodingError { source: rmpv::encode::Error },
 
-    #[snafu(display("Error ocurred during msgpack decoding: {source}"))]
+    #[snafu(display("Error occurred during msgpack decoding: {source}"))]
     MsgpackDecodingError { source: rmpv::decode::Error },
 
-    #[snafu(display("Error ocurred during decoding at path {path}: {source}"))]
+    #[snafu(display("Error occurred during decoding at path {path}: {source}"))]
     DecodingErrorWithPath {
         path: String,
         source: rmp_serde::decode::Error,
