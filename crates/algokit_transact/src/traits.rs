@@ -74,9 +74,13 @@ pub trait AlgorandMsgpack: Serialize + for<'de> Deserialize<'de> {
             && &bytes[..Self::PREFIX.len()] == Self::PREFIX
         {
             let without_prefix = &bytes[Self::PREFIX.len()..];
-            Ok(rmp_serde::from_slice(without_prefix)?)
+            Ok(serde_path_to_error::deserialize(
+                &mut rmp_serde::Deserializer::new(std::io::Cursor::new(without_prefix)),
+            )?)
         } else {
-            Ok(rmp_serde::from_slice(bytes)?)
+            Ok(serde_path_to_error::deserialize(
+                &mut rmp_serde::Deserializer::new(std::io::Cursor::new(bytes)),
+            )?)
         }
     }
 
