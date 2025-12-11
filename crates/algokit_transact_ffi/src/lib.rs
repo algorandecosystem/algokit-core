@@ -49,11 +49,6 @@ impl From<algokit_transact::AlgoKitTransactError> for AlgoKitTransactError {
                     message: e.to_string(),
                 }
             }
-            algokit_transact::AlgoKitTransactError::MsgpackDecodingError { .. } => {
-                AlgoKitTransactError::DecodingError {
-                    message: e.to_string(),
-                }
-            }
             algokit_transact::AlgoKitTransactError::MsgpackEncodingError { .. } => {
                 AlgoKitTransactError::EncodingError {
                     message: e.to_string(),
