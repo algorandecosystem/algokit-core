@@ -42,6 +42,7 @@ pub struct BlockAppEvalDelta {
     #[serde(rename = "sa", skip_serializing_if = "Option::is_none")]
     pub shared_accounts: Option<Vec<Vec<u8>>>,
     /// [lg] Application log outputs.
+    #[serde_as(as = "Option<Vec<Bytes>>")]
     #[serde(rename = "lg", skip_serializing_if = "Option::is_none")]
     pub logs: Option<Vec<Vec<u8>>>,
 }
