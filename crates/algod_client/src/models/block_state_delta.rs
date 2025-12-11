@@ -61,7 +61,7 @@ impl<'de> Visitor<'de> for BlockStateDeltaVisitor {
                 _ => {
                     return Err(serde::de::Error::custom(
                         "expected string or binary key in BlockStateDelta",
-                    ))
+                    ));
                 }
             };
             entries.insert(key_bytes, value);
