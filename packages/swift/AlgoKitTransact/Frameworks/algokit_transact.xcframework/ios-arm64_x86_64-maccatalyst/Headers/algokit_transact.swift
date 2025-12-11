@@ -1468,6 +1468,162 @@ public func FfiConverterTypeBoxReference_lower(_ value: BoxReference) -> RustBuf
 }
 
 
+/**
+ * Represents a signature in the merkle signature scheme using falcon signatures
+ * as an underlying crypto scheme. It consists of an ephemeral public key, a signature, a merkle
+ * verification path and an index. The merkle signature considered valid only if the Signature is
+ * verified under the ephemeral public key and the Merkle verification path verifies that the
+ * ephemeral public key is located at the given index of the tree (for the root given in the
+ * long-term public key). More details can be found on Algorand's spec
+ */
+public struct FalconSignatureStruct {
+    public var signature: Data
+    public var vectorCommitmentIndex: UInt64
+    public var proof: MerkleArrayProof
+    public var verifyingKey: FalconVerifier
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(signature: Data, vectorCommitmentIndex: UInt64, proof: MerkleArrayProof, verifyingKey: FalconVerifier) {
+        self.signature = signature
+        self.vectorCommitmentIndex = vectorCommitmentIndex
+        self.proof = proof
+        self.verifyingKey = verifyingKey
+    }
+}
+
+#if compiler(>=6)
+extension FalconSignatureStruct: Sendable {}
+#endif
+
+
+extension FalconSignatureStruct: Equatable, Hashable {
+    public static func ==(lhs: FalconSignatureStruct, rhs: FalconSignatureStruct) -> Bool {
+        if lhs.signature != rhs.signature {
+            return false
+        }
+        if lhs.vectorCommitmentIndex != rhs.vectorCommitmentIndex {
+            return false
+        }
+        if lhs.proof != rhs.proof {
+            return false
+        }
+        if lhs.verifyingKey != rhs.verifyingKey {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(signature)
+        hasher.combine(vectorCommitmentIndex)
+        hasher.combine(proof)
+        hasher.combine(verifyingKey)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeFalconSignatureStruct: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FalconSignatureStruct {
+        return
+            try FalconSignatureStruct(
+                signature: FfiConverterData.read(from: &buf), 
+                vectorCommitmentIndex: FfiConverterUInt64.read(from: &buf), 
+                proof: FfiConverterTypeMerkleArrayProof.read(from: &buf), 
+                verifyingKey: FfiConverterTypeFalconVerifier.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: FalconSignatureStruct, into buf: inout [UInt8]) {
+        FfiConverterData.write(value.signature, into: &buf)
+        FfiConverterUInt64.write(value.vectorCommitmentIndex, into: &buf)
+        FfiConverterTypeMerkleArrayProof.write(value.proof, into: &buf)
+        FfiConverterTypeFalconVerifier.write(value.verifyingKey, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeFalconSignatureStruct_lift(_ buf: RustBuffer) throws -> FalconSignatureStruct {
+    return try FfiConverterTypeFalconSignatureStruct.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeFalconSignatureStruct_lower(_ value: FalconSignatureStruct) -> RustBuffer {
+    return FfiConverterTypeFalconSignatureStruct.lower(value)
+}
+
+
+public struct FalconVerifier {
+    public var publicKey: Data
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(publicKey: Data) {
+        self.publicKey = publicKey
+    }
+}
+
+#if compiler(>=6)
+extension FalconVerifier: Sendable {}
+#endif
+
+
+extension FalconVerifier: Equatable, Hashable {
+    public static func ==(lhs: FalconVerifier, rhs: FalconVerifier) -> Bool {
+        if lhs.publicKey != rhs.publicKey {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(publicKey)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeFalconVerifier: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FalconVerifier {
+        return
+            try FalconVerifier(
+                publicKey: FfiConverterData.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: FalconVerifier, into buf: inout [UInt8]) {
+        FfiConverterData.write(value.publicKey, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeFalconVerifier_lift(_ buf: RustBuffer) throws -> FalconVerifier {
+    return try FfiConverterTypeFalconVerifier.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeFalconVerifier_lower(_ value: FalconVerifier) -> RustBuffer {
+    return FfiConverterTypeFalconVerifier.lower(value)
+}
+
+
 public struct FeeParams {
     public var feePerByte: UInt64
     public var minFee: UInt64
@@ -1551,6 +1707,324 @@ public func FfiConverterTypeFeeParams_lift(_ buf: RustBuffer) throws -> FeeParam
 #endif
 public func FfiConverterTypeFeeParams_lower(_ value: FeeParams) -> RustBuffer {
     return FfiConverterTypeFeeParams.lower(value)
+}
+
+
+public struct HashFactory {
+    public var hashType: UInt64
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(hashType: UInt64) {
+        self.hashType = hashType
+    }
+}
+
+#if compiler(>=6)
+extension HashFactory: Sendable {}
+#endif
+
+
+extension HashFactory: Equatable, Hashable {
+    public static func ==(lhs: HashFactory, rhs: HashFactory) -> Bool {
+        if lhs.hashType != rhs.hashType {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(hashType)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeHashFactory: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> HashFactory {
+        return
+            try HashFactory(
+                hashType: FfiConverterUInt64.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: HashFactory, into buf: inout [UInt8]) {
+        FfiConverterUInt64.write(value.hashType, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeHashFactory_lift(_ buf: RustBuffer) throws -> HashFactory {
+    return try FfiConverterTypeHashFactory.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeHashFactory_lower(_ value: HashFactory) -> RustBuffer {
+    return FfiConverterTypeHashFactory.lower(value)
+}
+
+
+/**
+ * Parameters for a heartbeat transaction proof.
+ */
+public struct HeartbeatProof {
+    /**
+     * Signature (64 bytes).
+     */
+    public var sig: Data
+    /**
+     * Public key (32 bytes).
+     */
+    public var pk: Data
+    /**
+     * Public key 2 (32 bytes).
+     */
+    public var pk2: Data
+    /**
+     * Public key 1 signature (64 bytes).
+     */
+    public var pk1Sig: Data
+    /**
+     * Public key 2 signature (64 bytes).
+     */
+    public var pk2Sig: Data
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * Signature (64 bytes).
+         */sig: Data, 
+        /**
+         * Public key (32 bytes).
+         */pk: Data, 
+        /**
+         * Public key 2 (32 bytes).
+         */pk2: Data, 
+        /**
+         * Public key 1 signature (64 bytes).
+         */pk1Sig: Data, 
+        /**
+         * Public key 2 signature (64 bytes).
+         */pk2Sig: Data) {
+        self.sig = sig
+        self.pk = pk
+        self.pk2 = pk2
+        self.pk1Sig = pk1Sig
+        self.pk2Sig = pk2Sig
+    }
+}
+
+#if compiler(>=6)
+extension HeartbeatProof: Sendable {}
+#endif
+
+
+extension HeartbeatProof: Equatable, Hashable {
+    public static func ==(lhs: HeartbeatProof, rhs: HeartbeatProof) -> Bool {
+        if lhs.sig != rhs.sig {
+            return false
+        }
+        if lhs.pk != rhs.pk {
+            return false
+        }
+        if lhs.pk2 != rhs.pk2 {
+            return false
+        }
+        if lhs.pk1Sig != rhs.pk1Sig {
+            return false
+        }
+        if lhs.pk2Sig != rhs.pk2Sig {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(sig)
+        hasher.combine(pk)
+        hasher.combine(pk2)
+        hasher.combine(pk1Sig)
+        hasher.combine(pk2Sig)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeHeartbeatProof: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> HeartbeatProof {
+        return
+            try HeartbeatProof(
+                sig: FfiConverterData.read(from: &buf), 
+                pk: FfiConverterData.read(from: &buf), 
+                pk2: FfiConverterData.read(from: &buf), 
+                pk1Sig: FfiConverterData.read(from: &buf), 
+                pk2Sig: FfiConverterData.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: HeartbeatProof, into buf: inout [UInt8]) {
+        FfiConverterData.write(value.sig, into: &buf)
+        FfiConverterData.write(value.pk, into: &buf)
+        FfiConverterData.write(value.pk2, into: &buf)
+        FfiConverterData.write(value.pk1Sig, into: &buf)
+        FfiConverterData.write(value.pk2Sig, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeHeartbeatProof_lift(_ buf: RustBuffer) throws -> HeartbeatProof {
+    return try FfiConverterTypeHeartbeatProof.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeHeartbeatProof_lower(_ value: HeartbeatProof) -> RustBuffer {
+    return FfiConverterTypeHeartbeatProof.lower(value)
+}
+
+
+/**
+ * Parameters to define a heartbeat transaction.
+ *
+ * Used to maintain participation in Algorand consensus.
+ */
+public struct HeartbeatTransactionFields {
+    /**
+     * Heartbeat address.
+     */
+    public var address: String
+    /**
+     * Heartbeat proof.
+     */
+    public var proof: HeartbeatProof
+    /**
+     * Heartbeat seed.
+     */
+    public var seed: Data
+    /**
+     * Heartbeat vote ID (32 bytes).
+     */
+    public var voteId: Data
+    /**
+     * Heartbeat key dilution.
+     */
+    public var keyDilution: UInt64
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * Heartbeat address.
+         */address: String, 
+        /**
+         * Heartbeat proof.
+         */proof: HeartbeatProof, 
+        /**
+         * Heartbeat seed.
+         */seed: Data, 
+        /**
+         * Heartbeat vote ID (32 bytes).
+         */voteId: Data, 
+        /**
+         * Heartbeat key dilution.
+         */keyDilution: UInt64) {
+        self.address = address
+        self.proof = proof
+        self.seed = seed
+        self.voteId = voteId
+        self.keyDilution = keyDilution
+    }
+}
+
+#if compiler(>=6)
+extension HeartbeatTransactionFields: Sendable {}
+#endif
+
+
+extension HeartbeatTransactionFields: Equatable, Hashable {
+    public static func ==(lhs: HeartbeatTransactionFields, rhs: HeartbeatTransactionFields) -> Bool {
+        if lhs.address != rhs.address {
+            return false
+        }
+        if lhs.proof != rhs.proof {
+            return false
+        }
+        if lhs.seed != rhs.seed {
+            return false
+        }
+        if lhs.voteId != rhs.voteId {
+            return false
+        }
+        if lhs.keyDilution != rhs.keyDilution {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(address)
+        hasher.combine(proof)
+        hasher.combine(seed)
+        hasher.combine(voteId)
+        hasher.combine(keyDilution)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeHeartbeatTransactionFields: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> HeartbeatTransactionFields {
+        return
+            try HeartbeatTransactionFields(
+                address: FfiConverterString.read(from: &buf), 
+                proof: FfiConverterTypeHeartbeatProof.read(from: &buf), 
+                seed: FfiConverterData.read(from: &buf), 
+                voteId: FfiConverterData.read(from: &buf), 
+                keyDilution: FfiConverterUInt64.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: HeartbeatTransactionFields, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.address, into: &buf)
+        FfiConverterTypeHeartbeatProof.write(value.proof, into: &buf)
+        FfiConverterData.write(value.seed, into: &buf)
+        FfiConverterData.write(value.voteId, into: &buf)
+        FfiConverterUInt64.write(value.keyDilution, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeHeartbeatTransactionFields_lift(_ buf: RustBuffer) throws -> HeartbeatTransactionFields {
+    return try FfiConverterTypeHeartbeatTransactionFields.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeHeartbeatTransactionFields_lower(_ value: HeartbeatTransactionFields) -> RustBuffer {
+    return FfiConverterTypeHeartbeatTransactionFields.lower(value)
 }
 
 
@@ -1768,6 +2242,154 @@ public func FfiConverterTypeKeyRegistrationTransactionFields_lower(_ value: KeyR
 }
 
 
+public struct MerkleArrayProof {
+    public var path: [Data]
+    public var hashFactory: HashFactory
+    public var treeDepth: UInt64
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(path: [Data], hashFactory: HashFactory, treeDepth: UInt64) {
+        self.path = path
+        self.hashFactory = hashFactory
+        self.treeDepth = treeDepth
+    }
+}
+
+#if compiler(>=6)
+extension MerkleArrayProof: Sendable {}
+#endif
+
+
+extension MerkleArrayProof: Equatable, Hashable {
+    public static func ==(lhs: MerkleArrayProof, rhs: MerkleArrayProof) -> Bool {
+        if lhs.path != rhs.path {
+            return false
+        }
+        if lhs.hashFactory != rhs.hashFactory {
+            return false
+        }
+        if lhs.treeDepth != rhs.treeDepth {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(path)
+        hasher.combine(hashFactory)
+        hasher.combine(treeDepth)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeMerkleArrayProof: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> MerkleArrayProof {
+        return
+            try MerkleArrayProof(
+                path: FfiConverterSequenceData.read(from: &buf), 
+                hashFactory: FfiConverterTypeHashFactory.read(from: &buf), 
+                treeDepth: FfiConverterUInt64.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: MerkleArrayProof, into buf: inout [UInt8]) {
+        FfiConverterSequenceData.write(value.path, into: &buf)
+        FfiConverterTypeHashFactory.write(value.hashFactory, into: &buf)
+        FfiConverterUInt64.write(value.treeDepth, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeMerkleArrayProof_lift(_ buf: RustBuffer) throws -> MerkleArrayProof {
+    return try FfiConverterTypeMerkleArrayProof.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeMerkleArrayProof_lower(_ value: MerkleArrayProof) -> RustBuffer {
+    return FfiConverterTypeMerkleArrayProof.lower(value)
+}
+
+
+public struct MerkleSignatureVerifier {
+    public var commitment: Data
+    public var keyLifetime: UInt64
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(commitment: Data, keyLifetime: UInt64) {
+        self.commitment = commitment
+        self.keyLifetime = keyLifetime
+    }
+}
+
+#if compiler(>=6)
+extension MerkleSignatureVerifier: Sendable {}
+#endif
+
+
+extension MerkleSignatureVerifier: Equatable, Hashable {
+    public static func ==(lhs: MerkleSignatureVerifier, rhs: MerkleSignatureVerifier) -> Bool {
+        if lhs.commitment != rhs.commitment {
+            return false
+        }
+        if lhs.keyLifetime != rhs.keyLifetime {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(commitment)
+        hasher.combine(keyLifetime)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeMerkleSignatureVerifier: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> MerkleSignatureVerifier {
+        return
+            try MerkleSignatureVerifier(
+                commitment: FfiConverterData.read(from: &buf), 
+                keyLifetime: FfiConverterUInt64.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: MerkleSignatureVerifier, into buf: inout [UInt8]) {
+        FfiConverterData.write(value.commitment, into: &buf)
+        FfiConverterUInt64.write(value.keyLifetime, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeMerkleSignatureVerifier_lift(_ buf: RustBuffer) throws -> MerkleSignatureVerifier {
+    return try FfiConverterTypeMerkleSignatureVerifier.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeMerkleSignatureVerifier_lower(_ value: MerkleSignatureVerifier) -> RustBuffer {
+    return FfiConverterTypeMerkleSignatureVerifier.lower(value)
+}
+
+
 /**
  * Representation of an Algorand multisignature signature.
  */
@@ -1954,6 +2576,85 @@ public func FfiConverterTypeMultisigSubsignature_lower(_ value: MultisigSubsigna
 }
 
 
+/**
+ * A Participant corresponds to an account whose AccountData.Status is Online, and for which the
+ * expected sigRound satisfies AccountData.VoteFirstValid <= sigRound <= AccountData.VoteLastValid.
+ *
+ * In the Algorand ledger, it is possible for multiple accounts to have the same PK. Thus, the PK is
+ * not necessarily unique among Participants. However, each account will produce a unique Participant
+ * struct, to avoid potential DoS attacks where one account claims to have the same VoteID PK as
+ * another account.
+ */
+public struct Participant {
+    public var verifier: MerkleSignatureVerifier
+    public var weight: UInt64
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(verifier: MerkleSignatureVerifier, weight: UInt64) {
+        self.verifier = verifier
+        self.weight = weight
+    }
+}
+
+#if compiler(>=6)
+extension Participant: Sendable {}
+#endif
+
+
+extension Participant: Equatable, Hashable {
+    public static func ==(lhs: Participant, rhs: Participant) -> Bool {
+        if lhs.verifier != rhs.verifier {
+            return false
+        }
+        if lhs.weight != rhs.weight {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(verifier)
+        hasher.combine(weight)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeParticipant: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Participant {
+        return
+            try Participant(
+                verifier: FfiConverterTypeMerkleSignatureVerifier.read(from: &buf), 
+                weight: FfiConverterUInt64.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: Participant, into buf: inout [UInt8]) {
+        FfiConverterTypeMerkleSignatureVerifier.write(value.verifier, into: &buf)
+        FfiConverterUInt64.write(value.weight, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeParticipant_lift(_ buf: RustBuffer) throws -> Participant {
+    return try FfiConverterTypeParticipant.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeParticipant_lower(_ value: Participant) -> RustBuffer {
+    return FfiConverterTypeParticipant.lower(value)
+}
+
+
 public struct PaymentTransactionFields {
     public var receiver: String
     public var amount: UInt64
@@ -2029,6 +2730,88 @@ public func FfiConverterTypePaymentTransactionFields_lift(_ buf: RustBuffer) thr
 #endif
 public func FfiConverterTypePaymentTransactionFields_lower(_ value: PaymentTransactionFields) -> RustBuffer {
     return FfiConverterTypePaymentTransactionFields.lower(value)
+}
+
+
+/**
+ * A single array position revealed as part of a state proof. It reveals an element of the
+ * signature array and the corresponding element of the participants array.
+ */
+public struct Reveal {
+    public var position: UInt64
+    public var sigslot: SigslotCommit
+    public var participant: Participant
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(position: UInt64, sigslot: SigslotCommit, participant: Participant) {
+        self.position = position
+        self.sigslot = sigslot
+        self.participant = participant
+    }
+}
+
+#if compiler(>=6)
+extension Reveal: Sendable {}
+#endif
+
+
+extension Reveal: Equatable, Hashable {
+    public static func ==(lhs: Reveal, rhs: Reveal) -> Bool {
+        if lhs.position != rhs.position {
+            return false
+        }
+        if lhs.sigslot != rhs.sigslot {
+            return false
+        }
+        if lhs.participant != rhs.participant {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(position)
+        hasher.combine(sigslot)
+        hasher.combine(participant)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeReveal: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Reveal {
+        return
+            try Reveal(
+                position: FfiConverterUInt64.read(from: &buf), 
+                sigslot: FfiConverterTypeSigslotCommit.read(from: &buf), 
+                participant: FfiConverterTypeParticipant.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: Reveal, into buf: inout [UInt8]) {
+        FfiConverterUInt64.write(value.position, into: &buf)
+        FfiConverterTypeSigslotCommit.write(value.sigslot, into: &buf)
+        FfiConverterTypeParticipant.write(value.participant, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeReveal_lift(_ buf: RustBuffer) throws -> Reveal {
+    return try FfiConverterTypeReveal.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeReveal_lower(_ value: Reveal) -> RustBuffer {
+    return FfiConverterTypeReveal.lower(value)
 }
 
 
@@ -2139,6 +2922,358 @@ public func FfiConverterTypeSignedTransaction_lift(_ buf: RustBuffer) throws -> 
 #endif
 public func FfiConverterTypeSignedTransaction_lower(_ value: SignedTransaction) -> RustBuffer {
     return FfiConverterTypeSignedTransaction.lower(value)
+}
+
+
+public struct SigslotCommit {
+    public var sig: FalconSignatureStruct
+    public var lowerSigWeight: UInt64
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(sig: FalconSignatureStruct, lowerSigWeight: UInt64) {
+        self.sig = sig
+        self.lowerSigWeight = lowerSigWeight
+    }
+}
+
+#if compiler(>=6)
+extension SigslotCommit: Sendable {}
+#endif
+
+
+extension SigslotCommit: Equatable, Hashable {
+    public static func ==(lhs: SigslotCommit, rhs: SigslotCommit) -> Bool {
+        if lhs.sig != rhs.sig {
+            return false
+        }
+        if lhs.lowerSigWeight != rhs.lowerSigWeight {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(sig)
+        hasher.combine(lowerSigWeight)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeSigslotCommit: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SigslotCommit {
+        return
+            try SigslotCommit(
+                sig: FfiConverterTypeFalconSignatureStruct.read(from: &buf), 
+                lowerSigWeight: FfiConverterUInt64.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: SigslotCommit, into buf: inout [UInt8]) {
+        FfiConverterTypeFalconSignatureStruct.write(value.sig, into: &buf)
+        FfiConverterUInt64.write(value.lowerSigWeight, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeSigslotCommit_lift(_ buf: RustBuffer) throws -> SigslotCommit {
+    return try FfiConverterTypeSigslotCommit.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeSigslotCommit_lower(_ value: SigslotCommit) -> RustBuffer {
+    return FfiConverterTypeSigslotCommit.lower(value)
+}
+
+
+public struct StateProof {
+    public var sigCommit: Data
+    public var signedWeight: UInt64
+    public var sigProofs: MerkleArrayProof
+    public var partProofs: MerkleArrayProof
+    public var merkleSignatureSaltVersion: UInt64
+    public var reveals: [Reveal]
+    public var positionsToReveal: [UInt64]
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(sigCommit: Data, signedWeight: UInt64, sigProofs: MerkleArrayProof, partProofs: MerkleArrayProof, merkleSignatureSaltVersion: UInt64, reveals: [Reveal], positionsToReveal: [UInt64]) {
+        self.sigCommit = sigCommit
+        self.signedWeight = signedWeight
+        self.sigProofs = sigProofs
+        self.partProofs = partProofs
+        self.merkleSignatureSaltVersion = merkleSignatureSaltVersion
+        self.reveals = reveals
+        self.positionsToReveal = positionsToReveal
+    }
+}
+
+#if compiler(>=6)
+extension StateProof: Sendable {}
+#endif
+
+
+extension StateProof: Equatable, Hashable {
+    public static func ==(lhs: StateProof, rhs: StateProof) -> Bool {
+        if lhs.sigCommit != rhs.sigCommit {
+            return false
+        }
+        if lhs.signedWeight != rhs.signedWeight {
+            return false
+        }
+        if lhs.sigProofs != rhs.sigProofs {
+            return false
+        }
+        if lhs.partProofs != rhs.partProofs {
+            return false
+        }
+        if lhs.merkleSignatureSaltVersion != rhs.merkleSignatureSaltVersion {
+            return false
+        }
+        if lhs.reveals != rhs.reveals {
+            return false
+        }
+        if lhs.positionsToReveal != rhs.positionsToReveal {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(sigCommit)
+        hasher.combine(signedWeight)
+        hasher.combine(sigProofs)
+        hasher.combine(partProofs)
+        hasher.combine(merkleSignatureSaltVersion)
+        hasher.combine(reveals)
+        hasher.combine(positionsToReveal)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeStateProof: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> StateProof {
+        return
+            try StateProof(
+                sigCommit: FfiConverterData.read(from: &buf), 
+                signedWeight: FfiConverterUInt64.read(from: &buf), 
+                sigProofs: FfiConverterTypeMerkleArrayProof.read(from: &buf), 
+                partProofs: FfiConverterTypeMerkleArrayProof.read(from: &buf), 
+                merkleSignatureSaltVersion: FfiConverterUInt64.read(from: &buf), 
+                reveals: FfiConverterSequenceTypeReveal.read(from: &buf), 
+                positionsToReveal: FfiConverterSequenceUInt64.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: StateProof, into buf: inout [UInt8]) {
+        FfiConverterData.write(value.sigCommit, into: &buf)
+        FfiConverterUInt64.write(value.signedWeight, into: &buf)
+        FfiConverterTypeMerkleArrayProof.write(value.sigProofs, into: &buf)
+        FfiConverterTypeMerkleArrayProof.write(value.partProofs, into: &buf)
+        FfiConverterUInt64.write(value.merkleSignatureSaltVersion, into: &buf)
+        FfiConverterSequenceTypeReveal.write(value.reveals, into: &buf)
+        FfiConverterSequenceUInt64.write(value.positionsToReveal, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeStateProof_lift(_ buf: RustBuffer) throws -> StateProof {
+    return try FfiConverterTypeStateProof.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeStateProof_lower(_ value: StateProof) -> RustBuffer {
+    return FfiConverterTypeStateProof.lower(value)
+}
+
+
+public struct StateProofMessage {
+    public var blockHeadersCommitment: Data
+    public var votersCommitment: Data
+    public var lnProvenWeight: UInt64
+    public var firstAttestedRound: UInt64
+    public var lastAttestedRound: UInt64
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(blockHeadersCommitment: Data, votersCommitment: Data, lnProvenWeight: UInt64, firstAttestedRound: UInt64, lastAttestedRound: UInt64) {
+        self.blockHeadersCommitment = blockHeadersCommitment
+        self.votersCommitment = votersCommitment
+        self.lnProvenWeight = lnProvenWeight
+        self.firstAttestedRound = firstAttestedRound
+        self.lastAttestedRound = lastAttestedRound
+    }
+}
+
+#if compiler(>=6)
+extension StateProofMessage: Sendable {}
+#endif
+
+
+extension StateProofMessage: Equatable, Hashable {
+    public static func ==(lhs: StateProofMessage, rhs: StateProofMessage) -> Bool {
+        if lhs.blockHeadersCommitment != rhs.blockHeadersCommitment {
+            return false
+        }
+        if lhs.votersCommitment != rhs.votersCommitment {
+            return false
+        }
+        if lhs.lnProvenWeight != rhs.lnProvenWeight {
+            return false
+        }
+        if lhs.firstAttestedRound != rhs.firstAttestedRound {
+            return false
+        }
+        if lhs.lastAttestedRound != rhs.lastAttestedRound {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(blockHeadersCommitment)
+        hasher.combine(votersCommitment)
+        hasher.combine(lnProvenWeight)
+        hasher.combine(firstAttestedRound)
+        hasher.combine(lastAttestedRound)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeStateProofMessage: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> StateProofMessage {
+        return
+            try StateProofMessage(
+                blockHeadersCommitment: FfiConverterData.read(from: &buf), 
+                votersCommitment: FfiConverterData.read(from: &buf), 
+                lnProvenWeight: FfiConverterUInt64.read(from: &buf), 
+                firstAttestedRound: FfiConverterUInt64.read(from: &buf), 
+                lastAttestedRound: FfiConverterUInt64.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: StateProofMessage, into buf: inout [UInt8]) {
+        FfiConverterData.write(value.blockHeadersCommitment, into: &buf)
+        FfiConverterData.write(value.votersCommitment, into: &buf)
+        FfiConverterUInt64.write(value.lnProvenWeight, into: &buf)
+        FfiConverterUInt64.write(value.firstAttestedRound, into: &buf)
+        FfiConverterUInt64.write(value.lastAttestedRound, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeStateProofMessage_lift(_ buf: RustBuffer) throws -> StateProofMessage {
+    return try FfiConverterTypeStateProofMessage.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeStateProofMessage_lower(_ value: StateProofMessage) -> RustBuffer {
+    return FfiConverterTypeStateProofMessage.lower(value)
+}
+
+
+public struct StateProofTransactionFields {
+    public var stateProofType: UInt64?
+    public var stateProof: StateProof?
+    public var message: StateProofMessage?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(stateProofType: UInt64? = nil, stateProof: StateProof? = nil, message: StateProofMessage? = nil) {
+        self.stateProofType = stateProofType
+        self.stateProof = stateProof
+        self.message = message
+    }
+}
+
+#if compiler(>=6)
+extension StateProofTransactionFields: Sendable {}
+#endif
+
+
+extension StateProofTransactionFields: Equatable, Hashable {
+    public static func ==(lhs: StateProofTransactionFields, rhs: StateProofTransactionFields) -> Bool {
+        if lhs.stateProofType != rhs.stateProofType {
+            return false
+        }
+        if lhs.stateProof != rhs.stateProof {
+            return false
+        }
+        if lhs.message != rhs.message {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(stateProofType)
+        hasher.combine(stateProof)
+        hasher.combine(message)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeStateProofTransactionFields: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> StateProofTransactionFields {
+        return
+            try StateProofTransactionFields(
+                stateProofType: FfiConverterOptionUInt64.read(from: &buf), 
+                stateProof: FfiConverterOptionTypeStateProof.read(from: &buf), 
+                message: FfiConverterOptionTypeStateProofMessage.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: StateProofTransactionFields, into buf: inout [UInt8]) {
+        FfiConverterOptionUInt64.write(value.stateProofType, into: &buf)
+        FfiConverterOptionTypeStateProof.write(value.stateProof, into: &buf)
+        FfiConverterOptionTypeStateProofMessage.write(value.message, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeStateProofTransactionFields_lift(_ buf: RustBuffer) throws -> StateProofTransactionFields {
+    return try FfiConverterTypeStateProofTransactionFields.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeStateProofTransactionFields_lower(_ value: StateProofTransactionFields) -> RustBuffer {
+    return FfiConverterTypeStateProofTransactionFields.lower(value)
 }
 
 
@@ -2259,6 +3394,8 @@ public struct Transaction {
     public var appCall: AppCallTransactionFields?
     public var keyRegistration: KeyRegistrationTransactionFields?
     public var assetFreeze: AssetFreezeTransactionFields?
+    public var heartbeat: HeartbeatTransactionFields?
+    public var stateProof: StateProofTransactionFields?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
@@ -2273,7 +3410,7 @@ public struct Transaction {
          * Optional transaction fee in microALGO.
          *
          * If not set, the fee will be interpreted as 0 by the network.
-         */fee: UInt64? = nil, firstValid: UInt64, lastValid: UInt64, genesisHash: Data?, genesisId: String?, note: Data? = nil, rekeyTo: String? = nil, lease: Data? = nil, group: Data? = nil, payment: PaymentTransactionFields? = nil, assetTransfer: AssetTransferTransactionFields? = nil, assetConfig: AssetConfigTransactionFields? = nil, appCall: AppCallTransactionFields? = nil, keyRegistration: KeyRegistrationTransactionFields? = nil, assetFreeze: AssetFreezeTransactionFields? = nil) {
+         */fee: UInt64? = nil, firstValid: UInt64, lastValid: UInt64, genesisHash: Data?, genesisId: String?, note: Data? = nil, rekeyTo: String? = nil, lease: Data? = nil, group: Data? = nil, payment: PaymentTransactionFields? = nil, assetTransfer: AssetTransferTransactionFields? = nil, assetConfig: AssetConfigTransactionFields? = nil, appCall: AppCallTransactionFields? = nil, keyRegistration: KeyRegistrationTransactionFields? = nil, assetFreeze: AssetFreezeTransactionFields? = nil, heartbeat: HeartbeatTransactionFields? = nil, stateProof: StateProofTransactionFields? = nil) {
         self.transactionType = transactionType
         self.sender = sender
         self.fee = fee
@@ -2291,6 +3428,8 @@ public struct Transaction {
         self.appCall = appCall
         self.keyRegistration = keyRegistration
         self.assetFreeze = assetFreeze
+        self.heartbeat = heartbeat
+        self.stateProof = stateProof
     }
 }
 
@@ -2352,6 +3491,12 @@ extension Transaction: Equatable, Hashable {
         if lhs.assetFreeze != rhs.assetFreeze {
             return false
         }
+        if lhs.heartbeat != rhs.heartbeat {
+            return false
+        }
+        if lhs.stateProof != rhs.stateProof {
+            return false
+        }
         return true
     }
 
@@ -2373,6 +3518,8 @@ extension Transaction: Equatable, Hashable {
         hasher.combine(appCall)
         hasher.combine(keyRegistration)
         hasher.combine(assetFreeze)
+        hasher.combine(heartbeat)
+        hasher.combine(stateProof)
     }
 }
 
@@ -2401,7 +3548,9 @@ public struct FfiConverterTypeTransaction: FfiConverterRustBuffer {
                 assetConfig: FfiConverterOptionTypeAssetConfigTransactionFields.read(from: &buf), 
                 appCall: FfiConverterOptionTypeAppCallTransactionFields.read(from: &buf), 
                 keyRegistration: FfiConverterOptionTypeKeyRegistrationTransactionFields.read(from: &buf), 
-                assetFreeze: FfiConverterOptionTypeAssetFreezeTransactionFields.read(from: &buf)
+                assetFreeze: FfiConverterOptionTypeAssetFreezeTransactionFields.read(from: &buf), 
+                heartbeat: FfiConverterOptionTypeHeartbeatTransactionFields.read(from: &buf), 
+                stateProof: FfiConverterOptionTypeStateProofTransactionFields.read(from: &buf)
         )
     }
 
@@ -2423,6 +3572,8 @@ public struct FfiConverterTypeTransaction: FfiConverterRustBuffer {
         FfiConverterOptionTypeAppCallTransactionFields.write(value.appCall, into: &buf)
         FfiConverterOptionTypeKeyRegistrationTransactionFields.write(value.keyRegistration, into: &buf)
         FfiConverterOptionTypeAssetFreezeTransactionFields.write(value.assetFreeze, into: &buf)
+        FfiConverterOptionTypeHeartbeatTransactionFields.write(value.heartbeat, into: &buf)
+        FfiConverterOptionTypeStateProofTransactionFields.write(value.stateProof, into: &buf)
     }
 }
 
@@ -2826,6 +3977,8 @@ public enum TransactionType {
     case assetConfig
     case keyRegistration
     case appCall
+    case heartbeat
+    case stateProof
 }
 
 
@@ -2854,6 +4007,10 @@ public struct FfiConverterTypeTransactionType: FfiConverterRustBuffer {
         case 5: return .keyRegistration
         
         case 6: return .appCall
+        
+        case 7: return .heartbeat
+        
+        case 8: return .stateProof
         
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -3140,6 +4297,30 @@ fileprivate struct FfiConverterOptionTypeAssetTransferTransactionFields: FfiConv
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterOptionTypeHeartbeatTransactionFields: FfiConverterRustBuffer {
+    typealias SwiftType = HeartbeatTransactionFields?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeHeartbeatTransactionFields.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeHeartbeatTransactionFields.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionTypeKeyRegistrationTransactionFields: FfiConverterRustBuffer {
     typealias SwiftType = KeyRegistrationTransactionFields?
 
@@ -3204,6 +4385,78 @@ fileprivate struct FfiConverterOptionTypePaymentTransactionFields: FfiConverterR
         switch try readInt(&buf) as Int8 {
         case 0: return nil
         case 1: return try FfiConverterTypePaymentTransactionFields.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterOptionTypeStateProof: FfiConverterRustBuffer {
+    typealias SwiftType = StateProof?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeStateProof.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeStateProof.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterOptionTypeStateProofMessage: FfiConverterRustBuffer {
+    typealias SwiftType = StateProofMessage?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeStateProofMessage.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeStateProofMessage.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterOptionTypeStateProofTransactionFields: FfiConverterRustBuffer {
+    typealias SwiftType = StateProofTransactionFields?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeStateProofTransactionFields.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeStateProofTransactionFields.read(from: &buf)
         default: throw UniffiInternalError.unexpectedOptionalTag
         }
     }
@@ -3449,6 +4702,31 @@ fileprivate struct FfiConverterSequenceTypeMultisigSubsignature: FfiConverterRus
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
             seq.append(try FfiConverterTypeMultisigSubsignature.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeReveal: FfiConverterRustBuffer {
+    typealias SwiftType = [Reveal]
+
+    public static func write(_ value: [Reveal], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeReveal.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [Reveal] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [Reveal]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeReveal.read(from: &buf))
         }
         return seq
     }
