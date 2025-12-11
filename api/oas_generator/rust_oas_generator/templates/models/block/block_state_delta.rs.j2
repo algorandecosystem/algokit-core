@@ -14,6 +14,6 @@ use std::collections::HashMap;
 use crate::models::BlockEvalDelta;
 
 /// BlockStateDelta is a map keyed by state key to BlockEvalDelta.
-pub type BlockStateDelta = HashMap<String, BlockEvalDelta>;
+pub type BlockStateDelta = HashMap<Vec<u8>, BlockEvalDelta>;
 
 

@@ -22,7 +22,7 @@ pub struct BlockEvalDelta {
     pub action: u32,
     /// [bs] bytes value.
     #[serde(rename = "bs", skip_serializing_if = "Option::is_none")]
-    pub bytes: Option<String>,
+    pub bytes: Option<Vec<u8>>,
     /// [ui] uint value.
     #[serde(rename = "ui", skip_serializing_if = "Option::is_none")]
     pub uint: Option<u64>,
