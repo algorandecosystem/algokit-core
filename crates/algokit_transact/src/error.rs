@@ -18,9 +18,6 @@ pub enum AlgoKitTransactError {
     #[snafu(display("Error occurred during msgpack encoding: {source}"))]
     MsgpackEncodingError { source: rmpv::encode::Error },
 
-    #[snafu(display("Error occurred during msgpack decoding: {source}"))]
-    MsgpackDecodingError { source: rmpv::decode::Error },
-
     #[snafu(display("Error occurred during decoding at path {path}: {source}"))]
     DecodingError {
         path: String,
@@ -49,12 +46,6 @@ impl From<rmp_serde::encode::Error> for AlgoKitTransactError {
 impl From<rmpv::encode::Error> for AlgoKitTransactError {
     fn from(source: rmpv::encode::Error) -> Self {
         AlgoKitTransactError::MsgpackEncodingError { source }
-    }
-}
-
-impl From<rmpv::decode::Error> for AlgoKitTransactError {
-    fn from(source: rmpv::decode::Error) -> Self {
-        AlgoKitTransactError::MsgpackDecodingError { source }
     }
 }
 
