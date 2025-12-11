@@ -2886,6 +2886,14 @@ public struct FfiConverterTypeTransactionType: FfiConverterRustBuffer {
         case .appCall:
             writeInt(&buf, Int32(6))
         
+        
+        case .heartbeat:
+            writeInt(&buf, Int32(7))
+        
+        
+        case .stateProof:
+            writeInt(&buf, Int32(8))
+        
         }
     }
 }
