@@ -138,7 +138,7 @@ impl Transaction {
         if let Some(max_fee) = request.max_fee {
             if calculated_fee > max_fee {
                 return Err(AlgoKitTransactError::InputError {
-                    message: format!(
+                    err_msg: format!(
                         "Transaction fee {} µALGO is greater than max fee {} µALGO",
                         calculated_fee, max_fee
                     ),
@@ -209,7 +209,9 @@ impl AlgorandMsgpack for SignedTransaction {
     // decode the transaction using Transaction::decode (which does check the type) and
     // then add it to the decoded struct
     fn decode(bytes: &[u8]) -> Result<Self, AlgoKitTransactError> {
-        let value: rmpv::Value = rmp_serde::from_slice(bytes)?;
+        let value: rmpv::Value = serde_path_to_error::deserialize(
+            &mut rmp_serde::Deserializer::new(std::io::Cursor::new(bytes)),
+        )?;
 
         match value {
             rmpv::Value::Map(map) => {
@@ -224,13 +226,15 @@ impl AlgorandMsgpack for SignedTransaction {
 
                 let stxn = SignedTransaction {
                     transaction: Transaction::decode(&txn_buf)?,
-                    ..rmp_serde::from_slice(bytes)?
+                    ..serde_path_to_error::deserialize(&mut rmp_serde::Deserializer::new(
+                        std::io::Cursor::new(bytes),
+                    ))?
                 };
 
                 Ok(stxn)
             }
             _ => Err(AlgoKitTransactError::InputError {
-                message: format!(
+                err_msg: format!(
                     "expected signed transaction to be a map, but got a: {:#?}",
                     value.type_id()
                 ),
