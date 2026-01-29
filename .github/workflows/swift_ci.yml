@@ -64,3 +64,12 @@ jobs:
       - name: Test (Catalyst)
         run: cd packages/swift/${{ env.PACKAGE }} && xcodebuild -scheme ${{ env.PACKAGE }} test -destination "platform=macOS,variant=Mac Catalyst"
 
+      - name: Zip Swift package
+        run: cd packages/swift && zip -r ${{ env.PACKAGE }}.zip ${{ env.PACKAGE }} -x "${{ env.PACKAGE }}/.build/*"
+
+      - name: Upload Swift package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.PACKAGE }}
+          path: packages/swift/${{ env.PACKAGE }}.zip
+
