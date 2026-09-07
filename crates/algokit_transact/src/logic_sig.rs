@@ -2,8 +2,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::{Bytes, serde_as};
 
 use crate::constants::{
-    ALGORAND_SIGNATURE_BYTE_LENGTH, MAX_LOGIC_SIG_SIZE, MULTISIG_PROGRAM_DOMAIN_SEPARATOR,
-    PROGRAM_DOMAIN_SEPARATOR,
+    ALGORAND_SIGNATURE_BYTE_LENGTH, MULTISIG_PROGRAM_DOMAIN_SEPARATOR, PROGRAM_DOMAIN_SEPARATOR,
 };
 use crate::traits::Validate;
 use crate::utils::{hash, is_empty_signature_opt, is_empty_vec_opt};
@@ -100,14 +99,6 @@ impl Validate for LogicSignature {
             errors.push("LogicSig program cannot be empty".to_string());
         }
 
-        if self.logic.len() > MAX_LOGIC_SIG_SIZE {
-            errors.push(format!(
-                "LogicSig program of {} bytes exceeds the maximum of {} bytes",
-                self.logic.len(),
-                MAX_LOGIC_SIG_SIZE
-            ));
-        }
-
         let delegations = [
             self.signature.is_some(),
             self.multisignature.is_some(),
@@ -119,6 +110,12 @@ impl Validate for LogicSignature {
 
         if delegations > 1 {
             errors.push("LogicSig can carry at most one delegation signature".to_string());
+        }
+
+        if self.multisignature.is_some() {
+            errors.push(
+                "LogicSig msig delegation is rejected since consensus v41; use lmsig".to_string(),
+            );
         }
 
         if errors.is_empty() {
@@ -248,5 +245,49 @@ mod tests {
         lsig.logic_multisignature = Some(multisig());
 
         assert!(lsig.validate().is_err());
+    }
+}
+
+#[cfg(test)]
+mod msig_rejection_tests {
+    use super::*;
+    use crate::test_utils::AccountMother;
+
+    fn multisig() -> MultisigSignature {
+        MultisigSignature::from_participants(
+            1,
+            2,
+            vec![AccountMother::account(), AccountMother::neil()],
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn rejects_legacy_msig_delegation() {
+        let mut lsig = LogicSignature::new(vec![1, 32, 1, 1, 34]);
+        lsig.multisignature = Some(multisig());
+
+        assert!(lsig.validate().is_err());
+    }
+
+    #[test]
+    fn accepts_lmsig_delegation() {
+        let mut lsig = LogicSignature::new(vec![1, 32, 1, 1, 34]);
+        lsig.logic_multisignature = Some(multisig());
+
+        assert!(lsig.validate().is_ok());
+    }
+
+    /// Validation rejects msig, but decoding must still accept it so pre-v41
+    /// transactions round-trip.
+    #[test]
+    fn legacy_msig_still_round_trips() {
+        let mut lsig = LogicSignature::new(vec![1, 32, 1, 1, 34]);
+        lsig.multisignature = Some(multisig());
+
+        let decoded: LogicSignature =
+            rmp_serde::from_slice(&rmp_serde::to_vec_named(&lsig).unwrap()).unwrap();
+
+        assert_eq!(decoded, lsig);
     }
 }

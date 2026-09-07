@@ -349,6 +349,54 @@ impl ResourceRef {
     }
 }
 
+/// Checks each access index is in bounds and names the right kind of entry.
+/// Index 0 means the sender, or the app being called.
+fn validate_access_indices(access: &[ResourceRef]) -> Vec<TransactionValidationError> {
+    let mut errors = Vec::new();
+
+    let describe = |index: u64, expected: &str| {
+        TransactionValidationError::ArbitraryConstraint(format!(
+            "Access index {} must refer to {}",
+            index, expected
+        ))
+    };
+
+    let resolves_to = |index: u64, want: fn(&ResourceRef) -> bool| -> bool {
+        match access.get(index as usize - 1) {
+            Some(entry) => want(entry),
+            None => false,
+        }
+    };
+
+    for entry in access {
+        if let Some(ref holding) = entry.holding {
+            if holding.address != 0 && !resolves_to(holding.address, |e| e.address.is_some()) {
+                errors.push(describe(holding.address, "an Address in the Access list"));
+            }
+            if holding.asset == 0 || !resolves_to(holding.asset, |e| e.asset.is_some()) {
+                errors.push(describe(holding.asset, "an Asset in the Access list"));
+            }
+        }
+
+        if let Some(ref locals) = entry.locals {
+            if locals.address != 0 && !resolves_to(locals.address, |e| e.address.is_some()) {
+                errors.push(describe(locals.address, "an Address in the Access list"));
+            }
+            if locals.app != 0 && !resolves_to(locals.app, |e| e.app.is_some()) {
+                errors.push(describe(locals.app, "an App in the Access list"));
+            }
+        }
+
+        if let Some(ref box_ref) = entry.box_ref {
+            if box_ref.app_id != 0 && !resolves_to(box_ref.app_id, |e| e.app.is_some()) {
+                errors.push(describe(box_ref.app_id, "an App in the Access list"));
+            }
+        }
+    }
+
+    errors
+}
+
 fn is_default_on_complete(on_complete: &OnApplicationComplete) -> bool {
     matches!(on_complete, OnApplicationComplete::NoOp)
 }
@@ -684,6 +732,8 @@ impl AppCallTransactionFields {
                     "Each Access entry may name at most one resource".to_string(),
                 ));
             }
+
+            errors.extend(validate_access_indices(access));
 
             let legacy_refs_present = self
                 .account_references
@@ -1666,6 +1716,155 @@ mod access_tests {
     #[test]
     fn rejects_more_entries_than_the_bound() {
         let fields = app_call_with_access(vec![ResourceRef::default(); MAX_ACCESS_REFERENCES + 1]);
+
+        assert!(fields.validate().is_err());
+    }
+}
+
+#[cfg(test)]
+mod access_index_tests {
+    use super::*;
+    use crate::test_utils::{AccountMother, AppCallTransactionMother};
+
+    fn with_access(access: Vec<ResourceRef>) -> AppCallTransactionFields {
+        let mut fields = AppCallTransactionMother::app_call().build_fields().unwrap();
+        fields.account_references = None;
+        fields.app_references = None;
+        fields.asset_references = None;
+        fields.box_references = None;
+        fields.access = Some(access);
+        fields
+    }
+
+    fn address_entry() -> ResourceRef {
+        ResourceRef {
+            address: Some(AccountMother::neil()),
+            ..Default::default()
+        }
+    }
+
+    fn asset_entry() -> ResourceRef {
+        ResourceRef {
+            asset: Some(107686045),
+            ..Default::default()
+        }
+    }
+
+    fn app_entry() -> ResourceRef {
+        ResourceRef {
+            app: Some(1234),
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn accepts_indices_pointing_at_the_right_kinds() {
+        let fields = with_access(vec![
+            address_entry(),
+            asset_entry(),
+            app_entry(),
+            ResourceRef {
+                holding: Some(HoldingRef {
+                    address: 1,
+                    asset: 2,
+                }),
+                ..Default::default()
+            },
+            ResourceRef {
+                locals: Some(LocalsRef { address: 1, app: 3 }),
+                ..Default::default()
+            },
+        ]);
+
+        assert!(fields.validate().is_ok());
+    }
+
+    /// 0 is valid, not out of bounds.
+    #[test]
+    fn accepts_zero_as_sender_or_current_app() {
+        let fields = with_access(vec![
+            asset_entry(),
+            ResourceRef {
+                holding: Some(HoldingRef {
+                    address: 0,
+                    asset: 1,
+                }),
+                ..Default::default()
+            },
+            ResourceRef {
+                locals: Some(LocalsRef { address: 0, app: 0 }),
+                ..Default::default()
+            },
+            ResourceRef {
+                box_ref: Some(BoxReference {
+                    app_id: 0,
+                    name: b"b".to_vec(),
+                }),
+                ..Default::default()
+            },
+        ]);
+
+        assert!(fields.validate().is_ok());
+    }
+
+    #[test]
+    fn rejects_an_index_beyond_the_list() {
+        let fields = with_access(vec![
+            asset_entry(),
+            ResourceRef {
+                holding: Some(HoldingRef {
+                    address: 0,
+                    asset: 9,
+                }),
+                ..Default::default()
+            },
+        ]);
+
+        assert!(fields.validate().is_err());
+    }
+
+    #[test]
+    fn rejects_an_index_pointing_at_the_wrong_kind() {
+        // The holding's asset index points at an Address entry, not an Asset.
+        let fields = with_access(vec![
+            address_entry(),
+            ResourceRef {
+                holding: Some(HoldingRef {
+                    address: 0,
+                    asset: 1,
+                }),
+                ..Default::default()
+            },
+        ]);
+
+        assert!(fields.validate().is_err());
+    }
+
+    #[test]
+    fn rejects_a_holding_without_an_asset() {
+        let fields = with_access(vec![ResourceRef {
+            holding: Some(HoldingRef {
+                address: 0,
+                asset: 0,
+            }),
+            ..Default::default()
+        }]);
+
+        assert!(fields.validate().is_err());
+    }
+
+    #[test]
+    fn rejects_a_box_index_pointing_at_a_non_app() {
+        let fields = with_access(vec![
+            asset_entry(),
+            ResourceRef {
+                box_ref: Some(BoxReference {
+                    app_id: 1,
+                    name: b"b".to_vec(),
+                }),
+                ..Default::default()
+            },
+        ]);
 
         assert!(fields.validate().is_err());
     }
