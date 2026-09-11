@@ -14,7 +14,11 @@ fn jna_resource_prefix() -> Result<&'static str> {
         ("linux", "x86_64") => "linux-x86-64",
         ("windows", "x86_64") => "win32-x86-64",
         ("windows", "aarch64") => "win32-aarch64",
-        (os, arch) => return Err(eyre!("Unsupported host platform for JVM build: {os}-{arch}")),
+        (os, arch) => {
+            return Err(eyre!(
+                "Unsupported host platform for JVM build: {os}-{arch}"
+            ));
+        }
     };
 
     Ok(prefix)
