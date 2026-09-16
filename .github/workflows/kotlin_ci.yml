@@ -25,6 +25,10 @@ jobs:
   # NOTE: Windows isn't included yet - the build_pkgs Kotlin builder shells out to
   # `sh` to run Gradle, which isn't guaranteed to be on PATH on windows-latest
   # runners. Once that's verified, add a `windows-latest` / `win32-x86-64` entry.
+  #
+  # NOTE: darwin-x86-64 (Intel Mac) isn't built - only Apple Silicon (darwin-aarch64)
+  # is currently supported. Add a `macos-13` / `darwin-x86-64` entry if Intel support
+  # is needed again.
   build:
     strategy:
       fail-fast: false
@@ -34,8 +38,6 @@ jobs:
             platform: linux-x86-64
           - os: macos-latest
             platform: darwin-aarch64
-          - os: macos-13
-            platform: darwin-x86-64
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout Code
