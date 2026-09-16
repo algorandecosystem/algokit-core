@@ -87,7 +87,7 @@ jobs:
         run: cargo pkg ${{ env.CRATE }} kotlin
 
       - name: Download all platform native libraries
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
         with:
           path: ${{ env.KOTLIN_PACKAGE_DIR }}/src/main/resources
           pattern: ${{ env.CRATE }}-*
