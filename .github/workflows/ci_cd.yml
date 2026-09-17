@@ -91,3 +91,15 @@ jobs:
     with:
       crate: ${{ matrix.crate_name }}
       release: ${{ github.event_name == 'push' && github.ref_type == 'tag' }}
+
+  kotlin_ci:
+    needs:
+      - setup
+    uses: ./.github/workflows/kotlin_ci.yml
+    secrets: inherit
+    strategy:
+      matrix:
+        include: ${{ fromJSON(needs.setup.outputs.ffi_packages) }}
+    with:
+      crate: ${{ matrix.crate_name }}
+      release: ${{ github.event_name == 'push' && github.ref_type == 'tag' }}

@@ -1,4 +1,5 @@
 mod android;
+mod kotlin;
 mod python;
 mod swift;
 
@@ -19,6 +20,9 @@ enum Language {
     Swift,
     #[value(alias = "aar")]
     Android,
+    /// Desktop/server Kotlin package, built as a plain JVM JAR (as opposed to an Android AAR).
+    #[value(alias = "jvm", alias = "jar")]
+    Kotlin,
 }
 
 impl Display for Language {
@@ -27,6 +31,7 @@ impl Display for Language {
             Language::Python => f.write_str("python"),
             Language::Swift => f.write_str("swift"),
             Language::Android => f.write_str("android"),
+            Language::Kotlin => f.write_str("kotlin"),
         }
     }
 }
@@ -37,6 +42,7 @@ impl Language {
             Self::Python => python::build(pkg),
             Self::Swift => swift::build(pkg),
             Self::Android => android::build(pkg),
+            Self::Kotlin => kotlin::build(pkg),
         }
     }
 
