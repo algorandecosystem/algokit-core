@@ -27,6 +27,8 @@ MODULE := $(LOCAL_DIR)
 
 MANIFEST := $(LOCAL_DIR)/manifest.json
 
+MODULE_CRATE_NAME := seed_vault_ta
+
 MODULE_SRCS := $(LOCAL_DIR)/main.rs
 
 MODULE_LIBRARY_DEPS := \
