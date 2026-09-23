@@ -182,8 +182,14 @@ jobs:
           find trusty-manifest/build-root/build-generic-x86_64/ -name "*.elf" -exec cp {} build-output/ \;
           find trusty-manifest/build-root/build-generic-x86_64/ -name "*.bin" -exec cp {} build-output/ \;
 
+      - name: Reclaim Disk Space Before Cache Save
+        if: always()
+        run: |
+          rm -rf trusty-manifest/build-root
+          df -h
+
       - name: Upload Build Artifacts to GitHub
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: trusty-applet-binaries
           path: build-output/
