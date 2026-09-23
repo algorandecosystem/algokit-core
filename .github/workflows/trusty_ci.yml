@@ -174,13 +174,13 @@ jobs:
       - name: Build Trusty OS & Applet Binary
         run: |
           cd trusty-manifest
-          ./trusty/vendor/google/aosp/scripts/build.py generic-x86_64-test
+          ./trusty/vendor/google/aosp/scripts/build.py generic-x86_64
 
       - name: Package Binaries
         run: |
           mkdir -p build-output
-          find trusty-manifest/build-generic-x86_64-test/ -name "*.elf" -exec cp {} build-output/ \;
-          find trusty-manifest/build-generic-x86_64-test/ -name "*.bin" -exec cp {} build-output/ \;
+          find trusty-manifest/build-root/build-generic-x86_64/ -name "*.elf" -exec cp {} build-output/ \;
+          find trusty-manifest/build-root/build-generic-x86_64/ -name "*.bin" -exec cp {} build-output/ \;
 
       - name: Upload Build Artifacts to GitHub
         uses: actions/upload-artifact@v4
