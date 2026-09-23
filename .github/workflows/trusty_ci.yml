@@ -20,7 +20,7 @@ jobs:
         run: rustup show
 
       - name: Cache Cargo Registry & Build Artifacts
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/registry
@@ -89,7 +89,7 @@ jobs:
 
       - name: Cache Trusty Source Tree (.repo git objects)
         id: repo-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           # Only `.repo/` (repo's internal bare/mirror git objects for every
           # project in the manifest -- kernel, lib, app, device, prebuilt

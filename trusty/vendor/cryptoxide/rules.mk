@@ -21,6 +21,19 @@
 #   - "ed25519"     -- `cryptoxide::ed25519::{keypair, signature, verify}`.
 # Verified against a real minimal-feature build (`cargo build` against just
 # these 4 features, no `default-features`) before vendoring, not guessed.
+#
+# `-A dead_code`: Trusty's build denies *all* warnings by default (unlike a
+# plain `cargo build`, which only warns). With just these 4 features
+# enabled, several of upstream's own internal helpers in `cryptoutil.rs`
+# and per-arch dispatch consts in `hashing/sha2/impl256/mod.rs` (e.g.
+# `HAS_AVX`/`HAS_SSE41`, always `false` -- no SIMD backend is reachable
+# without other features) are genuinely unused *by this narrow build*, even
+# though they're real, used-elsewhere-upstream library code, not dead code
+# we introduced. That's an inherent property of vendoring a subset of a
+# real published crate's feature surface (verbatim, not hand-trimmed --
+# see above), so it's suppressed here at the build-flag level rather than
+# scattering `#[allow(dead_code)]` through otherwise-untouched upstream
+# source.
 
 LOCAL_DIR := $(GET_LOCAL_DIR)
 MODULE := $(LOCAL_DIR)
@@ -35,6 +48,7 @@ MODULE_RUSTFLAGS += \
 	--cfg 'feature="sha2"' \
 	--cfg 'feature="curve25519"' \
 	--cfg 'feature="ed25519"' \
+	-A dead_code \
 
 MODULE_LIBRARY_DEPS := \
 	trusty/user/base/lib/liballoc-rust \
