@@ -1,4 +1,4 @@
-name: Build Trusty Applet & Cuttlefish Artifacts
+name: Build Trusty Applet
 
 on:
   push:

@@ -27,9 +27,7 @@ MODULE := $(LOCAL_DIR)
 
 MANIFEST := $(LOCAL_DIR)/manifest.json
 
-MODULE_SRCS := \
-	$(LOCAL_DIR)/main.rs \
-	$(LOCAL_DIR)/trusty_store.rs \
+MODULE_SRCS := $(LOCAL_DIR)/main.rs
 
 MODULE_LIBRARY_DEPS := \
 	trusty/user/base/lib/trusty-std \
