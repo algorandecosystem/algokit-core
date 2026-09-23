@@ -49,7 +49,7 @@ impl KeyAlgorithm {
 /// address. That's not a general rule -- a future HD algorithm (e.g.
 /// BIP32-Ed25519 via `algokit_crypto::xhd`) would persist one root seed per
 /// record but derive *many* addresses from it. That's why address lookups
-/// (see [`addresses_for_record`]) always return a `Vec<String>` rather than
+/// (see `addresses_for_record`) always return a `Vec<String>` rather than
 /// a single `String`.
 ///
 /// # `key_material` must be recoverable back into the exact backup phrase
