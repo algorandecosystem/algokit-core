@@ -1,7 +1,7 @@
 # Trusty Trusted Application: seed_vault_ta
 #
 # Exposes a `CREATE_ACCOUNT`/`LIST_ACCOUNTS`/`REVEAL_MNEMONIC` IPC service
-# (port "algorandfoundation.seed_vault_ta") for creating, enumerating, and
+# (port "algorandecosystem.seed_vault_ta") for creating, enumerating, and
 # (deliberately, explicitly) backing up Algorand accounts. Private key
 # material never leaves this TA except via the explicit REVEAL_MNEMONIC
 # opcode -- see the doc comment at the top of main.rs and

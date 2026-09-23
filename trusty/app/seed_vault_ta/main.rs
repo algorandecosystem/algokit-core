@@ -5,7 +5,7 @@
 //!
 //! ## What this TA exposes
 //!
-//! A single IPC port, `algorandfoundation.seed_vault_ta`, open to
+//! A single IPC port, `algorandecosystem.seed_vault_ta`, open to
 //! non-secure (Android) callers via `PortCfg::allow_ns_connect()`. Four
 //! operations, all defined byte-for-byte in `seed_vault::protocol`:
 //!
@@ -51,19 +51,21 @@
 //!   against Trusty's real secure storage service, modeled on
 //!   `trusty/app/secretkeeper/store.rs`.
 //! - This file wires a `tipc::Service` event loop to
-//!   `seed_vault::service::handle_request`. The `tipc` trait shapes below
-//!   are modeled on Google's `secretkeeper` reference, but Trusty's Rust
-//!   libraries aren't published to crates.io/docs.rs, so this could not be
-//!   compiled from this environment -- double-check the exact trait method
-//!   signatures against whatever is vendored at
-//!   `trusty/user/base/lib/tipc/rust` in your synced tree.
+//!   `seed_vault::service::handle_request`. The `Service`/`Deserialize`/
+//!   `Serialize`/`Manager`/`SingleDispatcher` shapes below are cross-checked
+//!   against `rkutipc` (a published, pure-Rust reimplementation of Trusty's
+//!   `tipc` wire protocol) rather than guessed, since Trusty's own `tipc`
+//!   crate isn't published to crates.io/docs.rs. The official crate at
+//!   `trusty/user/base/lib/tipc/rust` in your synced tree is very likely
+//!   API-compatible, but treat this as a strong reference, not a guarantee
+//!   -- diff against it if the build still complains.
 //!
 //! ## Calling this TA from AOSP
 //!
 //! ```ignore
 //! use trusty::{DEFAULT_DEVICE, TipcChannel};
 //!
-//! let mut channel = TipcChannel::connect(DEFAULT_DEVICE, "algorandfoundation.seed_vault_ta")?;
+//! let mut channel = TipcChannel::connect(DEFAULT_DEVICE, "algorandecosystem.seed_vault_ta")?;
 //!
 //! // CREATE_ACCOUNT (algorithm tag 0x01 = Algo25Ed25519)
 //! channel.send(&[0x01, 0x01])?;
@@ -100,23 +102,26 @@ mod trusty_store;
 
 extern crate alloc;
 
-use alloc::rc::Rc;
 use alloc::vec::Vec;
 
 use seed_vault::service::handle_request;
+use tipc::service::SingleDispatcher;
 use tipc::{
-    ConnectResult, Deserialize, Handle, Manager, MessageResult, PortCfg, Serialize, Service,
-    TipcError, TipcUuid,
+    ConnectResult, Deserialize, Handle, Manager, MessageResult, PortCfg, Serialize, Serializer,
+    Service, TipcError, Uuid,
 };
 use trusty_store::TrustySecureStore;
 use zeroize::Zeroize;
 
-const PORT: &str = "algorandfoundation.seed_vault_ta";
+const PORT: &str = "algorandecosystem.seed_vault_ta";
 
 /// Maximum request/response size. `seed_vault::protocol` messages are tiny,
 /// so this comfortably covers a realistic number of accounts per device
 /// without needing message fragmentation.
 const MAX_MSG_SIZE: u32 = 4096;
+
+/// Max simultaneous client connections this TA will service at once.
+const MAX_CONNECTIONS: usize = 4;
 
 /// Thin newtype so a plain byte buffer can be used as a `tipc` message,
 /// without pulling in a serialization framework for a protocol this simple.
@@ -126,16 +131,16 @@ impl Deserialize for RawMessage {
     type Error = TipcError;
     const MAX_SERIALIZED_SIZE: usize = MAX_MSG_SIZE as usize;
 
-    fn deserialize(bytes: &[u8], _handles: &mut [Handle]) -> Result<Self, Self::Error> {
+    fn deserialize(bytes: &[u8], _handles: &mut [Option<Handle>]) -> Result<Self, Self::Error> {
         Ok(RawMessage(bytes.to_vec()))
     }
 }
 
-impl Serialize for RawMessage {
-    fn serialize<'s, 'h: 's>(
-        &'s self,
-        serializer: &mut tipc::Serializer<'s, 'h>,
-    ) -> Result<(), TipcError> {
+impl<'s> Serialize<'s> for RawMessage {
+    fn serialize<'a: 's, S: Serializer<'s>>(
+        &'a self,
+        serializer: &mut S,
+    ) -> Result<S::Ok, S::Error> {
         serializer.serialize_bytes(&self.0)
     }
 }
@@ -155,7 +160,7 @@ impl Service for SeedVaultService {
         &self,
         _port: &PortCfg,
         _handle: &Handle,
-        _peer: &TipcUuid,
+        _peer: &Uuid,
     ) -> tipc::Result<ConnectResult<Self::Connection>> {
         // Every caller is accepted -- access control happens at the port
         // level via `PortCfg::allow_ns_connect()` below, not per-connection.
@@ -193,14 +198,8 @@ fn main() {
         .msg_max_size(MAX_MSG_SIZE)
         .allow_ns_connect();
 
-    let mut dispatcher = tipc::PortDispatcher::new();
-    dispatcher
-        .add_service(Rc::new(SeedVaultService), cfg)
-        .expect("failed to register seed_vault_ta service port");
-
     let buffer = [0u8; MAX_MSG_SIZE as usize];
-    Manager::new_with_dispatcher(dispatcher, buffer)
-        .expect("failed to create tipc Manager")
-        .run_event_loop()
-        .expect("seed_vault_ta event loop exited unexpectedly");
+    let manager: Manager<SingleDispatcher<SeedVaultService>, _, 1, MAX_CONNECTIONS> =
+        Manager::new(SeedVaultService, cfg, buffer).expect("failed to create tipc Manager");
+    manager.run_event_loop().expect("seed_vault_ta event loop exited unexpectedly");
 }
