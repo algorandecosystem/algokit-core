@@ -19,6 +19,17 @@ jobs:
       - name: Install Rust Toolchain
         run: rustup show
 
+      - name: Cache Cargo Registry & Build Artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: cargo-verify-algo25-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            cargo-verify-algo25-${{ runner.os }}-
+
       - name: Create & Recover algo25 Account (algokit_crypto)
         run: cargo run -p algokit_crypto --example algo25_roundtrip
 
@@ -55,11 +66,50 @@ jobs:
             libx11-dev lib32z1-dev libgl1-mesa-dev libxml2-utils xsltproc unzip \
             fontconfig python3 python3-pip repo
 
+      - name: Compute Weekly Cache Key
+        id: cache-week
+        run: echo "week=$(date -u +%Y-W%V)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Trusty Source Tree (.repo git objects)
+        id: repo-cache
+        uses: actions/cache@v4
+        with:
+          # Only `.repo/` (repo's internal bare/mirror git objects for every
+          # project in the manifest -- kernel, lib, app, device, prebuilt
+          # toolchains, ...) is cached, not the checked-out working trees
+          # under trusty-manifest/trusty/*. `repo sync` below always
+          # recreates those from `.repo/` (a fast, local-only checkout) --
+          # this keeps the cache to roughly half the size for the same
+          # speedup, and guarantees a pristine tree every run regardless of
+          # what a previous run's "Register seed_vault_ta" step mutated in
+          # place.
+          path: trusty-manifest/.repo
+          # Rotates weekly (rather than a single fixed key) so the cache
+          # can't grow unbounded/go permanently stale: each week starts by
+          # restoring the *previous* week's objects (via restore-keys, a
+          # prefix match) and only has to fetch that week's deltas, then
+          # saves a fresh snapshot under the new key. First run of a given
+          # week (or the very first run ever) falls back to a full
+          # `repo sync` -- still correct, just not accelerated.
+          key: trusty-repo-src-${{ steps.cache-week.outputs.week }}
+          restore-keys: |
+            trusty-repo-src-
+
       - name: Fetch Trusty Source Tree
         run: |
+          # Purely informational: makes a cache-miss (e.g. first run of the
+          # week, or after the 10GB/repo GitHub Actions cache quota evicted
+          # this entry) obvious from the log/timing rather than a mystery.
+          echo "Trusty .repo cache hit: ${{ steps.repo-cache.outputs.cache-hit }}"
+
           mkdir -p trusty-manifest
           cd trusty-manifest
           repo init -u https://android.googlesource.com/trusty/manifest -b main
+          # `-j$(nproc)` parallelizes across projects either way, but with a
+          # warm `.repo` cache (see the step above) this only has to fetch
+          # commits made *since* the cached snapshot instead of cloning
+          # every one of the manifest's ~dozens of git projects from
+          # scratch -- by far the slowest part of this workflow otherwise.
           repo sync -j$(nproc)
 
       - name: Inject Vendored Crates & First-Party Libraries
@@ -75,7 +125,6 @@ jobs:
 
       - name: Inject Custom Trusty Applet
         run: |
-          # trusty/user/app/ (not .../sample/) -- same tier as gatekeeper/storage.
           mkdir -p trusty-manifest/trusty/user/app/seed_vault_ta
           cp -r trusty/app/seed_vault_ta/* trusty-manifest/trusty/user/app/seed_vault_ta/
 
