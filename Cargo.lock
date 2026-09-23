@@ -109,7 +109,6 @@ dependencies = [
  "cryptoxide",
  "ed25519-bip32",
  "getrandom 0.4.1",
- "sha2",
  "signature",
  "snafu",
  "tokio",

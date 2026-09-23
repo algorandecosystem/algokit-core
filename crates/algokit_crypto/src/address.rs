@@ -14,7 +14,8 @@
 //! crate.
 
 use alloc::string::String;
-use sha2::{Digest, Sha512_256};
+
+use crate::hash::sha512_256;
 
 /// Number of checksum bytes appended to the public key before base32 encoding.
 const CHECKSUM_LEN: usize = 4;
@@ -22,7 +23,7 @@ const CHECKSUM_LEN: usize = 4;
 /// Derives the standard 58-character Algorand address from a raw 32-byte
 /// ed25519 public key.
 pub fn address_from_public_key(public_key: &[u8; 32]) -> String {
-    let hash = Sha512_256::digest(public_key);
+    let hash = sha512_256(public_key);
 
     let mut buf = [0u8; 32 + CHECKSUM_LEN];
     buf[..32].copy_from_slice(public_key);

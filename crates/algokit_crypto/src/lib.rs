@@ -6,8 +6,11 @@
 
 extern crate alloc;
 
+mod hash;
+
 pub mod address;
 pub mod algo25;
 pub mod ed25519;
+#[cfg(feature = "xhd")]
 pub mod xhd;
 pub use signature::{Keypair, Signer};

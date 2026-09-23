@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [features]
-default = ["std"]
+default = ["std", "xhd"]
 
 # Disable (`--no-default-features`) to build under `#![no_std]` + `alloc`,
 # e.g. for TEE/embedded targets like Trusty's `*-unknown-trusty` (which ships
@@ -16,7 +16,21 @@ default = ["std"]
 # dependency links `std` unconditionally (it doesn't declare `#![no_std]`
 # itself), so it only builds on targets that actually ship a real `std`
 # (which includes Trusty, unlike a bare-metal `*-none-*` target).
-std = ["bip39/std", "sha2/std", "snafu/std"]
+std = ["bip39?/std", "snafu?/std"]
+
+# Gates the `xhd` (BIP32-Ed25519 / HD wallet) module and its dependencies
+# (`bip39`, `snafu`, the `ed25519-bip32` git fork, and everything *they*
+# pull in transitively -- `bitcoin_hashes`, `unicode-normalization`, etc.).
+# On by default so nothing changes for normal (host/mobile) consumers of
+# this crate, e.g. `algokit_crypto_ffi`.
+#
+# Consumers that only need `algo25`/`ed25519`/`address` -- notably
+# `seed_vault` (and therefore Trusty's `seed_vault_ta`, see
+# `trusty/app/seed_vault_ta/rules.mk`) -- should disable default features to
+# drop this whole dependency subtree: it would otherwise be by far the
+# largest chunk of *not-already-AOSP-vendored* crates blocking that Trusty
+# build, despite `seed_vault` never calling into `xhd` at all.
+xhd = ["dep:bip39", "dep:snafu", "dep:ed25519-bip32"]
 
 [dependencies]
 # Provides ed25519 implementation
@@ -31,33 +45,52 @@ signature = { workspace = true }
 # Enables zeroing of sk in the concrete implementation when it is dropped
 zeroize = { workspace = true }
 
-# Used random seed generation for ed25519. `no_std` by design; ships its own
-# secure RNG backend per-target (including Trusty).
+# Used random seed generation for ed25519. `no_std` by design, with built-in
+# backends for most targets -- but NOT Trusty: `getrandom` 0.4 has no
+# `*-unknown-trusty` backend at all (there's no `trusty` case in its
+# `backends.rs` target-selection `cfg_if!`). Resolved for the Trusty build
+# by hand-vendoring a trimmed copy of `getrandom` (`trusty/vendor/getrandom`)
+# built with `--cfg getrandom_backend="custom"`, plus a real implementation
+# of that custom backend's hook (`__getrandom_v03_custom`, in
+# `trusty/app/seed_vault_ta/main.rs`'s `trusty_rng` module) that sources
+# entropy from Trusty's own `trusty_rng_secure_rand` service (the same
+# HWRNG-backed CSPRNG `gatekeeper`/`keymint` use) -- not a stub or
+# fallback. See `trusty/app/seed_vault_ta/rules.mk`'s long comment for the
+# full picture, and `create_algo25_account` in
+# `crates/seed_vault/src/store.rs` for the one call site this backs.
 getrandom = "0.4.1"
 async-trait = "0.1.89"
-# Pinned to the same version as `workspace.dependencies.sha2`; can't use
-# `workspace = true` here because Cargo forbids overriding
-# `default-features` on an inherited dependency.
-sha2 = { version = "0.10.8", default-features = false }
 
-# BIP32-Ed25519 (XHD wallet) derivation and raw signing.
+# NOTE: this crate deliberately does *not* depend on the separate `sha2`
+# crate (unlike `algokit_abi`/`algokit_transact`) even though `algo25` and
+# `address` both need SHA-512/256. `sha2` pulls in the whole RustCrypto
+# `digest`/`block-buffer`/`generic-array`/`typenum`/`crypto-common`/
+# `cpufeatures` subtree, none of which are pre-vendored in AOSP -- see
+# `src/hash.rs` and `trusty/app/seed_vault_ta/rules.mk`. `cryptoxide`
+# (already a mandatory dependency here for ed25519) ships the exact same
+# algorithm as `Sha512Trunc256`, so `src/hash.rs` uses that instead.
+
+# BIP32-Ed25519 (XHD wallet) derivation and raw signing. Only used by the
+# `xhd` module/feature -- see the `xhd` feature doc-comment above.
 # Pinned by commit so the build is deterministic. The fork's package name is
 # kept as `ed25519-bip32` from the upstream typed-io crate it forks.
 # NOTE: this fork does not declare `#![no_std]`, so it always links `std`
 # (see the `std` feature doc-comment above).
-ed25519-bip32 = { git = "https://github.com/algorandfoundation/xHD-Wallet-API-rs.git", rev = "3cafd074e840971a2de791593918bb1c0707cd04" }
+ed25519-bip32 = { git = "https://github.com/algorandfoundation/xHD-Wallet-API-rs.git", rev = "3cafd074e840971a2de791593918bb1c0707cd04", optional = true }
 
-# BIP39 mnemonic ↔ 64-byte seed conversion. `zeroize` feature wires the
-# crate's internal `Mnemonic`/`Seed` buffers to `ZeroizeOnDrop`. `alloc` is
-# always enabled (needed regardless of the `std` feature); `std` is layered
-# on top by this crate's own `std` feature.
-bip39 = { version = "2.2", default-features = false, features = ["alloc", "zeroize"] }
+# BIP39 mnemonic ↔ 64-byte seed conversion. Only used by the `xhd`
+# module/feature. `zeroize` feature wires the crate's internal
+# `Mnemonic`/`Seed` buffers to `ZeroizeOnDrop`. `alloc` is always enabled
+# (needed regardless of the `std` feature); `std` is layered on top by this
+# crate's own `std` feature.
+bip39 = { version = "2.2", default-features = false, features = ["alloc", "zeroize"], optional = true }
 
-# `alloc` is always enabled for `String`-carrying error variants (e.g.
-# `XhdError::InvalidMnemonic`); `rust_1_81` lets the `Snafu` derive implement
-# `core::error::Error` without requiring the `std` feature. Pinned directly
-# (see the `sha2` comment above for why `workspace = true` can't be used here).
-snafu = { version = "0.8", default-features = false, features = ["alloc", "rust_1_81"] }
+# Only used by the `xhd` module/feature. `alloc` is always enabled for
+# `String`-carrying error variants (e.g. `XhdError::InvalidMnemonic`);
+# `rust_1_81` lets the `Snafu` derive implement `core::error::Error` without
+# requiring the `std` feature. Pinned directly (see the `sha2` comment above
+# for why `workspace = true` can't be used here).
+snafu = { version = "0.8", default-features = false, features = ["alloc", "rust_1_81"], optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.4.1", features = ["wasm_js"] }

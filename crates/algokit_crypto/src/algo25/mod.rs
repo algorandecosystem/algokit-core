@@ -2,7 +2,8 @@ mod english;
 
 use alloc::{format, string::String, vec::Vec};
 use english::ENGLISH;
-use sha2::{Digest, Sha512_256};
+
+use crate::hash::sha512_256;
 
 pub const FAIL_TO_DECODE_MNEMONIC_ERROR_MSG: &str = "failed to decode mnemonic";
 pub const NOT_IN_WORDS_LIST_ERROR_MSG: &str =
@@ -91,11 +92,9 @@ fn english_index(word: &str) -> Option<usize> {
 }
 
 fn compute_checksum(seed: &[u8; SEED_BYTES_LENGTH]) -> &'static str {
-    let mut hasher = Sha512_256::new();
-    hasher.update(seed);
-    let hash = hasher.finalize();
+    let hash = sha512_256(seed);
 
-    let uint11_hash = to_uint11_array(hash.as_ref());
+    let uint11_hash = to_uint11_array(&hash);
     let words = apply_words(&uint11_hash);
     words[0]
 }

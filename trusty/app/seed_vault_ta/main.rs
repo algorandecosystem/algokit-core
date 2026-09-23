@@ -59,6 +59,14 @@
 //!   `trusty/user/base/lib/tipc/rust` in your synced tree is very likely
 //!   API-compatible, but treat this as a strong reference, not a guarantee
 //!   -- diff against it if the build still complains.
+//! - This file also supplies `getrandom`'s *custom backend* entry point
+//!   (`__getrandom_v03_custom`, in the `trusty_rng` module below), sourcing
+//!   entropy for `CREATE_ACCOUNT` from Trusty's own `trusty_rng_secure_rand`
+//!   (a BoringSSL CSPRNG reseeded from the platform HWRNG) instead of
+//!   `getrandom`'s upstream backends, none of which support
+//!   `*-unknown-trusty`. See that module's doc comment for the full
+//!   rationale and `trusty/vendor/getrandom` for the vendored crate this
+//!   backs.
 //!
 //! ## Calling this TA from AOSP
 //!
@@ -98,6 +106,7 @@
 //! let response = channel.recv()?;
 //! ```
 
+mod trusty_rng;
 mod trusty_store;
 
 extern crate alloc;
@@ -105,7 +114,6 @@ extern crate alloc;
 use alloc::vec::Vec;
 
 use seed_vault::service::handle_request;
-use tipc::service::SingleDispatcher;
 use tipc::{
     ConnectResult, Deserialize, Handle, Manager, MessageResult, PortCfg, Serialize, Serializer,
     Service, TipcError, Uuid,
@@ -199,7 +207,13 @@ fn main() {
         .allow_ns_connect();
 
     let buffer = [0u8; MAX_MSG_SIZE as usize];
-    let manager: Manager<SingleDispatcher<SeedVaultService>, _, 1, MAX_CONNECTIONS> =
-        Manager::new(SeedVaultService, cfg, buffer).expect("failed to create tipc Manager");
+    // `tipc`'s `service` module is private (`mod service;`, not `pub mod
+    // service;` -- see the upstream lib.rs), so `SingleDispatcher` cannot be
+    // named from this crate at all. `Manager::new` is only implemented for
+    // `Manager<SingleDispatcher<S>, ..>`, so leaving the dispatcher type
+    // parameter as `_` still resolves correctly through inference without
+    // ever spelling out that private type.
+    let manager = Manager::<_, _, 1, MAX_CONNECTIONS>::new(SeedVaultService, cfg, buffer)
+        .expect("failed to create tipc Manager");
     manager.run_event_loop().expect("seed_vault_ta event loop exited unexpectedly");
 }

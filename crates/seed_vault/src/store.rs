@@ -265,9 +265,16 @@ pub fn reveal_mnemonic(store: &mut impl AccountStore, address: &str) -> Result<S
     result
 }
 
-/// Generates a fresh 32-byte seed from the platform CSPRNG (`getrandom`,
-/// which resolves to Trusty's secure RNG backend on-target) and persists it
-/// as a [`KeyAlgorithm::Algo25Ed25519`] record.
+/// Generates a fresh 32-byte seed from the platform CSPRNG (`getrandom`) and
+/// persists it as a [`KeyAlgorithm::Algo25Ed25519`] record.
+///
+/// NOTE: `getrandom` has no built-in backend for Trusty upstream -- see the
+/// `getrandom` dependency comment in `algokit_crypto/Cargo.toml`. For
+/// `seed_vault_ta` specifically this is already resolved: a hand-vendored
+/// `getrandom` build (`trusty/vendor/getrandom`) sources entropy from
+/// Trusty's own HWRNG-backed CSPRNG via `trusty_rng_secure_rand` (see
+/// `trusty/app/seed_vault_ta/main.rs`'s `trusty_rng` module). Any *other*
+/// Trusty consumer of this crate would need the same wiring.
 fn create_algo25_account(store: &mut impl AccountStore) -> Result<AccountSummary, StoreError> {
     let mut seed = [0u8; ALGO25_SEED_LEN];
     getrandom::fill(&mut seed).map_err(|_| StoreError::RandomnessUnavailable)?;

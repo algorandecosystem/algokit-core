@@ -62,25 +62,16 @@ jobs:
           repo init -u https://android.googlesource.com/trusty/manifest -b main
           repo sync -j$(nproc)
 
-      - name: Vendor crates for Trusty (best effort)
+      - name: Inject Vendored Crates & First-Party Libraries
         run: |
-          # Trusty apps can't `cargo build` against crates.io/git directly;
-          # crates need vendoring + a generated rules.mk via cargo2rulesmk.py.
-          # Non-fatal: output still needs manual wiring into
-          # trusty/app/seed_vault_ta/rules.mk's MODULE_LIBRARY_DEPS.
-          CARGO2RULESMK=$(find trusty-manifest -maxdepth 6 -name 'cargo2rulesmk.py' -print -quit || true)
-          if [ -n "$CARGO2RULESMK" ]; then
-            echo "Found cargo2rulesmk.py at $CARGO2RULESMK"
-            for crate in algokit_crypto seed_vault; do
-              mkdir -p "build-output/${crate}-rules-mk"
-              (cd "crates/${crate}" && python3 "$CARGO2RULESMK" --run \
-                || echo "cargo2rulesmk run failed/needs manual setup for ${crate}; see build-output for details") \
-                | tee "build-output/${crate}-rules-mk/cargo2rulesmk.log"
-            done
-          else
-            echo "cargo2rulesmk.py not found in synced tree; skipping crate vendoring." \
-              "The seed_vault_ta applet still builds without it (crate wiring is a documented follow-up)."
-          fi
+          for crate in cryptoxide base32 signature getrandom; do
+            mkdir -p "trusty-manifest/trusty/user/base/lib/${crate}"
+            cp -r "trusty/vendor/${crate}/." "trusty-manifest/trusty/user/base/lib/${crate}/"
+          done
+          for crate in algokit_crypto seed_vault; do
+            mkdir -p "trusty-manifest/trusty/user/base/lib/${crate}"
+            cp -r "crates/${crate}/." "trusty-manifest/trusty/user/base/lib/${crate}/"
+          done
 
       - name: Inject Custom Trusty Applet
         run: |
@@ -90,10 +81,6 @@ jobs:
 
       - name: Register seed_vault_ta as a build module
         run: |
-          # Apps only get linked into lk.bin if listed in
-          # TRUSTY_BUILTIN_USER_TASKS (trusty/device/x86/generic-x86_64/
-          # project/generic-x86_64-inc.mk upstream). Fails loudly rather than
-          # silently no-op'ing if that file's format ever changes upstream.
           python3 - <<'PYEOF'
           import pathlib
           import sys

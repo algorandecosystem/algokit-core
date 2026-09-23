@@ -4,9 +4,12 @@
 //! This example is intentionally free of filesystem, network, and OS-thread usage,
 //! so the exact same logic can run unmodified inside constrained/embedded targets --
 //! including a Trusty TEE Trusted Application targeting `aarch64-unknown-trusty`,
-//! which only exposes a partial `std` (no fs/net/thread-spawn, but `alloc` and a
-//! secure RNG backend are both available). See `trusty/app/seed_vault_ta` for a sketch
-//! of what wiring this into a real Trusty applet looks like.
+//! which only exposes a partial `std` (no fs/net/thread-spawn, but `alloc` is
+//! available). See `trusty/app/seed_vault_ta` for a sketch of what wiring this
+//! into a real Trusty applet looks like -- note that the `getrandom::fill`
+//! call below is *not* yet portable to Trusty as-is (see the `getrandom`
+//! dependency comment in `Cargo.toml`); a custom Trusty HWRNG backend still
+//! needs to be wired up before this example's logic is fully on-target-ready.
 //!
 //! Run with:
 //!   cargo run -p algokit_crypto --example algo25_roundtrip
@@ -28,8 +31,9 @@ fn hex_encode(bytes: &[u8]) -> String {
 async fn main() {
     // ---- 1. CREATE a brand new algo25 account ------------------------------
     // The 32-byte seed *is* the account's private key material. `getrandom`
-    // pulls from the platform CSPRNG -- on `*-unknown-trusty` this resolves to
-    // the target's built-in secure RNG backend, so this call is portable as-is.
+    // pulls from the platform CSPRNG on every target this crate currently
+    // builds for in CI (host + wasm) -- but NOT yet on `*-unknown-trusty`,
+    // see the `getrandom` dependency comment in `Cargo.toml`.
     let mut seed = [0u8; 32];
     getrandom::fill(&mut seed).expect("failed to source randomness");
 
