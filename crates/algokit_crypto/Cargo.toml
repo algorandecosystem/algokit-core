@@ -3,9 +3,27 @@ name = "algokit_crypto"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+default = ["std"]
+
+# Disable (`--no-default-features`) to build under `#![no_std]` + `alloc`,
+# e.g. for TEE/embedded targets like Trusty's `*-unknown-trusty` (which ships
+# a partial `std` -- no fs/net/thread-spawn -- but does provide `alloc` and a
+# secure RNG backend). `algo25` and `ed25519` are fully `no_std`-clean under
+# this flag.
+#
+# `xhd` is NOT affected by this flag either way: its upstream `ed25519-bip32`
+# dependency links `std` unconditionally (it doesn't declare `#![no_std]`
+# itself), so it only builds on targets that actually ship a real `std`
+# (which includes Trusty, unlike a bare-metal `*-none-*` target).
+std = ["bip39/std", "sha2/std", "snafu/std"]
+
 [dependencies]
 # Provides ed25519 implementation
 cryptoxide = { workspace = true }
+
+# Base32 (RFC4648) encode/decode for Algorand addresses. `no_std` by design.
+base32 = { workspace = true }
 
 # Provides cryptographic traits
 signature = { workspace = true }
@@ -13,21 +31,33 @@ signature = { workspace = true }
 # Enables zeroing of sk in the concrete implementation when it is dropped
 zeroize = { workspace = true }
 
-# Used random seed generation for ed25519
+# Used random seed generation for ed25519. `no_std` by design; ships its own
+# secure RNG backend per-target (including Trusty).
 getrandom = "0.4.1"
 async-trait = "0.1.89"
-sha2.workspace = true
+# Pinned to the same version as `workspace.dependencies.sha2`; can't use
+# `workspace = true` here because Cargo forbids overriding
+# `default-features` on an inherited dependency.
+sha2 = { version = "0.10.8", default-features = false }
 
 # BIP32-Ed25519 (XHD wallet) derivation and raw signing.
 # Pinned by commit so the build is deterministic. The fork's package name is
 # kept as `ed25519-bip32` from the upstream typed-io crate it forks.
+# NOTE: this fork does not declare `#![no_std]`, so it always links `std`
+# (see the `std` feature doc-comment above).
 ed25519-bip32 = { git = "https://github.com/algorandfoundation/xHD-Wallet-API-rs.git", rev = "3cafd074e840971a2de791593918bb1c0707cd04" }
 
 # BIP39 mnemonic ↔ 64-byte seed conversion. `zeroize` feature wires the
-# crate's internal `Mnemonic`/`Seed` buffers to `ZeroizeOnDrop`.
-bip39 = { version = "2.2", default-features = false, features = ["std", "zeroize"] }
+# crate's internal `Mnemonic`/`Seed` buffers to `ZeroizeOnDrop`. `alloc` is
+# always enabled (needed regardless of the `std` feature); `std` is layered
+# on top by this crate's own `std` feature.
+bip39 = { version = "2.2", default-features = false, features = ["alloc", "zeroize"] }
 
-snafu = { workspace = true }
+# `alloc` is always enabled for `String`-carrying error variants (e.g.
+# `XhdError::InvalidMnemonic`); `rust_1_81` lets the `Snafu` derive implement
+# `core::error::Error` without requiring the `std` feature. Pinned directly
+# (see the `sha2` comment above for why `workspace = true` can't be used here).
+snafu = { version = "0.8", default-features = false, features = ["alloc", "rust_1_81"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.4.1", features = ["wasm_js"] }

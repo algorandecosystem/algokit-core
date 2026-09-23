@@ -1,0 +1,137 @@
+name: Build Trusty Applet & Cuttlefish Artifacts
+
+on:
+  push:
+    branches: [ "main", "trusty" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  # Proves the algo25 create/recover/sign flow works, independent of the
+  # much heavier AOSP/Trusty build below.
+  verify-algo25-crypto:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+
+      - name: Install Rust Toolchain
+        run: rustup show
+
+      - name: Create & Recover algo25 Account (algokit_crypto)
+        run: cargo run -p algokit_crypto --example algo25_roundtrip
+
+      - name: Verify no_std + alloc Compatibility (Trusty/TEE targets)
+        run: cargo check -p algokit_crypto --no-default-features
+
+      - name: Test seed_vault (applet protocol + account store logic)
+        run: |
+          cargo test -p seed_vault
+          cargo check -p seed_vault --all-targets
+
+  build-trusty:
+    needs: verify-algo25-crypto
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+
+      - name: Maximize Runner Disk Space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          sudo apt-get clean
+          df -h
+
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            git-core gnupg flex bison build-essential zip curl \
+            zlib1g-dev libc6-dev-i386 lib32ncurses-dev x11proto-core-dev \
+            libx11-dev lib32z1-dev libgl1-mesa-dev libxml2-utils xsltproc unzip \
+            fontconfig python3 python3-pip repo
+
+      - name: Fetch Trusty Source Tree
+        run: |
+          mkdir -p trusty-manifest
+          cd trusty-manifest
+          repo init -u https://android.googlesource.com/trusty/manifest -b main
+          repo sync -j$(nproc)
+
+      - name: Vendor crates for Trusty (best effort)
+        run: |
+          # Trusty apps can't `cargo build` against crates.io/git directly;
+          # crates need vendoring + a generated rules.mk via cargo2rulesmk.py.
+          # Non-fatal: output still needs manual wiring into
+          # trusty/app/seed_vault_ta/rules.mk's MODULE_LIBRARY_DEPS.
+          CARGO2RULESMK=$(find trusty-manifest -maxdepth 6 -name 'cargo2rulesmk.py' -print -quit || true)
+          if [ -n "$CARGO2RULESMK" ]; then
+            echo "Found cargo2rulesmk.py at $CARGO2RULESMK"
+            for crate in algokit_crypto seed_vault; do
+              mkdir -p "build-output/${crate}-rules-mk"
+              (cd "crates/${crate}" && python3 "$CARGO2RULESMK" --run \
+                || echo "cargo2rulesmk run failed/needs manual setup for ${crate}; see build-output for details") \
+                | tee "build-output/${crate}-rules-mk/cargo2rulesmk.log"
+            done
+          else
+            echo "cargo2rulesmk.py not found in synced tree; skipping crate vendoring." \
+              "The seed_vault_ta applet still builds without it (crate wiring is a documented follow-up)."
+          fi
+
+      - name: Inject Custom Trusty Applet
+        run: |
+          # trusty/user/app/ (not .../sample/) -- same tier as gatekeeper/storage.
+          mkdir -p trusty-manifest/trusty/user/app/seed_vault_ta
+          cp -r trusty/app/seed_vault_ta/* trusty-manifest/trusty/user/app/seed_vault_ta/
+
+      - name: Register seed_vault_ta as a build module
+        run: |
+          # Apps only get linked into lk.bin if listed in
+          # TRUSTY_BUILTIN_USER_TASKS (trusty/device/x86/generic-x86_64/
+          # project/generic-x86_64-inc.mk upstream). Fails loudly rather than
+          # silently no-op'ing if that file's format ever changes upstream.
+          python3 - <<'PYEOF'
+          import pathlib
+          import sys
+
+          mk_path = pathlib.Path(
+              "trusty-manifest/trusty/device/x86/generic-x86_64/project/generic-x86_64-inc.mk"
+          )
+          text = mk_path.read_text()
+          anchor = "TRUSTY_BUILTIN_USER_TASKS := \\\n"
+          app_line = "\ttrusty/user/app/seed_vault_ta \\\n"
+
+          if anchor not in text:
+              sys.exit(
+                  f"Could not find '{anchor.strip()}' in {mk_path}. "
+                  "Upstream Trusty project file format has likely changed -- "
+                  "update this step in trusty_ci.yml to match."
+              )
+          if app_line in text:
+              print("seed_vault_ta already registered in TRUSTY_BUILTIN_USER_TASKS")
+          else:
+              mk_path.write_text(text.replace(anchor, anchor + app_line, 1))
+              print(f"Registered seed_vault_ta in TRUSTY_BUILTIN_USER_TASKS ({mk_path})")
+          PYEOF
+
+      - name: Build Trusty OS & Applet Binary
+        run: |
+          cd trusty-manifest
+          ./trusty/vendor/google/aosp/scripts/build.py generic-x86_64-test
+
+      - name: Package Binaries
+        run: |
+          mkdir -p build-output
+          find trusty-manifest/build-generic-x86_64-test/ -name "*.elf" -exec cp {} build-output/ \;
+          find trusty-manifest/build-generic-x86_64-test/ -name "*.bin" -exec cp {} build-output/ \;
+
+      - name: Upload Build Artifacts to GitHub
+        uses: actions/upload-artifact@v4
+        with:
+          name: trusty-applet-binaries
+          path: build-output/
+          retention-days: 14

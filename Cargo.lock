@@ -104,6 +104,7 @@ name = "algokit_crypto"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "base32",
  "bip39",
  "cryptoxide",
  "ed25519-bip32",
@@ -3038,6 +3039,15 @@ checksum = "49db231d56a190491cb4aeda9527f1ad45345af50b0851622a7adb8c03b01c32"
 dependencies = [
  "core-foundation-sys",
  "libc",
+]
+
+[[package]]
+name = "seed_vault"
+version = "0.1.0"
+dependencies = [
+ "algokit_crypto",
+ "getrandom 0.4.1",
+ "zeroize",
 ]
 
 [[package]]

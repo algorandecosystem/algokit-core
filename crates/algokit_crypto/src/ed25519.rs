@@ -1,3 +1,4 @@
+use alloc::{boxed::Box, string::String};
 use async_trait::async_trait;
 use cryptoxide::ed25519;
 use signature::Keypair;

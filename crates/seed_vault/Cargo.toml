@@ -1,0 +1,40 @@
+[package]
+name = "seed_vault"
+version = "0.1.0"
+edition = "2024"
+
+# The transport- and storage-agnostic "brain" of the seed_vault_ta Trusty
+# applet (see `trusty/app/seed_vault_ta`): the IPC wire protocol, the
+# account-creation logic (backed by `algokit_crypto`), and the
+# `AccountStore` persistence trait. Deliberately `no_std` + `alloc` only and
+# free of any dependency on Trusty-specific crates (`tipc`, `storage`) so
+# that:
+#
+#   1. It can be exercised with a plain `cargo test -p seed_vault` on
+#      any machine -- no AOSP/Trusty checkout required -- via the in-memory
+#      `MemoryStore` in `src/memory_store.rs`.
+#   2. The real Trusty applet (`trusty/app/seed_vault_ta/main.rs`) is a thin
+#      binding layer: it only has to implement `AccountStore` against
+#      Trusty's real secure-storage service and wire `service::handle_request`
+#      up to a `tipc::Service`. All the logic that actually matters (how an
+#      account is created, what bytes go over the wire, what a malformed
+#      request looks like) is proven here first.
+#
+# Today this crate only creates standard Algorand accounts: an ed25519
+# keypair derived from a 32-byte seed, backed up as a 25-word BIP mnemonic
+# (`algokit_crypto::algo25`). It is deliberately structured (see
+# `store::KeyAlgorithm`/`AccountRecord`) so that a second, much larger
+# post-quantum key type -- Falcon-1024 -- can be added later as an additive
+# change rather than a breaking rewrite of the storage format or wire
+# protocol.
+
+[dependencies]
+algokit_crypto = { path = "../algokit_crypto", default-features = false }
+
+# Same RNG story as `algokit_crypto`: `no_std` by design, resolves to
+# Trusty's secure RNG backend on `*-unknown-trusty` targets.
+getrandom = "0.4.1"
+zeroize = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.4.1", features = ["wasm_js"] }

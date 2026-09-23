@@ -1,5 +1,6 @@
 mod english;
 
+use alloc::{format, string::String, vec::Vec};
 use english::ENGLISH;
 use sha2::{Digest, Sha512_256};
 
@@ -30,7 +31,10 @@ impl core::fmt::Display for MnemonicError {
     }
 }
 
-impl std::error::Error for MnemonicError {}
+// `core::error::Error` (stable since Rust 1.81) rather than `std::error::Error`
+// so this crate stays `no_std`-clean; `std::error::Error` is just a re-export
+// of the same trait, so this is a no-op for `std`-enabled consumers.
+impl core::error::Error for MnemonicError {}
 
 fn to_uint11_array(buffer8: &[u8]) -> Vec<u16> {
     let mut buffer11 = Vec::new();
