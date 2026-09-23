@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
+    inputs:
+      build_x86_64:
+        description: >-
+          Also build the generic-x86_64 Trusty target. Off by default
+        type: boolean
+        default: false
 
 jobs:
   # Proves the algo25 create/recover/sign flow works, independent of the
@@ -18,17 +24,6 @@ jobs:
 
       - name: Install Rust Toolchain
         run: rustup show
-
-      - name: Cache Cargo Registry & Build Artifacts
-        uses: actions/cache@v6
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: cargo-verify-algo25-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            cargo-verify-algo25-${{ runner.os }}-
 
       - name: Create & Recover algo25 Account (algokit_crypto)
         run: cargo run -p algokit_crypto --example algo25_roundtrip
@@ -68,65 +63,16 @@ jobs:
 
       - name: Install repo Launcher
         run: |
-          # NOT `apt-get install repo`: Ubuntu's packaged launcher lands at
-          # /usr/bin/repo, which is root-owned/read-only to the runner user,
-          # so every run nags "A new version of repo (...) is available ...
-          # The launcher is not writable" and can never actually self-update
-          # in place. Installing the official launcher into a writable,
-          # user-owned dir (per
-          # https://source.android.com/docs/setup/start) fixes that for
-          # good: it's the same launcher `repo init`/`repo sync` below
-          # bootstrap the *real* repo tool from either way, just able to
-          # update itself when it detects a newer version.
           mkdir -p "$HOME/bin"
           curl -sL https://storage.googleapis.com/git-repo-downloads/repo > "$HOME/bin/repo"
           chmod a+x "$HOME/bin/repo"
           echo "$HOME/bin" >> "$GITHUB_PATH"
 
-      - name: Compute Weekly Cache Key
-        id: cache-week
-        run: echo "week=$(date -u +%Y-W%V)" >> "$GITHUB_OUTPUT"
-
-      - name: Cache Trusty Source Tree (.repo git objects)
-        id: repo-cache
-        uses: actions/cache@v6
-        with:
-          # Only `.repo/` (repo's internal bare/mirror git objects for every
-          # project in the manifest -- kernel, lib, app, device, prebuilt
-          # toolchains, ...) is cached, not the checked-out working trees
-          # under trusty-manifest/trusty/*. `repo sync` below always
-          # recreates those from `.repo/` (a fast, local-only checkout) --
-          # this keeps the cache to roughly half the size for the same
-          # speedup, and guarantees a pristine tree every run regardless of
-          # what a previous run's "Register seed_vault_ta" step mutated in
-          # place.
-          path: trusty-manifest/.repo
-          # Rotates weekly (rather than a single fixed key) so the cache
-          # can't grow unbounded/go permanently stale: each week starts by
-          # restoring the *previous* week's objects (via restore-keys, a
-          # prefix match) and only has to fetch that week's deltas, then
-          # saves a fresh snapshot under the new key. First run of a given
-          # week (or the very first run ever) falls back to a full
-          # `repo sync` -- still correct, just not accelerated.
-          key: trusty-repo-src-${{ steps.cache-week.outputs.week }}
-          restore-keys: |
-            trusty-repo-src-
-
       - name: Fetch Trusty Source Tree
         run: |
-          # Purely informational: makes a cache-miss (e.g. first run of the
-          # week, or after the 10GB/repo GitHub Actions cache quota evicted
-          # this entry) obvious from the log/timing rather than a mystery.
-          echo "Trusty .repo cache hit: ${{ steps.repo-cache.outputs.cache-hit }}"
-
           mkdir -p trusty-manifest
           cd trusty-manifest
           repo init -u https://android.googlesource.com/trusty/manifest -b main
-          # `-j$(nproc)` parallelizes across projects either way, but with a
-          # warm `.repo` cache (see the step above) this only has to fetch
-          # commits made *since* the cached snapshot instead of cloning
-          # every one of the manifest's ~dozens of git projects from
-          # scratch -- by far the slowest part of this workflow otherwise.
           repo sync -j$(nproc)
 
       - name: Inject Vendored Crates & First-Party Libraries
@@ -151,36 +97,62 @@ jobs:
           import pathlib
           import sys
 
-          mk_path = pathlib.Path(
-              "trusty-manifest/trusty/device/x86/generic-x86_64/project/generic-x86_64-inc.mk"
-          )
-          text = mk_path.read_text()
+          mk_paths = [
+              pathlib.Path(
+                  "trusty-manifest/trusty/device/x86/generic-x86_64/project/generic-x86_64-inc.mk"
+              ),
+              pathlib.Path(
+                  "trusty-manifest/trusty/device/arm/generic-arm64/project/generic-arm-inc.mk"
+              ),
+          ]
           anchor = "TRUSTY_BUILTIN_USER_TASKS := \\\n"
           app_line = "\ttrusty/user/app/seed_vault_ta \\\n"
 
-          if anchor not in text:
-              sys.exit(
-                  f"Could not find '{anchor.strip()}' in {mk_path}. "
-                  "Upstream Trusty project file format has likely changed -- "
-                  "update this step in trusty_ci.yml to match."
-              )
-          if app_line in text:
-              print("seed_vault_ta already registered in TRUSTY_BUILTIN_USER_TASKS")
-          else:
-              mk_path.write_text(text.replace(anchor, anchor + app_line, 1))
-              print(f"Registered seed_vault_ta in TRUSTY_BUILTIN_USER_TASKS ({mk_path})")
+          for mk_path in mk_paths:
+              text = mk_path.read_text()
+
+              if anchor not in text:
+                  sys.exit(
+                      f"Could not find '{anchor.strip()}' in {mk_path}. "
+                      "Upstream Trusty project file format has likely changed -- "
+                      "update this step in trusty_ci.yml to match."
+                  )
+              if app_line in text:
+                  print(f"seed_vault_ta already registered in {mk_path}")
+              else:
+                  mk_path.write_text(text.replace(anchor, anchor + app_line, 1))
+                  print(f"Registered seed_vault_ta in TRUSTY_BUILTIN_USER_TASKS ({mk_path})")
           PYEOF
 
-      - name: Build Trusty OS & Applet Binary
+      - name: Build Trusty OS & Applet Binary (arm64)
+        run: |
+          cd trusty-manifest
+          ./trusty/vendor/google/aosp/scripts/build.py generic-arm64
+
+      - name: Package Binaries (arm64)
+        run: |
+          mkdir -p build-output/arm64
+          find trusty-manifest/build-root/build-generic-arm64/ -name "*.elf" -exec cp {} build-output/arm64/ \;
+          find trusty-manifest/build-root/build-generic-arm64/ -name "*.bin" -exec cp {} build-output/arm64/ \;
+
+      - name: Reclaim Disk Space Between Targets
+        if: ${{ inputs.build_x86_64 == true }}
+        run: |
+          rm -rf trusty-manifest/build-root/build-generic-arm64
+          df -h
+
+      - name: Build Trusty OS & Applet Binary (x86_64)
+        if: ${{ inputs.build_x86_64 == true }}
         run: |
           cd trusty-manifest
           ./trusty/vendor/google/aosp/scripts/build.py generic-x86_64
 
-      - name: Package Binaries
+      - name: Package Binaries (x86_64)
+        if: ${{ inputs.build_x86_64 == true }}
         run: |
-          mkdir -p build-output
-          find trusty-manifest/build-root/build-generic-x86_64/ -name "*.elf" -exec cp {} build-output/ \;
-          find trusty-manifest/build-root/build-generic-x86_64/ -name "*.bin" -exec cp {} build-output/ \;
+          mkdir -p build-output/x86_64
+          find trusty-manifest/build-root/build-generic-x86_64/ -name "*.elf" -exec cp {} build-output/x86_64/ \;
+          find trusty-manifest/build-root/build-generic-x86_64/ -name "*.bin" -exec cp {} build-output/x86_64/ \;
 
       - name: Reclaim Disk Space Before Cache Save
         if: always()
