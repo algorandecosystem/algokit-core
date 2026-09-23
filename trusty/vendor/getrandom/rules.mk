@@ -25,7 +25,18 @@ MODULE_CRATE_NAME := getrandom
 MODULE_RUST_CRATE_TYPES := rlib
 MODULE_SRCS := $(LOCAL_DIR)/src/lib.rs
 MODULE_ADD_IMPLICIT_DEPS := false
-MODULE_RUST_EDITION := 2024
+
+# NOT 2024, even though upstream's real Cargo.toml declares `edition =
+# "2024"`. Trusty's own bundled rustc (baked into the synced AOSP tree,
+# entirely independent of this workspace's `rust-toolchain`) rejects it
+# outright: "edition 2024 is unstable and only available with
+# -Z unstable-options" -- i.e. it predates edition 2024's stabilization
+# (rustc 1.85). `src/` here only uses two edition-2024-flavored syntax
+# forms (`unsafe extern { .. }` blocks), both hand-reverted to their
+# always-valid plain `extern { .. }` equivalents (semantically identical --
+# see the comments at each site), so 2021 compiles identically with no
+# behavior change and works on much older compilers.
+MODULE_RUST_EDITION := 2021
 
 MODULE_RUSTFLAGS += \
 	--cfg 'getrandom_backend="custom"' \

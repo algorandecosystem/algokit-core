@@ -94,8 +94,14 @@ pub fn fill_uninit(dest: &mut [MaybeUninit<u8>]) -> Result<&mut [u8], Error> {
         backends::fill_inner(dest)?;
     }
 
+    // Plain `extern "C" { .. }`, not `unsafe extern "C" { .. }` -- see
+    // `backends/custom.rs` for why (edition 2021, for compatibility with
+    // Trusty's older bundled rustc). `#[cfg(getrandom_msan)]` is never set
+    // in this build, but the block still has to *parse* under whatever
+    // edition is active even when cfg'd out, since cfg-stripping happens
+    // after parsing.
     #[cfg(getrandom_msan)]
-    unsafe extern "C" {
+    extern "C" {
         fn __msan_unpoison(a: *mut core::ffi::c_void, size: usize);
     }
 

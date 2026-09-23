@@ -23,7 +23,19 @@
 
 use getrandom::Error;
 
-unsafe extern "C" {
+// Deliberately the plain (pre-Rust-1.82) `extern "C" { .. }` form, not
+// `unsafe extern "C" { .. }`: Trusty's own bundled rustc (baked into the
+// synced AOSP tree, independent of this workspace's `rust-toolchain`) is
+// old enough to reject `edition = "2024"` outright ("unstable, only
+// available with -Z unstable-options"), so every module built as part of
+// the Trusty OS/applet image is pinned to edition 2021 (see
+// `MODULE_RUST_EDITION` in `../rules.mk`) rather than 2024 like the rest of
+// this workspace's crates. Declarations inside an `extern` block are always
+// unsafe to call regardless of whether the block itself is written with a
+// leading `unsafe` -- that keyword only changes whether *writing* the
+// block requires `unsafe`, not the callee's safety contract -- so this is
+// semantically identical, just compatible with older compilers too.
+extern "C" {
     /// `int trusty_rng_secure_rand(uint8_t* data, size_t len);` --
     /// `include/lib/rng/trusty_rng.h` in `trusty/user/base/lib/rng`. Fully
     /// overwrites `data[..len]` on success (`NO_ERROR`, i.e. `0`); on
@@ -40,7 +52,12 @@ unsafe extern "C" {
 /// though it may start out uninitialized, is safe to pass to
 /// `trusty_rng_secure_rand` because that function only ever writes to it
 /// (via `RAND_bytes`), never reads from it.
-#[unsafe(no_mangle)]
+// Plain `#[no_mangle]`, not `#[unsafe(no_mangle)]` -- same edition-2021
+// compatibility reasoning as the `extern "C"` block above. `unsafe extern
+// "Rust" fn` here is an ordinary FFI-export function signature (`unsafe` +
+// `extern "Rust"` modifiers on a single item), not the newer extern-*block*
+// syntax, so it's valid on every Rust edition and needs no changes.
+#[no_mangle]
 unsafe extern "Rust" fn __getrandom_v03_custom(dest: *mut u8, len: usize) -> Result<(), Error> {
     // SAFETY: forwarding the exact same (valid-for-`len`-bytes,
     // possibly-uninitialized) pointer/length pair this function received,

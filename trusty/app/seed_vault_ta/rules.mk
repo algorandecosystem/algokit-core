@@ -77,11 +77,19 @@ MODULE_CRATE_NAME := seed_vault_ta
 
 MODULE_SRCS := $(LOCAL_DIR)/main.rs
 
-# Pinned explicitly (rather than relying on Trusty's own ambient default)
-# to match every other crate in this workspace (see any `Cargo.toml`'s
-# `edition = "2024"`) -- `trusty_rng.rs` also relies on 2024-only syntax
-# (`unsafe extern "C" { .. }` blocks, `#[unsafe(no_mangle)]`).
-MODULE_RUST_EDITION := 2024
+# NOT 2024 (unlike every other crate in this workspace's `Cargo.toml`s):
+# Trusty's own bundled rustc (baked into the synced AOSP tree, entirely
+# independent of this workspace's `rust-toolchain`) is old enough to reject
+# it outright -- "edition 2024 is unstable and only available with
+# -Z unstable-options", i.e. it predates edition 2024's stabilization
+# (rustc 1.85). `trusty_rng.rs` originally used a couple of edition-2024
+# syntax forms (`unsafe extern "C" { .. }` blocks, `#[unsafe(no_mangle)]`);
+# both were hand-reverted to their always-valid plain equivalents
+# (`extern "C" { .. }`, `#[no_mangle]` -- semantically identical, see the
+# comments at each site in `trusty_rng.rs`), so 2021 compiles identically
+# with no behavior change and works on much older compilers. See
+# `trusty/vendor/getrandom/rules.mk` for the same story on that crate.
+MODULE_RUST_EDITION := 2021
 
 # `main.rs`/`trusty_store.rs` only directly `use seed_vault::...` (never
 # `algokit_crypto`/`cryptoxide`/etc. directly) -- `seed_vault`'s own

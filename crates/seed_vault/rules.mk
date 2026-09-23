@@ -20,7 +20,17 @@ MODULE_CRATE_NAME := seed_vault
 MODULE_RUST_CRATE_TYPES := rlib
 MODULE_SRCS := $(LOCAL_DIR)/src/lib.rs
 MODULE_ADD_IMPLICIT_DEPS := false
-MODULE_RUST_EDITION := 2024
+
+# NOT 2024, despite this crate's real `Cargo.toml` declaring
+# `edition = "2024"`: Trusty's own bundled rustc (baked into the synced AOSP
+# tree, entirely independent of this workspace's `rust-toolchain`) rejects
+# it outright -- "edition 2024 is unstable and only available with
+# -Z unstable-options", i.e. it predates edition 2024's stabilization
+# (rustc 1.85). This crate's source has no edition-2024-only syntax
+# (no `unsafe extern` blocks, no `#[unsafe(..)]` attributes -- it's pure,
+# non-FFI `#![no_std]` Rust), so 2021 compiles identically. Same story on
+# `crates/algokit_crypto/rules.mk` and `trusty/vendor/getrandom/rules.mk`.
+MODULE_RUST_EDITION := 2021
 
 MODULE_LIBRARY_DEPS := \
 	trusty/user/base/lib/algokit_crypto \
