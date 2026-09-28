@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">Seed Vault Companion</string>
+
+    <string name="btn_create_account">Create Account</string>
+    <string name="btn_list_accounts">List Accounts</string>
+    <string name="btn_reveal_mnemonic">Reveal Mnemonic</string>
+    <string name="btn_import_account">Import Account</string>
+
+    <string name="hint_address">Algorand address (for Reveal Mnemonic)</string>
+    <string name="hint_mnemonic">25-word mnemonic (for Import Account)</string>
+
+    <string name="label_output">Output</string>
+    <string name="output_placeholder">Tap a button above to talk to seed_vault_ta over TIPC.</string>
+</resources>

@@ -5,7 +5,7 @@
 //!
 //! ## What this TA exposes
 //!
-//! A single IPC port, `algorandecosystem.seed_vault_ta`, open to
+//! A single IPC port, `io.github.algorandecosystem.algokitcore.seed_vault_ta`, open to
 //! non-secure (Android) callers via `PortCfg::allow_ns_connect()`. Four
 //! operations, all defined byte-for-byte in `seed_vault::protocol`:
 //!
@@ -73,7 +73,7 @@
 //! ```ignore
 //! use trusty::{DEFAULT_DEVICE, TipcChannel};
 //!
-//! let mut channel = TipcChannel::connect(DEFAULT_DEVICE, "algorandecosystem.seed_vault_ta")?;
+//! let mut channel = TipcChannel::connect(DEFAULT_DEVICE, "io.github.algorandecosystem.algokitcore.seed_vault_ta")?;
 //!
 //! // CREATE_ACCOUNT (algorithm tag 0x01 = Algo25Ed25519)
 //! channel.send(&[0x01, 0x01])?;
@@ -121,7 +121,7 @@ use tipc::{
 use trusty_store::TrustySecureStore;
 use zeroize::Zeroize;
 
-const PORT: &str = "algorandecosystem.seed_vault_ta";
+const PORT: &str = "io.github.algorandecosystem.algokitcore.seed_vault_ta";
 
 /// Maximum request/response size. `seed_vault::protocol` messages are tiny,
 /// so this comfortably covers a realistic number of accounts per device
