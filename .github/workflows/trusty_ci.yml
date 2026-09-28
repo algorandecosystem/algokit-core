@@ -9,9 +9,9 @@ on:
     inputs:
       build_x86_64:
         description: >-
-          Also build the generic-x86_64 Trusty target. Off by default
+          Also build the generic-x86_64 Trusty target. On by default
         type: boolean
-        default: false
+        default: true
 
 jobs:
   # Proves the algo25 create/recover/sign flow works, independent of the
