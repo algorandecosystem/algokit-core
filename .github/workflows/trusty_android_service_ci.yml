@@ -28,10 +28,8 @@ jobs:
         with:
           packages: >-
             platform-tools
-            platforms;android-37
+            platforms;android-37.0
             cmake;3.22.1
-      # Build-tools and the NDK are unpinned in build.gradle.kts, so AGP
-      # downloads its default versions (licenses are accepted by the step above).
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
