@@ -1,0 +1,53 @@
+name: Build Trusty Android Service APK
+
+on:
+  push:
+    branches: [ "main", "trusty" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: trusty/android_service
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: >-
+            platform-tools
+            platforms;android-37
+            cmake;3.22.1
+      # Build-tools and the NDK are unpinned in build.gradle.kts, so AGP
+      # downloads its default versions (licenses are accepted by the step above).
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Build Debug APK
+        run: ./gradlew --no-daemon :app:assembleDebug
+
+      - name: Rename APK
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/apk-output"
+          cp app/build/outputs/apk/debug/app-debug.apk \
+            "$GITHUB_WORKSPACE/apk-output/seed-vault-service-debug.apk"
+
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: seed-vault-service-debug-apk
+          path: apk-output/seed-vault-service-debug.apk
+          retention-days: 14
