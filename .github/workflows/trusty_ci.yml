@@ -6,12 +6,6 @@ on:
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
-    inputs:
-      build_x86_64:
-        description: >-
-          Also build the generic-x86_64 Trusty target. On by default
-        type: boolean
-        default: true
 
 jobs:
   # Proves the algo25 create/recover/sign flow works, independent of the
@@ -136,19 +130,16 @@ jobs:
           find trusty-manifest/build-root/build-generic-arm64/ -name "*.bin" -exec cp {} build-output/arm64/ \;
 
       - name: Reclaim Disk Space Between Targets
-        if: ${{ inputs.build_x86_64 == true }}
         run: |
           rm -rf trusty-manifest/build-root/build-generic-arm64
           df -h
 
       - name: Build Trusty OS & Applet Binary (x86_64)
-        if: ${{ inputs.build_x86_64 == true }}
         run: |
           cd trusty-manifest
           ./trusty/vendor/google/aosp/scripts/build.py generic-x86_64
 
       - name: Package Binaries (x86_64)
-        if: ${{ inputs.build_x86_64 == true }}
         run: |
           mkdir -p build-output/x86_64
           find trusty-manifest/build-root/build-generic-x86_64/ -name "*.elf" -exec cp {} build-output/x86_64/ \;
