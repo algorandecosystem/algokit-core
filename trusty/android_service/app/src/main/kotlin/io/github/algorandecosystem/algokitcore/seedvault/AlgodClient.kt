@@ -83,6 +83,9 @@ class AlgodClient(baseUrl: String, private val token: String) {
     }
 
     companion object {
+        /** Public Algorand TestNet algod endpoint (AlgoNode); no API token needed. */
+        const val NODE_TESTNET_BASE_URL: String = "https://testnet-api.algonode.cloud"
+
         /** Falcon-1024 senders pay the min fee plus a 2x min fee PQ surcharge. */
         fun feeFor(algorithm: KeyAlgorithm, minFee: Long): Long =
             if (algorithm == KeyAlgorithm.FALCON_1024) minFee * 3 else minFee

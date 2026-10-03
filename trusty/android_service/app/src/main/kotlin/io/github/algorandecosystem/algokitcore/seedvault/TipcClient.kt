@@ -4,14 +4,22 @@ package io.github.algorandecosystem.algokitcore.seedvault
  * One request/response round trip to `seed_vault_ta` over Trusty's `tipc`
  * transport, from the non-secure (Android) side.
  *
- * Backed by [tipc_jni.c][/src/main/cpp/tipc_jni.c], which talks to the
+ * Backed by [tipc_jni.c][/src/main/cpp/tipc_jni.c], which talks to either the
  * kernel's Trusty IPC device node directly (`open` + `ioctl(TIPC_IOC_CONNECT)`
- * + `read`/`write`) -- the same mechanism AOSP's own `libtrusty` uses, just
+ * + `read`/`write`) or, for a `VSOCK:<cid>:<port>` device path, Trusty's vsock
+ * tipc bridge -- the same two mechanisms AOSP's own `libtrusty` uses, just
  * reimplemented standalone so this app doesn't need the full AOSP source
  * tree to build. See `trusty/app/seed_vault_ta/main.rs` for the TA this
  * talks to.
  *
  * ## Before this will connect to anything
+ *
+ * On x86_64 Cuttlefish (the default, `VSOCK:200:0`), the `trusty_security_vm`
+ * must be running with `seed_vault_ta` built in, and SELinux must let this
+ * app open a vsock to it -- for local bring-up, `adb root` +
+ * `adb shell setenforce 0`.
+ *
+ * On a target with a Trusty-enabled kernel ([KERNEL_DEVICE_PATH]):
  *
  * `/dev/trusty-ipc-dev0` is normally only accessible to specific system
  * processes (DAC owner/group + an SELinux domain), not arbitrary apps. On
@@ -42,7 +50,7 @@ class TipcClient(
 ) {
     private var fd: Int = -1
 
-    /** Opens `/dev/trusty-ipc-dev0` and connects it to [serviceName]. */
+    /** Opens [devicePath] (a device node or `VSOCK:<cid>:<port>`) and connects it to [serviceName]. */
     fun connect() {
         check(fd < 0) { "already connected" }
         val result = nativeConnect(devicePath, serviceName)
@@ -78,8 +86,16 @@ class TipcClient(
     private external fun nativeClose(fd: Int)
 
     companion object {
-        /** The standard Trusty IPC device node on Cuttlefish/most AOSP Trusty targets. */
-        const val DEFAULT_DEVICE_PATH: String = "/dev/trusty-ipc-dev0"
+        /**
+         * Trusty's vsock tipc bridge on x86_64 Cuttlefish, where Trusty runs as
+         * `trusty_security_vm` (CID 200, from `trusty.security_vm.vm_cid`) rather
+         * than behind a kernel driver. Use [KERNEL_DEVICE_PATH] on targets whose
+         * kernel has the Trusty driver.
+         */
+        const val DEFAULT_DEVICE_PATH: String = "VSOCK:200:0"
+
+        /** The kernel Trusty IPC device node on targets with a Trusty-enabled kernel. */
+        const val KERNEL_DEVICE_PATH: String = "/dev/trusty-ipc-dev0"
 
         /** Must match `PORT` in `trusty/app/seed_vault_ta/main.rs`. */
         const val DEFAULT_SERVICE_NAME: String = "io.github.algorandecosystem.algokitcore.seed_vault_ta"

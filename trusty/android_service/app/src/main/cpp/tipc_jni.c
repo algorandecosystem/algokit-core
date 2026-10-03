@@ -29,7 +29,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
+#include <sys/socket.h>
 #include <unistd.h>
+
+#include <linux/vm_sockets.h>
 
 #define LOG_TAG "SeedVaultTipc"
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
@@ -40,6 +43,103 @@
 // stable ABI (documented publicly), so it's spelled out here instead.
 #define TIPC_IOC_MAGIC 'r'
 #define TIPC_IOC_CONNECT _IOW(TIPC_IOC_MAGIC, 0x80, char*)
+
+// Device paths of the form "VSOCK:<cid>:<port>" select the vsock transport
+// instead of a kernel device node -- the same convention AOSP's `libtrusty`
+// (`tipc_connect`) uses. This is how Android reaches Trusty when it runs as
+// a separate VM rather than behind a kernel driver, e.g. the
+// `trusty_security_vm` on x86_64 Cuttlefish ("VSOCK:200:0").
+#define VSOCK_PREFIX "VSOCK:"
+
+// Opens a kernel Trusty IPC device node and connects it to `service_name`.
+// Returns the fd, or -errno.
+static int tipc_dev_connect(const char* device_path, const char* service_name) {
+    int fd = open(device_path, O_RDWR);
+    if (fd < 0) {
+        int err = errno;
+        LOGE("open(%s) failed: %s", device_path, strerror(err));
+        return -err;
+    }
+
+    int rc = ioctl(fd, TIPC_IOC_CONNECT, service_name);
+    if (rc < 0) {
+        int err = errno;
+        LOGE("ioctl(TIPC_IOC_CONNECT, \"%s\") failed: %s", service_name, strerror(err));
+        close(fd);
+        return -err;
+    }
+    return fd;
+}
+
+// Connects to `service_name` through Trusty's vsock tipc bridge at
+// "<cid>:<port>". Mirrors `tipc_vsock_connect` in AOSP's libtrusty: connect a
+// SOCK_STREAM vsock, send the service name as the first packet, then read
+// one status byte before any request traffic. After that, plain write()/read()
+// carry the request/response messages. Returns the fd, or -errno.
+static int tipc_vsock_connect(const char* cid_port, const char* service_name) {
+    char* end;
+    errno = 0;
+    unsigned long cid = strtoul(cid_port, &end, 0);
+    if (errno != 0 || end == cid_port || *end != ':') {
+        LOGE("invalid VSOCK address \"%s\", need <cid>:<port>", cid_port);
+        return -EINVAL;
+    }
+    const char* port_str = end + 1;
+    unsigned long port = strtoul(port_str, &end, 0);
+    if (errno != 0 || end == port_str || *end != '\0') {
+        LOGE("invalid VSOCK address \"%s\", need <cid>:<port>", cid_port);
+        return -EINVAL;
+    }
+
+    int fd = socket(AF_VSOCK, SOCK_STREAM, 0);
+    if (fd < 0) {
+        int err = errno;
+        LOGE("socket(AF_VSOCK) failed: %s", strerror(err));
+        return -err;
+    }
+
+    struct sockaddr_vm sa = {
+            .svm_family = AF_VSOCK,
+            .svm_port = (unsigned int)port,
+            .svm_cid = (unsigned int)cid,
+    };
+    int rc;
+    do {
+        rc = connect(fd, (struct sockaddr*)&sa, sizeof(sa));
+    } while (rc < 0 && errno == EINTR);
+    if (rc < 0) {
+        int err = errno;
+        LOGE("connect(vsock %lu:%lu) for \"%s\" failed: %s", cid, port, service_name, strerror(err));
+        close(fd);
+        return -err;
+    }
+
+    size_t name_len = strlen(service_name);
+    ssize_t n;
+    do {
+        n = write(fd, service_name, name_len);
+    } while (n < 0 && errno == EINTR);
+    if (n != (ssize_t)name_len) {
+        int err = n < 0 ? errno : EIO;
+        LOGE("vsock %lu:%lu: sending service name \"%s\" failed: %s", cid, port, service_name,
+             strerror(err));
+        close(fd);
+        return -err;
+    }
+
+    int8_t status;
+    do {
+        n = read(fd, &status, sizeof(status));
+    } while (n < 0 && errno == EINTR);
+    if (n != (ssize_t)sizeof(status)) {
+        int err = n < 0 ? errno : ECONNREFUSED;
+        LOGE("vsock %lu:%lu: no connect status for \"%s\" (is the TA running?): %s", cid, port,
+             service_name, strerror(err));
+        close(fd);
+        return -err;
+    }
+    return fd;
+}
 
 JNIEXPORT jint JNICALL
 Java_io_github_algorandecosystem_algokitcore_seedvault_TipcClient_nativeConnect(
@@ -54,23 +154,11 @@ Java_io_github_algorandecosystem_algokitcore_seedvault_TipcClient_nativeConnect(
         return -ENOMEM;
     }
 
-    int fd = open(device_path, O_RDWR);
-    if (fd < 0) {
-        int err = errno;
-        LOGE("open(%s) failed: %s", device_path, strerror(err));
-        (*env)->ReleaseStringUTFChars(env, j_device_path, device_path);
-        (*env)->ReleaseStringUTFChars(env, j_service_name, service_name);
-        return -err;
-    }
-
-    int rc = ioctl(fd, TIPC_IOC_CONNECT, service_name);
-    if (rc < 0) {
-        int err = errno;
-        LOGE("ioctl(TIPC_IOC_CONNECT, \"%s\") failed: %s", service_name, strerror(err));
-        close(fd);
-        (*env)->ReleaseStringUTFChars(env, j_device_path, device_path);
-        (*env)->ReleaseStringUTFChars(env, j_service_name, service_name);
-        return -err;
+    int fd;
+    if (strncmp(device_path, VSOCK_PREFIX, strlen(VSOCK_PREFIX)) == 0) {
+        fd = tipc_vsock_connect(device_path + strlen(VSOCK_PREFIX), service_name);
+    } else {
+        fd = tipc_dev_connect(device_path, service_name);
     }
 
     (*env)->ReleaseStringUTFChars(env, j_device_path, device_path);

@@ -10,7 +10,7 @@
     <string name="btn_build_test_payment">Build Test Payment (0 ALGO to self)</string>
     <string name="btn_submit_transaction">Submit Signed Transaction</string>
 
-    <string name="hint_address">Algorand address (for Reveal Mnemonic / Delete Account / Sign Transaction)</string>
+    <string name="hint_address">Account</string>
     <string name="hint_mnemonic">25-word mnemonic (for Import Account)</string>
     <string name="hint_algod_url">algod URL, e.g. http://10.0.2.2:4001 (for Build / Submit)</string>
     <string name="hint_algod_token">algod API token (blank if none)</string>
