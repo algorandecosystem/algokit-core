@@ -54,7 +54,7 @@ const FALCON1024_KEY_INDICES: [u32; 2] = [HUMAN_SIGN_INDEX, AUTOSIGN_INDEX];
 /// Falcon-1024 keygen derives from it, plus the salt/address of each of
 /// [`HUMAN_SIGN_INDEX`] and [`AUTOSIGN_INDEX`], so `LIST_ACCOUNTS`, duplicate
 /// checks, and signing never have to re-run keygen. Records written by
-/// earlier builds stop after the private key ([`KEYPAIR_LEN`]) or hold
+/// earlier builds stop after the private key ([`falcon_record::KEYPAIR_LEN`]) or hold
 /// only the entropy; whatever is missing is re-derived on demand.
 pub mod falcon_record {
     use algokit_crypto::falcon1024::{PRIVATE_KEY_SIZE, PUBLIC_KEY_SIZE};

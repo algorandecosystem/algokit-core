@@ -8,9 +8,10 @@ on:
   workflow_dispatch:
 
 jobs:
-  # Proves the algo25 create/recover/sign flow works, independent of the
-  # much heavier AOSP/Trusty build below.
-  verify-algo25-crypto:
+  # Proves the account crypto the applet relies on works -- algo25 (Ed25519)
+  # and Falcon-1024 (PQ) create/recover/sign, plus the seed_vault protocol
+  # and store logic -- independent of the much heavier AOSP/Trusty build below.
+  verify-account-crypto:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -35,8 +36,17 @@ jobs:
           cargo test -p seed_vault
           cargo check -p seed_vault --all-targets
 
+      # The Trusty build runs rustdoc with `-D warnings` (so e.g. a broken
+      # intra-doc link fails it); catch that here instead of an hour later.
+      - name: Rustdoc with warnings as errors (as the Trusty build does)
+        env:
+          RUSTDOCFLAGS: -D warnings
+        run: |
+          cargo doc -p seed_vault --no-deps
+          cargo doc -p algokit_crypto --no-deps --no-default-features --features falcon
+
   build-trusty:
-    needs: verify-algo25-crypto
+    needs: verify-account-crypto
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
