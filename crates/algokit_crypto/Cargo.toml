@@ -32,7 +32,19 @@ std = ["bip39?/std", "snafu?/std"]
 # build, despite `seed_vault` never calling into `xhd` at all.
 xhd = ["dep:bip39", "dep:snafu", "dep:ed25519-bip32"]
 
+# Gates the `falcon1024` module: native Algorand post-quantum accounts
+# (deterministic Falcon-1024) derived from the same 25-word mnemonic as an
+# `algo25` account. Off by default because `algorand-falcon` compiles the
+# reference Falcon C sources via `cc` (needs a C toolchain for the target).
+# `algorand-falcon` itself is `#![no_std]` + `alloc` and its C build disables
+# every OS entropy source, so it is TEE/Trusty-friendly.
+falcon = ["dep:algorand-falcon"]
+
 [dependencies]
+# Rust bindings to Algorand's deterministic Falcon-1024 C implementation (the
+# same C code go-algorand links via cgo). Only used by the `falcon` feature.
+algorand-falcon = { version = "0.1.0", optional = true }
+
 # Provides ed25519 implementation
 cryptoxide = { workspace = true }
 

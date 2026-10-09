@@ -11,6 +11,9 @@ mod hash;
 pub mod address;
 pub mod algo25;
 pub mod ed25519;
+#[cfg(feature = "falcon")]
+pub mod falcon1024;
 #[cfg(feature = "xhd")]
 pub mod xhd;
+pub use hash::sha512_256;
 pub use signature::{Keypair, Signer};

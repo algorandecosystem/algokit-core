@@ -2,6 +2,6 @@
     "uuid": "5f902ace-5e5c-4cd8-ae54-87b88c22ddaf",
     "app_name": "seed_vault_ta",
 
-    "min_heap": 131072,
-    "min_stack": 32768
+    "min_heap": 1048576,
+    "min_stack": 131072
 }

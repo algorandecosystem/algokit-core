@@ -23,7 +23,12 @@ jobs:
         run: cargo run -p algokit_crypto --example algo25_roundtrip
 
       - name: Verify no_std + alloc Compatibility (Trusty/TEE targets)
-        run: cargo check -p algokit_crypto --no-default-features
+        run: |
+          cargo check -p algokit_crypto --no-default-features
+          cargo check -p algokit_crypto --no-default-features --features falcon
+
+      - name: Falcon-1024 PQ accounts match go-algorand known answers
+        run: cargo test -p algokit_crypto --features falcon falcon1024
 
       - name: Test seed_vault (applet protocol + account store logic)
         run: |
@@ -71,7 +76,7 @@ jobs:
 
       - name: Inject Vendored Crates & First-Party Libraries
         run: |
-          for crate in cryptoxide base32 signature getrandom; do
+          for crate in cryptoxide base32 signature getrandom algorand_falcon; do
             mkdir -p "trusty-manifest/trusty/user/base/lib/${crate}"
             cp -r "trusty/vendor/${crate}/." "trusty-manifest/trusty/user/base/lib/${crate}/"
           done

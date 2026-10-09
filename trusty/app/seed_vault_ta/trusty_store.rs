@@ -10,9 +10,9 @@
 //! which is Google's own reference implementation of a `KeyValueStore` on
 //! top of this exact `storage` crate -- `Session::new(Port::TamperDetect, true)`,
 //! `session.open_file(name, OpenMode::Open | OpenMode::Create)`,
-//! `session.write_all` / `session.read_all` / `session.get_size`, and
-//! `session.list_files()` returning `(filename, state)` pairs are all taken
-//! from that file.
+//! `session.write_all` / `session.read_all` / `session.get_size`,
+//! `session.remove(name)`, and `session.list_files()` returning
+//! `(filename, state)` pairs are all taken from that file.
 //!
 //! ## Storage layout
 //!
@@ -20,11 +20,17 @@
 //! `[algorithm_tag: u8][key material bytes]` and nothing else. There is no
 //! separate index/metadata file -- `next_index`/`all_records` both derive
 //! everything they need by listing files and parsing the `<index>` suffix,
-//! so the set of files *is* the database. An account's Algorand address is
-//! never stored; it is always re-derived from the key material on demand
-//! (see `seed_vault::store`), so there is exactly one source of truth
-//! per account and no way for a stored address to drift out of sync with
-//! its key material.
+//! so the set of files *is* the database. Deleting an account removes its
+//! file, which may leave a gap in the index sequence; that's fine, since
+//! nothing assumes indices are contiguous.
+//!
+//! What "key material" holds depends on the algorithm (see
+//! `seed_vault::store`): an `Algo25Ed25519` record is just its 32-byte
+//! seed (the address is re-derived, which is cheap), while a `Falcon1024`
+//! record is the 32-byte entropy followed by a cache of its keygen output
+//! (public key, private key) and of both of its accounts' salt + address
+//! (see `seed_vault::store::falcon_record`), so Falcon keygen runs only at
+//! create/import time.
 //!
 //! ## `Port::TamperDetect` vs `Port::TamperProof`
 //!
@@ -53,6 +59,7 @@ use alloc::vec::Vec;
 
 use seed_vault::{AccountRecord, AccountStore, KeyAlgorithm, StoreError};
 use storage::{OpenMode, Port, Session};
+use zeroize::Zeroize;
 
 const FILE_PREFIX: &str = "seed_vault_v1_";
 
@@ -104,17 +111,29 @@ impl AccountStore for TrustySecureStore {
         let mut bytes = Vec::with_capacity(1 + record.key_material.len());
         bytes.push(record.algorithm as u8);
         bytes.extend_from_slice(&record.key_material);
-        session
+        let result = session
             .write_all(&mut file, &bytes)
+            .map_err(|_| StoreError::Backend);
+        bytes.zeroize();
+        result
+    }
+
+    fn delete_record(&mut self, index: u32) -> Result<(), StoreError> {
+        let mut session = open_session()?;
+        // Distinguishing "not found" would need `trusty_sys::Error::NotFound`
+        // (as secretkeeper does); callers only delete indices they just
+        // listed, so any failure here is a genuine backend error.
+        session
+            .remove(&filename_for_index(index))
             .map_err(|_| StoreError::Backend)
     }
 
-    fn all_records(&mut self) -> Result<Vec<AccountRecord>, StoreError> {
+    fn all_indexed_records(&mut self) -> Result<Vec<(u32, AccountRecord)>, StoreError> {
         let mut session = open_session()?;
         let indexed = indexed_filenames(&mut session)?;
 
         let mut records = Vec::with_capacity(indexed.len());
-        for (_, filename) in indexed {
+        for (index, filename) in indexed {
             let file = session
                 .open_file(&filename, OpenMode::Open)
                 .map_err(|_| StoreError::Backend)?;
@@ -123,16 +142,25 @@ impl AccountStore for TrustySecureStore {
                 return Err(StoreError::CorruptRecord);
             }
             let mut buf = alloc::vec![0u8; size as usize];
-            session
-                .read_all(&file, &mut buf)
-                .map_err(|_| StoreError::Backend)?;
+            if session.read_all(&file, &mut buf).is_err() {
+                buf.zeroize();
+                return Err(StoreError::Backend);
+            }
 
-            let (&tag, key_material) = buf.split_first().ok_or(StoreError::CorruptRecord)?;
-            let algorithm = KeyAlgorithm::from_tag(tag).ok_or(StoreError::CorruptRecord)?;
-            records.push(AccountRecord {
-                algorithm,
-                key_material: key_material.to_vec(),
-            });
+            // Split in place rather than copying, so (up to ~4 KB per
+            // Falcon record) key material is never duplicated on the heap.
+            let mut key_material = buf.split_off(1);
+            let Some(algorithm) = KeyAlgorithm::from_tag(buf[0]) else {
+                key_material.zeroize();
+                return Err(StoreError::CorruptRecord);
+            };
+            records.push((
+                index,
+                AccountRecord {
+                    algorithm,
+                    key_material,
+                },
+            ));
         }
         Ok(records)
     }

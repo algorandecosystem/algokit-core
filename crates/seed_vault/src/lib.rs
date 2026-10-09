@@ -12,9 +12,12 @@ extern crate alloc;
 pub mod memory_store;
 pub mod protocol;
 pub mod service;
+pub mod signed_txn;
 pub mod store;
 
 pub use store::{
-    ALGO25_SEED_LEN, AccountRecord, AccountStore, AccountSummary, KeyAlgorithm, StoreError,
-    create_account, import_account, list_accounts, reveal_mnemonic,
+    ALGO25_SEED_LEN, AUTOSIGN_INDEX, AccountRecord, AccountStore, AccountSummary,
+    FALCON1024_ENTROPY_LEN, HUMAN_SIGN_INDEX, KeyAlgorithm, SignedTxnPrefix, StoreError,
+    create_account, delete_account, falcon_record, import_account, list_accounts, reveal_mnemonic,
+    sign_transaction,
 };

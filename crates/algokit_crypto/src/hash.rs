@@ -1,4 +1,5 @@
-//! Tiny internal SHA-512/256 helper shared by `address` and `algo25`.
+//! Tiny SHA-512/256 helper shared by `address`, `algo25`, and `falcon1024`
+//! (and re-exported for `no_std` callers such as `seed_vault`).
 //!
 //! Both call sites only ever need a one-shot digest of a single buffer, so
 //! rather than depending on the separate `sha2` crate (which pulls in the
@@ -16,7 +17,7 @@ use cryptoxide::digest::Digest;
 use cryptoxide::sha2::Sha512Trunc256;
 
 /// One-shot SHA-512/256 digest of `data`.
-pub(crate) fn sha512_256(data: &[u8]) -> [u8; 32] {
+pub fn sha512_256(data: &[u8]) -> [u8; 32] {
     let mut hasher = Sha512Trunc256::new();
     hasher.input(data);
     let mut out = [0u8; 32];

@@ -20,16 +20,19 @@ edition = "2024"
 #      account is created, what bytes go over the wire, what a malformed
 #      request looks like) is proven here first.
 #
-# Today this crate only creates standard Algorand accounts: an ed25519
-# keypair derived from a 32-byte seed, backed up as a 25-word BIP mnemonic
-# (`algokit_crypto::algo25`). It is deliberately structured (see
-# `store::KeyAlgorithm`/`AccountRecord`) so that a second, much larger
-# post-quantum key type -- Falcon-1024 -- can be added later as an additive
-# change rather than a breaking rewrite of the storage format or wire
-# protocol.
+# Supports two account types, both backed by 32 bytes of entropy encoded as
+# the same 25-word Algorand mnemonic (`algokit_crypto::algo25`):
+#   - `Algo25Ed25519` (tag 0x01): classic ed25519 keypair from the seed.
+#   - `Falcon1024`    (tag 0x02): native post-quantum Falcon-1024 account
+#     (`algokit_crypto::falcon1024`, go-algorand `algokey pq` compatible).
+# Only the 32-byte entropy is ever persisted; keys and addresses are
+# re-derived on demand.
 
 [dependencies]
-algokit_crypto = { path = "../algokit_crypto", default-features = false }
+# `falcon` enables `algokit_crypto::falcon1024` (native post-quantum
+# Falcon-1024 accounts from the same 25-word mnemonic) -- see
+# `store::KeyAlgorithm::Falcon1024`.
+algokit_crypto = { path = "../algokit_crypto", default-features = false, features = ["falcon"] }
 
 # Same RNG story as `algokit_crypto`: `no_std` by design, resolves to
 # Trusty's secure RNG backend on `*-unknown-trusty` targets.

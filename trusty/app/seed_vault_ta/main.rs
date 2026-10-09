@@ -12,9 +12,22 @@
 //!   - `CREATE_ACCOUNT`: generates a brand-new account (a 32-byte seed from
 //!     the platform CSPRNG, backed by a 25-word mnemonic), persists it via
 //!     `trusty_store::TrustySecureStore`, and replies with just its
-//!     Algorand address.
-//!   - `LIST_ACCOUNTS`: replies with the algorithm + address of every
-//!     account ever created/imported by this TA, in creation order.
+//!     Algorand address. The algorithm tag picks how that entropy becomes
+//!     an address: `0x01` = classic Ed25519 (`Algo25Ed25519`), `0x02` =
+//!     native post-quantum Falcon-1024 (`Falcon1024`, go-algorand
+//!     `algokey pq` compatible). Either way the same 25 words back it up.
+//!     A Falcon-1024 seed derives *two* accounts, distinguished by
+//!     `address_index`: `0` = human signing (the account go-algorand / the
+//!     SDKs restore from those words, at the Falcon key's canonical salt)
+//!     and `1` = autosign (the same key at its next PQ-compliant salt; any
+//!     go-algorand-sdk `SaltedPQSigner` can sign for it too). An Ed25519
+//!     seed only has index `0`. The request names which index's account to
+//!     reply with; `LIST_ACCOUNTS` shows all of them.
+//!   - `LIST_ACCOUNTS`: replies with the algorithm, address, and public
+//!     key of every account this TA holds, in creation order. A Falcon-1024
+//!     public key is 1793 bytes, so the reply is paged: the request may
+//!     carry a `start` position, and each reply says how many accounts
+//!     there are in total and packs as many as fit in one message.
 //!   - `REVEAL_MNEMONIC`: replies with the literal 25-word backup phrase
 //!     for the seed a given Algorand address was derived from. **Exception
 //!     #1** to "keys never leave the secure world" -- see the security
@@ -23,12 +36,26 @@
 //!     25-word mnemonic and persists the account it recovers to, rejecting
 //!     it if that seed is already stored. **Exception #2**: a secret
 //!     enters the secure world instead of leaving it.
+//!   - `DELETE_ACCOUNT`: permanently removes the seed a given Algorand
+//!     address was derived from and replies with that account's summary.
+//!     Irreversible unless the user still holds the 25 words; gated like
+//!     `REVEAL_MNEMONIC` (see below).
+//!   - `SIGN_TRANSACTION`: signs `"TX" || txn` (a msgpack-encoded
+//!     transaction) with the given address's key -- Ed25519 or deterministic
+//!     Falcon-1024 -- and replies with the msgpack `SignedTxn` *prefix*; the
+//!     caller appends `txn` to it to get network-ready bytes. Only the
+//!     prefix comes back because a Falcon-1024 public key + signature is
+//!     already ~3.3 KB of this TA's 4 KB message budget. Falcon signing uses
+//!     ~78 KB of C stack (see `rules.mk`).
 //!
 //! `CREATE_ACCOUNT` and `LIST_ACCOUNTS` never serialize a seed/private key
 //! into a response -- see `seed_vault::store::AccountStore`'s doc comment
 //! for why that's a hard invariant.
 //!
-//! ## Security note: hardening `REVEAL_MNEMONIC`/`IMPORT_ACCOUNT` before shipping
+//! ## Security note: hardening `REVEAL_MNEMONIC`/`IMPORT_ACCOUNT`/`DELETE_ACCOUNT` before shipping
+//!
+//! (`DELETE_ACCOUNT` leaks nothing, but an unauthenticated caller could use
+//! it to destroy funds, so it needs the same gate.)
 //!
 //! Both opcodes mirror the real "show/enter recovery phrase" flows
 //! secure-enclave wallets (e.g. Solana Mobile's Seed Vault on the Seeker
@@ -75,14 +102,17 @@
 //!
 //! let mut channel = TipcChannel::connect(DEFAULT_DEVICE, "io.github.algorandecosystem.algokitcore.seed_vault_ta")?;
 //!
-//! // CREATE_ACCOUNT (algorithm tag 0x01 = Algo25Ed25519)
-//! channel.send(&[0x01, 0x01])?;
+//! // CREATE_ACCOUNT: [0x01][algorithm][address_index]. Here: Falcon1024
+//! // (0x02; 0x01 = Algo25Ed25519), replying with its autosign account (1).
+//! channel.send(&[0x01, 0x02, 0x01])?;
 //! let response = channel.recv()?;
 //! // response = [0x00, algorithm, address_index: u32 LE, addr_len, ...address
 //! // bytes] on success -- see `seed_vault::protocol` for the full wire
 //! // format and reference decoders.
 //!
-//! // LIST_ACCOUNTS
+//! // LIST_ACCOUNTS, first page; then [0x02, start: u32 LE] for the next ones.
+//! // response = [0x00, total: u32 LE, count: u32 LE, ...count entries of
+//! // (algorithm, address_index: u32 LE, addr_len, address, pk_len: u16 LE, pk)]
 //! channel.send(&[0x02])?;
 //! let response = channel.recv()?;
 //!
@@ -97,11 +127,34 @@
 //! channel.send(&request)?;
 //! let response = channel.recv()?;
 //!
-//! // IMPORT_ACCOUNT: [0x04][algorithm: u8][mnemonic_len: u8][mnemonic bytes],
-//! // gated behind the same fresh-auth requirement as REVEAL_MNEMONIC.
+//! // IMPORT_ACCOUNT: [0x04][algorithm: u8][address_index: u8][mnemonic_len: u8]
+//! // [mnemonic bytes], gated behind the same fresh-auth requirement as
+//! // REVEAL_MNEMONIC.
 //! let mnemonic = "abandon ability able ..."; // 25 words
-//! let mut request = alloc::vec![0x04u8, 0x01u8, mnemonic.len() as u8];
+//! let mut request = alloc::vec![0x04u8, 0x01u8, 0x00u8, mnemonic.len() as u8];
 //! request.extend_from_slice(mnemonic.as_bytes());
+//! channel.send(&request)?;
+//! let response = channel.recv()?;
+//!
+//! // DELETE_ACCOUNT: [0x05][addr_len: u8][addr bytes]. Same gate again.
+//! let mut request = alloc::vec![0x05u8, address.len() as u8];
+//! request.extend_from_slice(address.as_bytes());
+//! channel.send(&request)?;
+//! let response = channel.recv()?;
+//!
+//! // SIGN_TRANSACTION: [0x06][address_index: u8][addr_len: u8][addr]
+//! // [txn_len: u16 LE][txn]. address_index states which kind of key the
+//! // caller means (0 = human signing, 1 = autosign); the TA refuses with
+//! // UnknownAddressIndex if `address` isn't that account, and with
+//! // SenderMismatch unless the txn's `snd` is `address` (both Falcon
+//! // accounts share one key, so this stops autosign signing for index 0).
+//! // response = [0x00, algorithm, prefix_len: u16 LE, ...prefix]; the
+//! // SignedTxn is prefix || txn. Index 0 needs the same gate again, plus
+//! // showing the user what they're signing.
+//! let mut request = alloc::vec![0x06u8, 0x01u8, address.len() as u8];
+//! request.extend_from_slice(address.as_bytes());
+//! request.extend_from_slice(&(txn.len() as u16).to_le_bytes());
+//! request.extend_from_slice(&txn);
 //! channel.send(&request)?;
 //! let response = channel.recv()?;
 //! ```
@@ -123,9 +176,12 @@ use zeroize::Zeroize;
 
 const PORT: &str = "io.github.algorandecosystem.algokitcore.seed_vault_ta";
 
-/// Maximum request/response size. `seed_vault::protocol` messages are tiny,
-/// so this comfortably covers a realistic number of accounts per device
-/// without needing message fragmentation.
+/// Maximum request/response size. Effectively fixed: the Linux `trusty-ipc`
+/// driver's per-message buffer is one page, so raising this wouldn't let a
+/// non-secure (Android) client send or receive anything bigger. The largest
+/// response is `SIGN_TRANSACTION`'s Falcon-1024 `SignedTxn` prefix (~3.3 KB,
+/// `seed_vault::signed_txn::MAX_PREFIX_LEN`), which is why that opcode
+/// returns a prefix rather than the whole signed transaction.
 const MAX_MSG_SIZE: u32 = 4096;
 
 /// Max simultaneous client connections this TA will service at once.
@@ -184,7 +240,10 @@ impl Service for SeedVaultService {
         mut msg: Self::Message,
     ) -> tipc::Result<MessageResult> {
         // TODO(security): before this reaches production, REVEAL_MNEMONIC
-        // (0x03) and IMPORT_ACCOUNT (0x04) requests must be rejected here
+        // (0x03), IMPORT_ACCOUNT (0x04), DELETE_ACCOUNT (0x05) and
+        // human-signing SIGN_TRANSACTION (0x06 with address_index 0)
+        // requests must be rejected here (index-1 autosign signing is
+        // deliberately exempt; it may want its own policy, e.g. limits)
         // unless they carry proof of a fresh, explicit user authentication
         // (e.g. a Gatekeeper auth token verified the same way
         // `trusty/app/gatekeeper` does). `handle_request` is purely

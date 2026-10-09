@@ -19,6 +19,11 @@
 # `seed_vault` (this crate's only consumer on Trusty) never calls into
 # `xhd`, so this matches its actual real-world usage exactly, not just a
 # convenient subset.
+#
+# Exception: "falcon" IS enabled (see MODULE_RUSTFLAGS below), matching
+# `seed_vault`'s `features = ["falcon"]`, for `KeyAlgorithm::Falcon1024`
+# native post-quantum accounts. It pulls in the hand-vendored
+# `trusty/vendor/algorand_falcon` (Rust bindings + Falcon C sources).
 
 LOCAL_DIR := $(GET_LOCAL_DIR)
 MODULE := $(LOCAL_DIR)
@@ -38,8 +43,12 @@ MODULE_ADD_IMPLICIT_DEPS := false
 # `trusty/vendor/getrandom/rules.mk`.
 MODULE_RUST_EDITION := 2021
 
+MODULE_RUSTFLAGS += \
+	--cfg 'feature="falcon"' \
+
 MODULE_LIBRARY_DEPS := \
 	trusty/user/base/lib/cryptoxide \
+	trusty/user/base/lib/algorand_falcon \
 	trusty/user/base/lib/base32 \
 	trusty/user/base/lib/signature \
 	trusty/user/base/lib/getrandom \

@@ -1,6 +1,7 @@
 # Trusty Trusted Application: seed_vault_ta
 #
-# Exposes a `CREATE_ACCOUNT`/`LIST_ACCOUNTS`/`REVEAL_MNEMONIC` IPC service
+# Exposes a `CREATE_ACCOUNT`/`LIST_ACCOUNTS`/`REVEAL_MNEMONIC`/
+# `IMPORT_ACCOUNT`/`DELETE_ACCOUNT`/`SIGN_TRANSACTION` IPC service
 # (port "io.github.algorandecosystem.algokitcore.seed_vault_ta") for creating, enumerating, and
 # (deliberately, explicitly) backing up Algorand accounts. Private key
 # material never leaves this TA except via the explicit REVEAL_MNEMONIC
@@ -67,6 +68,24 @@
 # BoringSSL CSPRNG reseeded from the platform HWRNG). See
 # `trusty/vendor/getrandom/rules.mk` and `trusty_rng.rs`'s doc comments for
 # the full picture.
+
+# Falcon-1024 (`KeyAlgorithm::Falcon1024`, via the hand-vendored
+# `trusty/vendor/algorand_falcon` -- pulled in transitively through
+# `algokit_crypto`) puts large scratch buffers on the C stack:
+# `FALCON_TMPSIZE_KEYGEN(10)` ~= 31 KB for keygen (run once per
+# create/import; only legacy entropy-only records re-run it on list/reveal),
+# and `FALCON_TMPSIZE_SIGNDYN(10)` ~= 78 KB for every Falcon
+# `SIGN_TRANSACTION`. `manifest.json`'s `min_stack` was therefore raised from
+# 32 KB to 128 KB; JSON has no comments, so the rationale lives here.
+#
+# Falcon records also cache their keygen output, plus the salt/address of
+# both accounts (human-sign index 0 and autosign index 1, see
+# `seed_vault::store::falcon_record`): ~4.2 KB each vs 33 bytes for
+# Ed25519. Every request loads all records into the heap at once, and
+# LIST_ACCOUNTS also copies out the 1793-byte public key for each of a
+# Falcon seed's two accounts (~11 KB peak per seed), so `min_heap` was
+# raised from 128 KB to 1 MB (room for roughly 80 Falcon seeds plus working
+# buffers).
 
 LOCAL_DIR := $(GET_LOCAL_DIR)
 MODULE := $(LOCAL_DIR)
