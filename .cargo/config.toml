@@ -4,6 +4,18 @@ pkg = ["run", "--bin", "build_pkgs", "--"]
 api = ["run", "--bin", "api_tools", "--"]
 t = "bin cargo-nextest run"
 
+# Apple minimum OS versions, matching `platforms:` in
+# `packages/swift/AlgoKitUtils/Package.swift` (iOS 15 / macOS 12 / Catalyst
+# 15). Without these, rustc 1.85 links for its ancient defaults (iOS 10.0,
+# macOS 10.12) while `cc` compiles C deps (e.g. `algorand-falcon`) for the
+# installed SDK version -- a mismatch that fails to link on newer Xcode
+# (`Undefined symbols: ___chkstk_darwin`). Both rustc and `cc` read these
+# (`IPHONEOS_DEPLOYMENT_TARGET` also covers the `*-ios-macabi` Catalyst
+# targets). Not forced, so an explicitly exported value still wins.
+[env]
+IPHONEOS_DEPLOYMENT_TARGET = "15.0"
+MACOSX_DEPLOYMENT_TARGET = "12.0"
+
 # We need to enable dynamic linking for musl targets
 # See https://github.com/rust-lang/rust/issues/59302#issue-422994250
 

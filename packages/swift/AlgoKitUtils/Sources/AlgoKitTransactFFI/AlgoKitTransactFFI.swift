@@ -611,6 +611,10 @@ public struct AppCallTransactionFields {
      * The boxes that should be made available for the runtime of the program.
      */
     public var boxReferences: [BoxReference]?
+    /**
+     * The unified access list, replacing the separate reference arrays above.
+     */
+    public var access: [ResourceRef]?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
@@ -677,7 +681,10 @@ public struct AppCallTransactionFields {
          */assetReferences: [UInt64]? = nil, 
         /**
          * The boxes that should be made available for the runtime of the program.
-         */boxReferences: [BoxReference]? = nil) {
+         */boxReferences: [BoxReference]? = nil, 
+        /**
+         * The unified access list, replacing the separate reference arrays above.
+         */access: [ResourceRef]? = nil) {
         self.appId = appId
         self.onComplete = onComplete
         self.approvalProgram = approvalProgram
@@ -690,6 +697,7 @@ public struct AppCallTransactionFields {
         self.appReferences = appReferences
         self.assetReferences = assetReferences
         self.boxReferences = boxReferences
+        self.access = access
     }
 }
 
@@ -736,6 +744,9 @@ extension AppCallTransactionFields: Equatable, Hashable {
         if lhs.boxReferences != rhs.boxReferences {
             return false
         }
+        if lhs.access != rhs.access {
+            return false
+        }
         return true
     }
 
@@ -752,6 +763,7 @@ extension AppCallTransactionFields: Equatable, Hashable {
         hasher.combine(appReferences)
         hasher.combine(assetReferences)
         hasher.combine(boxReferences)
+        hasher.combine(access)
     }
 }
 
@@ -775,7 +787,8 @@ public struct FfiConverterTypeAppCallTransactionFields: FfiConverterRustBuffer {
                 accountReferences: FfiConverterOptionSequenceString.read(from: &buf), 
                 appReferences: FfiConverterOptionSequenceUInt64.read(from: &buf), 
                 assetReferences: FfiConverterOptionSequenceUInt64.read(from: &buf), 
-                boxReferences: FfiConverterOptionSequenceTypeBoxReference.read(from: &buf)
+                boxReferences: FfiConverterOptionSequenceTypeBoxReference.read(from: &buf), 
+                access: FfiConverterOptionSequenceTypeResourceRef.read(from: &buf)
         )
     }
 
@@ -792,6 +805,7 @@ public struct FfiConverterTypeAppCallTransactionFields: FfiConverterRustBuffer {
         FfiConverterOptionSequenceUInt64.write(value.appReferences, into: &buf)
         FfiConverterOptionSequenceUInt64.write(value.assetReferences, into: &buf)
         FfiConverterOptionSequenceTypeBoxReference.write(value.boxReferences, into: &buf)
+        FfiConverterOptionSequenceTypeResourceRef.write(value.access, into: &buf)
     }
 }
 
@@ -2028,6 +2042,91 @@ public func FfiConverterTypeHeartbeatTransactionFields_lower(_ value: HeartbeatT
 }
 
 
+/**
+ * An asset holding, by position within the access list.
+ */
+public struct HoldingRef {
+    /**
+     * 0 is the sender, otherwise a 1-based index into the access list.
+     */
+    public var address: UInt64
+    /**
+     * A 1-based index into the access list.
+     */
+    public var asset: UInt64
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * 0 is the sender, otherwise a 1-based index into the access list.
+         */address: UInt64, 
+        /**
+         * A 1-based index into the access list.
+         */asset: UInt64) {
+        self.address = address
+        self.asset = asset
+    }
+}
+
+#if compiler(>=6)
+extension HoldingRef: Sendable {}
+#endif
+
+
+extension HoldingRef: Equatable, Hashable {
+    public static func ==(lhs: HoldingRef, rhs: HoldingRef) -> Bool {
+        if lhs.address != rhs.address {
+            return false
+        }
+        if lhs.asset != rhs.asset {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(address)
+        hasher.combine(asset)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeHoldingRef: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> HoldingRef {
+        return
+            try HoldingRef(
+                address: FfiConverterUInt64.read(from: &buf), 
+                asset: FfiConverterUInt64.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: HoldingRef, into buf: inout [UInt8]) {
+        FfiConverterUInt64.write(value.address, into: &buf)
+        FfiConverterUInt64.write(value.asset, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeHoldingRef_lift(_ buf: RustBuffer) throws -> HoldingRef {
+    return try FfiConverterTypeHoldingRef.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeHoldingRef_lower(_ value: HoldingRef) -> RustBuffer {
+    return FfiConverterTypeHoldingRef.lower(value)
+}
+
+
 public struct KeyRegistrationTransactionFields {
     /**
      * Root participation public key (32 bytes)
@@ -2177,6 +2276,218 @@ public func FfiConverterTypeKeyRegistrationTransactionFields_lift(_ buf: RustBuf
 #endif
 public func FfiConverterTypeKeyRegistrationTransactionFields_lower(_ value: KeyRegistrationTransactionFields) -> RustBuffer {
     return FfiConverterTypeKeyRegistrationTransactionFields.lower(value)
+}
+
+
+/**
+ * An account's local state for an app, by position within the access list.
+ */
+public struct LocalsRef {
+    /**
+     * 0 is the sender, otherwise a 1-based index into the access list.
+     */
+    public var address: UInt64
+    /**
+     * 0 is the app being called, otherwise a 1-based index into the access list.
+     */
+    public var app: UInt64
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * 0 is the sender, otherwise a 1-based index into the access list.
+         */address: UInt64, 
+        /**
+         * 0 is the app being called, otherwise a 1-based index into the access list.
+         */app: UInt64) {
+        self.address = address
+        self.app = app
+    }
+}
+
+#if compiler(>=6)
+extension LocalsRef: Sendable {}
+#endif
+
+
+extension LocalsRef: Equatable, Hashable {
+    public static func ==(lhs: LocalsRef, rhs: LocalsRef) -> Bool {
+        if lhs.address != rhs.address {
+            return false
+        }
+        if lhs.app != rhs.app {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(address)
+        hasher.combine(app)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeLocalsRef: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> LocalsRef {
+        return
+            try LocalsRef(
+                address: FfiConverterUInt64.read(from: &buf), 
+                app: FfiConverterUInt64.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: LocalsRef, into buf: inout [UInt8]) {
+        FfiConverterUInt64.write(value.address, into: &buf)
+        FfiConverterUInt64.write(value.app, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeLocalsRef_lift(_ buf: RustBuffer) throws -> LocalsRef {
+    return try FfiConverterTypeLocalsRef.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeLocalsRef_lower(_ value: LocalsRef) -> RustBuffer {
+    return FfiConverterTypeLocalsRef.lower(value)
+}
+
+
+/**
+ * Representation of an Algorand logic signature.
+ */
+public struct LogicSignature {
+    /**
+     * The compiled program bytes.
+     */
+    public var logic: Data
+    /**
+     * Signature of an account delegating to this program.
+     */
+    public var signature: Data?
+    /**
+     * Legacy multisig delegation, rejected by the network since consensus v41.
+     */
+    public var multisignature: MultisigSignature?
+    /**
+     * Multisig delegation, binding the signature to the delegating account.
+     */
+    public var logicMultisignature: MultisigSignature?
+    /**
+     * Arguments made available to the program.
+     */
+    public var args: [Data]?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * The compiled program bytes.
+         */logic: Data, 
+        /**
+         * Signature of an account delegating to this program.
+         */signature: Data? = nil, 
+        /**
+         * Legacy multisig delegation, rejected by the network since consensus v41.
+         */multisignature: MultisigSignature? = nil, 
+        /**
+         * Multisig delegation, binding the signature to the delegating account.
+         */logicMultisignature: MultisigSignature? = nil, 
+        /**
+         * Arguments made available to the program.
+         */args: [Data]? = nil) {
+        self.logic = logic
+        self.signature = signature
+        self.multisignature = multisignature
+        self.logicMultisignature = logicMultisignature
+        self.args = args
+    }
+}
+
+#if compiler(>=6)
+extension LogicSignature: Sendable {}
+#endif
+
+
+extension LogicSignature: Equatable, Hashable {
+    public static func ==(lhs: LogicSignature, rhs: LogicSignature) -> Bool {
+        if lhs.logic != rhs.logic {
+            return false
+        }
+        if lhs.signature != rhs.signature {
+            return false
+        }
+        if lhs.multisignature != rhs.multisignature {
+            return false
+        }
+        if lhs.logicMultisignature != rhs.logicMultisignature {
+            return false
+        }
+        if lhs.args != rhs.args {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(logic)
+        hasher.combine(signature)
+        hasher.combine(multisignature)
+        hasher.combine(logicMultisignature)
+        hasher.combine(args)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeLogicSignature: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> LogicSignature {
+        return
+            try LogicSignature(
+                logic: FfiConverterData.read(from: &buf), 
+                signature: FfiConverterOptionData.read(from: &buf), 
+                multisignature: FfiConverterOptionTypeMultisigSignature.read(from: &buf), 
+                logicMultisignature: FfiConverterOptionTypeMultisigSignature.read(from: &buf), 
+                args: FfiConverterOptionSequenceData.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: LogicSignature, into buf: inout [UInt8]) {
+        FfiConverterData.write(value.logic, into: &buf)
+        FfiConverterOptionData.write(value.signature, into: &buf)
+        FfiConverterOptionTypeMultisigSignature.write(value.multisignature, into: &buf)
+        FfiConverterOptionTypeMultisigSignature.write(value.logicMultisignature, into: &buf)
+        FfiConverterOptionSequenceData.write(value.args, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeLogicSignature_lift(_ buf: RustBuffer) throws -> LogicSignature {
+    return try FfiConverterTypeLogicSignature.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeLogicSignature_lower(_ value: LogicSignature) -> RustBuffer {
+    return FfiConverterTypeLogicSignature.lower(value)
 }
 
 
@@ -2672,6 +2983,151 @@ public func FfiConverterTypePaymentTransactionFields_lower(_ value: PaymentTrans
 
 
 /**
+ * A single entry in an app call's access list.
+ *
+ * At most one field is set. An entry with none set bumps the box read/write quota.
+ */
+public struct ResourceRef {
+    /**
+     * An account made available to the program.
+     */
+    public var address: String?
+    /**
+     * An asset made available to the program.
+     */
+    public var asset: UInt64?
+    /**
+     * An app made available to the program.
+     */
+    public var app: UInt64?
+    /**
+     * An asset holding, naming an account and an asset already in the access list.
+     */
+    public var holding: HoldingRef?
+    /**
+     * An account's local state for an app, both already in the access list.
+     */
+    public var locals: LocalsRef?
+    /**
+     * A box owned by an app in the access list. `app_id` here is a 1-based index into
+     * the access list, not an app ID.
+     */
+    public var boxRef: BoxReference?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * An account made available to the program.
+         */address: String? = nil, 
+        /**
+         * An asset made available to the program.
+         */asset: UInt64? = nil, 
+        /**
+         * An app made available to the program.
+         */app: UInt64? = nil, 
+        /**
+         * An asset holding, naming an account and an asset already in the access list.
+         */holding: HoldingRef? = nil, 
+        /**
+         * An account's local state for an app, both already in the access list.
+         */locals: LocalsRef? = nil, 
+        /**
+         * A box owned by an app in the access list. `app_id` here is a 1-based index into
+         * the access list, not an app ID.
+         */boxRef: BoxReference? = nil) {
+        self.address = address
+        self.asset = asset
+        self.app = app
+        self.holding = holding
+        self.locals = locals
+        self.boxRef = boxRef
+    }
+}
+
+#if compiler(>=6)
+extension ResourceRef: Sendable {}
+#endif
+
+
+extension ResourceRef: Equatable, Hashable {
+    public static func ==(lhs: ResourceRef, rhs: ResourceRef) -> Bool {
+        if lhs.address != rhs.address {
+            return false
+        }
+        if lhs.asset != rhs.asset {
+            return false
+        }
+        if lhs.app != rhs.app {
+            return false
+        }
+        if lhs.holding != rhs.holding {
+            return false
+        }
+        if lhs.locals != rhs.locals {
+            return false
+        }
+        if lhs.boxRef != rhs.boxRef {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(address)
+        hasher.combine(asset)
+        hasher.combine(app)
+        hasher.combine(holding)
+        hasher.combine(locals)
+        hasher.combine(boxRef)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeResourceRef: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ResourceRef {
+        return
+            try ResourceRef(
+                address: FfiConverterOptionString.read(from: &buf), 
+                asset: FfiConverterOptionUInt64.read(from: &buf), 
+                app: FfiConverterOptionUInt64.read(from: &buf), 
+                holding: FfiConverterOptionTypeHoldingRef.read(from: &buf), 
+                locals: FfiConverterOptionTypeLocalsRef.read(from: &buf), 
+                boxRef: FfiConverterOptionTypeBoxReference.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: ResourceRef, into buf: inout [UInt8]) {
+        FfiConverterOptionString.write(value.address, into: &buf)
+        FfiConverterOptionUInt64.write(value.asset, into: &buf)
+        FfiConverterOptionUInt64.write(value.app, into: &buf)
+        FfiConverterOptionTypeHoldingRef.write(value.holding, into: &buf)
+        FfiConverterOptionTypeLocalsRef.write(value.locals, into: &buf)
+        FfiConverterOptionTypeBoxReference.write(value.boxRef, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeResourceRef_lift(_ buf: RustBuffer) throws -> ResourceRef {
+    return try FfiConverterTypeResourceRef.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeResourceRef_lower(_ value: ResourceRef) -> RustBuffer {
+    return FfiConverterTypeResourceRef.lower(value)
+}
+
+
+/**
  * A single array position revealed as part of a state proof. It reveals an element of the
  * signature array and the corresponding element of the participants array.
  */
@@ -2770,6 +3226,10 @@ public struct SignedTransaction {
      * Optional multisig signature if the transaction is a multisig transaction.
      */
     public var multisignature: MultisigSignature?
+    /**
+     * Optional logic signature authorizing the transaction with a program.
+     */
+    public var logicSignature: LogicSignature?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
@@ -2785,11 +3245,15 @@ public struct SignedTransaction {
          */authAddress: String? = nil, 
         /**
          * Optional multisig signature if the transaction is a multisig transaction.
-         */multisignature: MultisigSignature? = nil) {
+         */multisignature: MultisigSignature? = nil, 
+        /**
+         * Optional logic signature authorizing the transaction with a program.
+         */logicSignature: LogicSignature? = nil) {
         self.transaction = transaction
         self.signature = signature
         self.authAddress = authAddress
         self.multisignature = multisignature
+        self.logicSignature = logicSignature
     }
 }
 
@@ -2812,6 +3276,9 @@ extension SignedTransaction: Equatable, Hashable {
         if lhs.multisignature != rhs.multisignature {
             return false
         }
+        if lhs.logicSignature != rhs.logicSignature {
+            return false
+        }
         return true
     }
 
@@ -2820,6 +3287,7 @@ extension SignedTransaction: Equatable, Hashable {
         hasher.combine(signature)
         hasher.combine(authAddress)
         hasher.combine(multisignature)
+        hasher.combine(logicSignature)
     }
 }
 
@@ -2835,7 +3303,8 @@ public struct FfiConverterTypeSignedTransaction: FfiConverterRustBuffer {
                 transaction: FfiConverterTypeTransaction.read(from: &buf), 
                 signature: FfiConverterOptionData.read(from: &buf), 
                 authAddress: FfiConverterOptionString.read(from: &buf), 
-                multisignature: FfiConverterOptionTypeMultisigSignature.read(from: &buf)
+                multisignature: FfiConverterOptionTypeMultisigSignature.read(from: &buf), 
+                logicSignature: FfiConverterOptionTypeLogicSignature.read(from: &buf)
         )
     }
 
@@ -2844,6 +3313,7 @@ public struct FfiConverterTypeSignedTransaction: FfiConverterRustBuffer {
         FfiConverterOptionData.write(value.signature, into: &buf)
         FfiConverterOptionString.write(value.authAddress, into: &buf)
         FfiConverterOptionTypeMultisigSignature.write(value.multisignature, into: &buf)
+        FfiConverterOptionTypeLogicSignature.write(value.logicSignature, into: &buf)
     }
 }
 
@@ -4245,6 +4715,30 @@ fileprivate struct FfiConverterOptionTypeAssetTransferTransactionFields: FfiConv
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterOptionTypeBoxReference: FfiConverterRustBuffer {
+    typealias SwiftType = BoxReference?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeBoxReference.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeBoxReference.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionTypeHeartbeatTransactionFields: FfiConverterRustBuffer {
     typealias SwiftType = HeartbeatTransactionFields?
 
@@ -4269,6 +4763,30 @@ fileprivate struct FfiConverterOptionTypeHeartbeatTransactionFields: FfiConverte
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterOptionTypeHoldingRef: FfiConverterRustBuffer {
+    typealias SwiftType = HoldingRef?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeHoldingRef.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeHoldingRef.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionTypeKeyRegistrationTransactionFields: FfiConverterRustBuffer {
     typealias SwiftType = KeyRegistrationTransactionFields?
 
@@ -4285,6 +4803,54 @@ fileprivate struct FfiConverterOptionTypeKeyRegistrationTransactionFields: FfiCo
         switch try readInt(&buf) as Int8 {
         case 0: return nil
         case 1: return try FfiConverterTypeKeyRegistrationTransactionFields.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterOptionTypeLocalsRef: FfiConverterRustBuffer {
+    typealias SwiftType = LocalsRef?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeLocalsRef.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeLocalsRef.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterOptionTypeLogicSignature: FfiConverterRustBuffer {
+    typealias SwiftType = LogicSignature?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeLogicSignature.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeLogicSignature.read(from: &buf)
         default: throw UniffiInternalError.unexpectedOptionalTag
         }
     }
@@ -4533,6 +5099,30 @@ fileprivate struct FfiConverterOptionSequenceTypeBoxReference: FfiConverterRustB
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterOptionSequenceTypeResourceRef: FfiConverterRustBuffer {
+    typealias SwiftType = [ResourceRef]?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterSequenceTypeResourceRef.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterSequenceTypeResourceRef.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceUInt64: FfiConverterRustBuffer {
     typealias SwiftType = [UInt64]
 
@@ -4650,6 +5240,31 @@ fileprivate struct FfiConverterSequenceTypeMultisigSubsignature: FfiConverterRus
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
             seq.append(try FfiConverterTypeMultisigSubsignature.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeResourceRef: FfiConverterRustBuffer {
+    typealias SwiftType = [ResourceRef]
+
+    public static func write(_ value: [ResourceRef], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeResourceRef.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [ResourceRef] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [ResourceRef]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeResourceRef.read(from: &buf))
         }
         return seq
     }
@@ -4959,6 +5574,37 @@ public func getEncodedTransactionType(encodedTransaction: Data)throws  -> Transa
 })
 }
 /**
+ * Returns the escrow address a program authorizes as when it is not delegated.
+ */
+public func getLogicSignatureAddress(logic: Data)throws  -> String  {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeAlgoKitTransactError_lift) {
+    uniffi_algokit_transact_ffi_fn_func_get_logic_signature_address(
+        FfiConverterData.lower(logic),$0
+    )
+})
+}
+/**
+ * Returns the bytes an account signs to delegate a program to itself.
+ */
+public func getLogicSignatureBytesToSign(logic: Data)throws  -> Data  {
+    return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeAlgoKitTransactError_lift) {
+    uniffi_algokit_transact_ffi_fn_func_get_logic_signature_bytes_to_sign(
+        FfiConverterData.lower(logic),$0
+    )
+})
+}
+/**
+ * Returns the bytes a multisig participant signs to delegate a program.
+ */
+public func getLogicSignatureBytesToSignForMultisig(logic: Data, multisignature: MultisigSignature)throws  -> Data  {
+    return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeAlgoKitTransactError_lift) {
+    uniffi_algokit_transact_ffi_fn_func_get_logic_signature_bytes_to_sign_for_multisig(
+        FfiConverterData.lower(logic),
+        FfiConverterTypeMultisigSignature_lower(multisignature),$0
+    )
+})
+}
+/**
  * Get the base32 transaction ID string for a transaction.
  */
 public func getTransactionId(transaction: Transaction)throws  -> String  {
@@ -5039,6 +5685,15 @@ public func publicKeyFromAddress(address: String)throws  -> Data  {
     )
 })
 }
+/**
+ * Validates a logic signature, returning the reasons it is not well formed.
+ */
+public func validateLogicSignature(logicSignature: LogicSignature)throws   {try rustCallWithError(FfiConverterTypeAlgoKitTransactError_lift) {
+    uniffi_algokit_transact_ffi_fn_func_validate_logic_signature(
+        FfiConverterTypeLogicSignature_lower(logicSignature),$0
+    )
+}
+}
 
 private enum InitializationResult {
     case ok
@@ -5109,6 +5764,15 @@ private let initializationResult: InitializationResult = {
     if (uniffi_algokit_transact_ffi_checksum_func_get_encoded_transaction_type() != 42551) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_algokit_transact_ffi_checksum_func_get_logic_signature_address() != 43834) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_algokit_transact_ffi_checksum_func_get_logic_signature_bytes_to_sign() != 49447) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_algokit_transact_ffi_checksum_func_get_logic_signature_bytes_to_sign_for_multisig() != 9568) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_algokit_transact_ffi_checksum_func_get_transaction_id() != 10957) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -5128,6 +5792,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_algokit_transact_ffi_checksum_func_public_key_from_address() != 58152) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_algokit_transact_ffi_checksum_func_validate_logic_signature() != 25417) {
         return InitializationResult.apiChecksumMismatch
     }
 
