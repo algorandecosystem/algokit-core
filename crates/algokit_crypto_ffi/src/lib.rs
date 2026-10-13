@@ -1,4 +1,5 @@
 pub mod algo25;
+pub mod falcon1024;
 pub mod xhd;
 
 use algokit_crypto::ed25519::{

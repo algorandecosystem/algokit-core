@@ -15,8 +15,8 @@
 # line in main.rs until that's done -- that is expected and is purely a
 # build-plumbing TODO, not a logic problem: all the logic `seed_vault`/
 # `algokit_crypto` provide is already proven independently via
-# `cargo test -p seed_vault` and `cargo run -p algokit_crypto --example
-# algo25_roundtrip` (both enforced in CI).
+# `cargo test -p seed_vault` and `cargo test -p algokit_crypto
+# --no-default-features --test account_roundtrip` (both enforced in CI).
 #
 # Current, *verified*, state -- every dependency this TA needs is now wired
 # below, either straight from AOSP or hand-vendored in this repo (confirmed

@@ -20,10 +20,10 @@
 # `xhd`, so this matches its actual real-world usage exactly, not just a
 # convenient subset.
 #
-# Exception: "falcon" IS enabled (see MODULE_RUSTFLAGS below), matching
-# `seed_vault`'s `features = ["falcon"]`, for `KeyAlgorithm::Falcon1024`
-# native post-quantum accounts. It pulls in the hand-vendored
-# `trusty/vendor/algorand_falcon` (Rust bindings + Falcon C sources).
+# The `falcon1024` module (native post-quantum accounts, used by
+# `seed_vault`'s `KeyAlgorithm::Falcon1024`) is not feature-gated, so it is
+# always built; it pulls in the hand-vendored `trusty/vendor/algorand_falcon`
+# (Rust bindings + Falcon C sources).
 
 LOCAL_DIR := $(GET_LOCAL_DIR)
 MODULE := $(LOCAL_DIR)
@@ -42,9 +42,6 @@ MODULE_ADD_IMPLICIT_DEPS := false
 # compiles identically. Same story on `crates/seed_vault/rules.mk` and
 # `trusty/vendor/getrandom/rules.mk`.
 MODULE_RUST_EDITION := 2021
-
-MODULE_RUSTFLAGS += \
-	--cfg 'feature="falcon"' \
 
 MODULE_LIBRARY_DEPS := \
 	trusty/user/base/lib/cryptoxide \

@@ -20,16 +20,16 @@ jobs:
       - name: Install Rust Toolchain
         run: rustup show
 
-      - name: Create & Recover algo25 Account (algokit_crypto)
-        run: cargo run -p algokit_crypto --example algo25_roundtrip
-
       - name: Verify no_std + alloc Compatibility (Trusty/TEE targets)
         run: |
           cargo check -p algokit_crypto --no-default-features
-          cargo check -p algokit_crypto --no-default-features --features falcon
+
+      # Built exactly as Trusty builds it (no default features).
+      - name: Create, Recover & Sign algo25 + Falcon-1024 Accounts (algokit_crypto)
+        run: cargo test -p algokit_crypto --no-default-features --test account_roundtrip
 
       - name: Falcon-1024 PQ accounts match go-algorand known answers
-        run: cargo test -p algokit_crypto --features falcon falcon1024
+        run: cargo test -p algokit_crypto falcon1024
 
       - name: Test seed_vault (applet protocol + account store logic)
         run: |
@@ -43,7 +43,7 @@ jobs:
           RUSTDOCFLAGS: -D warnings
         run: |
           cargo doc -p seed_vault --no-deps
-          cargo doc -p algokit_crypto --no-deps --no-default-features --features falcon
+          cargo doc -p algokit_crypto --no-deps --no-default-features
 
   build-trusty:
     needs: verify-account-crypto
