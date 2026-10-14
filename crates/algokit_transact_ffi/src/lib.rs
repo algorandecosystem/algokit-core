@@ -434,6 +434,7 @@ impl TryFrom<SignedTransaction> for algokit_transact::SignedTransaction {
                 .logic_signature
                 .map(TryInto::try_into)
                 .transpose()?,
+            pq_signature: None,
         })
     }
 }

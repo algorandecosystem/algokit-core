@@ -7,6 +7,7 @@ use crate::Address;
 use crate::Byte32;
 use crate::Transaction;
 use crate::transactions::common::TransactionHeader;
+use crate::utils::is_false_opt;
 use derive_builder::Builder;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_with::{Bytes, serde_as};
@@ -67,6 +68,12 @@ struct HeartbeatParams {
     /// Heartbeat key dilution.
     #[serde(rename = "kd")]
     pub key_dilution: u64,
+
+    /// Request the challenge fee discount, which reduces the required fee by one min fee.
+    #[serde(rename = "c")]
+    #[serde(skip_serializing_if = "is_false_opt")]
+    #[serde(default)]
+    pub challenge_discount: Option<bool>,
 }
 
 /// Represents a heartbeat transaction that maintains participation in Algorand consensus.
@@ -90,6 +97,11 @@ pub struct HeartbeatTransactionFields {
 
     /// Heartbeat key dilution.
     pub key_dilution: u64,
+
+    /// Request the challenge fee discount. Only honoured when the account is actually
+    /// under challenge, and only from consensus v42.
+    #[builder(default)]
+    pub challenge_discount: Option<bool>,
 }
 
 #[serde_as]
@@ -115,6 +127,7 @@ where
         seed: fields.seed.clone(),
         vote_id: fields.vote_id,
         key_dilution: fields.key_dilution,
+        challenge_discount: fields.challenge_discount,
     };
 
     let serde_struct = HeartbeatTransactionFieldsSerde {
@@ -140,6 +153,7 @@ where
         seed: deserialised_fields.heartbeat_params.seed,
         vote_id: deserialised_fields.heartbeat_params.vote_id,
         key_dilution: deserialised_fields.heartbeat_params.key_dilution,
+        challenge_discount: deserialised_fields.heartbeat_params.challenge_discount,
     })
 }
 
@@ -151,7 +165,8 @@ impl HeartbeatTransactionBuilder {
 
 #[cfg(test)]
 mod tests {
-    use crate::test_utils::TestDataMother;
+    use crate::test_utils::{HeartbeatTransactionMother, TestDataMother};
+    use crate::{AlgorandMsgpack, Transaction};
 
     #[test]
     fn test_heartbeat_snapshot() {
@@ -160,5 +175,54 @@ mod tests {
             data.id,
             String::from("GCVW7GJTD5OALIXPQ3RGMYKTTYCWUJY3E4RPJTX7WHIWZK4V6NYA")
         );
+    }
+
+    #[test]
+    fn challenge_discount_is_omitted_unless_requested() {
+        let unset = HeartbeatTransactionMother::heartbeat()
+            .build_fields()
+            .unwrap();
+
+        let mut declined = unset.clone();
+        declined.challenge_discount = Some(false);
+
+        let mut requested = unset.clone();
+        requested.challenge_discount = Some(true);
+
+        let encoded_unset = Transaction::Heartbeat(unset).encode().unwrap();
+        let encoded_declined = Transaction::Heartbeat(declined).encode().unwrap();
+        let encoded_requested = Transaction::Heartbeat(requested).encode().unwrap();
+
+        // Declining the discount must encode as if the field were absent, or the
+        // transaction ID would change for a heartbeat that asked for nothing.
+        assert_eq!(encoded_unset, encoded_declined);
+        assert!(encoded_requested.len() > encoded_unset.len());
+    }
+
+    #[test]
+    fn challenge_discount_round_trips() {
+        let mut fields = HeartbeatTransactionMother::heartbeat()
+            .build_fields()
+            .unwrap();
+        fields.challenge_discount = Some(true);
+
+        let encoded = Transaction::Heartbeat(fields).encode().unwrap();
+        let decoded = Transaction::decode(&encoded).unwrap();
+
+        match decoded {
+            Transaction::Heartbeat(h) => assert_eq!(h.challenge_discount, Some(true)),
+            other => panic!("expected a heartbeat, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn an_absent_challenge_discount_decodes_to_none() {
+        let data = TestDataMother::heartbeat();
+        let decoded = Transaction::decode(&data.unsigned_bytes).unwrap();
+
+        match decoded {
+            Transaction::Heartbeat(h) => assert_eq!(h.challenge_discount, None),
+            other => panic!("expected a heartbeat, got {other:?}"),
+        }
     }
 }

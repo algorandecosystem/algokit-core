@@ -1121,6 +1121,62 @@ mod tests {
     }
 
     #[test]
+    fn v42_allows_seven_extra_program_pages() {
+        let app_call = AppCallTransactionMother::app_create()
+            .extra_program_pages(MAX_EXTRA_PROGRAM_PAGES)
+            .build_fields()
+            .unwrap();
+
+        assert!(app_call.validate().is_ok());
+    }
+
+    #[test]
+    fn extra_program_pages_past_the_absolute_cap_are_rejected() {
+        let app_call = AppCallTransactionMother::app_create()
+            .extra_program_pages(MAX_EXTRA_PROGRAM_PAGES + 1)
+            .build_fields()
+            .unwrap();
+
+        let errors = app_call.validate().unwrap_err();
+        assert!(errors.iter().any(|e| e
+            == &format!(
+                "{FIELD_EXTRA_PROGRAM_PAGES} cannot exceed {MAX_EXTRA_PROGRAM_PAGES} pages, got {}",
+                MAX_EXTRA_PROGRAM_PAGES + 1
+            )));
+    }
+
+    #[test]
+    fn v42_allows_args_totalling_the_absolute_cap() {
+        let args = vec![vec![0u8; MAX_ARGS_SIZE / MAX_APP_ARGS]; MAX_APP_ARGS];
+        assert_eq!(args.iter().map(|a| a.len()).sum::<usize>(), MAX_ARGS_SIZE);
+
+        let app_call = AppCallTransactionMother::app_call()
+            .args(args)
+            .build_fields()
+            .unwrap();
+
+        assert!(app_call.validate().is_ok());
+    }
+
+    #[test]
+    fn args_past_the_absolute_cap_are_rejected() {
+        let mut args = vec![vec![0u8; MAX_ARGS_SIZE / MAX_APP_ARGS]; MAX_APP_ARGS];
+        args[0].push(0);
+
+        let app_call = AppCallTransactionMother::app_call()
+            .args(args)
+            .build_fields()
+            .unwrap();
+
+        let errors = app_call.validate().unwrap_err();
+        assert!(errors.iter().any(|e| e
+            == &format!(
+                "Args total size cannot exceed {MAX_ARGS_SIZE} bytes, got {}",
+                MAX_ARGS_SIZE + 1
+            )));
+    }
+
+    #[test]
     fn test_validate_app_create_invalid() {
         let app_call = AppCallTransactionMother::app_create()
             .approval_program(vec![]) // Missing approval program
@@ -1403,7 +1459,9 @@ mod tests {
     #[test]
     fn test_validate_args() {
         // The args are both too many and too large
-        let args = (0..=MAX_APP_ARGS).map(|_i| vec![0u8; 700]).collect();
+        let args = (0..=MAX_APP_ARGS)
+            .map(|_i| vec![0u8; MAX_ARGS_SIZE / MAX_APP_ARGS])
+            .collect();
         let app_call = AppCallTransactionMother::app_call_example()
             .args(args)
             .build_fields()

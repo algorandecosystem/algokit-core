@@ -61,6 +61,7 @@ fn sign_transaction(
         auth_address: None,
         multisignature: None,
         logic_signature: None,
+        pq_signature: None,
     })
 }
 
