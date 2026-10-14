@@ -240,3 +240,10 @@ pub mod msgpack {
     pub const TESTNET_LOCAL_STATE_DELTA_TX: &str =
         include_str!("../msgpack/testnet_local_state_delta_tx.json");
 }
+
+/// Post-quantum (Falcon-1024) transaction vectors from the js-algorand-sdk test suite.
+pub mod pq {
+    pub const PAYMENT: &str = include_str!("../pq/payment.json");
+    pub const DELEGATED_PAYMENT: &str = include_str!("../pq/delegated_payment.json");
+    pub const MNEMONIC: &str = include_str!("../pq/mnemonic.json");
+}

@@ -15,6 +15,12 @@ pub const EMPTY_SIGNATURE: [u8; ALGORAND_SIGNATURE_BYTE_LENGTH] =
 // LogicSig domain separators
 pub const PROGRAM_DOMAIN_SEPARATOR: &str = "Program";
 pub const MULTISIG_PROGRAM_DOMAIN_SEPARATOR: &str = "MsigProgram";
+pub const PQ_PROGRAM_DOMAIN_SEPARATOR: &str = "PQProgram";
+
+// Post-quantum schemes and domain separators
+pub const PQ_SCHEME_FALCON1024: [u8; 2] = *b"f1";
+pub const PQ_ADDRESS_DOMAIN_SEPARATOR: &str = "PQA";
+pub const PQ_KEY_DOMAIN_SEPARATOR: &str = "PQK";
 
 // Application program size constraints
 pub const MAX_EXTRA_PROGRAM_PAGES: u32 = 3;
