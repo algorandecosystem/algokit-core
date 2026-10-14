@@ -81,6 +81,12 @@ jobs:
           repo init -u https://android.googlesource.com/trusty/manifest -b main
           repo sync -j$(nproc)
 
+      # Only the hand-written rules.mk files (and the trimmed/patched
+      # getrandom) are checked in; upstream crate sources are pulled from
+      # crates.io here, pinned by version + sha256, with local patches applied.
+      - name: Fetch Vendored Crate Sources
+        run: trusty/fetch_vendor_crates.sh
+
       - name: Inject Vendored Crates & First-Party Libraries
         run: |
           for crate in cryptoxide base32 signature getrandom algorand_falcon; do

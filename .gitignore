@@ -21,6 +21,14 @@ build/
 *.iml
 local.properties
 
+# Trusty vendored crate sources, fetched by trusty/fetch_vendor_crates.sh.
+# Only the hand-written rules.mk files and the trimmed/patched getrandom
+# are checked in.
+/trusty/vendor/*/*
+!/trusty/vendor/*/rules.mk
+!/trusty/vendor/algorand_falcon/c/
+!/trusty/vendor/getrandom/**
+
 # Insta snapshot testing
 *.snap.new
 *.pending-snap
