@@ -80,6 +80,12 @@ jobs:
   swift_ci:
     uses: ./.github/workflows/swift_ci.yml
 
+  trusty_ci:
+    uses: ./.github/workflows/trusty_ci.yml
+
+  trusty_android_service_ci:
+    uses: ./.github/workflows/trusty_android_service_ci.yml
+
   android_ci:
     needs:
       - setup

@@ -1,10 +1,7 @@
 name: Build Trusty Android Service APK
 
 on:
-  push:
-    branches: [ "main", "trusty" ]
-  pull_request:
-    branches: [ "main" ]
+  workflow_call:
   workflow_dispatch:
 
 jobs:
