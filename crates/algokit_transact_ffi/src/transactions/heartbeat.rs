@@ -50,6 +50,9 @@ pub struct HeartbeatTransactionFields {
 
     /// Heartbeat key dilution.
     key_dilution: u64,
+
+    /// Request the challenge fee discount, which reduces the required fee by one min fee.
+    challenge_discount: Option<bool>,
 }
 
 impl From<algokit_transact::HeartbeatTransactionFields> for HeartbeatTransactionFields {
@@ -60,6 +63,7 @@ impl From<algokit_transact::HeartbeatTransactionFields> for HeartbeatTransaction
             seed: tx.seed,
             vote_id: tx.vote_id.to_vec(),
             key_dilution: tx.key_dilution,
+            challenge_discount: tx.challenge_discount,
         }
     }
 }
@@ -99,6 +103,7 @@ impl TryFrom<Transaction> for algokit_transact::HeartbeatTransactionFields {
             seed: data.seed,
             vote_id,
             key_dilution: data.key_dilution,
+            challenge_discount: data.challenge_discount,
         };
 
         Ok(transaction_fields)

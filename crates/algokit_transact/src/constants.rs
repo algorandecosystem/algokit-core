@@ -23,12 +23,14 @@ pub const PQ_ADDRESS_DOMAIN_SEPARATOR: &str = "PQA";
 pub const PQ_KEY_DOMAIN_SEPARATOR: &str = "PQK";
 
 // Application program size constraints
-pub const MAX_EXTRA_PROGRAM_PAGES: u32 = 3;
+pub const MAX_EXTRA_PROGRAM_PAGES: u32 = 7;
+pub const BASE_EXTRA_PROGRAM_PAGES: u32 = 3; // Pages past this are surcharged, not rejected
 pub const PROGRAM_PAGE_SIZE: usize = 2048; // In bytes
 
 // Application reference limits
 pub const MAX_APP_ARGS: usize = 16;
-pub const MAX_ARGS_SIZE: usize = 2048; // Maximum size in bytes of all args combined
+pub const MAX_ARGS_SIZE: usize = 16384; // Maximum size in bytes of all args combined
+pub const BASE_ARGS_SIZE: usize = 2048; // Bytes past this are surcharged, not rejected
 pub const MAX_OVERALL_REFERENCES: usize = 8;
 pub const MAX_ACCOUNT_REFERENCES: usize = 4;
 pub const MAX_APP_REFERENCES: usize = 8;
@@ -39,5 +41,17 @@ pub const MAX_ACCESS_REFERENCES: usize = 16;
 // Application state schema limits
 pub const MAX_GLOBAL_STATE_KEYS: u32 = 64;
 pub const MAX_LOCAL_STATE_KEYS: u32 = 16;
+
+// Transaction size limits. Bytes past each BASE_ value cost PER_BYTE_TXN_SURCHARGE.
+pub const MAX_TX_NOTE_BYTES: usize = 4096;
+pub const BASE_TX_NOTE_BYTES: usize = 1024;
+pub const MAX_LOGIC_SIG_SIZE: usize = 16000;
+pub const BASE_LOGIC_SIG_SIZE: usize = 1000;
+
+// Fees. Factors are fixed-point millionths of the min fee, so FEE_FACTOR_ONE is one min fee.
+pub const MIN_TX_FEE: u64 = 1000;
+pub const FEE_FACTOR_ONE: u64 = 1_000_000;
+pub const PER_BYTE_TXN_SURCHARGE: u64 = 100;
+pub const PQ_FALCON1024_FEE_FACTOR: u64 = 2_000_000;
 
 pub const MAX_SIMULATE_OPCODE_BUDGET: u64 = 320_000;
