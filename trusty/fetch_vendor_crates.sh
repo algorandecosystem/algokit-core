@@ -3,10 +3,10 @@
 #
 # Trusty builds Rust with make + rustc (no Cargo), so every crate not already
 # in AOSP's external/rust/android-crates-io must sit in the source tree next
-# to a hand-written rules.mk. Only those rules.mk files (plus `getrandom`,
-# which is heavily trimmed/patched) are checked in; the upstream sources are
-# fetched here instead, pinned by version + sha256 (the `cksum` crates.io
-# publishes in its index), with the few local patches applied below.
+# to a hand-written rules.mk. Only those rules.mk files are checked in; the
+# upstream sources are fetched here instead, pinned by version + sha256 (the
+# `cksum` crates.io publishes in its index), with the few local patches
+# applied below.
 #
 # Usage: trusty/fetch_vendor_crates.sh [vendor_dir]   (default: trusty/vendor)
 set -euo pipefail
@@ -20,6 +20,7 @@ CRATES=(
   "cryptoxide      0.4.4 382ce8820a5bb815055d3553a610e8cb542b2d767bbacea99038afda96cd760d cryptoxide"
   "signature       2.2.0 77549399552de45a898a580c1b41d445bf730df867cc44e6c0233bbc4b8329de signature"
   "algorand-falcon 0.1.0 aef694c31f7f8e5805adaf125599ab4cec16765c360dc8e3703e1887528aaeea algorand_falcon"
+  "getrandom       0.4.1 139ef39800118c7683f2fd3c98c1b23c09ae076556b435f8e9064ae108aaeeec getrandom"
 )
 
 # Files copied from each extracted crate (everything else -- Cargo.toml,
@@ -32,6 +33,13 @@ files_for() {
       echo LICENSE src csrc/check_sizes.c falcon/README.txt \
         falcon/{codec,common,deterministic1024,falcon,fft,fpr,keygen,rng,shake,sign,vrfy}.c \
         falcon/{config,deterministic,falcon,fpr,inner}.h
+      ;;
+    getrandom)
+      # Only what `--cfg getrandom_backend="custom"` reaches (see its
+      # rules.mk). The per-OS backends, `sys_rng` and `std` impls are left
+      # out; the references to them in these files are all behind cfgs this
+      # build never sets, so they're inert.
+      echo src/{lib,backends,error,util}.rs src/backends/custom.rs
       ;;
     *) echo src ;;
   esac
@@ -75,6 +83,20 @@ apply_patches() {
 // copy uses the always-valid, semantically identical plain \`extern \"C\"\`
 // form -- same story as \`trusty/vendor/getrandom\`.
 extern \"C\" {"
+      ;;
+    getrandom)
+      # Upstream's README isn't vendored, so drop its doc include.
+      patch_once "${dir}/src/lib.rs" '#![doc = include_str!("../README.md")]' \
+        "// Upstream's \`#![doc = include_str!(\"../README.md\")]\` dropped: README not vendored."
+      # Edition-2024 syntax that Trusty's bundled rustc rejects -- even
+      # inside cfg'd-out code, since parsing happens before cfg stripping.
+      # This one is under `#[cfg(getrandom_msan)]`, never set here.
+      patch_once "${dir}/src/lib.rs" 'unsafe extern "C" {' 'extern "C" {'
+      # The matching definition lives in trusty/app/seed_vault_ta/trusty_rng.rs.
+      patch_once "${dir}/src/backends/custom.rs" 'unsafe extern "Rust" {' \
+        "// TRUSTY VENDOR PATCH: upstream's \`unsafe extern \"Rust\"\` is edition-2024
+    // syntax that Trusty's bundled rustc rejects; plain \`extern\` is identical.
+    extern \"Rust\" {"
       ;;
   esac
 }

@@ -2,9 +2,10 @@
 # (https://crates.io/crates/getrandom), which is not vendored in AOSP's
 # `external/rust/android-crates-io` as of this writing (unlike `zeroize`,
 # `async-trait`, `cfg-if`, etc., which are and get referenced directly from
-# there in seed_vault_ta/rules.mk). `src/` here is a deliberately trimmed
-# subset of the real crate -- see `src/lib.rs` for exactly what's included
-# and why.
+# there in seed_vault_ta/rules.mk). `src/` is not checked in: it's fetched by
+# `trusty/fetch_vendor_crates.sh` as a trimmed subset of the real crate (only
+# the files the `custom` backend reaches) with two one-line patches -- see
+# that script for exactly what's included and why.
 #
 # This crate is built with `--cfg getrandom_backend="custom"`, which selects
 # `src/backends/custom.rs`: instead of one of getrandom's own (unavailable
@@ -31,11 +32,10 @@ MODULE_ADD_IMPLICIT_DEPS := false
 # entirely independent of this workspace's `rust-toolchain`) rejects it
 # outright: "edition 2024 is unstable and only available with
 # -Z unstable-options" -- i.e. it predates edition 2024's stabilization
-# (rustc 1.85). `src/` here only uses two edition-2024-flavored syntax
-# forms (`unsafe extern { .. }` blocks), both hand-reverted to their
-# always-valid plain `extern { .. }` equivalents (semantically identical --
-# see the comments at each site), so 2021 compiles identically with no
-# behavior change and works on much older compilers.
+# (rustc 1.85). The only edition-2024 syntax reached is the
+# `unsafe extern "Rust" { .. }` block in `src/backends/custom.rs`, which
+# `fetch_vendor_crates.sh` rewrites to the semantically identical plain
+# `extern "Rust" { .. }`, so 2021 compiles identically with no behavior change.
 MODULE_RUST_EDITION := 2021
 
 MODULE_RUSTFLAGS += \
