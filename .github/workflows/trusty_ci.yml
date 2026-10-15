@@ -1,8 +1,6 @@
 name: Build Trusty Applet
 
 on:
-  push:
-    branches: [ "trusty-vendor" ]
   workflow_call:
   workflow_dispatch:
 
