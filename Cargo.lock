@@ -3068,6 +3068,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "seed_vault_ffi"
+version = "0.1.0"
+dependencies = [
+ "libc",
+ "seed_vault",
+ "uniffi",
+ "zeroize",
+]
+
+[[package]]
 name = "semver"
 version = "1.0.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"

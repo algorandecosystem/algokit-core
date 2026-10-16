@@ -78,6 +78,7 @@ pub fn handle_request(store: &mut impl AccountStore, request: &[u8]) -> Vec<u8> 
             }
             Err(err) => protocol::encode_error_response(error_code_for(err)),
         },
+        Ok(Request::GetVersion) => protocol::encode_get_version_response(),
         Err(code) => protocol::encode_error_response(code),
     }
 }

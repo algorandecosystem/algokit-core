@@ -1,31 +1,20 @@
-package io.github.algorandecosystem.algokitcore.seedvault
-
-import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Base64
+import org.json.JSONObject
+import uniffi.seed_vault_ffi.KeyAlgorithm
 
 /**
- * Just enough of the algod v2 REST API to test `seed_vault_ta` signatures
- * end to end: fetch suggested params, build a self-payment, submit the
- * signed bytes, and wait for confirmation. No algosdk dependency -- the
- * one transaction shape needed here is hand-encoded as canonical msgpack
- * (keys sorted, zero values omitted), exactly what go-algorand expects.
+ * Just enough of the algod v2 REST API (and transaction encoding) to check
+ * `seed_vault_ta` signatures end to end, without an algosdk dependency.
  *
  * Falcon-1024 (`pqsig`) transactions are only accepted by a network whose
  * consensus enables `EnablePQSchemeFalcon1024`, and their fee must cover
  * go-algorand's extra Falcon contribution: 3x the min fee in total.
  */
-class AlgodClient(baseUrl: String, private val token: String) {
+class AlgodTestClient(baseUrl: String, private val token: String) {
     private val baseUrl = baseUrl.trim().trimEnd('/')
-
-    data class SuggestedParams(
-        val minFee: Long,
-        val firstValid: Long,
-        val genesisId: String,
-        val genesisHash: ByteArray,
-    )
 
     fun suggestedParams(): SuggestedParams {
         val json = JSONObject(String(request("GET", "/v2/transactions/params"), Charsets.UTF_8))
@@ -50,10 +39,10 @@ class AlgodClient(baseUrl: String, private val token: String) {
             val round = json.optLong("confirmed-round", 0)
             if (round > 0) return round
             val poolError = json.optString("pool-error", "")
-            if (poolError.isNotEmpty()) throw AlgodException("rejected from pool: $poolError")
+            if (poolError.isNotEmpty()) error("rejected from pool: $poolError")
             Thread.sleep(1000)
         }
-        throw AlgodException("not confirmed after $maxPolls polls")
+        error("not confirmed after $maxPolls polls")
     }
 
     private fun request(method: String, path: String, body: ByteArray? = null): ByteArray {
@@ -71,33 +60,46 @@ class AlgodClient(baseUrl: String, private val token: String) {
             val code = conn.responseCode
             val stream = if (code in 200..299) conn.inputStream else conn.errorStream
             val bytes = stream?.use { it.readBytes() } ?: ByteArray(0)
-            if (code !in 200..299) {
-                val message = runCatching { JSONObject(String(bytes, Charsets.UTF_8)).getString("message") }
-                    .getOrDefault(String(bytes, Charsets.UTF_8))
-                throw AlgodException("$method $path -> HTTP $code: $message")
-            }
+            check(code in 200..299) { "$method $path -> HTTP $code: ${String(bytes, Charsets.UTF_8)}" }
             return bytes
         } finally {
             conn.disconnect()
         }
     }
 
-    companion object {
-        /** Public Algorand TestNet algod endpoint (AlgoNode); no API token needed. */
-        const val NODE_TESTNET_BASE_URL: String = "https://testnet-api.algonode.cloud"
+    data class SuggestedParams(
+        val minFee: Long,
+        val firstValid: Long,
+        val genesisId: String,
+        val genesisHash: ByteArray,
+    )
 
+    companion object {
         /** Falcon-1024 senders pay the min fee plus a 2x min fee PQ surcharge. */
         fun feeFor(algorithm: KeyAlgorithm, minFee: Long): Long =
-            if (algorithm == KeyAlgorithm.FALCON_1024) minFee * 3 else minFee
+            if (algorithm == KeyAlgorithm.FALCON1024) minFee * 3 else minFee
+
+        /** Offline params for tests that only sign (never submit). */
+        val OFFLINE_PARAMS = SuggestedParams(
+            minFee = 1000,
+            firstValid = 1000,
+            genesisId = "testnet-v1.0",
+            genesisHash = ByteArray(32),
+        )
 
         /**
-         * A 0-ALGO payment from [sender] to itself, valid for 1000 rounds,
-         * as canonical msgpack *without* the `"TX"` prefix (what
-         * `SIGN_TRANSACTION` expects). [note] keeps repeated test
+         * A 0-ALGO payment from [sender] to [receiver] (default: itself), valid
+         * for 1000 rounds, as canonical msgpack *without* the `"TX"` prefix
+         * (what `SIGN_TRANSACTION` expects). [note] keeps repeated test
          * transactions from colliding on the same txid.
          */
-        fun selfPayment(sender: String, params: SuggestedParams, fee: Long, note: ByteArray): ByteArray {
-            val snd = decodeAddress(sender)
+        fun payment(
+            sender: String,
+            params: SuggestedParams,
+            fee: Long,
+            note: ByteArray,
+            receiver: String = sender,
+        ): ByteArray {
             val out = MsgpackWriter()
             // Keys in sorted order; "amt" (0) is omitted like go-algorand does.
             out.mapHeader(9)
@@ -107,21 +109,20 @@ class AlgodClient(baseUrl: String, private val token: String) {
             out.str("gh"); out.bin(params.genesisHash)
             out.str("lv"); out.uint(params.firstValid + 1000)
             out.str("note"); out.bin(note)
-            out.str("rcv"); out.bin(snd)
-            out.str("snd"); out.bin(snd)
+            out.str("rcv"); out.bin(decodeAddress(receiver))
+            out.str("snd"); out.bin(decodeAddress(sender))
             out.str("type"); out.str("pay")
             return out.toByteArray()
         }
 
-        /** The 32-byte public key/address bytes of a 58-char Algorand address (checksum not verified). */
-        fun decodeAddress(address: String): ByteArray {
+        /** The 32 key bytes of a 58-char Algorand address (checksum not verified). */
+        private fun decodeAddress(address: String): ByteArray {
             val alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
-            val trimmed = address.trim()
-            require(trimmed.length == 58) { "Algorand address must be 58 characters" }
+            require(address.length == 58) { "Algorand address must be 58 characters" }
             val out = ByteArrayOutputStream()
             var buffer = 0
             var bits = 0
-            for (c in trimmed) {
+            for (c in address) {
                 val v = alphabet.indexOf(c)
                 require(v >= 0) { "invalid base32 character '$c' in address" }
                 buffer = (buffer shl 5) or v
@@ -135,8 +136,6 @@ class AlgodClient(baseUrl: String, private val token: String) {
         }
     }
 }
-
-class AlgodException(message: String) : Exception(message)
 
 /** Minimal canonical msgpack writer (smallest encodings, as go-algorand's `msgp`). */
 private class MsgpackWriter {

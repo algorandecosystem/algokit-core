@@ -18,6 +18,7 @@ members = [
   "crates/algokit_crypto",
   "crates/algokit_crypto_ffi",
   "crates/seed_vault",
+  "crates/seed_vault_ffi",
   "crates/algokit_composer",
   "crates/algokit_composer_ffi",
 ]

@@ -24,6 +24,24 @@ pub fn build(package: &Package) -> Result<()> {
     let env = HashMap::from([("RUSTFLAGS".to_string(), rustflags.to_string())]);
     run(&cargo_build_cmd, None, Some(env))?;
 
+    // `cargo ndk -o` copies every `.so` in the shared `target/<triple>/release`
+    // dir, including other FFI crates' libraries left over from earlier
+    // builds. Keep only this package's own library.
+    let own_lib = format!("lib{}.so", package.crate_name());
+    for abi_dir in std::fs::read_dir(&so_file_output_dir)? {
+        let abi_dir = abi_dir?.path();
+        if !abi_dir.is_dir() {
+            continue;
+        }
+        for lib in std::fs::read_dir(&abi_dir)? {
+            let lib = lib?.path();
+            if lib.file_name().is_some_and(|name| name != own_lib.as_str()) {
+                println!("Removing unrelated library {}", lib.display());
+                std::fs::remove_file(&lib)?;
+            }
+        }
+    }
+
     // Build for host platform (for running unit tests)
     println!("Building for host platform to enable unit tests...");
     let host_build_cmd = format!(

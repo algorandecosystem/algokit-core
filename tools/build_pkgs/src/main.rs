@@ -59,6 +59,9 @@ enum Package {
     Crypto,
     #[value(alias = "algokit_composer")]
     Composer,
+    /// Android-only client for the `seed_vault_ta` Trusty applet.
+    #[value(alias = "algokit_seed_vault", alias = "seed_vault")]
+    SeedVault,
 }
 
 impl Display for Package {
@@ -67,6 +70,7 @@ impl Display for Package {
             Package::Transact => f.write_str("algokit_transact"),
             Package::Crypto => f.write_str("algokit_crypto"),
             Package::Composer => f.write_str("algokit_composer"),
+            Package::SeedVault => f.write_str("algokit_seed_vault"),
         }
     }
 }
@@ -77,6 +81,7 @@ impl Package {
             Self::Transact => "algokit_transact_ffi",
             Self::Crypto => "algokit_crypto_ffi",
             Self::Composer => "algokit_composer_ffi",
+            Self::SeedVault => "seed_vault_ffi",
         }
         .to_string()
     }
@@ -91,6 +96,7 @@ impl Package {
             Self::Transact => "AlgoKitTransact",
             Self::Crypto => "AlgoKitCrypto",
             Self::Composer => "AlgoKitComposer",
+            Self::SeedVault => "AlgoKitSeedVault",
         }
     }
 

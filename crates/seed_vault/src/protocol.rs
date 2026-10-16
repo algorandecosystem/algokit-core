@@ -13,6 +13,17 @@
 //! | `0x04` = `IMPORT_ACCOUNT`  | `[algorithm: u8][address_index: u8][mnemonic_len: u8][mnemonic_len bytes of ASCII]` |
 //! | `0x05` = `DELETE_ACCOUNT`  | `[addr_len: u8][addr_len bytes of ASCII address]`                   |
 //! | `0x06` = `SIGN_TRANSACTION`| `[address_index: u8][addr_len: u8][addr_len bytes of ASCII address][txn_len: u16 LE][txn_len bytes of msgpack txn]` |
+//! | `0x07` = `GET_VERSION`     | (none)                                                              |
+//!
+//! ## Versioning
+//!
+//! `GET_VERSION` answers `[major: u16 LE][minor: u16 LE]`
+//! ([`PROTOCOL_VERSION_MAJOR`]/[`PROTOCOL_VERSION_MINOR`]). Bump the major
+//! for any change that breaks an existing client (a payload layout changes,
+//! an opcode/error code is removed or renumbered); bump the minor for
+//! additive changes (a new opcode or error code). A client is compatible
+//! with a TA whose major equals its own. A TA from before `GET_VERSION`
+//! existed answers it with [`ErrorCode::MalformedRequest`].
 //!
 //! `REVEAL_MNEMONIC` takes the same Algorand address a caller already got
 //! back from `CREATE_ACCOUNT`/`LIST_ACCOUNTS` -- not an internal index. This
@@ -87,6 +98,12 @@ const OP_REVEAL_MNEMONIC: u8 = 0x03;
 const OP_IMPORT_ACCOUNT: u8 = 0x04;
 const OP_DELETE_ACCOUNT: u8 = 0x05;
 const OP_SIGN_TRANSACTION: u8 = 0x06;
+const OP_GET_VERSION: u8 = 0x07;
+
+/// Wire protocol major version (see the module docs on versioning).
+pub const PROTOCOL_VERSION_MAJOR: u16 = 1;
+/// Wire protocol minor version (see the module docs on versioning).
+pub const PROTOCOL_VERSION_MINOR: u16 = 0;
 
 /// Largest response the TA will build. The TA's port allows 4096-byte
 /// messages; this leaves headroom under that for the Linux `trusty-ipc`
@@ -155,6 +172,8 @@ pub enum Request {
         address: String,
         txn: Vec<u8>,
     },
+    /// Asks for the TA's wire protocol version.
+    GetVersion,
 }
 
 /// Machine-readable error codes carried in an error response.
@@ -221,6 +240,7 @@ pub fn decode_request(bytes: &[u8]) -> Result<Request, ErrorCode> {
                 address_index: *address_index,
             })
         }
+        [OP_GET_VERSION] => Ok(Request::GetVersion),
         [OP_LIST_ACCOUNTS] => Ok(Request::ListAccounts { start: 0 }),
         [OP_LIST_ACCOUNTS, a, b, c, d] => Ok(Request::ListAccounts {
             start: u32::from_le_bytes([*a, *b, *c, *d]),
@@ -322,6 +342,7 @@ pub fn encode_request(request: Request) -> Vec<u8> {
             let _ = encode_u16_length_prefixed(&mut out, &txn);
             out
         }
+        Request::GetVersion => alloc::vec![OP_GET_VERSION],
     }
 }
 
@@ -425,6 +446,15 @@ pub fn encode_sign_transaction_response(algorithm: KeyAlgorithm, prefix: &[u8]) 
         Ok(()) => out,
         Err(code) => encode_error_response(code),
     }
+}
+
+/// Encodes a successful `GET_VERSION` response carrying this build's
+/// [`PROTOCOL_VERSION_MAJOR`]/[`PROTOCOL_VERSION_MINOR`].
+pub fn encode_get_version_response() -> Vec<u8> {
+    let mut out = alloc::vec![STATUS_OK];
+    out.extend_from_slice(&PROTOCOL_VERSION_MAJOR.to_le_bytes());
+    out.extend_from_slice(&PROTOCOL_VERSION_MINOR.to_le_bytes());
+    out
 }
 
 /// Encodes an error response.
@@ -566,6 +596,14 @@ pub fn decode_sign_transaction_response(
     Ok((algorithm, prefix.to_vec()))
 }
 
+/// Decodes a successful `GET_VERSION` response into `(major, minor)`.
+pub fn decode_get_version_response(bytes: &[u8]) -> Result<(u16, u16), DecodeError> {
+    match decode_ok_payload(bytes)? {
+        [a, b, c, d] => Ok((u16::from_le_bytes([*a, *b]), u16::from_le_bytes([*c, *d]))),
+        _ => Err(DecodeError::Truncated),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -595,6 +633,7 @@ mod tests {
                 address: "C".repeat(58),
                 txn: alloc::vec![0x81; 3000],
             },
+            Request::GetVersion,
         ] {
             let bytes = encode_request(req.clone());
             assert_eq!(decode_request(&bytes), Ok(req));
@@ -670,6 +709,22 @@ mod tests {
         assert_eq!(
             decode_sign_transaction_response(&[STATUS_OK, 0x02, 5, 0, 1]),
             Err(DecodeError::Truncated)
+        );
+    }
+
+    #[test]
+    fn get_version_response_round_trips() {
+        assert_eq!(
+            decode_get_version_response(&encode_get_version_response()),
+            Ok((PROTOCOL_VERSION_MAJOR, PROTOCOL_VERSION_MINOR))
+        );
+        assert_eq!(
+            decode_get_version_response(&[STATUS_OK, 1, 0]),
+            Err(DecodeError::Truncated)
+        );
+        assert_eq!(
+            decode_get_version_response(&encode_error_response(ErrorCode::MalformedRequest)),
+            Err(DecodeError::ErrorResponse(ErrorCode::MalformedRequest))
         );
     }
 
