@@ -143,8 +143,66 @@ class SeedVaultEndToEndTest {
             assertEquals(algorithm, signed.algorithm)
             // The library appends the unsigned txn after the signature prefix.
             assertArrayEquals(txn, signed.signedTxn.copyOfRange(signed.signedTxn.size - txn.size, signed.signedTxn.size))
+            // The bare signature is the one embedded in the SignedTxn.
+            if (algorithm == KeyAlgorithm.ALGO25_ED25519) assertEquals(64, signed.signature.size)
+            assertTrue(signed.signedTxn.indexOf(signed.signature) >= 0)
         }
     }
+
+    @Test
+    fun signsArbitraryDataWithHumanAndAutosignKeys() {
+        val challenge = "liquid-auth challenge ${System.nanoTime()}".toByteArray()
+
+        val ed = create(KeyAlgorithm.ALGO25_ED25519, humanSignIndex())
+        val edSig = vault.signArbitraryData(ed.address, humanSignIndex(), challenge)
+        assertEquals(KeyAlgorithm.ALGO25_ED25519, edSig.algorithm)
+        assertEquals(64, edSig.signature.size)
+        // Ed25519 is deterministic.
+        assertArrayEquals(edSig.signature, vault.signArbitraryData(ed.address, humanSignIndex(), challenge).signature)
+        // Ed25519 seeds have no autosign key.
+        expectAppletError(AppletErrorCode.UNKNOWN_ADDRESS_INDEX) {
+            vault.signArbitraryData(ed.address, autosignIndex(), challenge)
+        }
+
+        val human = create(KeyAlgorithm.FALCON1024, humanSignIndex())
+        val autosign = vault.listAccounts()
+            .single { it.account.addressIndex == autosignIndex().toUInt() && it.publicKey.contentEquals(publicKeyOf(human)) }
+            .account
+        val humanSig = vault.signArbitraryData(human.address, humanSignIndex(), challenge)
+        val autosignSig = vault.signArbitraryData(autosign.address, autosignIndex(), challenge)
+        assertEquals(KeyAlgorithm.FALCON1024, humanSig.algorithm)
+        // Both accounts share one Falcon key and signing is deterministic.
+        assertArrayEquals(humanSig.signature, autosignSig.signature)
+        // The index must name the address's own key.
+        expectAppletError(AppletErrorCode.UNKNOWN_ADDRESS_INDEX) {
+            vault.signArbitraryData(autosign.address, humanSignIndex(), challenge)
+        }
+    }
+
+    @Test
+    fun signArbitraryDataRefusesAlgorandDomainPrefixes() {
+        val account = create(KeyAlgorithm.ALGO25_ED25519, humanSignIndex())
+        val txn = AlgodTestClient.payment(account.address, AlgodTestClient.OFFLINE_PARAMS, 1000, ByteArray(0))
+        for (data in listOf(
+            "TX".toByteArray() + txn,
+            "TG".toByteArray(),
+            "Program".toByteArray(),
+            "ProgData".toByteArray(),
+            "MXhello".toByteArray(),
+        )) {
+            expectAppletError(AppletErrorCode.RESERVED_DOMAIN_PREFIX) {
+                vault.signArbitraryData(account.address, humanSignIndex(), data)
+            }
+        }
+        // Lookalikes that aren't a reserved prefix are fine.
+        assertEquals(64, vault.signArbitraryData(account.address, humanSignIndex(), "mx tx".toByteArray()).signature.size)
+    }
+
+    private fun publicKeyOf(account: Account): ByteArray =
+        vault.listAccounts().single { it.account.address == account.address }.publicKey
+
+    private fun ByteArray.indexOf(needle: ByteArray): Int =
+        (0..size - needle.size).firstOrNull { i -> needle.indices.all { this[i + it] == needle[it] } } ?: -1
 
     @Test
     fun refusesToSignForAnotherSender() {

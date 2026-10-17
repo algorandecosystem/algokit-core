@@ -215,7 +215,28 @@ pub enum StoreError {
     UnknownKeyIndex,
     /// `sign_transaction`'s transaction isn't sent by the requested address.
     SenderMismatch,
+    /// `sign_arbitrary_data` was given data starting with one of Algorand's
+    /// signing-domain prefixes ([`RESERVED_DOMAIN_PREFIXES`]).
+    ReservedDomainPrefix,
 }
+
+/// Algorand signing-domain prefixes (go-algorand `protocol.HashID`) that
+/// [`sign_arbitrary_data`] refuses, so a raw arbitrary-data signature can never be
+/// mistaken for one of these more specific signatures:
+///
+/// - `TX`: a transaction (would bypass [`sign_transaction`]'s sender check).
+/// - `TG`: a transaction group.
+/// - `Program`: delegating a logic sig to the account.
+/// - `ProgData`: data a smart contract checks with `ed25519verify`.
+/// - `MX`: an algosdk `signBytes` message, as checked by `verifyBytes`.
+///   Off-chain only, but blocked so that a party choosing the bytes to sign
+///   (e.g. a server-chosen challenge) can't obtain a signature that a
+///   `verifyBytes` service would accept as the account signing a message.
+///
+/// ARC-60 (`SHA256(data) || ...`) and FIDO2/Liquid Auth challenges sign
+/// hash/random bytes without a prefix, so they're unaffected except for the
+/// rare (~3 in 65,536) hash that happens to start with `TX`, `TG` or `MX`.
+pub const RESERVED_DOMAIN_PREFIXES: &[&[u8]] = &[b"TX", b"TG", b"Program", b"ProgData", b"MX"];
 
 /// Persistence abstraction for seed vault accounts.
 ///
@@ -449,14 +470,83 @@ pub fn sign_transaction(
             return Err(StoreError::UnknownKeyIndex);
         }
         let record = &records[pos].1;
+        let message = crate::signed_txn::bytes_to_sign(txn);
+        let prefix = match raw_sign(record, key_index, &message)? {
+            RawSignature::Ed25519(signature) => crate::signed_txn::ed25519_prefix(&signature),
+            RawSignature::Falcon1024 {
+                public_key,
+                salt,
+                signature,
+            } => crate::signed_txn::falcon1024_prefix(&public_key, salt, &signature),
+        };
         Ok(SignedTxnPrefix {
             algorithm: record.algorithm,
             address_index,
-            prefix: sign_with_record(record, key_index, txn)?,
+            prefix,
         })
     });
     wipe(&mut records);
     result
+}
+
+/// Signs arbitrary `data` *as is* (no domain prefix added) with the account
+/// whose address is `address`, for off-chain uses such as FIDO2/Liquid Auth
+/// challenges or MPP messages. Works for every key a seed has
+/// ([`HUMAN_SIGN_INDEX`] and, for Falcon-1024, [`AUTOSIGN_INDEX`]);
+/// `address_index` must name `address`'s key, else
+/// [`StoreError::UnknownKeyIndex`], exactly as in [`sign_transaction`].
+///
+/// - **Ed25519:** the raw 64-byte signature over `data`.
+/// - **Falcon-1024:** the compressed deterministic signature over `data`
+///   (go-algorand `FalconSigner.SignBytes`). Both of a seed's Falcon
+///   accounts share one key, so their signatures are identical.
+///
+/// `data` starting with a [`RESERVED_DOMAIN_PREFIXES`] entry is refused
+/// with [`StoreError::ReservedDomainPrefix`] -- otherwise `sign_arbitrary_data("TX"
+/// || txn)` would be a transaction signature that skipped
+/// [`sign_transaction`]'s checks.
+pub fn sign_arbitrary_data(
+    store: &mut impl AccountStore,
+    address: &str,
+    address_index: u32,
+    data: &[u8],
+) -> Result<SignedArbitraryData, StoreError> {
+    if RESERVED_DOMAIN_PREFIXES
+        .iter()
+        .any(|prefix| data.starts_with(prefix))
+    {
+        return Err(StoreError::ReservedDomainPrefix);
+    }
+    let mut records = store.all_indexed_records()?;
+    let result = find_record_by_address(&records, address).and_then(|(pos, key_index)| {
+        if key_index != address_index {
+            return Err(StoreError::UnknownKeyIndex);
+        }
+        let record = &records[pos].1;
+        let signature = match raw_sign(record, key_index, data)? {
+            RawSignature::Ed25519(signature) => signature.to_vec(),
+            RawSignature::Falcon1024 { signature, .. } => signature,
+        };
+        Ok(SignedArbitraryData {
+            algorithm: record.algorithm,
+            address_index,
+            signature,
+        })
+    });
+    wipe(&mut records);
+    result
+}
+
+/// Result of [`sign_arbitrary_data`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SignedArbitraryData {
+    /// Which kind of signature `signature` is.
+    pub algorithm: KeyAlgorithm,
+    /// Which of the seed's keys signed.
+    pub address_index: u32,
+    /// 64 bytes for Ed25519; a compressed Falcon-1024 signature (variable
+    /// length, at most `falcon1024::SIGNATURE_MAX_SIZE`) for Falcon-1024.
+    pub signature: Vec<u8>,
 }
 
 /// Result of [`sign_transaction`]. The signed transaction is
@@ -479,25 +569,36 @@ impl SignedTxnPrefix {
     }
 }
 
-/// The [`SignedTxnPrefix::prefix`] for `txn` signed by key `key_index` of
-/// `record`.
-fn sign_with_record(
+/// A signature over exactly the bytes [`raw_sign`] was given.
+enum RawSignature {
+    Ed25519([u8; 64]),
+    Falcon1024 {
+        /// Needed to build a `SignedTxn`; a Falcon signature doesn't embed it.
+        public_key: Vec<u8>,
+        /// The PQ address salt of the key that signed.
+        salt: u8,
+        /// Compressed deterministic signature.
+        signature: Vec<u8>,
+    },
+}
+
+/// Signs `message` exactly as given (callers add any domain prefix) with
+/// key `key_index` of `record`, and verifies the result before returning it.
+fn raw_sign(
     record: &AccountRecord,
     key_index: u32,
-    txn: &[u8],
-) -> Result<Vec<u8>, StoreError> {
-    use crate::signed_txn;
+    message: &[u8],
+) -> Result<RawSignature, StoreError> {
     use algokit_crypto::falcon1024::{PrivateKey, PublicKey};
 
-    let message = signed_txn::bytes_to_sign(txn);
     match record.algorithm {
         KeyAlgorithm::Algo25Ed25519 => {
             let keypair = ed25519_keypair(record)?;
-            let signature = keypair.sign(&message);
-            if !algokit_crypto::ed25519::verify(&message, &keypair.verifying_key(), &signature) {
+            let signature = keypair.sign(message);
+            if !algokit_crypto::ed25519::verify(message, &keypair.verifying_key(), &signature) {
                 return Err(StoreError::SigningFailed);
             }
-            Ok(signed_txn::ed25519_prefix(&signature))
+            Ok(RawSignature::Ed25519(signature))
         }
         KeyAlgorithm::Falcon1024 => {
             let km = &record.key_material;
@@ -516,19 +617,19 @@ fn sign_with_record(
             };
             let (salt, _) = falcon_salt_and_address(record, &public_key.0, key_index)?;
             let signature = private_key
-                .sign_compressed(&message)
+                .sign_compressed(message)
                 .map_err(|_| StoreError::SigningFailed)?;
             // `private_key` zeroizes on drop. Verifying here catches a
             // miscompiled/emulated-FP Falcon build before a bad signature
             // ever leaves the TA.
             public_key
-                .verify(&signature, &message)
+                .verify(&signature, message)
                 .map_err(|_| StoreError::SigningFailed)?;
-            Ok(signed_txn::falcon1024_prefix(
-                &public_key.0,
+            Ok(RawSignature::Falcon1024 {
+                public_key: public_key.0.to_vec(),
                 salt,
-                &signature.0,
-            ))
+                signature: signature.0.to_vec(),
+            })
         }
     }
 }

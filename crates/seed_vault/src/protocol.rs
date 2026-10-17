@@ -14,6 +14,7 @@
 //! | `0x05` = `DELETE_ACCOUNT`  | `[addr_len: u8][addr_len bytes of ASCII address]`                   |
 //! | `0x06` = `SIGN_TRANSACTION`| `[address_index: u8][addr_len: u8][addr_len bytes of ASCII address][txn_len: u16 LE][txn_len bytes of msgpack txn]` |
 //! | `0x07` = `GET_VERSION`     | (none)                                                              |
+//! | `0x08` = `SIGN_ARBITRARY_DATA`      | `[address_index: u8][addr_len: u8][addr_len bytes of ASCII address][data_len: u16 LE][data_len bytes]` (since 1.1) |
 //!
 //! ## Versioning
 //!
@@ -80,6 +81,16 @@
 //! driver's per-message buffer), and a Falcon-1024 prefix alone (public key
 //! + signature) is up to ~3.3 KB.
 //!
+//! `SIGN_ARBITRARY_DATA` signs `data` exactly as given (no prefix added) with any of
+//! a seed's keys -- human-sign or autosign -- under the same
+//! `address_index` rule as `SIGN_TRANSACTION`. `data` starting with an
+//! Algorand signing-domain prefix (`TX`, `TG`, `Program`, `ProgData`, `MX`; see
+//! [`crate::store::RESERVED_DOMAIN_PREFIXES`]) fails with
+//! [`ErrorCode::ReservedDomainPrefix`]. Success payload:
+//! `[algorithm: u8][sig_len: u16 LE][sig_len bytes of raw signature]` (64
+//! bytes for Ed25519, a compressed Falcon-1024 signature otherwise). A 1.0
+//! TA answers `SIGN_ARBITRARY_DATA` with [`ErrorCode::MalformedRequest`].
+//!
 //! `CREATE_ACCOUNT`/`LIST_ACCOUNTS` never carry private key material --
 //! only addresses. `REVEAL_MNEMONIC`/`IMPORT_ACCOUNT` are the two
 //! deliberate exceptions (a mnemonic leaves the secure world for one,
@@ -99,11 +110,15 @@ const OP_IMPORT_ACCOUNT: u8 = 0x04;
 const OP_DELETE_ACCOUNT: u8 = 0x05;
 const OP_SIGN_TRANSACTION: u8 = 0x06;
 const OP_GET_VERSION: u8 = 0x07;
+const OP_SIGN_ARBITRARY_DATA: u8 = 0x08;
 
 /// Wire protocol major version (see the module docs on versioning).
 pub const PROTOCOL_VERSION_MAJOR: u16 = 1;
 /// Wire protocol minor version (see the module docs on versioning).
-pub const PROTOCOL_VERSION_MINOR: u16 = 0;
+///
+/// - 1.0: initial versioned protocol.
+/// - 1.1: `SIGN_ARBITRARY_DATA`, [`ErrorCode::ReservedDomainPrefix`].
+pub const PROTOCOL_VERSION_MINOR: u16 = 1;
 
 /// Largest response the TA will build. The TA's port allows 4096-byte
 /// messages; this leaves headroom under that for the Linux `trusty-ipc`
@@ -174,6 +189,13 @@ pub enum Request {
     },
     /// Asks for the TA's wire protocol version.
     GetVersion,
+    /// Signs arbitrary `data` with the account for `address` (see
+    /// `store::sign_arbitrary_data`).
+    SignArbitraryData {
+        address_index: u8,
+        address: String,
+        data: Vec<u8>,
+    },
 }
 
 /// Machine-readable error codes carried in an error response.
@@ -212,6 +234,9 @@ pub enum ErrorCode {
     /// `SIGN_TRANSACTION`'s transaction isn't sent by (`snd` isn't) the
     /// address it asked to sign with.
     SenderMismatch = 0x0B,
+    /// `SIGN_ARBITRARY_DATA`'s data starts with an Algorand signing-domain prefix
+    /// (`TX`, `TG`, `Program`, `ProgData`, `MX`). Since 1.1.
+    ReservedDomainPrefix = 0x0C,
 }
 
 /// Errors decoding a *response*. Only used by clients/tests, since a real
@@ -252,20 +277,19 @@ pub fn decode_request(bytes: &[u8]) -> Result<Request, ErrorCode> {
             address: decode_address_payload(rest)?,
         }),
         [OP_SIGN_TRANSACTION, address_index, rest @ ..] => {
-            let (addr_bytes, rest) =
-                decode_length_prefixed(rest).map_err(|_| ErrorCode::MalformedRequest)?;
-            let address = core::str::from_utf8(addr_bytes)
-                .map_err(|_| ErrorCode::MalformedRequest)?
-                .into();
-            let (txn, rest) =
-                decode_u16_length_prefixed(rest).ok_or(ErrorCode::MalformedRequest)?;
-            if !rest.is_empty() {
-                return Err(ErrorCode::MalformedRequest);
-            }
+            let (address, txn) = decode_address_and_payload(rest)?;
             Ok(Request::SignTransaction {
                 address_index: *address_index,
                 address,
-                txn: txn.to_vec(),
+                txn,
+            })
+        }
+        [OP_SIGN_ARBITRARY_DATA, address_index, rest @ ..] => {
+            let (address, data) = decode_address_and_payload(rest)?;
+            Ok(Request::SignArbitraryData {
+                address_index: *address_index,
+                address,
+                data,
             })
         }
         [OP_IMPORT_ACCOUNT, tag, address_index, rest @ ..] => {
@@ -286,6 +310,21 @@ pub fn decode_request(bytes: &[u8]) -> Result<Request, ErrorCode> {
         }
         _ => Err(ErrorCode::MalformedRequest),
     }
+}
+
+/// `[addr_len: u8][addr bytes][len: u16 LE][len bytes]`, with nothing
+/// trailing (the signing requests' shape after the opcode and index).
+fn decode_address_and_payload(bytes: &[u8]) -> Result<(String, Vec<u8>), ErrorCode> {
+    let (addr_bytes, rest) =
+        decode_length_prefixed(bytes).map_err(|_| ErrorCode::MalformedRequest)?;
+    let address = core::str::from_utf8(addr_bytes)
+        .map_err(|_| ErrorCode::MalformedRequest)?
+        .into();
+    let (payload, rest) = decode_u16_length_prefixed(rest).ok_or(ErrorCode::MalformedRequest)?;
+    if !rest.is_empty() {
+        return Err(ErrorCode::MalformedRequest);
+    }
+    Ok((address, payload.to_vec()))
 }
 
 /// `[addr_len: u8][addr_len bytes of ASCII]`, with nothing trailing.
@@ -343,6 +382,16 @@ pub fn encode_request(request: Request) -> Vec<u8> {
             out
         }
         Request::GetVersion => alloc::vec![OP_GET_VERSION],
+        Request::SignArbitraryData {
+            address_index,
+            address,
+            data,
+        } => {
+            let mut out = alloc::vec![OP_SIGN_ARBITRARY_DATA, address_index];
+            let _ = encode_length_prefixed(&mut out, address.as_bytes());
+            let _ = encode_u16_length_prefixed(&mut out, &data);
+            out
+        }
     }
 }
 
@@ -448,6 +497,12 @@ pub fn encode_sign_transaction_response(algorithm: KeyAlgorithm, prefix: &[u8]) 
     }
 }
 
+/// Encodes a successful `SIGN_ARBITRARY_DATA` response. Same shape as
+/// `SIGN_TRANSACTION`'s, carrying the raw signature instead of a prefix.
+pub fn encode_sign_arbitrary_data_response(algorithm: KeyAlgorithm, signature: &[u8]) -> Vec<u8> {
+    encode_sign_transaction_response(algorithm, signature)
+}
+
 /// Encodes a successful `GET_VERSION` response carrying this build's
 /// [`PROTOCOL_VERSION_MAJOR`]/[`PROTOCOL_VERSION_MINOR`].
 pub fn encode_get_version_response() -> Vec<u8> {
@@ -475,6 +530,7 @@ fn parse_error_code(byte: Option<&u8>) -> Result<ErrorCode, DecodeError> {
         Some(0x09) => Ok(ErrorCode::SigningFailed),
         Some(0x0A) => Ok(ErrorCode::UnknownAddressIndex),
         Some(0x0B) => Ok(ErrorCode::SenderMismatch),
+        Some(0x0C) => Ok(ErrorCode::ReservedDomainPrefix),
         Some(_) => Err(DecodeError::UnknownStatus),
         None => Err(DecodeError::Truncated),
     }
@@ -596,6 +652,14 @@ pub fn decode_sign_transaction_response(
     Ok((algorithm, prefix.to_vec()))
 }
 
+/// Decodes a successful `SIGN_ARBITRARY_DATA` response into the signing algorithm
+/// and the raw signature.
+pub fn decode_sign_arbitrary_data_response(
+    bytes: &[u8],
+) -> Result<(KeyAlgorithm, Vec<u8>), DecodeError> {
+    decode_sign_transaction_response(bytes)
+}
+
 /// Decodes a successful `GET_VERSION` response into `(major, minor)`.
 pub fn decode_get_version_response(bytes: &[u8]) -> Result<(u16, u16), DecodeError> {
     match decode_ok_payload(bytes)? {
@@ -634,6 +698,16 @@ mod tests {
                 txn: alloc::vec![0x81; 3000],
             },
             Request::GetVersion,
+            Request::SignArbitraryData {
+                address_index: 1,
+                address: "D".repeat(58),
+                data: alloc::vec![0xAB; 32],
+            },
+            Request::SignArbitraryData {
+                address_index: 0,
+                address: "E".repeat(58),
+                data: alloc::vec![],
+            },
         ] {
             let bytes = encode_request(req.clone());
             assert_eq!(decode_request(&bytes), Ok(req));
@@ -693,6 +767,9 @@ mod tests {
             &[OP_SIGN_TRANSACTION, 1, b'a'],
             &[OP_SIGN_TRANSACTION, 1, b'a', 3, 0, 0x81, 0x00],
             &[OP_SIGN_TRANSACTION, 1, b'a', 1, 0, 0x81, 0x00],
+            &[OP_SIGN_ARBITRARY_DATA][..],
+            &[OP_SIGN_ARBITRARY_DATA, 0, 1, b'a', 2, 0, 0x01],
+            &[OP_SIGN_ARBITRARY_DATA, 0, 1, b'a', 1, 0, 0x01, 0x02],
         ] {
             assert_eq!(decode_request(bytes), Err(ErrorCode::MalformedRequest));
         }
@@ -861,6 +938,7 @@ mod tests {
             ErrorCode::SigningFailed,
             ErrorCode::UnknownAddressIndex,
             ErrorCode::SenderMismatch,
+            ErrorCode::ReservedDomainPrefix,
         ] {
             let bytes = encode_error_response(code);
             assert_eq!(decode_error_code(&bytes), Ok(code));

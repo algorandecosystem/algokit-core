@@ -71,7 +71,41 @@ pub fn transaction_sender(txn: &[u8]) -> Option<[u8; 32]> {
     (reader.pos == txn.len()).then_some(sender).flatten()
 }
 
-/// Just enough of a msgpack reader for [`transaction_sender`].
+/// The bare signature inside a prefix built by [`ed25519_prefix`] or
+/// [`falcon1024_prefix`]: `sig` (64-byte Ed25519) or `pqsig.sig`
+/// (compressed Falcon-1024). This is the raw signature over `"TX" || txn`,
+/// e.g. for protocols that carry a transaction signature on its own.
+pub fn signature_from_prefix(prefix: &[u8]) -> Option<&[u8]> {
+    let mut reader = Reader {
+        bytes: prefix,
+        pos: 0,
+    };
+    // Both layouts are a 2-entry map whose last key is "txn" (value not
+    // included in the prefix), so only the first entry carries a value.
+    if reader.map_len()? != 2 {
+        return None;
+    }
+    let signature = match reader.str()? {
+        b"sig" => reader.bin()?,
+        b"pqsig" => {
+            let entries = reader.map_len()?;
+            let mut signature = None;
+            for _ in 0..entries {
+                if reader.str()? == b"sig" {
+                    signature = Some(reader.bin()?);
+                } else {
+                    reader.skip(0)?;
+                }
+            }
+            signature?
+        }
+        _ => return None,
+    };
+    (reader.str()? == b"txn" && reader.pos == prefix.len()).then_some(signature)
+}
+
+/// Just enough of a msgpack reader for [`transaction_sender`] and
+/// [`signature_from_prefix`].
 struct Reader<'a> {
     bytes: &'a [u8],
     pos: usize,
@@ -315,6 +349,29 @@ mod tests {
         // Absurd nesting is rejected rather than recursed into.
         let deep = [&[0x81, 0xa1, b'x'][..], &[0x91; 64], &[0x00]].concat();
         assert_eq!(transaction_sender(&deep), None);
+    }
+
+    #[test]
+    fn signature_from_prefix_finds_both_layouts() {
+        let ed_sig = [7u8; 64];
+        assert_eq!(
+            signature_from_prefix(&ed25519_prefix(&ed_sig)),
+            Some(&ed_sig[..])
+        );
+        let pq_sig = [2u8; 1200];
+        for salt in [0, 5, 200] {
+            assert_eq!(
+                signature_from_prefix(&falcon1024_prefix(&[1u8; 1793], salt, &pq_sig)),
+                Some(&pq_sig[..])
+            );
+        }
+        // Not a prefix: trailing txn bytes, truncated, or a bare transaction.
+        let mut with_txn = ed25519_prefix(&ed_sig);
+        with_txn.push(0x80);
+        assert_eq!(signature_from_prefix(&with_txn), None);
+        let prefix = ed25519_prefix(&ed_sig);
+        assert_eq!(signature_from_prefix(&prefix[..prefix.len() - 1]), None);
+        assert_eq!(signature_from_prefix(b"\x81\xa4type\xa3pay"), None);
     }
 
     #[test]

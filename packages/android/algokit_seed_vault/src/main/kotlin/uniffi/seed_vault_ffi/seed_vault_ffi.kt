@@ -794,6 +794,8 @@ internal interface IntegrityCheckingUniffiLib : Library {
 
   fun uniffi_seed_vault_ffi_checksum_method_seedvaultclient_service_name(): Short
 
+  fun uniffi_seed_vault_ffi_checksum_method_seedvaultclient_sign_arbitrary_data(): Short
+
   fun uniffi_seed_vault_ffi_checksum_method_seedvaultclient_sign_transaction(): Short
 
   fun uniffi_seed_vault_ffi_checksum_method_seedvaultclient_status(): Short
@@ -912,6 +914,14 @@ internal interface UniffiLib : Library {
 
   fun uniffi_seed_vault_ffi_fn_method_seedvaultclient_service_name(
     `ptr`: Pointer,
+    uniffi_out_err: UniffiRustCallStatus,
+  ): RustBuffer.ByValue
+
+  fun uniffi_seed_vault_ffi_fn_method_seedvaultclient_sign_arbitrary_data(
+    `ptr`: Pointer,
+    `address`: RustBuffer.ByValue,
+    `addressIndex`: Byte,
+    `data`: RustBuffer.ByValue,
     uniffi_out_err: UniffiRustCallStatus,
   ): RustBuffer.ByValue
 
@@ -1209,6 +1219,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
   }
   if (lib.uniffi_seed_vault_ffi_checksum_method_seedvaultclient_service_name() != 13625.toShort()) {
+    throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+  }
+  if (lib.uniffi_seed_vault_ffi_checksum_method_seedvaultclient_sign_arbitrary_data() != 60888.toShort()) {
     throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
   }
   if (lib.uniffi_seed_vault_ffi_checksum_method_seedvaultclient_sign_transaction() != 60555.toShort()) {
@@ -1672,6 +1685,23 @@ public interface SeedVaultClientInterface {
   fun `serviceName`(): kotlin.String
 
   /**
+   * Signs `data` exactly as given (no prefix added) with `address`, which
+   * must be its seed's `address_index` key. Works for both
+   * [`human_sign_index`] and [`autosign_index`] accounts.
+   *
+   * Use it for off-chain signatures such as FIDO2/Liquid Auth challenges.
+   * Data starting with `TX`, `TG`, `Program`, `ProgData` or `MX` is refused
+   * ([`AppletErrorCode::ReservedDomainPrefix`]); sign transactions with
+   * [`Self::sign_transaction`]. Needs protocol 1.1: a 1.0 applet answers
+   * [`AppletErrorCode::MalformedRequest`].
+   */
+  fun `signArbitraryData`(
+    `address`: kotlin.String,
+    `addressIndex`: kotlin.UByte,
+    `data`: kotlin.ByteArray,
+  ): SignedArbitraryData
+
+  /**
    * Signs `txn` (msgpack, no `"TX"` prefix) with `address`, which must be
    * its seed's `address_index` key and the transaction's sender.
    */
@@ -1915,6 +1945,37 @@ open class SeedVaultClient :
     )
 
   /**
+   * Signs `data` exactly as given (no prefix added) with `address`, which
+   * must be its seed's `address_index` key. Works for both
+   * [`human_sign_index`] and [`autosign_index`] accounts.
+   *
+   * Use it for off-chain signatures such as FIDO2/Liquid Auth challenges.
+   * Data starting with `TX`, `TG`, `Program`, `ProgData` or `MX` is refused
+   * ([`AppletErrorCode::ReservedDomainPrefix`]); sign transactions with
+   * [`Self::sign_transaction`]. Needs protocol 1.1: a 1.0 applet answers
+   * [`AppletErrorCode::MalformedRequest`].
+   */
+  @Throws(SeedVaultException::class)
+  override fun `signArbitraryData`(
+    `address`: kotlin.String,
+    `addressIndex`: kotlin.UByte,
+    `data`: kotlin.ByteArray,
+  ): SignedArbitraryData =
+    FfiConverterTypeSignedArbitraryData.lift(
+      callWithPointer {
+        uniffiRustCallWithError(SeedVaultException) { _status ->
+          UniffiLib.INSTANCE.uniffi_seed_vault_ffi_fn_method_seedvaultclient_sign_arbitrary_data(
+            it,
+            FfiConverterString.lower(`address`),
+            FfiConverterUByte.lower(`addressIndex`),
+            FfiConverterByteArray.lower(`data`),
+            _status,
+          )
+        }
+      },
+    )
+
+  /**
    * Signs `txn` (msgpack, no `"TX"` prefix) with `address`, which must be
    * its seed's `address_index` key and the transaction's sender.
    */
@@ -2116,6 +2177,46 @@ public object FfiConverterTypeProtocolVersion : FfiConverterRustBuffer<ProtocolV
 }
 
 /**
+ * The result of [`SeedVaultClient::sign_arbitrary_data`].
+ */
+data class SignedArbitraryData(
+  var `algorithm`: KeyAlgorithm,
+  /**
+   * Raw signature over the data exactly as given: 64 bytes for Ed25519
+   * (`ed25519RawSign`), a compressed deterministic signature for
+   * Falcon-1024 (go-algorand `FalconSigner.SignBytes`).
+   */
+  var `signature`: kotlin.ByteArray,
+) {
+  companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeSignedArbitraryData : FfiConverterRustBuffer<SignedArbitraryData> {
+  override fun read(buf: ByteBuffer): SignedArbitraryData =
+    SignedArbitraryData(
+      FfiConverterTypeKeyAlgorithm.read(buf),
+      FfiConverterByteArray.read(buf),
+    )
+
+  override fun allocationSize(value: SignedArbitraryData) =
+    (
+      FfiConverterTypeKeyAlgorithm.allocationSize(value.`algorithm`) +
+        FfiConverterByteArray.allocationSize(value.`signature`)
+    )
+
+  override fun write(
+    value: SignedArbitraryData,
+    buf: ByteBuffer,
+  ) {
+    FfiConverterTypeKeyAlgorithm.write(value.`algorithm`, buf)
+    FfiConverterByteArray.write(value.`signature`, buf)
+  }
+}
+
+/**
  * The result of [`SeedVaultClient::sign_transaction`].
  */
 data class SignedTransaction(
@@ -2124,6 +2225,12 @@ data class SignedTransaction(
    * The network-ready msgpack `SignedTxn` (`POST /v2/transactions` body).
    */
   var `signedTxn`: kotlin.ByteArray,
+  /**
+   * The bare signature over `"TX" || txn` that `signed_txn` carries (64
+   * bytes for Ed25519, compressed Falcon-1024 otherwise), for protocols
+   * that send a transaction signature on its own (e.g. Liquid Auth).
+   */
+  var `signature`: kotlin.ByteArray,
 ) {
   companion object
 }
@@ -2136,12 +2243,14 @@ public object FfiConverterTypeSignedTransaction : FfiConverterRustBuffer<SignedT
     SignedTransaction(
       FfiConverterTypeKeyAlgorithm.read(buf),
       FfiConverterByteArray.read(buf),
+      FfiConverterByteArray.read(buf),
     )
 
   override fun allocationSize(value: SignedTransaction) =
     (
       FfiConverterTypeKeyAlgorithm.allocationSize(value.`algorithm`) +
-        FfiConverterByteArray.allocationSize(value.`signedTxn`)
+        FfiConverterByteArray.allocationSize(value.`signedTxn`) +
+        FfiConverterByteArray.allocationSize(value.`signature`)
     )
 
   override fun write(
@@ -2150,6 +2259,7 @@ public object FfiConverterTypeSignedTransaction : FfiConverterRustBuffer<SignedT
   ) {
     FfiConverterTypeKeyAlgorithm.write(value.`algorithm`, buf)
     FfiConverterByteArray.write(value.`signedTxn`, buf)
+    FfiConverterByteArray.write(value.`signature`, buf)
   }
 }
 
@@ -2170,6 +2280,12 @@ enum class AppletErrorCode {
   SIGNING_FAILED,
   UNKNOWN_ADDRESS_INDEX,
   SENDER_MISMATCH,
+
+  /**
+   * `sign_arbitrary_data` data started with `TX`, `TG`, `Program`, `ProgData` or `MX`.
+   */
+  RESERVED_DOMAIN_PREFIX,
+
   ;
 
   companion object

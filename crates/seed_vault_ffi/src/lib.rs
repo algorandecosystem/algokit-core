@@ -102,6 +102,20 @@ pub struct SignedTransaction {
     pub algorithm: KeyAlgorithm,
     /// The network-ready msgpack `SignedTxn` (`POST /v2/transactions` body).
     pub signed_txn: Vec<u8>,
+    /// The bare signature over `"TX" || txn` that `signed_txn` carries (64
+    /// bytes for Ed25519, compressed Falcon-1024 otherwise), for protocols
+    /// that send a transaction signature on its own (e.g. Liquid Auth).
+    pub signature: Vec<u8>,
+}
+
+/// The result of [`SeedVaultClient::sign_arbitrary_data`].
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+pub struct SignedArbitraryData {
+    pub algorithm: KeyAlgorithm,
+    /// Raw signature over the data exactly as given: 64 bytes for Ed25519
+    /// (`ed25519RawSign`), a compressed deterministic signature for
+    /// Falcon-1024 (go-algorand `FalconSigner.SignBytes`).
+    pub signature: Vec<u8>,
 }
 
 /// A wire protocol version (see `seed_vault::protocol`'s versioning docs).
@@ -126,6 +140,8 @@ pub enum AppletErrorCode {
     SigningFailed,
     UnknownAddressIndex,
     SenderMismatch,
+    /// `sign_arbitrary_data` data started with `TX`, `TG`, `Program`, `ProgData` or `MX`.
+    ReservedDomainPrefix,
 }
 
 impl From<ErrorCode> for AppletErrorCode {
@@ -142,6 +158,7 @@ impl From<ErrorCode> for AppletErrorCode {
             ErrorCode::SigningFailed => Self::SigningFailed,
             ErrorCode::UnknownAddressIndex => Self::UnknownAddressIndex,
             ErrorCode::SenderMismatch => Self::SenderMismatch,
+            ErrorCode::ReservedDomainPrefix => Self::ReservedDomainPrefix,
         }
     }
 }
@@ -435,22 +452,67 @@ impl SeedVaultClient {
             address,
             txn: txn.clone(),
         });
-        if request.len() > MAX_MESSAGE_SIZE {
-            return Err(SeedVaultError::InvalidArgument {
-                reason: format!(
-                    "transaction too large for one seed_vault_ta message ({} bytes)",
-                    txn.len()
-                ),
-            });
-        }
+        check_request_size("transaction", &request, txn.len())?;
         let response = self.call(&request)?;
-        let (algorithm, mut signed_txn) = protocol::decode_sign_transaction_response(&response)?;
+        let (algorithm, prefix) = protocol::decode_sign_transaction_response(&response)?;
+        let signature = seed_vault::signed_txn::signature_from_prefix(&prefix)
+            .ok_or_else(|| SeedVaultError::MalformedResponse {
+                reason: "SignedTxn prefix has no signature".into(),
+            })?
+            .to_vec();
+        let mut signed_txn = prefix;
         signed_txn.extend_from_slice(&txn);
         Ok(SignedTransaction {
             algorithm: algorithm.into(),
             signed_txn,
+            signature,
         })
     }
+
+    /// Signs `data` exactly as given (no prefix added) with `address`, which
+    /// must be its seed's `address_index` key. Works for both
+    /// [`human_sign_index`] and [`autosign_index`] accounts.
+    ///
+    /// Use it for off-chain signatures such as FIDO2/Liquid Auth challenges.
+    /// Data starting with `TX`, `TG`, `Program`, `ProgData` or `MX` is refused
+    /// ([`AppletErrorCode::ReservedDomainPrefix`]); sign transactions with
+    /// [`Self::sign_transaction`]. Needs protocol 1.1: a 1.0 applet answers
+    /// [`AppletErrorCode::MalformedRequest`].
+    pub fn sign_arbitrary_data(
+        &self,
+        address: String,
+        address_index: u8,
+        data: Vec<u8>,
+    ) -> Result<SignedArbitraryData, SeedVaultError> {
+        let address = check_short_field("address", address.trim())?;
+        let data_len = data.len();
+        let request = protocol::encode_request(Request::SignArbitraryData {
+            address_index,
+            address,
+            data,
+        });
+        check_request_size("data", &request, data_len)?;
+        let response = self.call(&request)?;
+        let (algorithm, signature) = protocol::decode_sign_arbitrary_data_response(&response)?;
+        Ok(SignedArbitraryData {
+            algorithm: algorithm.into(),
+            signature,
+        })
+    }
+}
+
+/// Requests carry a `u16` payload length and must fit one TIPC message.
+fn check_request_size(
+    name: &str,
+    request: &[u8],
+    payload_len: usize,
+) -> Result<(), SeedVaultError> {
+    if request.len() > MAX_MESSAGE_SIZE || payload_len > u16::MAX as usize {
+        return Err(SeedVaultError::InvalidArgument {
+            reason: format!("{name} too large for one seed_vault_ta message ({payload_len} bytes)"),
+        });
+    }
+    Ok(())
 }
 
 impl Default for SeedVaultClient {
@@ -516,6 +578,10 @@ mod tests {
         ));
         assert!(matches!(
             client.sign_transaction("A".repeat(58), 0, vec![0x81; 4096]),
+            Err(SeedVaultError::InvalidArgument { .. })
+        ));
+        assert!(matches!(
+            client.sign_arbitrary_data("A".repeat(58), 1, vec![0x00; 4096]),
             Err(SeedVaultError::InvalidArgument { .. })
         ));
     }

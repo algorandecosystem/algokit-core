@@ -78,6 +78,16 @@ pub fn handle_request(store: &mut impl AccountStore, request: &[u8]) -> Vec<u8> 
             }
             Err(err) => protocol::encode_error_response(error_code_for(err)),
         },
+        Ok(Request::SignArbitraryData {
+            address_index,
+            address,
+            data,
+        }) => match store::sign_arbitrary_data(store, &address, address_index.into(), &data) {
+            Ok(signed) => {
+                protocol::encode_sign_arbitrary_data_response(signed.algorithm, &signed.signature)
+            }
+            Err(err) => protocol::encode_error_response(error_code_for(err)),
+        },
         Ok(Request::GetVersion) => protocol::encode_get_version_response(),
         Err(code) => protocol::encode_error_response(code),
     }
@@ -93,6 +103,7 @@ fn error_code_for(err: StoreError) -> ErrorCode {
         StoreError::SigningFailed => ErrorCode::SigningFailed,
         StoreError::UnknownKeyIndex => ErrorCode::UnknownAddressIndex,
         StoreError::SenderMismatch => ErrorCode::SenderMismatch,
+        StoreError::ReservedDomainPrefix => ErrorCode::ReservedDomainPrefix,
         StoreError::Backend
         | StoreError::CorruptRecord
         | StoreError::RandomnessUnavailable
@@ -513,6 +524,183 @@ mod tests {
             protocol::decode_error_code(&sign(&mut store, &other, &test_txn_from(&other))),
             Ok(ErrorCode::AccountNotFound)
         );
+    }
+
+    fn sign_arbitrary_data(
+        store: &mut MemoryStore,
+        address: &str,
+        address_index: u8,
+        data: &[u8],
+    ) -> Vec<u8> {
+        handle_request(
+            store,
+            &protocol::encode_request(Request::SignArbitraryData {
+                address_index,
+                address: address.into(),
+                data: data.to_vec(),
+            }),
+        )
+    }
+
+    #[test]
+    fn ed25519_sign_arbitrary_data_is_a_raw_signature_over_the_data() {
+        let entropy = [9u8; 32];
+        let mut store = MemoryStore::default();
+        let account = import(&mut store, KeyAlgorithm::Algo25Ed25519, &entropy);
+        let challenge = b"liquid-auth challenge \x00\x01\x02";
+
+        let (algorithm, sig) = protocol::decode_sign_arbitrary_data_response(&sign_arbitrary_data(
+            &mut store,
+            &account.address,
+            0,
+            challenge,
+        ))
+        .unwrap();
+        assert_eq!(algorithm, KeyAlgorithm::Algo25Ed25519);
+        let keypair =
+            algokit_crypto::ed25519::CryptoxideEd25519Keypair::try_generate(Some(entropy)).unwrap();
+        // Over the data exactly as given: no "TX"/"MX" prefix added.
+        assert!(algokit_crypto::ed25519::verify(
+            challenge,
+            &algokit_crypto::Keypair::verifying_key(&keypair),
+            sig.as_slice().try_into().unwrap(),
+        ));
+
+        // Ed25519 seeds have no autosign key.
+        assert_eq!(
+            protocol::decode_error_code(&sign_arbitrary_data(
+                &mut store,
+                &account.address,
+                1,
+                challenge
+            )),
+            Ok(ErrorCode::UnknownAddressIndex)
+        );
+    }
+
+    #[test]
+    fn falcon1024_sign_arbitrary_data_works_for_human_and_autosign() {
+        let entropy: [u8; 32] = core::array::from_fn(|i| (i + 7) as u8);
+        let mut store = MemoryStore::default();
+        let human = import(&mut store, KeyAlgorithm::Falcon1024, &entropy);
+        let autosign = list_wire_accounts(&mut store)
+            .into_iter()
+            .find(|a| a.address_index == 1)
+            .unwrap();
+        let data = b"arbitrary payload";
+        let expected = algokit_crypto::falcon1024::account_from_entropy(&entropy).unwrap();
+
+        let mut signatures = Vec::new();
+        for (account, index) in [(&human, 0u8), (&autosign, 1u8)] {
+            let (algorithm, sig) = protocol::decode_sign_arbitrary_data_response(
+                &sign_arbitrary_data(&mut store, &account.address, index, data),
+            )
+            .unwrap();
+            assert_eq!(algorithm, KeyAlgorithm::Falcon1024);
+            expected
+                .public_key
+                .verify(&sig, data)
+                .expect("Falcon signature must verify over the raw data");
+            signatures.push(sig);
+
+            // The index must name this address's key.
+            assert_eq!(
+                protocol::decode_error_code(&sign_arbitrary_data(
+                    &mut store,
+                    &account.address,
+                    1 - index,
+                    data
+                )),
+                Ok(ErrorCode::UnknownAddressIndex)
+            );
+        }
+        // One key, deterministic signing: both accounts sign identically.
+        assert_eq!(signatures[0], signatures[1]);
+    }
+
+    #[test]
+    fn sign_arbitrary_data_refuses_algorand_domain_prefixes() {
+        let mut store = MemoryStore::default();
+        let ed = import(&mut store, KeyAlgorithm::Algo25Ed25519, &[4u8; 32]);
+        let falcon = import(&mut store, KeyAlgorithm::Falcon1024, &[5u8; 32]);
+        for account in [&ed, &falcon] {
+            let txn = test_txn_from(&account.address);
+            for data in [
+                [b"TX".as_slice(), &txn].concat(),
+                b"TGgroup".to_vec(),
+                b"Program\x06\x81\x01".to_vec(),
+                b"ProgData0123456789".to_vec(),
+                b"MXhello".to_vec(),
+            ] {
+                assert_eq!(
+                    protocol::decode_error_code(&sign_arbitrary_data(
+                        &mut store,
+                        &account.address,
+                        0,
+                        &data
+                    )),
+                    Ok(ErrorCode::ReservedDomainPrefix)
+                );
+            }
+            // Lookalikes that aren't a reserved prefix are fine.
+            for data in [&b"T"[..], b"tx", b"Prog", b"M", b"mx", b""] {
+                assert!(
+                    protocol::decode_sign_arbitrary_data_response(&sign_arbitrary_data(
+                        &mut store,
+                        &account.address,
+                        0,
+                        data
+                    ))
+                    .is_ok()
+                );
+            }
+        }
+        // Unknown address.
+        let other = algokit_crypto::address::address_from_public_key(&[3u8; 32]);
+        assert_eq!(
+            protocol::decode_error_code(&sign_arbitrary_data(&mut store, &other, 0, b"hi")),
+            Ok(ErrorCode::AccountNotFound)
+        );
+    }
+
+    #[test]
+    fn transaction_signature_is_extractable_from_the_prefix() {
+        let mut store = MemoryStore::default();
+        for (algorithm, entropy) in [
+            (KeyAlgorithm::Algo25Ed25519, [6u8; 32]),
+            (KeyAlgorithm::Falcon1024, [8u8; 32]),
+        ] {
+            let account = import(&mut store, algorithm, &entropy);
+            let txn = test_txn_from(&account.address);
+            let (_, prefix) = protocol::decode_sign_transaction_response(&sign(
+                &mut store,
+                &account.address,
+                &txn,
+            ))
+            .unwrap();
+            let sig = crate::signed_txn::signature_from_prefix(&prefix).unwrap();
+            let message = crate::signed_txn::bytes_to_sign(&txn);
+            match algorithm {
+                KeyAlgorithm::Algo25Ed25519 => {
+                    let keypair = algokit_crypto::ed25519::CryptoxideEd25519Keypair::try_generate(
+                        Some(entropy),
+                    )
+                    .unwrap();
+                    assert!(algokit_crypto::ed25519::verify(
+                        &message,
+                        &algokit_crypto::Keypair::verifying_key(&keypair),
+                        sig.try_into().unwrap(),
+                    ));
+                }
+                KeyAlgorithm::Falcon1024 => {
+                    algokit_crypto::falcon1024::account_from_entropy(&entropy)
+                        .unwrap()
+                        .public_key
+                        .verify(sig, &message)
+                        .unwrap();
+                }
+            }
+        }
     }
 
     #[test]
