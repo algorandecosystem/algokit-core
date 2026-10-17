@@ -227,6 +227,7 @@ mod tests {
             auth_address: None,
             multisignature: None,
             logic_signature: Some(lsig.clone()),
+            pq_signature: None,
         };
 
         let decoded = SignedTransaction::decode(&signed.encode().unwrap()).unwrap();

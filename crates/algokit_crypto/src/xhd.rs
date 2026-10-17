@@ -11,6 +11,10 @@
 //! storage, zeroization, and BIP44 path bookkeeping are the responsibility of
 //! the caller.
 
+use alloc::{
+    string::{String, ToString},
+    vec::Vec,
+};
 use bip39::Mnemonic;
 use ed25519_bip32::{
     DerivationScheme, Signature, XPrv,

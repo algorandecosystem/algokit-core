@@ -1,0 +1,27 @@
+[package]
+name = "seed_vault_ffi"
+version = "0.1.0"
+edition = "2024"
+
+# Client-side (non-secure world) bindings for the `seed_vault_ta` Trusty
+# applet, packaged for Android as `packages/android/algokit_seed_vault`
+# (`cargo pkg seed_vault aar`).
+#
+# Wraps `seed_vault::protocol` -- the exact encoder/decoder the applet itself
+# is built from -- plus the Trusty IPC (TIPC) transport, so an Android app
+# never hand-rolls the wire format and can't drift out of sync with the
+# applet it talks to.
+
+[lib]
+crate-type = ["lib", "cdylib"]
+
+[dependencies]
+seed_vault = { path = "../seed_vault" }
+uniffi = { workspace = true, features = ["scaffolding-ffi-buffer-fns"] }
+zeroize = { workspace = true }
+
+[target.'cfg(any(target_os = "android", target_os = "linux"))'.dependencies]
+libc = "0.2.172"
+
+[build-dependencies]
+uniffi = { workspace = true, features = ["build", "scaffolding-ffi-buffer-fns"] }

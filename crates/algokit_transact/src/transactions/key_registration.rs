@@ -414,6 +414,7 @@ mod tests {
             auth_address: None,
             multisignature: None,
             logic_signature: None,
+            pq_signature: None,
         };
         let encoded_stx = signed_tx.encode().unwrap();
         let decoded_stx = SignedTransaction::decode(&encoded_stx).unwrap();
@@ -446,6 +447,7 @@ mod tests {
             auth_address: None,
             multisignature: None,
             logic_signature: None,
+            pq_signature: None,
         };
         let encoded_stx = signed_tx.encode().unwrap();
         let decoded_stx = SignedTransaction::decode(&encoded_stx).unwrap();
@@ -479,6 +481,7 @@ mod tests {
             auth_address: None,
             multisignature: None,
             logic_signature: None,
+            pq_signature: None,
         };
 
         // Test that transaction ID can be generated

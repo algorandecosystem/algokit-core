@@ -1,0 +1,261 @@
+name: Build Trusty Applet
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  # Proves the account crypto the applet relies on works -- algo25 (Ed25519)
+  # and Falcon-1024 (PQ) create/recover/sign, plus the seed_vault protocol
+  # and store logic -- independent of the much heavier AOSP/Trusty build below.
+  verify-account-crypto:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+
+      - name: Install Rust Toolchain
+        run: rustup show
+
+      - name: Verify no_std + alloc Compatibility (Trusty/TEE targets)
+        run: |
+          cargo check -p algokit_crypto --no-default-features
+
+      # Built exactly as Trusty builds it (no default features).
+      - name: Create, Recover & Sign algo25 + Falcon-1024 Accounts (algokit_crypto)
+        run: cargo test -p algokit_crypto --no-default-features --test account_roundtrip
+
+      - name: Falcon-1024 PQ accounts match go-algorand known answers
+        run: cargo test -p algokit_crypto falcon1024
+
+      - name: Test seed_vault (applet protocol + account store logic)
+        run: |
+          cargo test -p seed_vault
+          cargo check -p seed_vault --all-targets
+
+      # The Trusty build runs rustdoc with `-D warnings` (so e.g. a broken
+      # intra-doc link fails it); catch that here instead of an hour later.
+      - name: Rustdoc with warnings as errors (as the Trusty build does)
+        env:
+          RUSTDOCFLAGS: -D warnings
+        run: |
+          cargo doc -p seed_vault --no-deps
+          cargo doc -p algokit_crypto --no-deps --no-default-features
+
+  build-trusty:
+    needs: verify-account-crypto
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+
+      - name: Maximize Runner Disk Space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          sudo apt-get clean
+          df -h
+
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            git-core gnupg flex bison build-essential zip curl \
+            zlib1g-dev libc6-dev-i386 lib32ncurses-dev x11proto-core-dev \
+            libx11-dev lib32z1-dev libgl1-mesa-dev libxml2-utils xsltproc unzip \
+            fontconfig python3 python3-pip
+
+      - name: Install repo Launcher
+        run: |
+          mkdir -p "$HOME/bin"
+          curl -sL https://storage.googleapis.com/git-repo-downloads/repo > "$HOME/bin/repo"
+          chmod a+x "$HOME/bin/repo"
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+
+      - name: Fetch Trusty Source Tree
+        run: |
+          mkdir -p trusty-manifest
+          cd trusty-manifest
+          repo init -u https://android.googlesource.com/trusty/manifest -b main
+          repo sync -j$(nproc)
+
+      # Only the hand-written rules.mk files are checked in; upstream crate
+      # sources are pulled from crates.io here, pinned by version + sha256,
+      # with local patches applied.
+      - name: Fetch Vendored Crate Sources
+        run: trusty/fetch_vendor_crates.sh
+
+      - name: Inject Vendored Crates & First-Party Libraries
+        run: |
+          for crate in cryptoxide base32 signature getrandom algorand_falcon; do
+            mkdir -p "trusty-manifest/trusty/user/base/lib/${crate}"
+            cp -r "trusty/vendor/${crate}/." "trusty-manifest/trusty/user/base/lib/${crate}/"
+          done
+          for crate in algokit_crypto seed_vault; do
+            mkdir -p "trusty-manifest/trusty/user/base/lib/${crate}"
+            cp -r "crates/${crate}/." "trusty-manifest/trusty/user/base/lib/${crate}/"
+          done
+
+      - name: Inject Custom Trusty Applet
+        run: |
+          mkdir -p trusty-manifest/trusty/user/app/seed_vault_ta
+          cp -r trusty/app/seed_vault_ta/* trusty-manifest/trusty/user/app/seed_vault_ta/
+
+      - name: Register seed_vault_ta as a build module
+        run: |
+          python3 - <<'PYEOF'
+          import pathlib
+          import sys
+
+          mk_paths = [
+              pathlib.Path(
+                  "trusty-manifest/trusty/device/x86/generic-x86_64/project/generic-x86_64-inc.mk"
+              ),
+              pathlib.Path(
+                  "trusty-manifest/trusty/device/arm/generic-arm64/project/generic-arm-inc.mk"
+              ),
+          ]
+          anchor = "TRUSTY_BUILTIN_USER_TASKS := \\\n"
+          app_line = "\ttrusty/user/app/seed_vault_ta \\\n"
+
+          for mk_path in mk_paths:
+              text = mk_path.read_text()
+
+              if anchor not in text:
+                  sys.exit(
+                      f"Could not find '{anchor.strip()}' in {mk_path}. "
+                      "Upstream Trusty project file format has likely changed -- "
+                      "update this step in trusty_ci.yml to match."
+                  )
+              if app_line in text:
+                  print(f"seed_vault_ta already registered in {mk_path}")
+              else:
+                  mk_path.write_text(text.replace(anchor, anchor + app_line, 1))
+                  print(f"Registered seed_vault_ta in TRUSTY_BUILTIN_USER_TASKS ({mk_path})")
+          PYEOF
+
+      - name: Build Trusty OS & Applet Binary (arm64)
+        run: |
+          cd trusty-manifest
+          ./trusty/vendor/google/aosp/scripts/build.py generic-arm64
+
+      - name: Package Binaries (arm64)
+        run: |
+          mkdir -p build-output/arm64
+          find trusty-manifest/build-root/build-generic-arm64/ -name "*.elf" -exec cp {} build-output/arm64/ \;
+          find trusty-manifest/build-root/build-generic-arm64/ -name "*.bin" -exec cp {} build-output/arm64/ \;
+
+      - name: Reclaim Disk Space Between Targets
+        run: |
+          rm -rf trusty-manifest/build-root/build-generic-arm64
+          df -h
+
+      - name: Build Trusty OS & Applet Binary (x86_64)
+        run: |
+          cd trusty-manifest
+          ./trusty/vendor/google/aosp/scripts/build.py generic-x86_64
+
+      - name: Package Binaries (x86_64)
+        run: |
+          mkdir -p build-output/x86_64
+          find trusty-manifest/build-root/build-generic-x86_64/ -name "*.elf" -exec cp {} build-output/x86_64/ \;
+          find trusty-manifest/build-root/build-generic-x86_64/ -name "*.bin" -exec cp {} build-output/x86_64/ \;
+
+      - name: Reclaim Disk Space Before Cache Save
+        if: always()
+        run: |
+          rm -rf trusty-manifest/build-root
+          df -h
+
+      - name: Upload Build Artifacts to GitHub
+        uses: actions/upload-artifact@v7
+        with:
+          name: trusty-applet-binaries
+          path: build-output/
+          retention-days: 14
+
+      # --- Cuttlefish security VM (trusty_security_vm.elf) -----------------
+      #
+      # Cuttlefish boots Trusty as an AVF "security VM", a *different* Trusty
+      # project from generic-x86_64 above, with built-in apps linked into its
+      # lk.elf -- so seed_vault_ta has to be built into it, reusing the source
+      # tree already synced and injected above. This mirrors AOSP's
+      # `trusty_security_vm_x86_64.elf` genrule
+      # (trusty/vendor/google/aosp/scripts/Android.bp): the same build.py, for
+      # the project Cuttlefish selects (device/google/cuttlefish/shared/
+      # device.mk: TRUSTY_SYSTEM_VM ?= enabled_with_placeholder_trusted_hal,
+      # buildtype = build variant), copying build-<project>/lk.elf.
+      #
+      # x86_64 only: x86_64 Cuttlefish loads this ELF as-is from
+      # /system_ext/etc/vm/trusty_vm/trusty_security_vm.elf, while arm64 also
+      # AVB-signs and wraps it inside the AOSP build.
+      #
+      # Runs after the upload above so the applet binaries are published even
+      # if this build fails.
+
+      # Not generic-x86_64-inc.mk (registered above): vm-x86_64-security-inc.mk
+      # *resets* the list with `:=`, so the app must be appended in the
+      # placeholder-trusted-hal project file, after that include. That variant
+      # also has the secure storage app seed_vault_ta needs.
+      - name: Register seed_vault_ta in the security VM project
+        run: |
+          python3 - <<'PYEOF'
+          import pathlib
+          import sys
+
+          mk_path = pathlib.Path(
+              "trusty-manifest/trusty/device/x86/generic-x86_64/project/"
+              "vm-x86_64-security-placeholder-trusted-hal-inc.mk"
+          )
+          anchor = "TRUSTY_BUILTIN_USER_TASKS += \\\n"
+          app_line = "\ttrusty/user/app/seed_vault_ta \\\n"
+
+          text = mk_path.read_text()
+          if anchor not in text:
+              sys.exit(
+                  f"Could not find '{anchor.strip()}' in {mk_path}. "
+                  "Upstream Trusty project file format has likely changed -- "
+                  "update this step in trusty_ci.yml to match."
+              )
+          if app_line in text:
+              print(f"seed_vault_ta already registered in {mk_path}")
+          else:
+              mk_path.write_text(text.replace(anchor, anchor + app_line, 1))
+              print(f"Registered seed_vault_ta in {mk_path}")
+          PYEOF
+
+      # `-userdebug` must match the Cuttlefish image's build variant.
+      # `--buildid AVF_BUILTIN` and skipping docs mirror AOSP's genrule.
+      - name: Build Trusty Security VM (x86_64)
+        env:
+          PROJECT: vm-x86_64-security-placeholder-trusted-hal-userdebug
+        run: |
+          cd trusty-manifest
+          TRUSTY_SKIP_DOCS=true ./trusty/vendor/google/aosp/scripts/build.py \
+            --buildid AVF_BUILTIN "$PROJECT"
+
+      - name: Package trusty_security_vm.elf
+        env:
+          PROJECT: vm-x86_64-security-placeholder-trusted-hal-userdebug
+        run: |
+          build_dir="trusty-manifest/build-root/build-${PROJECT}"
+          if ! find "$build_dir" -path '*seed_vault_ta*' -print -quit | grep -q .; then
+            echo "::error::seed_vault_ta was not built into ${PROJECT}"
+            exit 1
+          fi
+          mkdir -p security-vm-output
+          cp "${build_dir}/lk.elf" security-vm-output/trusty_security_vm.elf
+          {
+            echo "project:     ${PROJECT}"
+            echo "source sha:  ${GITHUB_SHA}"
+            echo "sha256:      $(sha256sum security-vm-output/trusty_security_vm.elf | cut -d' ' -f1)"
+          } | tee security-vm-output/BUILD_INFO.txt
+
+      - name: Upload trusty_security_vm.elf
+        uses: actions/upload-artifact@v7
+        with:
+          name: trusty-security-vm-x86_64-userdebug
+          path: security-vm-output/
+          retention-days: 14
