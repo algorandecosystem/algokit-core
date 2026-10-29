@@ -24,59 +24,102 @@ pub const FALCON1024_ENTROPY_LEN: usize = algokit_crypto::falcon1024::ENTROPY_LE
 pub const HUMAN_SIGN_INDEX: u32 = 0;
 
 /// [`AccountSummary::address_index`] of a [`KeyAlgorithm::Falcon1024`]
-/// seed's autosign account: the *same* Falcon key at its next-lowest
-/// PQ-compliant salt (`algokit_crypto::falcon1024::nth_pq_address(pk, 1)`).
-/// go-algorand accepts any compliant salt, and go-algorand-sdk can sign for
-/// it with `SaltedPQSigner`, so the 25 words recover it anywhere that knows
-/// to look at the second salt. [`KeyAlgorithm::Algo25Ed25519`] seeds don't
-/// have one.
+/// seed's default autosign account. Any index `n` in
+/// `1..=`[`MAX_AUTOSIGN_INDEX`] is an autosign account: a *separate* Falcon
+/// key, derived with the standard derivation from child entropy
+/// `SHA512/256("SeedVaultAutosign" || n || entropy)` (see
+/// [`falcon_key_entropy`]) and addressed at its own canonical salt. Each
+/// child entropy is effectively its own 25-word account: the seed's 25
+/// words recover it, but it reveals nothing about the human-sign key (or
+/// any other autosign key), so a signature -- or even the key -- from one
+/// account can never authorize another.
 ///
-/// Both accounts share one private key, and a Falcon signature doesn't
-/// cover the salt, so an autosign signature would also authorize the
-/// human-sign account's transactions if the salt were swapped. That's why
-/// [`sign_transaction`] only signs transactions whose sender is the
-/// requested address.
+/// Every new Falcon-1024 seed starts with index 0 and this one; further
+/// autosign keys (e.g. a fresh session key) are added with
+/// [`derive_account`]. [`KeyAlgorithm::Algo25Ed25519`] seeds have none.
 pub const AUTOSIGN_INDEX: u32 = 1;
 
-/// The accounts a [`KeyAlgorithm::Falcon1024`] seed has, in order: the
-/// `n`th entry is the key's `n`th-lowest PQ-compliant salt.
-const FALCON1024_KEY_INDICES: [u32; 2] = [HUMAN_SIGN_INDEX, AUTOSIGN_INDEX];
+/// Largest autosign [`AccountSummary::address_index`] (requests carry it as
+/// a `u8`).
+pub const MAX_AUTOSIGN_INDEX: u32 = u8::MAX as u32;
+
+/// Most keys (human-sign plus autosign) one Falcon-1024 seed holds. Each
+/// caches ~4 KB of keygen output in the record, and the TA loads every
+/// record to answer a request, so this bounds its heap use.
+pub const MAX_FALCON1024_KEYS: usize = 8;
+
+/// The keys every new Falcon-1024 seed starts with.
+const DEFAULT_FALCON1024_KEYS: [u32; 2] = [HUMAN_SIGN_INDEX, AUTOSIGN_INDEX];
+
+/// Domain separator for a Falcon-1024 seed's autosign child entropy.
+const AUTOSIGN_ENTROPY_DOMAIN: &[u8] = b"SeedVaultAutosign";
+
+/// The 32 bytes of mnemonic entropy Falcon-1024 key `key_index` of a seed
+/// with `entropy` is derived from (via
+/// `algokit_crypto::falcon1024::account_from_entropy`): `entropy` itself for
+/// [`HUMAN_SIGN_INDEX`] (the go-algorand/SDK-compatible account), and
+/// `SHA512/256("SeedVaultAutosign" || key_index as u32 LE || entropy)` for
+/// autosign keys `1..=`[`MAX_AUTOSIGN_INDEX`]. The caller should zeroize
+/// the result.
+///
+/// This is the only place the autosign derivation is defined, so it can be
+/// swapped for a standard one later. Existing records cache their derived
+/// keys and keep working; only re-importing a mnemonic would land on the
+/// new derivation's autosign addresses.
+pub fn falcon_key_entropy(
+    entropy: &[u8; FALCON1024_ENTROPY_LEN],
+    key_index: u32,
+) -> Result<[u8; FALCON1024_ENTROPY_LEN], StoreError> {
+    const DOMAIN_LEN: usize = AUTOSIGN_ENTROPY_DOMAIN.len();
+    match key_index {
+        HUMAN_SIGN_INDEX => Ok(*entropy),
+        AUTOSIGN_INDEX..=MAX_AUTOSIGN_INDEX => {
+            let mut input = [0u8; DOMAIN_LEN + 4 + FALCON1024_ENTROPY_LEN];
+            input[..DOMAIN_LEN].copy_from_slice(AUTOSIGN_ENTROPY_DOMAIN);
+            input[DOMAIN_LEN..DOMAIN_LEN + 4].copy_from_slice(&key_index.to_le_bytes());
+            input[DOMAIN_LEN + 4..].copy_from_slice(entropy);
+            let child = algokit_crypto::sha512_256(&input);
+            input.zeroize();
+            Ok(child)
+        }
+        _ => Err(StoreError::UnknownKeyIndex),
+    }
+}
 
 /// Persisted layout of a [`KeyAlgorithm::Falcon1024`] record's
-/// `key_material`:
+/// `key_material`: the seed entropy, then one key block per key the seed
+/// holds (1 to [`MAX_FALCON1024_KEYS`]), in the order they were added:
 ///
 /// ```text
-/// [entropy: 32][salt₀: 1][address₀: 32][public_key: 1793][private_key: 2305][salt₁: 1][address₁: 32]
+/// [entropy: 32]
+/// [key_index: 1][salt: 1][address: 32][public_key: 1793][private_key: 2305]   // index 0
+/// [key_index: 1][salt: 1][address: 32][public_key: 1793][private_key: 2305]   // index 1
+/// ...                                                                         // derive_account
 /// ```
 ///
-/// The entropy comes first and is the source of truth (it's what
-/// `reveal_mnemonic` turns back into the 25 words). The rest caches what
-/// Falcon-1024 keygen derives from it, plus the salt/address of each of
-/// [`HUMAN_SIGN_INDEX`] and [`AUTOSIGN_INDEX`], so `LIST_ACCOUNTS`, duplicate
-/// checks, and signing never have to re-run keygen. Records written by
-/// earlier builds stop after the private key ([`falcon_record::KEYPAIR_LEN`]) or hold
-/// only the entropy; whatever is missing is re-derived on demand.
+/// The entropy is the source of truth (it's what `reveal_mnemonic` turns
+/// back into the 25 words). Each block caches what keygen derives from
+/// [`falcon_key_entropy`] for its index, so `LIST_ACCOUNTS`, duplicate
+/// checks, and signing never have to re-run keygen. The ranges below are
+/// offsets within one key block.
 pub mod falcon_record {
     use algokit_crypto::falcon1024::{PRIVATE_KEY_SIZE, PUBLIC_KEY_SIZE};
+    use core::ops::Range;
 
-    pub const ENTROPY: core::ops::Range<usize> = 0..32;
-    pub const PUBLIC_KEY: core::ops::Range<usize> = 65..65 + PUBLIC_KEY_SIZE;
-    pub const PRIVATE_KEY: core::ops::Range<usize> =
-        PUBLIC_KEY.end..PUBLIC_KEY.end + PRIVATE_KEY_SIZE;
-    /// Length of a record from an earlier build, caching only the keypair
-    /// and index 0's salt/address: 4163 bytes.
-    pub const KEYPAIR_LEN: usize = PRIVATE_KEY.end;
-    /// Total length of a current record: 4196 bytes.
-    pub const LEN: usize = KEYPAIR_LEN + 1 + 32;
+    pub const ENTROPY: Range<usize> = 0..32;
+    /// The key's `address_index`.
+    pub const KEY_INDEX: usize = 0;
+    pub const SALT: usize = 1;
+    pub const ADDRESS: Range<usize> = 2..34;
+    pub const PUBLIC_KEY: Range<usize> = ADDRESS.end..ADDRESS.end + PUBLIC_KEY_SIZE;
+    pub const PRIVATE_KEY: Range<usize> = PUBLIC_KEY.end..PUBLIC_KEY.end + PRIVATE_KEY_SIZE;
+    /// Length of one key block: 4132 bytes.
+    pub const KEY_LEN: usize = PRIVATE_KEY.end;
 
-    /// Offset of key index `index`'s salt.
-    pub const fn salt(index: u32) -> usize {
-        if index == 0 { ENTROPY.end } else { KEYPAIR_LEN }
-    }
-
-    /// Byte range of key index `index`'s 32-byte address.
-    pub const fn address(index: u32) -> core::ops::Range<usize> {
-        salt(index) + 1..salt(index) + 33
+    /// Length of a record holding `keys` key blocks (8296 bytes for a new
+    /// seed's two).
+    pub const fn record_len(keys: usize) -> usize {
+        ENTROPY.end + keys * KEY_LEN
     }
 }
 
@@ -102,7 +145,9 @@ pub enum KeyAlgorithm {
     /// go-algorand-sdk's `mnemonic.ToPQSeed`/`Falcon1024AccountFromPQSeed`.
     ///
     /// The same 25 words therefore back *different* addresses under
-    /// [`Self::Algo25Ed25519`] vs this algorithm.
+    /// [`Self::Algo25Ed25519`] vs this algorithm. That's the human-sign
+    /// account; the autosign account uses its own key (see
+    /// [`AUTOSIGN_INDEX`]).
     Falcon1024 = 0x02,
 }
 
@@ -116,13 +161,13 @@ impl KeyAlgorithm {
         }
     }
 
-    /// The [`AccountSummary::address_index`] values a seed of this
-    /// algorithm derives: human-sign only for Ed25519, human-sign and
-    /// autosign for Falcon-1024.
-    pub fn key_indices(self) -> &'static [u32] {
+    /// Whether a seed of this algorithm can have key `address_index`: only
+    /// [`HUMAN_SIGN_INDEX`] for Ed25519; that plus autosign keys
+    /// `1..=`[`MAX_AUTOSIGN_INDEX`] for Falcon-1024 (see [`AUTOSIGN_INDEX`]).
+    pub fn has_key_index(self, address_index: u32) -> bool {
         match self {
-            Self::Algo25Ed25519 => &[HUMAN_SIGN_INDEX],
-            Self::Falcon1024 => &FALCON1024_KEY_INDICES,
+            Self::Algo25Ed25519 => address_index == HUMAN_SIGN_INDEX,
+            Self::Falcon1024 => address_index <= MAX_AUTOSIGN_INDEX,
         }
     }
 }
@@ -161,8 +206,8 @@ pub struct AccountRecord {
 /// material.
 ///
 /// `address_index` says which of its seed's keys this is:
-/// [`HUMAN_SIGN_INDEX`] (0) or [`AUTOSIGN_INDEX`] (1, Falcon-1024 only; see
-/// [`KeyAlgorithm::key_indices`]). The TA only reports the index today;
+/// [`HUMAN_SIGN_INDEX`] (0) or an autosign key (1 and up, Falcon-1024 only;
+/// see [`AUTOSIGN_INDEX`]). The TA only reports the index today;
 /// enforcing "index 0 needs a human to approve each signature" is the
 /// pending user-authentication TODO in `seed_vault_ta`.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -210,14 +255,18 @@ pub enum StoreError {
     /// Signing failed, or the fresh signature didn't verify against the
     /// account's own public key.
     SigningFailed,
-    /// An `address_index` the account's algorithm doesn't derive (see
-    /// [`KeyAlgorithm::key_indices`]).
+    /// An `address_index` the account's algorithm can't have (see
+    /// [`KeyAlgorithm::has_key_index`]), or that the seed doesn't hold (yet;
+    /// see [`derive_account`]).
     UnknownKeyIndex,
     /// `sign_transaction`'s transaction isn't sent by the requested address.
     SenderMismatch,
     /// `sign_arbitrary_data` was given data starting with one of Algorand's
     /// signing-domain prefixes ([`RESERVED_DOMAIN_PREFIXES`]).
     ReservedDomainPrefix,
+    /// [`derive_account`] would give a seed more than
+    /// [`MAX_FALCON1024_KEYS`] keys.
+    TooManyKeys,
 }
 
 /// Algorand signing-domain prefixes (go-algorand `protocol.HashID`) that
@@ -259,6 +308,11 @@ pub trait AccountStore {
     /// overwrite if `index` is already occupied.
     fn persist_record(&mut self, index: u32, record: &AccountRecord) -> Result<(), StoreError>;
 
+    /// Durably replaces the existing record at `index` with `record` (used
+    /// by [`derive_account`] to add a key to a seed). The new record is never
+    /// shorter than the old one.
+    fn replace_record(&mut self, index: u32, record: &AccountRecord) -> Result<(), StoreError>;
+
     /// Returns every persisted record paired with its index, ordered by
     /// ascending index (i.e. creation order).
     fn all_indexed_records(&mut self) -> Result<Vec<(u32, AccountRecord)>, StoreError>;
@@ -280,9 +334,10 @@ pub trait AccountStore {
 }
 
 /// Creates a brand-new seed using `algorithm`, persists its key material via
-/// `store`, and returns the public identity of its key `address_index` (one
-/// of [`KeyAlgorithm::key_indices`], else [`StoreError::UnknownKeyIndex`];
-/// a Falcon-1024 seed has both of its accounts either way). Key material is
+/// `store`, and returns the public identity of its key `address_index` (see
+/// [`KeyAlgorithm::has_key_index`], else [`StoreError::UnknownKeyIndex`]).
+/// A Falcon-1024 seed gets keys 0 and [`AUTOSIGN_INDEX`] either way, plus
+/// `address_index` if it's another autosign key. Key material is
 /// never returned to the caller -- only the [`AccountSummary`] is.
 pub fn create_account(
     store: &mut impl AccountStore,
@@ -326,7 +381,7 @@ pub fn import_account(
 }
 
 fn check_key_index(algorithm: KeyAlgorithm, address_index: u32) -> Result<(), StoreError> {
-    if algorithm.key_indices().contains(&address_index) {
+    if algorithm.has_key_index(address_index) {
         Ok(())
     } else {
         Err(StoreError::UnknownKeyIndex)
@@ -355,7 +410,7 @@ pub fn list_accounts(store: &mut impl AccountStore) -> Result<Vec<AccountSummary
 /// derived from -- `address` is the same identifier `create_account` and
 /// `list_accounts` hand back, so a caller never needs to know anything
 /// about internal storage indices. Looking up by address also means this
-/// works for every address of a seed (see [`KeyAlgorithm::key_indices`]):
+/// works for every address of a seed (see [`AccountRecord`]):
 /// the mnemonic returned is the seed's *one* recovery phrase, shared by all.
 ///
 /// # This is the one deliberate exception to "seeds never leave the secure
@@ -386,12 +441,15 @@ pub fn reveal_mnemonic(store: &mut impl AccountStore, address: &str) -> Result<S
     result
 }
 
-/// Permanently deletes the persisted *seed* that `address` was derived
-/// from, and returns that address's [`AccountSummary`] so the caller can
-/// confirm what was removed.
+/// Permanently deletes the persisted *seed* whose human-sign
+/// ([`HUMAN_SIGN_INDEX`]) address is `address`, and returns that address's
+/// [`AccountSummary`] so the caller can confirm what was removed.
 ///
 /// Because a record is a seed (see [`AccountRecord`]), this removes *all*
-/// of its addresses (for Falcon-1024, human-sign and autosign). Importing the same
+/// of its addresses (for Falcon-1024, human-sign and every autosign key).
+/// That's why only the human-sign address is accepted: an autosign address
+/// fails with [`StoreError::UnknownKeyIndex`], so a caller holding just a
+/// session key's address can't wipe the whole seed by mistake. Importing the same
 /// mnemonic under the *other* [`KeyAlgorithm`] creates a separate record,
 /// which this leaves untouched.
 ///
@@ -407,7 +465,10 @@ pub fn delete_account(
 ) -> Result<AccountSummary, StoreError> {
     let mut records = store.all_indexed_records()?;
 
-    let result = find_record_by_address(&records, address).and_then(|(pos, _)| {
+    let result = find_record_by_address(&records, address).and_then(|(pos, key_index)| {
+        if key_index != HUMAN_SIGN_INDEX {
+            return Err(StoreError::UnknownKeyIndex);
+        }
         let (index, record) = &records[pos];
         let summary = summaries_for_record(record)?
             .into_iter()
@@ -421,6 +482,60 @@ pub fn delete_account(
     result
 }
 
+/// Adds autosign key `address_index` (`1..=`[`MAX_AUTOSIGN_INDEX`]) to the
+/// [`KeyAlgorithm::Falcon1024`] seed that `address` (any of its addresses)
+/// belongs to, and returns that key's [`AccountSummary`]. A key the seed
+/// already holds is returned as is, so this is idempotent. This is how a
+/// caller gets a fresh session key without a new backup: the seed's 25
+/// words recover every autosign key (see [`falcon_key_entropy`]).
+///
+/// Fails with [`StoreError::NotFound`] for an unknown `address`,
+/// [`StoreError::UnknownKeyIndex`] for index 0, an out-of-range index, or
+/// an Ed25519 seed, and [`StoreError::TooManyKeys`] once the seed holds
+/// [`MAX_FALCON1024_KEYS`] keys.
+pub fn derive_account(
+    store: &mut impl AccountStore,
+    address: &str,
+    address_index: u32,
+) -> Result<AccountSummary, StoreError> {
+    let mut records = store.all_indexed_records()?;
+
+    let result = find_record_by_address(&records, address).and_then(|(pos, _)| {
+        let (index, record) = &mut records[pos];
+        if address_index == HUMAN_SIGN_INDEX || !record.algorithm.has_key_index(address_index) {
+            return Err(StoreError::UnknownKeyIndex);
+        }
+        if let Ok(identity) = public_identity(record, address_index) {
+            return Ok(identity);
+        }
+        if falcon_keys(record)?.len() >= MAX_FALCON1024_KEYS {
+            return Err(StoreError::TooManyKeys);
+        }
+        // A fresh buffer rather than growing the old one in place, so a
+        // reallocation can't leave an unwiped copy of the keys behind.
+        let mut entropy = *record_entropy(record)?;
+        let mut key_material =
+            Vec::with_capacity(record.key_material.len() + falcon_record::KEY_LEN);
+        key_material.extend_from_slice(&record.key_material);
+        let pushed = push_falcon_key(&mut key_material, &entropy, address_index);
+        entropy.zeroize();
+        record.key_material.zeroize();
+        record.key_material = key_material;
+        pushed?;
+        store.replace_record(*index, record)?;
+        public_identity(record, address_index)
+    });
+
+    wipe(&mut records);
+
+    result.map(|(address, public_key)| AccountSummary {
+        algorithm: KeyAlgorithm::Falcon1024,
+        address_index,
+        address,
+        public_key,
+    })
+}
+
 /// Signs `txn` -- a msgpack-encoded Algorand transaction *without* the
 /// `"TX"` prefix, e.g. `algosdk`'s `txn.encode()` -- with the account whose
 /// address is `address`, and returns the [`SignedTxnPrefix`] for it: the
@@ -432,9 +547,8 @@ pub fn delete_account(
 /// ([`HUMAN_SIGN_INDEX`] or [`AUTOSIGN_INDEX`]); if `address` isn't that
 /// key this fails with [`StoreError::UnknownKeyIndex`]. The transaction's
 /// sender (`snd`) must be `address` itself, else
-/// [`StoreError::SenderMismatch`]: this is what keeps a Falcon seed's
-/// autosign account from being used to sign for its human-sign account
-/// (see [`AUTOSIGN_INDEX`]). Rekeyed senders are therefore not supported.
+/// [`StoreError::SenderMismatch`], so no key ever signs another account's
+/// transaction. Rekeyed senders are therefore not supported.
 ///
 /// - **Ed25519:** `{sig, txn}`.
 /// - **Falcon-1024:** `{pqsig: {pk, sch: "f1", sig, slt}, txn}`. Only
@@ -498,8 +612,9 @@ pub fn sign_transaction(
 ///
 /// - **Ed25519:** the raw 64-byte signature over `data`.
 /// - **Falcon-1024:** the compressed deterministic signature over `data`
-///   (go-algorand `FalconSigner.SignBytes`). Both of a seed's Falcon
-///   accounts share one key, so their signatures are identical.
+///   (go-algorand `FalconSigner.SignBytes`). Each of a seed's Falcon
+///   accounts has its own key (see [`AUTOSIGN_INDEX`]), so an autosign
+///   signature never verifies under the human-sign key.
 ///
 /// `data` starting with a [`RESERVED_DOMAIN_PREFIXES`] entry is refused
 /// with [`StoreError::ReservedDomainPrefix`] -- otherwise `sign_arbitrary_data("TX"
@@ -601,21 +716,16 @@ fn raw_sign(
             Ok(RawSignature::Ed25519(signature))
         }
         KeyAlgorithm::Falcon1024 => {
-            let km = &record.key_material;
-            let (public_key, private_key) = if km.len() >= falcon_record::KEYPAIR_LEN {
-                let mut public_key = PublicKey([0u8; algokit_crypto::falcon1024::PUBLIC_KEY_SIZE]);
-                public_key.0.copy_from_slice(&km[falcon_record::PUBLIC_KEY]);
-                let mut private_key = PrivateKey::default();
-                private_key
-                    .0
-                    .copy_from_slice(&km[falcon_record::PRIVATE_KEY]);
-                (public_key, private_key)
-            } else {
-                // Entropy-only record from an earlier build: re-derive.
-                let account = derive_falcon_account(record)?;
-                (account.public_key, account.private_key)
-            };
-            let (salt, _) = falcon_salt_and_address(record, &public_key.0, key_index)?;
+            let key = falcon_key(record, key_index)?;
+            let mut public_key = PublicKey::default();
+            public_key
+                .0
+                .copy_from_slice(&key[falcon_record::PUBLIC_KEY]);
+            let mut private_key = PrivateKey::default();
+            private_key
+                .0
+                .copy_from_slice(&key[falcon_record::PRIVATE_KEY]);
+            let salt = key[falcon_record::SALT];
             let signature = private_key
                 .sign_compressed(message)
                 .map_err(|_| StoreError::SigningFailed)?;
@@ -635,7 +745,7 @@ fn raw_sign(
 }
 
 /// Position (within `records`) of the record deriving `address`, and which
-/// of its keys ([`KeyAlgorithm::key_indices`]) `address` belongs to.
+/// of its keys (its [`AccountSummary::address_index`]) `address` belongs to.
 fn find_record_by_address(
     records: &[(u32, AccountRecord)],
     address: &str,
@@ -719,7 +829,7 @@ fn persist_seed(
     mut seed: [u8; ALGO25_SEED_LEN],
     reject_duplicate: bool,
 ) -> Result<AccountSummary, StoreError> {
-    let result = build_record(algorithm, &seed).and_then(|(mut record, address)| {
+    let result = build_record(algorithm, &seed, address_index).and_then(|(mut record, address)| {
         let persisted = (|| {
             // Both keys come from the same seed, so checking the human-sign
             // address is enough.
@@ -748,10 +858,12 @@ fn persist_seed(
 }
 
 /// The record to persist for `seed` under `algorithm`, plus its human-sign
-/// (index 0) address.
+/// (index 0) address. A Falcon-1024 record holds [`DEFAULT_FALCON1024_KEYS`]
+/// plus `address_index`.
 fn build_record(
     algorithm: KeyAlgorithm,
     seed: &[u8; ALGO25_SEED_LEN],
+    address_index: u32,
 ) -> Result<(AccountRecord, String), StoreError> {
     match algorithm {
         KeyAlgorithm::Algo25Ed25519 => {
@@ -763,30 +875,55 @@ fn build_record(
             Ok((record, address))
         }
         KeyAlgorithm::Falcon1024 => {
-            let account = algokit_crypto::falcon1024::account_from_entropy(seed)
-                .map_err(|_| StoreError::KeyDerivationFailed)?;
-            let (autosign_salt, autosign_address) =
-                algokit_crypto::falcon1024::nth_pq_address(&account.public_key.0, 1)
-                    .map_err(|_| StoreError::KeyDerivationFailed)?;
-            let mut key_material = Vec::with_capacity(falcon_record::LEN);
+            let mut key_indices = Vec::from(DEFAULT_FALCON1024_KEYS);
+            if !key_indices.contains(&address_index) {
+                key_indices.push(address_index);
+            }
+            let mut key_material = Vec::with_capacity(falcon_record::record_len(key_indices.len()));
             key_material.extend_from_slice(seed);
-            key_material.push(account.salt);
-            key_material.extend_from_slice(&account.address);
-            key_material.extend_from_slice(&account.public_key.0);
-            key_material.extend_from_slice(&account.private_key.0);
-            key_material.push(autosign_salt);
-            key_material.extend_from_slice(&autosign_address);
-            debug_assert_eq!(key_material.len(), falcon_record::LEN);
-            // `account.private_key` is zeroized when `account` drops here.
+            let mut human_address = String::new();
+            for key_index in key_indices {
+                match push_falcon_key(&mut key_material, seed, key_index) {
+                    Ok(address) if key_index == HUMAN_SIGN_INDEX => human_address = address,
+                    Ok(_) => {}
+                    Err(e) => {
+                        key_material.zeroize();
+                        return Err(e);
+                    }
+                }
+            }
             Ok((
                 AccountRecord {
                     algorithm,
                     key_material,
                 },
-                account.address_string(),
+                human_address,
             ))
         }
     }
+}
+
+/// Derives Falcon-1024 key `key_index` of the seed with `entropy` and
+/// appends its [`falcon_record`] key block to `key_material` (which the
+/// caller must have reserved room for). Returns the key's address.
+fn push_falcon_key(
+    key_material: &mut Vec<u8>,
+    entropy: &[u8; FALCON1024_ENTROPY_LEN],
+    key_index: u32,
+) -> Result<String, StoreError> {
+    let key_index_byte = u8::try_from(key_index).map_err(|_| StoreError::UnknownKeyIndex)?;
+    let mut key_entropy = falcon_key_entropy(entropy, key_index)?;
+    let account = algokit_crypto::falcon1024::account_from_entropy(&key_entropy)
+        .map_err(|_| StoreError::KeyDerivationFailed);
+    key_entropy.zeroize();
+    let account = account?;
+    key_material.push(key_index_byte);
+    key_material.push(account.salt);
+    key_material.extend_from_slice(&account.address);
+    key_material.extend_from_slice(&account.public_key.0);
+    key_material.extend_from_slice(&account.private_key.0);
+    // `account.private_key` is zeroized when `account` drops here.
+    Ok(account.address_string())
 }
 
 /// Fails with [`StoreError::AlreadyExists`] if any persisted record already
@@ -815,11 +952,15 @@ fn reject_if_address_exists(
 fn record_entropy(record: &AccountRecord) -> Result<&[u8; ALGO25_SEED_LEN], StoreError> {
     let valid_len = match record.algorithm {
         KeyAlgorithm::Algo25Ed25519 => record.key_material.len() == ALGO25_SEED_LEN,
-        // Current records, plus the two shapes earlier builds wrote.
-        KeyAlgorithm::Falcon1024 => matches!(
-            record.key_material.len(),
-            FALCON1024_ENTROPY_LEN | falcon_record::KEYPAIR_LEN | falcon_record::LEN
-        ),
+        KeyAlgorithm::Falcon1024 => {
+            let keys_len = record
+                .key_material
+                .len()
+                .saturating_sub(falcon_record::ENTROPY.end);
+            record.key_material.len() > falcon_record::ENTROPY.end
+                && keys_len % falcon_record::KEY_LEN == 0
+                && keys_len / falcon_record::KEY_LEN <= MAX_FALCON1024_KEYS
+        }
     };
     if !valid_len {
         return Err(StoreError::CorruptRecord);
@@ -830,10 +971,9 @@ fn record_entropy(record: &AccountRecord) -> Result<&[u8; ALGO25_SEED_LEN], Stor
 }
 
 /// Every Algorand address `record` derives, paired with its
-/// [`AccountSummary::address_index`] (see [`KeyAlgorithm::key_indices`]).
+/// [`AccountSummary::address_index`].
 ///
-/// Current Falcon-1024 records answer from their cache (no keygen, no salt
-/// search).
+/// Falcon-1024 records answer from their cache (no keygen, no salt search).
 fn addresses_for_record(record: &AccountRecord) -> Result<Vec<(u32, String)>, StoreError> {
     Ok(public_identities(record)?
         .into_iter()
@@ -842,7 +982,7 @@ fn addresses_for_record(record: &AccountRecord) -> Result<Vec<(u32, String)>, St
 }
 
 /// `(address_index, address, public_key)` for every account `record`
-/// derives. Both Falcon-1024 accounts carry the same public key.
+/// derives. Each Falcon-1024 account has its own public key.
 fn public_identities(record: &AccountRecord) -> Result<Vec<(u32, String, Vec<u8>)>, StoreError> {
     match record.algorithm {
         KeyAlgorithm::Algo25Ed25519 => {
@@ -853,20 +993,18 @@ fn public_identities(record: &AccountRecord) -> Result<Vec<(u32, String, Vec<u8>
                 public_key.to_vec(),
             )])
         }
-        KeyAlgorithm::Falcon1024 => {
-            let public_key = falcon_public_key(record)?;
-            FALCON1024_KEY_INDICES
-                .iter()
-                .map(|&key_index| {
-                    let (_, address) = falcon_salt_and_address(record, &public_key, key_index)?;
-                    Ok((
-                        key_index,
-                        address_from_public_key(&address),
-                        public_key.clone(),
-                    ))
-                })
-                .collect()
-        }
+        KeyAlgorithm::Falcon1024 => falcon_keys(record)?
+            .map(|key| {
+                let address = key[falcon_record::ADDRESS]
+                    .try_into()
+                    .map_err(|_| StoreError::CorruptRecord)?;
+                Ok((
+                    u32::from(key[falcon_record::KEY_INDEX]),
+                    address_from_public_key(&address),
+                    key[falcon_record::PUBLIC_KEY].to_vec(),
+                ))
+            })
+            .collect(),
     }
 }
 
@@ -888,44 +1026,18 @@ fn ed25519_keypair(record: &AccountRecord) -> Result<CryptoxideEd25519Keypair, S
         .map_err(|_| StoreError::KeyDerivationFailed)
 }
 
-/// Runs Falcon-1024 keygen for `record`'s entropy. The private key is
-/// zeroized when the returned account drops.
-fn derive_falcon_account(
-    record: &AccountRecord,
-) -> Result<algokit_crypto::falcon1024::Falcon1024Account, StoreError> {
-    algokit_crypto::falcon1024::account_from_entropy(record_entropy(record)?)
-        .map_err(|_| StoreError::KeyDerivationFailed)
-}
-
-/// A Falcon-1024 record's public key: cached, or re-derived for
-/// entropy-only records from earlier builds.
-fn falcon_public_key(record: &AccountRecord) -> Result<Vec<u8>, StoreError> {
+/// A Falcon-1024 record's key blocks (see [`falcon_record`]), in the order
+/// they were added, after checking the record's length.
+fn falcon_keys(record: &AccountRecord) -> Result<core::slice::ChunksExact<'_, u8>, StoreError> {
     record_entropy(record)?; // validates the length
-    if record.key_material.len() >= falcon_record::KEYPAIR_LEN {
-        Ok(record.key_material[falcon_record::PUBLIC_KEY].to_vec())
-    } else {
-        Ok(derive_falcon_account(record)?.public_key.0.to_vec())
-    }
+    Ok(record.key_material[falcon_record::ENTROPY.end..].chunks_exact(falcon_record::KEY_LEN))
 }
 
-/// Salt and raw address of Falcon-1024 account `key_index`: cached when
-/// the record has it, else the `key_index`th-lowest PQ-compliant salt of
-/// `public_key`.
-fn falcon_salt_and_address(
-    record: &AccountRecord,
-    public_key: &[u8],
-    key_index: u32,
-) -> Result<(u8, [u8; 32]), StoreError> {
-    if !FALCON1024_KEY_INDICES.contains(&key_index) {
-        return Err(StoreError::UnknownKeyIndex);
-    }
-    let km = &record.key_material;
-    if let Some(address) = km.get(falcon_record::address(key_index)) {
-        let address = address.try_into().map_err(|_| StoreError::CorruptRecord)?;
-        return Ok((km[falcon_record::salt(key_index)], address));
-    }
-    algokit_crypto::falcon1024::nth_pq_address(public_key, key_index as usize)
-        .map_err(|_| StoreError::KeyDerivationFailed)
+/// The key block for `key_index`, if the record holds that key.
+fn falcon_key(record: &AccountRecord, key_index: u32) -> Result<&[u8], StoreError> {
+    falcon_keys(record)?
+        .find(|key| u32::from(key[falcon_record::KEY_INDEX]) == key_index)
+        .ok_or(StoreError::UnknownKeyIndex)
 }
 
 #[cfg(test)]
@@ -1018,29 +1130,136 @@ mod tests {
         assert_eq!(imported.algorithm, KeyAlgorithm::Falcon1024);
         assert_eq!(imported.address, FALCON_KNOWN_ADDRESS);
 
-        // The record caches keygen output after the entropy, and that cache
-        // matches a fresh derivation exactly: index 0 is the canonical salt
-        // (go-algorand/SDK compatible), index 1 the next compliant salt of
-        // the same key.
+        // The record caches each key's keygen output after the entropy, and
+        // that cache matches a fresh derivation exactly: index 0 is the
+        // standard (go-algorand/SDK compatible) account, index 1 the
+        // standard derivation of the autosign child entropy.
         let records = store.all_records().unwrap();
         let km = &records[0].key_material;
-        assert_eq!(km.len(), falcon_record::LEN);
+        assert_eq!(km.len(), falcon_record::record_len(2));
         assert_eq!(&km[falcon_record::ENTROPY], &falcon_known_entropy());
-        let fresh =
-            algokit_crypto::falcon1024::account_from_entropy(&falcon_known_entropy()).unwrap();
-        assert_eq!(&km[falcon_record::PUBLIC_KEY], &fresh.public_key.0[..]);
-        assert_eq!(&km[falcon_record::PRIVATE_KEY], &fresh.private_key.0[..]);
-        for key_index in [HUMAN_SIGN_INDEX, AUTOSIGN_INDEX] {
-            let (salt, address) =
-                algokit_crypto::falcon1024::nth_pq_address(&fresh.public_key.0, key_index as usize)
-                    .unwrap();
-            assert_eq!(km[falcon_record::salt(key_index)], salt);
-            assert_eq!(&km[falcon_record::address(key_index)], &address);
+        let keys: Vec<&[u8]> = km[32..].chunks_exact(falcon_record::KEY_LEN).collect();
+        for (key, key_index) in keys.iter().zip([HUMAN_SIGN_INDEX, AUTOSIGN_INDEX]) {
+            let entropy = falcon_key_entropy(&falcon_known_entropy(), key_index).unwrap();
+            let fresh = algokit_crypto::falcon1024::account_from_entropy(&entropy).unwrap();
+            assert_eq!(u32::from(key[falcon_record::KEY_INDEX]), key_index);
+            assert_eq!(key[falcon_record::SALT], fresh.salt);
+            assert_eq!(&key[falcon_record::ADDRESS], &fresh.address);
+            assert_eq!(&key[falcon_record::PUBLIC_KEY], &fresh.public_key.0[..]);
+            assert_eq!(&key[falcon_record::PRIVATE_KEY], &fresh.private_key.0[..]);
         }
-        assert_eq!(km[falcon_record::salt(HUMAN_SIGN_INDEX)], fresh.salt);
+    }
+
+    fn hex32(hex: &str) -> [u8; 32] {
+        core::array::from_fn(|i| u8::from_str_radix(&hex[2 * i..2 * i + 2], 16).unwrap())
+    }
+
+    /// Pins the autosign derivation, so changing it is a deliberate act (it
+    /// moves every re-imported autosign address).
+    #[test]
+    fn falcon_key_entropy_known_answers() {
+        let entropy = falcon_known_entropy();
         assert_eq!(
-            &km[falcon_record::address(HUMAN_SIGN_INDEX)],
-            &fresh.address
+            falcon_key_entropy(&entropy, HUMAN_SIGN_INDEX).unwrap(),
+            entropy
+        );
+        assert_eq!(
+            falcon_key_entropy(&entropy, 1).unwrap(),
+            hex32("861f184961559dc6cfb0438fe17af14d3fb4a29f0ed54f2f6db2737c03b3a1c9")
+        );
+        assert_eq!(
+            falcon_key_entropy(&entropy, 2).unwrap(),
+            hex32("6ad325ce31b1911db75acfbcb712c4b04f8830146b5fe07dca629e28c558a268")
+        );
+        assert!(falcon_key_entropy(&entropy, MAX_AUTOSIGN_INDEX).is_ok());
+        assert_eq!(
+            falcon_key_entropy(&entropy, MAX_AUTOSIGN_INDEX + 1),
+            Err(StoreError::UnknownKeyIndex)
+        );
+    }
+
+    #[test]
+    fn derive_account_adds_a_separate_autosign_key() {
+        let mut store = MemoryStore::default();
+        let human = create_account(&mut store, KeyAlgorithm::Falcon1024, HUMAN_SIGN_INDEX).unwrap();
+        let before = list_accounts(&mut store).unwrap();
+
+        // Derived via any of the seed's addresses (here: the autosign one).
+        let session = derive_account(&mut store, &before[1].address, 7).unwrap();
+        assert_eq!(session.address_index, 7);
+        assert!(before.iter().all(|a| a.public_key != session.public_key));
+        let listed = list_accounts(&mut store).unwrap();
+        assert_eq!(
+            listed.iter().map(|a| a.address_index).collect::<Vec<_>>(),
+            alloc::vec![0, 1, 7]
+        );
+        assert_eq!(listed[2], session);
+
+        // Idempotent.
+        assert_eq!(
+            derive_account(&mut store, &human.address, 7).unwrap(),
+            session
+        );
+        assert_eq!(list_accounts(&mut store).unwrap().len(), 3);
+
+        // It signs as its own account, with its own key.
+        let txn = test_txn_from(&session.address);
+        let signed = sign_transaction(&mut store, &session.address, 7, &txn).unwrap();
+        let (pk, _, _) = parse_falcon_prefix(&signed.prefix);
+        assert_eq!(pk, &session.public_key[..]);
+        assert_eq!(
+            sign_transaction(&mut store, &session.address, AUTOSIGN_INDEX, &txn),
+            Err(StoreError::UnknownKeyIndex)
+        );
+
+        // Same words, same key: importing elsewhere and deriving 7 again
+        // reproduces it; the seed's mnemonic is unchanged.
+        let mnemonic = reveal_mnemonic(&mut store, &session.address).unwrap();
+        assert_eq!(
+            reveal_mnemonic(&mut store, &human.address).unwrap(),
+            mnemonic
+        );
+        let mut other = MemoryStore::default();
+        import_account(&mut other, KeyAlgorithm::Falcon1024, 7, &mnemonic).unwrap();
+        assert_eq!(list_accounts(&mut other).unwrap(), listed);
+    }
+
+    #[test]
+    fn derive_account_rejects_bad_requests() {
+        let mut store = MemoryStore::default();
+        let falcon =
+            create_account(&mut store, KeyAlgorithm::Falcon1024, HUMAN_SIGN_INDEX).unwrap();
+        let ed = create_account(&mut store, KeyAlgorithm::Algo25Ed25519, HUMAN_SIGN_INDEX).unwrap();
+        assert_eq!(
+            derive_account(&mut store, &falcon.address, HUMAN_SIGN_INDEX),
+            Err(StoreError::UnknownKeyIndex)
+        );
+        assert_eq!(
+            derive_account(&mut store, &falcon.address, MAX_AUTOSIGN_INDEX + 1),
+            Err(StoreError::UnknownKeyIndex)
+        );
+        assert_eq!(
+            derive_account(&mut store, &ed.address, AUTOSIGN_INDEX),
+            Err(StoreError::UnknownKeyIndex)
+        );
+        assert_eq!(
+            derive_account(&mut store, &address_for_algo25_seed(&[9u8; 32]).unwrap(), 2),
+            Err(StoreError::NotFound)
+        );
+
+        // Fill the seed up to its cap; one more is refused, but existing
+        // keys are still returned.
+        for n in 2..MAX_FALCON1024_KEYS as u32 {
+            derive_account(&mut store, &falcon.address, n).unwrap();
+        }
+        assert_eq!(
+            derive_account(&mut store, &falcon.address, 200),
+            Err(StoreError::TooManyKeys)
+        );
+        derive_account(&mut store, &falcon.address, 3).unwrap();
+        assert_eq!(
+            list_accounts(&mut store).unwrap().len(),
+            MAX_FALCON1024_KEYS + 1
         );
     }
 
@@ -1059,15 +1278,11 @@ mod tests {
             alloc::vec![HUMAN_SIGN_INDEX, AUTOSIGN_INDEX]
         );
         assert_eq!(listed[1], autosign);
-        // Same Falcon key; index 0 at the canonical salt, index 1 at the
-        // next PQ-compliant one.
-        assert_eq!(listed[0].public_key, listed[1].public_key);
+        // Separate Falcon keys, each at its own canonical salt.
+        assert_ne!(listed[0].public_key, listed[1].public_key);
         for summary in &listed {
-            let (_, address) = algokit_crypto::falcon1024::nth_pq_address(
-                &summary.public_key,
-                summary.address_index as usize,
-            )
-            .unwrap();
+            let (_, address) =
+                algokit_crypto::falcon1024::canonical_pq_address(&summary.public_key).unwrap();
             assert!(algokit_crypto::falcon1024::is_pq_compliant(&address));
             assert_eq!(address_from_public_key(&address), summary.address);
         }
@@ -1091,8 +1306,14 @@ mod tests {
         assert_eq!(human, listed[0]);
         assert_eq!(list_accounts(&mut other).unwrap(), listed);
 
-        // Deleting via the autosign address removes the whole seed.
-        delete_account(&mut store, &autosign.address).unwrap();
+        // Only the human-sign address deletes the seed (and with it the
+        // autosign account); the autosign address is refused.
+        assert_eq!(
+            delete_account(&mut store, &autosign.address),
+            Err(StoreError::UnknownKeyIndex)
+        );
+        assert_eq!(list_accounts(&mut store).unwrap().len(), 2);
+        delete_account(&mut store, &listed[0].address).unwrap();
         assert!(list_accounts(&mut store).unwrap().is_empty());
     }
 
@@ -1115,7 +1336,7 @@ mod tests {
         );
         assert!(list_accounts(&mut store).unwrap().is_empty());
         assert_eq!(
-            create_account(&mut store, KeyAlgorithm::Falcon1024, 2),
+            create_account(&mut store, KeyAlgorithm::Falcon1024, MAX_AUTOSIGN_INDEX + 1),
             Err(StoreError::UnknownKeyIndex)
         );
 
@@ -1208,10 +1429,8 @@ mod tests {
 
     #[test]
     fn autosign_cannot_sign_the_human_sign_accounts_transactions() {
-        // Both accounts share one Falcon key and the salt isn't signed, so an
-        // autosign signature over a human-sign transaction would become a
-        // valid human-sign authorization by swapping `slt`. The sender check
-        // is what stops that.
+        // The accounts have separate keys, so this is defense in depth: the
+        // sender check still refuses to sign another account's transaction.
         let mut store = MemoryStore::default();
         create_account(&mut store, KeyAlgorithm::Falcon1024, AUTOSIGN_INDEX).unwrap();
         let listed = list_accounts(&mut store).unwrap();
@@ -1239,62 +1458,21 @@ mod tests {
     }
 
     #[test]
-    fn falcon_records_from_earlier_builds_derive_the_same_keys() {
-        let entropy = [11u8; 32];
-        let mnemonic = algokit_crypto::algo25::mnemonic_from_seed(&entropy).unwrap();
-        let mut full = MemoryStore::default();
-        import_account(
-            &mut full,
-            KeyAlgorithm::Falcon1024,
-            HUMAN_SIGN_INDEX,
-            &mnemonic,
-        )
-        .unwrap();
-        let expected = list_accounts(&mut full).unwrap();
-        let full_km = full.all_records().unwrap()[0].key_material.clone();
-
-        // Entropy only, and entropy + keypair + index 0's salt/address only.
-        for len in [32, falcon_record::KEYPAIR_LEN] {
-            let mut store = MemoryStore::default();
-            store
-                .persist_record(
-                    0,
-                    &AccountRecord {
-                        algorithm: KeyAlgorithm::Falcon1024,
-                        key_material: full_km[..len].to_vec(),
-                    },
-                )
-                .unwrap();
-            assert_eq!(list_accounts(&mut store).unwrap(), expected, "len {len}");
-            let txn = test_txn_from(&expected[1].address);
-            let signed =
-                sign_transaction(&mut store, &expected[1].address, AUTOSIGN_INDEX, &txn).unwrap();
-            assert_eq!(
-                signed,
-                sign_transaction(&mut full, &expected[1].address, AUTOSIGN_INDEX, &txn).unwrap()
-            );
-        }
-    }
-
-    #[test]
-    fn legacy_entropy_only_falcon_record_still_works() {
+    fn autosign_signature_does_not_verify_under_the_human_sign_key() {
         let mut store = MemoryStore::default();
-        store
-            .persist_record(
-                0,
-                &AccountRecord {
-                    algorithm: KeyAlgorithm::Falcon1024,
-                    key_material: falcon_known_entropy().to_vec(),
-                },
-            )
-            .unwrap();
+        create_account(&mut store, KeyAlgorithm::Falcon1024, HUMAN_SIGN_INDEX).unwrap();
         let listed = list_accounts(&mut store).unwrap();
-        assert_eq!(listed[0].address, FALCON_KNOWN_ADDRESS);
-        let mnemonic = reveal_mnemonic(&mut store, FALCON_KNOWN_ADDRESS).unwrap();
-        assert_eq!(
-            algokit_crypto::algo25::seed_from_mnemonic(&mnemonic).unwrap(),
-            falcon_known_entropy()
-        );
+        let (human, autosign) = (&listed[0], &listed[1]);
+
+        let txn = test_txn_from(&autosign.address);
+        let signed = sign_transaction(&mut store, &autosign.address, AUTOSIGN_INDEX, &txn).unwrap();
+        let (pk, sig, _) = parse_falcon_prefix(&signed.prefix);
+        assert_eq!(pk, &autosign.public_key[..]);
+
+        let message = crate::signed_txn::bytes_to_sign(&txn);
+        let mut human_key = algokit_crypto::falcon1024::PublicKey::default();
+        human_key.0.copy_from_slice(&human.public_key);
+        assert!(human_key.verify(sig, &message).is_err());
     }
 
     #[test]

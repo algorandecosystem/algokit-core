@@ -27,9 +27,9 @@
 //! What "key material" holds depends on the algorithm (see
 //! `seed_vault::store`): an `Algo25Ed25519` record is just its 32-byte
 //! seed (the address is re-derived, which is cheap), while a `Falcon1024`
-//! record is the 32-byte entropy followed by a cache of its keygen output
-//! (public key, private key) and of both of its accounts' salt + address
-//! (see `seed_vault::store::falcon_record`), so Falcon keygen runs only at
+//! record is the 32-byte entropy followed by a cache of each of its two
+//! accounts' keygen output (salt, address, public key, private key; see
+//! `seed_vault::store::falcon_record`), so Falcon keygen runs only at
 //! create/import time.
 //!
 //! ## `Port::TamperDetect` vs `Port::TamperProof`
@@ -89,6 +89,23 @@ fn indexed_filenames(session: &mut Session) -> Result<Vec<(u32, String)>, StoreE
     Ok(indexed)
 }
 
+/// Writes `record` as the file for `index`, opened with `mode`.
+fn write_record(index: u32, record: &AccountRecord, mode: OpenMode) -> Result<(), StoreError> {
+    let mut session = open_session()?;
+    let filename = filename_for_index(index);
+    let mut file = session
+        .open_file(&filename, mode)
+        .map_err(|_| StoreError::Backend)?;
+    let mut bytes = Vec::with_capacity(1 + record.key_material.len());
+    bytes.push(record.algorithm as u8);
+    bytes.extend_from_slice(&record.key_material);
+    let result = session
+        .write_all(&mut file, &bytes)
+        .map_err(|_| StoreError::Backend);
+    bytes.zeroize();
+    result
+}
+
 /// [`AccountStore`] backed by Trusty's on-device secure storage service, so
 /// seed vault accounts created by this TA survive reboots (subject to the
 /// `TamperDetect` factory-reset semantics described above).
@@ -103,19 +120,13 @@ impl AccountStore for TrustySecureStore {
     }
 
     fn persist_record(&mut self, index: u32, record: &AccountRecord) -> Result<(), StoreError> {
-        let mut session = open_session()?;
-        let filename = filename_for_index(index);
-        let mut file = session
-            .open_file(&filename, OpenMode::Create)
-            .map_err(|_| StoreError::Backend)?;
-        let mut bytes = Vec::with_capacity(1 + record.key_material.len());
-        bytes.push(record.algorithm as u8);
-        bytes.extend_from_slice(&record.key_material);
-        let result = session
-            .write_all(&mut file, &bytes)
-            .map_err(|_| StoreError::Backend);
-        bytes.zeroize();
-        result
+        write_record(index, record, OpenMode::Create)
+    }
+
+    fn replace_record(&mut self, index: u32, record: &AccountRecord) -> Result<(), StoreError> {
+        // `write_all` rewrites the file from the start; a replacement is never
+        // shorter than the original (see the trait), so no stale tail remains.
+        write_record(index, record, OpenMode::Open)
     }
 
     fn delete_record(&mut self, index: u32) -> Result<(), StoreError> {

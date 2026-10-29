@@ -782,6 +782,8 @@ internal interface IntegrityCheckingUniffiLib : Library {
 
   fun uniffi_seed_vault_ffi_checksum_method_seedvaultclient_delete_account(): Short
 
+  fun uniffi_seed_vault_ffi_checksum_method_seedvaultclient_derive_account(): Short
+
   fun uniffi_seed_vault_ffi_checksum_method_seedvaultclient_device_path(): Short
 
   fun uniffi_seed_vault_ffi_checksum_method_seedvaultclient_import_account(): Short
@@ -880,6 +882,13 @@ internal interface UniffiLib : Library {
   fun uniffi_seed_vault_ffi_fn_method_seedvaultclient_delete_account(
     `ptr`: Pointer,
     `address`: RustBuffer.ByValue,
+    uniffi_out_err: UniffiRustCallStatus,
+  ): RustBuffer.ByValue
+
+  fun uniffi_seed_vault_ffi_fn_method_seedvaultclient_derive_account(
+    `ptr`: Pointer,
+    `address`: RustBuffer.ByValue,
+    `addressIndex`: Byte,
     uniffi_out_err: UniffiRustCallStatus,
   ): RustBuffer.ByValue
 
@@ -1179,7 +1188,7 @@ private fun uniffiCheckContractApiVersion(lib: IntegrityCheckingUniffiLib) {
 
 @Suppress("UNUSED_PARAMETER")
 private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
-  if (lib.uniffi_seed_vault_ffi_checksum_func_autosign_index() != 11314.toShort()) {
+  if (lib.uniffi_seed_vault_ffi_checksum_func_autosign_index() != 60839.toShort()) {
     throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
   }
   if (lib.uniffi_seed_vault_ffi_checksum_func_client_protocol_version() != 62655.toShort()) {
@@ -1200,7 +1209,10 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
   if (lib.uniffi_seed_vault_ffi_checksum_method_seedvaultclient_create_account() != 62723.toShort()) {
     throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
   }
-  if (lib.uniffi_seed_vault_ffi_checksum_method_seedvaultclient_delete_account() != 48452.toShort()) {
+  if (lib.uniffi_seed_vault_ffi_checksum_method_seedvaultclient_delete_account() != 32520.toShort()) {
+    throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+  }
+  if (lib.uniffi_seed_vault_ffi_checksum_method_seedvaultclient_derive_account() != 49386.toShort()) {
     throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
   }
   if (lib.uniffi_seed_vault_ffi_checksum_method_seedvaultclient_device_path() != 32184.toShort()) {
@@ -1648,10 +1660,26 @@ public interface SeedVaultClientInterface {
   ): Account
 
   /**
-   * Permanently deletes the seed behind `address`. Irreversible without
-   * its mnemonic.
+   * Permanently deletes the seed whose [`human_sign_index`] address is
+   * `address`, together with all of its autosign accounts. Irreversible
+   * without its mnemonic. An autosign address fails with
+   * [`AppletErrorCode::UnknownAddressIndex`].
    */
   fun `deleteAccount`(`address`: kotlin.String): Account
+
+  /**
+   * Adds autosign key `address_index` (`1..=255`) to the Falcon-1024 seed
+   * behind `address` (any of its addresses) and returns that account --
+   * e.g. a fresh session key, recoverable from the seed's same 25 words.
+   * Returns the existing account if the seed already has that key. Fails
+   * with [`AppletErrorCode::TooManyKeys`] once the seed holds the
+   * applet's maximum. Needs protocol 1.2: an older applet answers
+   * [`AppletErrorCode::MalformedRequest`].
+   */
+  fun `deriveAccount`(
+    `address`: kotlin.String,
+    `addressIndex`: kotlin.UByte,
+  ): Account
 
   fun `devicePath`(): kotlin.String
 
@@ -1840,8 +1868,10 @@ open class SeedVaultClient :
     )
 
   /**
-   * Permanently deletes the seed behind `address`. Irreversible without
-   * its mnemonic.
+   * Permanently deletes the seed whose [`human_sign_index`] address is
+   * `address`, together with all of its autosign accounts. Irreversible
+   * without its mnemonic. An autosign address fails with
+   * [`AppletErrorCode::UnknownAddressIndex`].
    */
   @Throws(SeedVaultException::class)
   override fun `deleteAccount`(`address`: kotlin.String): Account =
@@ -1851,6 +1881,33 @@ open class SeedVaultClient :
           UniffiLib.INSTANCE.uniffi_seed_vault_ffi_fn_method_seedvaultclient_delete_account(
             it,
             FfiConverterString.lower(`address`),
+            _status,
+          )
+        }
+      },
+    )
+
+  /**
+   * Adds autosign key `address_index` (`1..=255`) to the Falcon-1024 seed
+   * behind `address` (any of its addresses) and returns that account --
+   * e.g. a fresh session key, recoverable from the seed's same 25 words.
+   * Returns the existing account if the seed already has that key. Fails
+   * with [`AppletErrorCode::TooManyKeys`] once the seed holds the
+   * applet's maximum. Needs protocol 1.2: an older applet answers
+   * [`AppletErrorCode::MalformedRequest`].
+   */
+  @Throws(SeedVaultException::class)
+  override fun `deriveAccount`(
+    `address`: kotlin.String,
+    `addressIndex`: kotlin.UByte,
+  ): Account =
+    FfiConverterTypeAccount.lift(
+      callWithPointer {
+        uniffiRustCallWithError(SeedVaultException) { _status ->
+          UniffiLib.INSTANCE.uniffi_seed_vault_ffi_fn_method_seedvaultclient_derive_account(
+            it,
+            FfiConverterString.lower(`address`),
+            FfiConverterUByte.lower(`addressIndex`),
             _status,
           )
         }
@@ -2068,8 +2125,9 @@ public object FfiConverterTypeSeedVaultClient : FfiConverter<SeedVaultClient, Po
 data class Account(
   var `algorithm`: KeyAlgorithm,
   /**
-   * Which of its seed's keys this is: [`human_sign_index`] or
-   * [`autosign_index`] (Falcon-1024 only).
+   * Which of its seed's keys this is: [`human_sign_index`], or an
+   * autosign key (Falcon-1024 only: [`autosign_index`], or any added with
+   * [`SeedVaultClient::derive_account`]).
    */
   var `addressIndex`: kotlin.UInt,
   var `address`: kotlin.String,
@@ -2285,6 +2343,11 @@ enum class AppletErrorCode {
    * `sign_arbitrary_data` data started with `TX`, `TG`, `Program`, `ProgData` or `MX`.
    */
   RESERVED_DOMAIN_PREFIX,
+
+  /**
+   * `derive_account` would give the seed more keys than it can hold.
+   */
+  TOO_MANY_KEYS,
 
   ;
 
@@ -2824,8 +2887,9 @@ public object FfiConverterSequenceTypeListedAccount : FfiConverterRustBuffer<Lis
 }
 
 /**
- * `address_index` of a Falcon-1024 seed's autosign account (same key, next
- * PQ-compliant salt).
+ * `address_index` of a Falcon-1024 seed's default autosign account (a
+ * separate Falcon key derived from the same seed). Every new Falcon seed
+ * has it; [`SeedVaultClient::derive_account`] adds more (`2..=255`).
  */
 fun `autosignIndex`(): kotlin.UByte =
   FfiConverterUByte.lift(

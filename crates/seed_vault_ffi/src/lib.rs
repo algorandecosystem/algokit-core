@@ -72,8 +72,9 @@ impl From<KeyAlgorithm> for store::KeyAlgorithm {
 #[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
 pub struct Account {
     pub algorithm: KeyAlgorithm,
-    /// Which of its seed's keys this is: [`human_sign_index`] or
-    /// [`autosign_index`] (Falcon-1024 only).
+    /// Which of its seed's keys this is: [`human_sign_index`], or an
+    /// autosign key (Falcon-1024 only: [`autosign_index`], or any added with
+    /// [`SeedVaultClient::derive_account`]).
     pub address_index: u32,
     pub address: String,
 }
@@ -142,6 +143,8 @@ pub enum AppletErrorCode {
     SenderMismatch,
     /// `sign_arbitrary_data` data started with `TX`, `TG`, `Program`, `ProgData` or `MX`.
     ReservedDomainPrefix,
+    /// `derive_account` would give the seed more keys than it can hold.
+    TooManyKeys,
 }
 
 impl From<ErrorCode> for AppletErrorCode {
@@ -159,6 +162,7 @@ impl From<ErrorCode> for AppletErrorCode {
             ErrorCode::UnknownAddressIndex => Self::UnknownAddressIndex,
             ErrorCode::SenderMismatch => Self::SenderMismatch,
             ErrorCode::ReservedDomainPrefix => Self::ReservedDomainPrefix,
+            ErrorCode::TooManyKeys => Self::TooManyKeys,
         }
     }
 }
@@ -253,8 +257,9 @@ pub fn human_sign_index() -> u8 {
     store::HUMAN_SIGN_INDEX as u8
 }
 
-/// `address_index` of a Falcon-1024 seed's autosign account (same key, next
-/// PQ-compliant salt).
+/// `address_index` of a Falcon-1024 seed's default autosign account (a
+/// separate Falcon key derived from the same seed). Every new Falcon seed
+/// has it; [`SeedVaultClient::derive_account`] adds more (`2..=255`).
 #[uniffi::export]
 pub fn autosign_index() -> u8 {
     store::AUTOSIGN_INDEX as u8
@@ -428,8 +433,30 @@ impl SeedVaultClient {
         Ok(protocol::decode_create_account_response(&response?)?.into())
     }
 
-    /// Permanently deletes the seed behind `address`. Irreversible without
-    /// its mnemonic.
+    /// Adds autosign key `address_index` (`1..=255`) to the Falcon-1024 seed
+    /// behind `address` (any of its addresses) and returns that account --
+    /// e.g. a fresh session key, recoverable from the seed's same 25 words.
+    /// Returns the existing account if the seed already has that key. Fails
+    /// with [`AppletErrorCode::TooManyKeys`] once the seed holds the
+    /// applet's maximum. Needs protocol 1.2: an older applet answers
+    /// [`AppletErrorCode::MalformedRequest`].
+    pub fn derive_account(
+        &self,
+        address: String,
+        address_index: u8,
+    ) -> Result<Account, SeedVaultError> {
+        let address = check_short_field("address", address.trim())?;
+        let response = self.call(&protocol::encode_request(Request::DeriveAccount {
+            address_index,
+            address,
+        }))?;
+        Ok(protocol::decode_create_account_response(&response)?.into())
+    }
+
+    /// Permanently deletes the seed whose [`human_sign_index`] address is
+    /// `address`, together with all of its autosign accounts. Irreversible
+    /// without its mnemonic. An autosign address fails with
+    /// [`AppletErrorCode::UnknownAddressIndex`].
     pub fn delete_account(&self, address: String) -> Result<Account, SeedVaultError> {
         let address = check_short_field("address", address.trim())?;
         let response = self.call(&protocol::encode_request(Request::DeleteAccount {

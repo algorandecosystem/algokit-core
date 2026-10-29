@@ -17,7 +17,8 @@ pub mod store;
 
 pub use store::{
     ALGO25_SEED_LEN, AUTOSIGN_INDEX, AccountRecord, AccountStore, AccountSummary,
-    FALCON1024_ENTROPY_LEN, HUMAN_SIGN_INDEX, KeyAlgorithm, SignedTxnPrefix, StoreError,
-    create_account, delete_account, falcon_record, import_account, list_accounts, reveal_mnemonic,
+    FALCON1024_ENTROPY_LEN, HUMAN_SIGN_INDEX, KeyAlgorithm, MAX_AUTOSIGN_INDEX,
+    MAX_FALCON1024_KEYS, SignedTxnPrefix, StoreError, create_account, delete_account,
+    derive_account, falcon_record, import_account, list_accounts, reveal_mnemonic,
     sign_transaction,
 };

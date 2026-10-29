@@ -15,6 +15,7 @@
 //! | `0x06` = `SIGN_TRANSACTION`| `[address_index: u8][addr_len: u8][addr_len bytes of ASCII address][txn_len: u16 LE][txn_len bytes of msgpack txn]` |
 //! | `0x07` = `GET_VERSION`     | (none)                                                              |
 //! | `0x08` = `SIGN_ARBITRARY_DATA`      | `[address_index: u8][addr_len: u8][addr_len bytes of ASCII address][data_len: u16 LE][data_len bytes]` (since 1.1) |
+//! | `0x09` = `DERIVE_ACCOUNT`  | `[address_index: u8][addr_len: u8][addr_len bytes of ASCII address]` (since 1.2) |
 //!
 //! ## Versioning
 //!
@@ -40,7 +41,7 @@
 //! | `0x00` = `OK`          | opcode-specific, see below |
 //! | `0x01` = `ERR`         | 1 byte: [`ErrorCode`]      |
 //!
-//! `CREATE_ACCOUNT`/`IMPORT_ACCOUNT`/`DELETE_ACCOUNT` success payload
+//! `CREATE_ACCOUNT`/`IMPORT_ACCOUNT`/`DELETE_ACCOUNT`/`DERIVE_ACCOUNT` success payload
 //! (for delete: the account that was removed):
 //! `[algorithm: u8][address_index: u32 LE][addr_len: u8][addr_len bytes of ASCII Algorand address]`.
 //!
@@ -57,9 +58,15 @@
 //! `address_index` says which of its seed's accounts an address is (see
 //! [`crate::store::AccountSummary::address_index`]): `0` = human signing
 //! (the standard account other wallets/SDKs restore from the 25 words; the
-//! only one an Ed25519 seed has), `1` = autosign (Falcon-1024 seeds only:
-//! the same key at its next PQ-compliant salt, so both entries carry the
-//! same public key).
+//! only one an Ed25519 seed has), `1..=255` = autosign (Falcon-1024 seeds
+//! only: each a separate Falcon key derived from the same seed, so each
+//! entry carries its own public key; see [`crate::store::AUTOSIGN_INDEX`]).
+//! A new Falcon seed holds `0` and `1`; `DERIVE_ACCOUNT` adds autosign key
+//! `address_index` to the seed `address` (any of its addresses) belongs to
+//! -- e.g. a fresh session key -- and answers with that account (the
+//! existing one if the seed already holds it), or
+//! [`ErrorCode::TooManyKeys`] once the seed holds
+//! [`crate::store::MAX_FALCON1024_KEYS`].
 //! `CREATE_ACCOUNT`/`IMPORT_ACCOUNT` take the index of the account to
 //! return (the seed derives all of its keys regardless; `LIST_ACCOUNTS`
 //! shows them all). `SIGN_TRANSACTION` takes the index the caller intends
@@ -67,8 +74,7 @@
 //! address isn't that account -- so the TA always knows whether a signature
 //! is meant to be human-approved or automatic. An index the algorithm
 //! doesn't have fails the same way. The transaction's sender must also be
-//! the address, else [`ErrorCode::SenderMismatch`] (see
-//! [`crate::store::AUTOSIGN_INDEX`] for why).
+//! the address, else [`ErrorCode::SenderMismatch`].
 //!
 //! `REVEAL_MNEMONIC` success payload: `[mnemonic_len: u8][mnemonic_len bytes of ASCII, space-separated words]`.
 //!
@@ -111,6 +117,7 @@ const OP_DELETE_ACCOUNT: u8 = 0x05;
 const OP_SIGN_TRANSACTION: u8 = 0x06;
 const OP_GET_VERSION: u8 = 0x07;
 const OP_SIGN_ARBITRARY_DATA: u8 = 0x08;
+const OP_DERIVE_ACCOUNT: u8 = 0x09;
 
 /// Wire protocol major version (see the module docs on versioning).
 pub const PROTOCOL_VERSION_MAJOR: u16 = 1;
@@ -118,7 +125,10 @@ pub const PROTOCOL_VERSION_MAJOR: u16 = 1;
 ///
 /// - 1.0: initial versioned protocol.
 /// - 1.1: `SIGN_ARBITRARY_DATA`, [`ErrorCode::ReservedDomainPrefix`].
-pub const PROTOCOL_VERSION_MINOR: u16 = 1;
+/// - 1.2: `DERIVE_ACCOUNT`, [`ErrorCode::TooManyKeys`]; Falcon-1024 autosign
+///   indices beyond `1`; `DELETE_ACCOUNT` only accepts a seed's index-`0`
+///   address.
+pub const PROTOCOL_VERSION_MINOR: u16 = 2;
 
 /// Largest response the TA will build. The TA's port allows 4096-byte
 /// messages; this leaves headroom under that for the Linux `trusty-ipc`
@@ -196,6 +206,12 @@ pub enum Request {
         address: String,
         data: Vec<u8>,
     },
+    /// Adds autosign key `address_index` to the seed behind `address` (see
+    /// `store::derive_account`).
+    DeriveAccount {
+        address_index: u8,
+        address: String,
+    },
 }
 
 /// Machine-readable error codes carried in an error response.
@@ -228,8 +244,9 @@ pub enum ErrorCode {
     /// own public key.
     SigningFailed = 0x09,
     /// The requested `address_index` isn't one the account's algorithm has
-    /// (e.g. `1` for Ed25519), or `SIGN_TRANSACTION`'s address isn't the key
-    /// at that index.
+    /// (e.g. `1` for Ed25519), `SIGN_TRANSACTION`'s address isn't the key
+    /// at that index, or `DELETE_ACCOUNT` was given an autosign (non-`0`)
+    /// address.
     UnknownAddressIndex = 0x0A,
     /// `SIGN_TRANSACTION`'s transaction isn't sent by (`snd` isn't) the
     /// address it asked to sign with.
@@ -237,6 +254,9 @@ pub enum ErrorCode {
     /// `SIGN_ARBITRARY_DATA`'s data starts with an Algorand signing-domain prefix
     /// (`TX`, `TG`, `Program`, `ProgData`, `MX`). Since 1.1.
     ReservedDomainPrefix = 0x0C,
+    /// `DERIVE_ACCOUNT` would give the seed more keys than it can hold.
+    /// Since 1.2.
+    TooManyKeys = 0x0D,
 }
 
 /// Errors decoding a *response*. Only used by clients/tests, since a real
@@ -292,6 +312,10 @@ pub fn decode_request(bytes: &[u8]) -> Result<Request, ErrorCode> {
                 data,
             })
         }
+        [OP_DERIVE_ACCOUNT, address_index, rest @ ..] => Ok(Request::DeriveAccount {
+            address_index: *address_index,
+            address: decode_address_payload(rest)?,
+        }),
         [OP_IMPORT_ACCOUNT, tag, address_index, rest @ ..] => {
             let algorithm = KeyAlgorithm::from_tag(*tag).ok_or(ErrorCode::UnsupportedAlgorithm)?;
             let (mnemonic_bytes, rest) =
@@ -390,6 +414,14 @@ pub fn encode_request(request: Request) -> Vec<u8> {
             let mut out = alloc::vec![OP_SIGN_ARBITRARY_DATA, address_index];
             let _ = encode_length_prefixed(&mut out, address.as_bytes());
             let _ = encode_u16_length_prefixed(&mut out, &data);
+            out
+        }
+        Request::DeriveAccount {
+            address_index,
+            address,
+        } => {
+            let mut out = alloc::vec![OP_DERIVE_ACCOUNT, address_index];
+            let _ = encode_length_prefixed(&mut out, address.as_bytes());
             out
         }
     }
@@ -531,6 +563,7 @@ fn parse_error_code(byte: Option<&u8>) -> Result<ErrorCode, DecodeError> {
         Some(0x0A) => Ok(ErrorCode::UnknownAddressIndex),
         Some(0x0B) => Ok(ErrorCode::SenderMismatch),
         Some(0x0C) => Ok(ErrorCode::ReservedDomainPrefix),
+        Some(0x0D) => Ok(ErrorCode::TooManyKeys),
         Some(_) => Err(DecodeError::UnknownStatus),
         None => Err(DecodeError::Truncated),
     }
@@ -939,6 +972,7 @@ mod tests {
             ErrorCode::UnknownAddressIndex,
             ErrorCode::SenderMismatch,
             ErrorCode::ReservedDomainPrefix,
+            ErrorCode::TooManyKeys,
         ] {
             let bytes = encode_error_response(code);
             assert_eq!(decode_error_code(&bytes), Ok(code));

@@ -3,6 +3,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Assume.assumeTrue
@@ -49,8 +50,14 @@ class SeedVaultEndToEndTest {
     private val args = InstrumentationRegistry.getArguments()
     private lateinit var vault: SeedVaultClient
 
-    /** Accounts a test created; deleted in [tearDown] so reruns start clean. */
+    /**
+     * Index-0 addresses of the seeds a test created; deleted in [tearDown]
+     * so reruns start clean (only an index-0 address can delete a seed).
+     */
     private val created = mutableListOf<String>()
+
+    /** Index-0 address of the seed each [track]ed account belongs to. */
+    private val seedAddress = mutableMapOf<String, String>()
 
     @Before
     fun setUp() {
@@ -72,8 +79,22 @@ class SeedVaultEndToEndTest {
         }
     }
 
-    private fun create(algorithm: KeyAlgorithm, index: UByte): Account =
-        vault.createAccount(algorithm, index).also { created += it.address }
+    private fun create(algorithm: KeyAlgorithm, index: UByte): Account = track { vault.createAccount(algorithm, index) }
+
+    /**
+     * Runs [block], which adds one seed, and records that seed's index-0
+     * address (see [seedAddress]) for [tearDown].
+     */
+    private fun track(block: () -> Account): Account {
+        val before = vault.listAccounts().map { it.account.address }.toSet()
+        val account = block()
+        val seed = vault.listAccounts()
+            .single { it.account.addressIndex == humanSignIndex().toUInt() && it.account.address !in before }
+            .account.address
+        created += seed
+        seedAddress[account.address] = seed
+        return account
+    }
 
     @Test
     fun createListRevealDelete() {
@@ -93,7 +114,12 @@ class SeedVaultEndToEndTest {
 
             assertEquals(25, vault.revealMnemonic(account.address).split(" ").size)
 
-            assertEquals(account.address, vault.deleteAccount(account.address).address)
+            // Only the seed's index-0 address deletes it (with all its accounts).
+            val seed = seedAddress.getValue(account.address)
+            if (seed != account.address) {
+                expectAppletError(AppletErrorCode.UNKNOWN_ADDRESS_INDEX) { vault.deleteAccount(account.address) }
+            }
+            assertEquals(seed, vault.deleteAccount(seed).address)
             assertTrue(vault.listAccounts().none { it.account.address == account.address })
             expectAppletError(AppletErrorCode.ACCOUNT_NOT_FOUND) { vault.revealMnemonic(account.address) }
         }
@@ -108,14 +134,15 @@ class SeedVaultEndToEndTest {
             vault.importAccount(mnemonic, KeyAlgorithm.FALCON1024, autosignIndex())
         }
 
-        vault.deleteAccount(original.address)
+        vault.deleteAccount(seedAddress.getValue(original.address))
         // Extra whitespace between words is accepted.
-        val imported = vault.importAccount(
-            mnemonic.replace(" ", "  \n"),
-            KeyAlgorithm.FALCON1024,
-            autosignIndex(),
-        )
-        created += imported.address
+        val imported = track {
+            vault.importAccount(
+                mnemonic.replace(" ", "  \n"),
+                KeyAlgorithm.FALCON1024,
+                autosignIndex(),
+            )
+        }
         assertEquals(original, imported)
     }
 
@@ -164,18 +191,44 @@ class SeedVaultEndToEndTest {
             vault.signArbitraryData(ed.address, autosignIndex(), challenge)
         }
 
+        val accountsBefore = vault.listAccounts().map { it.account.address }.toSet()
         val human = create(KeyAlgorithm.FALCON1024, humanSignIndex())
         val autosign = vault.listAccounts()
-            .single { it.account.addressIndex == autosignIndex().toUInt() && it.publicKey.contentEquals(publicKeyOf(human)) }
+            .single { it.account.addressIndex == autosignIndex().toUInt() && it.account.address !in accountsBefore }
             .account
         val humanSig = vault.signArbitraryData(human.address, humanSignIndex(), challenge)
         val autosignSig = vault.signArbitraryData(autosign.address, autosignIndex(), challenge)
         assertEquals(KeyAlgorithm.FALCON1024, humanSig.algorithm)
-        // Both accounts share one Falcon key and signing is deterministic.
-        assertArrayEquals(humanSig.signature, autosignSig.signature)
+        // Each account has its own Falcon key, so the signatures differ.
+        assertFalse(humanSig.signature.contentEquals(autosignSig.signature))
         // The index must name the address's own key.
         expectAppletError(AppletErrorCode.UNKNOWN_ADDRESS_INDEX) {
             vault.signArbitraryData(autosign.address, humanSignIndex(), challenge)
+        }
+    }
+
+    @Test
+    fun derivesSeparateAutosignKeys() {
+        val human = create(KeyAlgorithm.FALCON1024, humanSignIndex())
+        val session = vault.deriveAccount(human.address, 2u)
+        assertEquals(2u, session.addressIndex)
+        assertEquals(KeyAlgorithm.FALCON1024, session.algorithm)
+        // Idempotent.
+        assertEquals(session, vault.deriveAccount(human.address, 2u))
+        // Its own key: the seed's other accounts sign differently.
+        val challenge = "session ${System.nanoTime()}".toByteArray()
+        val sessionSig = vault.signArbitraryData(session.address, 2u, challenge)
+        val humanSig = vault.signArbitraryData(human.address, humanSignIndex(), challenge)
+        assertFalse(sessionSig.signature.contentEquals(humanSig.signature))
+        // A session key's address can't delete the seed.
+        expectAppletError(AppletErrorCode.UNKNOWN_ADDRESS_INDEX) { vault.deleteAccount(session.address) }
+        // Index 0 is never derivable; Ed25519 seeds have no autosign keys.
+        expectAppletError(AppletErrorCode.UNKNOWN_ADDRESS_INDEX) {
+            vault.deriveAccount(human.address, humanSignIndex())
+        }
+        val ed = create(KeyAlgorithm.ALGO25_ED25519, humanSignIndex())
+        expectAppletError(AppletErrorCode.UNKNOWN_ADDRESS_INDEX) {
+            vault.deriveAccount(ed.address, 2u)
         }
     }
 
@@ -198,9 +251,6 @@ class SeedVaultEndToEndTest {
         assertEquals(64, vault.signArbitraryData(account.address, humanSignIndex(), "mx tx".toByteArray()).signature.size)
     }
 
-    private fun publicKeyOf(account: Account): ByteArray =
-        vault.listAccounts().single { it.account.address == account.address }.publicKey
-
     private fun ByteArray.indexOf(needle: ByteArray): Int =
         (0..size - needle.size).firstOrNull { i -> needle.indices.all { this[i + it] == needle[it] } } ?: -1
 
@@ -222,8 +272,7 @@ class SeedVaultEndToEndTest {
         val algorithm = KeyAlgorithm.valueOf(args.getString("fundedAlgorithm") ?: "ALGO25_ED25519")
         val index = if (algorithm == KeyAlgorithm.FALCON1024) autosignIndex() else humanSignIndex()
 
-        val account = vault.importAccount(fundedMnemonic!!, algorithm, index)
-        created += account.address
+        val account = track { vault.importAccount(fundedMnemonic!!, algorithm, index) }
 
         val algod = AlgodTestClient(algodUrl!!, args.getString("algodToken") ?: "")
         val params = algod.suggestedParams()

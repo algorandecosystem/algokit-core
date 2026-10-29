@@ -39,6 +39,13 @@ impl AccountStore for MemoryStore {
         Ok(())
     }
 
+    fn replace_record(&mut self, index: u32, record: &AccountRecord) -> Result<(), StoreError> {
+        let existing = self.records.get_mut(&index).ok_or(StoreError::NotFound)?;
+        existing.key_material.zeroize();
+        *existing = record.clone();
+        Ok(())
+    }
+
     fn all_indexed_records(&mut self) -> Result<Vec<(u32, AccountRecord)>, StoreError> {
         Ok(self
             .records

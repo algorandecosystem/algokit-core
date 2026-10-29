@@ -88,6 +88,17 @@ pub fn handle_request(store: &mut impl AccountStore, request: &[u8]) -> Vec<u8> 
             }
             Err(err) => protocol::encode_error_response(error_code_for(err)),
         },
+        Ok(Request::DeriveAccount {
+            address_index,
+            address,
+        }) => match store::derive_account(store, &address, address_index.into()) {
+            Ok(summary) => protocol::encode_create_account_response(
+                summary.algorithm,
+                summary.address_index,
+                &summary.address,
+            ),
+            Err(err) => protocol::encode_error_response(error_code_for(err)),
+        },
         Ok(Request::GetVersion) => protocol::encode_get_version_response(),
         Err(code) => protocol::encode_error_response(code),
     }
@@ -104,6 +115,7 @@ fn error_code_for(err: StoreError) -> ErrorCode {
         StoreError::UnknownKeyIndex => ErrorCode::UnknownAddressIndex,
         StoreError::SenderMismatch => ErrorCode::SenderMismatch,
         StoreError::ReservedDomainPrefix => ErrorCode::ReservedDomainPrefix,
+        StoreError::TooManyKeys => ErrorCode::TooManyKeys,
         StoreError::Backend
         | StoreError::CorruptRecord
         | StoreError::RandomnessUnavailable
@@ -588,7 +600,10 @@ mod tests {
             .find(|a| a.address_index == 1)
             .unwrap();
         let data = b"arbitrary payload";
-        let expected = algokit_crypto::falcon1024::account_from_entropy(&entropy).unwrap();
+        let key_for = |index: u8| {
+            let entropy = crate::store::falcon_key_entropy(&entropy, index.into()).unwrap();
+            algokit_crypto::falcon1024::account_from_entropy(&entropy).unwrap()
+        };
 
         let mut signatures = Vec::new();
         for (account, index) in [(&human, 0u8), (&autosign, 1u8)] {
@@ -597,10 +612,12 @@ mod tests {
             )
             .unwrap();
             assert_eq!(algorithm, KeyAlgorithm::Falcon1024);
-            expected
+            key_for(index)
                 .public_key
                 .verify(&sig, data)
                 .expect("Falcon signature must verify over the raw data");
+            // ...and only under this account's own key.
+            assert!(key_for(1 - index).public_key.verify(&sig, data).is_err());
             signatures.push(sig);
 
             // The index must name this address's key.
@@ -614,8 +631,8 @@ mod tests {
                 Ok(ErrorCode::UnknownAddressIndex)
             );
         }
-        // One key, deterministic signing: both accounts sign identically.
-        assert_eq!(signatures[0], signatures[1]);
+        // Separate keys: the two accounts' signatures differ.
+        assert_ne!(signatures[0], signatures[1]);
     }
 
     #[test]
@@ -804,6 +821,72 @@ mod tests {
         assert_eq!(
             protocol::decode_error_code(&create(&mut store, KeyAlgorithm::Algo25Ed25519, 1)),
             Ok(ErrorCode::UnknownAddressIndex)
+        );
+    }
+
+    #[test]
+    fn derive_account_over_the_wire_protocol() {
+        let mut store = MemoryStore::default();
+        let human = import(&mut store, KeyAlgorithm::Falcon1024, &[3u8; 32]);
+        let derive = |store: &mut MemoryStore, address: &str, address_index| {
+            handle_request(
+                store,
+                &protocol::encode_request(Request::DeriveAccount {
+                    address_index,
+                    address: address.into(),
+                }),
+            )
+        };
+
+        let session =
+            protocol::decode_create_account_response(&derive(&mut store, &human.address, 2))
+                .unwrap();
+        assert_eq!(session.algorithm, KeyAlgorithm::Falcon1024);
+        assert_eq!(session.address_index, 2);
+        assert_eq!(
+            list_wire_accounts(&mut store)
+                .iter()
+                .map(|a| a.address_index)
+                .collect::<Vec<_>>(),
+            alloc::vec![0, 1, 2]
+        );
+        assert!(
+            protocol::decode_sign_transaction_response(&handle_request(
+                &mut store,
+                &protocol::encode_request(Request::SignTransaction {
+                    address_index: 2,
+                    address: session.address.clone(),
+                    txn: test_txn_from(&session.address),
+                }),
+            ))
+            .is_ok()
+        );
+
+        assert_eq!(
+            protocol::decode_error_code(&derive(&mut store, &human.address, 0)),
+            Ok(ErrorCode::UnknownAddressIndex)
+        );
+        // A session key's address can't delete the seed.
+        assert_eq!(
+            protocol::decode_error_code(&handle_request(
+                &mut store,
+                &protocol::encode_request(Request::DeleteAccount {
+                    address: session.address.clone(),
+                }),
+            )),
+            Ok(ErrorCode::UnknownAddressIndex)
+        );
+        assert_eq!(list_wire_accounts(&mut store).len(), 3);
+        assert_eq!(
+            protocol::decode_error_code(&derive(&mut store, "NOPE", 2)),
+            Ok(ErrorCode::AccountNotFound)
+        );
+        for n in 3..crate::store::MAX_FALCON1024_KEYS as u8 {
+            derive(&mut store, &human.address, n);
+        }
+        assert_eq!(
+            protocol::decode_error_code(&derive(&mut store, &human.address, 99)),
+            Ok(ErrorCode::TooManyKeys)
         );
     }
 

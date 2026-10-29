@@ -16,13 +16,17 @@
 //!     an address: `0x01` = classic Ed25519 (`Algo25Ed25519`), `0x02` =
 //!     native post-quantum Falcon-1024 (`Falcon1024`, go-algorand
 //!     `algokey pq` compatible). Either way the same 25 words back it up.
-//!     A Falcon-1024 seed derives *two* accounts, distinguished by
+//!     A Falcon-1024 seed derives several accounts, distinguished by
 //!     `address_index`: `0` = human signing (the account go-algorand / the
 //!     SDKs restore from those words, at the Falcon key's canonical salt)
-//!     and `1` = autosign (the same key at its next PQ-compliant salt; any
-//!     go-algorand-sdk `SaltedPQSigner` can sign for it too). An Ed25519
-//!     seed only has index `0`. The request names which index's account to
-//!     reply with; `LIST_ACCOUNTS` shows all of them.
+//!     and `1..=255` = autosign (each a separate Falcon key derived from
+//!     the same seed, see `seed_vault::store::AUTOSIGN_INDEX`). A new seed
+//!     holds `0` and `1`. An Ed25519 seed only has index `0`. The request
+//!     names which index's account to reply with; `LIST_ACCOUNTS` shows
+//!     all of them.
+//!   - `DERIVE_ACCOUNT`: adds autosign key `n` (e.g. a fresh session key)
+//!     to the Falcon-1024 seed a given address belongs to, and replies with
+//!     that account. The seed's same 25 words recover it.
 //!   - `LIST_ACCOUNTS`: replies with the algorithm, address, and public
 //!     key of every account this TA holds, in creation order. A Falcon-1024
 //!     public key is 1793 bytes, so the reply is paged: the request may
@@ -36,8 +40,10 @@
 //!     25-word mnemonic and persists the account it recovers to, rejecting
 //!     it if that seed is already stored. **Exception #2**: a secret
 //!     enters the secure world instead of leaving it.
-//!   - `DELETE_ACCOUNT`: permanently removes the seed a given Algorand
-//!     address was derived from and replies with that account's summary.
+//!   - `DELETE_ACCOUNT`: permanently removes the seed whose index-`0`
+//!     address is given (with all of its accounts) and replies with that
+//!     account's summary. An autosign address is refused, so a session
+//!     key's address can't wipe the seed.
 //!     Irreversible unless the user still holds the 25 words; gated like
 //!     `REVEAL_MNEMONIC` (see below).
 //!   - `SIGN_TRANSACTION`: signs `"TX" || txn` (a msgpack-encoded
@@ -146,8 +152,7 @@
 //! // [txn_len: u16 LE][txn]. address_index states which kind of key the
 //! // caller means (0 = human signing, 1 = autosign); the TA refuses with
 //! // UnknownAddressIndex if `address` isn't that account, and with
-//! // SenderMismatch unless the txn's `snd` is `address` (both Falcon
-//! // accounts share one key, so this stops autosign signing for index 0).
+//! // SenderMismatch unless the txn's `snd` is `address`.
 //! // response = [0x00, algorithm, prefix_len: u16 LE, ...prefix]; the
 //! // SignedTxn is prefix || txn. Index 0 needs the same gate again, plus
 //! // showing the user what they're signing.
@@ -241,9 +246,10 @@ impl Service for SeedVaultService {
     ) -> tipc::Result<MessageResult> {
         // TODO(security): before this reaches production, REVEAL_MNEMONIC
         // (0x03), IMPORT_ACCOUNT (0x04), DELETE_ACCOUNT (0x05) and
-        // human-signing SIGN_TRANSACTION (0x06 with address_index 0)
-        // requests must be rejected here (index-1 autosign signing is
-        // deliberately exempt; it may want its own policy, e.g. limits)
+        // human-signing SIGN_TRANSACTION/SIGN_ARBITRARY_DATA (0x06/0x08
+        // with address_index 0) requests must be rejected here (autosign
+        // signing, index 1 and up, and DERIVE_ACCOUNT (0x09) are
+        // deliberately exempt; they may want their own policy, e.g. limits)
         // unless they carry proof of a fresh, explicit user authentication
         // (e.g. a Gatekeeper auth token verified the same way
         // `trusty/app/gatekeeper` does). `handle_request` is purely
