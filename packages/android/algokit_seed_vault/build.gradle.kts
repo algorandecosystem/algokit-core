@@ -34,9 +34,9 @@ android {
 
 dependencies {
   // `api`: the generated bindings expose JNA types to callers.
-  api("${libs.jna.get()}@aar")
+  api("net.java.dev.jna:jna:5.17.0@aar")
   // Full JNA JAR for host unit tests (includes desktop dispatch libraries).
-  testImplementation(libs.jna)
+  testImplementation("net.java.dev.jna:jna:5.17.0")
   testImplementation(libs.junit)
   androidTestImplementation(libs.androidx.junit)
   androidTestImplementation(libs.androidx.test.runner)
