@@ -296,11 +296,14 @@ pub struct SeedVaultClient {
 
 #[uniffi::export]
 impl SeedVaultClient {
-    /// A client for the default Cuttlefish vsock bridge and service name.
+    /// A client for this device's Trusty and the default service name: the
+    /// kernel device node ([`kernel_device_path`]) when the device has one
+    /// (e.g. NXP i.MX95), otherwise the Cuttlefish vsock bridge
+    /// ([`default_device_path`]).
     #[uniffi::constructor]
     pub fn new() -> Self {
         Self::with_config(
-            DEFAULT_DEVICE_PATH.into(),
+            detect_device_path(std::path::Path::new(KERNEL_DEVICE_PATH)).into(),
             DEFAULT_SERVICE_NAME.into(),
             DEFAULT_TIMEOUT_MS,
         )
@@ -559,6 +562,19 @@ impl SeedVaultClient {
     }
 }
 
+/// The kernel device node if `kernel_node` exists, else the vsock bridge.
+/// SELinux usually denies apps even a `stat` of the node, which still proves
+/// it's there -- so that counts as present, and the later `open` reports
+/// [`SeedVaultError::PermissionDenied`] instead of a misleading
+/// `NotSupported` from a vsock that doesn't exist on this device.
+fn detect_device_path(kernel_node: &std::path::Path) -> &'static str {
+    match std::fs::metadata(kernel_node) {
+        Ok(_) => KERNEL_DEVICE_PATH,
+        Err(err) if err.kind() == std::io::ErrorKind::PermissionDenied => KERNEL_DEVICE_PATH,
+        Err(_) => DEFAULT_DEVICE_PATH,
+    }
+}
+
 /// Fields with a `u8` length prefix on the wire.
 fn check_short_field(name: &str, value: &str) -> Result<String, SeedVaultError> {
     if !value.is_ascii() {
@@ -611,6 +627,14 @@ mod tests {
             client.sign_arbitrary_data("A".repeat(58), 1, vec![0x00; 4096]),
             Err(SeedVaultError::InvalidArgument { .. })
         ));
+    }
+
+    #[test]
+    fn default_client_prefers_the_kernel_device_node() {
+        let present = std::env::temp_dir();
+        assert_eq!(detect_device_path(&present), KERNEL_DEVICE_PATH);
+        let missing = present.join("no-such-trusty-ipc-dev0");
+        assert_eq!(detect_device_path(&missing), DEFAULT_DEVICE_PATH);
     }
 
     #[test]

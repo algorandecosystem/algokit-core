@@ -42,8 +42,8 @@ import uniffi.seed_vault_ffi.humanSignIndex
  *   -Pandroid.testInstrumentationRunnerArguments.fundedAlgorithm=ALGO25_ED25519
  * ```
  *
- * Optional: `algodToken`, `devicePath` (default `VSOCK:200:0`; use
- * `/dev/trusty-ipc-dev0` on kernel-driver targets).
+ * Optional: `algodToken`, `devicePath` (default: `/dev/trusty-ipc-dev0` when
+ * the device has it, else `VSOCK:200:0`).
  */
 @RunWith(AndroidJUnit4::class)
 class SeedVaultEndToEndTest {
