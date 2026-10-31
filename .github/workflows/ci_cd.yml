@@ -80,6 +80,12 @@ jobs:
   swift_ci:
     uses: ./.github/workflows/swift_ci.yml
 
+  cuttlefish_ci:
+    uses: ./.github/workflows/cuttlefish_ci.yml
+
+  nxp95_ci:
+    uses: ./.github/workflows/nxp95_ci.yml
+
   android_ci:
     needs:
       - setup
@@ -90,6 +96,14 @@ jobs:
         include: ${{ fromJSON(needs.setup.outputs.ffi_packages) }}
     with:
       crate: ${{ matrix.crate_name }}
+      release: ${{ github.event_name == 'push' && github.ref_type == 'tag' }}
+
+  # Android-only (no Swift/JVM package), so not part of the ffi_packages matrix.
+  android_seed_vault_ci:
+    uses: ./.github/workflows/android_ci.yml
+    secrets: inherit
+    with:
+      crate: algokit_seed_vault
       release: ${{ github.event_name == 'push' && github.ref_type == 'tag' }}
 
   kotlin_ci:

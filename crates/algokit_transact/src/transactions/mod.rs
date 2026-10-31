@@ -44,7 +44,7 @@ use crate::constants::{
 use crate::error::AlgoKitTransactError;
 use crate::traits::{AlgorandMsgpack, EstimateTransactionSize, TransactionId, Transactions};
 use crate::utils::{compute_group, is_empty_signature_opt, is_zero_addr_opt};
-use crate::{Address, LogicSignature, MultisigSignature};
+use crate::{Address, LogicSignature, MultisigSignature, PqSignature};
 use serde::{Deserialize, Serialize};
 use serde_with::{Bytes, serde_as};
 use std::any::Any;
@@ -200,6 +200,13 @@ pub struct SignedTransaction {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub logic_signature: Option<LogicSignature>,
+
+    /// Optional native post-quantum (e.g. Falcon-1024) signature authorizing
+    /// the transaction.
+    #[serde(rename = "pqsig")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    pub pq_signature: Option<PqSignature>,
 }
 
 impl AlgorandMsgpack for SignedTransaction {
@@ -631,6 +638,7 @@ mod transaction_tests {
                 auth_address: None,
                 multisignature: None,
                 logic_signature: None,
+                pq_signature: None,
             })
             .collect::<Vec<SignedTransaction>>();
 
@@ -662,6 +670,7 @@ mod transaction_tests {
             auth_address: None,
             multisignature: None,
             logic_signature: None,
+            pq_signature: None,
         }
     }
 

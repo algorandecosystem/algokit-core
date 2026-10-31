@@ -57,5 +57,6 @@ pub fn ed25519_sign_transaction(
         signature: Some(signature.into()),
         multisignature: None,
         logic_signature: None,
+        pq_signature: None,
     })
 }

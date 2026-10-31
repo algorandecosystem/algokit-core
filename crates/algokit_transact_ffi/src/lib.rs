@@ -1,5 +1,6 @@
 mod logic_sig;
 mod multisig;
+mod pq_sig;
 mod signer;
 pub mod transactions;
 
@@ -12,6 +13,7 @@ use serde::{Deserialize, Serialize};
 
 pub use logic_sig::*;
 pub use multisig::{MultisigSignature, MultisigSubsignature};
+pub use pq_sig::PqSignature;
 pub use signer::ed25519_sign_transaction;
 pub use transactions::AppCallTransactionFields;
 pub use transactions::AssetConfigTransactionFields;
@@ -392,6 +394,9 @@ pub struct SignedTransaction {
 
     /// Optional logic signature authorizing the transaction with a program.
     pub logic_signature: Option<LogicSignature>,
+
+    /// Optional native post-quantum (e.g. Falcon-1024) signature.
+    pub pq_signature: Option<PqSignature>,
 }
 
 impl From<algokit_transact::SignedTransaction> for SignedTransaction {
@@ -402,6 +407,7 @@ impl From<algokit_transact::SignedTransaction> for SignedTransaction {
             auth_address: signed_transaction.auth_address.map(|addr| addr.as_str()),
             multisignature: signed_transaction.multisignature.map(Into::into),
             logic_signature: signed_transaction.logic_signature.map(Into::into),
+            pq_signature: signed_transaction.pq_signature.map(Into::into),
         }
     }
 }
@@ -432,6 +438,10 @@ impl TryFrom<SignedTransaction> for algokit_transact::SignedTransaction {
                 .transpose()?,
             logic_signature: signed_transaction
                 .logic_signature
+                .map(TryInto::try_into)
+                .transpose()?,
+            pq_signature: signed_transaction
+                .pq_signature
                 .map(TryInto::try_into)
                 .transpose()?,
         })

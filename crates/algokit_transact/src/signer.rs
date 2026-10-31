@@ -55,6 +55,7 @@ impl TransactionSigner for EmptyTransactionSigner {
                         signature: Some(EMPTY_SIGNATURE),
                         multisignature: None,
                         logic_signature: None,
+                        pq_signature: None,
                     }
                 } else {
                     // Return completely unsigned for transactions we weren't asked to sign
@@ -64,6 +65,7 @@ impl TransactionSigner for EmptyTransactionSigner {
                         signature: None,
                         multisignature: None,
                         logic_signature: None,
+                        pq_signature: None,
                     }
                 }
             })
@@ -147,6 +149,7 @@ impl TransactionSigner for AlgorandSigner {
                     signature: Some(signature),
                     multisignature: None,
                     logic_signature: None,
+                    pq_signature: None,
                 });
             } else {
                 // Transaction not meant to be signed by this signer
@@ -156,6 +159,7 @@ impl TransactionSigner for AlgorandSigner {
                     signature: None,
                     multisignature: None,
                     logic_signature: None,
+                    pq_signature: None,
                 });
             }
         }
