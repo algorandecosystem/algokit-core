@@ -1,0 +1,198 @@
+name: Build Trusty Applet (NXP i.MX95)
+
+# Builds seed_vault_ta as a *loadable* Trusty app (seed_vault_ta.app), signed
+# with NXP's published development key, so it can be loaded at runtime into
+# the stock Trusty OS of NXP's Android 16 images (android-16.0.0_2.0.0, e.g.
+# FRDM-IMX95-PRO) without reflashing the bootloader:
+#
+#   adb push seed_vault_ta.app /data/local/tmp/
+#   adb shell /vendor/bin/trusty_apploader /data/local/tmp/seed_vault_ta.app
+#
+# NXP's Trusty (project imx95, trusty/device/nxp/imx8) builds its apploader
+# with APPLOADER_ALLOW_NS_CONNECT and trusts the dev keys published in
+# nxp-imx-android/aosp_trusty_device_nxp_imx8m (project/keys), key ID 0.
+#
+# The app itself is compiled in Google's upstream Trusty tree (same as
+# cuttlefish_ci.yml), not NXP's. The applet only talks to the kernel through
+# syscalls and to storage/hwrng over TIPC, so it is expected to run on NXP's
+# Trusty, but if loading fails or the app crashes on start (see the board's
+# serial console), it needs building in NXP's Trusty tree instead.
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+env:
+  # NXP release whose Trusty the app is loaded into, and whose dev key signs it
+  NXP_RELEASE_TAG: android-16.0.0_2.0.0
+
+jobs:
+  # Same gate as cuttlefish_ci.yml: prove the crypto and seed_vault logic
+  # before the much heavier Trusty build.
+  verify-account-crypto:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+
+      - name: Install Rust Toolchain
+        run: rustup show
+
+      - name: Verify no_std + alloc Compatibility (Trusty/TEE targets)
+        run: |
+          cargo check -p algokit_crypto --no-default-features
+
+      - name: Create, Recover & Sign algo25 + Falcon-1024 Accounts (algokit_crypto)
+        run: cargo test -p algokit_crypto --no-default-features --test account_roundtrip
+
+      - name: Falcon-1024 PQ accounts match go-algorand known answers
+        run: cargo test -p algokit_crypto falcon1024
+
+      - name: Test seed_vault (applet protocol + account store logic)
+        run: |
+          cargo test -p seed_vault
+          cargo check -p seed_vault --all-targets
+
+      - name: Rustdoc with warnings as errors (as the Trusty build does)
+        env:
+          RUSTDOCFLAGS: -D warnings
+        run: |
+          cargo doc -p seed_vault --no-deps
+          cargo doc -p algokit_crypto --no-deps --no-default-features
+
+  build-loadable-app:
+    needs: verify-account-crypto
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+
+      - name: Maximize Runner Disk Space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          sudo apt-get clean
+          df -h
+
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            git-core gnupg flex bison build-essential zip curl \
+            zlib1g-dev libc6-dev-i386 lib32ncurses-dev x11proto-core-dev \
+            libx11-dev lib32z1-dev libgl1-mesa-dev libxml2-utils xsltproc unzip \
+            fontconfig python3 python3-pip
+
+      - name: Install repo Launcher
+        run: |
+          mkdir -p "$HOME/bin"
+          curl -sL https://storage.googleapis.com/git-repo-downloads/repo > "$HOME/bin/repo"
+          chmod a+x "$HOME/bin/repo"
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+
+      - name: Fetch Trusty Source Tree
+        run: |
+          mkdir -p trusty-manifest
+          cd trusty-manifest
+          repo init -u https://android.googlesource.com/trusty/manifest -b main
+          repo sync -j$(nproc)
+
+      - name: Fetch Vendored Crate Sources
+        run: trusty/fetch_vendor_crates.sh
+
+      - name: Inject Vendored Crates & First-Party Libraries
+        run: |
+          for crate in cryptoxide base32 signature getrandom algorand_falcon; do
+            mkdir -p "trusty-manifest/trusty/user/base/lib/${crate}"
+            cp -r "trusty/vendor/${crate}/." "trusty-manifest/trusty/user/base/lib/${crate}/"
+          done
+          for crate in algokit_crypto seed_vault; do
+            mkdir -p "trusty-manifest/trusty/user/base/lib/${crate}"
+            cp -r "crates/${crate}/." "trusty-manifest/trusty/user/base/lib/${crate}/"
+          done
+
+      - name: Inject Custom Trusty Applet
+        run: |
+          mkdir -p trusty-manifest/trusty/user/app/seed_vault_ta
+          cp -r trusty/app/seed_vault_ta/* trusty-manifest/trusty/user/app/seed_vault_ta/
+
+      # NXP's dev keys are public (they ship in NXP's Trusty source), pinned
+      # here to the release tag the board runs.
+      - name: Fetch NXP Trusty App Signing Keys
+        run: |
+          keys_url="https://raw.githubusercontent.com/nxp-imx-android/aosp_trusty_device_nxp_imx8m/${NXP_RELEASE_TAG}/project/keys"
+          mkdir -p nxp-keys
+          for key in privateKey0.der publicKey0.der; do
+            curl -fsSL "${keys_url}/${key}" -o "nxp-keys/${key}"
+          done
+          sha256sum nxp-keys/*
+
+      # Loadable, not built-in: the build then packages and signs
+      # seed_vault_ta.app (trusty/kernel make/loadable_app.mk) with
+      # APPLOADER_SIGN_PRIVATE_KEY_<APPLOADER_SIGN_KEY_ID>_FILE. Appended to the
+      # top-level project file so it wins over anything its includes set.
+      - name: Register seed_vault_ta as a loadable app signed with NXP's key
+        run: |
+          python3 - <<'PYEOF'
+          import os
+          import pathlib
+
+          mk_path = pathlib.Path(
+              "trusty-manifest/trusty/device/arm/generic-arm64/project/generic-arm64.mk"
+          )
+          keys = pathlib.Path(os.environ["GITHUB_WORKSPACE"]) / "nxp-keys"
+          text = mk_path.read_text()
+          if "trusty/user/app/seed_vault_ta" in text:
+              raise SystemExit(f"seed_vault_ta is already registered in {mk_path}")
+          text += (
+              "\n# Added by nxp95_ci.yml\n"
+              "TRUSTY_LOADABLE_USER_TASKS += trusty/user/app/seed_vault_ta\n"
+              f"APPLOADER_SIGN_PRIVATE_KEY_0_FILE := {keys / 'privateKey0.der'}\n"
+              f"APPLOADER_SIGN_PUBLIC_KEY_0_FILE := {keys / 'publicKey0.der'}\n"
+              "APPLOADER_SIGN_KEY_ID := 0\n"
+          )
+          mk_path.write_text(text)
+          print(f"Registered seed_vault_ta as a loadable app in {mk_path}")
+          PYEOF
+
+      - name: Build Trusty & Loadable App (arm64)
+        run: |
+          cd trusty-manifest
+          ./trusty/vendor/google/aosp/scripts/build.py generic-arm64
+
+      - name: Package & Verify seed_vault_ta.app
+        run: |
+          build_dir="trusty-manifest/build-root/build-generic-arm64"
+          app=$(find "$build_dir" -name seed_vault_ta.app -print -quit)
+          tool=$(find "$build_dir" -type f -name apploader_package_tool -print -quit)
+          if [ -z "$app" ]; then
+            echo "::error::seed_vault_ta.app was not built"
+            exit 1
+          fi
+          mkdir -p nxp-output
+          cp "$app" nxp-output/seed_vault_ta.app
+          cp "${app%.app}.elf" nxp-output/seed_vault_ta.elf
+          if [ -n "$tool" ]; then
+            "$tool" --mode verify nxp-output/seed_vault_ta.app nxp-keys/publicKey0.der
+            "$tool" --mode info nxp-output/seed_vault_ta.app
+          else
+            echo "::warning::apploader_package_tool not found, signature not verified"
+          fi
+          {
+            echo "nxp release: ${NXP_RELEASE_TAG}"
+            echo "signed with: NXP dev key ID 0"
+            echo "source sha:  ${GITHUB_SHA}"
+            echo "sha256:      $(sha256sum nxp-output/seed_vault_ta.app | cut -d' ' -f1)"
+            echo
+            echo "adb push seed_vault_ta.app /data/local/tmp/"
+            echo "adb shell /vendor/bin/trusty_apploader /data/local/tmp/seed_vault_ta.app"
+          } | tee nxp-output/BUILD_INFO.txt
+
+      - name: Upload seed_vault_ta.app
+        uses: actions/upload-artifact@v7
+        with:
+          name: trusty-seed-vault-ta-nxp-imx95
+          path: nxp-output/
+          retention-days: 14

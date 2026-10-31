@@ -3,7 +3,7 @@
 # Same story as `crates/algokit_crypto/rules.mk`: first-party in-workspace
 # crate, so `cargo2rulesmk.py` doesn't apply and this is hand-written. CI
 # copies this whole crate directory into the synced Trusty tree at
-# `trusty/user/base/lib/seed_vault` (see trusty_ci.yml), matching the path
+# `trusty/user/base/lib/seed_vault` (see cuttlefish_ci.yml and nxp95_ci.yml), matching the path
 # referenced from `trusty/app/seed_vault_ta/rules.mk`'s
 # `MODULE_LIBRARY_DEPS`.
 #

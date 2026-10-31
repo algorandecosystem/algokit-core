@@ -5,7 +5,7 @@
 # one -- so this is hand-written, not generated, same as
 # `trusty/app/seed_vault_ta/rules.mk` and `trusty/vendor/*/rules.mk`. CI
 # copies this whole crate directory into the synced Trusty tree at
-# `trusty/user/base/lib/algokit_crypto` (see trusty_ci.yml), matching the
+# `trusty/user/base/lib/algokit_crypto` (see cuttlefish_ci.yml and nxp95_ci.yml), matching the
 # path referenced from `trusty/app/seed_vault_ta/rules.mk`'s
 # `MODULE_LIBRARY_DEPS`.
 #

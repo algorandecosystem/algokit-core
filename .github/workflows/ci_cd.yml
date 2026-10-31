@@ -80,8 +80,11 @@ jobs:
   swift_ci:
     uses: ./.github/workflows/swift_ci.yml
 
-  trusty_ci:
-    uses: ./.github/workflows/trusty_ci.yml
+  cuttlefish_ci:
+    uses: ./.github/workflows/cuttlefish_ci.yml
+
+  nxp95_ci:
+    uses: ./.github/workflows/nxp95_ci.yml
 
   android_ci:
     needs:

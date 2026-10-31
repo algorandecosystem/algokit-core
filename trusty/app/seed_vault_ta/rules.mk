@@ -51,7 +51,7 @@
 #   its `Cargo.toml` (`crates/algokit_crypto/rules.mk`,
 #   `crates/seed_vault/rules.mk`), copied into the synced tree by CI at
 #   `trusty/user/base/lib/algokit_crypto` / `.../seed_vault` -- see
-#   trusty_ci.yml.
+#   cuttlefish_ci.yml.
 #
 # RESOLVED, separately, and more security-sensitive than plain vendoring:
 # `getrandom` 0.4 (used by `seed_vault::store::create_algo25_account` and
@@ -60,7 +60,7 @@
 # its `src/backends.rs` target-selection `cfg_if!` has no `trusty` arm.
 # Fixed by hand-vendoring a trimmed copy of `getrandom` at
 # `trusty/vendor/getrandom` in *this* repo (CI copies it into the synced
-# tree as `trusty/user/base/lib/getrandom`, see trusty_ci.yml -- that's the
+# tree as `trusty/user/base/lib/getrandom`, see cuttlefish_ci.yml -- that's the
 # path referenced below), built with `--cfg getrandom_backend="custom"`,
 # plus a real (not stubbed) implementation of its custom-backend hook
 # (`__getrandom_v03_custom`, in `main.rs`'s `trusty_rng` module) that calls

@@ -1,4 +1,4 @@
-name: Build Trusty Applet
+name: Build Trusty Applet (Cuttlefish)
 
 on:
   workflow_call:
@@ -127,7 +127,7 @@ jobs:
                   sys.exit(
                       f"Could not find '{anchor.strip()}' in {mk_path}. "
                       "Upstream Trusty project file format has likely changed -- "
-                      "update this step in trusty_ci.yml to match."
+                      "update this step in cuttlefish_ci.yml to match."
                   )
               if app_line in text:
                   print(f"seed_vault_ta already registered in {mk_path}")
@@ -217,7 +217,7 @@ jobs:
               sys.exit(
                   f"Could not find '{anchor.strip()}' in {mk_path}. "
                   "Upstream Trusty project file format has likely changed -- "
-                  "update this step in trusty_ci.yml to match."
+                  "update this step in cuttlefish_ci.yml to match."
               )
           if app_line in text:
               print(f"seed_vault_ta already registered in {mk_path}")
