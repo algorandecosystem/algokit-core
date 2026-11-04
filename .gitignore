@@ -41,6 +41,11 @@ packages/python**/*.so
 packages/python**/*.dylib
 packages/python**/*.whl
 
+# Kotlin/JVM - native libs bundled by build_pkgs are host-specific build output
+packages/kotlin**/*.dll
+packages/kotlin/*/src/main/resources/
+packages/kotlin/*/src/test/resources/
+
 # Swift / SwiftPM
 packages/swift/**/Frameworks
 packages/swift/**/.swiftpm/
