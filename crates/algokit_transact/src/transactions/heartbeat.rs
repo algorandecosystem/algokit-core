@@ -69,7 +69,7 @@ struct HeartbeatParams {
     #[serde(rename = "kd")]
     pub key_dilution: u64,
 
-    /// Request the challenge fee discount, which reduces the required fee by one min fee.
+    /// Request the challenge fee discount, which lowers the required fee.
     #[serde(rename = "c")]
     #[serde(skip_serializing_if = "is_false_opt")]
     #[serde(default)]
@@ -99,7 +99,7 @@ pub struct HeartbeatTransactionFields {
     pub key_dilution: u64,
 
     /// Request the challenge fee discount. Only honoured when the account is actually
-    /// under challenge, and only from consensus v42.
+    /// under challenge, on networks that support it.
     #[builder(default)]
     pub challenge_discount: Option<bool>,
 }

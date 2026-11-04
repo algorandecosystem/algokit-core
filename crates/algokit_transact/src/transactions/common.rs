@@ -73,7 +73,7 @@ pub struct TransactionHeader {
 
     /// Optional user-defined note field.
     ///
-    /// Can contain arbitrary data up to 1KB in size.
+    /// Can contain arbitrary data; the network sets the size limit.
     #[serde_as(as = "Option<Bytes>")]
     #[serde(skip_serializing_if = "is_empty_vec_opt")]
     #[serde(default)]
@@ -119,12 +119,6 @@ pub struct TransactionHeader {
 #[derive(Debug, Clone, PartialEq)]
 pub enum TransactionValidationError {
     RequiredField(String),
-    FieldTooLong {
-        field: String,
-        actual: usize,
-        max: usize,
-        unit: String,
-    },
     ImmutableField(String),
     ZeroValueField(String),
     ArbitraryConstraint(String),
@@ -135,18 +129,6 @@ impl std::fmt::Display for TransactionValidationError {
         match self {
             TransactionValidationError::RequiredField(field) => {
                 write!(f, "{} is required", field)
-            }
-            TransactionValidationError::FieldTooLong {
-                field,
-                actual,
-                max,
-                unit,
-            } => {
-                write!(
-                    f,
-                    "{} cannot exceed {} {}, got {}",
-                    field, max, unit, actual
-                )
             }
             TransactionValidationError::ImmutableField(field) => {
                 write!(f, "{} is immutable and cannot be changed", field)

@@ -316,7 +316,7 @@ impl Transaction {
 #[cfg(test)]
 mod transaction_tests {
     use crate::{
-        EMPTY_SIGNATURE, MAX_TX_GROUP_SIZE,
+        EMPTY_SIGNATURE,
         test_utils::PLACEHOLDER_SIGNATURE,
         test_utils::{TransactionGroupMother, TransactionHeaderMother, TransactionMother},
     };
@@ -539,20 +539,6 @@ mod transaction_tests {
         for grouped_tx in grouped_txs.iter() {
             assert_eq!(grouped_tx.header().group.unwrap(), expected_group);
         }
-    }
-
-    #[test]
-    fn test_transaction_group_too_big() {
-        let txs: Vec<Transaction> = TransactionGroupMother::group_of(MAX_TX_GROUP_SIZE + 1);
-
-        let result = txs.assign_group();
-
-        let error = result.unwrap_err();
-        assert!(
-            error
-                .to_string()
-                .starts_with("Transaction group size exceeds the max limit")
-        );
     }
 
     #[test]

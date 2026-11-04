@@ -661,9 +661,6 @@ pub enum AlgorandConstant {
 
     /// Increment in the encoded byte size when a signature is attached to a transaction (75)
     SignatureEncodingIncrLength,
-
-    /// The maximum number of transactions in a group (16)
-    MaxTxGroupSize,
 }
 
 impl AlgorandConstant {
@@ -679,7 +676,6 @@ impl AlgorandConstant {
             AlgorandConstant::SignatureEncodingIncrLength => {
                 ALGORAND_SIGNATURE_ENCODING_INCR as u64
             }
-            AlgorandConstant::MaxTxGroupSize => MAX_TX_GROUP_SIZE as u64,
         }
     }
 }

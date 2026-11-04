@@ -51,7 +51,7 @@ pub struct HeartbeatTransactionFields {
     /// Heartbeat key dilution.
     key_dilution: u64,
 
-    /// Request the challenge fee discount, which reduces the required fee by one min fee.
+    /// Request the challenge fee discount, which lowers the required fee.
     challenge_discount: Option<bool>,
 }
 
