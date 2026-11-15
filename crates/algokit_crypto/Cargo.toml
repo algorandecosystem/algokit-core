@@ -15,7 +15,6 @@ zeroize = { workspace = true }
 
 # Used random seed generation for ed25519
 getrandom = "0.4.1"
-async-trait = "0.1.89"
 sha2.workspace = true
 
 # BIP32-Ed25519 (XHD wallet) derivation and raw signing.
@@ -31,6 +30,3 @@ snafu = { workspace = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.4.1", features = ["wasm_js"] }
-
-[dev-dependencies]
-tokio = { version = "1.49.0", features = ["macros", "rt"] }

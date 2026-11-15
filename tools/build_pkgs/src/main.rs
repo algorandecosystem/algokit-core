@@ -9,7 +9,7 @@ use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use std::process::Output;
 
-use clap::{Parser, ValueEnum, command};
+use clap::{Parser, ValueEnum};
 use color_eyre::eyre::Result;
 use duct::cmd;
 

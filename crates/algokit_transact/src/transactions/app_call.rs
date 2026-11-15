@@ -381,10 +381,11 @@ fn validate_access_indices(access: &[ResourceRef]) -> Vec<TransactionValidationE
             }
         }
 
-        if let Some(ref box_ref) = entry.box_ref {
-            if box_ref.app_id != 0 && !resolves_to(box_ref.app_id, |e| e.app.is_some()) {
-                errors.push(describe(box_ref.app_id, "an App in the Access list"));
-            }
+        if let Some(ref box_ref) = entry.box_ref
+            && box_ref.app_id != 0
+            && !resolves_to(box_ref.app_id, |e| e.app.is_some())
+        {
+            errors.push(describe(box_ref.app_id, "an App in the Access list"));
         }
     }
 
@@ -407,44 +408,44 @@ where
     S: serde::Serializer,
 {
     // Transform box references if present
-    if let Some(ref box_references) = fields.box_references {
-        if !box_references.is_empty() {
-            let app_references = fields.app_references.as_deref().unwrap_or(&[]);
+    if let Some(ref box_references) = fields.box_references
+        && !box_references.is_empty()
+    {
+        let app_references = fields.app_references.as_deref().unwrap_or(&[]);
 
-            let box_references = box_references
-                .iter()
-                .map(|box_ref| {
-                    let app_id_index = if box_ref.app_id == 0 || box_ref.app_id == fields.app_id {
-                        // A 0 value denotes the current app_id,
-                        // return 0 when the app_id is for the current app.
-                        0
-                    } else {
-                        // Find position in app_references and add 1 (1-based indexing)
-                        app_references
-                            .iter()
-                            .position(|&id| id == box_ref.app_id)
-                            .map(|pos| (pos + 1) as u64) // App references start from index 1; index 0 is the current app ID.
-                            .ok_or_else(|| {
-                                format!(
-                                    "Box reference with app id {} not found in app references.",
-                                    box_ref.app_id
-                                )
-                            })?
-                    };
+        let box_references = box_references
+            .iter()
+            .map(|box_ref| {
+                let app_id_index = if box_ref.app_id == 0 || box_ref.app_id == fields.app_id {
+                    // A 0 value denotes the current app_id,
+                    // return 0 when the app_id is for the current app.
+                    0
+                } else {
+                    // Find position in app_references and add 1 (1-based indexing)
+                    app_references
+                        .iter()
+                        .position(|&id| id == box_ref.app_id)
+                        .map(|pos| (pos + 1) as u64) // App references start from index 1; index 0 is the current app ID.
+                        .ok_or_else(|| {
+                            format!(
+                                "Box reference with app id {} not found in app references.",
+                                box_ref.app_id
+                            )
+                        })?
+                };
 
-                    Ok(BoxReference {
-                        app_id: app_id_index,
-                        name: box_ref.name.clone(),
-                    })
+                Ok(BoxReference {
+                    app_id: app_id_index,
+                    name: box_ref.name.clone(),
                 })
-                .collect::<Result<Vec<_>, String>>()
-                .map_err(serde::ser::Error::custom)?;
+            })
+            .collect::<Result<Vec<_>, String>>()
+            .map_err(serde::ser::Error::custom)?;
 
-            let mut fields: AppCallTransactionFields = fields.clone();
-            fields.box_references = Some(box_references);
+        let mut fields: AppCallTransactionFields = fields.clone();
+        fields.box_references = Some(box_references);
 
-            return fields.serialize(serializer);
-        }
+        return fields.serialize(serializer);
     }
 
     // No transformation needed, serialize directly
@@ -462,38 +463,38 @@ where
     let mut fields = AppCallTransactionFields::deserialize(deserializer)?;
 
     // Transform box references if present
-    if let Some(ref box_references) = fields.box_references {
-        if !box_references.is_empty() {
-            let app_references = fields.app_references.as_deref().unwrap_or(&[]);
+    if let Some(ref box_references) = fields.box_references
+        && !box_references.is_empty()
+    {
+        let app_references = fields.app_references.as_deref().unwrap_or(&[]);
 
-            let box_references = box_references
-                .iter()
-                .map(|box_ref| {
-                    let app_id = if box_ref.app_id == 0 {
-                        // The current app_id is always serialized as 0,
-                        // return 0 when the app_id is for the current app.
-                        0
-                    } else {
-                        // Convert 1-based index back to the actual app ID
-                        let app_reference_index = box_ref.app_id as usize - 1;
-                        app_references
-                            .get(app_reference_index)
-                            .copied()
-                            .ok_or_else(|| {
-                                format!("Cannot find app reference index {}.", app_reference_index,)
-                            })?
-                    };
+        let box_references = box_references
+            .iter()
+            .map(|box_ref| {
+                let app_id = if box_ref.app_id == 0 {
+                    // The current app_id is always serialized as 0,
+                    // return 0 when the app_id is for the current app.
+                    0
+                } else {
+                    // Convert 1-based index back to the actual app ID
+                    let app_reference_index = box_ref.app_id as usize - 1;
+                    app_references
+                        .get(app_reference_index)
+                        .copied()
+                        .ok_or_else(|| {
+                            format!("Cannot find app reference index {}.", app_reference_index,)
+                        })?
+                };
 
-                    Ok(BoxReference {
-                        app_id,
-                        name: box_ref.name.clone(),
-                    })
+                Ok(BoxReference {
+                    app_id,
+                    name: box_ref.name.clone(),
                 })
-                .collect::<Result<Vec<_>, String>>()
-                .map_err(serde::de::Error::custom)?;
+            })
+            .collect::<Result<Vec<_>, String>>()
+            .map_err(serde::de::Error::custom)?;
 
-            fields.box_references = Some(box_references);
-        }
+        fields.box_references = Some(box_references);
     }
 
     Ok(fields)

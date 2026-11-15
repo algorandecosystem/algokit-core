@@ -1,5 +1,6 @@
 use crate::{AlgoKitTransactError, SignedTransaction, Transaction};
-use algokit_crypto::ed25519::{CryptoxideEd25519Keypair, Ed25519Signer};
+use algokit_crypto::Signer;
+use algokit_crypto::ed25519::CryptoxideEd25519Keypair;
 
 use algokit_transact::AlgorandMsgpack;
 #[cfg(feature = "ffi_uniffi")]
@@ -31,25 +32,12 @@ pub fn ed25519_sign_transaction(
                 ),
             })?;
 
-    // Spin up a Tokio runtime to perform the async signing operation
-    // eventually we want to have the exported function be async, but for now
-    // we need to be sync to maintain swift 6 compatibility
-    let rt = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
+    let encoded = rust_txn
+        .encode()
         .map_err(|e| AlgoKitTransactError::SigningError {
-            error_msg: format!("Failed to build Tokio runtime: {}", e),
+            error_msg: format!("Failed to encode transaction for signing: {}", e),
         })?;
-
-    let signature = rt
-        .block_on(keypair.try_sign(&rust_txn.encode().map_err(|e| {
-            AlgoKitTransactError::SigningError {
-                error_msg: format!("Failed to encode transaction for signing: {}", e),
-            }
-        })?))
-        .map_err(|e| AlgoKitTransactError::SigningError {
-            error_msg: format!("Failed to sign transaction: {}", e),
-        })?;
+    let signature = keypair.sign(&encoded);
 
     Ok(SignedTransaction {
         transaction: txn,

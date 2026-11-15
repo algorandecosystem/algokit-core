@@ -108,12 +108,12 @@ impl KeyRegistrationTransactionFields {
                 "Vote last".to_string(),
             ));
         }
-        if let (Some(first), Some(last)) = (self.vote_first, self.vote_last) {
-            if first >= last {
-                errors.push(TransactionValidationError::ArbitraryConstraint(
-                    "Vote first must be less than vote last".to_string(),
-                ));
-            }
+        if let (Some(first), Some(last)) = (self.vote_first, self.vote_last)
+            && first >= last
+        {
+            errors.push(TransactionValidationError::ArbitraryConstraint(
+                "Vote first must be less than vote last".to_string(),
+            ));
         }
         if self.vote_key_dilution.is_none() {
             errors.push(TransactionValidationError::RequiredField(
