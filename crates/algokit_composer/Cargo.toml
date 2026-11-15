@@ -15,7 +15,6 @@ algod_client = { path = "../algod_client", default-features = false }
 algokit_http_client = { path = "../algokit_http_client", default-features = false }
 rmp-serde = { workspace = true }
 snafu.workspace = true
-tokio = { version = "1.49.0", features = ["rt"] }
 zeroize.workspace = true
 
 [dev-dependencies]

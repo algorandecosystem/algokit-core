@@ -27,11 +27,8 @@ serde_with = { workspace = true }
 sha2 = { workspace = true }
 snafu = { workspace = true }
 algokit_test_artifacts = { path = "../algokit_test_artifacts", optional = true }
-async-trait = "0.1.89"
 algokit_crypto = { version = "0.1.0", path = "../algokit_crypto" }
 
 [dev-dependencies]
 pretty_assertions = { workspace = true }
 algokit_transact = { path = '.', features = ["test_utils"] }
-tokio = { version = "1.42.0", features = ["macros", "rt"] }
-cryptoxide = { workspace = true }

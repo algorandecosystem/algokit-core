@@ -15,10 +15,5 @@ algokit_crypto = { path = "../algokit_crypto" }
 uniffi = { workspace = true, features = [
   "scaffolding-ffi-buffer-fns",
 ], optional = true }
-async-trait = "0.1.89"
 signature = { workspace = true }
-tokio = { version = "1.49.0", features = ["rt", "time", "net", "io-util", "sync"] }
 getrandom = "0.4.1"
-
-[dev-dependencies]
-tokio = { version = "1.49.0", features = ["macros", "rt"] }

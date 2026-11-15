@@ -4,7 +4,6 @@ mod error;
 pub mod logic_sig;
 pub mod multisig;
 pub mod pq;
-pub mod signer;
 mod traits;
 mod transactions;
 mod utils;

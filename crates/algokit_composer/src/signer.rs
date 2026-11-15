@@ -1,4 +1,5 @@
-use algokit_crypto::ed25519::{CryptoxideEd25519Keypair, Ed25519Signer};
+use algokit_crypto::Signer;
+use algokit_crypto::ed25519::CryptoxideEd25519Keypair;
 use algokit_transact::{AlgorandMsgpack, SignedTransaction, Transaction};
 use zeroize::Zeroizing;
 
@@ -17,21 +18,13 @@ pub fn sign_transactions(
         });
     }
 
-    let rt = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .map_err(|e| ComposerError::Signing {
-            message: format!("failed to build tokio runtime: {e}"),
-        })?;
-
     txns.into_iter()
         .zip(secret_keys.into_iter().map(Zeroizing::new))
-        .map(|(txn, sk)| sign_transaction(&rt, txn, sk))
+        .map(|(txn, sk)| sign_transaction(txn, sk))
         .collect()
 }
 
 fn sign_transaction(
-    rt: &tokio::runtime::Runtime,
     txn: Transaction,
     secret_key: Zeroizing<Vec<u8>>,
 ) -> Result<SignedTransaction, ComposerError> {
@@ -51,9 +44,7 @@ fn sign_transaction(
     })?;
 
     let encoded = txn.encode()?;
-    let signature = rt
-        .block_on(keypair.try_sign(&encoded))
-        .map_err(|e| ComposerError::Signing { message: e })?;
+    let signature = keypair.sign(&encoded);
 
     Ok(SignedTransaction {
         transaction: txn,

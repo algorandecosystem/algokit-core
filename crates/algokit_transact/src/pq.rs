@@ -59,6 +59,42 @@ impl MsgPackEmpty for PQSignature {
 }
 
 impl PQSignature {
+    /// Builds a signature with the canonical salt for its scheme and public key.
+    ///
+    /// The salt is the lowest value whose derived address is not also an
+    /// Edwards25519 point, matching [`canonical_pq_address`].
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AlgoKitTransactError::InputError`] if no salt derives a
+    /// post-quantum address for this public key.
+    pub fn canonical(
+        scheme: [u8; 2],
+        public_key: Vec<u8>,
+        signature: Vec<u8>,
+    ) -> Result<Self, AlgoKitTransactError> {
+        let (salt, _) = canonical_pq_address(&scheme, &public_key)?;
+        Ok(Self {
+            scheme,
+            salt,
+            public_key,
+            signature,
+        })
+    }
+
+    /// Builds a Falcon-1024 signature with the canonical salt for `public_key`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AlgoKitTransactError::InputError`] if no salt derives a
+    /// post-quantum address for this public key.
+    pub fn canonical_falcon1024(
+        public_key: Vec<u8>,
+        signature: Vec<u8>,
+    ) -> Result<Self, AlgoKitTransactError> {
+        Self::canonical(PQ_SCHEME_FALCON1024, public_key, signature)
+    }
+
     /// The address this signature authorizes.
     pub fn address(&self) -> Address {
         pq_address(&self.scheme, self.salt, &self.public_key)
@@ -165,6 +201,31 @@ mod tests {
             .unwrap()
             .pq_signature
             .unwrap()
+    }
+
+    #[test]
+    fn canonical_constructor_matches_the_payment_vector() {
+        let payment = fixture(PAYMENT);
+        let expected = payment_signature();
+
+        let from_scheme = PQSignature::canonical(
+            PQ_SCHEME_FALCON1024,
+            expected.public_key.clone(),
+            expected.signature.clone(),
+        )
+        .unwrap();
+        let from_falcon = PQSignature::canonical_falcon1024(
+            expected.public_key.clone(),
+            expected.signature.clone(),
+        )
+        .unwrap();
+
+        assert_eq!(from_scheme, expected);
+        assert_eq!(from_falcon, expected);
+        assert_eq!(
+            from_falcon.address().to_string(),
+            payment["stxn"]["txn"]["snd"].as_str().unwrap()
+        );
     }
 
     #[test]

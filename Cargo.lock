@@ -103,7 +103,6 @@ dependencies = [
 name = "algokit_crypto"
 version = "0.1.0"
 dependencies = [
- "async-trait",
  "bip39",
  "cryptoxide",
  "ed25519-bip32",
@@ -111,7 +110,6 @@ dependencies = [
  "sha2",
  "signature",
  "snafu",
- "tokio",
  "zeroize",
 ]
 
@@ -120,10 +118,8 @@ name = "algokit_crypto_ffi"
 version = "0.1.0"
 dependencies = [
  "algokit_crypto",
- "async-trait",
  "getrandom 0.4.1",
  "signature",
- "tokio",
  "uniffi",
 ]
 
@@ -149,11 +145,9 @@ dependencies = [
  "algokit_crypto",
  "algokit_test_artifacts",
  "algokit_transact",
- "async-trait",
  "base32",
  "base64 0.22.1",
  "convert_case",
- "cryptoxide",
  "derive_builder",
  "ed25519-dalek",
  "pretty_assertions",
@@ -167,7 +161,6 @@ dependencies = [
  "serde_with",
  "sha2",
  "snafu",
- "tokio",
 ]
 
 [[package]]
@@ -176,7 +169,6 @@ version = "0.1.0"
 dependencies = [
  "algokit_crypto",
  "algokit_transact",
- "async-trait",
  "base64 0.22.1",
  "ffi_macros",
  "pretty_assertions",
@@ -185,7 +177,6 @@ dependencies = [
  "serde_bytes",
  "serde_json",
  "snafu",
- "tokio",
  "uniffi",
 ]
 
