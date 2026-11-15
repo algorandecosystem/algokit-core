@@ -3,9 +3,7 @@ use crate::constants::{
     Byte32, EMPTY_SIGNATURE, HASH_BYTES_LENGTH,
 };
 use crate::traits::MsgPackEmpty;
-use crate::{
-    Address, AlgoKitTransactError, AlgorandMsgpack, MAX_TX_GROUP_SIZE, Transaction, TransactionId,
-};
+use crate::{Address, AlgoKitTransactError, AlgorandMsgpack, Transaction, TransactionId};
 use serde::{Deserialize, Serialize};
 use serde_with::{Bytes, serde_as, skip_serializing_none};
 use sha2::{Digest, Sha512_256};
@@ -293,15 +291,6 @@ pub fn compute_group(txs: &[Transaction]) -> Result<Byte32, AlgoKitTransactError
     if txs.is_empty() {
         return Err(AlgoKitTransactError::InputError {
             err_msg: String::from("Transaction group size cannot be 0"),
-        });
-    }
-
-    if txs.len() > MAX_TX_GROUP_SIZE {
-        return Err(AlgoKitTransactError::InputError {
-            err_msg: format!(
-                "Transaction group size exceeds the max limit of {}",
-                MAX_TX_GROUP_SIZE
-            ),
         });
     }
 

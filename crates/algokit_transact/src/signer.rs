@@ -1,6 +1,6 @@
 use crate::{
-    Address, AlgoKitTransactError, EMPTY_SIGNATURE, SignedTransaction, Transaction,
-    traits::AlgorandMsgpack,
+    Address, AlgoKitTransactError, EMPTY_SIGNATURE, PQSignature, SignedTransaction, Transaction,
+    canonical_pq_address, traits::AlgorandMsgpack,
 };
 use algokit_crypto::ed25519::Ed25519KeyAndSigner;
 use async_trait::async_trait;
@@ -55,6 +55,7 @@ impl TransactionSigner for EmptyTransactionSigner {
                         signature: Some(EMPTY_SIGNATURE),
                         multisignature: None,
                         logic_signature: None,
+                        pq_signature: None,
                     }
                 } else {
                     // Return completely unsigned for transactions we weren't asked to sign
@@ -64,6 +65,7 @@ impl TransactionSigner for EmptyTransactionSigner {
                         signature: None,
                         multisignature: None,
                         logic_signature: None,
+                        pq_signature: None,
                     }
                 }
             })
@@ -147,6 +149,7 @@ impl TransactionSigner for AlgorandSigner {
                     signature: Some(signature),
                     multisignature: None,
                     logic_signature: None,
+                    pq_signature: None,
                 });
             } else {
                 // Transaction not meant to be signed by this signer
@@ -156,6 +159,7 @@ impl TransactionSigner for AlgorandSigner {
                     signature: None,
                     multisignature: None,
                     logic_signature: None,
+                    pq_signature: None,
                 });
             }
         }
@@ -174,6 +178,94 @@ pub fn generate_address_with_signers(
         addr: address,
         signer,
     }
+}
+
+/// A post-quantum key that signs raw bytes, supplied by the caller.
+/// The bytes passed to `try_sign` already carry their domain separator.
+#[async_trait]
+pub trait PQKeyAndSigner {
+    /// Two-byte scheme identifier, `f1` for Falcon-1024.
+    fn scheme(&self) -> [u8; 2];
+    /// The scheme's public key.
+    fn public_key(&self) -> Vec<u8>;
+    async fn try_sign(&self, msg: &[u8]) -> Result<Vec<u8>, String>;
+}
+
+struct PQSigner {
+    address: Address,
+    salt: u8,
+    key_and_signer: Box<dyn PQKeyAndSigner + Send + Sync>,
+}
+
+#[async_trait]
+impl TransactionSigner for PQSigner {
+    async fn sign_transactions(
+        &self,
+        transactions: &[Transaction],
+        indexes_to_sign: &[usize],
+    ) -> Result<Vec<SignedTransaction>, AlgoKitTransactError> {
+        check_indexes_in_bounds(indexes_to_sign, transactions.len())?;
+
+        let mut signed_transactions = Vec::with_capacity(transactions.len());
+
+        for (index, txn) in transactions.iter().enumerate() {
+            if indexes_to_sign.contains(&index) {
+                let signature =
+                    self.key_and_signer
+                        .try_sign(&txn.encode()?)
+                        .await
+                        .map_err(|e| AlgoKitTransactError::SigningError {
+                            err_msg: format!("Failed to sign transaction {}: {}", index, e),
+                        })?;
+
+                // A rekeyed sender names the post-quantum account as its authorizer.
+                let auth_address =
+                    (txn.header().sender != self.address).then(|| self.address.clone());
+
+                signed_transactions.push(SignedTransaction {
+                    transaction: txn.clone(),
+                    signature: None,
+                    auth_address,
+                    multisignature: None,
+                    logic_signature: None,
+                    pq_signature: Some(PQSignature {
+                        scheme: self.key_and_signer.scheme(),
+                        salt: self.salt,
+                        public_key: self.key_and_signer.public_key(),
+                        signature,
+                    }),
+                });
+            } else {
+                signed_transactions.push(SignedTransaction {
+                    transaction: txn.clone(),
+                    signature: None,
+                    auth_address: None,
+                    multisignature: None,
+                    logic_signature: None,
+                    pq_signature: None,
+                });
+            }
+        }
+
+        Ok(signed_transactions)
+    }
+}
+
+/// Builds signers for a post-quantum key, deriving the account address from its public key.
+pub fn generate_pq_address_with_signers(
+    key_and_signer: impl PQKeyAndSigner + Send + Sync + 'static,
+) -> Result<AddressWithSigners, AlgoKitTransactError> {
+    let (salt, address) =
+        canonical_pq_address(&key_and_signer.scheme(), &key_and_signer.public_key())?;
+
+    Ok(AddressWithSigners {
+        addr: address.clone(),
+        signer: Arc::new(PQSigner {
+            address,
+            salt,
+            key_and_signer: Box::new(key_and_signer),
+        }),
+    })
 }
 
 #[cfg(test)]
@@ -261,5 +353,87 @@ mod tests {
         let result = signer.sign_transactions(&transactions, &[5]).await;
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("out of bounds"));
+    }
+}
+
+#[cfg(test)]
+mod pq_signer_tests {
+    use super::*;
+    use crate::constants::PQ_SCHEME_FALCON1024;
+    use crate::test_utils::AccountMother;
+    use algokit_test_artifacts::pq::PAYMENT;
+    use base64::{Engine, prelude::BASE64_STANDARD};
+
+    /// Replays the vector's signature, asserting it is asked to sign the expected bytes.
+    struct VectorSigner {
+        public_key: Vec<u8>,
+        bytes_to_sign: Vec<u8>,
+        signature: Vec<u8>,
+    }
+
+    #[async_trait]
+    impl PQKeyAndSigner for VectorSigner {
+        fn scheme(&self) -> [u8; 2] {
+            PQ_SCHEME_FALCON1024
+        }
+
+        fn public_key(&self) -> Vec<u8> {
+            self.public_key.clone()
+        }
+
+        async fn try_sign(&self, msg: &[u8]) -> Result<Vec<u8>, String> {
+            assert_eq!(msg, self.bytes_to_sign.as_slice());
+            Ok(self.signature.clone())
+        }
+    }
+
+    fn vector() -> (VectorSigner, SignedTransaction, Vec<u8>) {
+        let payment: serde_json::Value = serde_json::from_str(PAYMENT).unwrap();
+        let blob = BASE64_STANDARD
+            .decode(payment["stxnBlob"].as_str().unwrap())
+            .unwrap();
+        let expected = SignedTransaction::decode(&blob).unwrap();
+        let pqsig = expected.pq_signature.clone().unwrap();
+
+        let signer = VectorSigner {
+            public_key: pqsig.public_key,
+            bytes_to_sign: expected.transaction.encode().unwrap(),
+            signature: pqsig.signature,
+        };
+
+        (signer, expected, blob)
+    }
+
+    #[tokio::test]
+    async fn signs_to_the_vector_bytes() {
+        let (signer, expected, blob) = vector();
+
+        let account = generate_pq_address_with_signers(signer).unwrap();
+        let signed = account
+            .sign_transactions(&[expected.transaction.clone()], &[0])
+            .await
+            .unwrap();
+
+        assert_eq!(account.address(), expected.transaction.header().sender);
+        assert_eq!(signed[0].encode_raw().unwrap(), blob);
+    }
+
+    #[tokio::test]
+    async fn names_the_pq_account_as_authorizer_for_a_rekeyed_sender() {
+        let (signer, expected, _) = vector();
+        let mut transaction = expected.transaction.clone();
+        transaction.header_mut().sender = AccountMother::neil();
+        let signer = VectorSigner {
+            bytes_to_sign: transaction.encode().unwrap(),
+            ..signer
+        };
+
+        let account = generate_pq_address_with_signers(signer).unwrap();
+        let signed = account
+            .sign_transactions(&[transaction], &[0])
+            .await
+            .unwrap();
+
+        assert_eq!(signed[0].auth_address, Some(account.address()));
     }
 }

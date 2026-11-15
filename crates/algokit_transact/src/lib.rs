@@ -3,6 +3,7 @@ pub mod constants;
 mod error;
 pub mod logic_sig;
 pub mod multisig;
+pub mod pq;
 pub mod signer;
 mod traits;
 mod transactions;
@@ -14,6 +15,7 @@ pub use constants::*;
 pub use error::AlgoKitTransactError;
 pub use logic_sig::LogicSignature;
 pub use multisig::*;
+pub use pq::{PQSignature, canonical_pq_address, derive_pq_key_seed, pq_address};
 pub use traits::{AlgorandMsgpack, EstimateTransactionSize, TransactionId, Transactions, Validate};
 pub use transactions::{
     AppCallTransactionBuilder, AppCallTransactionFields, AssetConfigTransactionBuilder,

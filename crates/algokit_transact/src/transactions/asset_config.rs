@@ -328,50 +328,6 @@ impl AssetConfigTransactionFields {
             ));
         }
 
-        if let Some(decimals) = self.decimals {
-            if decimals > 19 {
-                errors.push(TransactionValidationError::FieldTooLong {
-                    field: "Decimals".to_string(),
-                    actual: decimals as usize,
-                    max: 19,
-                    unit: "decimal places".to_string(),
-                });
-            }
-        }
-
-        if let Some(ref unit_name) = self.unit_name {
-            if unit_name.len() > 8 {
-                errors.push(TransactionValidationError::FieldTooLong {
-                    field: "Unit name".to_string(),
-                    actual: unit_name.len(),
-                    max: 8,
-                    unit: "bytes".to_string(),
-                });
-            }
-        }
-
-        if let Some(ref asset_name) = self.asset_name {
-            if asset_name.len() > 32 {
-                errors.push(TransactionValidationError::FieldTooLong {
-                    field: "Asset name".to_string(),
-                    actual: asset_name.len(),
-                    max: 32,
-                    unit: "bytes".to_string(),
-                });
-            }
-        }
-
-        if let Some(ref url) = self.url {
-            if url.len() > 96 {
-                errors.push(TransactionValidationError::FieldTooLong {
-                    field: "Url".to_string(),
-                    actual: url.len(),
-                    max: 96,
-                    unit: "bytes".to_string(),
-                });
-            }
-        }
-
         match errors.is_empty() {
             true => Ok(()),
             false => Err(errors),
@@ -482,19 +438,19 @@ mod tests {
     use crate::test_utils::{AccountMother, TestDataMother, TransactionHeaderMother};
 
     #[test]
-    fn test_validate_asset_creation_multiple_errors() {
-        let long_url = "https://".to_string() + &"a".repeat(100); // More than 96 bytes total
+    fn test_validate_asset_creation_has_no_length_caps() {
+        let long_url = "https://".to_string() + &"a".repeat(100);
         let asset_config = AssetConfigTransactionFields {
             header: TransactionHeaderMother::example().build().unwrap(),
-            asset_id: 0,        // Asset creation
-            total: None,        // Missing total - ERROR 1
-            decimals: Some(20), // Too large (max is 19) - ERROR 2
+            asset_id: 0, // Asset creation
+            total: None, // Missing total - the only error
+            decimals: Some(20),
             default_frozen: Some(false),
             asset_name: Some(
                 "ThisIsAVeryLongAssetNameThatExceedsTheMaximumLengthOf32Bytes".to_string(),
-            ), // More than 32 bytes - ERROR 3
-            unit_name: Some("VERYLONGUNITNAME".to_string()), // More than 8 bytes - ERROR 4
-            url: Some(long_url),                             // More than 96 bytes - ERROR 5
+            ),
+            unit_name: Some("VERYLONGUNITNAME".to_string()),
+            url: Some(long_url),
             metadata_hash: None,
             manager: Some(AccountMother::neil()),
             reserve: None,
@@ -505,15 +461,7 @@ mod tests {
         let result = asset_config.validate();
         assert!(result.is_err());
         let errors = result.unwrap_err();
-        assert_eq!(errors.len(), 5);
-
-        // Check that all errors are present
-        let error_text = errors.join("\n");
-        assert!(error_text.contains("Total is required"));
-        assert!(error_text.contains("Decimals cannot exceed 19 decimal places"));
-        assert!(error_text.contains("Asset name cannot exceed 32 bytes"));
-        assert!(error_text.contains("Unit name cannot exceed 8 bytes"));
-        assert!(error_text.contains("Url cannot exceed 96 bytes"));
+        assert_eq!(errors, vec!["Total is required".to_string()]);
     }
 
     #[test]

@@ -207,6 +207,7 @@ mod tests {
                     .unwrap(),
             ),
             logic_signature: None,
+            pq_signature: None,
         };
         assert_eq!(
             observed_signed_txn.encode().unwrap(),

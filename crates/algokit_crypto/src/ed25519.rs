@@ -59,6 +59,12 @@ impl Keypair for CryptoxideEd25519Keypair {
     }
 }
 
+/// Whether 32 bytes decode to an Edwards25519 point, accepting non-canonical encodings
+/// and small-order points. Not a public key validity check.
+pub fn is_edwards25519_point(bytes: &[u8; 32]) -> bool {
+    cryptoxide::curve25519::Ge::from_bytes(bytes).is_some()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -96,5 +102,50 @@ mod tests {
             is_valid,
             "Signature verification failed for randomly generated key"
         );
+    }
+}
+
+#[cfg(test)]
+mod edwards25519_point_tests {
+    use super::is_edwards25519_point;
+
+    fn decode_hex(hex: &str) -> [u8; 32] {
+        let mut bytes = [0u8; 32];
+        for (i, byte) in bytes.iter_mut().enumerate() {
+            *byte = u8::from_str_radix(&hex[i * 2..i * 2 + 2], 16).unwrap();
+        }
+        bytes
+    }
+
+    /// Known answers for the permissive decode predicate, including the encodings a
+    /// strict subgroup check rejects but which still decode to curve points.
+    #[test]
+    fn matches_known_answers() {
+        let cases = [
+            (
+                "5866666666666666666666666666666666666666666666666666666666666666",
+                true,
+            ),
+            (
+                "0100000000000000000000000000000000000000000000000000000000000000",
+                true,
+            ),
+            (
+                "0100000000000000000000000000000000000000000000000000000000000080",
+                true,
+            ),
+            (
+                "edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+                true,
+            ),
+            (
+                "efffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+                false,
+            ),
+        ];
+
+        for (hex, expected) in cases {
+            assert_eq!(is_edwards25519_point(&decode_hex(hex)), expected, "{hex}");
+        }
     }
 }

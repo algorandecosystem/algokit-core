@@ -126,6 +126,7 @@ pub fn empty_signature_envelope(transaction: Transaction) -> SignedTransaction {
         auth_address: None,
         multisignature: None,
         logic_signature: None,
+        pq_signature: None,
     }
 }
 
@@ -491,6 +492,7 @@ mod tests {
             auth_address: None,
             multisignature: None,
             logic_signature: None,
+            pq_signature: None,
         };
 
         // An all-zero signature is omitted, so both produce the same envelope.
@@ -525,6 +527,7 @@ mod tests {
             auth_address: None,
             multisignature: None,
             logic_signature: None,
+            pq_signature: None,
         };
 
         let request =
@@ -546,6 +549,7 @@ mod tests {
             auth_address: None,
             multisignature: None,
             logic_signature: None,
+            pq_signature: None,
         };
 
         let request = build_simulate_request(vec![signed], &SimulateOptions::default()).unwrap();
@@ -831,6 +835,7 @@ mod tests {
             auth_address: None,
             multisignature: None,
             logic_signature: None,
+            pq_signature: None,
         };
         let client = StubHttpClient {
             response: response_for(&[txn]),

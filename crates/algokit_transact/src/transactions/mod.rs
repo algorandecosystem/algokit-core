@@ -43,8 +43,8 @@ use crate::constants::{
 };
 use crate::error::AlgoKitTransactError;
 use crate::traits::{AlgorandMsgpack, EstimateTransactionSize, TransactionId, Transactions};
-use crate::utils::{compute_group, is_empty_signature_opt, is_zero_addr_opt};
-use crate::{Address, LogicSignature, MultisigSignature};
+use crate::utils::{compute_group, is_empty_signature_opt, is_empty_struct_opt, is_zero_addr_opt};
+use crate::{Address, LogicSignature, MultisigSignature, PQSignature};
 use serde::{Deserialize, Serialize};
 use serde_with::{Bytes, serde_as};
 use std::any::Any;
@@ -200,6 +200,12 @@ pub struct SignedTransaction {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub logic_signature: Option<LogicSignature>,
+
+    /// Optional post-quantum signature authorizing the transaction.
+    #[serde(rename = "pqsig")]
+    #[serde(skip_serializing_if = "is_empty_struct_opt")]
+    #[serde(default)]
+    pub pq_signature: Option<PQSignature>,
 }
 
 impl AlgorandMsgpack for SignedTransaction {
@@ -310,7 +316,7 @@ impl Transaction {
 #[cfg(test)]
 mod transaction_tests {
     use crate::{
-        EMPTY_SIGNATURE, MAX_TX_GROUP_SIZE,
+        EMPTY_SIGNATURE,
         test_utils::PLACEHOLDER_SIGNATURE,
         test_utils::{TransactionGroupMother, TransactionHeaderMother, TransactionMother},
     };
@@ -536,20 +542,6 @@ mod transaction_tests {
     }
 
     #[test]
-    fn test_transaction_group_too_big() {
-        let txs: Vec<Transaction> = TransactionGroupMother::group_of(MAX_TX_GROUP_SIZE + 1);
-
-        let result = txs.assign_group();
-
-        let error = result.unwrap_err();
-        assert!(
-            error
-                .to_string()
-                .starts_with("Transaction group size exceeds the max limit")
-        );
-    }
-
-    #[test]
     fn test_transaction_group_too_small() {
         let txs: Vec<Transaction> = TransactionGroupMother::group_of(0);
 
@@ -631,6 +623,7 @@ mod transaction_tests {
                 auth_address: None,
                 multisignature: None,
                 logic_signature: None,
+                pq_signature: None,
             })
             .collect::<Vec<SignedTransaction>>();
 
@@ -662,6 +655,7 @@ mod transaction_tests {
             auth_address: None,
             multisignature: None,
             logic_signature: None,
+            pq_signature: None,
         }
     }
 

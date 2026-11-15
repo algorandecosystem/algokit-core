@@ -2,18 +2,19 @@ use serde::{Deserialize, Serialize};
 use serde_with::{Bytes, serde_as};
 
 use crate::constants::{
-    ALGORAND_SIGNATURE_BYTE_LENGTH, MULTISIG_PROGRAM_DOMAIN_SEPARATOR, PROGRAM_DOMAIN_SEPARATOR,
+    ALGORAND_SIGNATURE_BYTE_LENGTH, MULTISIG_PROGRAM_DOMAIN_SEPARATOR, PQ_PROGRAM_DOMAIN_SEPARATOR,
+    PROGRAM_DOMAIN_SEPARATOR,
 };
 use crate::traits::Validate;
-use crate::utils::{hash, is_empty_signature_opt, is_empty_vec_opt};
-use crate::{Address, MultisigSignature};
+use crate::utils::{hash, is_empty_signature_opt, is_empty_struct_opt, is_empty_vec_opt};
+use crate::{Address, MultisigSignature, PQSignature};
 
 /// A logic signature, authorizing a transaction with a program rather than a key.
 ///
 /// The program can authorize on its own behalf, in which case the transaction sender is
 /// the program's escrow address, or it can be delegated by an account that signs the
-/// program. Exactly one of `signature`, `multisignature` or `logic_multisignature` is
-/// present for a delegated logic signature; all three are absent for an escrow.
+/// program. Exactly one of `signature`, `multisignature`, `logic_multisignature` or
+/// `pq_signature` is present for a delegated logic signature; all are absent for an escrow.
 #[serde_as]
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Default)]
 pub struct LogicSignature {
@@ -40,6 +41,12 @@ pub struct LogicSignature {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub logic_multisignature: Option<MultisigSignature>,
+
+    /// Post-quantum delegation, binding the signature to the delegating account.
+    #[serde(rename = "pqsig")]
+    #[serde(skip_serializing_if = "is_empty_struct_opt")]
+    #[serde(default)]
+    pub pq_signature: Option<PQSignature>,
 
     /// Arguments made available to the program. Individual arguments may be empty.
     #[serde(rename = "arg")]
@@ -82,6 +89,17 @@ impl LogicSignature {
         buffer.extend_from_slice(&self.logic);
         buffer
     }
+
+    /// The bytes a post-quantum account signs to delegate this program, bound to its address.
+    pub fn bytes_to_sign_for_pq(&self, account: &Address) -> Vec<u8> {
+        let mut buffer = Vec::with_capacity(
+            PQ_PROGRAM_DOMAIN_SEPARATOR.len() + account.as_bytes().len() + self.logic.len(),
+        );
+        buffer.extend_from_slice(PQ_PROGRAM_DOMAIN_SEPARATOR.as_bytes());
+        buffer.extend_from_slice(account.as_bytes());
+        buffer.extend_from_slice(&self.logic);
+        buffer
+    }
 }
 
 fn program_preimage(logic: &[u8]) -> Vec<u8> {
@@ -103,6 +121,7 @@ impl Validate for LogicSignature {
             self.signature.is_some(),
             self.multisignature.is_some(),
             self.logic_multisignature.is_some(),
+            self.pq_signature.is_some(),
         ]
         .iter()
         .filter(|present| **present)
@@ -227,6 +246,7 @@ mod tests {
             auth_address: None,
             multisignature: None,
             logic_signature: Some(lsig.clone()),
+            pq_signature: None,
         };
 
         let decoded = SignedTransaction::decode(&signed.encode().unwrap()).unwrap();
@@ -289,5 +309,43 @@ mod msig_rejection_tests {
             rmp_serde::from_slice(&rmp_serde::to_vec_named(&lsig).unwrap()).unwrap();
 
         assert_eq!(decoded, lsig);
+    }
+}
+
+#[cfg(test)]
+mod pq_delegation_tests {
+    use super::*;
+    use crate::constants::PQ_SCHEME_FALCON1024;
+    use crate::test_utils::{AccountMother, PLACEHOLDER_SIGNATURE};
+
+    const PROGRAM: [u8; 5] = [0x01, 0x20, 0x01, 0x01, 0x22];
+
+    #[test]
+    fn pq_delegation_binds_the_account_address() {
+        let lsig = LogicSignature::new(PROGRAM.to_vec());
+        let account = AccountMother::neil();
+
+        let preimage = lsig.bytes_to_sign_for_pq(&account);
+
+        assert!(preimage.starts_with(PQ_PROGRAM_DOMAIN_SEPARATOR.as_bytes()));
+        assert_eq!(
+            &preimage[PQ_PROGRAM_DOMAIN_SEPARATOR.len()..][..32],
+            account.as_bytes()
+        );
+        assert!(preimage.ends_with(&PROGRAM));
+    }
+
+    #[test]
+    fn pq_signature_counts_as_a_delegation() {
+        let mut lsig = LogicSignature::new(PROGRAM.to_vec());
+        lsig.signature = Some(PLACEHOLDER_SIGNATURE);
+        lsig.pq_signature = Some(PQSignature {
+            scheme: PQ_SCHEME_FALCON1024,
+            salt: 3,
+            public_key: vec![1],
+            signature: vec![2],
+        });
+
+        assert!(lsig.validate().is_err());
     }
 }
