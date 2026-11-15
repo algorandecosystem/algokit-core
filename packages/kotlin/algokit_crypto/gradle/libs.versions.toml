@@ -1,7 +1,7 @@
 [versions]
 kotlin = "2.0.21"
 junit = "4.13.2"
-jna = "5.14.0"
+jna = "5.17.0"
 mavenPublish = "0.34.0"
 
 [libraries]

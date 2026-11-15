@@ -400,6 +400,22 @@ fileprivate final class UniffiHandleMap<T>: @unchecked Sendable {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterUInt8: FfiConverterPrimitive {
+    typealias FfiType = UInt8
+    typealias SwiftType = UInt8
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UInt8 {
+        return try lift(readInt(&buf))
+    }
+
+    public static func write(_ value: UInt8, into buf: inout [UInt8]) {
+        writeInt(&buf, lower(value))
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterUInt32: FfiConverterPrimitive {
     typealias FfiType = UInt32
     typealias SwiftType = UInt32
@@ -425,6 +441,30 @@ fileprivate struct FfiConverterUInt64: FfiConverterPrimitive {
     }
 
     public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        writeInt(&buf, lower(value))
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterBool : FfiConverter {
+    typealias FfiType = Int8
+    typealias SwiftType = Bool
+
+    public static func lift(_ value: Int8) throws -> Bool {
+        return value != 0
+    }
+
+    public static func lower(_ value: Bool) -> Int8 {
+        return value ? 1 : 0
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Bool {
+        return try lift(readInt(&buf))
+    }
+
+    public static func write(_ value: Bool, into buf: inout [UInt8]) {
         writeInt(&buf, lower(value))
     }
 }
@@ -486,6 +526,228 @@ fileprivate struct FfiConverterData: FfiConverterRustBuffer {
         writeInt(&buf, len)
         writeBytes(&buf, value)
     }
+}
+
+
+/**
+ * FFI-compatible mirror of [`algokit_crypto::falcon1024::Falcon1024Account`].
+ */
+public struct Falcon1024Account {
+    /**
+     * 1793-byte Falcon-1024 public key.
+     */
+    public var publicKey: Data
+    /**
+     * 2305-byte Falcon-1024 private key.
+     */
+    public var privateKey: Data
+    /**
+     * The address salt (canonical = lowest PQ-compliant salt). Must be
+     * included in the `pqsig` of signed transactions when non-zero.
+     */
+    public var salt: UInt8
+    /**
+     * Raw 32-byte Algorand address.
+     */
+    public var address: Data
+    /**
+     * 58-character base32 Algorand address.
+     */
+    public var addressString: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * 1793-byte Falcon-1024 public key.
+         */publicKey: Data, 
+        /**
+         * 2305-byte Falcon-1024 private key.
+         */privateKey: Data, 
+        /**
+         * The address salt (canonical = lowest PQ-compliant salt). Must be
+         * included in the `pqsig` of signed transactions when non-zero.
+         */salt: UInt8, 
+        /**
+         * Raw 32-byte Algorand address.
+         */address: Data, 
+        /**
+         * 58-character base32 Algorand address.
+         */addressString: String) {
+        self.publicKey = publicKey
+        self.privateKey = privateKey
+        self.salt = salt
+        self.address = address
+        self.addressString = addressString
+    }
+}
+
+#if compiler(>=6)
+extension Falcon1024Account: Sendable {}
+#endif
+
+
+extension Falcon1024Account: Equatable, Hashable {
+    public static func ==(lhs: Falcon1024Account, rhs: Falcon1024Account) -> Bool {
+        if lhs.publicKey != rhs.publicKey {
+            return false
+        }
+        if lhs.privateKey != rhs.privateKey {
+            return false
+        }
+        if lhs.salt != rhs.salt {
+            return false
+        }
+        if lhs.address != rhs.address {
+            return false
+        }
+        if lhs.addressString != rhs.addressString {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(publicKey)
+        hasher.combine(privateKey)
+        hasher.combine(salt)
+        hasher.combine(address)
+        hasher.combine(addressString)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeFalcon1024Account: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Falcon1024Account {
+        return
+            try Falcon1024Account(
+                publicKey: FfiConverterData.read(from: &buf), 
+                privateKey: FfiConverterData.read(from: &buf), 
+                salt: FfiConverterUInt8.read(from: &buf), 
+                address: FfiConverterData.read(from: &buf), 
+                addressString: FfiConverterString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: Falcon1024Account, into buf: inout [UInt8]) {
+        FfiConverterData.write(value.publicKey, into: &buf)
+        FfiConverterData.write(value.privateKey, into: &buf)
+        FfiConverterUInt8.write(value.salt, into: &buf)
+        FfiConverterData.write(value.address, into: &buf)
+        FfiConverterString.write(value.addressString, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeFalcon1024Account_lift(_ buf: RustBuffer) throws -> Falcon1024Account {
+    return try FfiConverterTypeFalcon1024Account.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeFalcon1024Account_lower(_ value: Falcon1024Account) -> RustBuffer {
+    return FfiConverterTypeFalcon1024Account.lower(value)
+}
+
+
+/**
+ * A PQ address (salt + address) for a Falcon-1024 public key.
+ */
+public struct Falcon1024Address {
+    public var salt: UInt8
+    /**
+     * Raw 32-byte Algorand address.
+     */
+    public var address: Data
+    /**
+     * 58-character base32 Algorand address.
+     */
+    public var addressString: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(salt: UInt8, 
+        /**
+         * Raw 32-byte Algorand address.
+         */address: Data, 
+        /**
+         * 58-character base32 Algorand address.
+         */addressString: String) {
+        self.salt = salt
+        self.address = address
+        self.addressString = addressString
+    }
+}
+
+#if compiler(>=6)
+extension Falcon1024Address: Sendable {}
+#endif
+
+
+extension Falcon1024Address: Equatable, Hashable {
+    public static func ==(lhs: Falcon1024Address, rhs: Falcon1024Address) -> Bool {
+        if lhs.salt != rhs.salt {
+            return false
+        }
+        if lhs.address != rhs.address {
+            return false
+        }
+        if lhs.addressString != rhs.addressString {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(salt)
+        hasher.combine(address)
+        hasher.combine(addressString)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeFalcon1024Address: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Falcon1024Address {
+        return
+            try Falcon1024Address(
+                salt: FfiConverterUInt8.read(from: &buf), 
+                address: FfiConverterData.read(from: &buf), 
+                addressString: FfiConverterString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: Falcon1024Address, into buf: inout [UInt8]) {
+        FfiConverterUInt8.write(value.salt, into: &buf)
+        FfiConverterData.write(value.address, into: &buf)
+        FfiConverterString.write(value.addressString, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeFalcon1024Address_lift(_ buf: RustBuffer) throws -> Falcon1024Address {
+    return try FfiConverterTypeFalcon1024Address.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeFalcon1024Address_lower(_ value: Falcon1024Address) -> RustBuffer {
+    return FfiConverterTypeFalcon1024Address.lower(value)
 }
 
 
@@ -564,6 +826,92 @@ public func FfiConverterTypeMnemonicError_lift(_ buf: RustBuffer) throws -> Mnem
 #endif
 public func FfiConverterTypeMnemonicError_lower(_ value: MnemonicError) -> RustBuffer {
     return FfiConverterTypeMnemonicError.lower(value)
+}
+
+
+/**
+ * FFI-compatible mirror of [`algokit_crypto::xhd::DerivedAccount`] with byte
+ * vectors in place of fixed-size arrays.
+ */
+public struct XhdDerivedAccount {
+    /**
+     * Extended private key: 32-byte scalar, 32-byte prefix, 32-byte chain code.
+     */
+    public var extendedPrivateKey: Data
+    /**
+     * Ed25519 public key derived from the extended private key.
+     */
+    public var publicKey: Data
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * Extended private key: 32-byte scalar, 32-byte prefix, 32-byte chain code.
+         */extendedPrivateKey: Data, 
+        /**
+         * Ed25519 public key derived from the extended private key.
+         */publicKey: Data) {
+        self.extendedPrivateKey = extendedPrivateKey
+        self.publicKey = publicKey
+    }
+}
+
+#if compiler(>=6)
+extension XhdDerivedAccount: Sendable {}
+#endif
+
+
+extension XhdDerivedAccount: Equatable, Hashable {
+    public static func ==(lhs: XhdDerivedAccount, rhs: XhdDerivedAccount) -> Bool {
+        if lhs.extendedPrivateKey != rhs.extendedPrivateKey {
+            return false
+        }
+        if lhs.publicKey != rhs.publicKey {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(extendedPrivateKey)
+        hasher.combine(publicKey)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeXhdDerivedAccount: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> XhdDerivedAccount {
+        return
+            try XhdDerivedAccount(
+                extendedPrivateKey: FfiConverterData.read(from: &buf), 
+                publicKey: FfiConverterData.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: XhdDerivedAccount, into buf: inout [UInt8]) {
+        FfiConverterData.write(value.extendedPrivateKey, into: &buf)
+        FfiConverterData.write(value.publicKey, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeXhdDerivedAccount_lift(_ buf: RustBuffer) throws -> XhdDerivedAccount {
+    return try FfiConverterTypeXhdDerivedAccount.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeXhdDerivedAccount_lower(_ value: XhdDerivedAccount) -> RustBuffer {
+    return FfiConverterTypeXhdDerivedAccount.lower(value)
 }
 
 
@@ -721,6 +1069,164 @@ extension AlgoKitCryptoError: Foundation.LocalizedError {
 
 
 
+
+/**
+ * FFI-compatible error type for Falcon-1024 operations.
+ */
+public enum AlgoKitFalcon1024Error: Swift.Error {
+
+    
+    
+    case Error(errMsg: String
+    )
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeAlgoKitFalcon1024Error: FfiConverterRustBuffer {
+    typealias SwiftType = AlgoKitFalcon1024Error
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AlgoKitFalcon1024Error {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+
+        
+
+        
+        case 1: return .Error(
+            errMsg: try FfiConverterString.read(from: &buf)
+            )
+
+         default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: AlgoKitFalcon1024Error, into buf: inout [UInt8]) {
+        switch value {
+
+        
+
+        
+        
+        case let .Error(errMsg):
+            writeInt(&buf, Int32(1))
+            FfiConverterString.write(errMsg, into: &buf)
+            
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeAlgoKitFalcon1024Error_lift(_ buf: RustBuffer) throws -> AlgoKitFalcon1024Error {
+    return try FfiConverterTypeAlgoKitFalcon1024Error.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeAlgoKitFalcon1024Error_lower(_ value: AlgoKitFalcon1024Error) -> RustBuffer {
+    return FfiConverterTypeAlgoKitFalcon1024Error.lower(value)
+}
+
+
+extension AlgoKitFalcon1024Error: Equatable, Hashable {}
+
+
+
+
+extension AlgoKitFalcon1024Error: Foundation.LocalizedError {
+    public var errorDescription: String? {
+        String(reflecting: self)
+    }
+}
+
+
+
+
+
+/**
+ * FFI-compatible error type for HD wallet operations.
+ */
+public enum AlgoKitXhdError: Swift.Error {
+
+    
+    
+    case Error(errMsg: String
+    )
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeAlgoKitXhdError: FfiConverterRustBuffer {
+    typealias SwiftType = AlgoKitXhdError
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AlgoKitXhdError {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+
+        
+
+        
+        case 1: return .Error(
+            errMsg: try FfiConverterString.read(from: &buf)
+            )
+
+         default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: AlgoKitXhdError, into buf: inout [UInt8]) {
+        switch value {
+
+        
+
+        
+        
+        case let .Error(errMsg):
+            writeInt(&buf, Int32(1))
+            FfiConverterString.write(errMsg, into: &buf)
+            
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeAlgoKitXhdError_lift(_ buf: RustBuffer) throws -> AlgoKitXhdError {
+    return try FfiConverterTypeAlgoKitXhdError.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeAlgoKitXhdError_lower(_ value: AlgoKitXhdError) -> RustBuffer {
+    return FfiConverterTypeAlgoKitXhdError.lower(value)
+}
+
+
+extension AlgoKitXhdError: Equatable, Hashable {}
+
+
+
+
+extension AlgoKitXhdError: Foundation.LocalizedError {
+    public var errorDescription: String? {
+        String(reflecting: self)
+    }
+}
+
+
+
+
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
@@ -798,6 +1304,79 @@ extension MnemonicErrorKind: Equatable, Hashable {}
 
 
 
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+/**
+ * FFI-compatible mirror of [`algokit_crypto::xhd::KeyContext`].
+ */
+
+public enum XhdKeyContext {
+    
+    case address
+    case identity
+}
+
+
+#if compiler(>=6)
+extension XhdKeyContext: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeXhdKeyContext: FfiConverterRustBuffer {
+    typealias SwiftType = XhdKeyContext
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> XhdKeyContext {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .address
+        
+        case 2: return .identity
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: XhdKeyContext, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case .address:
+            writeInt(&buf, Int32(1))
+        
+        
+        case .identity:
+            writeInt(&buf, Int32(2))
+        
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeXhdKeyContext_lift(_ buf: RustBuffer) throws -> XhdKeyContext {
+    return try FfiConverterTypeXhdKeyContext.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeXhdKeyContext_lower(_ value: XhdKeyContext) -> RustBuffer {
+    return FfiConverterTypeXhdKeyContext.lower(value)
+}
+
+
+extension XhdKeyContext: Equatable, Hashable {}
+
+
+
+
+
+
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -833,6 +1412,121 @@ public func ed25519RawSign(secretKey: Data, data: Data)throws  -> Data  {
     uniffi_algokit_crypto_ffi_fn_func_ed25519_raw_sign(
         FfiConverterData.lower(secretKey),
         FfiConverterData.lower(data),$0
+    )
+})
+}
+/**
+ * Derives the Falcon-1024 account from the 32 bytes of entropy a 25-word
+ * mnemonic encodes (i.e. the `algo25` seed).
+ */
+public func falcon1024AccountFromEntropy(entropy: Data)throws  -> Falcon1024Account  {
+    return try  FfiConverterTypeFalcon1024Account_lift(try rustCallWithError(FfiConverterTypeAlgoKitFalcon1024Error_lift) {
+    uniffi_algokit_crypto_ffi_fn_func_falcon1024_account_from_entropy(
+        FfiConverterData.lower(entropy),$0
+    )
+})
+}
+/**
+ * Derives the Falcon-1024 account from a 25-word Algorand mnemonic.
+ *
+ * The same words also back an `algo25` (Ed25519) account at a *different*
+ * address.
+ */
+public func falcon1024AccountFromMnemonic(mnemonic: String)throws  -> Falcon1024Account  {
+    return try  FfiConverterTypeFalcon1024Account_lift(try rustCallWithError(FfiConverterTypeAlgoKitFalcon1024Error_lift) {
+    uniffi_algokit_crypto_ffi_fn_func_falcon1024_account_from_mnemonic(
+        FfiConverterString.lower(mnemonic),$0
+    )
+})
+}
+/**
+ * Derives the Falcon-1024 account directly from a 32-byte PQ keygen seed
+ * (go-algorand-sdk's `crypto.Falcon1024AccountFromPQSeed`).
+ */
+public func falcon1024AccountFromPqSeed(pqSeed: Data)throws  -> Falcon1024Account  {
+    return try  FfiConverterTypeFalcon1024Account_lift(try rustCallWithError(FfiConverterTypeAlgoKitFalcon1024Error_lift) {
+    uniffi_algokit_crypto_ffi_fn_func_falcon1024_account_from_pq_seed(
+        FfiConverterData.lower(pqSeed),$0
+    )
+})
+}
+/**
+ * Returns the canonical (lowest PQ-compliant salt) address for a Falcon-1024
+ * public key.
+ */
+public func falcon1024CanonicalAddress(publicKey: Data)throws  -> Falcon1024Address  {
+    return try  FfiConverterTypeFalcon1024Address_lift(try rustCallWithError(FfiConverterTypeAlgoKitFalcon1024Error_lift) {
+    uniffi_algokit_crypto_ffi_fn_func_falcon1024_canonical_address(
+        FfiConverterData.lower(publicKey),$0
+    )
+})
+}
+/**
+ * Returns the `n`th-lowest (0-based) PQ-compliant salted address for a
+ * Falcon-1024 public key. Every such address is authorized by the same key.
+ */
+public func falcon1024NthAddress(publicKey: Data, n: UInt32)throws  -> Falcon1024Address  {
+    return try  FfiConverterTypeFalcon1024Address_lift(try rustCallWithError(FfiConverterTypeAlgoKitFalcon1024Error_lift) {
+    uniffi_algokit_crypto_ffi_fn_func_falcon1024_nth_address(
+        FfiConverterData.lower(publicKey),
+        FfiConverterUInt32.lower(n),$0
+    )
+})
+}
+/**
+ * Byte length of a Falcon-1024 private key.
+ */
+public func falcon1024PrivateKeySize() -> UInt32  {
+    return try!  FfiConverterUInt32.lift(try! rustCall() {
+    uniffi_algokit_crypto_ffi_fn_func_falcon1024_private_key_size($0
+    )
+})
+}
+/**
+ * Byte length of a Falcon-1024 public key.
+ */
+public func falcon1024PublicKeySize() -> UInt32  {
+    return try!  FfiConverterUInt32.lift(try! rustCall() {
+    uniffi_algokit_crypto_ffi_fn_func_falcon1024_public_key_size($0
+    )
+})
+}
+/**
+ * Signs `msg` with a Falcon-1024 private key, returning the compressed
+ * deterministic signature (as used in a transaction's `pqsig.sig`).
+ *
+ * For transactions, `msg` must be `"TX" || msgpack(txn)` -- i.e. the same
+ * bytes an Ed25519 signer signs.
+ */
+public func falcon1024RawSign(privateKey: Data, msg: Data)throws  -> Data  {
+    return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeAlgoKitFalcon1024Error_lift) {
+    uniffi_algokit_crypto_ffi_fn_func_falcon1024_raw_sign(
+        FfiConverterData.lower(privateKey),
+        FfiConverterData.lower(msg),$0
+    )
+})
+}
+/**
+ * Upper bound on the byte length of a compressed Falcon-1024 signature.
+ */
+public func falcon1024SignatureMaxSize() -> UInt32  {
+    return try!  FfiConverterUInt32.lift(try! rustCall() {
+    uniffi_algokit_crypto_ffi_fn_func_falcon1024_signature_max_size($0
+    )
+})
+}
+/**
+ * Verifies a compressed Falcon-1024 `signature` over `msg`.
+ *
+ * Returns `false` for an invalid signature; errors only on a malformed
+ * public key length.
+ */
+public func falcon1024Verify(publicKey: Data, signature: Data, msg: Data)throws  -> Bool  {
+    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeAlgoKitFalcon1024Error_lift) {
+    uniffi_algokit_crypto_ffi_fn_func_falcon1024_verify(
+        FfiConverterData.lower(publicKey),
+        FfiConverterData.lower(signature),
+        FfiConverterData.lower(msg),$0
     )
 })
 }
@@ -881,6 +1575,92 @@ public func seedFromMnemonic(mnemonic: String)throws  -> Data  {
     )
 })
 }
+/**
+ * Derives an extended private key at the BIP44 path
+ * `m/44'/<coin>'/<account>'/0/<key_index>` using the Peikert derivation scheme.
+ *
+ * The `coin` segment is determined by `key_context`: 283 for
+ * [`XhdKeyContext::Address`] and 0 for [`XhdKeyContext::Identity`].
+ *
+ * # Errors
+ *
+ * Returns an error if `root_key` is not exactly 96 bytes or does not form a
+ * valid extended private key.
+ */
+public func xhdDerive(rootKey: Data, keyContext: XhdKeyContext, account: UInt32, keyIndex: UInt32)throws  -> XhdDerivedAccount  {
+    return try  FfiConverterTypeXhdDerivedAccount_lift(try rustCallWithError(FfiConverterTypeAlgoKitXhdError_lift) {
+    uniffi_algokit_crypto_ffi_fn_func_xhd_derive(
+        FfiConverterData.lower(rootKey),
+        FfiConverterTypeXhdKeyContext_lower(keyContext),
+        FfiConverterUInt32.lower(account),
+        FfiConverterUInt32.lower(keyIndex),$0
+    )
+})
+}
+/**
+ * Signs `msg` with an already-derived 96-byte extended private key.
+ *
+ * # Errors
+ *
+ * Returns an error if `extended_key` is not exactly 96 bytes or does not form
+ * a valid extended private key.
+ */
+public func xhdRawSign(extendedKey: Data, msg: Data)throws  -> Data  {
+    return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeAlgoKitXhdError_lift) {
+    uniffi_algokit_crypto_ffi_fn_func_xhd_raw_sign(
+        FfiConverterData.lower(extendedKey),
+        FfiConverterData.lower(msg),$0
+    )
+})
+}
+/**
+ * Derives a 96-byte root extended private key directly from a BIP39 mnemonic.
+ *
+ * Convenience wrapper around [`xhd_seed_from_mnemonic`] +
+ * [`xhd_root_key_from_seed`].
+ *
+ * # Errors
+ *
+ * Returns an error if `mnemonic` is not a valid BIP39 phrase.
+ */
+public func xhdRootKeyFromMnemonic(mnemonic: String)throws  -> Data  {
+    return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeAlgoKitXhdError_lift) {
+    uniffi_algokit_crypto_ffi_fn_func_xhd_root_key_from_mnemonic(
+        FfiConverterString.lower(mnemonic),$0
+    )
+})
+}
+/**
+ * Derives a 96-byte root extended private key from a 64-byte seed.
+ *
+ * # Errors
+ *
+ * Returns an error if `seed` is not exactly 64 bytes.
+ */
+public func xhdRootKeyFromSeed(seed: Data)throws  -> Data  {
+    return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeAlgoKitXhdError_lift) {
+    uniffi_algokit_crypto_ffi_fn_func_xhd_root_key_from_seed(
+        FfiConverterData.lower(seed),$0
+    )
+})
+}
+/**
+ * Derives a 64-byte BIP39 seed from a 12/15/18/21/24-word mnemonic.
+ *
+ * The BIP39 passphrase is hardcoded to the empty string; this binding does
+ * not expose passphrase-based derivation.
+ *
+ * # Errors
+ *
+ * Returns an error if `mnemonic` is not a valid BIP39 phrase.
+ */
+public func xhdSeedFromMnemonic(mnemonic: String)throws  -> Data  {
+    return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeAlgoKitXhdError_lift) {
+    uniffi_algokit_crypto_ffi_fn_func_xhd_seed_from_mnemonic(
+        FfiConverterString.lower(mnemonic),$0
+    )
+})
+}
 
 private enum InitializationResult {
     case ok
@@ -903,6 +1683,36 @@ private let initializationResult: InitializationResult = {
     if (uniffi_algokit_crypto_ffi_checksum_func_ed25519_raw_sign() != 65210) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_algokit_crypto_ffi_checksum_func_falcon1024_account_from_entropy() != 51214) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_algokit_crypto_ffi_checksum_func_falcon1024_account_from_mnemonic() != 5183) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_algokit_crypto_ffi_checksum_func_falcon1024_account_from_pq_seed() != 55719) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_algokit_crypto_ffi_checksum_func_falcon1024_canonical_address() != 4766) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_algokit_crypto_ffi_checksum_func_falcon1024_nth_address() != 1952) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_algokit_crypto_ffi_checksum_func_falcon1024_private_key_size() != 26705) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_algokit_crypto_ffi_checksum_func_falcon1024_public_key_size() != 63900) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_algokit_crypto_ffi_checksum_func_falcon1024_raw_sign() != 63360) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_algokit_crypto_ffi_checksum_func_falcon1024_signature_max_size() != 56593) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_algokit_crypto_ffi_checksum_func_falcon1024_verify() != 25210) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_algokit_crypto_ffi_checksum_func_master_derivation_key_to_mnemonic() != 64790) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -919,6 +1729,21 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_algokit_crypto_ffi_checksum_func_seed_from_mnemonic() != 21226) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_algokit_crypto_ffi_checksum_func_xhd_derive() != 52973) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_algokit_crypto_ffi_checksum_func_xhd_raw_sign() != 60836) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_algokit_crypto_ffi_checksum_func_xhd_root_key_from_mnemonic() != 40161) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_algokit_crypto_ffi_checksum_func_xhd_root_key_from_seed() != 52215) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_algokit_crypto_ffi_checksum_func_xhd_seed_from_mnemonic() != 17628) {
         return InitializationResult.apiChecksumMismatch
     }
 

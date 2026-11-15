@@ -1,3 +1,4 @@
+use alloc::{boxed::Box, string::String};
 use async_trait::async_trait;
 use cryptoxide::ed25519;
 use signature::Keypair;
@@ -39,6 +40,18 @@ impl CryptoxideEd25519Keypair {
         let (keypair, _) = ed25519::keypair(&seed);
         Ok(Self { keypair })
     }
+
+    /// Synchronous signing, for `no_std` callers with no async executor
+    /// (e.g. the Trusty `seed_vault_ta`). Same result as
+    /// [`Ed25519Signer::try_sign`].
+    pub fn sign(&self, msg: &[u8]) -> [u8; 64] {
+        ed25519::signature(msg, &self.keypair)
+    }
+}
+
+/// Verifies an Ed25519 `signature` over `msg` by `public_key`.
+pub fn verify(msg: &[u8], public_key: &[u8; 32], signature: &[u8; 64]) -> bool {
+    ed25519::verify(msg, public_key, signature)
 }
 
 #[async_trait]
