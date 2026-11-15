@@ -19,7 +19,6 @@ const FIELD_GLOBAL_STATE_SCHEMA: &str = "Global state schema";
 const FIELD_LOCAL_STATE_SCHEMA: &str = "Local state schema";
 const FIELD_EXTRA_PROGRAM_PAGES: &str = "Extra program pages";
 const FIELD_APP_ID: &str = "App id";
-const FIELD_ARGS: &str = "Args";
 
 /// On-completion actions for app transactions.
 ///
