@@ -135,15 +135,15 @@ impl Transaction {
             calculated_fee += extra_fee;
         }
 
-        if let Some(max_fee) = request.max_fee {
-            if calculated_fee > max_fee {
-                return Err(AlgoKitTransactError::InputError {
-                    err_msg: format!(
-                        "Transaction fee {} µALGO is greater than max fee {} µALGO",
-                        calculated_fee, max_fee
-                    ),
-                });
-            }
+        if let Some(max_fee) = request.max_fee
+            && calculated_fee > max_fee
+        {
+            return Err(AlgoKitTransactError::InputError {
+                err_msg: format!(
+                    "Transaction fee {} µALGO is greater than max fee {} µALGO",
+                    calculated_fee, max_fee
+                ),
+            });
         }
 
         Ok(calculated_fee)
