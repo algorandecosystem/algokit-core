@@ -10,9 +10,11 @@ inputs:
 runs:
   using: 'composite'
   steps:
+    - uses: ./.github/actions/rust-toolchain-channel
+      id: rust-toolchain
     - uses: dtolnay/rust-toolchain@master
       with:
-        toolchain: 1.85.0
+        toolchain: ${{ steps.rust-toolchain.outputs.channel }}
         components: rustfmt
 
     - name: Install uv
