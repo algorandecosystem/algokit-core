@@ -311,4 +311,52 @@ mod tests {
 
         assert!(pqsig.validate().is_err());
     }
+
+    #[test]
+    fn algokit_crypto_falcon1024_account_signs_a_valid_pqsig() {
+        use crate::test_utils::{TransactionHeaderMother, TransactionMother};
+        use algokit_crypto::falcon1024;
+
+        // go-algorand known-answer entropy; its canonical salt is non-zero.
+        let entropy: [u8; 32] = core::array::from_fn(|i| (i + 1) as u8);
+        let account = falcon1024::account_from_entropy(&entropy).unwrap();
+        assert_ne!(account.salt, 0);
+
+        let header = TransactionHeaderMother::simple_testnet()
+            .sender(Address(account.address))
+            .build()
+            .unwrap();
+        let txn = TransactionMother::simple_payment()
+            .header(header)
+            .build()
+            .unwrap();
+        let signature = account
+            .private_key
+            .sign_compressed(&txn.encode().unwrap())
+            .unwrap();
+        let signed = SignedTransaction {
+            transaction: txn,
+            signature: None,
+            auth_address: None,
+            multisignature: None,
+            logic_signature: None,
+            pq_signature: Some(PQSignature {
+                scheme: PQ_SCHEME_FALCON1024,
+                salt: account.salt,
+                public_key: account.public_key.0.to_vec(),
+                signature: signature.0,
+            }),
+        };
+
+        let pqsig = signed.pq_signature.as_ref().unwrap();
+        assert_eq!(pqsig.address(), signed.transaction.header().sender);
+        account
+            .public_key
+            .verify(&pqsig.signature, &signed.transaction.encode().unwrap())
+            .unwrap();
+        assert_eq!(
+            SignedTransaction::decode(&signed.encode().unwrap()).unwrap(),
+            signed
+        );
+    }
 }
