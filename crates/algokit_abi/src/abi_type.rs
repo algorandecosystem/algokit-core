@@ -25,7 +25,10 @@ impl BitSize {
     /// # Returns
     /// A new [`BitSize`] if valid, or an [`ABIError`] if invalid.
     pub fn new(bits: u16) -> Result<Self, ABIError> {
-        if bits < BITS_PER_BYTE as u16 || bits > MAX_BIT_SIZE || bits % BITS_PER_BYTE as u16 != 0 {
+        if bits < BITS_PER_BYTE as u16
+            || bits > MAX_BIT_SIZE
+            || !bits.is_multiple_of(BITS_PER_BYTE as u16)
+        {
             return Err(ABIError::ValidationError {
                 message: format!(
                     "Bit size must be between {} and {} and divisible by {}, got {}",

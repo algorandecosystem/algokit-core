@@ -66,10 +66,10 @@ pub fn ffi_enum(_attr: TokenStream, item: TokenStream) -> TokenStream {
 }
 
 fn is_option_type(field: &Field) -> bool {
-    if let Type::Path(TypePath { path, .. }) = &field.ty {
-        if let Some(segment) = path.segments.last() {
-            return segment.ident == "Option";
-        }
+    if let Type::Path(TypePath { path, .. }) = &field.ty
+        && let Some(segment) = path.segments.last()
+    {
+        return segment.ident == "Option";
     }
     false
 }
