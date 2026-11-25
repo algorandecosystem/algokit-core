@@ -97,7 +97,9 @@ pub struct VaultConfig {
     /// just re-derives its key on each call.
     pub max_cached_keys_per_program: usize,
     /// Largest `run` input, uploaded in chunks if it doesn't fit in one
-    /// message (a state proof is ~16 KB).
+    /// message. Algorand state proofs measured on live networks: ~66 KB on
+    /// TestNet and ~320 KB on MainNet (the private-network sample in the
+    /// fixtures is ~16 KB), so this must stay well above that.
     pub max_input_len: usize,
 }
 
@@ -116,7 +118,7 @@ impl Default for VaultConfig {
                 memory_limit_bytes: 2 << 20,
             },
             max_cached_keys_per_program: 64,
-            max_input_len: 64 * 1024,
+            max_input_len: 1024 * 1024,
         }
     }
 }

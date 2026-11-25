@@ -272,3 +272,11 @@ fn run_only_and_sign_only_programs_stay_in_their_lane() {
         Err(ClientError::Applet(ErrorCode::UnknownProgram))
     );
 }
+
+/// A MainNet state proof is ~320 KB and a TestNet one ~66 KB (measured on the live networks, 2026-11), far
+/// bigger than the 16 KB sample. The default input limit must let both through, or no light client can follow
+/// either network.
+#[test]
+fn the_default_input_limit_fits_a_live_mainnet_state_proof() {
+    assert!(VaultConfig::default().max_input_len >= 512 * 1024);
+}
