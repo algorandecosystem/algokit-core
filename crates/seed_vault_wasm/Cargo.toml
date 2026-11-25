@@ -1,0 +1,41 @@
+[package]
+name = "seed_vault_wasm"
+version = "0.1.0"
+# 2021 to match its `rules.mk` (Trusty's rustc predates edition 2024); see
+# `crates/wasm_runtime/Cargo.toml`.
+edition = "2021"
+
+# Optional WASM support for the seed_vault_ta Trusty applet: load a signing
+# algorithm as a WASM module at runtime (no firmware update) and let it sign
+# with keys derived from the seeds already in the vault.
+#
+# Kept out of `seed_vault` on purpose, so a TA build can leave WASM out
+# entirely: drop this crate from the TA's `MODULE_LIBRARY_DEPS` and the
+# `wasm` cfg (see `trusty/app/seed_vault_ta/rules.mk`). `seed_vault` doesn't
+# depend on this crate.
+#
+# Like `seed_vault`, `no_std` + `alloc` and free of Trusty-specific crates, so
+# `cargo test -p seed_vault_wasm` runs anywhere against `MemoryStore`.
+
+[features]
+default = ["vault"]
+# The TA side: runtime, storage, policy, request handling. Clients (e.g. the
+# Android FFI) use `default-features = false` for just the protocol,
+# manifests and client helpers, without wasmi.
+vault = ["wasm_runtime/runtime"]
+
+[[bin]]
+name = "seed_vault_wasm_sign"
+required-features = ["vault"]
+
+[dependencies]
+algokit_crypto = { path = "../algokit_crypto", default-features = false }
+seed_vault = { path = "../seed_vault" }
+wasm_runtime = { path = "../wasm_runtime", default-features = false }
+zeroize = { workspace = true }
+
+[dev-dependencies]
+wat = "1.0"
+# Decoding light-client-poc's sample data (tests/fixtures/light_client).
+base64 = { workspace = true }
+serde_json = { workspace = true }

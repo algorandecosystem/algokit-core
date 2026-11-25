@@ -652,6 +652,46 @@ pub fn sign_arbitrary_data(
     result
 }
 
+/// The 32 bytes of mnemonic entropy of the seed whose human-sign
+/// ([`HUMAN_SIGN_INDEX`]) address is `address`, for code running *inside*
+/// the TA that derives its own keys from a seed (e.g. `seed_vault_wasm`,
+/// which derives one key per WASM program from it). This must never be
+/// sent over IPC; [`reveal_mnemonic`] is the only sanctioned way out.
+///
+/// An autosign address fails with [`StoreError::UnknownKeyIndex`], so a
+/// seed is always named by the same address, as in [`delete_account`].
+/// The caller should zeroize the result.
+pub fn seed_entropy(
+    store: &mut impl AccountStore,
+    address: &str,
+) -> Result<[u8; ALGO25_SEED_LEN], StoreError> {
+    let mut records = store.all_indexed_records()?;
+    let result = find_record_by_address(&records, address).and_then(|(pos, key_index)| {
+        if key_index != HUMAN_SIGN_INDEX {
+            return Err(StoreError::UnknownKeyIndex);
+        }
+        record_entropy(&records[pos].1).copied()
+    });
+    wipe(&mut records);
+    result
+}
+
+/// The mnemonic entropy of every stored seed, in index order. Same rules as
+/// [`seed_entropy`]: in-TA use only (e.g. `seed_vault_wasm` dropping cached
+/// keys of deleted seeds), never sent over IPC. The caller should zeroize
+/// the result.
+pub fn seed_entropies(
+    store: &mut impl AccountStore,
+) -> Result<Vec<[u8; ALGO25_SEED_LEN]>, StoreError> {
+    let mut records = store.all_indexed_records()?;
+    let result = records
+        .iter()
+        .map(|(_, record)| record_entropy(record).copied())
+        .collect();
+    wipe(&mut records);
+    result
+}
+
 /// Result of [`sign_arbitrary_data`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SignedArbitraryData {
@@ -1519,6 +1559,44 @@ mod tests {
         create_account(&mut store, KeyAlgorithm::Falcon1024, HUMAN_SIGN_INDEX).unwrap();
         // a, c, and the new Falcon seed's two accounts.
         assert_eq!(list_accounts(&mut store).unwrap().len(), 4);
+    }
+
+    #[test]
+    fn seed_entropy_is_the_mnemonic_entropy_of_the_human_sign_address() {
+        let mut store = MemoryStore::default();
+        for algorithm in [KeyAlgorithm::Algo25Ed25519, KeyAlgorithm::Falcon1024] {
+            let entropy = [0x42u8; 32];
+            let mnemonic = algokit_crypto::algo25::mnemonic_from_seed(&entropy).unwrap();
+            let account =
+                import_account(&mut store, algorithm, HUMAN_SIGN_INDEX, &mnemonic).unwrap();
+            assert_eq!(seed_entropy(&mut store, &account.address), Ok(entropy));
+            delete_account(&mut store, &account.address).unwrap();
+        }
+
+        let falcon = create_account(&mut store, KeyAlgorithm::Falcon1024, AUTOSIGN_INDEX).unwrap();
+        assert_eq!(
+            seed_entropy(&mut store, &falcon.address),
+            Err(StoreError::UnknownKeyIndex)
+        );
+        assert_eq!(
+            seed_entropy(&mut store, "NOT-AN-ADDRESS"),
+            Err(StoreError::NotFound)
+        );
+        let ed25519 = import_account(
+            &mut store,
+            KeyAlgorithm::Algo25Ed25519,
+            HUMAN_SIGN_INDEX,
+            &algokit_crypto::algo25::mnemonic_from_seed(&[7; 32]).unwrap(),
+        )
+        .unwrap();
+        let human_sign = list_accounts(&mut store).unwrap()[0].address.clone();
+        assert_eq!(
+            seed_entropies(&mut store),
+            Ok(alloc::vec![
+                seed_entropy(&mut store, &human_sign).unwrap(),
+                seed_entropy(&mut store, &ed25519.address).unwrap(),
+            ])
+        );
     }
 
     #[test]

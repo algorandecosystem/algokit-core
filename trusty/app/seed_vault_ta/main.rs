@@ -54,6 +54,16 @@
 //!     already ~3.3 KB of this TA's 4 KB message budget. Falcon signing uses
 //!     ~78 KB of C stack (see `rules.mk`).
 //!
+//! Built with `SEED_VAULT_WASM=true` (the default, see `rules.mk`), the
+//! same port also takes the `seed_vault_wasm` opcodes (`0x20..=0x2F`):
+//! upload a signing algorithm as a WASM module once, then ask it for public
+//! keys and signatures made with keys derived from the seeds stored here --
+//! a new algorithm without new firmware. A program only ever gets its own
+//! derived key, never a seed; see `seed_vault_wasm`'s crate docs. Programs,
+//! and the key pairs they cache (so e.g. Falcon keygen runs once per key),
+//! are saved in secure storage by `trusty_wasm_store.rs`, so they survive a
+//! restart.
+//!
 //! `CREATE_ACCOUNT` and `LIST_ACCOUNTS` never serialize a seed/private key
 //! into a response -- see `seed_vault::store::AccountStore`'s doc comment
 //! for why that's a hard invariant.
@@ -166,10 +176,14 @@
 
 mod trusty_rng;
 mod trusty_store;
+#[cfg(seed_vault_wasm)]
+mod trusty_wasm_store;
 
 extern crate alloc;
 
 use alloc::vec::Vec;
+#[cfg(seed_vault_wasm)]
+use core::cell::RefCell;
 
 use seed_vault::service::handle_request;
 use tipc::{
@@ -219,7 +233,12 @@ impl<'s> Serialize<'s> for RawMessage {
 /// self-contained, and `TrustySecureStore` opens its own secure-storage
 /// session per operation (matching the pattern in
 /// `trusty/app/secretkeeper/store.rs`), so `Connection = ()` is sufficient.
-struct SeedVaultService;
+struct SeedVaultService {
+    /// Installed WASM programs. `RefCell`: `tipc` dispatches one message at
+    /// a time on this single-threaded TA, and `Service` takes `&self`.
+    #[cfg(seed_vault_wasm)]
+    wasm: RefCell<seed_vault_wasm::WasmVault<seed_vault_wasm::PublisherPolicy>>,
+}
 
 impl Service for SeedVaultService {
     type Connection = ();
@@ -256,6 +275,37 @@ impl Service for SeedVaultService {
         // protocol-and-store logic and has no way to enforce that -- this
         // call site is where the check belongs.
         let mut store = TrustySecureStore;
+        // TODO(security): WASM modules run with the powers their
+        // publisher-signed manifest grants (see `wasm_policy`); before
+        // shipping, build with SEED_VAULT_WASM_ALLOW_UNSIGNED=false and trust
+        // only an offline production publisher key, never `dev_ff.pub`.
+        // WASM use of index 0 also needs the user-auth gate above.
+        #[cfg(seed_vault_wasm)]
+        let response = {
+            let mut vault = self.wasm.borrow_mut();
+            let mut wasm_store = trusty_wasm_store::TrustyWasmStore;
+            if seed_vault_wasm::protocol::is_wasm_request(&msg.0) {
+                seed_vault_wasm::service::handle_request(
+                    &mut vault,
+                    &mut store,
+                    &mut wasm_store,
+                    &msg.0,
+                )
+            } else {
+                let response = handle_request(&mut store, &msg.0);
+                // A deleted seed's WASM-derived keys must not outlive it.
+                // Best effort: they're unusable anyway (signing looks the
+                // seed up first), and the next delete retries the purge.
+                const OP_DELETE_ACCOUNT: u8 = 0x05;
+                const STATUS_OK: u8 = 0x00;
+                if msg.0.first() == Some(&OP_DELETE_ACCOUNT) && response.first() == Some(&STATUS_OK)
+                {
+                    let _ = vault.purge_orphaned_keys(&mut store, &mut wasm_store);
+                }
+                response
+            }
+        };
+        #[cfg(not(seed_vault_wasm))]
         let response = handle_request(&mut store, &msg.0);
         // The request buffer may have carried a mnemonic (IMPORT_ACCOUNT);
         // wipe it now that it's no longer needed.
@@ -263,6 +313,40 @@ impl Service for SeedVaultService {
         handle.send(&RawMessage(response))?;
         Ok(MessageResult::MaintainConnection)
     }
+}
+
+/// Publisher keys whose signed WASM modules this TA runs (see
+/// `seed_vault_wasm::manifest`), as raw Falcon-1024 public keys made with
+/// `seed_vault_wasm_sign pubkey`.
+///
+/// TODO(security): `dev_ff.pub` is the *development* key, whose seed is
+/// public (`seed_vault_wasm::policy::dev_publisher_seed`): anyone can sign
+/// with it. Before shipping, replace it with production keys generated
+/// offline (`seed_vault_wasm_sign keygen`, ideally in an HSM), using key IDs
+/// other than 0xFF; keep a second key to rotate to.
+#[cfg(seed_vault_wasm)]
+const PUBLISHER_KEYS: &[(u8, &[u8; algokit_crypto::falcon1024::PUBLIC_KEY_SIZE])] =
+    &[(0xFF, include_bytes!("publisher_keys/dev_ff.pub"))];
+
+/// The WASM policy: modules signed by `PUBLISHER_KEYS`, plus (dev builds,
+/// `SEED_VAULT_WASM_ALLOW_UNSIGNED=true`) unsigned ones.
+#[cfg(seed_vault_wasm)]
+fn wasm_policy() -> seed_vault_wasm::PublisherPolicy {
+    let keys = PUBLISHER_KEYS
+        .iter()
+        .map(|(id, bytes)| {
+            let mut public_key = algokit_crypto::falcon1024::PublicKey::default();
+            public_key.0.copy_from_slice(*bytes);
+            seed_vault_wasm::PublisherKey {
+                id: *id,
+                public_key,
+            }
+        })
+        .collect();
+    let policy = seed_vault_wasm::PublisherPolicy::new(keys);
+    #[cfg(seed_vault_wasm_allow_unsigned)]
+    let policy = policy.allowing_unsigned();
+    policy
 }
 
 fn main() {
@@ -278,7 +362,14 @@ fn main() {
     // `Manager<SingleDispatcher<S>, ..>`, so leaving the dispatcher type
     // parameter as `_` still resolves correctly through inference without
     // ever spelling out that private type.
-    let manager = Manager::<_, _, 1, MAX_CONNECTIONS>::new(SeedVaultService, cfg, buffer)
+    let service = SeedVaultService {
+        #[cfg(seed_vault_wasm)]
+        wasm: RefCell::new(seed_vault_wasm::WasmVault::new(
+            seed_vault_wasm::VaultConfig::default(),
+            wasm_policy(),
+        )),
+    };
+    let manager = Manager::<_, _, 1, MAX_CONNECTIONS>::new(service, cfg, buffer)
         .expect("failed to create tipc Manager");
     manager.run_event_loop().expect("seed_vault_ta event loop exited unexpectedly");
 }

@@ -1,0 +1,35 @@
+[package]
+name = "seed_vault_wasm_guest_ed25519"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# Example seed_vault_wasm guest: Ed25519 implemented *inside* WASM, to show a
+# signing algorithm running in the TA without being part of its firmware.
+# (Ed25519 is already native in the TA; it's used here because the result is
+# easy to check against `algokit_crypto`.) See `../../src/abi.rs` for the
+# guest ABI and `../../tests/guest_ed25519.rs`, which runs the prebuilt
+# `../../tests/fixtures/guest_ed25519.wasm`. Rebuild that with
+# `./build.sh`.
+#
+# Standalone (not a workspace member): it only builds for wasm32.
+
+[workspace]
+
+[lib]
+crate-type = ["cdylib"]
+path = "lib.rs"
+
+[features]
+# Seed-access build: reproduces the vault's native algo25 account.
+native = []
+
+[dependencies]
+cryptoxide = { version = "=0.4.4", default-features = false, features = ["ed25519"] }
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

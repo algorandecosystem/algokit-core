@@ -125,4 +125,42 @@ MODULE_LIBRARY_DEPS := \
 	trusty/user/base/lib/seed_vault \
 	external/rust/android-crates-io/crates/zeroize
 
+# Optional WASM signing-algorithm support (`crates/seed_vault_wasm`, on
+# `crates/wasm_runtime` + the vendored wasmi 0.46 tree). Build with
+# `SEED_VAULT_WASM=false` to leave it out entirely: the TA then has no WASM
+# code at all and answers the WASM opcodes (0x20..=0x2F) with
+# `MalformedRequest`, like any unknown opcode.
+#
+# Installed programs and the key pairs they cache are saved in secure
+# storage (`trusty_wasm_store.rs`, `svw1_*` files), so they survive a
+# restart; they're loaded on the first WASM request, once storage is up.
+#
+# With it on, the heap also holds up to 4 compiled programs (128 KB of
+# WASM each before compilation), one upload buffer, and a running
+# instance's linear memory (capped at 2 MiB) -- see
+# `seed_vault_wasm::VaultConfig`. That's why `manifest.json`'s `min_heap` is
+# 6 MiB rather than the 1 MiB the native code needs; JSON has no comments.
+SEED_VAULT_WASM ?= true
+ifeq ($(SEED_VAULT_WASM),true)
+# `trusty-sys` for `trusty_wasm_store.rs`'s `Error::NotFound` matching.
+MODULE_LIBRARY_DEPS += \
+	trusty/user/base/lib/seed_vault_wasm \
+	trusty/user/base/lib/trusty-sys
+MODULE_RUSTFLAGS += --cfg seed_vault_wasm
+# `main.rs` names `algokit_crypto::falcon1024::PublicKey` for the publisher
+# keys in `publisher_keys/` (see `PUBLISHER_KEYS`).
+MODULE_LIBRARY_DEPS += trusty/user/base/lib/algokit_crypto
+
+# WASM modules must be signed by a publisher key in `publisher_keys/` (see
+# `seed_vault_wasm::manifest`). `SEED_VAULT_WASM_ALLOW_UNSIGNED=true` also
+# runs unsigned modules, with every capability (including native account
+# key material): development only.
+# TODO(security): ship with `false`, and with production publisher keys
+# instead of the public dev key (see `PUBLISHER_KEYS` in main.rs).
+SEED_VAULT_WASM_ALLOW_UNSIGNED ?= true
+ifeq ($(SEED_VAULT_WASM_ALLOW_UNSIGNED),true)
+MODULE_RUSTFLAGS += --cfg seed_vault_wasm_allow_unsigned
+endif
+endif
+
 include make/trusted_app.mk

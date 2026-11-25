@@ -1,0 +1,37 @@
+[package]
+name = "seed_vault_wasm_guest_falcon1024"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# Example seed_vault_wasm guest: deterministic Falcon-1024 (go-algorand's
+# `algokey pq` scheme) running inside the WASM sandbox -- the same C
+# implementation the TA links natively (`algorand-falcon`), compiled to
+# wasm32 instead. Its keys are derived from the program key exactly as
+# `algokit_crypto::falcon1024::account_from_entropy` derives them from
+# mnemonic entropy, so each (seed, address_index) is an ordinary Falcon-1024
+# Algorand account. Rebuild the test fixture with `./build.sh` (needs a
+# clang with the WebAssembly backend, e.g. Homebrew's `llvm`).
+#
+# Standalone (not a workspace member): it only builds for wasm32.
+
+[workspace]
+
+[lib]
+crate-type = ["cdylib"]
+path = "lib.rs"
+
+[features]
+# Seed-access build: reproduces the vault's native Falcon-1024 accounts.
+native = []
+
+[dependencies]
+algorand-falcon = "=0.1.0"
+cryptoxide = { version = "=0.4.4", default-features = false, features = ["sha2"] }
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

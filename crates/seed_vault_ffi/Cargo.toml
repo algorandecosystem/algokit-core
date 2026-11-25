@@ -17,6 +17,10 @@ crate-type = ["lib", "cdylib"]
 
 [dependencies]
 seed_vault = { path = "../seed_vault" }
+# Client side of the WASM runtime only (protocol, manifests, light client
+# helpers): `default-features = false` leaves out the TA-side runtime, so
+# the Android library doesn't link wasmi.
+seed_vault_wasm = { path = "../seed_vault_wasm", default-features = false }
 uniffi = { workspace = true, features = ["scaffolding-ffi-buffer-fns"] }
 zeroize = { workspace = true }
 

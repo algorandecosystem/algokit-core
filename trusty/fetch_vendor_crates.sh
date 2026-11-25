@@ -21,6 +21,19 @@ CRATES=(
   "signature       2.2.0 77549399552de45a898a580c1b41d445bf730df867cc44e6c0233bbc4b8329de signature"
   "algorand-falcon 0.1.0 aef694c31f7f8e5805adaf125599ab4cec16765c360dc8e3703e1887528aaeea algorand_falcon"
   "getrandom       0.4.1 139ef39800118c7683f2fd3c98c1b23c09ae076556b435f8e9064ae108aaeeec getrandom"
+  # WASM runtime (crates/wasm_runtime, optional: see seed_vault_ta/rules.mk).
+  # wasmi is pinned to 0.46, the last release whose MSRV (1.83) Trusty's
+  # prebuilt rustc meets.
+  "wasmi             0.46.0 c602dd253549139314b217cb18557ac290135ed25a3d806c81d73db6b0effd49 wasmi"
+  "wasmi_core        0.46.0 909e4dcf38f60274b2d098802371e232d92c2c612b0b47a0016ec5234a3f425d wasmi_core"
+  "wasmi_ir          0.46.0 cab7c61bb8aa9de5b09fb63f95649af9d206f3a912b54508756a827f29eae678 wasmi_ir"
+  "wasmi_collections 0.46.0 001f3a73d68df33e164c935fd64a4bf63bcd6cd6a6e88ae0e4328fd5aff1b7a7 wasmi_collections"
+  "wasmparser        0.228.0 4abf1132c1fdf747d56bbc1bb52152400c70f336870f968b85e89ea422198ae3 wasmparser"
+  "multi-stash       0.2.0 685a9ac4b61f4e728e1d2c6a7844609c16527aeb5e6c865915c08e619c16410f multi_stash"
+  "smallvec          1.13.2 3c5e1a9a646d36c3599cd173a41282daf47c44583ad367b8e6837255952e5c67 smallvec"
+  "spin              0.9.9 3763264f6b73151db08c50ff20d7d8a0b8796e021cdea7ceedad07b80155fa0e spin"
+  "libm              0.2.16 b6d2cec3eae94f9f509c767b45932f1ada8350c4bdb85af2fcab4a3c14807981 libm"
+  "downcast-rs       2.0.2 117240f60069e65410b3ae1bb213295bd828f707b5bec6596a1afc8793ce0cbc downcast_rs"
 )
 
 # Files copied from each extracted crate (everything else -- Cargo.toml,

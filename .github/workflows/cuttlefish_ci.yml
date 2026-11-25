@@ -33,6 +33,17 @@ jobs:
           cargo test -p seed_vault
           cargo check -p seed_vault --all-targets
 
+      # Optional WASM support (SEED_VAULT_WASM in seed_vault_ta/rules.mk),
+      # including Ed25519 and Falcon-1024 compiled to WASM and checked
+      # against native algokit_crypto.
+      - name: Test wasm_runtime + seed_vault_wasm
+        run: cargo test -p wasm_runtime -p seed_vault_wasm
+
+      # The light client guest's Rust port, natively, against
+      # algorand/light-client-poc's sample state proof and transaction.
+      - name: Test light client guest (Rust port of algorand/light-client-poc)
+        run: cargo test --release --manifest-path crates/seed_vault_wasm/guest/light_client/Cargo.toml
+
       # The Trusty build runs rustdoc with `-D warnings` (so e.g. a broken
       # intra-doc link fails it); catch that here instead of an hour later.
       - name: Rustdoc with warnings as errors (as the Trusty build does)
@@ -40,6 +51,7 @@ jobs:
           RUSTDOCFLAGS: -D warnings
         run: |
           cargo doc -p seed_vault --no-deps
+          cargo doc -p wasm_runtime -p seed_vault_wasm --no-deps
           cargo doc -p algokit_crypto --no-deps --no-default-features
 
   build-trusty:
@@ -89,11 +101,13 @@ jobs:
 
       - name: Inject Vendored Crates & First-Party Libraries
         run: |
-          for crate in cryptoxide base32 signature getrandom algorand_falcon; do
+          for crate in cryptoxide base32 signature getrandom algorand_falcon \
+            wasmi wasmi_core wasmi_ir wasmi_collections wasmparser multi_stash \
+            smallvec spin libm downcast_rs; do
             mkdir -p "trusty-manifest/trusty/user/base/lib/${crate}"
             cp -r "trusty/vendor/${crate}/." "trusty-manifest/trusty/user/base/lib/${crate}/"
           done
-          for crate in algokit_crypto seed_vault; do
+          for crate in algokit_crypto seed_vault wasm_runtime seed_vault_wasm; do
             mkdir -p "trusty-manifest/trusty/user/base/lib/${crate}"
             cp -r "crates/${crate}/." "trusty-manifest/trusty/user/base/lib/${crate}/"
           done

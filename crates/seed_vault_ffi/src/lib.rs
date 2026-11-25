@@ -15,14 +15,26 @@
 //! reports the same conditions as the matching [`SeedVaultError`] variant,
 //! so a vault that disappears later (e.g. the Trusty VM restarted) is still
 //! a typed error rather than a crash.
+//!
+//! ## WASM programs
+//!
+//! The `wasm_*` methods install and use programs in the applet's WASM
+//! runtime (signing algorithms and general programs), and the
+//! `light_client_*` methods drive the Algorand light client program; see the
+//! `wasm` module.
 
 mod transport;
+mod wasm;
 
 use seed_vault::protocol::{self, DecodeError, ErrorCode, Request};
 use seed_vault::store;
 use zeroize::Zeroize;
 
 use transport::Connection;
+pub use wasm::{
+    LightBlockHeaderProof, LightClientErrorCode, LightClientStatus, StateProofMessage,
+    TransactionProof, WasmErrorCode, WasmProgram,
+};
 
 uniffi::setup_scaffolding!();
 
@@ -206,6 +218,12 @@ pub enum SeedVaultError {
     MalformedResponse { reason: String },
     /// The request can't be sent as given (e.g. too large for one message).
     InvalidArgument { reason: String },
+    /// The TA's WASM runtime answered with an error (the `wasm_*` and
+    /// `light_client_*` methods).
+    Wasm { code: WasmErrorCode },
+    /// The light client program refused (e.g. a state proof or transaction
+    /// didn't verify).
+    LightClient { code: LightClientErrorCode },
 }
 
 impl std::fmt::Display for SeedVaultError {
@@ -222,6 +240,8 @@ impl std::fmt::Display for SeedVaultError {
                 write!(f, "malformed seed vault response: {reason}")
             }
             Self::InvalidArgument { reason } => write!(f, "invalid argument: {reason}"),
+            Self::Wasm { code } => write!(f, "seed vault WASM runtime error: {code:?}"),
+            Self::LightClient { code } => write!(f, "light client error: {code:?}"),
         }
     }
 }
