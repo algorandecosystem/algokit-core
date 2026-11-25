@@ -138,8 +138,10 @@ MODULE_LIBRARY_DEPS := \
 # With it on, the heap also holds up to 4 compiled programs (128 KB of
 # WASM each before compilation), one upload buffer, and a running
 # instance's linear memory (capped at 2 MiB) -- see
-# `seed_vault_wasm::VaultConfig`. That's why `manifest.json`'s `min_heap` is
-# 6 MiB rather than the 1 MiB the native code needs; JSON has no comments.
+# `seed_vault_wasm::VaultConfig`. A `run` input (up to `max_input_len`, 1 MiB:
+# a live MainNet state proof is ~320 KB) is buffered in the heap too, while
+# the instance is also running. That's why `manifest.json`'s `min_heap` is
+# 8 MiB rather than the 1 MiB the native code needs; JSON has no comments.
 SEED_VAULT_WASM ?= true
 ifeq ($(SEED_VAULT_WASM),true)
 # `trusty-sys` for `trusty_wasm_store.rs`'s `Error::NotFound` matching.

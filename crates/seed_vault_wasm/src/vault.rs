@@ -110,11 +110,15 @@ impl Default for VaultConfig {
             max_programs: 4,
             call_limits: Limits {
                 // Falcon-1024 keygen + signing (guest/falcon1024, which
-                // re-runs keygen on every call) needs 250M-500M fuel; this
-                // leaves ~4x headroom while bounding how long a runaway
-                // program can block the TA (~0.5 s per 500M on an M-series
-                // Mac, likely 2-4x that in a phone's TEE).
-                fuel: 2_000_000_000,
+                // re-runs keygen on every call) needs 250M-500M fuel. The
+                // light client verifying a live MainNet state proof
+                // (guest/light_client, ADVANCE) needs 1.8B-2.0B for the
+                // biggest ones (~320 KB, ~1.4 s on an M-series Mac) and
+                // proofs vary in size, so 6B leaves ~3x headroom for it.
+                // This also bounds how long a runaway program can block
+                // the TA (~0.7 s per 1B on an M-series Mac, likely 2-4x
+                // that in a phone's TEE).
+                fuel: 6_000_000_000,
                 memory_limit_bytes: 2 << 20,
             },
             max_cached_keys_per_program: 64,

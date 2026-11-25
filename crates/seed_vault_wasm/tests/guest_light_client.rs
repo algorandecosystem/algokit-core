@@ -280,3 +280,10 @@ fn run_only_and_sign_only_programs_stay_in_their_lane() {
 fn the_default_input_limit_fits_a_live_mainnet_state_proof() {
     assert!(VaultConfig::default().max_input_len >= 512 * 1024);
 }
+
+/// The biggest live MainNet state proofs (~320 KB) need 1.8B-2.0B fuel to verify (measured 2026-11, TestNet ones
+/// are ~5x cheaper), and proofs vary in size, so the default per-call fuel must leave real headroom over 2B.
+#[test]
+fn the_default_fuel_has_headroom_over_a_live_mainnet_state_proof() {
+    assert!(VaultConfig::default().call_limits.fuel >= 4_000_000_000);
+}
