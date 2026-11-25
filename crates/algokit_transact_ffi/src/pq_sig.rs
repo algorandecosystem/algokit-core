@@ -21,8 +21,8 @@ pub struct PqSignature {
     pub salt: u8,
 }
 
-impl From<algokit_transact::PqSignature> for PqSignature {
-    fn from(value: algokit_transact::PqSignature) -> Self {
+impl From<algokit_transact::PQSignature> for PqSignature {
+    fn from(value: algokit_transact::PQSignature) -> Self {
         Self {
             public_key: value.public_key,
             scheme: value.scheme.to_vec(),
@@ -32,7 +32,7 @@ impl From<algokit_transact::PqSignature> for PqSignature {
     }
 }
 
-impl TryFrom<PqSignature> for algokit_transact::PqSignature {
+impl TryFrom<PqSignature> for algokit_transact::PQSignature {
     type Error = AlgoKitTransactError;
 
     fn try_from(value: PqSignature) -> Result<Self, Self::Error> {
@@ -87,6 +87,6 @@ mod tests {
             signature: vec![],
             salt: 0,
         };
-        assert!(algokit_transact::PqSignature::try_from(pq).is_err());
+        assert!(algokit_transact::PQSignature::try_from(pq).is_err());
     }
 }

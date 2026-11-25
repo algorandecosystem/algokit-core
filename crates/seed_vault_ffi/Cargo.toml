@@ -27,5 +27,3 @@ zeroize = { workspace = true }
 [target.'cfg(any(target_os = "android", target_os = "linux"))'.dependencies]
 libc = "0.2.172"
 
-[build-dependencies]
-uniffi = { workspace = true, features = ["build", "scaffolding-ffi-buffer-fns"] }

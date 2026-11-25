@@ -1,0 +1,4 @@
+# Trusty compiles this crate with AOSP's prebuilt rustc (1.83 at the time of
+# writing), older than this workspace's toolchain: keep clippy from
+# suggesting newer std APIs (e.g. `is_multiple_of`, `as_chunks`).
+msrv = "1.83"

@@ -22,8 +22,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - uses: ./.github/actions/rust-toolchain-channel
+        id: rust-toolchain
       - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: 1.85.0
+          toolchain: ${{ steps.rust-toolchain.outputs.channel }}
       - name: Polytest Validate
         run: cd crates/${{ env.CRATE }}_ffi && cargo bin polytest validate

@@ -50,6 +50,7 @@ impl TryFrom<LogicSignature> for algokit_transact::LogicSignature {
                 .map(TryInto::try_into)
                 .transpose()?,
             args: lsig.args,
+            pq_signature: None,
         })
     }
 }

@@ -38,9 +38,11 @@ jobs:
           ref: ${{ env.TAG }}
           fetch-depth: 0
 
+      - uses: ./.github/actions/rust-toolchain-channel
+        id: rust-toolchain
       - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: 1.85.0
+          toolchain: ${{ steps.rust-toolchain.outputs.channel }}
           targets: aarch64-apple-ios, x86_64-apple-ios, aarch64-apple-ios-sim, aarch64-apple-ios-macabi, x86_64-apple-ios-macabi, aarch64-apple-darwin, x86_64-apple-darwin
 
       - name: Build xcframeworks

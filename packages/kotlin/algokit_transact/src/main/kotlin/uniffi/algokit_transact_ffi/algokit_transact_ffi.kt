@@ -2296,6 +2296,10 @@ data class HeartbeatTransactionFields(
    * Heartbeat key dilution.
    */
   var `keyDilution`: kotlin.ULong,
+  /**
+   * Request the challenge fee discount, which lowers the required fee.
+   */
+  var `challengeDiscount`: kotlin.Boolean? = null,
 ) {
   companion object
 }
@@ -2311,6 +2315,7 @@ public object FfiConverterTypeHeartbeatTransactionFields : FfiConverterRustBuffe
       FfiConverterByteArray.read(buf),
       FfiConverterByteArray.read(buf),
       FfiConverterULong.read(buf),
+      FfiConverterOptionalBoolean.read(buf),
     )
 
   override fun allocationSize(value: HeartbeatTransactionFields) =
@@ -2319,7 +2324,8 @@ public object FfiConverterTypeHeartbeatTransactionFields : FfiConverterRustBuffe
         FfiConverterTypeHeartbeatProof.allocationSize(value.`proof`) +
         FfiConverterByteArray.allocationSize(value.`seed`) +
         FfiConverterByteArray.allocationSize(value.`voteId`) +
-        FfiConverterULong.allocationSize(value.`keyDilution`)
+        FfiConverterULong.allocationSize(value.`keyDilution`) +
+        FfiConverterOptionalBoolean.allocationSize(value.`challengeDiscount`)
     )
 
   override fun write(
@@ -2331,6 +2337,7 @@ public object FfiConverterTypeHeartbeatTransactionFields : FfiConverterRustBuffe
     FfiConverterByteArray.write(value.`seed`, buf)
     FfiConverterByteArray.write(value.`voteId`, buf)
     FfiConverterULong.write(value.`keyDilution`, buf)
+    FfiConverterOptionalBoolean.write(value.`challengeDiscount`, buf)
   }
 }
 
@@ -3536,11 +3543,6 @@ enum class AlgorandConstant {
    * Increment in the encoded byte size when a signature is attached to a transaction (75)
    */
   SIGNATURE_ENCODING_INCR_LENGTH,
-
-  /**
-   * The maximum number of transactions in a group (16)
-   */
-  MAX_TX_GROUP_SIZE,
 
   ;
 

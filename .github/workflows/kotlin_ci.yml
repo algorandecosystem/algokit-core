@@ -49,9 +49,11 @@ jobs:
           distribution: "temurin"
           java-version: "21"
 
+      - uses: ./.github/actions/rust-toolchain-channel
+        id: rust-toolchain
       - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: 1.85.0
+          toolchain: ${{ steps.rust-toolchain.outputs.channel }}
 
       - name: Build JAR
         run: cargo pkg ${{ env.CRATE }} kotlin
@@ -79,9 +81,11 @@ jobs:
           distribution: "temurin"
           java-version: "21"
 
+      - uses: ./.github/actions/rust-toolchain-channel
+        id: rust-toolchain
       - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: 1.85.0
+          toolchain: ${{ steps.rust-toolchain.outputs.channel }}
 
       - name: Build JAR (generates Kotlin bindings + this host's native library)
         run: cargo pkg ${{ env.CRATE }} kotlin

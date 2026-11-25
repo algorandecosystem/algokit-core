@@ -115,9 +115,11 @@ jobs:
       - uses: actions/checkout@v6
         with:
           ref: ${{ github.ref }}
+      - uses: ./.github/actions/rust-toolchain-channel
+        id: rust-toolchain
       - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: 1.85.0
+          toolchain: ${{ steps.rust-toolchain.outputs.channel }}
           targets: ${{ matrix.target.name }}
 
       - name: Install Poetry
@@ -184,6 +186,9 @@ jobs:
         with:
           ref: ${{ github.ref }}
 
+      - uses: ./.github/actions/rust-toolchain-channel
+        id: rust-toolchain
+
       - name: Set up QEMU
         if: matrix.arch != 'aarch64' && matrix.arch != 'x86_64'
         uses: docker/setup-qemu-action@v3
@@ -203,7 +208,7 @@ jobs:
 
       - name: Install Rustup
         env:
-          RUN: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-host ${{ env.TARGET }} --default-toolchain=1.85.0
+          RUN: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-host ${{ env.TARGET }} --default-toolchain=${{ steps.rust-toolchain.outputs.channel }}
         run: docker exec build-container bash -c "$RUN"
 
       - name: rustup target add

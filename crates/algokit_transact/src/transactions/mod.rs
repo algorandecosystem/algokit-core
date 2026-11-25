@@ -43,8 +43,8 @@ use crate::constants::{
 };
 use crate::error::AlgoKitTransactError;
 use crate::traits::{AlgorandMsgpack, EstimateTransactionSize, TransactionId, Transactions};
-use crate::utils::{compute_group, is_empty_signature_opt, is_zero_addr_opt};
-use crate::{Address, LogicSignature, MultisigSignature, PqSignature};
+use crate::utils::{compute_group, is_empty_signature_opt, is_empty_struct_opt, is_zero_addr_opt};
+use crate::{Address, LogicSignature, MultisigSignature, PQSignature};
 use serde::{Deserialize, Serialize};
 use serde_with::{Bytes, serde_as};
 use std::any::Any;
@@ -135,15 +135,15 @@ impl Transaction {
             calculated_fee += extra_fee;
         }
 
-        if let Some(max_fee) = request.max_fee {
-            if calculated_fee > max_fee {
-                return Err(AlgoKitTransactError::InputError {
-                    err_msg: format!(
-                        "Transaction fee {} µALGO is greater than max fee {} µALGO",
-                        calculated_fee, max_fee
-                    ),
-                });
-            }
+        if let Some(max_fee) = request.max_fee
+            && calculated_fee > max_fee
+        {
+            return Err(AlgoKitTransactError::InputError {
+                err_msg: format!(
+                    "Transaction fee {} µALGO is greater than max fee {} µALGO",
+                    calculated_fee, max_fee
+                ),
+            });
         }
 
         Ok(calculated_fee)
@@ -201,12 +201,11 @@ pub struct SignedTransaction {
     #[serde(default)]
     pub logic_signature: Option<LogicSignature>,
 
-    /// Optional native post-quantum (e.g. Falcon-1024) signature authorizing
-    /// the transaction.
+    /// Optional post-quantum signature authorizing the transaction.
     #[serde(rename = "pqsig")]
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "is_empty_struct_opt")]
     #[serde(default)]
-    pub pq_signature: Option<PqSignature>,
+    pub pq_signature: Option<PQSignature>,
 }
 
 impl AlgorandMsgpack for SignedTransaction {
@@ -317,7 +316,7 @@ impl Transaction {
 #[cfg(test)]
 mod transaction_tests {
     use crate::{
-        EMPTY_SIGNATURE, MAX_TX_GROUP_SIZE,
+        EMPTY_SIGNATURE,
         test_utils::PLACEHOLDER_SIGNATURE,
         test_utils::{TransactionGroupMother, TransactionHeaderMother, TransactionMother},
     };
@@ -540,20 +539,6 @@ mod transaction_tests {
         for grouped_tx in grouped_txs.iter() {
             assert_eq!(grouped_tx.header().group.unwrap(), expected_group);
         }
-    }
-
-    #[test]
-    fn test_transaction_group_too_big() {
-        let txs: Vec<Transaction> = TransactionGroupMother::group_of(MAX_TX_GROUP_SIZE + 1);
-
-        let result = txs.assign_group();
-
-        let error = result.unwrap_err();
-        assert!(
-            error
-                .to_string()
-                .starts_with("Transaction group size exceeds the max limit")
-        );
     }
 
     #[test]

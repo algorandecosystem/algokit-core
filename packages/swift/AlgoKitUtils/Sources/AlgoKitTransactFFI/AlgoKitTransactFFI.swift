@@ -1939,6 +1939,10 @@ public struct HeartbeatTransactionFields {
      * Heartbeat key dilution.
      */
     public var keyDilution: UInt64
+    /**
+     * Request the challenge fee discount, which lowers the required fee.
+     */
+    public var challengeDiscount: Bool?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
@@ -1957,12 +1961,16 @@ public struct HeartbeatTransactionFields {
          */voteId: Data, 
         /**
          * Heartbeat key dilution.
-         */keyDilution: UInt64) {
+         */keyDilution: UInt64, 
+        /**
+         * Request the challenge fee discount, which lowers the required fee.
+         */challengeDiscount: Bool? = nil) {
         self.address = address
         self.proof = proof
         self.seed = seed
         self.voteId = voteId
         self.keyDilution = keyDilution
+        self.challengeDiscount = challengeDiscount
     }
 }
 
@@ -1988,6 +1996,9 @@ extension HeartbeatTransactionFields: Equatable, Hashable {
         if lhs.keyDilution != rhs.keyDilution {
             return false
         }
+        if lhs.challengeDiscount != rhs.challengeDiscount {
+            return false
+        }
         return true
     }
 
@@ -1997,6 +2008,7 @@ extension HeartbeatTransactionFields: Equatable, Hashable {
         hasher.combine(seed)
         hasher.combine(voteId)
         hasher.combine(keyDilution)
+        hasher.combine(challengeDiscount)
     }
 }
 
@@ -2013,7 +2025,8 @@ public struct FfiConverterTypeHeartbeatTransactionFields: FfiConverterRustBuffer
                 proof: FfiConverterTypeHeartbeatProof.read(from: &buf), 
                 seed: FfiConverterData.read(from: &buf), 
                 voteId: FfiConverterData.read(from: &buf), 
-                keyDilution: FfiConverterUInt64.read(from: &buf)
+                keyDilution: FfiConverterUInt64.read(from: &buf), 
+                challengeDiscount: FfiConverterOptionBool.read(from: &buf)
         )
     }
 
@@ -2023,6 +2036,7 @@ public struct FfiConverterTypeHeartbeatTransactionFields: FfiConverterRustBuffer
         FfiConverterData.write(value.seed, into: &buf)
         FfiConverterData.write(value.voteId, into: &buf)
         FfiConverterUInt64.write(value.keyDilution, into: &buf)
+        FfiConverterOptionBool.write(value.challengeDiscount, into: &buf)
     }
 }
 
@@ -2983,6 +2997,124 @@ public func FfiConverterTypePaymentTransactionFields_lower(_ value: PaymentTrans
 
 
 /**
+ * A native post-quantum signature authorizing a transaction (`pqsig`).
+ *
+ * For Falcon-1024: `public_key` is the 1793-byte key, `scheme` is `"f1"`
+ * (see [`pq_scheme_falcon1024`]), `signature` is the compressed signature
+ * over `"TX" || encoded transaction` (e.g. from `algokit_crypto`'s
+ * `falcon1024_raw_sign`), and `salt` is the account's address salt.
+ */
+public struct PqSignature {
+    /**
+     * The signer's PQ public key.
+     */
+    public var publicKey: Data
+    /**
+     * Two-byte scheme identifier, e.g. `"f1"` for Falcon-1024.
+     */
+    public var scheme: Data
+    /**
+     * The signature over `"TX" || encoded transaction`.
+     */
+    public var signature: Data
+    /**
+     * Which PQ-compliant address of `public_key` this authorizes.
+     */
+    public var salt: UInt8
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * The signer's PQ public key.
+         */publicKey: Data, 
+        /**
+         * Two-byte scheme identifier, e.g. `"f1"` for Falcon-1024.
+         */scheme: Data, 
+        /**
+         * The signature over `"TX" || encoded transaction`.
+         */signature: Data, 
+        /**
+         * Which PQ-compliant address of `public_key` this authorizes.
+         */salt: UInt8) {
+        self.publicKey = publicKey
+        self.scheme = scheme
+        self.signature = signature
+        self.salt = salt
+    }
+}
+
+#if compiler(>=6)
+extension PqSignature: Sendable {}
+#endif
+
+
+extension PqSignature: Equatable, Hashable {
+    public static func ==(lhs: PqSignature, rhs: PqSignature) -> Bool {
+        if lhs.publicKey != rhs.publicKey {
+            return false
+        }
+        if lhs.scheme != rhs.scheme {
+            return false
+        }
+        if lhs.signature != rhs.signature {
+            return false
+        }
+        if lhs.salt != rhs.salt {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(publicKey)
+        hasher.combine(scheme)
+        hasher.combine(signature)
+        hasher.combine(salt)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypePqSignature: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PqSignature {
+        return
+            try PqSignature(
+                publicKey: FfiConverterData.read(from: &buf), 
+                scheme: FfiConverterData.read(from: &buf), 
+                signature: FfiConverterData.read(from: &buf), 
+                salt: FfiConverterUInt8.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: PqSignature, into buf: inout [UInt8]) {
+        FfiConverterData.write(value.publicKey, into: &buf)
+        FfiConverterData.write(value.scheme, into: &buf)
+        FfiConverterData.write(value.signature, into: &buf)
+        FfiConverterUInt8.write(value.salt, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePqSignature_lift(_ buf: RustBuffer) throws -> PqSignature {
+    return try FfiConverterTypePqSignature.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePqSignature_lower(_ value: PqSignature) -> RustBuffer {
+    return FfiConverterTypePqSignature.lower(value)
+}
+
+
+/**
  * A single entry in an app call's access list.
  *
  * At most one field is set. An entry with none set bumps the box read/write quota.
@@ -3230,6 +3362,10 @@ public struct SignedTransaction {
      * Optional logic signature authorizing the transaction with a program.
      */
     public var logicSignature: LogicSignature?
+    /**
+     * Optional native post-quantum (e.g. Falcon-1024) signature.
+     */
+    public var pqSignature: PqSignature?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
@@ -3248,12 +3384,16 @@ public struct SignedTransaction {
          */multisignature: MultisigSignature? = nil, 
         /**
          * Optional logic signature authorizing the transaction with a program.
-         */logicSignature: LogicSignature? = nil) {
+         */logicSignature: LogicSignature? = nil, 
+        /**
+         * Optional native post-quantum (e.g. Falcon-1024) signature.
+         */pqSignature: PqSignature? = nil) {
         self.transaction = transaction
         self.signature = signature
         self.authAddress = authAddress
         self.multisignature = multisignature
         self.logicSignature = logicSignature
+        self.pqSignature = pqSignature
     }
 }
 
@@ -3279,6 +3419,9 @@ extension SignedTransaction: Equatable, Hashable {
         if lhs.logicSignature != rhs.logicSignature {
             return false
         }
+        if lhs.pqSignature != rhs.pqSignature {
+            return false
+        }
         return true
     }
 
@@ -3288,6 +3431,7 @@ extension SignedTransaction: Equatable, Hashable {
         hasher.combine(authAddress)
         hasher.combine(multisignature)
         hasher.combine(logicSignature)
+        hasher.combine(pqSignature)
     }
 }
 
@@ -3304,7 +3448,8 @@ public struct FfiConverterTypeSignedTransaction: FfiConverterRustBuffer {
                 signature: FfiConverterOptionData.read(from: &buf), 
                 authAddress: FfiConverterOptionString.read(from: &buf), 
                 multisignature: FfiConverterOptionTypeMultisigSignature.read(from: &buf), 
-                logicSignature: FfiConverterOptionTypeLogicSignature.read(from: &buf)
+                logicSignature: FfiConverterOptionTypeLogicSignature.read(from: &buf), 
+                pqSignature: FfiConverterOptionTypePqSignature.read(from: &buf)
         )
     }
 
@@ -3314,6 +3459,7 @@ public struct FfiConverterTypeSignedTransaction: FfiConverterRustBuffer {
         FfiConverterOptionString.write(value.authAddress, into: &buf)
         FfiConverterOptionTypeMultisigSignature.write(value.multisignature, into: &buf)
         FfiConverterOptionTypeLogicSignature.write(value.logicSignature, into: &buf)
+        FfiConverterOptionTypePqSignature.write(value.pqSignature, into: &buf)
     }
 }
 
@@ -4152,10 +4298,6 @@ public enum AlgorandConstant {
      * Increment in the encoded byte size when a signature is attached to a transaction (75)
      */
     case signatureEncodingIncrLength
-    /**
-     * The maximum number of transactions in a group (16)
-     */
-    case maxTxGroupSize
 }
 
 
@@ -4186,8 +4328,6 @@ public struct FfiConverterTypeAlgorandConstant: FfiConverterRustBuffer {
         case 6: return .signatureLength
         
         case 7: return .signatureEncodingIncrLength
-        
-        case 8: return .maxTxGroupSize
         
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -4223,10 +4363,6 @@ public struct FfiConverterTypeAlgorandConstant: FfiConverterRustBuffer {
         
         case .signatureEncodingIncrLength:
             writeInt(&buf, Int32(7))
-        
-        
-        case .maxTxGroupSize:
-            writeInt(&buf, Int32(8))
         
         }
     }
@@ -4899,6 +5035,30 @@ fileprivate struct FfiConverterOptionTypePaymentTransactionFields: FfiConverterR
         switch try readInt(&buf) as Int8 {
         case 0: return nil
         case 1: return try FfiConverterTypePaymentTransactionFields.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterOptionTypePqSignature: FfiConverterRustBuffer {
+    typealias SwiftType = PqSignature?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypePqSignature.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypePqSignature.read(from: &buf)
         default: throw UniffiInternalError.unexpectedOptionalTag
         }
     }
@@ -5678,6 +5838,15 @@ public func participantsFromMultisigSignature(multisigSignature: MultisigSignatu
     )
 })
 }
+/**
+ * The two-byte `pqsig` scheme identifier for Falcon-1024 (`"f1"`).
+ */
+public func pqSchemeFalcon1024() -> Data  {
+    return try!  FfiConverterData.lift(try! rustCall() {
+    uniffi_algokit_transact_ffi_fn_func_pq_scheme_falcon1024($0
+    )
+})
+}
 public func publicKeyFromAddress(address: String)throws  -> Data  {
     return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeAlgoKitTransactError_lift) {
     uniffi_algokit_transact_ffi_fn_func_public_key_from_address(
@@ -5789,6 +5958,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_algokit_transact_ffi_checksum_func_participants_from_multisig_signature() != 25095) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_algokit_transact_ffi_checksum_func_pq_scheme_falcon1024() != 49248) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_algokit_transact_ffi_checksum_func_public_key_from_address() != 58152) {
