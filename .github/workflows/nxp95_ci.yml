@@ -72,6 +72,11 @@ jobs:
           cargo doc -p wasm_runtime -p seed_vault_wasm --no-deps
           cargo doc -p algokit_crypto --no-deps --no-default-features
 
+      # The vendored crates from crates.io (wasmi and friends) get the same rustdoc treatment in the Trusty
+      # build, and an upstream doc link that only resolves with `std` fails it. Check them here too.
+      - name: Rustdoc of the vendored WASM runtime crates with warnings as errors
+        run: trusty/check_vendor_docs.sh
+
   build-loadable-app:
     needs: verify-account-crypto
     runs-on: ubuntu-latest

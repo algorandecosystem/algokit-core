@@ -8,7 +8,8 @@
 # `cksum` crates.io publishes in its index), with the few local patches
 # applied below.
 #
-# Usage: trusty/fetch_vendor_crates.sh [vendor_dir]   (default: trusty/vendor)
+# Usage: [FULL_SOURCES_DIR=<dir>] trusty/fetch_vendor_crates.sh [vendor_dir]   (default: trusty/vendor)
+# With FULL_SOURCES_DIR, each whole patched crate is also copied to <dir>/<local-dir>.
 set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -111,6 +112,20 @@ extern \"C\" {"
     // syntax that Trusty's bundled rustc rejects; plain \`extern\` is identical.
     extern \"Rust\" {"
       ;;
+    wasmi_collections)
+      # Its docs link `std::collections::BTreeMap`/`BTreeSet`, which rustdoc can't resolve in this no_std
+      # build, and the Trusty build runs rustdoc with `-D warnings`. Point the links at the std docs on the
+      # web instead. Doc-comment difference only, no functional change.
+      local url=https://doc.rust-lang.org/std/collections
+      patch_once "${dir}/src/lib.rs" '//! [`BTreeMap`]: std::collections::BTreeMap' \
+        "//! [\`BTreeMap\`]: ${url}/struct.BTreeMap.html"
+      patch_once "${dir}/src/lib.rs" '//! [`BTreeSet`]: std::collections::BTreeSet' \
+        "//! [\`BTreeSet\`]: ${url}/struct.BTreeSet.html"
+      patch_once "${dir}/src/map.rs" '/// [`BTreeMap`]: std::collections::BTreeMap' \
+        "/// [\`BTreeMap\`]: ${url}/struct.BTreeMap.html"
+      patch_once "${dir}/src/set.rs" '/// [`BTreeSet`]: std::collections::BTreeSet' \
+        "/// [\`BTreeSet\`]: ${url}/struct.BTreeSet.html"
+      ;;
   esac
 }
 
@@ -133,6 +148,14 @@ for entry in "${CRATES[@]}"; do
   src="${tmp}/${name}-${version}"
   tar -xzf "$archive" -C "$tmp"
   apply_patches "$src" "$name"
+
+  # Optionally keep the whole patched crate (Cargo.toml and all) so cargo can build it, e.g. for
+  # trusty/check_vendor_docs.sh. The Trusty build only needs what files_for copies below.
+  if [[ -n "${FULL_SOURCES_DIR:-}" ]]; then
+    rm -rf "${FULL_SOURCES_DIR:?}/${dest}"
+    mkdir -p "${FULL_SOURCES_DIR}/${dest}"
+    cp -R "${src}/." "${FULL_SOURCES_DIR}/${dest}/"
+  fi
 
   mkdir -p "${vendor_dir}/${dest}"
   for f in $(files_for "$name"); do
