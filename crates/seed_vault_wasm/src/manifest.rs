@@ -26,6 +26,10 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use algokit_crypto::falcon1024::{PrivateKey, PublicKey};
+
+/// The Falcon-1024 public key type publisher keys use (re-exported so
+/// clients needn't depend on `algokit_crypto` to build a [`PublisherKey`]).
+pub use algokit_crypto::falcon1024::PublicKey as FalconPublicKey;
 use wasm_runtime::ProgramId;
 
 const MANIFEST_MAGIC: &[u8; 4] = b"SVWM";

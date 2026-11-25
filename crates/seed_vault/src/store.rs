@@ -676,22 +676,6 @@ pub fn seed_entropy(
     result
 }
 
-/// The mnemonic entropy of every stored seed, in index order. Same rules as
-/// [`seed_entropy`]: in-TA use only (e.g. `seed_vault_wasm` dropping cached
-/// keys of deleted seeds), never sent over IPC. The caller should zeroize
-/// the result.
-pub fn seed_entropies(
-    store: &mut impl AccountStore,
-) -> Result<Vec<[u8; ALGO25_SEED_LEN]>, StoreError> {
-    let mut records = store.all_indexed_records()?;
-    let result = records
-        .iter()
-        .map(|(_, record)| record_entropy(record).copied())
-        .collect();
-    wipe(&mut records);
-    result
-}
-
 /// Result of [`sign_arbitrary_data`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SignedArbitraryData {
@@ -1581,21 +1565,6 @@ mod tests {
         assert_eq!(
             seed_entropy(&mut store, "NOT-AN-ADDRESS"),
             Err(StoreError::NotFound)
-        );
-        let ed25519 = import_account(
-            &mut store,
-            KeyAlgorithm::Algo25Ed25519,
-            HUMAN_SIGN_INDEX,
-            &algokit_crypto::algo25::mnemonic_from_seed(&[7; 32]).unwrap(),
-        )
-        .unwrap();
-        let human_sign = list_accounts(&mut store).unwrap()[0].address.clone();
-        assert_eq!(
-            seed_entropies(&mut store),
-            Ok(alloc::vec![
-                seed_entropy(&mut store, &human_sign).unwrap(),
-                seed_entropy(&mut store, &ed25519.address).unwrap(),
-            ])
         );
     }
 

@@ -3,19 +3,18 @@
 
 use alloc::vec::Vec;
 
-use seed_vault::AccountStore;
-
 use crate::policy::WasmPolicy;
 use crate::protocol::{self, Request};
-use crate::storage::WasmStore;
+use crate::storage::{SeedSource, WasmStore};
 use crate::vault::WasmVault;
 
 /// Handles one raw WASM request (see [`protocol::is_wasm_request`]) and
-/// returns the raw response. `accounts` is the vault's seed store,
+/// returns the raw response. `accounts` is where seeds come from (the TA's
+/// account store, or an app's own vault in emulated mode),
 /// `wasm_store` where programs and their cached keys are kept.
 pub fn handle_request<P: WasmPolicy>(
     vault: &mut WasmVault<P>,
-    accounts: &mut impl AccountStore,
+    accounts: &mut impl SeedSource,
     wasm_store: &mut impl WasmStore,
     request: &[u8],
 ) -> Vec<u8> {
@@ -28,7 +27,7 @@ pub fn handle_request<P: WasmPolicy>(
 
 fn dispatch<P: WasmPolicy>(
     vault: &mut WasmVault<P>,
-    accounts: &mut impl AccountStore,
+    accounts: &mut impl SeedSource,
     wasm_store: &mut impl WasmStore,
     request: Request<'_>,
 ) -> Result<Vec<u8>, crate::WasmError> {

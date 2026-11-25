@@ -21,8 +21,12 @@
 //! The `wasm_*` methods install and use programs in the applet's WASM
 //! runtime (signing algorithms and general programs), and the
 //! `light_client_*` methods drive the Algorand light client program; see the
-//! `wasm` module.
+//! `wasm` module. On devices without the applet, [`SeedVaultClient::emulated`]
+//! (feature `emulator`, on by default) runs the same runtime in the app's
+//! process; see the `emulator` module.
 
+#[cfg(feature = "emulator")]
+mod emulator;
 mod transport;
 mod wasm;
 
@@ -30,6 +34,10 @@ use seed_vault::protocol::{self, DecodeError, ErrorCode, Request};
 use seed_vault::store;
 use zeroize::Zeroize;
 
+#[cfg(feature = "emulator")]
+pub use emulator::{
+    PublisherPublicKey, SeedProvider, WasmStorage, dev_publisher_public_key, file_wasm_storage,
+};
 use transport::Connection;
 pub use wasm::{
     LightBlockHeaderProof, LightClientErrorCode, LightClientStatus, StateProofMessage,
@@ -312,6 +320,10 @@ pub struct SeedVaultClient {
     device_path: String,
     service_name: String,
     timeout_ms: u32,
+    /// Set for [`SeedVaultClient::emulated`] clients: their WASM calls run
+    /// in-process instead of in the TA.
+    #[cfg(feature = "emulator")]
+    emulator: Option<std::sync::Arc<emulator::Emulator>>,
 }
 
 #[uniffi::export]
@@ -338,6 +350,8 @@ impl SeedVaultClient {
             device_path,
             service_name,
             timeout_ms,
+            #[cfg(feature = "emulator")]
+            emulator: None,
         }
     }
 
@@ -573,6 +587,14 @@ impl Default for SeedVaultClient {
 
 impl SeedVaultClient {
     fn connect(&self) -> Result<Connection, SeedVaultError> {
+        #[cfg(feature = "emulator")]
+        if self.emulator.is_some() {
+            return Err(SeedVaultError::NotSupported {
+                reason: "emulated client: only WASM calls run here; native accounts are the \
+                         app's own vault"
+                    .into(),
+            });
+        }
         Connection::open(&self.device_path, &self.service_name)
     }
 

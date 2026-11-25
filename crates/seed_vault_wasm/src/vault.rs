@@ -3,7 +3,7 @@
 use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
 
-use seed_vault::{AccountStore, StoreError};
+use seed_vault::StoreError;
 use wasm_runtime::{CompiledProgram, Limits, ProgramId, RuntimeConfig, WasmRuntime};
 use zeroize::Zeroize;
 
@@ -13,7 +13,7 @@ use crate::abi::{
 };
 use crate::manifest::{Manifest, Revocations, Signed};
 use crate::policy::{Admission, WasmPolicy};
-use crate::storage::{self, WasmStore};
+use crate::storage::{self, SeedSource, WasmStore};
 
 /// Largest result a program may return: whatever fits in one response
 /// (`[OK][len: u16][bytes]`) under `seed_vault`'s message budget.
@@ -458,20 +458,21 @@ impl<P: WasmPolicy> WasmVault<P> {
             .collect())
     }
 
-    /// Deletes every cached key whose seed is no longer in `accounts`. The
-    /// TA calls this after a successful `DELETE_ACCOUNT`, so keys derived
-    /// from a deleted seed don't outlive it.
+    /// Deletes every cached key whose seed is no longer in `accounts`, so
+    /// keys derived from a deleted seed don't outlive it. The TA calls this
+    /// after a successful `DELETE_ACCOUNT`; `seed_vault_ffi`'s emulator
+    /// whenever the app's seed list shrinks. Needs only seed addresses.
     pub fn purge_orphaned_keys(
         &mut self,
-        accounts: &mut impl AccountStore,
+        accounts: &mut impl SeedSource,
         wasm_store: &mut impl WasmStore,
     ) -> Result<(), WasmError> {
-        let mut entropies = seed_vault::seed_entropies(accounts).map_err(WasmError::Store)?;
-        let live: Vec<_> = entropies
+        let live: Vec<_> = accounts
+            .seed_addresses()
+            .map_err(WasmError::Store)?
             .iter()
-            .map(|entropy| storage::seed_tag_hex(&storage::seed_tag(entropy)))
+            .map(|address| storage::seed_tag_hex(&storage::seed_tag(address)))
             .collect();
-        entropies.zeroize();
         for name in wasm_store
             .list(storage::KEY_PREFIX)
             .map_err(WasmError::Store)?
@@ -489,7 +490,7 @@ impl<P: WasmPolicy> WasmVault<P> {
     /// seed whose human-sign address is `seed_address`.
     pub fn public_key(
         &mut self,
-        accounts: &mut impl AccountStore,
+        accounts: &mut impl SeedSource,
         wasm_store: &mut impl WasmStore,
         program: &ProgramId,
         seed_address: &str,
@@ -513,7 +514,7 @@ impl<P: WasmPolicy> WasmVault<P> {
     /// signing refuses Algorand domain prefixes.
     pub fn sign(
         &mut self,
-        accounts: &mut impl AccountStore,
+        accounts: &mut impl SeedSource,
         wasm_store: &mut impl WasmStore,
         program: &ProgramId,
         seed_address: &str,
@@ -531,7 +532,7 @@ impl<P: WasmPolicy> WasmVault<P> {
 
     fn run(
         &mut self,
-        accounts: &mut impl AccountStore,
+        accounts: &mut impl SeedSource,
         wasm_store: &mut impl WasmStore,
         call: Call<'_>,
         input: Vec<u8>,
@@ -551,8 +552,9 @@ impl<P: WasmPolicy> WasmVault<P> {
         {
             return Err(WasmError::KeyUseDenied);
         }
-        let mut entropy =
-            seed_vault::seed_entropy(accounts, call.seed_address).map_err(WasmError::Store)?;
+        let mut entropy = accounts
+            .seed_entropy(call.seed_address)
+            .map_err(WasmError::Store)?;
         let key = derive_program_key(&entropy, &installed.namespace, call.address_index);
         // Only for modules granted it (install refuses modules that import
         // `account_entropy` without the capability).
@@ -566,7 +568,7 @@ impl<P: WasmPolicy> WasmVault<P> {
         };
         let cache_name = storage::key_name(
             call.program,
-            &storage::seed_tag(&entropy),
+            &storage::seed_tag(call.seed_address),
             call.address_index,
         );
         entropy.zeroize();

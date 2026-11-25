@@ -265,6 +265,13 @@ impl SeedVaultClient {
             &mut Client<&mut dyn FnMut(&[u8]) -> Result<Vec<u8>, SeedVaultError>>,
         ) -> Result<T, SeedVaultError>,
     ) -> Result<T, SeedVaultError> {
+        #[cfg(feature = "emulator")]
+        if let Some(emulator) = &self.emulator {
+            let mut exchange =
+                |request: &[u8]| -> Result<Vec<u8>, SeedVaultError> { emulator.exchange(request) };
+            let mut client = Client::new(&mut exchange as &mut dyn FnMut(&[u8]) -> _);
+            return f(&mut client);
+        }
         let mut connection = self.connect()?;
         let timeout_ms = self.timeout_ms;
         let mut exchange = |request: &[u8]| -> Result<Vec<u8>, SeedVaultError> {

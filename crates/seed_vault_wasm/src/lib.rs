@@ -72,7 +72,7 @@ pub use manifest::{Capabilities, Manifest, PublisherKey, Revocations, Signed};
 #[cfg(feature = "vault")]
 pub use policy::{dev_publisher_key, Admission, PublisherPolicy, WasmPolicy};
 #[cfg(feature = "vault")]
-pub use storage::{MemoryWasmStore, WasmStore};
+pub use storage::{MemoryWasmStore, SeedSource, WasmStore};
 #[cfg(feature = "vault")]
 pub use vault::{derive_program_key, KeyNamespace, ProgramInfo, VaultConfig, WasmError, WasmVault};
 pub use wasm_runtime::ProgramId;

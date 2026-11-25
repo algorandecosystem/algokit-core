@@ -3089,9 +3089,11 @@ dependencies = [
 name = "seed_vault_ffi"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
  "libc",
  "seed_vault",
  "seed_vault_wasm",
+ "serde_json",
  "uniffi",
  "zeroize",
 ]

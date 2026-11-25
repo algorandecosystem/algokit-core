@@ -19,17 +19,49 @@
 //! - `svw1_key_<program_id hex>_<seed tag hex>_<address_index hex>`: what
 //!   that program cached for that key (see [`crate::abi`]'s `cache_put`).
 //!   The seed tag is 8 bytes of `SHA512/256("SeedVaultWasmSeedTag" ||
-//!   entropy)`, so entries can be matched to seeds (to drop a deleted
-//!   seed's keys) without naming the seed.
+//!   index-0 address)`, so a deleted seed's entries can be found from the
+//!   list of addresses alone.
 
 use alloc::collections::BTreeMap;
 use alloc::format;
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use seed_vault::StoreError;
+use seed_vault::{AccountStore, StoreError};
 use wasm_runtime::ProgramId;
 use zeroize::Zeroize;
+
+/// Where [`crate::WasmVault`] gets seeds from: all it needs is each seed's
+/// 32-byte mnemonic entropy, named by the seed's index-0 address.
+///
+/// Every `seed_vault` [`AccountStore`] is one (in the TA, the secure-storage
+/// account store). An app without the TA (e.g. `seed_vault_ffi`'s emulated
+/// mode) implements it over its own vault instead.
+pub trait SeedSource {
+    /// The entropy of the seed whose human-sign (index 0) address is
+    /// `address`: [`StoreError::NotFound`] if there's none, and
+    /// [`StoreError::UnknownKeyIndex`] for another of a seed's addresses.
+    /// The caller zeroizes it.
+    fn seed_entropy(&mut self, address: &str) -> Result<[u8; 32], StoreError>;
+
+    /// The human-sign (index 0) address of every seed, to drop the keys
+    /// cached for deleted seeds. Addresses are public: no unlock needed.
+    fn seed_addresses(&mut self) -> Result<Vec<String>, StoreError>;
+}
+
+impl<T: AccountStore> SeedSource for T {
+    fn seed_entropy(&mut self, address: &str) -> Result<[u8; 32], StoreError> {
+        seed_vault::seed_entropy(self, address)
+    }
+
+    fn seed_addresses(&mut self) -> Result<Vec<String>, StoreError> {
+        Ok(seed_vault::list_accounts(self)?
+            .into_iter()
+            .filter(|account| account.address_index == seed_vault::HUMAN_SIGN_INDEX)
+            .map(|account| account.address)
+            .collect())
+    }
+}
 
 /// Named-blob storage for [`crate::WasmVault`].
 pub trait WasmStore {
@@ -128,13 +160,14 @@ pub(crate) fn program_keys_prefix(program: &ProgramId) -> String {
     format!("{KEY_PREFIX}{}_", hex(&program.0))
 }
 
-/// 8 bytes identifying a seed in key-cache names.
-pub(crate) fn seed_tag(entropy: &[u8; 32]) -> [u8; 8] {
-    let mut input = [0u8; 20 + 32];
-    input[..20].copy_from_slice(b"SeedVaultWasmSeedTag");
-    input[20..].copy_from_slice(entropy);
+/// 8 bytes identifying a seed in key-cache names, from its (public)
+/// human-sign address: so finding a deleted seed's cached keys needs only
+/// the list of addresses, never the seeds themselves.
+pub(crate) fn seed_tag(address: &str) -> [u8; 8] {
+    let mut input = Vec::with_capacity(20 + address.len());
+    input.extend_from_slice(b"SeedVaultWasmSeedTag");
+    input.extend_from_slice(address.as_bytes());
     let hash = algokit_crypto::sha512_256(&input);
-    input.zeroize();
     hash[..8].try_into().unwrap()
 }
 
@@ -169,12 +202,12 @@ mod tests {
         assert_eq!(program_from_name(&name), Some(program));
         assert_eq!(program_from_name("svw1_prog_zz"), None);
 
-        let tag = seed_tag(&[1; 32]);
+        let tag = seed_tag("ADDRESS1");
         let key = key_name(&program, &tag, 0xFF);
         assert!(key.starts_with(&program_keys_prefix(&program)));
         assert_eq!(seed_tag_from_key_name(&key), Some(seed_tag_hex(&tag)));
         assert_eq!(key.len(), 93);
         assert!(key.len() <= 159);
-        assert_ne!(seed_tag(&[1; 32]), seed_tag(&[2; 32]));
+        assert_ne!(seed_tag("ADDRESS1"), seed_tag("ADDRESS2"));
     }
 }
