@@ -25,17 +25,24 @@ failed=()
 for crate in "${crates[@]}"; do
   # `feature="x"` pairs from the module's rules.mk, as the Trusty build enables them
   features="$(grep -o 'feature="[^"]*"' "${script_dir}/vendor/${crate}/rules.mk" | sed 's/feature="\(.*\)"/\1/' | sort -u | paste -sd, - || true)"
+  log="${tmp}/rustdoc_${crate}.log"
   echo "::group::rustdoc ${crate} (features: ${features:-none})"
   if (cd "${tmp}/full/${crate}" &&
-    RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --no-default-features ${features:+--features "$features"}); then
+    RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --no-default-features ${features:+--features "$features"}) >"$log" 2>&1; then
     echo "ok: ${crate}"
   else
     failed+=("$crate")
   fi
+  cat "$log"
   echo "::endgroup::"
 done
 
 if [[ ${#failed[@]} -gt 0 ]]; then
+  # The groups above are collapsed in the log, so repeat what went wrong where it is easy to see
+  for crate in "${failed[@]}"; do
+    echo "=== ${crate}: first rustdoc errors ==="
+    grep -E -A12 '^(error|warning)' "${tmp}/rustdoc_${crate}.log" | head -60 || true
+  done
   echo "::error::rustdoc with -D warnings failed for: ${failed[*]}" >&2
   exit 1
 fi
