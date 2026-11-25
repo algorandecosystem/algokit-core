@@ -78,6 +78,23 @@ p.write_text(s.replace(frm, to))
 PYEOF
 }
 
+# Lets a vendored crate build under the Trusty build's `-D warnings`. Upstream was written for other compilers
+# and features than ours: its doc comments link to things that only exist with features Trusty doesn't enable
+# (std, hashbrown, component-model, ...), rustc's cfg checking trips over feature names a crate never declared,
+# and newer rustc versions add lints (e.g. unused_parens) that older crate code trips. None of that changes what
+# the code does, and nobody reads these crates' warnings or docs, so warnings are allowed in the crates listed
+# in apply_patches. Fails if the file already has the line.
+allow_doc_lints() {
+  python3 - "$1" <<'PYEOF'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1]); s = p.read_text()
+line = "#![allow(warnings)]"
+if line in s:
+    sys.exit(f"patch failed: {p} already has {line}")
+p.write_text("// TRUSTY VENDOR PATCH: warnings allowed, see allow_doc_lints in trusty/fetch_vendor_crates.sh\n" + line + "\n" + s)
+PYEOF
+}
+
 apply_patches() {
   local dir="$1"
   case "$2" in
@@ -111,6 +128,9 @@ extern \"C\" {"
         "// TRUSTY VENDOR PATCH: upstream's \`unsafe extern \"Rust\"\` is edition-2024
     // syntax that Trusty's bundled rustc rejects; plain \`extern\` is identical.
     extern \"Rust\" {"
+      ;;
+    wasmi | wasmi_core | wasmparser | smallvec | spin)
+      allow_doc_lints "${dir}/src/lib.rs"
       ;;
     wasmi_collections)
       # Its docs link `std::collections::BTreeMap`/`BTreeSet`, which rustdoc can't resolve in this no_std
