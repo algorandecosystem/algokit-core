@@ -41,9 +41,9 @@ android {
 }
 
 dependencies {
-  implementation("net.java.dev.jna:jna:5.14.0@aar")
+  implementation("net.java.dev.jna:jna:5.17.0@aar")
   // Use full JNA JAR for unit tests (includes native dispatch libraries)
-  testImplementation("net.java.dev.jna:jna:5.14.0")
+  testImplementation("net.java.dev.jna:jna:5.17.0")
 
   implementation(libs.androidx.core.ktx)
   implementation(libs.androidx.appcompat)

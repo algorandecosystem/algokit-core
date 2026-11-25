@@ -1,0 +1,15 @@
+[versions]
+agp = "9.2.1"
+junit = "4.13.2"
+junitVersion = "1.2.1"
+testRunner = "1.7.0"
+mavenPublish = "0.37.0"
+
+[libraries]
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
+androidx-test-runner = { group = "androidx.test", name = "runner", version.ref = "testRunner" }
+
+[plugins]
+android-library = { id = "com.android.library", version.ref = "agp" }
+maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "mavenPublish" }

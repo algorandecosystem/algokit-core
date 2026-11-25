@@ -769,6 +769,26 @@ internal interface IntegrityCheckingUniffiLib : Library {
 
   fun uniffi_algokit_crypto_ffi_checksum_func_ed25519_raw_sign(): Short
 
+  fun uniffi_algokit_crypto_ffi_checksum_func_falcon1024_account_from_entropy(): Short
+
+  fun uniffi_algokit_crypto_ffi_checksum_func_falcon1024_account_from_mnemonic(): Short
+
+  fun uniffi_algokit_crypto_ffi_checksum_func_falcon1024_account_from_pq_seed(): Short
+
+  fun uniffi_algokit_crypto_ffi_checksum_func_falcon1024_canonical_address(): Short
+
+  fun uniffi_algokit_crypto_ffi_checksum_func_falcon1024_nth_address(): Short
+
+  fun uniffi_algokit_crypto_ffi_checksum_func_falcon1024_private_key_size(): Short
+
+  fun uniffi_algokit_crypto_ffi_checksum_func_falcon1024_public_key_size(): Short
+
+  fun uniffi_algokit_crypto_ffi_checksum_func_falcon1024_raw_sign(): Short
+
+  fun uniffi_algokit_crypto_ffi_checksum_func_falcon1024_signature_max_size(): Short
+
+  fun uniffi_algokit_crypto_ffi_checksum_func_falcon1024_verify(): Short
+
   fun uniffi_algokit_crypto_ffi_checksum_func_master_derivation_key_to_mnemonic(): Short
 
   fun uniffi_algokit_crypto_ffi_checksum_func_mnemonic_from_seed(): Short
@@ -843,6 +863,51 @@ internal interface UniffiLib : Library {
     `data`: RustBuffer.ByValue,
     uniffi_out_err: UniffiRustCallStatus,
   ): RustBuffer.ByValue
+
+  fun uniffi_algokit_crypto_ffi_fn_func_falcon1024_account_from_entropy(
+    `entropy`: RustBuffer.ByValue,
+    uniffi_out_err: UniffiRustCallStatus,
+  ): RustBuffer.ByValue
+
+  fun uniffi_algokit_crypto_ffi_fn_func_falcon1024_account_from_mnemonic(
+    `mnemonic`: RustBuffer.ByValue,
+    uniffi_out_err: UniffiRustCallStatus,
+  ): RustBuffer.ByValue
+
+  fun uniffi_algokit_crypto_ffi_fn_func_falcon1024_account_from_pq_seed(
+    `pqSeed`: RustBuffer.ByValue,
+    uniffi_out_err: UniffiRustCallStatus,
+  ): RustBuffer.ByValue
+
+  fun uniffi_algokit_crypto_ffi_fn_func_falcon1024_canonical_address(
+    `publicKey`: RustBuffer.ByValue,
+    uniffi_out_err: UniffiRustCallStatus,
+  ): RustBuffer.ByValue
+
+  fun uniffi_algokit_crypto_ffi_fn_func_falcon1024_nth_address(
+    `publicKey`: RustBuffer.ByValue,
+    `n`: Int,
+    uniffi_out_err: UniffiRustCallStatus,
+  ): RustBuffer.ByValue
+
+  fun uniffi_algokit_crypto_ffi_fn_func_falcon1024_private_key_size(uniffi_out_err: UniffiRustCallStatus): Int
+
+  fun uniffi_algokit_crypto_ffi_fn_func_falcon1024_public_key_size(uniffi_out_err: UniffiRustCallStatus): Int
+
+  fun uniffi_algokit_crypto_ffi_fn_func_falcon1024_raw_sign(
+    `privateKey`: RustBuffer.ByValue,
+    `msg`: RustBuffer.ByValue,
+    uniffi_out_err: UniffiRustCallStatus,
+  ): RustBuffer.ByValue
+
+  fun uniffi_algokit_crypto_ffi_fn_func_falcon1024_signature_max_size(uniffi_out_err: UniffiRustCallStatus): Int
+
+  fun uniffi_algokit_crypto_ffi_fn_func_falcon1024_verify(
+    `publicKey`: RustBuffer.ByValue,
+    `signature`: RustBuffer.ByValue,
+    `msg`: RustBuffer.ByValue,
+    uniffi_out_err: UniffiRustCallStatus,
+  ): Byte
 
   fun uniffi_algokit_crypto_ffi_fn_func_master_derivation_key_to_mnemonic(
     `mdk`: RustBuffer.ByValue,
@@ -1138,6 +1203,36 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
   if (lib.uniffi_algokit_crypto_ffi_checksum_func_ed25519_raw_sign() != 65210.toShort()) {
     throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
   }
+  if (lib.uniffi_algokit_crypto_ffi_checksum_func_falcon1024_account_from_entropy() != 51214.toShort()) {
+    throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+  }
+  if (lib.uniffi_algokit_crypto_ffi_checksum_func_falcon1024_account_from_mnemonic() != 5183.toShort()) {
+    throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+  }
+  if (lib.uniffi_algokit_crypto_ffi_checksum_func_falcon1024_account_from_pq_seed() != 55719.toShort()) {
+    throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+  }
+  if (lib.uniffi_algokit_crypto_ffi_checksum_func_falcon1024_canonical_address() != 4766.toShort()) {
+    throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+  }
+  if (lib.uniffi_algokit_crypto_ffi_checksum_func_falcon1024_nth_address() != 1952.toShort()) {
+    throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+  }
+  if (lib.uniffi_algokit_crypto_ffi_checksum_func_falcon1024_private_key_size() != 26705.toShort()) {
+    throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+  }
+  if (lib.uniffi_algokit_crypto_ffi_checksum_func_falcon1024_public_key_size() != 63900.toShort()) {
+    throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+  }
+  if (lib.uniffi_algokit_crypto_ffi_checksum_func_falcon1024_raw_sign() != 63360.toShort()) {
+    throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+  }
+  if (lib.uniffi_algokit_crypto_ffi_checksum_func_falcon1024_signature_max_size() != 56593.toShort()) {
+    throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+  }
+  if (lib.uniffi_algokit_crypto_ffi_checksum_func_falcon1024_verify() != 25210.toShort()) {
+    throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+  }
   if (lib.uniffi_algokit_crypto_ffi_checksum_func_master_derivation_key_to_mnemonic() != 64790.toShort()) {
     throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
   }
@@ -1258,6 +1353,26 @@ object NoPointer
 /**
  * @suppress
  */
+public object FfiConverterUByte : FfiConverter<UByte, Byte> {
+  override fun lift(value: Byte): UByte = value.toUByte()
+
+  override fun read(buf: ByteBuffer): UByte = lift(buf.get())
+
+  override fun lower(value: UByte): Byte = value.toByte()
+
+  override fun allocationSize(value: UByte) = 1UL
+
+  override fun write(
+    value: UByte,
+    buf: ByteBuffer,
+  ) {
+    buf.put(value.toByte())
+  }
+}
+
+/**
+ * @suppress
+ */
 public object FfiConverterUInt : FfiConverter<UInt, Int> {
   override fun lift(value: Int): UInt = value.toUInt()
 
@@ -1292,6 +1407,26 @@ public object FfiConverterULong : FfiConverter<ULong, Long> {
     buf: ByteBuffer,
   ) {
     buf.putLong(value.toLong())
+  }
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterBoolean : FfiConverter<Boolean, Byte> {
+  override fun lift(value: Byte): Boolean = value.toInt() != 0
+
+  override fun read(buf: ByteBuffer): Boolean = lift(buf.get())
+
+  override fun lower(value: Boolean): Byte = if (value) 1.toByte() else 0.toByte()
+
+  override fun allocationSize(value: Boolean) = 1UL
+
+  override fun write(
+    value: Boolean,
+    buf: ByteBuffer,
+  ) {
+    buf.put(lower(value))
   }
 }
 
@@ -1374,6 +1509,114 @@ public object FfiConverterByteArray : FfiConverterRustBuffer<ByteArray> {
   ) {
     buf.putInt(value.size)
     buf.put(value)
+  }
+}
+
+/**
+ * FFI-compatible mirror of [`algokit_crypto::falcon1024::Falcon1024Account`].
+ */
+data class Falcon1024Account(
+  /**
+   * 1793-byte Falcon-1024 public key.
+   */
+  var `publicKey`: kotlin.ByteArray,
+  /**
+   * 2305-byte Falcon-1024 private key.
+   */
+  var `privateKey`: kotlin.ByteArray,
+  /**
+   * The address salt (canonical = lowest PQ-compliant salt). Must be
+   * included in the `pqsig` of signed transactions when non-zero.
+   */
+  var `salt`: kotlin.UByte,
+  /**
+   * Raw 32-byte Algorand address.
+   */
+  var `address`: kotlin.ByteArray,
+  /**
+   * 58-character base32 Algorand address.
+   */
+  var `addressString`: kotlin.String,
+) {
+  companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFalcon1024Account : FfiConverterRustBuffer<Falcon1024Account> {
+  override fun read(buf: ByteBuffer): Falcon1024Account =
+    Falcon1024Account(
+      FfiConverterByteArray.read(buf),
+      FfiConverterByteArray.read(buf),
+      FfiConverterUByte.read(buf),
+      FfiConverterByteArray.read(buf),
+      FfiConverterString.read(buf),
+    )
+
+  override fun allocationSize(value: Falcon1024Account) =
+    (
+      FfiConverterByteArray.allocationSize(value.`publicKey`) +
+        FfiConverterByteArray.allocationSize(value.`privateKey`) +
+        FfiConverterUByte.allocationSize(value.`salt`) +
+        FfiConverterByteArray.allocationSize(value.`address`) +
+        FfiConverterString.allocationSize(value.`addressString`)
+    )
+
+  override fun write(
+    value: Falcon1024Account,
+    buf: ByteBuffer,
+  ) {
+    FfiConverterByteArray.write(value.`publicKey`, buf)
+    FfiConverterByteArray.write(value.`privateKey`, buf)
+    FfiConverterUByte.write(value.`salt`, buf)
+    FfiConverterByteArray.write(value.`address`, buf)
+    FfiConverterString.write(value.`addressString`, buf)
+  }
+}
+
+/**
+ * A PQ address (salt + address) for a Falcon-1024 public key.
+ */
+data class Falcon1024Address(
+  var `salt`: kotlin.UByte,
+  /**
+   * Raw 32-byte Algorand address.
+   */
+  var `address`: kotlin.ByteArray,
+  /**
+   * 58-character base32 Algorand address.
+   */
+  var `addressString`: kotlin.String,
+) {
+  companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFalcon1024Address : FfiConverterRustBuffer<Falcon1024Address> {
+  override fun read(buf: ByteBuffer): Falcon1024Address =
+    Falcon1024Address(
+      FfiConverterUByte.read(buf),
+      FfiConverterByteArray.read(buf),
+      FfiConverterString.read(buf),
+    )
+
+  override fun allocationSize(value: Falcon1024Address) =
+    (
+      FfiConverterUByte.allocationSize(value.`salt`) +
+        FfiConverterByteArray.allocationSize(value.`address`) +
+        FfiConverterString.allocationSize(value.`addressString`)
+    )
+
+  override fun write(
+    value: Falcon1024Address,
+    buf: ByteBuffer,
+  ) {
+    FfiConverterUByte.write(value.`salt`, buf)
+    FfiConverterByteArray.write(value.`address`, buf)
+    FfiConverterString.write(value.`addressString`, buf)
   }
 }
 
@@ -1565,6 +1808,62 @@ public object FfiConverterTypeAlgoKitCryptoError : FfiConverterRustBuffer<AlgoKi
 }
 
 /**
+ * FFI-compatible error type for Falcon-1024 operations.
+ */
+sealed class AlgoKitFalcon1024Exception : kotlin.Exception() {
+  class Exception(
+    val `errMsg`: kotlin.String,
+  ) : AlgoKitFalcon1024Exception() {
+    override val message
+      get() = "errMsg=${ `errMsg` }"
+  }
+
+  companion object ErrorHandler : UniffiRustCallStatusErrorHandler<AlgoKitFalcon1024Exception> {
+    override fun lift(error_buf: RustBuffer.ByValue): AlgoKitFalcon1024Exception = FfiConverterTypeAlgoKitFalcon1024Error.lift(error_buf)
+  }
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeAlgoKitFalcon1024Error : FfiConverterRustBuffer<AlgoKitFalcon1024Exception> {
+  override fun read(buf: ByteBuffer): AlgoKitFalcon1024Exception =
+    when (buf.getInt()) {
+      1 -> {
+        AlgoKitFalcon1024Exception.Exception(
+          FfiConverterString.read(buf),
+        )
+      }
+
+      else -> {
+        throw RuntimeException("invalid error enum value, something is very wrong!!")
+      }
+    }
+
+  override fun allocationSize(value: AlgoKitFalcon1024Exception): ULong =
+    when (value) {
+      is AlgoKitFalcon1024Exception.Exception -> (
+        // Add the size for the Int that specifies the variant plus the size needed for all fields
+        4UL +
+          FfiConverterString.allocationSize(value.`errMsg`)
+      )
+    }
+
+  override fun write(
+    value: AlgoKitFalcon1024Exception,
+    buf: ByteBuffer,
+  ) {
+    when (value) {
+      is AlgoKitFalcon1024Exception.Exception -> {
+        buf.putInt(1)
+        FfiConverterString.write(value.`errMsg`, buf)
+        Unit
+      }
+    }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+  }
+}
+
+/**
  * FFI-compatible error type for HD wallet operations.
  */
 sealed class AlgoKitXhdException : kotlin.Exception() {
@@ -1733,6 +2032,150 @@ fun `ed25519RawSign`(
       UniffiLib.INSTANCE.uniffi_algokit_crypto_ffi_fn_func_ed25519_raw_sign(
         FfiConverterByteArray.lower(`secretKey`),
         FfiConverterByteArray.lower(`data`),
+        _status,
+      )
+    },
+  )
+
+/**
+ * Derives the Falcon-1024 account from the 32 bytes of entropy a 25-word
+ * mnemonic encodes (i.e. the `algo25` seed).
+ */
+@Throws(AlgoKitFalcon1024Exception::class)
+fun `falcon1024AccountFromEntropy`(`entropy`: kotlin.ByteArray): Falcon1024Account =
+  FfiConverterTypeFalcon1024Account.lift(
+    uniffiRustCallWithError(AlgoKitFalcon1024Exception) { _status ->
+      UniffiLib.INSTANCE.uniffi_algokit_crypto_ffi_fn_func_falcon1024_account_from_entropy(FfiConverterByteArray.lower(`entropy`), _status)
+    },
+  )
+
+/**
+ * Derives the Falcon-1024 account from a 25-word Algorand mnemonic.
+ *
+ * The same words also back an `algo25` (Ed25519) account at a *different*
+ * address.
+ */
+@Throws(AlgoKitFalcon1024Exception::class)
+fun `falcon1024AccountFromMnemonic`(`mnemonic`: kotlin.String): Falcon1024Account =
+  FfiConverterTypeFalcon1024Account.lift(
+    uniffiRustCallWithError(AlgoKitFalcon1024Exception) { _status ->
+      UniffiLib.INSTANCE.uniffi_algokit_crypto_ffi_fn_func_falcon1024_account_from_mnemonic(FfiConverterString.lower(`mnemonic`), _status)
+    },
+  )
+
+/**
+ * Derives the Falcon-1024 account directly from a 32-byte PQ keygen seed
+ * (go-algorand-sdk's `crypto.Falcon1024AccountFromPQSeed`).
+ */
+@Throws(AlgoKitFalcon1024Exception::class)
+fun `falcon1024AccountFromPqSeed`(`pqSeed`: kotlin.ByteArray): Falcon1024Account =
+  FfiConverterTypeFalcon1024Account.lift(
+    uniffiRustCallWithError(AlgoKitFalcon1024Exception) { _status ->
+      UniffiLib.INSTANCE.uniffi_algokit_crypto_ffi_fn_func_falcon1024_account_from_pq_seed(FfiConverterByteArray.lower(`pqSeed`), _status)
+    },
+  )
+
+/**
+ * Returns the canonical (lowest PQ-compliant salt) address for a Falcon-1024
+ * public key.
+ */
+@Throws(AlgoKitFalcon1024Exception::class)
+fun `falcon1024CanonicalAddress`(`publicKey`: kotlin.ByteArray): Falcon1024Address =
+  FfiConverterTypeFalcon1024Address.lift(
+    uniffiRustCallWithError(AlgoKitFalcon1024Exception) { _status ->
+      UniffiLib.INSTANCE.uniffi_algokit_crypto_ffi_fn_func_falcon1024_canonical_address(FfiConverterByteArray.lower(`publicKey`), _status)
+    },
+  )
+
+/**
+ * Returns the `n`th-lowest (0-based) PQ-compliant salted address for a
+ * Falcon-1024 public key. Every such address is authorized by the same key.
+ */
+@Throws(AlgoKitFalcon1024Exception::class)
+fun `falcon1024NthAddress`(
+  `publicKey`: kotlin.ByteArray,
+  `n`: kotlin.UInt,
+): Falcon1024Address =
+  FfiConverterTypeFalcon1024Address.lift(
+    uniffiRustCallWithError(AlgoKitFalcon1024Exception) { _status ->
+      UniffiLib.INSTANCE.uniffi_algokit_crypto_ffi_fn_func_falcon1024_nth_address(
+        FfiConverterByteArray.lower(`publicKey`),
+        FfiConverterUInt.lower(`n`),
+        _status,
+      )
+    },
+  )
+
+/**
+ * Byte length of a Falcon-1024 private key.
+ */
+fun `falcon1024PrivateKeySize`(): kotlin.UInt =
+  FfiConverterUInt.lift(
+    uniffiRustCall { _status ->
+      UniffiLib.INSTANCE.uniffi_algokit_crypto_ffi_fn_func_falcon1024_private_key_size(_status)
+    },
+  )
+
+/**
+ * Byte length of a Falcon-1024 public key.
+ */
+fun `falcon1024PublicKeySize`(): kotlin.UInt =
+  FfiConverterUInt.lift(
+    uniffiRustCall { _status ->
+      UniffiLib.INSTANCE.uniffi_algokit_crypto_ffi_fn_func_falcon1024_public_key_size(_status)
+    },
+  )
+
+/**
+ * Signs `msg` with a Falcon-1024 private key, returning the compressed
+ * deterministic signature (as used in a transaction's `pqsig.sig`).
+ *
+ * For transactions, `msg` must be `"TX" || msgpack(txn)` -- i.e. the same
+ * bytes an Ed25519 signer signs.
+ */
+@Throws(AlgoKitFalcon1024Exception::class)
+fun `falcon1024RawSign`(
+  `privateKey`: kotlin.ByteArray,
+  `msg`: kotlin.ByteArray,
+): kotlin.ByteArray =
+  FfiConverterByteArray.lift(
+    uniffiRustCallWithError(AlgoKitFalcon1024Exception) { _status ->
+      UniffiLib.INSTANCE.uniffi_algokit_crypto_ffi_fn_func_falcon1024_raw_sign(
+        FfiConverterByteArray.lower(`privateKey`),
+        FfiConverterByteArray.lower(`msg`),
+        _status,
+      )
+    },
+  )
+
+/**
+ * Upper bound on the byte length of a compressed Falcon-1024 signature.
+ */
+fun `falcon1024SignatureMaxSize`(): kotlin.UInt =
+  FfiConverterUInt.lift(
+    uniffiRustCall { _status ->
+      UniffiLib.INSTANCE.uniffi_algokit_crypto_ffi_fn_func_falcon1024_signature_max_size(_status)
+    },
+  )
+
+/**
+ * Verifies a compressed Falcon-1024 `signature` over `msg`.
+ *
+ * Returns `false` for an invalid signature; errors only on a malformed
+ * public key length.
+ */
+@Throws(AlgoKitFalcon1024Exception::class)
+fun `falcon1024Verify`(
+  `publicKey`: kotlin.ByteArray,
+  `signature`: kotlin.ByteArray,
+  `msg`: kotlin.ByteArray,
+): kotlin.Boolean =
+  FfiConverterBoolean.lift(
+    uniffiRustCallWithError(AlgoKitFalcon1024Exception) { _status ->
+      UniffiLib.INSTANCE.uniffi_algokit_crypto_ffi_fn_func_falcon1024_verify(
+        FfiConverterByteArray.lower(`publicKey`),
+        FfiConverterByteArray.lower(`signature`),
+        FfiConverterByteArray.lower(`msg`),
         _status,
       )
     },

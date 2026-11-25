@@ -819,6 +819,8 @@ internal interface IntegrityCheckingUniffiLib : Library {
 
   fun uniffi_algokit_transact_ffi_checksum_func_participants_from_multisig_signature(): Short
 
+  fun uniffi_algokit_transact_ffi_checksum_func_pq_scheme_falcon1024(): Short
+
   fun uniffi_algokit_transact_ffi_checksum_func_public_key_from_address(): Short
 
   fun uniffi_algokit_transact_ffi_checksum_func_validate_logic_signature(): Short
@@ -1008,6 +1010,8 @@ internal interface UniffiLib : Library {
     `multisigSignature`: RustBuffer.ByValue,
     uniffi_out_err: UniffiRustCallStatus,
   ): RustBuffer.ByValue
+
+  fun uniffi_algokit_transact_ffi_fn_func_pq_scheme_falcon1024(uniffi_out_err: UniffiRustCallStatus): RustBuffer.ByValue
 
   fun uniffi_algokit_transact_ffi_fn_func_public_key_from_address(
     `address`: RustBuffer.ByValue,
@@ -1327,6 +1331,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
   }
   if (lib.uniffi_algokit_transact_ffi_checksum_func_participants_from_multisig_signature() != 25095.toShort()) {
+    throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+  }
+  if (lib.uniffi_algokit_transact_ffi_checksum_func_pq_scheme_falcon1024() != 49248.toShort()) {
     throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
   }
   if (lib.uniffi_algokit_transact_ffi_checksum_func_public_key_from_address() != 58152.toShort()) {
@@ -2289,6 +2296,10 @@ data class HeartbeatTransactionFields(
    * Heartbeat key dilution.
    */
   var `keyDilution`: kotlin.ULong,
+  /**
+   * Request the challenge fee discount, which lowers the required fee.
+   */
+  var `challengeDiscount`: kotlin.Boolean? = null,
 ) {
   companion object
 }
@@ -2304,6 +2315,7 @@ public object FfiConverterTypeHeartbeatTransactionFields : FfiConverterRustBuffe
       FfiConverterByteArray.read(buf),
       FfiConverterByteArray.read(buf),
       FfiConverterULong.read(buf),
+      FfiConverterOptionalBoolean.read(buf),
     )
 
   override fun allocationSize(value: HeartbeatTransactionFields) =
@@ -2312,7 +2324,8 @@ public object FfiConverterTypeHeartbeatTransactionFields : FfiConverterRustBuffe
         FfiConverterTypeHeartbeatProof.allocationSize(value.`proof`) +
         FfiConverterByteArray.allocationSize(value.`seed`) +
         FfiConverterByteArray.allocationSize(value.`voteId`) +
-        FfiConverterULong.allocationSize(value.`keyDilution`)
+        FfiConverterULong.allocationSize(value.`keyDilution`) +
+        FfiConverterOptionalBoolean.allocationSize(value.`challengeDiscount`)
     )
 
   override fun write(
@@ -2324,6 +2337,7 @@ public object FfiConverterTypeHeartbeatTransactionFields : FfiConverterRustBuffe
     FfiConverterByteArray.write(value.`seed`, buf)
     FfiConverterByteArray.write(value.`voteId`, buf)
     FfiConverterULong.write(value.`keyDilution`, buf)
+    FfiConverterOptionalBoolean.write(value.`challengeDiscount`, buf)
   }
 }
 
@@ -2781,6 +2795,66 @@ public object FfiConverterTypePaymentTransactionFields : FfiConverterRustBuffer<
 }
 
 /**
+ * A native post-quantum signature authorizing a transaction (`pqsig`).
+ *
+ * For Falcon-1024: `public_key` is the 1793-byte key, `scheme` is `"f1"`
+ * (see [`pq_scheme_falcon1024`]), `signature` is the compressed signature
+ * over `"TX" || encoded transaction` (e.g. from `algokit_crypto`'s
+ * `falcon1024_raw_sign`), and `salt` is the account's address salt.
+ */
+data class PqSignature(
+  /**
+   * The signer's PQ public key.
+   */
+  var `publicKey`: kotlin.ByteArray,
+  /**
+   * Two-byte scheme identifier, e.g. `"f1"` for Falcon-1024.
+   */
+  var `scheme`: kotlin.ByteArray,
+  /**
+   * The signature over `"TX" || encoded transaction`.
+   */
+  var `signature`: kotlin.ByteArray,
+  /**
+   * Which PQ-compliant address of `public_key` this authorizes.
+   */
+  var `salt`: kotlin.UByte,
+) {
+  companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypePqSignature : FfiConverterRustBuffer<PqSignature> {
+  override fun read(buf: ByteBuffer): PqSignature =
+    PqSignature(
+      FfiConverterByteArray.read(buf),
+      FfiConverterByteArray.read(buf),
+      FfiConverterByteArray.read(buf),
+      FfiConverterUByte.read(buf),
+    )
+
+  override fun allocationSize(value: PqSignature) =
+    (
+      FfiConverterByteArray.allocationSize(value.`publicKey`) +
+        FfiConverterByteArray.allocationSize(value.`scheme`) +
+        FfiConverterByteArray.allocationSize(value.`signature`) +
+        FfiConverterUByte.allocationSize(value.`salt`)
+    )
+
+  override fun write(
+    value: PqSignature,
+    buf: ByteBuffer,
+  ) {
+    FfiConverterByteArray.write(value.`publicKey`, buf)
+    FfiConverterByteArray.write(value.`scheme`, buf)
+    FfiConverterByteArray.write(value.`signature`, buf)
+    FfiConverterUByte.write(value.`salt`, buf)
+  }
+}
+
+/**
  * A single entry in an app call's access list.
  *
  * At most one field is set. An entry with none set bumps the box read/write quota.
@@ -2913,6 +2987,10 @@ data class SignedTransaction(
    * Optional logic signature authorizing the transaction with a program.
    */
   var `logicSignature`: LogicSignature? = null,
+  /**
+   * Optional native post-quantum (e.g. Falcon-1024) signature.
+   */
+  var `pqSignature`: PqSignature? = null,
 ) {
   companion object
 }
@@ -2928,6 +3006,7 @@ public object FfiConverterTypeSignedTransaction : FfiConverterRustBuffer<SignedT
       FfiConverterOptionalString.read(buf),
       FfiConverterOptionalTypeMultisigSignature.read(buf),
       FfiConverterOptionalTypeLogicSignature.read(buf),
+      FfiConverterOptionalTypePqSignature.read(buf),
     )
 
   override fun allocationSize(value: SignedTransaction) =
@@ -2936,7 +3015,8 @@ public object FfiConverterTypeSignedTransaction : FfiConverterRustBuffer<SignedT
         FfiConverterOptionalByteArray.allocationSize(value.`signature`) +
         FfiConverterOptionalString.allocationSize(value.`authAddress`) +
         FfiConverterOptionalTypeMultisigSignature.allocationSize(value.`multisignature`) +
-        FfiConverterOptionalTypeLogicSignature.allocationSize(value.`logicSignature`)
+        FfiConverterOptionalTypeLogicSignature.allocationSize(value.`logicSignature`) +
+        FfiConverterOptionalTypePqSignature.allocationSize(value.`pqSignature`)
     )
 
   override fun write(
@@ -2948,6 +3028,7 @@ public object FfiConverterTypeSignedTransaction : FfiConverterRustBuffer<SignedT
     FfiConverterOptionalString.write(value.`authAddress`, buf)
     FfiConverterOptionalTypeMultisigSignature.write(value.`multisignature`, buf)
     FfiConverterOptionalTypeLogicSignature.write(value.`logicSignature`, buf)
+    FfiConverterOptionalTypePqSignature.write(value.`pqSignature`, buf)
   }
 }
 
@@ -3462,11 +3543,6 @@ enum class AlgorandConstant {
    * Increment in the encoded byte size when a signature is attached to a transaction (75)
    */
   SIGNATURE_ENCODING_INCR_LENGTH,
-
-  /**
-   * The maximum number of transactions in a group (16)
-   */
-  MAX_TX_GROUP_SIZE,
 
   ;
 
@@ -4140,6 +4216,38 @@ public object FfiConverterOptionalTypePaymentTransactionFields : FfiConverterRus
     } else {
       buf.put(1)
       FfiConverterTypePaymentTransactionFields.write(value, buf)
+    }
+  }
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypePqSignature : FfiConverterRustBuffer<PqSignature?> {
+  override fun read(buf: ByteBuffer): PqSignature? {
+    if (buf.get().toInt() == 0) {
+      return null
+    }
+    return FfiConverterTypePqSignature.read(buf)
+  }
+
+  override fun allocationSize(value: PqSignature?): ULong {
+    if (value == null) {
+      return 1UL
+    } else {
+      return 1UL + FfiConverterTypePqSignature.allocationSize(value)
+    }
+  }
+
+  override fun write(
+    value: PqSignature?,
+    buf: ByteBuffer,
+  ) {
+    if (value == null) {
+      buf.put(0)
+    } else {
+      buf.put(1)
+      FfiConverterTypePqSignature.write(value, buf)
     }
   }
 }
@@ -5127,6 +5235,16 @@ fun `participantsFromMultisigSignature`(`multisigSignature`: MultisigSignature):
         FfiConverterTypeMultisigSignature.lower(`multisigSignature`),
         _status,
       )
+    },
+  )
+
+/**
+ * The two-byte `pqsig` scheme identifier for Falcon-1024 (`"f1"`).
+ */
+fun `pqSchemeFalcon1024`(): kotlin.ByteArray =
+  FfiConverterByteArray.lift(
+    uniffiRustCall { _status ->
+      UniffiLib.INSTANCE.uniffi_algokit_transact_ffi_fn_func_pq_scheme_falcon1024(_status)
     },
   )
 

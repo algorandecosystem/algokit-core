@@ -1,0 +1,49 @@
+[package]
+name = "seed_vault_wasm_guest_light_client"
+version = "0.1.0"
+edition = "2021"
+publish = false
+license = "MIT"
+
+# Example seed_vault_wasm guest that isn't a signing algorithm: an Algorand
+# light client, ported to Rust from https://github.com/algorand/light-client-poc
+# (oracle + transaction verifier) and the libraries it relies on,
+# https://github.com/algorand/go-stateproof-verification and
+# https://github.com/algorand/go-sumhash (all MIT, Algorand).
+#
+# It runs through the `run` export with persistent state: the oracle ingests
+# state proofs (verifying them), and transactions are checked against the
+# block interval commitments it has verified -- all inside the TEE.
+#
+# The logic is plain `no_std` Rust (`src/*.rs`), also built natively so
+# `cargo test` here checks it against the Go repo's sample data; `src/wasm.rs`
+# is the guest glue. Rebuild the test fixture with `./build.sh`.
+#
+# Standalone (not a workspace member): its WASM build needs a clang with the
+# WebAssembly backend for the Falcon C code.
+
+[workspace]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+algorand-falcon = "=0.1.0"
+sha2 = { version = "0.10", default-features = false }
+sha3 = { version = "0.10", default-features = false }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+# A real allocator (decoding and hashing allocate and free a lot; the
+# bump allocators of the other guests would run out).
+dlmalloc = { version = "0.2", features = ["global"] }
+
+[dev-dependencies]
+base64 = "0.22"
+serde_json = "1"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

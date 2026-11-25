@@ -1,0 +1,43 @@
+[package]
+name = "wasm_runtime"
+version = "0.1.0"
+# 2021, not 2024: Trusty builds this crate with AOSP's prebuilt rustc
+# (1.83 at the time of writing), which predates edition 2024. Keeping the
+# Cargo edition identical to `rules.mk`'s `MODULE_RUST_EDITION` means a plain
+# `cargo test` already proves the source compiles the way Trusty builds it.
+edition = "2021"
+
+# A small, `no_std` + `alloc` sandbox for running WebAssembly inside the
+# seed_vault_ta Trusty applet, adapted from
+# https://github.com/joe-p/wasm-crypto-eval (`wasmi_runtime` +
+# `wasm-crypto-eval`). Differences from upstream, all for the Trusty build:
+#
+# - wasmi 0.46 instead of 2.x: wasmi 0.47+ needs rustc 1.86, and AOSP's
+#   newest prebuilt rustc is 1.83. 0.46 is the last release that builds
+#   there, and (unlike 2.x) has no code-generating `build.rs`.
+# - SHA-256 from `cryptoxide` (already vendored for the TA) instead of the
+#   `sha2` crate and its `digest`/`generic-array`/... tree.
+# - No `snafu`, no `#[wasm_host_function]` proc macro: plain `enum` errors
+#   and hand-written host functions (via `guest_memory`), so Trusty needs no
+#   extra proc-macro crates.
+# - Host state is a typed `T` rather than `Box<dyn Any>`, so a host function
+#   can't ask for the wrong type in the first place.
+#
+# Knows nothing about seed vault keys -- see `crates/seed_vault_wasm` for
+# that, which is what keeps WASM support optional for the TA.
+
+[dependencies]
+cryptoxide = { workspace = true }
+zeroize = { workspace = true }
+# `std`, `wat` off for `no_std`; `prefer-btree-collections` avoids pulling in
+# `hashbrown` + its hasher (BTreeMap needs nothing extra).
+wasmi = { version = "=0.46.0", default-features = false, features = ["prefer-btree-collections"], optional = true }
+
+[features]
+default = ["runtime"]
+# The sandbox. Off, only `ProgramId` remains (for clients like the Android
+# FFI, which shouldn't link an interpreter).
+runtime = ["dep:wasmi"]
+
+[dev-dependencies]
+wat = "1.0"

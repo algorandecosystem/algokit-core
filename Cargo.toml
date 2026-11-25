@@ -17,6 +17,10 @@ members = [
   "tools/api_tools",
   "crates/algokit_crypto",
   "crates/algokit_crypto_ffi",
+  "crates/seed_vault",
+  "crates/seed_vault_ffi",
+  "crates/wasm_runtime",
+  "crates/seed_vault_wasm",
   "crates/algokit_composer",
   "crates/algokit_composer_ffi",
 ]
@@ -47,3 +51,15 @@ convert_case = { version = "0.8.0" }
 polytest = { version = "0.3.0", locked = true }
 cargo-insta = { version = "1.43.1", locked = true }
 cargo-nextest = { version = "0.9.100", locked = true }
+
+# The wasmi interpreter is ~20x slower unoptimized, which makes
+# seed_vault_wasm's Falcon-1024-in-WASM tests take tens of seconds in debug
+# builds. Optimizing just these crates keeps the rest debuggable.
+[profile.dev.package.wasmi]
+opt-level = 3
+[profile.dev.package.wasmi_core]
+opt-level = 3
+[profile.dev.package.wasmi_ir]
+opt-level = 3
+[profile.dev.package.wasmparser]
+opt-level = 3
